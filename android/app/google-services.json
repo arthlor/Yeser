@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "747763611639",
+    "project_id": "yeser-2b816",
+    "storage_bucket": "yeser-2b816.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:747763611639:android:5679917b99914307e460f2",
+        "android_client_info": {
+          "package_name": "com.arthlor.yeser"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfsLCIfPz73HlUl0aXo-e4N0e5G9GrEYU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

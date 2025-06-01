@@ -1,0 +1,183 @@
+
+> yeser@1.0.0 lint
+> eslint . --ext .js,.jsx,.ts,.tsx --fix --no-color
+
+
+/Users/anilkaraca/Desktop/yeser/.prettierrc.cjs
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/.prettierrc.cjs` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+/Users/anilkaraca/Desktop/yeser/android/app/build/intermediates/assets/debug/mergeDebugAssets/EXDevMenuApp.android.js
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/android/app/build/intermediates/assets/debug/mergeDebugAssets/EXDevMenuApp.android.js` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+/Users/anilkaraca/Desktop/yeser/babel.config.cjs
+  1:1  error  'module' is not defined  no-undef
+
+/Users/anilkaraca/Desktop/yeser/jest.config.cjs
+  2:1  error  'module' is not defined           no-undef
+  5:9  error  Unnecessary escape character: \.  no-useless-escape
+  6:9  error  Unnecessary escape character: \.  no-useless-escape
+
+/Users/anilkaraca/Desktop/yeser/metro.config.cjs
+   1:30  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   1:30  error  'require' is not defined                 no-undef
+   2:14  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:14  error  'require' is not defined                 no-undef
+   5:33  error  '__dirname' is not defined               no-undef
+  10:24  error  '__dirname' is not defined               no-undef
+  11:22  error  '__dirname' is not defined               no-undef
+  12:23  error  '__dirname' is not defined               no-undef
+  13:21  error  '__dirname' is not defined               no-undef
+  15:5   error  '__dirname' is not defined               no-undef
+  18:21  error  '__dirname' is not defined               no-undef
+  19:21  error  '__dirname' is not defined               no-undef
+  20:22  error  '__dirname' is not defined               no-undef
+  55:1   error  'module' is not defined                  no-undef
+
+/Users/anilkaraca/Desktop/yeser/src/App.tsx
+  10:8   warning  'Constants' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  14:10  warning  'Text' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  14:16  warning  'View' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  25:10  warning  'supabase' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+
+/Users/anilkaraca/Desktop/yeser/src/api/profileApi.ts
+  65:16  warning  'id' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/anilkaraca/Desktop/yeser/src/hooks/useStreak.ts
+  33:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/navigation/RootNavigator.tsx
+   30:7   warning  'getTabBarIcon' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                    @typescript-eslint/no-unused-vars
+   57:38  warning  Unexpected any. Specify a different type                                                                                                                                                    @typescript-eslint/no-explicit-any
+  118:9   warning  'profileIsLoading' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                 @typescript-eslint/no-unused-vars
+  120:9   warning  'throwbackReminderEnabled' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                         @typescript-eslint/no-unused-vars
+  123:9   warning  'throwbackReminderFrequency' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                       @typescript-eslint/no-unused-vars
+  128:9   warning  'fetchRandomEntry' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                 @typescript-eslint/no-unused-vars
+  129:9   warning  'isThrowbackVisible' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                               @typescript-eslint/no-unused-vars
+  132:9   warning  'lastThrowbackShownAt' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                             @typescript-eslint/no-unused-vars
+  147:9   warning  'canShowThrowback' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                 @typescript-eslint/no-unused-vars
+  172:6   warning  React Hook useEffect has a missing dependency: 'initializeAuth'. Either include it or remove the dependency array                                                                           react-hooks/exhaustive-deps
+  181:21  error    React Hook "useTheme" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+
+/Users/anilkaraca/Desktop/yeser/src/screens/CalendarViewScreen.tsx
+   1:30  warning  'useEffect' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  25:3   warning  'GratitudeEntry' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  63:19  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+  99:16  warning  'e' is defined but never used                                                     @typescript-eslint/no-unused-vars
+  99:19  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/screens/DailyEntryScreen.tsx
+    5:3   warning  'NavigationProp' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   25:3   warning  'GratitudeEntry' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  153:21  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+  176:38  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/screens/EntryDetailScreen.tsx
+  81:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/screens/HomeScreen.tsx
+   4:17  warning  'useEffect' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+   4:28  warning  'useState' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+   8:3   warning  'Button' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  14:10  warning  'GratitudeEntry' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  74:64  warning  Unexpected any. Specify a different type                                          @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/screens/LoginScreen.tsx
+  51:39  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/anilkaraca/Desktop/yeser/src/screens/PastEntriesScreen.tsx
+   10:3   warning  'ActivityIndicator' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   46:17  warning  Unexpected any. Specify a different type                                             @typescript-eslint/no-explicit-any
+  124:11  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                      react/no-unescaped-entities
+  124:22  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                      react/no-unescaped-entities
+
+/Users/anilkaraca/Desktop/yeser/src/screens/PrivacyPolicyScreen.tsx
+   7:6   warning  'PrivacyPolicyScreenNavigationProp' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  12:11  warning  An empty interface declaration allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowInterfaces' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  26:18  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                           react/no-unescaped-entities
+  26:22  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                           react/no-unescaped-entities
+  26:25  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                           react/no-unescaped-entities
+  26:31  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                           react/no-unescaped-entities
+  26:38  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                           react/no-unescaped-entities
+  26:47  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                           react/no-unescaped-entities
+
+/Users/anilkaraca/Desktop/yeser/src/screens/ReminderSettingsScreen.tsx
+  103:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/screens/SettingsScreen.tsx
+    9:17  warning  'useCallback' is defined but never used. Allowed unused vars must match /^_/u                        @typescript-eslint/no-unused-vars
+  104:9   warning  'parseTimeToDate' is assigned a value but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-vars
+  193:17  warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  205:9   warning  'getCurrentFrequencyLabel' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/anilkaraca/Desktop/yeser/src/screens/SignUpScreen.tsx
+  63:14  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/anilkaraca/Desktop/yeser/src/screens/TermsOfServiceScreen.tsx
+  28:37  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  28:46  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  29:22  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  29:31  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  47:23  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  55:20  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  55:32  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  55:37  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  55:56  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+/Users/anilkaraca/Desktop/yeser/src/screens/onboarding/OnboardingReminderSetupScreen.tsx
+   40:9   warning  'navigation' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  120:21  warning  Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
+  153:21  warning  Unexpected any. Specify a different type                                               @typescript-eslint/no-explicit-any
+  176:22  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                        react/no-unescaped-entities
+
+/Users/anilkaraca/Desktop/yeser/src/screens/onboarding/OnboardingScreen.tsx
+   9:3   warning  'TouchableOpacity' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  53:61  warning  Unexpected any. Specify a different type                                            @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/services/analyticsService.ts
+  29:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/services/authService.test.ts
+   33:7   warning  'mockSupabaseSignIn' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  442:11  warning  'subscription' is assigned a value but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+
+/Users/anilkaraca/Desktop/yeser/src/services/authService.ts
+    5:3   warning  'SignUpWithPasswordCredentials' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   16:13  warning  Unexpected any. Specify a different type                                                         @typescript-eslint/no-explicit-any
+  228:17  warning  Unexpected any. Specify a different type                                                         @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/store/authStore.test.ts
+    4:15  warning  'EmailPasswordCredentials' is defined but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+  113:14  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+  265:13  warning  'secondUnsubscribeInnerMock' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/anilkaraca/Desktop/yeser/src/store/authStore.ts
+  27:46  warning  'get' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  79:17  warning  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/store/profileStore.ts
+    5:10  warning  'ProfileResponse' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  140:21  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  189:21  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  260:21  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+
+/Users/anilkaraca/Desktop/yeser/src/store/themeStore.ts
+  48:41  warning  'error' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/anilkaraca/Desktop/yeser/src/store/throwbackStore.ts
+  56:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 103 problems (21 errors, 82 warnings)
+

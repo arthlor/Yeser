@@ -181,7 +181,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     <ScrollView 
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
-      accessibilityLabel="Şükran kaydı detayları"
+      accessibilityLabel="Minnet kaydı detayları"
     >
       <SlideIn direction="top" distance={20}>
         <View style={styles.headerContainer}>
@@ -199,14 +199,14 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           variant="elevated" 
           elevation="md"
           style={styles.cardContainer}
-          accessibilityLabel="Şükran içeriği"
+          accessibilityLabel="Minnet içeriği"
         >
           {gratitudeItems.length > 0 ? (
             gratitudeItems.map((item, index) => (
               <View 
                 key={index} 
                 style={styles.itemContainer}
-                accessibilityLabel={`Şükran ${index + 1}: ${item}`}
+                accessibilityLabel={`Minnet ${index + 1}: ${item}`}
               >
                 <Text style={styles.bulletPoint}>•</Text>
                 <Text style={styles.contentText}>{item}</Text>
@@ -237,8 +237,8 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 title="Düzenle"
                 onPress={handleEdit}
                 variant="secondary"
-                accessibilityLabel="Şükran kaydını düzenle"
-                accessibilityHint="Şükran kaydını düzenlemek için dokunun"
+                accessibilityLabel="Minnet kaydını düzenle"
+                accessibilityHint="Minnet kaydını düzenlemek için dokunun"
               />
             </View>
             <View style={styles.buttonWrapper}>
@@ -246,8 +246,8 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 title="Sil" 
                 onPress={handleDelete} 
                 variant="danger"
-                accessibilityLabel="Şükran kaydını sil"
-                accessibilityHint="Şükran kaydını silmek için dokunun"
+                accessibilityLabel="Minnet kaydını sil"
+                accessibilityHint="Minnet kaydını silmek için dokunun"
               />
             </View>
           </View>

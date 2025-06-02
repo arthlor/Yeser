@@ -252,6 +252,8 @@ export interface ThemeBreakpoints {
 }
 
 // Enhanced main theme interface
+export type ThemeName = 'light' | 'dark';
+
 export interface AppTheme {
   name: 'light' | 'dark';
   colors: ThemeColors;

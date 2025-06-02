@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { getRandomGratitudeEntry, GratitudeEntry } from '../api/gratitudeApi';
+import { getRandomGratitudeEntry } from '@/api/gratitudeApi';
+import { gratitudeEntrySchema, type GratitudeEntry } from '../schemas/gratitudeEntrySchema';
 
 interface ThrowbackState {
   lastThrowbackShownAt: number | null; // Timestamp of when a throwback was last shown
@@ -18,7 +19,7 @@ interface ThrowbackState {
   resetThrowback: () => void; // Added reset action
 }
 
-const initialState: Omit<
+export const initialState: Omit<
   ThrowbackState,
   | 'fetchRandomEntry'
   | 'showThrowback'
@@ -42,29 +43,38 @@ export const useThrowbackStore = create<ThrowbackState>()(
       fetchRandomEntry: async () => {
         set({ isLoading: true, error: null });
         try {
-          const entry = await getRandomGratitudeEntry();
-          if (entry) {
+          const rawEntry = await getRandomGratitudeEntry(); // API call
+
+          if (!rawEntry) {
+            set({ randomEntry: null, isLoading: false, error: 'No throwback entry found.' });
+            return;
+          }
+
+          const validationResult = gratitudeEntrySchema.safeParse(rawEntry);
+
+          if (validationResult.success) {
             set({
-              randomEntry: entry,
+              randomEntry: validationResult.data,
               isLoading: false,
               isThrowbackVisible: true,
               lastThrowbackShownAt: Date.now(),
+              error: null, // Clear previous errors
             });
           } else {
-            set({ randomEntry: null, isLoading: false }); // Ensure randomEntry is null if no entry found
+            console.error('Zod validation error in throwbackStore:', validationResult.error.flatten());
+            set({
+              error: 'Received invalid throwback data. Please try again.', // User-friendly Zod error
+              isLoading: false,
+              randomEntry: null,
+            });
           }
-        } catch (e: unknown) {
-          console.error('Error fetching random gratitude entry:', e);
-          let errorMessage = 'Failed to fetch random entry';
-          if (
-            typeof e === 'object' &&
-            e !== null &&
-            'message' in e &&
-            typeof (e as { message: unknown }).message === 'string'
-          ) {
-            errorMessage = (e as { message: string }).message;
-          } else if (typeof e === 'string') {
-            errorMessage = e;
+        } catch (apiError: unknown) { // Catches errors from getRandomGratitudeEntry() itself
+          console.error('API error fetching random gratitude entry:', apiError);
+          let errorMessage = 'Failed to fetch throwback entry due to a network or server issue.';
+          if (typeof apiError === 'object' && apiError !== null && 'message' in apiError && typeof (apiError as { message: unknown }).message === 'string') {
+            errorMessage = (apiError as { message: string }).message;
+          } else if (typeof apiError === 'string') {
+            errorMessage = apiError;
           }
           set({
             error: errorMessage,

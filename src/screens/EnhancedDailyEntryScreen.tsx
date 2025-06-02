@@ -1,34 +1,41 @@
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  LayoutAnimation,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
+  KeyboardAvoidingView,
+  Dimensions,
+  StatusBar,
+} from 'react-native';
+
 import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { RouteProp, useNavigation } from '@react-navigation/native';
-// import { StackNavigationProp } from '@react-navigation/stack'; // Replaced by BottomTabNavigationProp
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  Keyboard,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import {
-  addGratitudeEntry,
-  getGratitudeEntryByDate,
-  updateGratitudeEntry,
-} from '../api/gratitudeApi';
-import ThemedButton from '../components/ThemedButton';
-import ThemedCard from '../components/ThemedCard';
-import ThemedInput from '../components/ThemedInput';
-import { useTheme } from '../providers/ThemeProvider';
-import { analyticsService } from '../services/analyticsService';
-import { AppTheme } from '../themes/types';
-import { MainAppTabParamList } from '../types/navigation'; // Removed RootStackParamList, added MainAppTabParamList
+import { useGratitudeStore } from '@/store/gratitudeStore';
+import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
+import { ZodError } from 'zod';
+import GratitudeInputBar from '@/components/GratitudeInputBar';
+import GratitudeStatementItem from '@/components/GratitudeStatementItem';
+import DailyEntryHero from '@/components/daily-entries/DailyEntryHero';
+import DailyEntryDatePicker from '@/components/daily-entries/DailyEntryDatePicker';
+import DailyEntryStatementList from '@/components/daily-entries/DailyEntryStatementList';
+import ThemedCard from '@/components/ThemedCard';
+import { useTheme } from '@/providers/ThemeProvider';
+import { AppTheme } from '@/themes/types';
+import { MainAppTabParamList } from '@/types/navigation';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 type DailyEntryScreenRouteProp = RouteProp<
   MainAppTabParamList,
@@ -39,502 +46,238 @@ interface Props {
   route?: DailyEntryScreenRouteProp;
 }
 
-/**
- * EnhancedDailyEntryScreen provides an improved UI/UX for creating and editing gratitude entries.
- * It uses the new ThemedCard, ThemedInput, and animation components for a more polished experience.
- */
 const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList<string>>(null);
+  const navigation = useNavigation<
+    BottomTabNavigationProp<
+      MainAppTabParamList,
+      'DailyEntryTab'
+    >
+  >();
+  const routeParams = useRoute<DailyEntryScreenRouteProp>().params;
 
-  // State
-  const [items, setItems] = useState<string[]>(['']);
+  const {
+    entries,
+    isLoading: isStoreLoading,
+    error: storeError,
+    fetchEntry,
+    addStatement: storeAddStatement,
+    updateStatement: storeUpdateStatement,
+    removeStatement: storeRemoveStatement,
+  } = useGratitudeStore();
+
+  const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
   const [entryDate, setEntryDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [_focusedInputIndex, setFocusedInputIndex] = useState<number | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [errors, setErrors] = useState<{ [key: number]: string }>({});
+  const [statementInputError, setStatementInputError] = useState<string | null>(null);
 
-  // Navigation
-  const navigation =
-    useNavigation<
-      BottomTabNavigationProp<MainAppTabParamList, 'DailyEntryTab'>
-    >();
+  const dateString = entryDate.toISOString().split('T')[0];
+  const currentEntry = entries[dateString];
+  const statements = currentEntry?.statements || [];
+  const currentEntryId = currentEntry?.id || null;
 
-  // Check if we're in edit mode
-  const entryToEdit = route?.params?.entryToEdit;
-  const isEditMode = !!entryToEdit;
-  const entryId = entryToEdit?.id;
+  // Calculate if it's today
+  const today = new Date().toISOString().split('T')[0];
+  const isToday = dateString === today;
 
-  // Initialize with entry data if in edit mode
+  if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+
   useEffect(() => {
-    if (isEditMode && entryToEdit) {
-      setItems(entryToEdit.content ? entryToEdit.content.split('\n') : ['']);
-      if (entryToEdit.entry_date) {
-        const dateParts = entryToEdit.entry_date.split('-');
-        if (dateParts.length === 3) {
-          setEntryDate(
-            new Date(
-              parseInt(dateParts[0]),
-              parseInt(dateParts[1]) - 1,
-              parseInt(dateParts[2])
-            )
-          );
-        } else {
-          setEntryDate(new Date(entryToEdit.entry_date));
+    const initialDateString = routeParams?.initialDate;
+    if (initialDateString) {
+      const dateParts = initialDateString.split('-');
+      if (dateParts.length === 3) {
+        const year = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1;
+        const day = parseInt(dateParts[2]);
+        const newDate = new Date(year, month, day);
+        if (!isNaN(newDate.getTime())) {
+          setEntryDate(newDate);
         }
       }
     }
-  }, [isEditMode, entryToEdit]);
+  }, [routeParams]);
 
-  // Handle input changes
-  const handleItemChange = (text: string, index: number) => {
-    const newItems = [...items];
-    newItems[index] = text;
-    setItems(newItems);
-
-    // Clear error for this item if it exists
-    if (errors[index]) {
-      const newErrors = { ...errors };
-      delete newErrors[index];
-      setErrors(newErrors);
-    }
-  };
-
-  // Add a new gratitude item
-  const addItemInput = () => {
-    // Dismiss keyboard to prevent layout issues
-    Keyboard.dismiss();
-
-    setItems([...items, '']);
-
-    // Scroll to the bottom after a short delay to ensure the new item is rendered
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  };
-
-  // Remove a gratitude item
-  const removeItemInput = (index: number) => {
-    if (items.length > 1) {
-      const newItems = items.filter((_, i) => i !== index);
-      setItems(newItems);
-
-      // Update errors if any
-      if (Object.keys(errors).length > 0) {
-        const newErrors: { [key: number]: string } = {};
-        Object.entries(errors).forEach(([key, value]) => {
-          const keyNum = parseInt(key);
-          if (keyNum < index) {
-            newErrors[keyNum] = value;
-          } else if (keyNum > index) {
-            newErrors[keyNum - 1] = value;
-          }
-        });
-        setErrors(newErrors);
-      }
-    }
-  };
-
-  // Handle date picker changes
-  const handleDateChange = (
-    event: DateTimePickerEvent,
-    selectedDate?: Date
-  ) => {
-    const currentDate = selectedDate || entryDate;
-    setShowDatePicker(Platform.OS === 'ios');
-    setEntryDate(currentDate);
-  };
-
-  // Show the date picker
-  const showDatepicker = () => {
-    setShowDatePicker(true);
-  };
-
-  // Format date for display
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
-
-  // Validate inputs before saving
-  const validateInputs = () => {
-    const newErrors: { [key: number]: string } = {};
-    let isValid = true;
-
-    items.forEach((item, index) => {
-      if (item.trim() === '') {
-        newErrors[index] = 'Bu alan boş olamaz';
-        isValid = false;
-      }
-    });
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  // Dynamically set screen title based on mode
   useEffect(() => {
-    navigation.setOptions({
-      title: isEditMode ? 'Şükranı Düzenle' : 'Yeni Şükran Kaydı',
-    });
-  }, [navigation, isEditMode]);
+    fetchEntry(entryDate.toISOString().split('T')[0]);
+  }, [entryDate, fetchEntry]);
 
-  // Save or update the gratitude entry
-  const handleSaveEntry = async () => {
-    // Validate inputs
-    if (!validateInputs()) {
-      // Scroll to the first error
-      const firstErrorIndex = parseInt(Object.keys(errors)[0]);
-      scrollViewRef.current?.scrollTo({
-        y: firstErrorIndex * 120, // Approximate height of each item
-        animated: true,
+  useEffect(() => {
+    if (storeError) {
+      Alert.alert('Hata', storeError || 'Bir şeyler ters gitti.');
+      useGratitudeStore.setState({ error: null });
+    }
+  }, [storeError]);
+
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setEntryDate(selectedDate);
+    }
+  };
+
+  const handleAddStatement = async (newStatementText: string) => {
+    const validationResult = gratitudeStatementSchema.safeParse(newStatementText);
+
+    if (!validationResult.success) {
+      const errorMessage = (validationResult.error as ZodError).errors[0]?.message || 'Geçersiz ifade.';
+      setStatementInputError(errorMessage);
+      // Alert.alert('Geçersiz İfade', errorMessage); // Optionally keep alert or rely on UI error display
+      return;
+    }
+
+    setStatementInputError(null); // Clear any previous error
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const result = await storeAddStatement(dateString, validationResult.data);
+    if (result) {
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
       });
+    }
+  };
+
+  const handleEditStatement = (index: number) => {
+    setEditingStatementIndex(index);
+  };
+
+  const handleSaveEditedStatement = async (index: number, updatedText: string) => {
+    const validationResult = gratitudeStatementSchema.safeParse(updatedText);
+
+    if (!validationResult.success) {
+      const errorMessage = (validationResult.error as ZodError).errors[0]?.message || 'Geçersiz ifade.';
+      Alert.alert('Geçersiz İfade', errorMessage); // For now, use Alert for editing errors
       return;
     }
 
-    const nonEmptyItems = items
-      .map(item => item.trim())
-      .filter(item => item !== '');
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    await storeUpdateStatement(dateString, index, validationResult.data);
+    setEditingStatementIndex(null);
+  };
 
-    if (nonEmptyItems.length === 0) {
-      Alert.alert('Eksik Bilgi', 'Lütfen en az bir şükran metni girin.');
-      return;
-    }
+  const handleCancelEditingStatement = () => {
+    setEditingStatementIndex(null);
+  };
 
-    const entryText = nonEmptyItems.join('\n');
-    setIsLoading(true);
-
-    // Define isoDate here to make it accessible in the catch block for the "Edit" logic
-    const isoDate = entryDate.toISOString().split('T')[0];
-
-    let savedEntry;
-    try {
-      if (isEditMode && entryId) {
-        // Editing an existing entry
-        console.log(`Updating entry ID ${entryId} with date ${isoDate}.`);
-        savedEntry = await updateGratitudeEntry(entryId, {
-          content: entryText,
-          entry_date: isoDate,
-        });
-      } else {
-        // Adding a new entry (or upserting if an entry for this user/date already exists)
-        console.log(`Adding/Upserting new entry for date ${isoDate}.`);
-        savedEntry = await addGratitudeEntry({
-          content: entryText,
-          entry_date: isoDate,
-        });
-      }
-
-      // Unified success handling
-      if (savedEntry && savedEntry.id) {
-        setSaveSuccess(true);
-        if (isEditMode) {
-          analyticsService.logEvent('gratitude_entry_updated', {
-            entry_id: savedEntry.id,
-          });
-        } else {
-          analyticsService.logEvent('gratitude_entry_added', {
-            entry_id: savedEntry.id,
-          });
-        }
-        // Common navigation logic after success
-        setTimeout(() => {
-          navigation.goBack();
-        }, 1500);
-      } else {
-        // This case implies the API call might have succeeded without returning a valid/expected entry
-        console.error(
-          'Save operation completed but no valid entry returned or entry has no ID.',
-          savedEntry
-        );
-        throw new Error(
-          `Şükran kaydı ${isEditMode ? 'güncellenirken' : 'kaydedilirken'} bir sorun oluştu. Kayıt detayı alınamadı.`
-        );
-      }
-    } catch (error: unknown) {
-      let errorCode: string | undefined;
-      let errorMessage = `Şükran kaydı ${isEditMode ? 'güncellenirken' : 'eklenirken'} bir hata oluştu. Lütfen tekrar deneyin.`;
-
-      if (typeof error === 'object' && error !== null) {
-        if (
-          'code' in error &&
-          typeof (error as { code: unknown }).code === 'string'
-        ) {
-          errorCode = (error as { code: string }).code;
-        }
-        // Use the message from the error object if it's a string, otherwise keep the default
-        if (
-          'message' in error &&
-          typeof (error as { message: unknown }).message === 'string'
-        ) {
-          errorMessage = (error as { message: string }).message;
-        }
-      }
-
-      if (errorCode === '23505') {
-        Alert.alert(
-          'Kayıt Mevcut',
-          'Bu tarih için zaten bir şükran kaydınız mevcut. Mevcut kaydı düzenleyebilir veya farklı bir tarih seçebilirsiniz.',
-          [
-            {
-              text: 'Düzenle',
-              onPress: async () => {
-                try {
-                  setIsLoading(true);
-                  const existingEntry = await getGratitudeEntryByDate(isoDate);
-                  setIsLoading(false);
-                  if (existingEntry) {
-                    navigation.navigate('DailyEntryTab', {
-                      entryToEdit: existingEntry,
-                    });
-                  } else {
-                    Alert.alert(
-                      'Hata',
-                      'Düzenlenecek mevcut kayıt bulunamadı. Lütfen tekrar deneyin.'
-                    );
-                  }
-                } catch (fetchError: unknown) {
-                  setIsLoading(false);
-                  let fetchErrorMessage =
-                    'Mevcut kayıt getirilirken bir sorun oluştu.';
-                  if (
-                    typeof fetchError === 'object' &&
-                    fetchError !== null &&
-                    'message' in fetchError &&
-                    typeof (fetchError as { message: unknown }).message ===
-                      'string'
-                  ) {
-                    fetchErrorMessage = (fetchError as { message: string })
-                      .message;
-                  }
-                  console.error('Error fetching entry for edit:', fetchError);
-                  Alert.alert('Hata', fetchErrorMessage);
-                }
-              },
-            },
-            {
-              text: 'Farklı Tarih Seç',
-              style: 'cancel',
-            },
-          ]
-        );
-      } else {
-        console.error(
-          `Error ${isEditMode ? 'updating' : 'saving'} gratitude entry (Code: ${errorCode || 'N/A'}):`,
-          error
-        );
-        Alert.alert('Hata', errorMessage);
-      }
-    }
-    setIsLoading(false);
+  const handleDeleteStatement = (index: number) => {
+    Alert.alert(
+      'İfadeyi Sil',
+      'Bu şükran ifadesini silmek istediğinizden emin misiniz?',
+      [
+        { text: 'Hayır', style: 'cancel' },
+        {
+          text: 'Evet, Sil',
+          onPress: async () => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            await storeRemoveStatement(dateString, index);
+          },
+          style: 'destructive',
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
-    <ScrollView
-      ref={scrollViewRef}
-      style={styles.scrollView}
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      {/* Header */}
-      <View>
-        <Text style={styles.title}>
-          {isEditMode ? 'Kaydı Düzenle' : 'Bugün Neler İçin Minnettarsın?'}
-        </Text>
-      </View>
-
-      {/* Date Selection Card */}
-      <View>
-        <ThemedCard
-          variant="outlined"
-          contentPadding="lg"
-          style={styles.dateCard}
-        >
-          <Text style={styles.dateLabel}>Tarih</Text>
-          <TouchableOpacity onPress={showDatepicker} style={styles.dateButton}>
-            <Text style={styles.dateText}>{formatDate(entryDate)}</Text>
-            <Icon name="calendar" size={20} color={theme.colors.primary} />
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              testID="dateTimePicker"
-              value={entryDate}
-              mode="date"
-              is24Hour={true}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleDateChange}
-            />
-          )}
-        </ThemedCard>
-      </View>
-
-      {/* Section Title */}
-      <Text style={styles.sectionTitle}>
-        Bugün için neler için şükran duyuyorsun?
-      </Text>
-
-      {/* Gratitude Items */}
-      {items.map((item, index) => (
-        <ThemedCard
-          key={index}
-          variant="elevated"
-          elevation="xs"
-          style={styles.itemCard}
-          contentPadding="none"
-        >
-          <ThemedInput
-            value={item}
-            onChangeText={text => handleItemChange(text, index)}
-            placeholder={`${index + 1}. Şükran maddeniz...`}
-            multiline
-            numberOfLines={3}
-            onFocus={() => setFocusedInputIndex(index)}
-            onBlur={() => setFocusedInputIndex(null)}
-            error={errors[index]}
-            containerStyle={styles.inputContainer}
-          />
-          {items.length > 1 && (
-            <TouchableOpacity
-              onPress={() => removeItemInput(index)}
-              style={styles.removeButton}
-              accessibilityLabel="Şükran maddesini kaldır"
-            >
-              <Icon name="close-circle" size={24} color={theme.colors.error} />
-            </TouchableOpacity>
-          )}
-        </ThemedCard>
-      ))}
-
-      {/* Add Button */}
-      <TouchableOpacity onPress={addItemInput} style={styles.addButton}>
-        <Icon name="plus-circle" size={24} color={theme.colors.primary} />
-        <Text style={styles.addButtonText}>Şükran maddesi ekle</Text>
-      </TouchableOpacity>
-
-      {/* Save Button */}
-      <View style={styles.saveButtonContainer}>
-        {saveSuccess ? (
-          <View style={styles.successContainer}>
-            <Icon name="check-circle" size={40} color={theme.colors.success} />
-            <Text style={styles.successText}>
-              {isEditMode ? 'Güncellendi!' : 'Kaydedildi!'}
-            </Text>
-          </View>
-        ) : (
-          <ThemedButton
-            title={isEditMode ? 'Güncelle' : 'Kaydet'}
-            onPress={handleSaveEntry}
-            isLoading={isLoading}
-            disabled={isLoading}
-            style={styles.saveButton}
-            variant="primary"
-            accessibilityLabel={isEditMode ? 'Güncelle' : 'Kaydet'}
-            accessibilityHint={
-              isEditMode
-                ? 'Şükran girişini güncellemek için dokunun'
-                : 'Şükran girişini kaydetmek için dokunun'
-            }
+    <View style={styles.container}>
+      <StatusBar backgroundColor={theme.colors.background} barStyle="dark-content" />
+      
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <DailyEntryHero isToday={isToday} statementCount={statements.length} />
+        <DailyEntryDatePicker entryDate={entryDate} onPressChangeDate={() => setShowDatePicker(true)} />
+        <DailyEntryStatementList
+          flatListRef={flatListRef}
+          statements={statements}
+          editingStatementIndex={editingStatementIndex}
+          onEditStatement={handleEditStatement}
+          onSaveEditedStatement={handleSaveEditedStatement}
+          onCancelEditingStatement={handleCancelEditingStatement}
+          onDeleteStatement={handleDeleteStatement}
+        />
+        
+        {showDatePicker && (
+          <DateTimePicker
+            value={entryDate}
+            mode="date"
+            display="spinner"
+            onChange={handleDateChange}
           />
         )}
-      </View>
-    </ScrollView>
+        
+        <GratitudeInputBar onSubmit={handleAddStatement} error={statementInputError} />
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
-const createStyles = (theme: AppTheme) =>
-  StyleSheet.create({
-    scrollView: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    container: {
-      padding: theme.spacing.md,
-      paddingBottom: theme.spacing.xxl,
-    },
-    title: {
-      ...theme.typography.headlineMedium,
-      color: theme.colors.onBackground,
-      marginBottom: theme.spacing.lg,
-      textAlign: 'center',
-    },
-    dateCard: {
-      marginBottom: theme.spacing.lg,
-    },
-    dateLabel: {
-      ...theme.typography.labelMedium,
-      color: theme.colors.textSecondary,
-      marginBottom: theme.spacing.xs,
-    },
-    dateButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.sm,
-      borderRadius: theme.borderRadius.sm,
-      backgroundColor: theme.colors.surfaceVariant,
-    },
-    dateText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurface,
-    },
-    sectionTitle: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onBackground,
-      marginBottom: theme.spacing.md,
-      marginTop: theme.spacing.sm,
-    },
-    itemCard: {
-      marginBottom: theme.spacing.md,
-      overflow: 'hidden',
-    },
-    inputContainer: {
-      margin: 0,
-      marginBottom: 0,
-    },
-    removeButton: {
-      position: 'absolute',
-      top: theme.spacing.xs,
-      right: theme.spacing.xs,
-      zIndex: 1,
-    },
-    addButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: theme.spacing.sm,
-      marginBottom: theme.spacing.lg,
-    },
-    addButtonText: {
-      ...theme.typography.labelLarge,
-      color: theme.colors.primary,
-      marginLeft: theme.spacing.xs,
-    },
-    saveButtonContainer: {
-      marginTop: theme.spacing.md,
-      alignItems: 'center',
-    },
-    saveButton: {
-      minWidth: 200,
-    },
-    successContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: theme.spacing.md,
-    },
-    successText: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.success,
-      marginTop: theme.spacing.sm,
-    },
-  });
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  listContentContainer: {
+    paddingBottom: theme.spacing.xxl + 60, // Extra space for input bar
+  },
+  listContentContainerEmpty: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+
+  // Statement Items
+  statementWrapper: {
+    marginBottom: theme.spacing.sm,
+  },
+  itemSeparator: {
+    height: theme.spacing.xs,
+  },
+
+  // Empty State
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.xxl,
+    minHeight: screenHeight * 0.4,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: `${theme.colors.textSecondary}10`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: theme.colors.text,
+    textAlign: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  emptyDescription: {
+    fontSize: 16,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 280,
+  },
+});
 
 export default EnhancedDailyEntryScreen;

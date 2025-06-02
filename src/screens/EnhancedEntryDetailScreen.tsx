@@ -3,7 +3,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { deleteGratitudeEntry } from '../api/gratitudeApi';
+import { deleteStatement } from '../api/gratitudeApi';
 import ErrorState from '../components/states/ErrorState';
 import LoadingState from '../components/states/LoadingState';
 import ThemedButton from '../components/ThemedButton';
@@ -38,9 +38,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [error, setError] = useState<string | null>(null);
   const { entry } = route.params;
 
-  const gratitudeItems = entry.content
-    ? entry.content.split('\n').filter(item => item.trim() !== '')
-    : [];
+  const gratitudeItems = entry.statements || [];
 
   const formattedDate = entry.created_at
     ? new Date(entry.created_at).toLocaleDateString('tr-TR', {
@@ -78,8 +76,8 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           text: 'Sil',
           style: 'destructive',
           onPress: async () => {
-            if (!entry.id) {
-              setError('Kayıt ID bulunamadı.');
+            if (!entry || !entry.entry_date || !entry.statements) {
+              setError('Kayıt bilgileri eksik veya geçersiz.');
               return;
             }
 
@@ -87,8 +85,12 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             setError(null);
 
             try {
-              await deleteGratitudeEntry(entry.id);
-              Alert.alert('Başarılı', 'Kayıt silindi.', [
+              const numStatements = entry.statements.length;
+              for (let i = 0; i < numStatements; i++) {
+                // Always delete the first statement in the current list as indices shift
+                await deleteStatement(entry.entry_date, 0);
+              }
+              Alert.alert('Başarılı', 'Kayıt ve tüm ifadeleri silindi.', [
                 {
                   text: 'Tamam',
                   onPress: () => navigation.goBack(),
@@ -142,7 +144,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
-      accessibilityLabel="Şükran kaydı detayları"
+      accessibilityLabel="Minnet kaydı detayları"
     >
       <View style={styles.headerContainer}>
         <Text style={styles.dateText} accessibilityRole="header">
@@ -154,14 +156,14 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         variant="elevated"
         elevation="md"
         style={styles.cardContainer}
-        accessibilityLabel="Şükran içeriği"
+        accessibilityLabel="Minnet içeriği"
       >
         {gratitudeItems.length > 0 ? (
           gratitudeItems.map((item, index) => (
             <View
               key={index}
               style={styles.itemContainer}
-              accessibilityLabel={`Şükran ${index + 1}: ${item}`}
+              accessibilityLabel={`Minnet ${index + 1}: ${item}`}
             >
               <Text style={styles.bulletPoint}>•</Text>
               <Text style={styles.contentText}>{item}</Text>
@@ -189,8 +191,8 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               title="Düzenle"
               onPress={handleEdit}
               variant="secondary"
-              accessibilityLabel="Şükran kaydını düzenle"
-              accessibilityHint="Şükran kaydını düzenlemek için dokunun"
+              accessibilityLabel="Minnet kaydını düzenle"
+              accessibilityHint="Minnet kaydını düzenlemek için dokunun"
             />
           </View>
           <View style={styles.buttonWrapper}>
@@ -198,8 +200,8 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               title="Sil"
               onPress={handleDelete}
               variant="danger"
-              accessibilityLabel="Şükran kaydını sil"
-              accessibilityHint="Şükran kaydını silmek için dokunun"
+              accessibilityLabel="Minnet kaydını sil"
+              accessibilityHint="Minnet kaydını silmek için dokunun"
             />
           </View>
         </View>

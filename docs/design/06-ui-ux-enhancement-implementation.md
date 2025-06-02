@@ -520,7 +520,7 @@ return (
           <ThemedInput
             value={item}
             onChangeText={(text) => handleItemChange(text, index)}
-            placeholder={`${index + 1}. Şükran maddeniz...`}
+            placeholder={`${index + 1}. Minnet maddeniz...`}
             multiline
             numberOfLines={3}
             onFocus={() => setFocusedInputIndex(index)}
@@ -540,7 +540,7 @@ return (
 
     <TouchableOpacity onPress={addItemInput} style={styles.addButton}>
       <Icon name="plus-circle" size={24} color={theme.colors.primary} />
-      <Text style={styles.addButtonText}>Şükran maddesi ekle</Text>
+      <Text style={styles.addButtonText}>Minnet maddesi ekle</Text>
     </TouchableOpacity>
 
     <ThemedButton
@@ -747,7 +747,7 @@ const EnhancedPastEntriesScreen: React.FC = () => {
             onPress={() => handleEntryPress(item)}
             style={styles.cardContent}
             activeOpacity={0.7}
-            accessibilityLabel={`Şükran kaydı: ${formatDate(entryDate)}`}
+            accessibilityLabel={`Minnet kaydı: ${formatDate(entryDate)}`}
             accessibilityHint="Detayları görüntülemek için dokunun"
           >
             <View style={styles.cardHeader}>
@@ -784,7 +784,7 @@ const EnhancedPastEntriesScreen: React.FC = () => {
     return (
       <View style={styles.container}>
         <Animated.View style={{ opacity: headerOpacity.value }}>
-          <Text style={styles.title}>Şükran Kayıtlarınız</Text>
+          <Text style={styles.title}>Minnet Kayıtlarınız</Text>
         </Animated.View>
         
         <FlatList
@@ -807,7 +807,7 @@ const EnhancedPastEntriesScreen: React.FC = () => {
     return (
       <View style={styles.container}>
         <Animated.View style={{ opacity: headerOpacity.value }}>
-          <Text style={styles.title}>Şükran Kayıtlarınız</Text>
+          <Text style={styles.title}>Minnet Kayıtlarınız</Text>
         </Animated.View>
         
         <View style={styles.centeredContainer}>
@@ -841,7 +841,7 @@ const EnhancedPastEntriesScreen: React.FC = () => {
     return (
       <View style={styles.container}>
         <Animated.View style={{ opacity: headerOpacity.value }}>
-          <Text style={styles.title}>Şükran Kayıtlarınız</Text>
+          <Text style={styles.title}>Minnet Kayıtlarınız</Text>
         </Animated.View>
         
         <View style={styles.centeredContainer}>
@@ -857,10 +857,10 @@ const EnhancedPastEntriesScreen: React.FC = () => {
                 Henüz şükran kaydınız bulunmuyor
               </Text>
               <Text style={styles.emptyStateText}>
-                Şükran kayıtlarınız burada görünecek. İlk şükran kaydınızı eklemek için "Günlük Giriş" ekranına gidin.
+                Minnet kayıtlarınız burada görünecek. İlk şükran kaydınızı eklemek için "Günlük Giriş" ekranına gidin.
               </Text>
               <ThemedButton
-                title="Şükran Ekle"
+                title="Minnet Ekle"
                 onPress={() => navigation.navigate('DailyEntry')}
                 style={styles.emptyStateButton}
               />
@@ -875,7 +875,7 @@ const EnhancedPastEntriesScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <Animated.View style={{ opacity: headerOpacity.value }}>
-        <Text style={styles.title}>Şükran Kayıtlarınız</Text>
+        <Text style={styles.title}>Minnet Kayıtlarınız</Text>
       </Animated.View>
       
       <Animated.FlatList

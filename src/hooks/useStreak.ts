@@ -1,65 +1,53 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
-import { getStreak } from '../api/gratitudeApi';
 import { useProfileStore } from '../store/profileStore';
+import type { Streak } from '../schemas/streakSchema'; // Assuming Streak type has Date objects now
 
 interface UseStreakReturn {
-  streak: number | null;
+  streak: Streak | null;
   isLoading: boolean;
   error: string | null;
   fetchStreak: () => Promise<void>;
+  refreshStreak: () => Promise<void>;
 }
 
 const useStreak = (): UseStreakReturn => {
-  const setGlobalStreak = useProfileStore(state => state.setStreak);
-  const setGlobalStreakLoading = useProfileStore(
-    state => state.setStreakLoading
-  );
-  const setGlobalStreakError = useProfileStore(state => state.setStreakError);
-  const [streak, setStreak] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Local loading for initial fetch or direct hook usage
-  const [error, setError] = useState<string | null>(null); // Local error for direct hook usage
+  const streakData = useProfileStore((state) => state.streakData);
+  const streakLoading = useProfileStore((state) => state.streakDataLoading);
+  const streakError = useProfileStore((state) => state.streakDataError);
 
-  const fetchStreakData = useCallback(async () => {
-    setIsLoading(true);
-    setGlobalStreakLoading(true);
-    setError(null);
-    setGlobalStreakError(null);
-    try {
-      const currentStreak = await getStreak();
-      setStreak(currentStreak);
-      setGlobalStreak(currentStreak);
-    } catch (e: unknown) {
-      console.error('Error fetching streak:', e);
-      let errorMessage = 'Seri bilgisi alınamadı.';
-      if (
-        typeof e === 'object' &&
-        e !== null &&
-        'message' in e &&
-        typeof (e as { message: unknown }).message === 'string'
-      ) {
-        errorMessage = (e as { message: string }).message;
-      } else if (typeof e === 'string') {
-        errorMessage = e;
-      }
-      setError(errorMessage);
-      setGlobalStreakError(errorMessage);
-      setStreak(0); // Default to 0 on error for local state
-      setGlobalStreak(0); // Default to 0 on error for global state
-    } finally {
-      setIsLoading(false);
-      setGlobalStreakLoading(false);
+  // Assuming state.refreshStreak is the actual function in the store to call for data refresh.
+  const storeRefreshAction = useProfileStore(state => state.refreshStreak);
+
+  // Define a single, memoized function to perform the refresh action.
+  // This function will be returned for both fetchStreak and refreshStreak.
+  const executeRefresh = useCallback(async () => {
+    if (storeRefreshAction) {
+      await storeRefreshAction();
+    } else {
+      // It's good practice to handle the case where the action might not be available,
+      // though typically Zustand actions are always defined.
+      console.warn('useStreak: refreshStreak action is not available in the profile store.');
+      // Optionally, you could set an error state here or return a rejected promise.
+      // For now, it just logs a warning and does nothing.
     }
-  }, [setGlobalStreak, setGlobalStreakLoading, setGlobalStreakError]);
+  }, [storeRefreshAction]); // Dependency: storeRefreshAction from Zustand selector
 
   useFocusEffect(
     useCallback(() => {
-      fetchStreakData();
-    }, [fetchStreakData])
+      // Call the unified refresh function on screen focus.
+      executeRefresh();
+    }, [executeRefresh]) // Dependency: our memoized executeRefresh function
   );
 
-  return { streak, isLoading, error, fetchStreak: fetchStreakData };
+  return {
+    streak: streakData,
+    isLoading: streakLoading,
+    error: streakError,
+    fetchStreak: executeRefresh,   // Both properties point to the same function
+    refreshStreak: executeRefresh, // Consistent API for the consumer
+  };
 };
 
 export default useStreak;

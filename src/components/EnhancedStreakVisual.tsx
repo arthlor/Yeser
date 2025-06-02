@@ -11,9 +11,9 @@ interface EnhancedStreakVisualProps {
   onMilestoneReached?: (milestone: Milestone) => void;
 }
 
-interface Milestone {
+export interface Milestone {
   minDays: number;
-  maxDays: number;
+  maxDays: number; // Use number for consistency, handle Infinity in logic
   emoji: string;
   description: string;
   level: number;
@@ -58,17 +58,20 @@ const milestones: Milestone[] = [
   {
     level: 5,
     minDays: 60,
-    maxDays: Infinity,
+    maxDays: Infinity, // Represents the final, open-ended milestone
     emoji: '✨',
     description: 'Artık ışıldayan bir bahçen var!',
   },
 ];
 
+const CELEBRATION_DURATION_MS = 3000;
+const MAX_PROGRESS_BAR_STREAK_CAP_FOR_INFINITE_MILESTONE = 90; // Or currentMilestone.minDays, or another sensible cap for display
+
 /**
  * EnhancedStreakVisual displays the user's streak milestone with animations
  * and improved visual design using the ThemedCard component.
  */
-const EnhancedStreakVisual: React.FC<EnhancedStreakVisualProps> = ({
+export const EnhancedStreakVisual: React.FC<EnhancedStreakVisualProps> = ({
   streakCount,
   previousStreakCount,
   onMilestoneReached,
@@ -81,7 +84,7 @@ const EnhancedStreakVisual: React.FC<EnhancedStreakVisualProps> = ({
   const currentMilestone =
     milestones.find(
       m => streakCount >= m.minDays && streakCount <= m.maxDays
-    ) || milestones[0];
+    ) || milestones[0]; // Fallback to the first milestone
 
   // Find previous milestone if previous streak count is provided
   const previousMilestone =
@@ -93,28 +96,48 @@ const EnhancedStreakVisual: React.FC<EnhancedStreakVisualProps> = ({
       : currentMilestone;
 
   // Check if milestone level has changed
-  const hasMilestoneChanged =
-    previousMilestone.level !== currentMilestone.level;
+  const hasMilestoneChanged = previousMilestone.level !== currentMilestone.level;
 
   // Handle milestone change
   useEffect(() => {
-    if (hasMilestoneChanged) {
-      // Notify about milestone reached
+    if (hasMilestoneChanged && streakCount > (previousStreakCount ?? -1) ) { // Ensure streak actually increased
       if (onMilestoneReached) {
         onMilestoneReached(currentMilestone);
       }
-
-      // Show celebration text
       setShowCelebration(true);
-
-      // Hide celebration after a delay
       const timer = setTimeout(() => {
         setShowCelebration(false);
-      }, 3000);
-
+      }, CELEBRATION_DURATION_MS);
       return () => clearTimeout(timer);
     }
-  }, [currentMilestone, hasMilestoneChanged, onMilestoneReached]);
+  }, [currentMilestone, hasMilestoneChanged, onMilestoneReached, streakCount, previousStreakCount]);
+
+  // Calculate progress percentage
+  let progressPercentage = 0;
+  if (currentMilestone.maxDays === Infinity) {
+    // For the infinite milestone, show 100% once minDays is met,
+    // or progress towards minDays if not yet met.
+    // Or, cap progress display, e.g., based on MAX_PROGRESS_BAR_STREAK_CAP_FOR_INFINITE_MILESTONE
+    // For simplicity, let's show 100% if minDays is reached.
+    progressPercentage = streakCount >= currentMilestone.minDays ? 100 : (streakCount / currentMilestone.minDays) * 100;
+  } else if (currentMilestone.maxDays > 0) { // Avoid division by zero if maxDays could be 0
+    // For regular milestones, progress is streakCount relative to maxDays of current milestone
+    // This represents how "full" the current milestone is.
+    // An alternative: (streakCount - currentMilestone.minDays) / (currentMilestone.maxDays - currentMilestone.minDays +1)
+    // The original (streakCount / currentMilestone.maxDays) is simpler and visually intuitive.
+     progressPercentage = (streakCount / currentMilestone.maxDays) * 100;
+  }
+  progressPercentage = Math.min(100, Math.max(0, progressPercentage)); // Clamp between 0 and 100
+
+
+  // Calculate days to next milestone
+  let daysToNextMilestone: number | null = null;
+  if (currentMilestone.maxDays !== Infinity && currentMilestone.level < milestones[milestones.length -1].level) {
+    // Next milestone starts at currentMilestone.maxDays + 1
+    daysToNextMilestone = (currentMilestone.maxDays + 1) - streakCount;
+    if (daysToNextMilestone < 0) daysToNextMilestone = 0; // Should not happen if logic is correct
+  }
+
 
   return (
     <ThemedCard
@@ -132,7 +155,6 @@ const EnhancedStreakVisual: React.FC<EnhancedStreakVisualProps> = ({
         )}
 
         <Text style={styles.emoji}>{currentMilestone.emoji}</Text>
-
         <Text style={styles.description}>{currentMilestone.description}</Text>
 
         {streakCount > 0 && (
@@ -144,16 +166,20 @@ const EnhancedStreakVisual: React.FC<EnhancedStreakVisualProps> = ({
             style={[
               styles.progressBar,
               {
-                width: `${Math.min(100, (streakCount / (currentMilestone.maxDays === Infinity ? 60 : currentMilestone.maxDays)) * 100)}%`,
+                width: `${progressPercentage}%`,
               },
             ]}
+            accessibilityLabel={`Seri ilerlemesi: yüzde ${Math.round(progressPercentage)}`}
           />
         </View>
 
-        {currentMilestone.level < 5 && (
+        {daysToNextMilestone !== null && daysToNextMilestone > 0 && (
           <Text style={styles.nextMilestone}>
-            {currentMilestone.maxDays - streakCount} gün sonra yeni seviye!
+            {daysToNextMilestone} gün sonra yeni seviye!
           </Text>
+        )}
+        {daysToNextMilestone === 0 && currentMilestone.maxDays !== Infinity && (
+             <Text style={styles.nextMilestone}>Yarın yeni seviye!</Text>
         )}
       </View>
     </ThemedCard>
@@ -168,14 +194,15 @@ const createStyles = (theme: AppTheme) =>
     },
     container: {
       alignItems: 'center',
-      paddingVertical: theme.spacing.md,
+      paddingVertical: theme.spacing.md, // Keep some padding even if celebration text is overlaid
     },
     celebrationContainer: {
       position: 'absolute',
-      top: -theme.spacing.lg,
+      top: -theme.spacing.md, // Adjusted to be less aggressive if card has padding
       left: 0,
       right: 0,
       alignItems: 'center',
+      zIndex: 1, // Ensure it's above other elements
     },
     celebrationText: {
       ...theme.typography.labelLarge,
@@ -184,7 +211,8 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.xs,
       borderRadius: theme.borderRadius.full,
-      overflow: 'hidden',
+      overflow: 'hidden', // For borderRadius to clip background
+      elevation: 2, // Add shadow/elevation if needed for visibility
     },
     emoji: {
       fontSize: 60,
@@ -213,13 +241,11 @@ const createStyles = (theme: AppTheme) =>
     progressBar: {
       height: '100%',
       backgroundColor: theme.colors.primary,
-      borderRadius: theme.borderRadius.full,
+      borderRadius: theme.borderRadius.full, // Keep for smooth edges during animation
     },
     nextMilestone: {
       ...theme.typography.labelMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.textSecondary, // Changed from onSurfaceVariant for potentially better contrast
       marginTop: theme.spacing.sm,
     },
   });
-
-export default EnhancedStreakVisual;

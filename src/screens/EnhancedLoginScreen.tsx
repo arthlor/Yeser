@@ -2,12 +2,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useState } from 'react';
+import { loginSchema } from '../schemas/authSchemas';
 import {
   AccessibilityInfo,
   Alert,
   Keyboard,
+  KeyboardAvoidingView, // Added
   Platform,
   StyleSheet,
+  ScrollView, // Added for content scrolling if needed
   Text,
   TouchableOpacity,
   View,
@@ -103,30 +106,24 @@ const EnhancedLoginScreen: React.FC<Props> = ({ navigation }) => {
     };
   }, [clearError]);
 
-  // Validate email format
-  const validateEmail = useCallback((email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isValid = emailRegex.test(email);
-    setEmailError(isValid ? undefined : 'Geçerli bir e-posta adresi giriniz');
-    return isValid;
-  }, []);
-
-  // Validate password
-  const validatePassword = useCallback((password: string): boolean => {
-    const isValid = password.length >= 6;
-    setPasswordError(isValid ? undefined : 'Şifre en az 6 karakter olmalıdır');
-    return isValid;
-  }, []);
-
   // Handle login with email
   const handleEmailLogin = useCallback(async () => {
     Keyboard.dismiss();
 
-    // Validate inputs
-    const isEmailValid = validateEmail(email);
-    const isPasswordValid = validatePassword(password);
+    // Reset previous errors
+    setEmailError(undefined);
+    setPasswordError(undefined);
 
-    if (!isEmailValid || !isPasswordValid) {
+    const validationResult = loginSchema.safeParse({ email, password });
+
+    if (!validationResult.success) {
+      const { fieldErrors } = validationResult.error.formErrors;
+      if (fieldErrors.email) {
+        setEmailError(fieldErrors.email[0]);
+      }
+      if (fieldErrors.password) {
+        setPasswordError(fieldErrors.password[0]);
+      }
       return;
     }
 
@@ -135,7 +132,7 @@ const EnhancedLoginScreen: React.FC<Props> = ({ navigation }) => {
 
     try {
       analyticsService.logEvent('login_attempt', { method: 'email' });
-      await loginWithEmail({ email, password });
+      await loginWithEmail({ email, password }); // Use validated data: validationResult.data.email, validationResult.data.password
       analyticsService.logEvent('login_success', { method: 'email' });
     } catch {
       analyticsService.logEvent('login_failure', {
@@ -143,15 +140,7 @@ const EnhancedLoginScreen: React.FC<Props> = ({ navigation }) => {
         attempts: loginAttempts + 1,
       });
     }
-  }, [
-    email,
-    password,
-    validateEmail,
-    validatePassword,
-    clearError,
-    loginWithEmail,
-    loginAttempts,
-  ]);
+  }, [email, password, clearError, loginWithEmail, loginAttempts]);
 
   // Handle login with Google
   const handleGoogleLogin = useCallback(async () => {
@@ -206,8 +195,13 @@ const EnhancedLoginScreen: React.FC<Props> = ({ navigation }) => {
   // Render screen reader optimized version
   if (isScreenReaderEnabled) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title} accessibilityRole="header">
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView} // Use dedicated style
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0} // Added offset
+      >
+        <ScrollView contentContainerStyle={styles.container}> {/* Inner ScrollView with container style */}
+          <Text style={styles.title} accessibilityRole="header">
           Yeşer'e Hoş Geldin!
         </Text>
 
@@ -282,152 +276,164 @@ const EnhancedLoginScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.accessibleButton}
             accessibilityLabel="Gizlilik politikası sayfasına git"
           />
-        </View>
-      </View>
+        </View> {/* Closes accessibleFormContainer */}
+        </ScrollView> {/* Closes ScrollView */}
+      </KeyboardAvoidingView>
     );
   }
 
   // Render standard version with animations
   return (
-    <View style={styles.container}>
-      <View style={styles.logoContainer}>
-        <Ionicons
-          name="leaf-outline"
-          size={64}
-          color={theme.colors.primary}
-          accessibilityLabel="Yeşer logo"
-        />
-      </View>
-
-      <Text style={styles.title} accessibilityRole="header">
-        Yeşer'e Hoş Geldin!
-      </Text>
-
-      <Text style={styles.subtitle} accessibilityRole="text">
-        Minnettarlık yolculuğuna başla.
-      </Text>
-
-      <ThemedCard variant="elevated" style={styles.formCard}>
-        <ThemedInput
-          label="E-posta Adresiniz"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          error={emailError}
-          startIcon={
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoidingView}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.logoContainer}>
             <Ionicons
-              name="mail-outline"
-              size={20}
-              color={theme.colors.textSecondary}
+              name="leaf-outline"
+              size={64}
+              color={theme.colors.primary}
+              accessibilityLabel="Yeşer logo"
             />
-          }
-          accessibilityLabel="E-posta adresi giriş alanı"
-          accessibilityHint="E-posta adresinizi girin"
-        />
+          </View>
 
-        <ThemedInput
-          label="Şifreniz"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          error={passwordError}
-          startIcon={
+          <Text style={styles.title} accessibilityRole="header">
+            Yeşer'e Hoş Geldin!
+          </Text>
+
+          <Text style={styles.subtitle} accessibilityRole="text">
+            Minnettarlık yolculuğuna başla.
+          </Text>
+
+          <ThemedCard variant="elevated" style={styles.formCard}>
+            <ThemedInput
+              label="E-posta Adresiniz"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              error={emailError}
+              startIcon={
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
+              }
+              accessibilityLabel="E-posta adresi giriş alanı"
+              accessibilityHint="E-posta adresinizi girin"
+            />
+
+            <ThemedInput
+              label="Şifreniz"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              error={passwordError}
+              startIcon={
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
+              }
+              accessibilityLabel="Şifre giriş alanı"
+              accessibilityHint="Şifrenizi girin"
+            />
+
+            {error && (
+              <ErrorState
+                title="Giriş Hatası"
+                message={error}
+                onRetry={clearError}
+                icon="alert-circle-outline"
+              />
+            )}
+
+            <ThemedButton
+              title="Giriş Yap"
+              onPress={handleEmailLogin}
+              variant="primary"
+              style={styles.button}
+              accessibilityLabel="E-posta ile giriş yap butonu"
+            />
+
+            <TouchableOpacity
+              onPress={navigateToPasswordReset}
+              activeOpacity={0.7}
+              accessibilityLabel="Şifremi unuttum"
+              accessibilityRole="button"
+            >
+              <Text style={styles.forgotPasswordText}>Şifremi Unuttum</Text>
+            </TouchableOpacity>
+          </ThemedCard>
+
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>VEYA</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <View style={styles.socialButtonContainer}>
             <Ionicons
-              name="lock-closed-outline"
+              name="logo-google"
               size={20}
-              color={theme.colors.textSecondary}
+              color={theme.colors.primary}
+              style={styles.socialButtonIcon}
             />
-          }
-          accessibilityLabel="Şifre giriş alanı"
-          accessibilityHint="Şifrenizi girin"
-        />
+            <ThemedButton
+              title="Google ile Giriş Yap"
+              onPress={handleGoogleLogin}
+              variant="secondary"
+              style={styles.socialButton}
+              accessibilityLabel="Google ile giriş yap butonu"
+            />
+          </View>
 
-        {error && (
-          <ErrorState
-            title="Giriş Hatası"
-            message={error}
-            onRetry={clearError}
-            icon="alert-circle-outline"
-          />
-        )}
+          {!isKeyboardVisible && (
+            <View style={styles.footerContainer}>
+              <TouchableOpacity
+                onPress={navigateToSignUp}
+                activeOpacity={0.7}
+                style={styles.footerLink}
+                accessibilityLabel="Hesap oluşturma sayfasına git"
+                accessibilityRole="button"
+              >
+                <Text style={styles.linkText}>Hesabın yok mu?</Text>
+                <Text style={styles.linkTextBold}>Kaydol</Text>
+              </TouchableOpacity>
 
-        <ThemedButton
-          title="Giriş Yap"
-          onPress={handleEmailLogin}
-          variant="primary"
-          style={styles.button}
-          accessibilityLabel="E-posta ile giriş yap butonu"
-        />
-
-        <TouchableOpacity
-          onPress={navigateToPasswordReset}
-          activeOpacity={0.7}
-          accessibilityLabel="Şifremi unuttum"
-          accessibilityRole="button"
-        >
-          <Text style={styles.forgotPasswordText}>Şifremi Unuttum</Text>
-        </TouchableOpacity>
-      </ThemedCard>
-
-      <View style={styles.dividerContainer}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>VEYA</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <View style={styles.socialButtonContainer}>
-        <Ionicons
-          name="logo-google"
-          size={20}
-          color={theme.colors.primary}
-          style={styles.socialButtonIcon}
-        />
-        <ThemedButton
-          title="Google ile Giriş Yap"
-          onPress={handleGoogleLogin}
-          variant="secondary"
-          style={styles.socialButton}
-          accessibilityLabel="Google ile giriş yap butonu"
-        />
-      </View>
-
-      {!isKeyboardVisible && (
-        <View style={styles.footerContainer}>
-          <TouchableOpacity
-            onPress={navigateToSignUp}
-            activeOpacity={0.7}
-            style={styles.footerLink}
-            accessibilityLabel="Hesap oluşturma sayfasına git"
-            accessibilityRole="button"
-          >
-            <Text style={styles.linkText}>Hesabın yok mu?</Text>
-            <Text style={styles.linkTextBold}>Kaydol</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={navigateToPrivacyPolicy}
-            activeOpacity={0.7}
-            style={styles.footerLink}
-            accessibilityLabel="Gizlilik politikası sayfasına git"
-            accessibilityRole="button"
-          >
-            <Text style={styles.linkText}>Gizlilik Politikası</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+              <TouchableOpacity
+                onPress={navigateToPrivacyPolicy}
+                activeOpacity={0.7}
+                style={styles.footerLink}
+                accessibilityLabel="Gizlilik politikası sayfasına git"
+                accessibilityRole="button"
+              >
+                <Text style={styles.linkText}>Gizlilik Politikası</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
-const createStyles = (theme: AppTheme) =>
-  StyleSheet.create({
-    container: {
+const createStyles = (theme: AppTheme) => {
+  return StyleSheet.create({
+    // ...
+    keyboardAvoidingView: {
       flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    container: {
+      flexGrow: 1, // Changed to flexGrow for ScrollView content
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: theme.colors.background,
       paddingHorizontal: theme.spacing.large,
+      paddingVertical: theme.spacing.medium, // Added vertical padding for scroll content
     },
     logoContainer: {
       width: 120,
@@ -537,5 +543,6 @@ const createStyles = (theme: AppTheme) =>
       width: '100%',
     },
   });
+};
 
 export default EnhancedLoginScreen;

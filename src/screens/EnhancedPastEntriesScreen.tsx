@@ -14,11 +14,15 @@ import {
   Text,
   TouchableOpacity,
   View,
-  // Ensure Animated is not imported if it was here
+  StatusBar,
+  SafeAreaView,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { getGratitudeEntries, GratitudeEntry } from '../api/gratitudeApi';
+import { getGratitudeDailyEntries } from '../api/gratitudeApi';
+import type { GratitudeEntry } from '../schemas/gratitudeEntrySchema';
 import ThemedButton from '../components/ThemedButton';
 import ThemedCard from '../components/ThemedCard';
 import { useTheme } from '../providers/ThemeProvider';
@@ -26,18 +30,22 @@ import { analyticsService } from '../services/analyticsService';
 import { AppTheme } from '../themes/types';
 import { MainAppTabParamList, RootStackParamList } from '../types/navigation';
 
+const { width: screenWidth } = Dimensions.get('window');
+
 // Define navigation prop types
 type PastEntriesScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainAppTabParamList, 'PastEntriesTab'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-// Enhanced version of SkeletonEntryItem with ThemedCard and improved animations
+// Enhanced skeleton loader with improved animations and spacing
 const EnhancedSkeletonEntryItem: React.FC = () => {
   const { theme } = useTheme();
   const styles = StyleSheet.create({
     card: {
-      marginBottom: theme.spacing.md,
+      marginHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+      borderRadius: theme.borderRadius.lg,
     },
     itemContainer: {
       width: '100%',
@@ -46,90 +54,108 @@ const EnhancedSkeletonEntryItem: React.FC = () => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
     },
     datePlaceholder: {
-      width: '40%',
-      height: theme.typography.titleMedium.fontSize,
-      borderRadius: theme.borderRadius.sm,
+      width: '45%',
+      height: 18,
+      borderRadius: theme.borderRadius.md,
     },
     iconPlaceholder: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
     },
     linePlaceholder: {
-      width: '100%',
-      height: theme.typography.bodyMedium.fontSize,
+      height: 16,
       borderRadius: theme.borderRadius.sm,
       marginBottom: theme.spacing.sm,
     },
     line1: {
-      width: '95%',
+      width: '100%',
     },
     line2: {
-      width: '75%',
+      width: '80%',
+    },
+    line3: {
+      width: '60%',
     },
     footerContainer: {
       flexDirection: 'row',
-      justifyContent: 'flex-end',
-      marginTop: theme.spacing.xs,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: theme.spacing.md,
     },
     countPlaceholder: {
-      width: '20%',
-      height: theme.typography.labelSmall.fontSize,
+      width: '25%',
+      height: 14,
       borderRadius: theme.borderRadius.sm,
+    },
+    tagPlaceholder: {
+      width: 60,
+      height: 24,
+      borderRadius: theme.borderRadius.full,
     },
   });
 
-  const staticBackgroundColor = theme.colors.surfaceVariant; // Or another appropriate placeholder color
+  const placeholderColor = theme.colors.surfaceVariant;
 
   return (
     <ThemedCard
       variant="elevated"
-      elevation="sm"
-      contentPadding="md"
+      elevation="md"
+      contentPadding="lg"
       style={styles.card}
     >
       <View style={styles.itemContainer}>
-        {/* Header with date placeholder and icon */}
         <View style={styles.headerContainer}>
           <View
             style={[
               styles.datePlaceholder,
-              { backgroundColor: staticBackgroundColor },
+              { backgroundColor: placeholderColor },
             ]}
           />
           <View
             style={[
               styles.iconPlaceholder,
-              { backgroundColor: staticBackgroundColor },
+              { backgroundColor: placeholderColor },
             ]}
           />
         </View>
 
-        {/* Content lines */}
         <View
           style={[
             styles.linePlaceholder,
             styles.line1,
-            { backgroundColor: staticBackgroundColor },
+            { backgroundColor: placeholderColor },
           ]}
         />
         <View
           style={[
             styles.linePlaceholder,
             styles.line2,
-            { backgroundColor: staticBackgroundColor },
+            { backgroundColor: placeholderColor },
+          ]}
+        />
+        <View
+          style={[
+            styles.linePlaceholder,
+            styles.line3,
+            { backgroundColor: placeholderColor },
           ]}
         />
 
-        {/* Footer with entry count */}
         <View style={styles.footerContainer}>
           <View
             style={[
               styles.countPlaceholder,
-              { backgroundColor: staticBackgroundColor },
+              { backgroundColor: placeholderColor },
+            ]}
+          />
+          <View
+            style={[
+              styles.tagPlaceholder,
+              { backgroundColor: placeholderColor },
             ]}
           />
         </View>
@@ -138,9 +164,41 @@ const EnhancedSkeletonEntryItem: React.FC = () => {
   );
 };
 
+// Header component with improved styling
+const ScreenHeader: React.FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => {
+  const { theme } = useTheme();
+  
+  const styles = StyleSheet.create({
+    headerContainer: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.xl,
+      backgroundColor: theme.colors.background,
+    },
+    title: {
+      ...theme.typography.headlineMedium,
+      color: theme.colors.onBackground,
+      fontWeight: '700',
+      textAlign: 'center',
+      marginBottom: theme.spacing.xs,
+    },
+    subtitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+      opacity: 0.8,
+    },
+  });
+
+  return (
+    <View style={styles.headerContainer}>
+      <Text style={styles.title}>{title}</Text>
+      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+    </View>
+  );
+};
+
 /**
- * EnhancedPastEntriesScreen provides an improved UI/UX for viewing past gratitude entries
- * with animations, card-based design, and improved interactions.
+ * EnhancedPastEntriesScreen with improved UI/UX, better spacing, and modern design
  */
 const EnhancedPastEntriesScreen: React.FC = () => {
   const navigation = useNavigation<PastEntriesScreenNavigationProp>();
@@ -154,44 +212,26 @@ const EnhancedPastEntriesScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Log screen view or other non-animation logic if needed
-    analyticsService.logScreenView('EnhancedPastEntriesScreen'); // Assuming this was intended here or in useFocusEffect
+    analyticsService.logScreenView('EnhancedPastEntriesScreen');
   }, []);
 
-  // Fetch entries from API - wrapped in useCallback to prevent dependency changes
+  // Fetch entries from API
   const fetchEntries = useCallback(
     async (isRefresh: boolean) => {
       console.log('[PastEntries] fetchEntries: Attempting to fetch entries...');
       try {
         setError(null);
-        // if (!isRefresh) { // isLoading state handles this now
-        //   console.log(
-        //     '[PastEntries] fetchEntries: Not refreshing, showing loading animation.'
-        //   );
-        // }
-
-        console.log(
-          '[PastEntries] fetchEntries: Calling getGratitudeEntries().'
-        );
-        const fetchedEntries = await getGratitudeEntries();
-        console.log(
-          '[PastEntries] fetchEntries: getGratitudeEntries() succeeded. Count:',
-          fetchedEntries.length
-        );
+        
+        console.log('[PastEntries] fetchEntries: Calling getGratitudeEntries().');
+        const fetchedEntries = await getGratitudeDailyEntries();
+        console.log('[PastEntries] fetchEntries: Success. Count:', fetchedEntries.length);
         setEntries(fetchedEntries);
 
-        // Log analytics event
         analyticsService.logEvent('past_entries_viewed', {
           entry_count: fetchedEntries.length,
         });
-        console.log(
-          '[PastEntries] fetchEntries: Successfully set entries and logged analytics.'
-        );
       } catch (e: unknown) {
-        console.error(
-          '[PastEntries] fetchEntries: Error caught while fetching past entries:',
-          e
-        );
+        console.error('[PastEntries] fetchEntries: Error:', e);
         let errorMessage = 'Geçmiş kayıtlar alınırken bir hata oluştu.';
         if (
           typeof e === 'object' &&
@@ -207,33 +247,29 @@ const EnhancedPastEntriesScreen: React.FC = () => {
       } finally {
         console.log('[PastEntries] fetchEntries: Process finished.');
         if (!isRefresh) {
-          setIsLoading(false); // Directly set loading state
+          setIsLoading(false);
         } else {
           setRefreshing(false);
         }
       }
     },
-    [] // No animation dependencies
+    []
   );
 
   useFocusEffect(
     useCallback(() => {
       setIsLoading(true);
-      fetchEntries(false); // Not a refresh action
-    }, [fetchEntries]) // Ensure fetchEntries is stable
+      fetchEntries(false);
+    }, [fetchEntries])
   );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchEntries(true); // This is a refresh action
+    fetchEntries(true);
   }, [fetchEntries]);
 
   const handleEntryPress = (entry: GratitudeEntry) => {
-    // Apply haptic feedback here if available
-
-    // Log analytics event
     analyticsService.logEvent('past_entry_selected', {
-      // Convert undefined to null for analytics
       entry_id: entry.id !== undefined ? entry.id : null,
       entry_date: entry.entry_date !== undefined ? entry.entry_date : null,
     });
@@ -244,64 +280,99 @@ const EnhancedPastEntriesScreen: React.FC = () => {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('tr-TR', {
       day: '2-digit',
-      month: '2-digit',
+      month: 'long',
       year: 'numeric',
     });
   };
 
-  const renderItem = ({
-    item,
-    index: _index, // Aliased to _index as index is not used in the function body
-  }: {
-    item: GratitudeEntry;
-    index: number; // The prop from FlatList is still 'index'
-  }) => {
-    // Calculate entry date
-    const entryDate = item.created_at
-      ? new Date(item.created_at)
-      : new Date(item.entry_date);
+  const getRelativeDate = (date: Date) => {
+    const today = new Date();
+    const diffTime = today.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Bugün';
+    if (diffDays === 1) return 'Dün';
+    if (diffDays < 7) return `${diffDays} gün önce`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} hafta önce`;
+    return formatDate(date);
+  };
 
-    // Format content for display
-    const contentLines = item.content.split('\n');
-    const displayContent =
-      contentLines.length > 1
-        ? `${contentLines[0]}${contentLines.length > 1 ? '...' : ''}`
-        : item.content;
+  const renderItem = ({ item }: { item: GratitudeEntry }) => {
+    const entryDate = item.entry_date ? new Date(item.entry_date) : new Date();
+
+    let displayContent = 'Henüz bir şükran kaydı eklenmemiş.';
+    if (item.statements && item.statements.length > 0) {
+      // Show first statement with better formatting
+      displayContent = item.statements[0];
+      if (displayContent.length > 100) {
+        displayContent = displayContent.substring(0, 100) + '...';
+      }
+    }
+
+    const statementCount = item.statements?.length || 0;
+    const isRecent = entries.indexOf(item) < 3; // Highlight recent entries
 
     return (
       <View style={styles.itemContainer}>
         <ThemedCard
           variant="elevated"
-          elevation="sm"
-          contentPadding="md"
-          style={styles.card}
+          elevation={isRecent ? "lg" : "md"}
+          contentPadding="lg"
+          style={{
+            ...styles.card,
+            ...(isRecent ? styles.recentCard : {}),
+          }}
         >
           <TouchableOpacity
             onPress={() => handleEntryPress(item)}
             style={styles.cardContent}
-            activeOpacity={0.7}
-            accessibilityLabel={`Şükran kaydı: ${formatDate(entryDate)}`}
+            activeOpacity={0.8}
+            accessibilityLabel={`Minnet kaydı: ${getRelativeDate(entryDate)}`}
             accessibilityHint="Detayları görüntülemek için dokunun"
           >
             <View style={styles.cardHeader}>
-              <Text style={styles.entryDate}>{formatDate(entryDate)}</Text>
-              <Icon
-                name="chevron-right"
-                size={20}
-                color={theme.colors.textSecondary}
-              />
+              <View style={styles.dateContainer}>
+                <Text style={styles.relativeDate}>{getRelativeDate(entryDate)}</Text>
+                <Text style={styles.fullDate}>{formatDate(entryDate)}</Text>
+              </View>
+              <View style={styles.headerIconContainer}>
+                {isRecent && (
+                  <View style={styles.newBadge}>
+                    <Text style={styles.newBadgeText}>YENİ</Text>
+                  </View>
+                )}
+                <Icon
+                  name="chevron-right"
+                  size={24}
+                  color={theme.colors.textSecondary}
+                  style={styles.chevronIcon}
+                />
+              </View>
             </View>
 
-            <Text style={styles.entryTextSnippet} numberOfLines={2}>
+            <Text style={styles.entryTextSnippet} numberOfLines={3}>
               {displayContent}
             </Text>
 
             <View style={styles.cardFooter}>
-              <Text style={styles.entryCount}>
-                {contentLines.length > 1
-                  ? `${contentLines.length} madde`
-                  : '1 madde'}
-              </Text>
+              <View style={styles.statsContainer}>
+                <Icon
+                  name="format-list-bulleted"
+                  size={16}
+                  color={theme.colors.primary}
+                />
+                <Text style={styles.entryCount}>
+                  {statementCount} madde
+                </Text>
+              </View>
+              <View style={styles.gratitudeTag}>
+                <Icon
+                  name="heart"
+                  size={14}
+                  color={theme.colors.primary}
+                />
+                <Text style={styles.gratitudeTagText}>Minnet</Text>
+              </View>
             </View>
           </TouchableOpacity>
         </ThemedCard>
@@ -309,95 +380,115 @@ const EnhancedPastEntriesScreen: React.FC = () => {
     );
   };
 
-  const renderHeader = () => (
-    <View>
-      <Text style={styles.title}>Geçmiş Girdiler</Text>
-      {/* Sticky title can be conditionally rendered or removed if not essential without animation */}
-      {/* <Text style={styles.stickyHeaderTitle}>Geçmiş Girdiler</Text> */}
-    </View>
-  );
-
   const renderSkeletonLoader = () => (
-    <View style={styles.listContentContainer}>
-      {Array.from({ length: 5 }).map((_, index) => (
+    <View style={styles.skeletonContainer}>
+      {Array.from({ length: 4 }).map((_, index) => (
         <EnhancedSkeletonEntryItem key={`skeleton-${index}`} />
       ))}
     </View>
   );
 
-  if (isLoading && !refreshing) {
-    // Show skeleton items during initial load
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Şükran Kayıtlarınız</Text>
-        {renderSkeletonLoader()}
+  const renderEmptyState = () => (
+    <View style={styles.emptyStateContainer}>
+      <View style={styles.emptyStateContent}>
+        <View style={styles.emptyStateIconContainer}>
+          <Icon
+            name="book-heart"
+            size={80}
+            color={theme.colors.primary}
+            style={styles.emptyStateIcon}
+          />
+        </View>
+        <Text style={styles.emptyStateTitle}>
+          İlk şükran kaydınızı oluşturun
+        </Text>
+        <Text style={styles.emptyStateDescription}>
+          Günlük şükran kayıtlarınız burada görünecek. Mutluluğunuzu artırmak ve 
+          hayatınızdaki güzel anları hatırlamak için ilk kaydınızı oluşturun.
+        </Text>
+        <ThemedButton
+          title="Minnet Ekle"
+          onPress={() => navigation.navigate('DailyEntryTab')}
+          style={styles.emptyStateButton}
+        />
       </View>
+    </View>
+  );
+
+  const renderErrorState = () => (
+    <View style={styles.errorContainer}>
+      <ThemedCard
+        variant="filled"
+        contentPadding="xl"
+        style={styles.errorCard}
+      >
+        <Icon
+          name="alert-circle"
+          size={64}
+          color={theme.colors.error}
+          style={styles.errorIcon}
+        />
+        <Text style={styles.errorTitle}>Bir sorun oluştu</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <ThemedButton
+          title="Yeniden Dene"
+          onPress={() => fetchEntries(false)}
+          style={styles.retryButton}
+        />
+      </ThemedCard>
+    </View>
+  );
+
+  if (isLoading && !refreshing) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
+          backgroundColor={theme.colors.background}
+        />
+        <ScreenHeader title="Minnet Kayıtlarınız" subtitle="Yükleniyor..." />
+        {renderSkeletonLoader()}
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Şükran Kayıtlarınız</Text>
-        <View style={styles.centeredContainer}>
-          <ThemedCard
-            variant="filled"
-            contentPadding="lg"
-            style={styles.errorCard}
-          >
-            <Icon
-              name="alert-circle-outline"
-              size={48}
-              color={theme.colors.error}
-              style={styles.errorIcon}
-            />
-            <Text style={styles.errorText}>{error}</Text>
-            <ThemedButton
-              title="Yeniden Dene"
-              onPress={() => fetchEntries(false)} // Not a refresh action
-              style={styles.retryButton}
-            />
-          </ThemedCard>
-        </View>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
+          backgroundColor={theme.colors.background}
+        />
+        <ScreenHeader title="Minnet Kayıtlarınız" />
+        {renderErrorState()}
+      </SafeAreaView>
     );
   }
 
   if (entries.length === 0) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Şükran Kayıtlarınız</Text>
-        <View style={styles.centeredContainer}>
-          <View style={styles.emptyStateContainer}>
-            <Icon
-              name="book-outline"
-              size={64}
-              color={theme.colors.primary}
-              style={styles.emptyStateIcon}
-            />
-            <Text style={styles.emptyStateTitle}>
-              Henüz şükran kaydınız bulunmuyor
-            </Text>
-            <Text style={styles.emptyStateText}>
-              Şükran kayıtlarınız burada görünecek. İlk şükran kaydınızı eklemek
-              için "Günlük Giriş" ekranına gidin.
-            </Text>
-            <ThemedButton
-              title="Şükran Ekle"
-              onPress={() => navigation.navigate('DailyEntryTab')}
-              style={styles.emptyStateButton}
-            />
-          </View>
-        </View>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
+          backgroundColor={theme.colors.background}
+        />
+        <ScreenHeader title="Minnet Kayıtlarınız" />
+        {renderEmptyState()}
+      </SafeAreaView>
     );
   }
 
+  const subtitle = `${entries.length} kayıt • Son güncelleme: ${new Date().toLocaleDateString('tr-TR')}`;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Şükran Kayıtlarınız</Text>
+    <SafeAreaView style={styles.container}>
+      <StatusBar
+        barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.colors.background}
+      />
+      <ScreenHeader title="Minnet Kayıtlarınız" subtitle={subtitle} />
+      
       <FlatList
-        ListHeaderComponent={renderHeader}
         data={entries}
         renderItem={renderItem}
         keyExtractor={(item, index) =>
@@ -413,17 +504,21 @@ const EnhancedPastEntriesScreen: React.FC = () => {
             onRefresh={onRefresh}
             tintColor={theme.colors.primary}
             colors={[theme.colors.primary]}
+            progressBackgroundColor={theme.colors.surface}
           />
         }
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
 
-      {/* Conditionally rendered loading overlay */}
       {isLoading && (
         <View style={styles.loadingOverlay} pointerEvents={'auto'}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.loadingText}>Güncelleniyor...</Text>
+          </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -432,30 +527,27 @@ const createStyles = (theme: AppTheme) =>
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+    },
+    skeletonContainer: {
       paddingTop: theme.spacing.md,
     },
-    title: {
-      ...theme.typography.headlineSmall,
-      color: theme.colors.onBackground,
-      textAlign: 'center',
-      marginBottom: theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
-    },
-    centeredContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: theme.spacing.lg,
-    },
     listContentContainer: {
-      padding: theme.spacing.md,
-      paddingBottom: theme.spacing.xl,
+      paddingBottom: theme.spacing.xxl,
+    },
+    separator: {
+      height: theme.spacing.sm,
     },
     itemContainer: {
-      marginBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
     },
     card: {
+      borderRadius: theme.borderRadius.xl,
       overflow: 'hidden',
+    },
+    recentCard: {
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '20',
+      backgroundColor: theme.colors.primaryContainer + '10',
     },
     cardContent: {
       flex: 1,
@@ -463,74 +555,181 @@ const createStyles = (theme: AppTheme) =>
     cardHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: theme.spacing.sm,
+      alignItems: 'flex-start',
+      marginBottom: theme.spacing.md,
     },
-    entryDate: {
+    dateContainer: {
+      flex: 1,
+    },
+    relativeDate: {
       ...theme.typography.titleMedium,
       color: theme.colors.primary,
+      fontWeight: '600',
+      marginBottom: theme.spacing.xs,
+    },
+    fullDate: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.textSecondary,
+    },
+    headerIconContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    newBadge: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.borderRadius.full,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+    },
+    newBadgeText: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onPrimary,
+      fontWeight: '700',
+      fontSize: 10,
+    },
+    chevronIcon: {
+      opacity: 0.7,
     },
     entryTextSnippet: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodyLarge,
       color: theme.colors.onSurface,
-      marginBottom: theme.spacing.sm,
+      lineHeight: (theme.typography.bodyLarge.fontSize ?? 16) * 1.5,
+      marginBottom: theme.spacing.lg,
     },
     cardFooter: {
       flexDirection: 'row',
-      justifyContent: 'flex-end',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      marginTop: theme.spacing.xs,
+    },
+    statsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
     },
     entryCount: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.primary,
+      fontWeight: '500',
+    },
+    gratitudeTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primaryContainer,
+      borderRadius: theme.borderRadius.full,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      gap: theme.spacing.xs,
+    },
+    gratitudeTagText: {
       ...theme.typography.labelSmall,
+      color: theme.colors.onPrimaryContainer,
+      fontWeight: '500',
+    },
+    // Empty State
+    emptyStateContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.xl,
+    },
+    emptyStateContent: {
+      alignItems: 'center',
+      maxWidth: 320,
+    },
+    emptyStateIconContainer: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: theme.colors.primaryContainer + '30',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: theme.spacing.xl,
+    },
+    emptyStateIcon: {
+      opacity: 0.8,
+    },
+    emptyStateTitle: {
+      ...theme.typography.headlineSmall,
+      color: theme.colors.onBackground,
+      textAlign: 'center',
+      fontWeight: '600',
+      marginBottom: theme.spacing.md,
+    },
+    emptyStateDescription: {
+      ...theme.typography.bodyLarge,
       color: theme.colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: (theme.typography.bodyLarge.fontSize ?? 16) * 1.4,
+      marginBottom: theme.spacing.xxl,
+    },
+    emptyStateButton: {
+      minWidth: 160,
+    },
+    // Error State
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.xl,
     },
     errorCard: {
       backgroundColor: theme.colors.errorContainer,
       alignItems: 'center',
-      maxWidth: 350,
+      maxWidth: 320,
+      borderRadius: theme.borderRadius.xl,
     },
     errorIcon: {
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+      opacity: 0.8,
     },
-    errorText: {
-      ...theme.typography.bodyLarge,
+    errorTitle: {
+      ...theme.typography.titleLarge,
       color: theme.colors.onErrorContainer,
       textAlign: 'center',
-      marginBottom: theme.spacing.md,
-    },
-    retryButton: {
-      marginTop: theme.spacing.sm,
-    },
-    emptyStateContainer: {
-      alignItems: 'center',
-      padding: theme.spacing.lg,
-      maxWidth: 350,
-    },
-    emptyStateIcon: {
-      marginBottom: theme.spacing.md,
-    },
-    emptyStateTitle: {
-      ...theme.typography.titleLarge,
-      color: theme.colors.onBackground,
-      textAlign: 'center',
+      fontWeight: '600',
       marginBottom: theme.spacing.sm,
     },
-    emptyStateText: {
+    errorText: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onErrorContainer,
       textAlign: 'center',
+      lineHeight: (theme.typography.bodyMedium.fontSize ?? 14) * 1.4,
       marginBottom: theme.spacing.lg,
+      opacity: 0.8,
     },
-    emptyStateButton: {
-      marginTop: theme.spacing.md,
+    retryButton: {
+      minWidth: 140,
     },
+    // Loading
     loadingOverlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.1)',
+      backgroundColor: theme.colors.background + 'E6',
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 10,
+    },
+    loadingContainer: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      padding: theme.spacing.xl,
+      alignItems: 'center',
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.shadow,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 8,
+        },
+      }),
+    },
+    loadingText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      marginTop: theme.spacing.md,
     },
   });
 

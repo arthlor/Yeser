@@ -1,7 +1,7 @@
 // src/types/navigation.ts
 import { NavigatorScreenParams } from '@react-navigation/native';
 
-import { GratitudeEntry } from '../api/gratitudeApi'; // Assuming GratitudeEntry is exported from here
+import { GratitudeEntry } from '../schemas/gratitudeEntrySchema';
 
 // Define ParamList types for each navigator
 
@@ -25,7 +25,7 @@ export type MainAppStackParamList = {
 // For the Tab navigator within the main app flow
 export type MainAppTabParamList = {
   HomeTab: undefined; // Corresponds to HomeScreen
-  DailyEntryTab: { entryToEdit?: GratitudeEntry } | undefined; // Corresponds to DailyEntryScreen, can receive entryToEdit
+  DailyEntryTab: { entryToEdit?: GratitudeEntry; initialDate?: string } | undefined; // Corresponds to DailyEntryScreen, can receive entryToEdit or initialDate
   PastEntriesTab: undefined; // Corresponds to PastEntriesScreen
   CalendarTab: undefined; // Added CalendarTab
   SettingsTab: undefined; // Corresponds to SettingsScreen

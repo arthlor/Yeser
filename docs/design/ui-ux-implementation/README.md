@@ -40,12 +40,6 @@ This guide provides detailed implementation guidance for enhancing the UI/UX of 
    - EnhancedEntryDetailScreen
    - EnhancedOnboardingScreen
 
-6. [Animation & Interaction Guidelines](./06-animation-interaction-guidelines.md)
-   - Animation Principles
-   - Common Animation Patterns
-   - Interaction Patterns
-   - Micro-Interactions
-
 7. [Accessibility Implementation](./07-accessibility-implementation.md)
    - Accessibility Principles
    - Implementation Guidelines

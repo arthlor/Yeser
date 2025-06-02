@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'; // Correctly import useState and useEffect
+import { ActivityIndicator } from 'react-native';
 import {
   Modal,
   ScrollView,
@@ -18,6 +19,8 @@ const ThrowbackModal: React.FC = () => {
     randomEntry,
     isThrowbackVisible: isVisibleFromStore, // Renamed for clarity
     hideThrowback,
+    isLoading,
+    error,
   } = useThrowbackStore();
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -56,30 +59,57 @@ const ThrowbackModal: React.FC = () => {
         hideThrowback(); // This will set isVisibleFromStore to false, useEffect will update modalActuallyVisible
       }}
     >
-      {/* Content is rendered only if modalActuallyVisible is true AND randomEntry is available. */}
-      {modalActuallyVisible && randomEntry && (
+      {/* Conditional content rendering based on loading, error, and data states */}
+      {modalActuallyVisible && (
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <Text style={styles.modalTitle}>✨ Bir Anı Parçacığı ✨</Text>
-            <ScrollView
-              style={styles.entryScrollView}
-              contentContainerStyle={styles.entryScrollContentContainer}
-            >
-              <View style={styles.entryContainer}>
-                <Text style={styles.entryDate}>
-                  {formatUtilityDate(randomEntry.entry_date, 'PPP', 'tr')}
-                </Text>
-                <Text style={styles.entryContent}>{randomEntry.content}</Text>
-              </View>
-            </ScrollView>
-            <TouchableOpacity
-              style={[styles.button, styles.buttonClose]}
-              onPress={() => {
-                hideThrowback(); // This will set isVisibleFromStore to false, useEffect will update modalActuallyVisible
-              }}
-            >
-              <Text style={styles.textStyle}>Anladım!</Text>
-            </TouchableOpacity>
+            {isLoading ? (
+              <ActivityIndicator size="large" color={theme.colors.primary} style={styles.activityIndicator} />
+            ) : error ? (
+              <>
+                <Text style={styles.modalTitle}>Bir Hata Oluştu</Text>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonClose]}
+                  onPress={hideThrowback}
+                >
+                  <Text style={styles.textStyle}>Kapat</Text>
+                </TouchableOpacity>
+              </>
+            ) : randomEntry && randomEntry.statements && randomEntry.statements.length > 0 ? (
+              <>
+                <Text style={styles.modalTitle}>✨ Bir Anı Parçacığı ✨</Text>
+                <ScrollView
+                  style={styles.entryScrollView}
+                  contentContainerStyle={styles.entryScrollContentContainer}
+                >
+                  <View style={styles.entryContainer}>
+                    <Text style={styles.entryDate}>
+                      {formatUtilityDate(randomEntry.entry_date, 'PPP', 'tr')}
+                    </Text>
+                    <Text style={styles.entryContent}>{randomEntry.statements[0]}</Text>
+                  </View>
+                </ScrollView>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonClose]}
+                  onPress={hideThrowback}
+                >
+                  <Text style={styles.textStyle}>Anladım!</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              // Fallback if no entry but also no error and not loading (should be rare)
+              <>
+                <Text style={styles.modalTitle}>✨ Bir Anı Parçacığı ✨</Text>
+                <Text style={styles.entryContent}>Görünecek bir anı bulunamadı.</Text>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonClose]}
+                  onPress={hideThrowback}
+                >
+                  <Text style={styles.textStyle}>Kapat</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       )}
@@ -96,6 +126,8 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: 'rgba(0,0,0,0.6)',
     },
     modalView: {
+      minHeight: 150, // Ensure modal has some height for loader/error
+      justifyContent: 'center', // Center content like loader/error text
       margin: theme.spacing.medium,
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.xl,
@@ -140,6 +172,21 @@ const createStyles = (theme: AppTheme) =>
       fontStyle: 'italic', // Preserved from viewed file
     },
     entryContent: {
+      fontSize: theme.typography.bodyLarge.fontSize,
+      fontFamily: theme.typography.bodyLarge.fontFamily,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      marginBottom: theme.spacing.large,
+    },
+    errorText: {
+      fontSize: theme.typography.bodyMedium.fontSize,
+      fontFamily: theme.typography.bodyMedium.fontFamily,
+      color: theme.colors.error,
+      textAlign: 'center',
+      marginVertical: theme.spacing.medium,
+    },
+    activityIndicator: {
+      marginVertical: theme.spacing.large,
       ...theme.typography.body1, // Preserved from viewed file
       color: theme.colors.text, // Preserved from viewed file
       textAlign: 'left', // Preserved from viewed file

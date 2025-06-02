@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput, // Added TextInput
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -24,8 +25,10 @@ import {
   scheduleDailyReminder,
 } from '../services/notificationService';
 import { useProfileStore } from '../store/profileStore';
+import type { Profile } from '../schemas/profileSchema';
 import { AppTheme } from '../themes/types';
 import { hapticFeedback } from '../utils/hapticFeedback';
+import { updateProfileSchema } from '../schemas/profileSchema';
 
 /**
  * EnhancedReminderSettingsScreen provides an improved UI/UX for reminder settings.
@@ -40,10 +43,12 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
   const storeReminderTime = useProfileStore(state => state.reminder_time);
   const setProfile = useProfileStore(state => state.setProfile);
   const setProfileLoading = useProfileStore(state => state.setLoading);
+  const storeDailyGratitudeGoal = useProfileStore(state => state.daily_gratitude_goal);
 
   const [reminderEnabled, setReminderEnabled] = useState(storeReminderEnabled);
   const [reminderTime, setReminderTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [dailyGratitudeGoal, setDailyGratitudeGoal] = useState<string>(storeDailyGratitudeGoal?.toString() ?? '3');
 
   const thumbColorValue = reminderEnabled
     ? theme.colors.onPrimary
@@ -59,7 +64,8 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
       setReminderTime(initialTime);
     }
     setReminderEnabled(storeReminderEnabled);
-  }, [storeReminderTime, storeReminderEnabled]);
+    setDailyGratitudeGoal(storeDailyGratitudeGoal?.toString() ?? '3');
+  }, [storeReminderTime, storeReminderEnabled, storeDailyGratitudeGoal]);
 
   useEffect(() => {
     // Log screen view for analytics
@@ -154,21 +160,51 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
         analyticsService.logEvent('reminders_cancelled', {});
       }
 
-      await updateProfile({
-        reminder_enabled: finalReminderEnabled,
-        reminder_time: formattedTime,
-      });
-      setProfile({
-        reminder_enabled: finalReminderEnabled,
-        reminder_time: formattedTime,
-      });
+      // Parse dailyGratitudeGoal: empty string or invalid becomes undefined, otherwise a number
+      const goalValue = dailyGratitudeGoal.trim();
+      const parsedGoal = goalValue === '' ? undefined : parseInt(goalValue, 10);
+      // Ensure parseInt result is not NaN if goalValue was not a valid number string (though input restricts to numbers)
+      const dailyGratitudeGoalForPayload = Number.isNaN(parsedGoal) ? undefined : parsedGoal;
+
+      const rawPayload = {
+        reminder_enabled: reminderEnabled,
+        reminder_time: reminderTime.toTimeString().split(' ')[0], // HH:MM:SS format
+        daily_gratitude_goal: dailyGratitudeGoalForPayload,
+      };
+
+      const validationResult = updateProfileSchema.safeParse(rawPayload);
+
+      if (!validationResult.success) {
+        const fieldErrors = validationResult.error.flatten().fieldErrors;
+        let errorMessage = 'Lütfen hataları düzeltin:';
+        (Object.keys(fieldErrors) as Array<keyof typeof fieldErrors>).forEach((key) => {
+          const messages = fieldErrors[key];
+          if (messages) {
+            errorMessage += `\n- ${String(key)}: ${messages.join(', ')}`;
+          }
+        });
+        Alert.alert('Geçersiz Veri', errorMessage);
+        setProfileLoading(false);
+        return;
+      }
+
+      // Use validated data for API call and store update
+      const { data: validatedPayload } = validationResult;
+
+      // Ensure only fields present in validatedPayload are sent to API/store
+      // updateProfileSchema might strip undefined optional fields
+      const profileUpdatePayload = { ...validatedPayload };
+      const storeUpdatePayload = { ...validatedPayload };
+
+      await updateProfile(profileUpdatePayload); // API and backend update
+      setProfile(storeUpdatePayload); // Direct store update (optimistic or sync)
 
       // Provide success haptic feedback
       hapticFeedback.success();
 
       // Log settings saved
       analyticsService.logEvent('reminder_settings_saved', {
-        enabled: finalReminderEnabled,
+        enabled: finalReminderEnabled ?? null,
         time: formattedTime,
       });
 
@@ -237,6 +273,23 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
         </ThemedCard>
       </View>
 
+      <View style={styles.cardContainer}>
+        <ThemedCard style={styles.card}>
+          <Text style={styles.cardTitle}>Günlük Minnettarlık Hedefi</Text>
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Hedef Sayısı:</Text>
+            <TextInput
+              style={styles.input}
+              value={dailyGratitudeGoal}
+              onChangeText={(text) => setDailyGratitudeGoal(text.replace(/[^0-9]/g, ''))} // Allow only numbers
+              keyboardType="number-pad"
+              placeholder="Örn: 3"
+              placeholderTextColor={theme.colors.surfaceDisabled}
+            />
+          </View>
+        </ThemedCard>
+      </View>
+
       {showTimePicker && (
         <DateTimePicker
           value={reminderTime}
@@ -263,6 +316,35 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.outline,
+      borderRadius: theme.borderRadius.medium, // Assuming 'medium' for '.m'
+      paddingHorizontal: theme.spacing.medium, // Assuming 'medium' for '.m'
+      paddingVertical: theme.spacing.small, // Assuming 'small' for '.s'
+      color: theme.colors.onSurface,
+      minWidth: 50, // Ensure it's not too small
+      textAlign: 'center',
+      fontSize: 16,
+    },
+    cardTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.colors.onSurface,
+      marginBottom: theme.spacing.medium,
+    },
+    settingRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: theme.spacing.medium,
+      paddingVertical: theme.spacing.small,
+    },
+    settingLabel: {
+      fontSize: 16,
+      color: theme.colors.onSurfaceVariant,
+      marginRight: theme.spacing.medium,
+    },
     container: {
       flex: 1,
       padding: theme.spacing.large,

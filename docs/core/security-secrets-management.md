@@ -37,7 +37,8 @@ Proper management of secrets is crucial to prevent unauthorized access.
 ### 3.3. Row Level Security (RLS)
 *   RLS is **enabled and enforced** on all sensitive Supabase tables (e.g., `profiles`, `gratitude_entries`).
 *   Policies are defined to ensure that users can only access and modify their own data. For detailed RLS policy definitions, refer to the `docs/backend-database-setup.md` document.
-*   RLS is a cornerstone of our data protection strategy within the database.
+*   RLS is a cornerstone of our data protection strategy within the database. Policies extend to any views or functions that access table data, ensuring consistent permission enforcement.
+*   Database functions (RPCs) generally execute with the permissions of the calling user. For specific operations requiring elevated privileges, functions can be defined with `SECURITY DEFINER`, a practice used cautiously and with clearly defined scope (see `backend-database-setup.md` for details on RPCs like `update_user_streak`).
 
 ## 4. Data Privacy & Protection
 
@@ -47,7 +48,7 @@ Proper management of secrets is crucial to prevent unauthorized access.
 
 ### 4.2. User Data Control
 *   Users have ownership of their data.
-*   **Account Deletion:** A mechanism for users to delete their account and associated data is planned. This would involve deleting the user from `auth.users` (which cascades to `public.profiles` due to schema design) and subsequently all related `gratitude_entries`.
+*   **Account Deletion:** A mechanism for users to delete their account and associated data is planned. This involves deleting the user from `auth.users`. Due to foreign key constraints with `ON DELETE CASCADE` (as defined in `backend-database-setup.md`), this action will automatically cascade to delete related records in `public.profiles` and `public.streaks`. Associated `gratitude_entries` also have a cascading delete relationship with `auth.users`.
 *   **Data Export (Conceptual):** A future feature could allow users to export their gratitude entries (e.g., via a conceptual `export-user-data` Supabase Edge Function).
 
 ### 4.3. Encryption in Transit
@@ -62,8 +63,9 @@ Proper management of secrets is crucial to prevent unauthorized access.
 *   The Supabase client library (`@supabase/supabase-js`) handles the secure storage and management of JWTs. It typically uses `AsyncStorage` on React Native, which provides persistent, unencrypted, key-value storage. While `AsyncStorage` itself is not encrypted, the JWTs are signed and can be verified by Supabase. For higher security needs, `expo-secure-store` could be considered for storing refresh tokens if manual token management were implemented, but Supabase client handles this.
 
 ### 5.2. Input Validation (Zod)
-*   **Zod** is used for schema declaration and validation of data on the client-side.
-*   This includes validating user inputs in forms and data received from or sent to the Supabase API, ensuring data integrity and preventing common injection vulnerabilities.
+*   **Zod** is utilized for schema declaration and validation of data on the client-side and potentially in Supabase Edge Functions.
+*   This includes validating user inputs in forms, data being prepared for API calls, and environment variables on the client-side. This ensures data integrity before data leaves the client, helps prevent common injection vulnerabilities, and improves overall data handling robustness. Zod's TypeScript-first approach allows for deriving static types from validation schemas (`z.infer<typeof schema>`), enhancing code reliability and developer experience.
+*   For backend logic within PL/pgSQL functions (RPCs), input validation and data integrity are primarily enforced by PostgreSQL's strong typing system, table constraints (checks, foreign keys, unique constraints), and explicit validation logic coded within the SQL functions themselves. This ensures robust validation at the data layer.
 
 ## 6. Supabase Platform Security
 
@@ -72,6 +74,7 @@ Yeşer benefits from the inherent security features provided by the Supabase pla
 *   Protection against common web attacks (e.g., DDoS mitigation).
 *   Secure handling of database credentials and API keys.
 *   Regular security audits and compliance efforts by Supabase.
+*   Support for **database triggers**, which can automate data integrity checks and security-related logging or actions (e.g., automatically updating `updated_at` timestamps, managing streak calculations consistently).
 
 ## 7. Regular Reviews & Updates
 

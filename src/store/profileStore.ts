@@ -5,7 +5,11 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import {
   getProfile as fetchProfileApi,
   updateProfile as updateProfileApi,
+  fetchUserStreak, // Will be replaced by getStreakData or getStreakData will be added
+  getStreakData,   // Import the new function
 } from '../api/profileApi'; // Import API functions
+import { profileSchema, type Profile, type UpdateProfilePayload } from '../schemas/profileSchema';
+import { streakSchema, type Streak } from '../schemas/streakSchema'; // Import Streak type and schema
 import {
   cancelAllScheduledNotifications,
   requestNotificationPermissions,
@@ -14,58 +18,76 @@ import {
 import useAuthStore from './authStore'; // Import authStore to listen for auth changes
 
 export interface ProfileState {
-  id: string | null; // User's Supabase Auth ID
-  username: string | null;
-  reminder_enabled: boolean;
-  reminder_time: string; // Format HH:MM:SS
-  onboarded: boolean;
-  throwback_reminder_enabled: boolean;
-  throwback_reminder_frequency: string; // 'daily', 'weekly', 'monthly'
+  // Fields from the Zod Profile schema
+  id: string | null; // Initially null, then string (user's Supabase Auth ID)
+  username: Profile['username'];
+  onboarded: Profile['onboarded'];
+  reminder_enabled: Profile['reminder_enabled'];
+  reminder_time: Profile['reminder_time'] | null; // Allow null in store state
+  // theme_preference removed from here, will be a separate top-level state
+  throwback_reminder_enabled: Profile['throwback_reminder_enabled']; // Added
+  throwback_reminder_frequency: Profile['throwback_reminder_frequency'];
+  // last_entry_date removed from here, streak data managed separately
+  created_at: Profile['created_at'] | null;
+  updated_at: string | null | undefined; // ISO 8601 datetime string
+  daily_gratitude_goal: Profile['daily_gratitude_goal'];
+  // email is intentionally omitted as per schema (not directly stored/managed here)
+
+  // Client-side theme preference
+  theme: 'light' | 'dark' | 'system';
+
   // Streak related state
-  streak: number | null;
-  streakLoading: boolean;
-  streakError: string | null;
-  // For potential errors during profile operations
+  streakData: Streak | null; 
+  streakDataLoading: boolean;
+  streakDataError: string | null;
+
+  // Store-specific operational state
   error: string | null;
-  // To indicate if profile data is being fetched/updated
   loading: boolean;
-  initialProfileFetchAttempted: boolean; // Tracks if the initial fetch for the current user has been tried
+  initialProfileFetchAttempted: boolean;
 }
 
-interface ProfileActions {
-  setProfile: (profileData: Partial<ProfileState>) => void;
+export interface ProfileActions {
+  setProfile: (profileData: Partial<Profile>) => void; // Argument should be Partial<Profile> from the new schema
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   resetProfile: () => void;
+  // Theme action
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
   // Streak actions implementation
-  setStreakLoading: (streakLoading: boolean) => void;
-  setStreakError: (streakError: string | null) => void;
-  setStreak: (streak: number | null) => void;
+  setStreakDataLoading: (streakDataLoading: boolean) => void;
+  setStreakDataError: (streakDataError: string | null) => void;
+  setStreakData: (streakData: Streak | null) => void;
   fetchProfile: (retryCount?: number) => Promise<void>; // New action, accepts optional retryCount
   updateThrowbackPreferences: (prefs: {
-    throwback_reminder_enabled: boolean;
-    throwback_reminder_frequency: string;
+    throwback_reminder_enabled: Profile['throwback_reminder_enabled'];
+    throwback_reminder_frequency: Profile['throwback_reminder_frequency'];
   }) => Promise<void>;
   updateDailyReminderSettings: (prefs: {
     reminder_enabled: boolean;
-    reminder_time: string;
+    reminder_time: string | null;
   }) => Promise<void>;
   setInitialProfileFetchAttempted: (attempted: boolean) => void; // Action to set the flag
+  refreshStreak: () => Promise<void>; // Action to specifically refresh streak
 }
 
 const initialState: ProfileState = {
   id: null,
   username: null,
-  reminder_enabled: true,
-  reminder_time: '20:00:00',
-  onboarded: false,
-  throwback_reminder_enabled: true,
-  throwback_reminder_frequency: 'weekly',
-  streak: null,
-  streakLoading: true,
-  streakError: null,
+  reminder_enabled: true, // Default from original schema
+  reminder_time: '20:00:00', // Default time, can be null
+  onboarded: false, // Default from original schema
+  throwback_reminder_enabled: true, // Added, default from DB schema
+  throwback_reminder_frequency: 'weekly', // Or 'weekly', 'monthly', 'disabled'
+  daily_gratitude_goal: 3, // Default daily goal from original schema
+  created_at: null,
+  updated_at: null,
+  theme: 'system', // Default client-side theme
+  streakData: null,
+  streakDataLoading: true,
+  streakDataError: null,
   error: null,
-  loading: false, // MODIFIED: Initial profile loading state should be false
+  loading: false,
   initialProfileFetchAttempted: false,
 };
 
@@ -73,286 +95,302 @@ export const useProfileStore = create<ProfileState & ProfileActions>()(
   persist(
     (set, get) => ({
       ...initialState,
-      setProfile: (profileData: Partial<ProfileState>) =>
-        set(state => ({
+      setProfile: (profileUpdates: Partial<Profile>) => {
+        const filteredUpdates: Partial<ProfileState> = {};
+        for (const key in profileUpdates) {
+          if (Object.prototype.hasOwnProperty.call(profileUpdates, key)) {
+            const typedKey = key as keyof Profile;
+            if (profileUpdates[typedKey] !== undefined) {
+              (filteredUpdates as any)[typedKey] = profileUpdates[typedKey];
+            }
+          }
+        }
+        set((state) => ({
           ...state,
-          ...profileData,
+          ...filteredUpdates, // Spread the filtered updates
           error: null,
           loading: false,
-        })),
+        }));
+      },
+      setTheme: (theme) => set({ theme }),
       setLoading: loading => set({ loading }),
       setError: error => set({ error, loading: false }),
       // Streak actions implementation
-      setStreakLoading: streakLoading => set({ streakLoading }),
-      setStreakError: streakError => set({ streakError, streakLoading: false }),
-      setStreak: streak =>
-        set({ streak, streakLoading: false, streakError: null }),
+      setStreakDataLoading: streakDataLoading => set({ streakDataLoading }),
+      setStreakDataError: streakDataError => set({ streakDataError, streakDataLoading: false }),
+      setStreakData: streakData =>
+        set({ streakData, streakDataLoading: false, streakDataError: null }),
       fetchProfile: async (retryCount: number = 0) => {
         const {
           id: currentProfileId,
-          // loading, // No longer need to check 'loading' here for initial abort
-          initialProfileFetchAttempted: currentInitialProfileFetchAttempted, // Renamed to avoid conflict
+          initialProfileFetchAttempted: currentInitialProfileFetchAttempted,
         } = get();
         const authUserId = useAuthStore.getState().user?.id;
 
-        // Only fetch if authenticated, not already loading, and either:
-        // 1. Profile fetch hasn't been attempted for the current auth user.
-        // 2. The current profile ID in store doesn't match the authenticated user ID (relevant after re-auth or user switch).
         if (!authUserId) {
-          console.log(
-            '[profileStore] fetchProfile: No authenticated user. Aborting.'
-          );
-          set({ loading: false, initialProfileFetchAttempted: true }); // Mark as attempted for non-user state
+          console.log('[profileStore] fetchProfile: No authenticated user. Aborting.');
+          set({ loading: false, initialProfileFetchAttempted: true });
           return;
         }
 
-        // If initialProfileFetchAttempted is true AND currentProfileId matches authUserId,
-        // AND it's an initial call (not a retry), assume profile is current.
-        // RootNavigator's useEffect logic should prevent redundant calls primarily.
-        if (
-          currentInitialProfileFetchAttempted && // Use the renamed variable
-          currentProfileId === authUserId &&
-          retryCount === 0 // Only apply this optimization for non-retry calls
-        ) {
-          console.log(
-            '[profileStore] fetchProfile: Initial fetch already attempted for this user and profile ID matches. Aborting initial call.'
-          );
-          set({ loading: false }); // Ensure loading is false if we abort here
+        // If initial fetch was already done for this user (currentProfileId === authUserId) 
+        // and this is not an explicit retry (retryCount === 0), then don't re-fetch.
+        if (currentInitialProfileFetchAttempted && currentProfileId === authUserId && retryCount === 0) {
+          console.log('[profileStore] fetchProfile: Initial fetch already successfully completed for this user. Aborting redundant fetch.');
+          set({ loading: false }); // Ensure loading is false if we abort early
           return;
         }
 
-        console.log(
-          `[profileStore] fetchProfile called. authUserId: ${authUserId}, currentProfileId: ${currentProfileId}, initialProfileFetchAttempted_from_store: ${currentInitialProfileFetchAttempted}, retryCount: ${retryCount}`
-        );
-        set({ loading: true, error: null, initialProfileFetchAttempted: true }); // Set attempted true immediately
-        // The console.log below is now slightly redundant due to the one before set(), but harmless.
-        console.log(
-          `[profileStore] fetchProfile called (processing). retryCount: ${retryCount}`
-        );
+        console.log(`[profileStore] fetchProfile called. authUserId: ${authUserId}, currentProfileId: ${currentProfileId}, initialProfileFetchAttempted_from_store: ${currentInitialProfileFetchAttempted}, retryCount: ${retryCount}`);
+        // Set loading true only if it's the first attempt of a fetch sequence or a retry is in progress.
+        // Error is nulled out at the beginning of a fetch attempt sequence.
+        if (retryCount === 0) {
+          set({ loading: true, error: null, initialProfileFetchAttempted: true });
+        } else {
+          set({ loading: true, initialProfileFetchAttempted: true }); // Keep existing error until final failure or success
+        }
+
+        const MAX_RETRIES = 2; // Total 3 attempts (initial + 2 retries)
+        const RETRY_DELAY_MS = 2000;
+
         try {
-          const profileData = await fetchProfileApi();
-          console.log('[profileStore] profileData from API:', profileData);
-          if (profileData && profileData.id) {
-            set(state => {
-              const newState = {
+          const rawProfileData = await fetchProfileApi();
+          console.log('[profileStore] rawProfileData from API:', rawProfileData);
+
+          if (rawProfileData) {
+            const profileData = profileSchema.parse(rawProfileData); // This can throw ZodError
+            if (profileData.id) {
+              set(state => ({
                 ...state,
                 ...profileData,
-                id: profileData.id, // Explicitly set id from fetched data
+                id: profileData.id,
                 loading: false,
-                error: null, // Clear any previous error
-              };
-              console.log('[profileStore] New state after setting profile:', {
-                id: newState.id,
-                onboarded: newState.onboarded, // Log onboarded status for clarity
-                loading: newState.loading,
-              });
-              return newState;
-            });
-          } else if (profileData && !profileData.id) {
-            console.warn(
-              '[profileStore] Profile data received, but ID is missing:',
-              profileData
-            );
-            set({
-              loading: false,
-              error: 'Profil bilgisi eksik (ID bulunamadı).',
-            });
-          } else {
-            // profileData is null
-            const MAX_RETRIES = 2;
-            const RETRY_DELAY_MS = 1000;
-            console.log('[profileStore] No profile data returned from API.');
-            if (retryCount < MAX_RETRIES) {
-              console.log(
-                `[profileStore] Scheduling retry attempt ${retryCount + 1} of ${MAX_RETRIES}. Current retryCount: ${retryCount}. Next call with: ${retryCount + 1}.`
-              );
-              setTimeout(() => {
-                console.log(
-                  `[profileStore] setTimeout: Calling fetchProfile with retryCount: ${retryCount + 1}`
-                );
-                get().fetchProfile(retryCount + 1);
-              }, RETRY_DELAY_MS);
+                error: null, // Clear error on success
+              }));
+              // Streak refresh logic
+              try {
+                console.log('[profileStore] Profile fetched successfully, attempting to refresh streak.');
+                await get().refreshStreak();
+              } catch (streakError) {
+                console.error('[profileStore] Error during streak refresh after profile fetch:', streakError);
+              }
+              return; // Successful fetch, exit
             } else {
-              console.log(
-                `[profileStore] Max retries (${MAX_RETRIES}) reached. Final attempt (retryCount=${retryCount}) failed. Setting error.`
-              );
-              set({ loading: false, error: 'Profil bulunamadı.' });
+              console.warn('[profileStore] Parsed profile data is valid but missing an ID:', profileData);
+              set({ loading: false, error: 'Profil bilgisi ayrıştırıldı ancak ID eksik.' });
+              return; // Non-retryable data issue
             }
+          } else {
+            // rawProfileData is null, meaning profile not found
+            console.log('[profileStore] No profile data returned from API (profile not found).');
+            set({ loading: false, error: 'Profil bulunamadı.' });
+            return; // Non-retryable, profile doesn't exist
           }
-        } catch (e: unknown) {
-          console.error('[profileStore] Error fetching profile in store:', e);
-          let errorMessage = 'Profil alınırken bir hata oluştu.';
-          if (
-            typeof e === 'object' &&
-            e !== null &&
-            'message' in e &&
-            typeof (e as { message: unknown }).message === 'string'
-          ) {
-            errorMessage = (e as { message: string }).message;
-          } else if (typeof e === 'string') {
-            errorMessage = e;
+        } catch (err: any) {
+          console.error(`[profileStore] Error in fetchProfile (attempt ${retryCount + 1} of ${MAX_RETRIES + 1}):`, err);
+
+          if (err.constructor.name === 'ZodError') {
+            const errorMessage = 'Alınan profil verisi beklenen formatta değil: ' + (err.issues || err.errors)?.map((e: any) => `${e.path.join('.')} (${e.message})`).join(', ') || 'Zod validation error.';
+            set({ error: errorMessage, loading: false });
+          } else if (retryCount < MAX_RETRIES) {
+            console.log(`[profileStore] Retrying fetchProfile in ${RETRY_DELAY_MS}ms. Attempt ${retryCount + 2}...`);
+            setTimeout(() => {
+              get().fetchProfile(retryCount + 1);
+            }, RETRY_DELAY_MS);
+            // loading remains true, error (if any from previous retries) might persist until final failure or success
+          } else {
+            // Max retries reached for other errors
+            let errorMessage = 'Profil yüklenirken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.';
+            if (err instanceof Error && err.message) {
+              errorMessage = err.message;
+            } else if (typeof err === 'string' && err) {
+              errorMessage = err;
+            }
+            console.error('[profileStore] Max retries reached for fetchProfile.');
+            set({ error: errorMessage, loading: false });
           }
-          set({
-            error: errorMessage,
-            loading: false,
-          });
         }
       },
       resetProfile: () => {
         console.log('[profileStore] Resetting profile to initial state.');
         set(initialState);
       },
-      updateThrowbackPreferences: async prefs => {
-        const currentUserId = get().id;
-        if (!currentUserId) {
+      refreshStreak: async () => {
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) {
+          console.log('[profileStore] refreshStreak: No user ID, cannot refresh streak data.');
+          set({ streakData: null, streakDataLoading: false, streakDataError: 'Kullanıcı bulunamadı.' });
+          return;
+        }
+
+        console.log('[profileStore] Refreshing streak data...');
+        set({ streakDataLoading: true, streakDataError: null });
+        try {
+          const rawStreakData = await getStreakData();
+          console.log('[profileStore] Fetched raw streak data:', rawStreakData);
+          if (rawStreakData === null) {
+            set({ streakData: null, streakDataLoading: false, streakDataError: null });
+          } else {
+            const parsedStreakData = streakSchema.parse(rawStreakData);
+            console.log('[profileStore] Parsed streak data:', parsedStreakData);
+            set({ streakData: parsedStreakData, streakDataLoading: false, streakDataError: null });
+          }
+        } catch (err: any) {
+          console.error('[profileStore] Error refreshing streak data:', err);
+          let errorMessage = 'Minnet serisi bilgisi yenilenirken bir hata oluştu.';
+          if (err.constructor.name === 'ZodError') {
+            errorMessage = 'Alınan seri verisi beklenen formatta değil: ' + (err.issues || err.errors)?.map((e: any) => `${e.path.join('.')} (${e.message})`).join(', ') || 'Zod validation error.';
+          } else if (err instanceof Error) {
+            errorMessage = err.message;
+          } else if (typeof err === 'string') {
+            errorMessage = err;
+          }
+          set({
+            streakData: null, // Keep streakData null on error
+            streakDataLoading: false,
+            streakDataError: errorMessage,
+          });
+        }
+      },
+      updateThrowbackPreferences: async (prefs: {
+        throwback_reminder_enabled: Profile['throwback_reminder_enabled'];
+        throwback_reminder_frequency: Profile['throwback_reminder_frequency'];
+      }) => {
+        const currentUserIdFromGet = get().id; // This is string | null
+        if (!currentUserIdFromGet) {
           set({
             error: 'User ID not found. Cannot update throwback preferences.',
             loading: false,
           });
           return;
         }
+        const currentUserId: string = currentUserIdFromGet; // Explicitly typed after guard
+
         set({ loading: true, error: null });
         try {
-          // Assuming updateProfileApi can handle partial updates
-          const updatedProfile = await updateProfileApi({
-            id: currentUserId, // Pass the user ID for the update
+          // Construct the payload for the API call - should be UpdateProfilePayload
+          const currentPrefs = {
+            throwback_reminder_enabled: get().throwback_reminder_enabled,
+            throwback_reminder_frequency: get().throwback_reminder_frequency,
+          };
+
+          const updatePayload: UpdateProfilePayload = {
             throwback_reminder_enabled: prefs.throwback_reminder_enabled,
             throwback_reminder_frequency: prefs.throwback_reminder_frequency,
-          });
-          if (updatedProfile) {
-            set({
-              throwback_reminder_enabled:
-                updatedProfile.throwback_reminder_enabled,
-              throwback_reminder_frequency:
-                updatedProfile.throwback_reminder_frequency,
-              loading: false,
-              error: null,
-            });
-          } else {
-            // This case might indicate an issue with updateProfileApi returning null on success
-            // or if the API itself didn't return the full updated profile.
-            // For now, optimistically update state if API doesn't error.
-            set({
-              throwback_reminder_enabled: prefs.throwback_reminder_enabled,
-              throwback_reminder_frequency: prefs.throwback_reminder_frequency,
-              loading: false,
-              error: null,
-            });
-            console.warn(
-              '[profileStore] updateThrowbackPreferences: updateProfileApi returned no data, but no error. State updated optimistically.'
-            );
-          }
-        } catch (e: unknown) {
-          console.error(
-            '[profileStore] Error updating throwback preferences:',
-            e
-          );
-          let errorMessage = 'Failed to update throwback preferences.';
-          if (
-            typeof e === 'object' &&
-            e !== null &&
-            'message' in e &&
-            typeof (e as { message: unknown }).message === 'string'
-          ) {
-            errorMessage = (e as { message: string }).message;
-          } else if (typeof e === 'string') {
-            errorMessage = e;
+          };
+
+          // Call the API to update the profile
+          const rawUpdatedProfileData = await updateProfileApi(updatePayload);
+
+          // Note: updateProfileApi is expected to return the updated profile data
+          // which should conform to the Profile schema (or a subset if that's how the API is designed).
+          // If updateProfileApi throws, it's caught below. If it returns null/undefined unexpectedly,
+          // profileSchema.parse will likely fail if the schema doesn't allow null/undefined at the root.
+          const parsedProfileData = profileSchema.parse(rawUpdatedProfileData);
+
+          // Assuming parse is successful, parsedProfileData is a valid Profile object
+          set(state => ({
+            ...state,
+            ...parsedProfileData, // Spread the parsed and validated profile data
+            loading: false,
+            error: null,
+          }));
+          // Potentially call get().refreshStreak(); if these settings could affect streak, but they don't directly.
+        } catch (err: any) {
+          console.error('[profileStore] Error updating throwback preferences:', err);
+          let errorMessage = 'Geriye dönüş hatırlatıcı tercihleri güncellenirken bir hata oluştu.';
+          if (err.constructor.name === 'ZodError') {
+            errorMessage = 'Alınan profil verisi beklenen formatta değil: ' + (err.issues || err.errors)?.map((e: any) => `${e.path.join('.')} (${e.message})`).join(', ') || 'Zod validation error.';
+          } else if (err instanceof Error) {
+            errorMessage = err.message;
+          } else if (typeof err === 'string') {
+            errorMessage = err;
           }
           set({
             error: errorMessage,
             loading: false,
           });
-          // Optionally, re-throw or handle more gracefully
         }
-      },
-      setInitialProfileFetchAttempted: (attempted: boolean) =>
-        set({ initialProfileFetchAttempted: attempted }),
-      updateDailyReminderSettings: async prefs => {
+      }, // End of updateThrowbackPreferences
+
+      updateDailyReminderSettings: async (prefs: { reminder_enabled: boolean; reminder_time: string | null }) => {
         const currentUserId = get().id;
         if (!currentUserId) {
-          set({
-            error: 'User ID not found. Cannot update daily reminder settings.',
-            loading: false,
-          });
+          set({ error: 'User ID not found. Cannot update daily reminder settings.', loading: false });
           return;
         }
+
         set({ loading: true, error: null });
-
-        let finalReminderEnabled = prefs.reminder_enabled;
-
         try {
-          if (prefs.reminder_enabled) {
-            const permissionGranted = await requestNotificationPermissions();
-            if (permissionGranted) {
-              const [hours, minutes] = prefs.reminder_time
-                .split(':')
-                .map(Number);
-              await scheduleDailyReminder(
-                hours,
-                minutes,
-                'Günlük Minnettarlık Zamanı',
-                'Bugün neleri fark ettin? Yazmaya ne dersin?'
-              );
+          const updatePayload: UpdateProfilePayload = {
+            reminder_enabled: prefs.reminder_enabled,
+            reminder_time: prefs.reminder_time,
+          };
+
+          const rawUpdatedProfileData = await updateProfileApi(updatePayload);
+          const parsedProfileData = profileSchema.parse(rawUpdatedProfileData);
+
+          // parsedProfileData is a valid Profile object
+          set(state => ({
+            ...state,
+            ...parsedProfileData, // Spread the parsed and validated profile data
+            loading: false,
+            error: null,
+          }));
+
+          // Use reminder_enabled and reminder_time directly from parsedProfileData for notification logic
+          if (parsedProfileData.reminder_enabled && typeof parsedProfileData.reminder_time === 'string') {
+            const [hoursStr, minutesStr] = parsedProfileData.reminder_time.split(':');
+            const hours = parseInt(hoursStr, 10);
+            const minutes = parseInt(minutesStr, 10);
+            if (!isNaN(hours) && !isNaN(minutes)) {
+              await requestNotificationPermissions();
+              await scheduleDailyReminder(hours, minutes, 'Günlük Minnettarlık Hatırlatması', 'Bugün neleri fark ettin? Yazmaya ne dersin?');
             } else {
-              finalReminderEnabled = false; // Permission denied, force disable
-              await cancelAllScheduledNotifications(); // Ensure any old ones are cancelled
+              console.warn('[profileStore] Invalid reminder_time format for scheduling:', parsedProfileData.reminder_time);
+              await cancelAllScheduledNotifications(); // Cancel if time is invalid
             }
           } else {
+            // If reminders are disabled or time is not set/invalid, cancel all
             await cancelAllScheduledNotifications();
           }
-
-          const updatedProfile = await updateProfileApi({
-            id: currentUserId,
-            reminder_enabled: finalReminderEnabled,
-            reminder_time: prefs.reminder_time,
-          });
-
-          if (updatedProfile) {
-            set({
-              reminder_enabled: updatedProfile.reminder_enabled,
-              reminder_time: updatedProfile.reminder_time,
-              loading: false,
-              error: null,
-            });
-          } else {
-            // Optimistic update if API returns no data but no error
-            set({
-              reminder_enabled: finalReminderEnabled,
-              reminder_time: prefs.reminder_time,
-              loading: false,
-              error: null,
-            });
-            console.warn(
-              '[profileStore] updateDailyReminderSettings: updateProfileApi returned no data, but no error. State updated optimistically.'
-            );
+        } catch (err: any) {
+          console.error('[profileStore] Error updating daily reminder settings:', err);
+          let errorMessage = 'Günlük hatırlatıcı ayarları güncellenirken bir hata oluştu.';
+          if (err.constructor.name === 'ZodError') {
+            errorMessage = 'Alınan profil verisi beklenen formatta değil: ' + (err.issues || err.errors)?.map((e: any) => `${e.path.join('.')} (${e.message})`).join(', ') || 'Zod validation error.';
+          } else if (err instanceof Error) {
+            errorMessage = err.message;
+          } else if (typeof err === 'string') {
+            errorMessage = err;
           }
-        } catch (e: unknown) {
-          console.error(
-            '[profileStore] Error updating daily reminder settings:',
-            e
-          );
-          let errorMessage = 'Failed to update daily reminder settings.';
-          if (
-            typeof e === 'object' &&
-            e !== null &&
-            'message' in e &&
-            typeof (e as { message: unknown }).message === 'string'
-          ) {
-            errorMessage = (e as { message: string }).message;
-          } else if (typeof e === 'string') {
-            errorMessage = e;
-          }
-          set({
-            error: errorMessage,
-            loading: false,
-          });
+          set({ error: errorMessage, loading: false });
         }
-      },
-    }),
+      }, // End of updateDailyReminderSettings
+
+      setInitialProfileFetchAttempted: (attempted: boolean) =>
+        set({ initialProfileFetchAttempted: attempted }),
+
+    }), // This closes the (set, get) => ({...}) actions object
     {
-      name: 'yeser-profile-storage', // unique name for persist middleware
+      name: 'yeser-profile-storage',
       storage: createJSONStorage(() => AsyncStorage),
-    }
+      version: 1, // Added a version for migration
+      migrate: (persistedState: any, version: number) => {
+        console.log('[profileStore] Attempting migration. Current persisted version:', version, 'Target version: 1');
+        if (version < 1) {
+          // This block runs if the persisted state is older than version 1
+          if (persistedState && typeof persistedState.reminder_time === 'string') {
+            const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+            if (!timeRegex.test(persistedState.reminder_time)) {
+              console.warn(`[profileStore] Migrating invalid reminder_time "${persistedState.reminder_time}" from AsyncStorage to null.`);
+              persistedState.reminder_time = null;
+            }
+          }
+        }
+        return persistedState;
+      },
+    } // This is the persist config object
   ) // This closes the persist middleware call
 ); // This closes the create() call
 

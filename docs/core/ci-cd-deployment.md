@@ -53,7 +53,7 @@ Backend changes primarily involve schema migrations and potentially Edge Functio
     2.  Start local Supabase services: `supabase start`.
     3.  Make schema changes using Supabase Studio (local) or SQL.
     4.  Generate migration file: `supabase db diff -f <migration_name>`.
-    5.  Review and refine the generated SQL migration file in `supabase/migrations/`.
+    5.  Review and refine the generated SQL migration file in `supabase/migrations/`. **This `supabase/migrations` directory, containing all SQL migration files, must be committed to version control.**
 *   **Applying Migrations:**
     *   Locally: `supabase migration up` (to apply all pending migrations) or `supabase db reset` (to reset and apply all from scratch).
     *   Staging/Production: It's highly recommended to have separate Supabase projects for staging and production.
@@ -61,8 +61,11 @@ Backend changes primarily involve schema migrations and potentially Edge Functio
         2.  Apply migrations: `supabase migration up`.
         *   **Caution:** Always test migrations thoroughly in a staging environment before applying to production.
 
-### 4.2. Edge Functions
-*   **Development:** Develop functions locally within the `supabase/functions/` directory.
+### 4.2. Edge Functions (Deno-based)
+
+While Yeşer currently implements most custom backend logic via PL/pgSQL functions callable as RPCs (see `backend-database-setup.md`), Supabase also supports Deno-based Edge Functions. If such functions were to be utilized, the following process would apply:
+
+*   **Development:** Develop Deno functions locally within the `supabase/functions/` directory.
 *   **Deployment:**
     1.  Link CLI to the target project (if not already linked).
     2.  Deploy a specific function: `supabase functions deploy <function_name> --project-ref <your-project-ref>`.
@@ -93,7 +96,7 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18' # Match project's Node version
-        cache: 'npm'
+        cache: 'npm' # Consider caching Supabase CLI if used extensively for migrations in CI
 
     - name: Install dependencies
       run: npm ci
@@ -137,7 +140,7 @@ These should be updated systematically for each new release.
 
 ## 7. Best Practices & Future Enhancements
 
-*   **Secrets Management:** Use GitHub Actions secrets for `EXPO_TOKEN` and any other CI/CD sensitive keys. Manage EAS build secrets via the Expo dashboard.
+*   **Secrets Management:** Use GitHub Actions secrets for `EXPO_TOKEN` and any other CI/CD sensitive keys. Manage EAS build secrets (like `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`) via the Expo dashboard. If Supabase CLI is used in CI to apply migrations or deploy functions to a hosted Supabase project, ensure `SUPABASE_ACCESS_TOKEN` is configured as a GitHub Secret.
 *   **Build Reproducibility:** Lock dependency versions using `package-lock.json` or `yarn.lock`.
 *   **Thorough Testing:** Always test builds from `eas build --profile production` (or a `preview` build from the same commit) before store submission or pushing critical OTA updates.
 *   **Incremental OTA Rollouts:** For significant OTA updates, consider phased rollouts if supported by your update channel configuration or a feature flagging system.

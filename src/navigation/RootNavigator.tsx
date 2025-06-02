@@ -1,15 +1,21 @@
 // src/navigation/RootNavigator.tsx
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { EventArg, RouteProp } from '@react-navigation/native';
 import React, { useEffect } from 'react';
+import { Platform } from 'react-native'; // Added for OS-specific padding
+import { hapticFeedback } from '../utils/hapticFeedback';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { useTheme } from '../providers/ThemeProvider'; // Assuming useTheme is here
+import { useTheme } from '../providers/ThemeProvider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Assuming useTheme is here
+
 // Import enhanced screens
 import EnhancedCalendarViewScreen from '../screens/EnhancedCalendarViewScreen';
 import DailyEntryScreen from '../screens/EnhancedDailyEntryScreen'; // Import DailyEntryScreen
 import EntryDetailScreen from '../screens/EnhancedEntryDetailScreen';
 import EnhancedHelpScreen from '../screens/EnhancedHelpScreen';
-import HomeScreen from '../screens/EnhancedHomeScreen';
+import EnhancedHomeScreen from '../screens/EnhancedHomeScreen';
 import EnhancedPastEntriesScreen from '../screens/EnhancedPastEntriesScreen';
 import PrivacyPolicyScreen from '../screens/EnhancedPrivacyPolicyScreen'; // Import PrivacyPolicyScreen
 import ReminderSettingsScreen from '../screens/EnhancedReminderSettingsScreen'; // Import EnhancedReminderSettingsScreen
@@ -18,8 +24,8 @@ import EnhancedSplashScreen from '../screens/EnhancedSplashScreen';
 import TermsOfServiceScreen from '../screens/EnhancedTermsOfServiceScreen'; // Import TermsOfServiceScreen
 import OnboardingReminderSetupScreen from '../screens/onboarding/EnhancedOnboardingReminderSetupScreen'; // Import OnboardingReminderSetupScreen
 import OnboardingScreen from '../screens/onboarding/EnhancedOnboardingScreen'; // Import OnboardingScreen
-import useAuthStore from '../store/authStore';
-import { useProfileStore } from '../store/profileStore';
+import useAuthStore, { AuthState } from '../store/authStore';
+import { useProfileStore, ProfileState, ProfileActions } from '../store/profileStore';
 import { MainAppTabParamList, RootStackParamList } from '../types/navigation'; // Updated to MainAppTabParamList
 import AuthNavigator from './AuthNavigator';
 
@@ -28,14 +34,44 @@ const Tab = createBottomTabNavigator<MainAppTabParamList>();
 
 const MainAppNavigator: React.FC = () => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName = '';
+
+          if (route.name === 'HomeTab') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'DailyEntryTab') {
+            iconName = focused ? 'plus-circle' : 'plus-circle-outline';
+          } else if (route.name === 'PastEntriesTab') {
+            iconName = 'history'; // Consider focused ? 'view-list' : 'view-list-outline';
+          } else if (route.name === 'CalendarTab') {
+            iconName = focused ? 'calendar' : 'calendar-outline';
+          } else if (route.name === 'SettingsTab') {
+            iconName = focused ? 'cog' : 'cog-outline';
+          }
+          return <Icon name={iconName} size={size} color={color} />;
+        },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+        tabBarActiveBackgroundColor: theme.colors.surfaceVariant, // Active tab item background
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.outlineVariant, // Optional: for a subtle top border
+          borderTopColor: theme.colors.outlineVariant, // Keep or remove based on preference with shadow
+          height: 65 + insets.bottom,
+          paddingTop: theme.spacing.xs || 8,
+          paddingBottom: theme.spacing.xs || 8, 
+          shadowColor: theme.colors.shadow || theme.colors.onBackground, // Fallback for shadow color
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 5,
+        },
+        tabBarShowLabel: false,
+        tabBarItemStyle: {
+          paddingVertical: theme.spacing.xxs || 2, 
         },
         headerStyle: {
           backgroundColor: theme.colors.surface, // For screens within tabs that might show a header
@@ -44,32 +80,67 @@ const MainAppNavigator: React.FC = () => {
         headerTitleStyle: {
           fontFamily: theme.typography.titleMedium.fontFamily, // Example: Using a theme font
         },
-      }}
+      })}
     >
       <Tab.Screen
         name="HomeTab"
-        component={HomeScreen}
-        options={{ title: 'Ana Sayfa' }} // Turkish title for Home tab
+        component={EnhancedHomeScreen}
+        options={({ navigation, route }) => ({
+          title: 'Ana Sayfa',
+          listeners: {
+            tabPress: (e: EventArg<'tabPress', true, undefined>) => {
+              hapticFeedback.light();
+            },
+          },
+        })}
       />
       <Tab.Screen
         name="DailyEntryTab"
         component={DailyEntryScreen}
-        options={{ title: 'Yeni Kayıt' }} // Turkish title for Daily Entry tab
+        options={({ navigation, route }) => ({
+          title: 'Yeni Kayıt',
+          listeners: {
+            tabPress: (e: EventArg<'tabPress', true, undefined>) => {
+              hapticFeedback.light();
+            },
+          },
+        })}
       />
       <Tab.Screen
         name="PastEntriesTab"
         component={EnhancedPastEntriesScreen}
-        options={{ title: 'Geçmiş Kayıtlar' }} // Turkish title for Past Entries tab
+        options={({ navigation, route }) => ({
+          title: 'Geçmiş Kayıtlar',
+          listeners: {
+            tabPress: (e: EventArg<'tabPress', true, undefined>) => {
+              hapticFeedback.light();
+            },
+          },
+        })}
       />
       <Tab.Screen
         name="CalendarTab"
         component={EnhancedCalendarViewScreen}
-        options={{ title: 'Takvim' }}
+        options={({ navigation, route }) => ({
+          title: 'Takvim',
+          listeners: {
+            tabPress: (e: EventArg<'tabPress', true, undefined>) => {
+              hapticFeedback.light();
+            },
+          },
+        })}
       />
       <Tab.Screen
         name="SettingsTab"
         component={SettingsScreen}
-        options={{ title: 'Ayarlar' }} // Turkish title for Settings tab
+        options={({ navigation, route }) => ({
+          title: 'Ayarlar',
+          listeners: {
+            tabPress: (e: EventArg<'tabPress', true, undefined>) => {
+              hapticFeedback.light();
+            },
+          },
+        })}
       />
       {/* Add other main app tabs here */}
     </Tab.Navigator>
@@ -81,15 +152,15 @@ const Root = createStackNavigator<RootStackParamList>();
 
 const RootNavigator: React.FC = () => {
   const { theme } = useTheme(); // Moved useTheme to the top
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const authIsLoading = useAuthStore(state => state.isLoading);
-  const initializeAuth = useAuthStore(state => state.initializeAuth);
-  const profileId = useProfileStore(state => state.id);
-  const onboarded = useProfileStore(state => state.onboarded);
-  const fetchProfile = useProfileStore(state => state.fetchProfile);
-  const profileIsLoading = useProfileStore(state => state.loading);
+  const isAuthenticated = useAuthStore((state: AuthState) => state.isAuthenticated);
+  const authIsLoading = useAuthStore((state: AuthState) => state.isLoading);
+  const initializeAuth = useAuthStore((state: AuthState) => state.initializeAuth);
+  const profileId = useProfileStore((state: ProfileState & ProfileActions) => state.id);
+  const onboarded = useProfileStore((state: ProfileState & ProfileActions) => state.onboarded);
+  const fetchProfile = useProfileStore((state: ProfileState & ProfileActions) => state.fetchProfile);
+  const profileIsLoading = useProfileStore((state: ProfileState & ProfileActions) => state.loading);
   const profileInitialFetchAttempted = useProfileStore(
-    state => state.initialProfileFetchAttempted
+    (state: ProfileState & ProfileActions) => state.initialProfileFetchAttempted
   );
   // Throwback store integration
   // Effect to fetch profile data when user is authenticated and profile is not yet loaded

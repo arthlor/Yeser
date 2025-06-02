@@ -3,6 +3,7 @@ import React, { createContext, ReactNode, useContext, useEffect } from 'react';
 import { useThemeStore } from '../store/themeStore';
 import { lightTheme } from '../themes/lightTheme';
 import { AppTheme } from '../themes/types';
+export type { AppTheme };
 
 interface ThemeContextType {
   theme: AppTheme;

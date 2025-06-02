@@ -3,6 +3,7 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
+import { updateProfileSchema } from '../../schemas/profileSchema';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -16,7 +17,6 @@ import {
 } from 'react-native';
 import ToggleSwitch from 'toggle-switch-react-native';
 
-import type { ProfileResponse } from '../../api/profileApi';
 import * as profileApi from '../../api/profileApi';
 import ErrorState from '../../components/states/ErrorState';
 import LoadingState from '../../components/states/LoadingState';
@@ -31,6 +31,7 @@ import {
 } from '../../services/notificationService';
 import { type ProfileState, useProfileStore } from '../../store/profileStore';
 import { AppTheme } from '../../themes/types';
+import { parseTimeStringToValidDate } from '../../utils/dateUtils';
 import { RootStackParamList } from '../../types/navigation';
 
 type OnboardingReminderSetupNavigationProp = NativeStackNavigationProp<
@@ -42,6 +43,8 @@ type OnboardingReminderSetupNavigationProp = NativeStackNavigationProp<
  * EnhancedOnboardingReminderSetupScreen allows users to configure daily reminders
  * for their gratitude practice with improved animations, accessibility, and error handling.
  */
+
+
 const EnhancedOnboardingReminderSetupScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -53,11 +56,7 @@ const EnhancedOnboardingReminderSetupScreen: React.FC = () => {
   const [localReminderEnabled, setLocalReminderEnabled] = useState(
     reminder_enabled !== undefined ? reminder_enabled : true
   );
-  const [localReminderTime, setLocalReminderTime] = useState(
-    reminder_time
-      ? new Date(`1970-01-01T${reminder_time}`)
-      : new Date(new Date().setHours(20, 0, 0, 0))
-  );
+  const [localReminderTime, setLocalReminderTime] = useState(() => parseTimeStringToValidDate(reminder_time));
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
@@ -90,11 +89,7 @@ const EnhancedOnboardingReminderSetupScreen: React.FC = () => {
     setLocalReminderEnabled(
       reminder_enabled !== undefined ? reminder_enabled : true
     );
-    setLocalReminderTime(
-      reminder_time
-        ? new Date(`1970-01-01T${reminder_time}`)
-        : new Date(new Date().setHours(20, 0, 0, 0))
-    );
+    setLocalReminderTime(parseTimeStringToValidDate(reminder_time));
   }, [reminder_enabled, reminder_time]);
 
   // Handle time picker changes
@@ -134,19 +129,43 @@ const EnhancedOnboardingReminderSetupScreen: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    const timeString = localReminderTime
-      .toTimeString()
-      .split(' ')[0]
-      .substring(0, 5);
+    const timeString = localReminderTime.toTimeString().split(' ')[0]; // HH:MM:SS
 
     try {
-      const profileUpdateData: Partial<ProfileResponse> = {
+      // Prepare payload for Zod validation
+      const validationPayload = {
         onboarded: true,
         reminder_enabled: localReminderEnabled,
-        reminder_time: timeString,
+        reminder_time: localReminderEnabled ? timeString : null,
       };
 
-      if (localReminderEnabled) {
+      const validationResult = updateProfileSchema.safeParse(validationPayload);
+
+      if (!validationResult.success) {
+        const fieldErrors = validationResult.error.flatten().fieldErrors;
+        let errorMessage = 'Lütfen hataları düzeltin:';
+        if (fieldErrors.reminder_time && fieldErrors.reminder_time[0]) {
+          errorMessage = `Hatırlatıcı zamanı: ${fieldErrors.reminder_time[0]}`;
+        } else if (fieldErrors.reminder_enabled && fieldErrors.reminder_enabled[0]) {
+          errorMessage = `Hatırlatıcı durumu: ${fieldErrors.reminder_enabled[0]}`;
+        } else {
+          const firstErrorKey = Object.keys(fieldErrors)[0] as keyof typeof fieldErrors;
+          if (firstErrorKey && fieldErrors[firstErrorKey]?.[0]) {
+            errorMessage = `${firstErrorKey}: ${fieldErrors[firstErrorKey]?.[0]}`;
+          } else {
+            errorMessage = validationResult.error.issues[0]?.message || 'Geçersiz ayarlar.';
+          }
+        }
+        setError(errorMessage);
+        setIsSaving(false);
+        setLoading(false);
+        return;
+      }
+
+      // Start with validated data, may be adjusted by permissions
+      const profileUpdateData = { ...validationResult.data };
+
+      if (validationResult.data.reminder_enabled) {
         const permissionGranted = await requestNotificationPermissions();
         if (permissionGranted) {
           const hour = localReminderTime.getHours();
@@ -158,19 +177,25 @@ const EnhancedOnboardingReminderSetupScreen: React.FC = () => {
             'Bugün neleri fark ettin? Yazmaya ne dersin?'
           );
         } else {
+          // Permission denied, so force reminders off
           profileUpdateData.reminder_enabled = false;
+          profileUpdateData.reminder_time = null;
         }
       } else {
+        // User intended to disable reminders or permission was denied
         await cancelAllScheduledNotifications();
+        // Ensure these are explicitly set if reminders end up disabled
+        profileUpdateData.reminder_enabled = false;
+        profileUpdateData.reminder_time = null;
       }
 
       await profileApi.updateProfile(profileUpdateData);
-      setProfile(profileUpdateData as Partial<ProfileState>);
+      setProfile(profileUpdateData);
 
       analyticsService.logEvent('onboarding_completed', {
         reminders_skipped: false,
-        reminder_time: timeString,
-        reminder_enabled: localReminderEnabled,
+        reminder_time: profileUpdateData.reminder_time ?? null, // Provide null if undefined
+        reminder_enabled: profileUpdateData.reminder_enabled ?? false, // Provide false if undefined
       });
 
       // Navigation to MainApp is now handled by RootNavigator's conditional rendering
@@ -208,13 +233,32 @@ const EnhancedOnboardingReminderSetupScreen: React.FC = () => {
     setError(null);
 
     try {
-      const profileUpdateData: Partial<ProfileResponse> = {
+      const validationPayload = {
         onboarded: true,
         reminder_enabled: false,
+        reminder_time: null, // Explicitly set to null when skipping
       };
 
+      const validationResult = updateProfileSchema
+        .pick({
+          onboarded: true,
+          reminder_enabled: true,
+          reminder_time: true,
+        })
+        .safeParse(validationPayload);
+
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.issues[0]?.message || 'Ayarlar kaydedilemedi.';
+        setError(errorMessage);
+        setIsSkipping(false);
+        setLoading(false);
+        return;
+      }
+
+      const profileUpdateData = { ...validationResult.data };
+
       await profileApi.updateProfile(profileUpdateData);
-      setProfile(profileUpdateData as Partial<ProfileState>);
+      setProfile(profileUpdateData);
       await cancelAllScheduledNotifications();
 
       analyticsService.logEvent('onboarding_reminder_setup_skipped');

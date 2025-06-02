@@ -6,7 +6,7 @@ import type { EmailPasswordCredentials } from '../services/authService';
 import * as authService from '../services/authService'; // Import all from authService
 
 // Define the state interface for authentication
-interface AuthState {
+export interface AuthState {
   isAuthenticated: boolean;
   user: SupabaseUser | null;
   isLoading: boolean; // For initial auth check and login/signup processes

@@ -43,7 +43,7 @@ C9: As Ayşe, I want to be able to tap on a past entry to read its full content 
 C10: As Ayşe, I want the ability to edit or delete a past entry (Implemented), so that I can correct mistakes or remove entries I no longer wish to keep.
 
 (D) Motivation & Engagement:
-D11: As Ayşe, I want to see my current consistency streak (number of consecutive days with entries) (Implemented), so that I feel motivated to maintain my habit.
+D11: As Ayşe, I want to see my current consistency streak (number of consecutive days with entries) (Implemented, reliably calculated and maintained by backend logic), so that I feel motivated to maintain my habit.
 D12: As Ayşe, I want a simple, visual reward or acknowledgment ("Gratitude Blooming" - Planned - Phase 2) when I reach milestones (e.g., 7-day streak, 30-day streak, 100 entries), so that I feel encouraged and my progress is celebrated.
 D13: As Ayşe, I want to occasionally receive "throwback" reminders ("Spark of Memory" - Planned - Phase 3) of a randomly selected past positive entry, so that I can re-experience past joys and stay motivated. (This should be configurable and not too frequent).
 
@@ -144,7 +144,7 @@ Avoid: Ads, intrusive paywalls, or features that feel essential being locked awa
 Decision on monetization strategy to be made before Phase 4.
 5. Technology Stack (Confirmation)
 Mobile App: React Native + Expo for rapid development, managed workflow, and OTA updates.
-Backend/DB: Supabase for integrated Auth, Postgres DB, Storage, and Edge Functions.
+Backend/DB: Supabase, utilizing its integrated Authentication, PostgreSQL database, Storage, and critically, custom **PL/pgSQL functions (RPCs) and database triggers** for core business logic, data integrity, and feature support (e.g., streak calculations).
 This stack is deemed suitable for achieving the desired simplicity, user experience, and feature set for Yeşer.
 6. Success Metrics (How we know Ayşe is happy)
 DAU/MAU (Daily/Monthly Active Users)

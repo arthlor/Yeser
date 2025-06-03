@@ -19,11 +19,7 @@ interface ThemedCardProps extends ViewProps {
 }
 
 // Define a function to get styles based on the theme, variant, and elevation
-const getCardStyles = (
-  theme: AppTheme,
-  variant: CardVariant,
-  elevation: ElevationLevel
-) => {
+const getCardStyles = (theme: AppTheme, variant: CardVariant, elevation: ElevationLevel) => {
   let cardStyle: ViewStyle = {};
 
   switch (variant) {

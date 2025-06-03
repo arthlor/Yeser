@@ -76,7 +76,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           text: 'Sil',
           style: 'destructive',
           onPress: async () => {
-            if (!entry || !entry.entry_date || !entry.statements) {
+            if (!entry?.entry_date || !entry.statements) {
               setError('Kayıt bilgileri eksik veya geçersiz.');
               return;
             }
@@ -93,7 +93,9 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               Alert.alert('Başarılı', 'Kayıt ve tüm ifadeleri silindi.', [
                 {
                   text: 'Tamam',
-                  onPress: () => navigation.goBack(),
+                  onPress: () => {
+                    navigation.goBack();
+                  },
                 },
               ]);
             } catch (error: unknown) {
@@ -170,20 +172,14 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
           ))
         ) : (
-          <Text
-            style={styles.contentText}
-            accessibilityLabel="İçerik bulunamadı"
-          >
+          <Text style={styles.contentText} accessibilityLabel="İçerik bulunamadı">
             {'İçerik bulunamadı.'}
           </Text>
         )}
       </ThemedCard>
 
       {isDeleting ? (
-        <LoadingState
-          message="Kayıt siliniyor..."
-          style={styles.loadingContainer}
-        />
+        <LoadingState message="Kayıt siliniyor..." style={styles.loadingContainer} />
       ) : (
         <View style={styles.actionsContainer}>
           <View style={styles.buttonWrapper}>

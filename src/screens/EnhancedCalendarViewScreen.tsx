@@ -1,3 +1,6 @@
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { CompositeNavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import {
   ActivityIndicator,
@@ -13,34 +16,28 @@ import {
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import {
-  CompositeNavigationProp,
-  useFocusEffect,
-  useNavigation,
-} from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 // Importing from actual project files where they exist or creating placeholder types and APIs
-import ThemedCard from '../components/ThemedCard';
-import { useTheme } from '../providers/ThemeProvider';
-import type { GratitudeEntry } from '../schemas/gratitudeEntrySchema';
 import {
   getEntryDatesForMonth,
   getGratitudeDailyEntryByDate as getGratitudeEntryByDateAPI,
 } from '../api/gratitudeApi';
+import ThemedCard from '../components/ThemedCard';
+import { useTheme } from '../providers/ThemeProvider';
 
-type RootStackParamList = {
+import type { GratitudeEntry } from '../schemas/gratitudeEntrySchema';
+
+interface RootStackParamList {
   Home: undefined;
   EntryDetail: { entryId: string };
   EnhancedDailyEntry: { dateString?: string; entry?: GratitudeEntry | null }; // Added for navigation
-};
+}
 
-type RootTabParamList = {
+interface RootTabParamList {
   DailyEntryTab: { date?: string; entry?: GratitudeEntry | null }; // Ensure consistent params
   CalendarView: undefined;
   Settings: undefined;
-};
+}
 
 // Placeholder analytics service
 const analyticsService = {
@@ -56,8 +53,9 @@ const formatDate = (dateString: string): string => {
 };
 
 // Define custom type for calendar marked dates
-type CustomMarkedDates = {
-  [date: string]: {
+type CustomMarkedDates = Record<
+  string,
+  {
     marked?: boolean;
     dotColor?: string;
     activeOpacity?: number;
@@ -65,8 +63,8 @@ type CustomMarkedDates = {
     selected?: boolean;
     selectedColor?: string;
     selectedTextColor?: string;
-  };
-};
+  }
+>;
 
 // Define the navigation prop type for this screen
 type CalendarViewScreenNavigationProp = CompositeNavigationProp<
@@ -102,17 +100,17 @@ const StatCard: React.FC<{
 const EnhancedCalendarViewScreen: React.FC = () => {
   const navigation = useNavigation<CalendarViewScreenNavigationProp>();
   const { theme } = useTheme();
-  
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
-  
+
   // State for month navigation and data
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [markedDates, setMarkedDates] = useState<CustomMarkedDates>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<GratitudeEntry | null>(null); // Updated type
-  
+
   // State for loading and error handling
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,28 +132,27 @@ const EnhancedCalendarViewScreen: React.FC = () => {
   }, [fadeAnim, translateY]);
 
   // Get count of days with entries in current month
-  const getEntryCount = (): number => {
-    return Object.keys(markedDates).filter(date => markedDates[date].marked).length;
-  };
+  const getEntryCount = (): number =>
+    Object.keys(markedDates).filter((date) => markedDates[date].marked).length;
 
   // Calculate longest streak in current month
   const getMonthlyStreak = (): number => {
     const dates = Object.keys(markedDates)
-      .filter(date => markedDates[date].marked)
+      .filter((date) => markedDates[date].marked)
       .sort();
-    
+
     if (dates.length === 0) return 0;
-    
+
     let maxStreak = 1;
     let currentStreak = 1;
-    
+
     for (let i = 1; i < dates.length; i++) {
       const currentDate = new Date(dates[i]);
       const prevDate = new Date(dates[i - 1]);
-      
+
       const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       if (diffDays === 1) {
         currentStreak++;
         maxStreak = Math.max(maxStreak, currentStreak);
@@ -163,49 +160,56 @@ const EnhancedCalendarViewScreen: React.FC = () => {
         currentStreak = 1;
       }
     }
-    
+
     return maxStreak;
   };
 
   // Fetch days with entries for the current month
-  const fetchMarkedDates = useCallback(async (date: Date) => {
-    setIsLoading(true);
-    setError(null);
-    // console.log(`Fetching marked dates for: ${date.getFullYear()}-${date.getMonth() + 1}`);
-    try {
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const entryDates = await getEntryDatesForMonth(year, month);
-      const newMarkedDates: CustomMarkedDates = {};
-      entryDates.forEach((entryDate: string) => {
-        newMarkedDates[entryDate] = {
-          marked: true,
-          dotColor: theme.colors.primary,
-          activeOpacity: 0.8,
-        };
-      });
+  const fetchMarkedDates = useCallback(
+    async (date: Date) => {
+      setIsLoading(true);
+      setError(null);
+      // console.log(`Fetching marked dates for: ${date.getFullYear()}-${date.getMonth() + 1}`);
+      try {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const entryDates = await getEntryDatesForMonth(year, month);
+        const newMarkedDates: CustomMarkedDates = {};
+        entryDates.forEach((entryDate: string) => {
+          newMarkedDates[entryDate] = {
+            marked: true,
+            dotColor: theme.colors.primary,
+            activeOpacity: 0.8,
+          };
+        });
 
-      // Preserve selection if the selected date is in the new marked dates
-      if (selectedDate && newMarkedDates[selectedDate]) {
-        newMarkedDates[selectedDate] = {
-          ...newMarkedDates[selectedDate],
-          selected: true,
-          selectedColor: theme.colors.primaryContainer,
-          selectedTextColor: theme.colors.onPrimaryContainer,
-        };
+        // Preserve selection if the selected date is in the new marked dates
+        if (selectedDate && newMarkedDates[selectedDate]) {
+          newMarkedDates[selectedDate] = {
+            ...newMarkedDates[selectedDate],
+            selected: true,
+            selectedColor: theme.colors.primaryContainer,
+            selectedTextColor: theme.colors.onPrimaryContainer,
+          };
+        }
+        setMarkedDates(newMarkedDates);
+        // analyticsService.logEvent('calendar_month_viewed', { year, month, entry_count: entryDates.length });
+      } catch (e: unknown) {
+        const errorMessage =
+          e instanceof Error ? e.message : 'Takvim verileri alınırken bir hata oluştu.';
+        setError(errorMessage);
+        // console.error('Error fetching marked dates:', errorMessage);
+        setMarkedDates({});
+      } finally {
+        setIsLoading(false);
       }
-      setMarkedDates(newMarkedDates);
-      // analyticsService.logEvent('calendar_month_viewed', { year, month, entry_count: entryDates.length });
-    } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : 'Takvim verileri alınırken bir hata oluştu.';
-      setError(errorMessage);
-      // console.error('Error fetching marked dates:', errorMessage);
-      setMarkedDates({});
-    } finally {
-      setIsLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme.colors.primary, theme.colors.primaryContainer, theme.colors.onPrimaryContainer, selectedDate, setIsLoading, setError, setMarkedDates /* getEntryDatesForMonth, analyticsService should be stable or added */]);
+    },
+    [
+      theme.colors.primary,
+      theme.colors.primaryContainer,
+      theme.colors.onPrimaryContainer /* removed selectedDate */,
+    ]
+  );
 
   const internalFetchMarkedDates = fetchMarkedDates; // Alias for useEffect dependency
 
@@ -218,8 +222,8 @@ const EnhancedCalendarViewScreen: React.FC = () => {
     (dateData: DateData) => {
       // console.log('Calendar onMonthChange (swipe) triggered with:', dateData);
       const newMonthDate = new Date(dateData.timestamp);
-      
-      // Update currentMonth state. This will trigger the useEffect hook 
+
+      // Update currentMonth state. This will trigger the useEffect hook
       // which calls fetchMarkedDates to load data for the new month.
       setCurrentMonth(newMonthDate);
 
@@ -235,12 +239,12 @@ const EnhancedCalendarViewScreen: React.FC = () => {
   const handleDayPress = async (day: DateData): Promise<void> => {
     const newSelectedDate = day.dateString;
     setSelectedDate(newSelectedDate);
-    
+
     // Update marked dates to show selection
     const updatedMarkedDates = { ...markedDates };
-    
+
     // Remove previous selection
-    Object.keys(updatedMarkedDates).forEach(date => {
+    Object.keys(updatedMarkedDates).forEach((date) => {
       if (updatedMarkedDates[date].selected) {
         updatedMarkedDates[date] = {
           ...updatedMarkedDates[date],
@@ -248,7 +252,7 @@ const EnhancedCalendarViewScreen: React.FC = () => {
         };
       }
     });
-    
+
     // Add new selection
     updatedMarkedDates[newSelectedDate] = {
       ...updatedMarkedDates[newSelectedDate],
@@ -258,15 +262,15 @@ const EnhancedCalendarViewScreen: React.FC = () => {
       marked: updatedMarkedDates[newSelectedDate]?.marked || false,
       dotColor: updatedMarkedDates[newSelectedDate]?.marked ? theme.colors.primary : undefined,
     };
-    
+
     setMarkedDates(updatedMarkedDates);
-    
+
     try {
       setIsLoading(true);
       const entry: GratitudeEntry | null = await getGratitudeEntryByDateAPI(newSelectedDate);
       if (entry) {
         setSelectedEntry(entry);
-        
+
         analyticsService.logEvent('calendar_day_selected', {
           date: newSelectedDate,
           has_entry: !!entry,
@@ -286,12 +290,12 @@ const EnhancedCalendarViewScreen: React.FC = () => {
     analyticsService.logEvent('add_entry_from_calendar', {
       date: selectedDate || new Date().toISOString().split('T')[0],
     });
-    
+
     navigation.navigate('DailyEntryTab', {
       date: selectedDate || new Date().toISOString().split('T')[0],
     });
   };
-  
+
   // Navigate to view an existing entry
   const handleViewEntry = (): void => {
     if (selectedEntry && selectedEntry.id) {
@@ -299,23 +303,36 @@ const EnhancedCalendarViewScreen: React.FC = () => {
         date: selectedDate,
         entry_id: selectedEntry.id,
       });
-      
+
       navigation.navigate('EntryDetail', { entryId: selectedEntry.id });
     }
   };
 
   // Define Turkish month and day names for localization
-  const turkishMonths = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  const turkishMonths = [
+    'Ocak',
+    'Şubat',
+    'Mart',
+    'Nisan',
+    'Mayıs',
+    'Haziran',
+    'Temmuz',
+    'Ağustos',
+    'Eylül',
+    'Ekim',
+    'Kasım',
+    'Aralık',
+  ];
   const turkishDays = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
   const turkishDaysShort = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-  
+
   // Custom function to format month name in Turkish
   const formatMonthYear = (date: Date): string => {
     const month = turkishMonths[date.getMonth()];
     const year = date.getFullYear();
     return `${month} ${year}`;
   };
-  
+
   // Calendar theme configuration
   const calendarTheme = useMemo(
     () => ({
@@ -340,7 +357,7 @@ const EnhancedCalendarViewScreen: React.FC = () => {
       // Turkish localization
       monthNames: turkishMonths,
       dayNames: turkishDays,
-      dayNamesShort: turkishDaysShort
+      dayNamesShort: turkishDaysShort,
     }),
     [theme.colors]
   );
@@ -349,7 +366,7 @@ const EnhancedCalendarViewScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       fetchMarkedDates(currentMonth);
-      
+
       // Reset selected entry when screen is focused again
       if (selectedDate) {
         getGratitudeEntryByDateAPI(selectedDate)
@@ -367,7 +384,7 @@ const EnhancedCalendarViewScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar backgroundColor={theme.colors.background} barStyle="dark-content" />
-      
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
@@ -385,12 +402,12 @@ const EnhancedCalendarViewScreen: React.FC = () => {
           {/* Calendar */}
           <ThemedCard style={styles.calendarCard} elevation="md">
             <Calendar
-              current={currentMonth.toISOString()}
+              current={currentMonth.toISOString().split('T')[0]} // 'YYYY-MM-DD'
               onMonthChange={handleMonthChange}
               onDayPress={handleDayPress}
               markedDates={markedDates}
               theme={calendarTheme}
-              enableSwipeMonths={true}
+              enableSwipeMonths
               hideExtraDays={false}
               firstDay={1}
               style={styles.calendar}
@@ -400,9 +417,9 @@ const EnhancedCalendarViewScreen: React.FC = () => {
                 // Handle possible undefined date by using current month as fallback
                 const headerDate = date ? new Date(date.toString()) : currentMonth;
                 return (
-                      <Text style={[styles.monthHeaderText, { color: theme.colors.onBackground }]}>
-                        {formatMonthYear(headerDate)}
-                      </Text>
+                  <Text style={[styles.monthHeaderText, { color: theme.colors.onBackground }]}>
+                    {formatMonthYear(headerDate)}
+                  </Text>
                 );
               }}
               // Ensure day names are displayed in Turkish
@@ -411,99 +428,103 @@ const EnhancedCalendarViewScreen: React.FC = () => {
                 const day = new Date(date.timestamp).getDate();
                 const isSelected = selectedDate === date.dateString;
                 return (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[
                       styles.dayContainer,
-                      isSelected && { backgroundColor: theme.colors.primaryContainer, borderRadius: 18 }
+                      isSelected && {
+                        backgroundColor: theme.colors.primaryContainer,
+                        borderRadius: 18,
+                      },
                     ]}
                     onPress={() => handleDayPress(date)}
                   >
-                    <Text 
+                    <Text
                       style={[
-                        styles.dayText, 
-                        { color: state === 'disabled' 
-                          ? theme.colors.surfaceDisabled || theme.colors.onSurface + '40'
-                          : isSelected
-                            ? theme.colors.onPrimaryContainer
-                            : state === 'today' 
-                              ? theme.colors.primary 
-                              : theme.colors.onSurface 
-                        }
+                        styles.dayText,
+                        {
+                          color:
+                            state === 'disabled'
+                              ? theme.colors.surfaceDisabled || theme.colors.onSurface + '40'
+                              : isSelected
+                                ? theme.colors.onPrimaryContainer
+                                : state === 'today'
+                                  ? theme.colors.primary
+                                  : theme.colors.onSurface,
+                        },
                       ]}
                     >
                       {day}
                     </Text>
                     {markedDates[date.dateString]?.marked && (
-                      <View 
+                      <View
                         style={[
-                          styles.dateDot, 
-                          { 
-                            backgroundColor: isSelected 
-                              ? theme.colors.onPrimaryContainer 
-                              : theme.colors.primary 
-                          }
-                        ]} 
+                          styles.dateDot,
+                          {
+                            backgroundColor: isSelected
+                              ? theme.colors.onPrimaryContainer
+                              : theme.colors.primary,
+                          },
+                        ]}
                       />
                     )}
                   </TouchableOpacity>
                 );
               }}
-              customHeader={() => {
-                return (
-                  <View>
-                    <View style={styles.monthHeaderContainer}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          const prevMonthDate = new Date(currentMonth);
-                          prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
-                          // console.log('Custom prev arrow pressed, new month:', prevMonthDate.toISOString());
-                          setCurrentMonth(prevMonthDate); // Triggers useEffect for fetchMarkedDates
-                          analyticsService.logEvent('calendar_month_changed_by_arrow', {
-                            direction: 'previous',
-                            year: prevMonthDate.getFullYear(),
-                            month: prevMonthDate.getMonth() + 1,
-                          });
-                        }}
-                        style={styles.arrowButton}
-                      >
-                        <Icon name="chevron-left" size={24} color={theme.colors.primary} />
-                      </TouchableOpacity>
-                      
-                      <Text style={[styles.monthHeaderText, { color: theme.colors.onBackground }]}>
-                        {formatMonthYear(currentMonth)}
-                      </Text>
-                      
-                      <TouchableOpacity
-                        onPress={() => {
-                          const nextMonthDate = new Date(currentMonth);
-                          nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
-                          // console.log('Custom next arrow pressed, new month:', nextMonthDate.toISOString());
-                          setCurrentMonth(nextMonthDate); // Triggers useEffect for fetchMarkedDates
-                          analyticsService.logEvent('calendar_month_changed_by_arrow', {
-                            direction: 'next',
-                            year: nextMonthDate.getFullYear(),
-                            month: nextMonthDate.getMonth() + 1,
-                          });
-                        }}
-                        style={styles.arrowButton}
-                      >
-                        <Icon name="chevron-right" size={24} color={theme.colors.primary} />
-                      </TouchableOpacity>
-                    </View>
-                    
-                    <View style={styles.weekdayHeaderContainer}>
-                      {turkishDaysShort.map((day, index) => (
-                        <Text 
-                          key={index} 
-                          style={[styles.weekdayHeaderText, { color: theme.colors.onSurface }]}
-                        >
-                          {day}
-                        </Text>
-                      ))}
-                    </View>
+              customHeader={() => (
+                <View>
+                  <View style={styles.monthHeaderContainer}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const prevMonthDate = new Date(currentMonth);
+                        prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
+                        // console.log('Custom prev arrow pressed, new month:', prevMonthDate.toISOString());
+                        setCurrentMonth(prevMonthDate); // Triggers useEffect for fetchMarkedDates
+                        analyticsService.logEvent('calendar_month_changed_by_arrow', {
+                          direction: 'previous',
+                          year: prevMonthDate.getFullYear(),
+                          month: prevMonthDate.getMonth() + 1,
+                        });
+                      }}
+                      style={styles.arrowButton}
+                    >
+                      <Icon name="chevron-left" size={24} color={theme.colors.primary} />
+                    </TouchableOpacity>
+
+                    <Text style={[styles.monthHeaderText, { color: theme.colors.onBackground }]}>
+                      {formatMonthYear(currentMonth)}
+                    </Text>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        const nextMonthDate = new Date(currentMonth);
+                        nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+                        // console.log('Custom next arrow pressed, new month:', nextMonthDate.toISOString());
+                        setCurrentMonth(nextMonthDate); // Triggers useEffect for fetchMarkedDates
+                        analyticsService.logEvent('calendar_month_changed_by_arrow', {
+                          direction: 'next',
+                          year: nextMonthDate.getFullYear(),
+                          month: nextMonthDate.getMonth() + 1,
+                        });
+                      }}
+                      style={styles.arrowButton}
+                    >
+                      <Icon name="chevron-right" size={24} color={theme.colors.primary} />
+                    </TouchableOpacity>
                   </View>
-                );
-              }}            />
+
+                  <View style={styles.weekdayHeaderContainer}>
+                    {turkishDaysShort.map((day, index) => (
+                      <Text
+                        key={index}
+                        style={[styles.weekdayHeaderText, { color: theme.colors.onSurface }]}
+                      >
+                        {day}
+                      </Text>
+                    ))}
+                  </View>
+                </View>
+              )}
+            />
           </ThemedCard>
 
           {/* Stats Cards */}
@@ -530,7 +551,7 @@ const EnhancedCalendarViewScreen: React.FC = () => {
                   {formatDate(selectedDate)}
                 </Text>
               </View>
-              
+
               {isLoading ? (
                 <ActivityIndicator
                   size="small"
@@ -539,7 +560,10 @@ const EnhancedCalendarViewScreen: React.FC = () => {
                 />
               ) : selectedEntry ? (
                 <TouchableOpacity onPress={handleViewEntry} style={styles.previewContent}>
-                  <Text style={[styles.previewText, { color: theme.colors.onSurfaceVariant }]} numberOfLines={3}>
+                  <Text
+                    style={[styles.previewText, { color: theme.colors.onSurfaceVariant }]}
+                    numberOfLines={3}
+                  >
                     {selectedEntry.statements.join('\n')}
                   </Text>
                   <View style={styles.previewFooter}>
@@ -575,14 +599,21 @@ const EnhancedCalendarViewScreen: React.FC = () => {
               <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
             </View>
           )}
-          
+
           {/* Calendar Guide */}
           <ThemedCard style={styles.guideCard} elevation="sm">
             <View style={styles.guideContent}>
-              <Icon name="information-outline" size={20} color={theme.colors.secondary} style={styles.guideIcon} />
+              <Icon
+                name="information-outline"
+                size={20}
+                color={theme.colors.secondary}
+                style={styles.guideIcon}
+              />
               <Text style={[styles.guideText, { color: theme.colors.onSurface }]}>
                 <Text style={{ fontWeight: 'bold' }}>•</Text> Noktalı günler şükür notları içerir.
-                {"\n"}<Text style={{ fontWeight: 'bold' }}>•</Text> Bir tarihe tıklayarak not detaylarını görüntüleyebilirsiniz.
+                {'\n'}
+                <Text style={{ fontWeight: 'bold' }}>•</Text> Bir tarihe tıklayarak not detaylarını
+                görüntüleyebilirsiniz.
               </Text>
             </View>
           </ThemedCard>

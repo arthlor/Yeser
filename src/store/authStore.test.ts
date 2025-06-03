@@ -3,6 +3,7 @@ import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 // Removed unused import: EmailPasswordCredentials
 import * as authService from '../services/authService';
+
 import useAuthStore from './authStore';
 
 // Mock the authService
@@ -43,9 +44,7 @@ const MOCK_SESSION = {
   refresh_token: 'mock-refresh',
 };
 
-let authCallback:
-  | ((event: string, session: typeof MOCK_SESSION | null) => void)
-  | undefined;
+let authCallback: ((event: string, session: typeof MOCK_SESSION | null) => void) | undefined;
 let globalUnsubscribeMock = jest.fn();
 let store: typeof useAuthStore;
 
@@ -74,7 +73,7 @@ describe('useAuthStore', () => {
     authCallback = undefined;
     globalUnsubscribeMock.mockClear();
 
-    mockOnAuthStateChange.mockImplementation(callbackFn => {
+    mockOnAuthStateChange.mockImplementation((callbackFn) => {
       authCallback = callbackFn;
       return { unsubscribe: globalUnsubscribeMock };
     });
@@ -88,9 +87,7 @@ describe('useAuthStore', () => {
 
   it('should have correct initial state', () => {
     const state = store.getState(); // Use the store instance from beforeEach
-    expect(state.isAuthenticated).toBe(
-      AUTH_STORE_INITIAL_STATE.isAuthenticated
-    );
+    expect(state.isAuthenticated).toBe(AUTH_STORE_INITIAL_STATE.isAuthenticated);
     expect(state.user).toBe(AUTH_STORE_INITIAL_STATE.user);
     expect(state.isLoading).toBe(AUTH_STORE_INITIAL_STATE.isLoading);
     expect(state.error).toBe(AUTH_STORE_INITIAL_STATE.error);
@@ -129,8 +126,7 @@ describe('useAuthStore', () => {
       mockGetCurrentSession.mockResolvedValueOnce(MOCK_SESSION);
       await useAuthStore.getState().initializeAuth();
 
-      const { isAuthenticated, user, isLoading, error } =
-        useAuthStore.getState();
+      const { isAuthenticated, user, isLoading, error } = useAuthStore.getState();
       expect(mockGetCurrentSession).toHaveBeenCalledTimes(1);
       expect(isAuthenticated).toBe(true);
       expect(user).toEqual(MOCK_USER);
@@ -143,8 +139,7 @@ describe('useAuthStore', () => {
       mockGetCurrentSession.mockResolvedValueOnce(null);
       await useAuthStore.getState().initializeAuth();
 
-      const { isAuthenticated, user, isLoading, error } =
-        useAuthStore.getState();
+      const { isAuthenticated, user, isLoading, error } = useAuthStore.getState();
       expect(mockGetCurrentSession).toHaveBeenCalledTimes(1);
       expect(isAuthenticated).toBe(false);
       expect(user).toBeNull();
@@ -158,8 +153,7 @@ describe('useAuthStore', () => {
       mockGetCurrentSession.mockRejectedValueOnce(new Error(errorMessage));
       await useAuthStore.getState().initializeAuth();
 
-      const { isAuthenticated, user, isLoading, error } =
-        useAuthStore.getState();
+      const { isAuthenticated, user, isLoading, error } = useAuthStore.getState();
       expect(mockGetCurrentSession).toHaveBeenCalledTimes(1);
       expect(isAuthenticated).toBe(false);
       expect(user).toBeNull();
@@ -190,8 +184,7 @@ describe('useAuthStore', () => {
       it('should handle SIGNED_IN event', () => {
         if (!authCallback) throw new Error('Auth callback not set');
         authCallback('SIGNED_IN', MOCK_SESSION);
-        const { isAuthenticated, user, isLoading, error } =
-          useAuthStore.getState();
+        const { isAuthenticated, user, isLoading, error } = useAuthStore.getState();
         expect(isAuthenticated).toBe(true);
         expect(user).toEqual(MOCK_USER);
         expect(isLoading).toBe(false);
@@ -203,8 +196,7 @@ describe('useAuthStore', () => {
         // First sign in, then sign out
         authCallback('SIGNED_IN', MOCK_SESSION);
         authCallback('SIGNED_OUT', null);
-        const { isAuthenticated, user, isLoading, error } =
-          useAuthStore.getState();
+        const { isAuthenticated, user, isLoading, error } = useAuthStore.getState();
         expect(isAuthenticated).toBe(false);
         expect(user).toBeNull();
         expect(isLoading).toBe(false);
@@ -226,8 +218,7 @@ describe('useAuthStore', () => {
       it('should handle INITIAL_SESSION event with session', () => {
         if (!authCallback) throw new Error('Auth callback not set');
         authCallback('INITIAL_SESSION', MOCK_SESSION);
-        const { isAuthenticated, user, isLoading, error } =
-          useAuthStore.getState();
+        const { isAuthenticated, user, isLoading, error } = useAuthStore.getState();
         expect(isAuthenticated).toBe(true);
         expect(user).toEqual(MOCK_USER);
         expect(isLoading).toBe(false);
@@ -237,8 +228,7 @@ describe('useAuthStore', () => {
       it('should handle INITIAL_SESSION event without session', () => {
         if (!authCallback) throw new Error('Auth callback not set');
         authCallback('INITIAL_SESSION', null);
-        const { isAuthenticated, user, isLoading, error } =
-          useAuthStore.getState();
+        const { isAuthenticated, user, isLoading, error } = useAuthStore.getState();
         expect(isAuthenticated).toBe(false);
         expect(user).toBeNull();
         expect(isLoading).toBe(false);
@@ -270,7 +260,7 @@ describe('useAuthStore', () => {
       // Re-implement onAuthStateChange specifically for this second call to return the new mock
       (
         (await import('../services/authService')).onAuthStateChange as jest.Mock
-      ).mockImplementationOnce(cb => {
+      ).mockImplementationOnce((cb) => {
         authCallback = cb; // Capture new callback
         return { unsubscribe: secondListenerUnsubscribeMock };
       });
@@ -296,7 +286,7 @@ describe('useAuthStore', () => {
       // (though the main beforeEach already does this, belt-and-suspenders for this block)
       authCallback = undefined;
       // Re-setup onAuthStateChange listener mock for this block if any test calls initializeAuth
-      mockOnAuthStateChange.mockImplementation(callbackFn => {
+      mockOnAuthStateChange.mockImplementation((callbackFn) => {
         authCallback = callbackFn;
         return { unsubscribe: globalUnsubscribeMock }; // Use the global one, cleared in main beforeEach
       });
@@ -310,9 +300,7 @@ describe('useAuthStore', () => {
       // Clear mocks from initializeAuth if they interfere, e.g., mockGetCurrentSession call count
       mockGetCurrentSession.mockClear();
       if (!authCallback) {
-        throw new Error(
-          'Auth callback was not captured by initializeAuth prior to login test.'
-        );
+        throw new Error('Auth callback was not captured by initializeAuth prior to login test.');
       }
 
       mockSignInWithEmail.mockResolvedValueOnce({
@@ -373,7 +361,7 @@ describe('useAuthStore', () => {
       });
       authCallback = undefined;
       // Setup onAuthStateChange listener mock for capturing the callback
-      mockOnAuthStateChange.mockImplementation(callbackFn => {
+      mockOnAuthStateChange.mockImplementation((callbackFn) => {
         authCallback = callbackFn;
         return { unsubscribe: globalUnsubscribeMock };
       });
@@ -395,9 +383,7 @@ describe('useAuthStore', () => {
 
       // 3. Call signUpWithEmail action
       // Action will set isLoading to true
-      const signUpPromise = store
-        .getState()
-        .signUpWithEmail(MOCK_USER_CREDENTIALS);
+      const signUpPromise = store.getState().signUpWithEmail(MOCK_USER_CREDENTIALS);
       // Immediately after calling, before promise resolves, action sets isLoading to true.
       expect(store.getState().isLoading).toBe(true);
       await signUpPromise;
@@ -415,9 +401,7 @@ describe('useAuthStore', () => {
       if (authCallback) {
         authCallback('SIGNED_IN', MOCK_SESSION);
       } else {
-        throw new Error(
-          'Auth callback not captured for SIGNED_IN event simulation'
-        );
+        throw new Error('Auth callback not captured for SIGNED_IN event simulation');
       }
 
       // 6. Assert final state after the explicit listener call (should largely be the same if already updated)
@@ -457,7 +441,7 @@ describe('useAuthStore', () => {
         error: null,
       });
       authCallback = undefined;
-      mockOnAuthStateChange.mockImplementation(callbackFn => {
+      mockOnAuthStateChange.mockImplementation((callbackFn) => {
         authCallback = callbackFn;
         // Simulate immediate INITIAL_SESSION event with a valid session upon listener setup
         // This aligns with Supabase client behavior and ensures the listener sets the state.
@@ -497,9 +481,7 @@ describe('useAuthStore', () => {
       if (authCallback) {
         authCallback('SIGNED_OUT', null);
       } else {
-        throw new Error(
-          'Auth callback not captured for SIGNED_OUT event simulation'
-        );
+        throw new Error('Auth callback not captured for SIGNED_OUT event simulation');
       }
 
       expect(store.getState().isLoading).toBe(false);

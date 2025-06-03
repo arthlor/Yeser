@@ -1,5 +1,6 @@
-import { Platform, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { Platform, Alert } from 'react-native';
+
 import {
   requestNotificationPermissions,
   scheduleDailyReminder,
@@ -40,13 +41,18 @@ describe('notificationService', () => {
     it('should setup channel and return true on Android', async () => {
       Platform.OS = 'android';
       const result = await requestNotificationPermissions();
-      expect(mockExpoNotifications.setNotificationChannelAsync).toHaveBeenCalledWith('default', expect.any(Object));
+      expect(mockExpoNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
+        'default',
+        expect.any(Object)
+      );
       expect(result).toBe(true);
     });
 
     it('should return true on iOS if permissions already granted', async () => {
       Platform.OS = 'ios';
-      mockExpoNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' } as Notifications.NotificationPermissionsStatus);
+      mockExpoNotifications.getPermissionsAsync.mockResolvedValue({
+        status: 'granted',
+      } as Notifications.NotificationPermissionsStatus);
       const result = await requestNotificationPermissions();
       expect(mockExpoNotifications.requestPermissionsAsync).not.toHaveBeenCalled();
       expect(result).toBe(true);
@@ -54,8 +60,12 @@ describe('notificationService', () => {
 
     it('should request and return true on iOS if permissions granted by user', async () => {
       Platform.OS = 'ios';
-      mockExpoNotifications.getPermissionsAsync.mockResolvedValue({ status: 'undetermined' } as Notifications.NotificationPermissionsStatus);
-      mockExpoNotifications.requestPermissionsAsync.mockResolvedValue({ status: 'granted' } as Notifications.NotificationPermissionsStatus);
+      mockExpoNotifications.getPermissionsAsync.mockResolvedValue({
+        status: 'undetermined',
+      } as Notifications.NotificationPermissionsStatus);
+      mockExpoNotifications.requestPermissionsAsync.mockResolvedValue({
+        status: 'granted',
+      } as Notifications.NotificationPermissionsStatus);
       const result = await requestNotificationPermissions();
       expect(mockExpoNotifications.requestPermissionsAsync).toHaveBeenCalled();
       expect(result).toBe(true);
@@ -63,8 +73,12 @@ describe('notificationService', () => {
 
     it('should request, alert, and return false on iOS if permissions denied by user', async () => {
       Platform.OS = 'ios';
-      mockExpoNotifications.getPermissionsAsync.mockResolvedValue({ status: 'undetermined' } as Notifications.NotificationPermissionsStatus);
-      mockExpoNotifications.requestPermissionsAsync.mockResolvedValue({ status: 'denied' } as Notifications.NotificationPermissionsStatus);
+      mockExpoNotifications.getPermissionsAsync.mockResolvedValue({
+        status: 'undetermined',
+      } as Notifications.NotificationPermissionsStatus);
+      mockExpoNotifications.requestPermissionsAsync.mockResolvedValue({
+        status: 'denied',
+      } as Notifications.NotificationPermissionsStatus);
       const result = await requestNotificationPermissions();
       expect(mockExpoNotifications.requestPermissionsAsync).toHaveBeenCalled();
       expect(Alert.alert).toHaveBeenCalledWith('İzin Gerekli', expect.any(String));
@@ -107,7 +121,9 @@ describe('notificationService', () => {
     });
 
     it('should alert and return null if scheduling fails', async () => {
-      mockExpoNotifications.scheduleNotificationAsync.mockRejectedValue(new Error('Scheduling failed'));
+      mockExpoNotifications.scheduleNotificationAsync.mockRejectedValue(
+        new Error('Scheduling failed')
+      );
       const notificationId = await scheduleDailyReminder(
         reminderDetails.hour,
         reminderDetails.minute,
@@ -126,7 +142,9 @@ describe('notificationService', () => {
     });
 
     it('should alert if cancelling fails', async () => {
-      mockExpoNotifications.cancelAllScheduledNotificationsAsync.mockRejectedValue(new Error('Cancelling failed'));
+      mockExpoNotifications.cancelAllScheduledNotificationsAsync.mockRejectedValue(
+        new Error('Cancelling failed')
+      );
       await cancelAllScheduledNotifications();
       expect(Alert.alert).toHaveBeenCalledWith('Hata', 'Hatırlatıcılar iptal edilemedi.');
     });

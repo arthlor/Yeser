@@ -2,8 +2,9 @@
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
-import type { EmailPasswordCredentials } from '../services/authService';
 import * as authService from '../services/authService'; // Import all from authService
+
+import type { EmailPasswordCredentials } from '../services/authService';
 
 // Define the state interface for authentication
 export interface AuthState {
@@ -44,38 +45,33 @@ const useAuthStore = create<AuthState>((set, _get) => ({
       authListenerSubscription?.unsubscribe();
 
       // Subscribe to auth state changes
-      authListenerSubscription = authService.onAuthStateChange(
-        (event, session) => {
-          console.log('Auth event:', event, session);
-          if (
-            (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') &&
-            session?.user
-          ) {
-            set({
-              isAuthenticated: true,
-              user: session.user,
-              isLoading: false,
-              error: null,
-            });
-          } else if (event === 'SIGNED_OUT') {
-            set({
-              isAuthenticated: false,
-              user: null,
-              isLoading: false,
-              error: null,
-            });
-          } else if (event === 'USER_UPDATED' && session?.user) {
-            set({ user: session.user });
-          } else if (event === 'PASSWORD_RECOVERY') {
-            // Handle password recovery if needed
-          } else if (event === 'TOKEN_REFRESHED') {
-            // Handle token refresh if needed
-          } else if (event === 'INITIAL_SESSION' && !session) {
-            // No active session on startup
-            set({ isAuthenticated: false, user: null, isLoading: false });
-          }
+      authListenerSubscription = authService.onAuthStateChange((event, session) => {
+        console.log('Auth event:', event, session);
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+          set({
+            isAuthenticated: true,
+            user: session.user,
+            isLoading: false,
+            error: null,
+          });
+        } else if (event === 'SIGNED_OUT') {
+          set({
+            isAuthenticated: false,
+            user: null,
+            isLoading: false,
+            error: null,
+          });
+        } else if (event === 'USER_UPDATED' && session?.user) {
+          set({ user: session.user });
+        } else if (event === 'PASSWORD_RECOVERY') {
+          // Handle password recovery if needed
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Handle token refresh if needed
+        } else if (event === 'INITIAL_SESSION' && !session) {
+          // No active session on startup
+          set({ isAuthenticated: false, user: null, isLoading: false });
         }
-      );
+      });
     } catch (e: unknown) {
       console.error('Error in initializeAuth:', e);
       let errorMessage = 'Failed to initialize auth';
@@ -98,7 +94,7 @@ const useAuthStore = create<AuthState>((set, _get) => ({
     }
   },
 
-  loginWithEmail: async credentials => {
+  loginWithEmail: async (credentials) => {
     set({ isLoading: true, error: null });
     const { user, error } = await authService.signInWithEmail(credentials);
     if (user && !error) {
@@ -114,16 +110,14 @@ const useAuthStore = create<AuthState>((set, _get) => ({
     }
   },
 
-  signUpWithEmail: async credentials => {
+  signUpWithEmail: async (credentials) => {
     set({ isLoading: true, error: null });
     const { user, error } = await authService.signUpWithEmail(credentials);
     if (user && !error) {
       // State will be updated by onAuthStateChange listener for SIGNED_IN (if auto-confirm is on)
       // Or user needs to confirm email
       // set({ isLoading: false, error: null }); // User might not be authenticated yet
-      console.log(
-        'Sign up successful, user needs to confirm email or is auto-confirmed.'
-      );
+      console.log('Sign up successful, user needs to confirm email or is auto-confirmed.');
       set({ isLoading: false }); // Let onAuthStateChange handle user state
     } else {
       set({ isLoading: false, error: error?.message || 'Sign up failed' });
@@ -154,11 +148,17 @@ const useAuthStore = create<AuthState>((set, _get) => ({
     }
   },
 
-  setLoading: loading => set({ isLoading: loading }),
+  setLoading: (loading) => {
+    set({ isLoading: loading });
+  },
 
-  setError: errorMessage => set({ error: errorMessage, isLoading: false }),
+  setError: (errorMessage) => {
+    set({ error: errorMessage, isLoading: false });
+  },
 
-  clearError: () => set({ error: null }),
+  clearError: () => {
+    set({ error: null });
+  },
 }));
 
 export default useAuthStore;

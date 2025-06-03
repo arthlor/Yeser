@@ -1,91 +1,164 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import ThemedCard from '@/components/ThemedCard';
+
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 
 interface DailyEntryDatePickerProps {
   entryDate: Date;
   onPressChangeDate: () => void;
+  onPrevDay?: () => void;
+  onNextDay?: () => void;
 }
 
-const DailyEntryDatePicker: React.FC<DailyEntryDatePickerProps> = ({ entryDate, onPressChangeDate }) => {
+const DailyEntryDatePicker: React.FC<DailyEntryDatePickerProps> = ({
+  entryDate,
+  onPressChangeDate,
+}) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  const formattedDate = entryDate.toLocaleDateString('tr-TR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  });
+  const formatMainDate = (date: Date) =>
+    date.toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+    });
+
+  const formatYear = (date: Date) => {
+    const currentYear = new Date().getFullYear();
+    const dateYear = date.getFullYear();
+    return dateYear !== currentYear ? dateYear.toString() : '';
+  };
+
+  const isToday = () => {
+    const today = new Date();
+    return entryDate.toDateString() === today.toDateString();
+  };
+
+  const isYesterday = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return entryDate.toDateString() === yesterday.toDateString();
+  };
+
+  const getDateLabel = () => {
+    if (isToday()) return 'Bugün';
+    if (isYesterday()) return 'Dün';
+    return entryDate.toLocaleDateString('tr-TR', { weekday: 'long' });
+  };
+
+  const year = formatYear(entryDate);
 
   return (
-    <View style={styles.dateCardContainer}>
-      <ThemedCard style={styles.dateCard}>
-        <View style={styles.dateInfoContainer}>
-          <Icon name="calendar-month" size={28} color={theme.colors.primary} style={styles.dateIcon} />
-          <View>
-            <Text style={styles.dateLabel}>Seçili Tarih</Text>
-            <Text style={styles.dateText}>{formattedDate}</Text>
+    <View style={styles.container}>
+      <TouchableOpacity
+        onPress={onPressChangeDate}
+        style={[styles.dateCard, isToday() && styles.todayCard]}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={`Tarih seç: ${getDateLabel()}, ${formatMainDate(entryDate)}`}
+      >
+        <View style={styles.dateContent}>
+          <View style={styles.mainContent}>
+            <View style={styles.dateInfo}>
+              <Text style={[styles.dateLabel, isToday() && styles.todayLabel]}>
+                {getDateLabel()}
+              </Text>
+              <View style={styles.dateRow}>
+                <Text style={[styles.mainDate, isToday() && styles.todayMainDate]}>
+                  {formatMainDate(entryDate)}
+                </Text>
+                {year && <Text style={styles.yearText}>{year}</Text>}
+              </View>
+            </View>
+
+            <View style={styles.iconContainer}>
+              <Icon
+                name="calendar-month"
+                size={20}
+                color={isToday() ? theme.colors.primary : theme.colors.onSurfaceVariant}
+              />
+            </View>
           </View>
         </View>
-        <TouchableOpacity onPress={onPressChangeDate} style={styles.changeDateButton}>
-          <Text style={styles.changeDateButtonText}>Tarihi Değiştir</Text>
-          <Icon name="chevron-down" size={20} color={theme.colors.primary} />
-        </TouchableOpacity>
-      </ThemedCard>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    dateCardContainer: {
-      marginBottom: theme.spacing.lg,
-      marginHorizontal: theme.spacing.md, // Consistent with list padding
+    container: {
+      marginHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
     },
     dateCard: {
-      padding: theme.spacing.lg,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '30',
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.shadow,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 2,
+        },
+        android: {
+          elevation: 1,
+        },
+      }),
+    },
+    todayCard: {
+      borderColor: theme.colors.primary + '30',
       backgroundColor: theme.colors.surface,
     },
-    dateInfoContainer: {
+    dateContent: {
+      width: '100%',
+    },
+    mainContent: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
     },
-    dateIcon: {
-      marginRight: theme.spacing.md,
+    dateInfo: {
+      flex: 1,
     },
     dateLabel: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      fontFamily: theme.typography.fontFamilyRegular,
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.colors.onSurfaceVariant,
+      letterSpacing: 0.3,
       marginBottom: 2,
     },
-    dateText: {
-      fontSize: 17,
-      fontWeight: '600',
-      color: theme.colors.text,
-      fontFamily: theme.typography.fontFamilyBold,
-    },
-    changeDateButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.sm,
-      borderRadius: theme.borderRadius.md,
-      backgroundColor: theme.colors.primaryContainer,
-    },
-    changeDateButtonText: {
+    todayLabel: {
       color: theme.colors.primary,
+    },
+    dateRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+    },
+    mainDate: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.colors.onSurface,
+      letterSpacing: -0.2,
+    },
+    todayMainDate: {
+      color: theme.colors.primary,
+    },
+    yearText: {
       fontSize: 14,
       fontWeight: '600',
-      marginRight: theme.spacing.xs,
-      fontFamily: theme.typography.fontFamilyMedium,
+      color: theme.colors.onSurfaceVariant,
+      marginLeft: theme.spacing.sm,
+    },
+    iconContainer: {
+      padding: theme.spacing.xs,
+      opacity: 0.7,
     },
   });
 

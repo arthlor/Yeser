@@ -26,8 +26,7 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
   }
 
   if (Platform.OS === 'ios') {
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync({
@@ -64,13 +63,13 @@ export const scheduleDailyReminder = async (
 
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
-        title: title,
-        body: body,
+        title,
+        body,
         sound: true, // Plays the default sound
       },
       trigger: {
-        hour: hour, // 0-23
-        minute: minute, // 0-59
+        hour, // 0-23
+        minute, // 0-59
         repeats: true, // Daily
         channelId: 'default', // Ensure this matches the channel set up for Android
       },

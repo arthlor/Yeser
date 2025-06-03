@@ -1,62 +1,57 @@
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   LayoutAnimation,
   Platform,
   StyleSheet,
-  Text,
-  TouchableOpacity,
+  StatusBar,
   UIManager,
   View,
   KeyboardAvoidingView,
   Dimensions,
-  StatusBar,
+  Keyboard,
+  Animated,
+  SafeAreaView,
 } from 'react-native';
-
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-
-import { useGratitudeStore } from '@/store/gratitudeStore';
-import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ZodError } from 'zod';
-import GratitudeInputBar from '@/components/GratitudeInputBar';
-import GratitudeStatementItem from '@/components/GratitudeStatementItem';
+
 import DailyEntryHero from '@/components/daily-entries/DailyEntryHero';
-import DailyEntryDatePicker from '@/components/daily-entries/DailyEntryDatePicker';
+import DailyEntryPrompt from '@/components/daily-entries/DailyEntryPrompt';
 import DailyEntryStatementList from '@/components/daily-entries/DailyEntryStatementList';
-import ThemedCard from '@/components/ThemedCard';
+import GratitudeInputBar from '@/components/GratitudeInputBar';
 import { useTheme } from '@/providers/ThemeProvider';
+import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
+import { useGratitudeStore } from '@/store/gratitudeStore';
+import { useProfileStore } from '@/store/profileStore';
 import { AppTheme } from '@/themes/types';
 import { MainAppTabParamList } from '@/types/navigation';
 
+// Added for varied prompts
+import usePromptStore from '@/store/promptStore';
+
+import DailyEntryDatePicker from '../components/daily-entries/DailyEntryDatePicker';
+
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-type DailyEntryScreenRouteProp = RouteProp<
-  MainAppTabParamList,
-  'DailyEntryTab'
->;
+type DailyEntryScreenRouteProp = RouteProp<MainAppTabParamList, 'DailyEntryTab'>;
 
 interface Props {
   route?: DailyEntryScreenRouteProp;
 }
 
 const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
-  const { theme } = useTheme();
+  const { theme, colorMode } = useTheme();
   const styles = createStyles(theme);
+  const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList<string>>(null);
-  const navigation = useNavigation<
-    BottomTabNavigationProp<
-      MainAppTabParamList,
-      'DailyEntryTab'
-    >
-  >();
-  const routeParams = useRoute<DailyEntryScreenRouteProp>().params;
+  const navigation = useNavigation<BottomTabNavigationProp<MainAppTabParamList, 'DailyEntryTab'>>();
+  const routeParams = useRoute<DailyEntryScreenRouteProp>().params || {};
 
   const {
     entries,
@@ -72,11 +67,28 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const [entryDate, setEntryDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [statementInputError, setStatementInputError] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Enhanced animations
+  const keyboardHeightAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const listOpacity = useRef(new Animated.Value(1)).current;
+
+  // Hooks for varied prompts and profile data
+  const { useVariedPrompts, daily_gratitude_goal } = useProfileStore();
+  const {
+    currentPrompt,
+    loading: promptLoading,
+    error: promptError,
+    fetchNewPrompt,
+    resetToDefaultPrompt,
+  } = usePromptStore();
 
   const dateString = entryDate.toISOString().split('T')[0];
   const currentEntry = entries[dateString];
   const statements = currentEntry?.statements || [];
-  const currentEntryId = currentEntry?.id || null;
+  const dailyGoal = daily_gratitude_goal ?? 3; // Default to 3 for minimalism
 
   // Calculate if it's today
   const today = new Date().toISOString().split('T')[0];
@@ -85,6 +97,15 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
   }
+
+  // Entrance animation
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   useEffect(() => {
     const initialDateString = routeParams?.initialDate;
@@ -113,10 +134,97 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     }
   }, [storeError]);
 
+  // Effect for fetching/resetting varied prompt based on date and preference
+  useEffect(() => {
+    if (isToday && useVariedPrompts) {
+      if (!currentPrompt && !promptLoading && !promptError) {
+        fetchNewPrompt();
+      }
+    } else {
+      if (currentPrompt) {
+        resetToDefaultPrompt();
+      }
+    }
+  }, [
+    isToday,
+    useVariedPrompts,
+    fetchNewPrompt,
+    resetToDefaultPrompt,
+    currentPrompt,
+    promptLoading,
+    promptError,
+  ]);
+
+  // Enhanced keyboard handling
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (event) => {
+        const { height } = event.endCoordinates;
+        setKeyboardHeight(height);
+
+        Animated.timing(keyboardHeightAnim, {
+          toValue: height,
+          duration: Platform.OS === 'ios' ? event.duration || 250 : 250,
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      (event) => {
+        setKeyboardHeight(0);
+
+        Animated.timing(keyboardHeightAnim, {
+          toValue: 0,
+          duration: Platform.OS === 'ios' ? event.duration || 250 : 250,
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, [keyboardHeightAnim]);
+
   const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
+      // Smooth transition animation when changing dates
+      Animated.sequence([
+        Animated.timing(listOpacity, {
+          toValue: 0.3,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(listOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
       setEntryDate(selectedDate);
+    }
+  };
+
+  const handlePrevDay = () => {
+    const prevDay = new Date(entryDate);
+    prevDay.setDate(prevDay.getDate() - 1);
+    setEntryDate(prevDay);
+  };
+
+  const handleNextDay = () => {
+    const nextDay = new Date(entryDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    if (nextDay < tomorrow) {
+      setEntryDate(nextDay);
     }
   };
 
@@ -124,19 +232,25 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     const validationResult = gratitudeStatementSchema.safeParse(newStatementText);
 
     if (!validationResult.success) {
-      const errorMessage = (validationResult.error as ZodError).errors[0]?.message || 'Geçersiz ifade.';
+      const errorMessage =
+        (validationResult.error as ZodError).errors[0]?.message || 'Geçersiz ifade.';
       setStatementInputError(errorMessage);
-      // Alert.alert('Geçersiz İfade', errorMessage); // Optionally keep alert or rely on UI error display
       return;
     }
 
-    setStatementInputError(null); // Clear any previous error
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setStatementInputError(null);
+    LayoutAnimation.configureNext({
+      duration: 300,
+      create: { type: 'easeInEaseOut', property: 'opacity' },
+      update: { type: 'easeInEaseOut' },
+    });
+
     const result = await storeAddStatement(dateString, validationResult.data);
     if (result) {
-      requestAnimationFrame(() => {
+      // Smooth scroll to new item
+      setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
-      });
+      }, 100);
     }
   };
 
@@ -148,8 +262,9 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     const validationResult = gratitudeStatementSchema.safeParse(updatedText);
 
     if (!validationResult.success) {
-      const errorMessage = (validationResult.error as ZodError).errors[0]?.message || 'Geçersiz ifade.';
-      Alert.alert('Geçersiz İfade', errorMessage); // For now, use Alert for editing errors
+      const errorMessage =
+        (validationResult.error as ZodError).errors[0]?.message || 'Geçersiz ifade.';
+      Alert.alert('Geçersiz İfade', errorMessage);
       return;
     }
 
@@ -167,11 +282,15 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       'İfadeyi Sil',
       'Bu şükran ifadesini silmek istediğinizden emin misiniz?',
       [
-        { text: 'Hayır', style: 'cancel' },
+        { text: 'İptal', style: 'cancel' },
         {
-          text: 'Evet, Sil',
+          text: 'Sil',
           onPress: async () => {
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            LayoutAnimation.configureNext({
+              duration: 300,
+              delete: { type: 'easeInEaseOut', property: 'opacity' },
+              update: { type: 'easeInEaseOut' },
+            });
             await storeRemoveStatement(dateString, index);
           },
           style: 'destructive',
@@ -181,103 +300,166 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     );
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchEntry(dateString);
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor={theme.colors.background} barStyle="dark-content" />
-      
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        <DailyEntryHero isToday={isToday} statementCount={statements.length} />
-        <DailyEntryDatePicker entryDate={entryDate} onPressChangeDate={() => setShowDatePicker(true)} />
-        <DailyEntryStatementList
-          flatListRef={flatListRef}
-          statements={statements}
-          editingStatementIndex={editingStatementIndex}
-          onEditStatement={handleEditStatement}
-          onSaveEditedStatement={handleSaveEditedStatement}
-          onCancelEditingStatement={handleCancelEditingStatement}
-          onDeleteStatement={handleDeleteStatement}
-        />
-        
+    <SafeAreaView style={styles.container}>
+      <StatusBar
+        backgroundColor={theme.colors.background}
+        barStyle={colorMode === 'dark' ? 'light-content' : 'dark-content'}
+      />
+
+      <Animated.View style={[styles.mainContainer, { opacity: fadeAnim }]}>
+        {/* Compact Header with Date Picker */}
+        <View style={styles.headerContainer}>
+          <DailyEntryDatePicker
+            entryDate={entryDate}
+            onPressChangeDate={() => {
+              setShowDatePicker(true);
+            }}
+            onPrevDay={handlePrevDay}
+            onNextDay={handleNextDay}
+          />
+        </View>
+
+        {/* Main Content */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+          {/* Statement List with enhanced animations */}
+          <Animated.View style={[styles.listContainer, { opacity: listOpacity }]}>
+            <DailyEntryStatementList
+              flatListRef={flatListRef}
+              statements={statements}
+              editingStatementIndex={editingStatementIndex}
+              onEditStatement={handleEditStatement}
+              onSaveEditedStatement={handleSaveEditedStatement}
+              onCancelEditingStatement={handleCancelEditingStatement}
+              onDeleteStatement={handleDeleteStatement}
+              isToday={isToday}
+              onRefresh={handleRefresh}
+              isRefreshing={isRefreshing}
+              listHeaderComponent={
+                <View style={styles.listHeader}>
+                  {/* Compact Hero Section */}
+                  <DailyEntryHero
+                    isToday={isToday}
+                    statementCount={statements.length}
+                    dailyGoal={dailyGoal}
+                  />
+                </View>
+              }
+              listFooterComponent={
+                <View style={styles.listFooter}>
+                  {/* Daily Prompt */}
+                  <DailyEntryPrompt
+                    promptText={currentPrompt?.prompt_text_tr ?? null}
+                    isLoading={promptLoading}
+                    error={promptError}
+                    isToday={isToday}
+                    useVariedPrompts={useVariedPrompts ?? false}
+                    onRefreshPrompt={fetchNewPrompt}
+                  />
+                  {/* Safe area for input */}
+                  <View style={{ height: 100 + insets.bottom }} />
+                </View>
+              }
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+            />
+          </Animated.View>
+
+          {/* Enhanced Input Bar with better positioning */}
+          <Animated.View
+            style={[
+              styles.inputBarContainer,
+              {
+                paddingBottom: Math.max(insets.bottom, 16),
+                transform: [
+                  {
+                    translateY: keyboardHeightAnim.interpolate({
+                      inputRange: [0, 300],
+                      outputRange: [0, -keyboardHeight],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <GratitudeInputBar
+              onSubmit={handleAddStatement}
+              error={statementInputError}
+              placeholder={isToday ? 'Bugün neye minnettarsın?' : 'O gün neye minnettardın?'}
+            />
+          </Animated.View>
+        </KeyboardAvoidingView>
+
+        {/* Date Picker Modal */}
         {showDatePicker && (
           <DateTimePicker
             value={entryDate}
             mode="date"
-            display="spinner"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleDateChange}
+            maximumDate={new Date()} // Prevent future dates
           />
         )}
-        
-        <GratitudeInputBar onSubmit={handleAddStatement} error={statementInputError} />
-      </KeyboardAvoidingView>
-    </View>
+      </Animated.View>
+    </SafeAreaView>
   );
 };
 
-const createStyles = (theme: AppTheme) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  listContentContainer: {
-    paddingBottom: theme.spacing.xxl + 60, // Extra space for input bar
-  },
-  listContentContainerEmpty: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-
-  // Statement Items
-  statementWrapper: {
-    marginBottom: theme.spacing.sm,
-  },
-  itemSeparator: {
-    height: theme.spacing.xs,
-  },
-
-  // Empty State
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.xxl,
-    minHeight: screenHeight * 0.4,
-  },
-  emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: `${theme.colors.textSecondary}10`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.xl,
-  },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  emptyDescription: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 280,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    mainContainer: {
+      flex: 1,
+    },
+    headerContainer: {
+      paddingTop: theme.spacing.sm,
+      backgroundColor: theme.colors.background,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    listContainer: {
+      flex: 1,
+    },
+    listHeader: {
+      paddingBottom: theme.spacing.sm,
+    },
+    listFooter: {
+      paddingTop: theme.spacing.md,
+    },
+    inputBarContainer: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: theme.colors.background,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.outline + '30',
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+  });
 
 export default EnhancedDailyEntryScreen;

@@ -9,8 +9,12 @@ export const rawGratitudeEntrySchema = z.object({
   // statements are stored as JSONB in the DB, typically fetched as a parsed object or array by Supabase client.
   // Assuming it's an array of strings post-fetch.
   statements: z.array(z.string().min(1, 'Statement cannot be empty')),
-  created_at: z.string().datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
-  updated_at: z.string().datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
+  created_at: z
+    .string()
+    .datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
+  updated_at: z
+    .string()
+    .datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
 });
 
 export type RawGratitudeEntry = z.infer<typeof rawGratitudeEntrySchema>;
@@ -21,10 +25,16 @@ export type RawGratitudeEntry = z.infer<typeof rawGratitudeEntrySchema>;
 export const gratitudeEntrySchema = z.object({
   id: z.string().uuid('Invalid UUID format for id'),
   user_id: z.string().uuid('Invalid UUID format for user_id'),
-  statements: z.array(z.string().min(1, 'Statement cannot be empty')).min(1, 'At least one statement is required'),
+  statements: z
+    .array(z.string().min(1, 'Statement cannot be empty'))
+    .min(1, 'At least one statement is required'),
   entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format, expected YYYY-MM-DD'),
-  created_at: z.string().datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
-  updated_at: z.string().datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
+  created_at: z
+    .string()
+    .datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
+  updated_at: z
+    .string()
+    .datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
 });
 
 export type GratitudeEntry = z.infer<typeof gratitudeEntrySchema>;

@@ -1,28 +1,18 @@
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import React, { useState, useEffect } from 'react';
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Switch from 'toggle-switch-react-native';
 
-import ThemedCard from '../ThemedCard'; // Assuming ThemedCard is in src/components/
 import { useTheme } from '../../providers/ThemeProvider';
 import { parseTimeStringToValidDate } from '../../utils/dateUtils';
+import ThemedCard from '../ThemedCard'; // Assuming ThemedCard is in src/components/
+
 import type { AppTheme } from '../../themes/types';
 
 interface DailyReminderSettingsProps {
   reminderEnabled: boolean;
   reminderTime: string | null | undefined;
-  onUpdateSettings: (settings: {
-    reminder_enabled: boolean;
-    reminder_time: string | null;
-  }) => void;
+  onUpdateSettings: (settings: { reminder_enabled: boolean; reminder_time: string | null }) => void;
 }
 
 const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
@@ -34,9 +24,7 @@ const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
   const styles = createStyles(theme);
 
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedTime, setSelectedTime] = useState(() =>
-    parseTimeStringToValidDate(reminderTime)
-  );
+  const [selectedTime, setSelectedTime] = useState(() => parseTimeStringToValidDate(reminderTime));
 
   useEffect(() => {
     setSelectedTime(parseTimeStringToValidDate(reminderTime));
@@ -55,7 +43,7 @@ const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
       const formattedTime = `${hours}:${minutes}:${seconds}`;
 
       onUpdateSettings({
-        reminder_enabled: true, 
+        reminder_enabled: true,
         reminder_time: formattedTime,
       });
     }
@@ -74,7 +62,7 @@ const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
     } else {
       onUpdateSettings({
         reminder_enabled: false,
-        reminder_time: null, 
+        reminder_time: null,
       });
     }
   };
@@ -101,22 +89,27 @@ const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
       {reminderEnabled && (
         <TouchableOpacity
           style={styles.timePickerButton}
-          onPress={() => setShowTimePicker(true)}
+          onPress={() => {
+            setShowTimePicker(true);
+          }}
+          accessibilityLabel={`Current reminder time: ${formattedSelectedTime}`}
+          accessibilityHint="Tap to change reminder time"
+          accessibilityRole="button"
         >
-          <Text style={styles.timePickerButtonText}>
-            Saat: {formattedSelectedTime}
-          </Text>
+          <Text style={styles.timePickerButtonText}>Saat: {formattedSelectedTime}</Text>
         </TouchableOpacity>
       )}
       {showTimePicker && (
         <DateTimePicker
           value={selectedTime}
           mode="time"
-          is24Hour={true}
+          is24Hour
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={onTimeChange}
-          textColor={theme.colors.text} 
-          accentColor={theme.colors.primary} 
+          textColor={theme.colors.text}
+          accentColor={theme.colors.primary}
+          accessibilityLabel="Select reminder time"
+          accessibilityHint="Choose the time for daily reminders"
         />
       )}
     </ThemedCard>
@@ -132,7 +125,7 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: theme.spacing.medium, 
+      paddingVertical: theme.spacing.medium,
     },
     settingText: {
       fontSize: 16,
@@ -143,13 +136,13 @@ const createStyles = (theme: AppTheme) =>
       marginTop: theme.spacing.small,
       paddingVertical: theme.spacing.small,
       paddingHorizontal: theme.spacing.medium,
-      backgroundColor: theme.colors.surface, 
+      backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.medium,
-      alignSelf: 'flex-start', 
+      alignSelf: 'flex-start',
     },
     timePickerButtonText: {
       fontSize: 16,
-      color: theme.colors.primary, 
+      color: theme.colors.primary,
       fontFamily: theme.typography.fontFamilyRegular,
     },
   });

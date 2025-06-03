@@ -1,15 +1,10 @@
 import React from 'react';
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import ThemedCard from '../ThemedCard';
 import { useTheme } from '../../providers/ThemeProvider';
+import ThemedCard from '../ThemedCard';
+
 import type { AppTheme } from '../../themes/types';
 
 interface AccountSettingsProps {
@@ -22,18 +17,14 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ onLogout, username })
   const styles = createStyles(theme);
 
   const handleLogoutPress = () => {
-    Alert.alert(
-      'Çıkış Yap',
-      'Hesabınızdan çıkış yapmak istediğinize emin misiniz?',
-      [
-        { text: 'İptal', style: 'cancel' },
-        {
-          text: 'Çıkış Yap',
-          style: 'destructive',
-          onPress: onLogout,
-        },
-      ]
-    );
+    Alert.alert('Çıkış Yap', 'Hesabınızdan çıkış yapmak istediğinize emin misiniz?', [
+      { text: 'İptal', style: 'cancel' },
+      {
+        text: 'Çıkış Yap',
+        style: 'destructive',
+        onPress: onLogout,
+      },
+    ]);
   };
 
   return (

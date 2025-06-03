@@ -1,6 +1,4 @@
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
@@ -18,6 +16,7 @@ import { updateProfile } from '../api/profileApi';
 import ThemedButton from '../components/ThemedButton';
 import ThemedCard from '../components/ThemedCard';
 import { useTheme } from '../providers/ThemeProvider';
+import { updateProfileSchema } from '../schemas/profileSchema';
 import { analyticsService } from '../services/analyticsService';
 import {
   cancelAllScheduledNotifications,
@@ -25,10 +24,10 @@ import {
   scheduleDailyReminder,
 } from '../services/notificationService';
 import { useProfileStore } from '../store/profileStore';
-import type { Profile } from '../schemas/profileSchema';
 import { AppTheme } from '../themes/types';
 import { hapticFeedback } from '../utils/hapticFeedback';
-import { updateProfileSchema } from '../schemas/profileSchema';
+
+import type { Profile } from '../schemas/profileSchema';
 
 /**
  * EnhancedReminderSettingsScreen provides an improved UI/UX for reminder settings.
@@ -39,26 +38,24 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  const storeReminderEnabled = useProfileStore(state => state.reminder_enabled);
-  const storeReminderTime = useProfileStore(state => state.reminder_time);
-  const setProfile = useProfileStore(state => state.setProfile);
-  const setProfileLoading = useProfileStore(state => state.setLoading);
-  const storeDailyGratitudeGoal = useProfileStore(state => state.daily_gratitude_goal);
+  const storeReminderEnabled = useProfileStore((state) => state.reminder_enabled);
+  const storeReminderTime = useProfileStore((state) => state.reminder_time);
+  const setProfile = useProfileStore((state) => state.setProfile);
+  const setProfileLoading = useProfileStore((state) => state.setLoading);
+  const storeDailyGratitudeGoal = useProfileStore((state) => state.daily_gratitude_goal);
 
   const [reminderEnabled, setReminderEnabled] = useState(storeReminderEnabled);
   const [reminderTime, setReminderTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [dailyGratitudeGoal, setDailyGratitudeGoal] = useState<string>(storeDailyGratitudeGoal?.toString() ?? '3');
+  const [dailyGratitudeGoal, setDailyGratitudeGoal] = useState<string>(
+    storeDailyGratitudeGoal?.toString() ?? '3'
+  );
 
-  const thumbColorValue = reminderEnabled
-    ? theme.colors.onPrimary
-    : theme.colors.surface;
+  const thumbColorValue = reminderEnabled ? theme.colors.onPrimary : theme.colors.surface;
 
   useEffect(() => {
     if (storeReminderTime) {
-      const [hours, minutes, seconds] = storeReminderTime
-        .split(':')
-        .map(Number);
+      const [hours, minutes, seconds] = storeReminderTime.split(':').map(Number);
       const initialTime = new Date();
       initialTime.setHours(hours, minutes, seconds);
       setReminderTime(initialTime);
@@ -72,10 +69,7 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
     analyticsService.logScreenView('EnhancedReminderSettingsScreen');
   }, []);
 
-  const handleTimeChange = (
-    event: DateTimePickerEvent,
-    selectedDate?: Date
-  ) => {
+  const handleTimeChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowTimePicker(Platform.OS === 'ios');
     if (selectedDate) {
       setReminderTime(selectedDate);
@@ -90,11 +84,11 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
     }
   };
 
-  const formatTime = (date: Date): string => {
-    return `${String(date.getHours()).padStart(2, '0')}:${String(
-      date.getMinutes()
-    ).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
-  };
+  const formatTime = (date: Date): string =>
+    `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(
+      2,
+      '0'
+    )}:${String(date.getSeconds()).padStart(2, '0')}`;
 
   const handleToggleReminder = (value: boolean) => {
     setReminderEnabled(value);
@@ -167,7 +161,7 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
       const dailyGratitudeGoalForPayload = Number.isNaN(parsedGoal) ? undefined : parsedGoal;
 
       const rawPayload = {
-        reminder_enabled: reminderEnabled,
+        reminder_enabled: finalReminderEnabled,
         reminder_time: reminderTime.toTimeString().split(' ')[0], // HH:MM:SS format
         daily_gratitude_goal: dailyGratitudeGoalForPayload,
       };
@@ -175,9 +169,9 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
       const validationResult = updateProfileSchema.safeParse(rawPayload);
 
       if (!validationResult.success) {
-        const fieldErrors = validationResult.error.flatten().fieldErrors;
+        const { fieldErrors } = validationResult.error.flatten();
         let errorMessage = 'Lütfen hataları düzeltin:';
-        (Object.keys(fieldErrors) as Array<keyof typeof fieldErrors>).forEach((key) => {
+        (Object.keys(fieldErrors) as (keyof typeof fieldErrors)[]).forEach((key) => {
           const messages = fieldErrors[key];
           if (messages) {
             errorMessage += `\n- ${String(key)}: ${messages.join(', ')}`;
@@ -260,7 +254,9 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
           {reminderEnabled && (
             <TouchableOpacity
               style={styles.row}
-              onPress={() => setShowTimePicker(true)}
+              onPress={() => {
+                setShowTimePicker(true);
+              }}
               accessibilityLabel={`Hatırlatıcı saati, mevcut saat ${formatTime(
                 reminderTime
               )}, değiştirmek için dokunun`}
@@ -281,7 +277,9 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
             <TextInput
               style={styles.input}
               value={dailyGratitudeGoal}
-              onChangeText={(text) => setDailyGratitudeGoal(text.replace(/[^0-9]/g, ''))} // Allow only numbers
+              onChangeText={(text) => {
+                setDailyGratitudeGoal(text.replace(/[^0-9]/g, ''));
+              }} // Allow only numbers
               keyboardType="number-pad"
               placeholder="Örn: 3"
               placeholderTextColor={theme.colors.surfaceDisabled}

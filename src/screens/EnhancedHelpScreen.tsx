@@ -24,12 +24,7 @@ interface FAQItemProps {
   _index: number;
 }
 
-const FAQItem: React.FC<FAQItemProps> = ({
-  question,
-  answer,
-  theme,
-  _index,
-}) => {
+const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) => {
   const [isOpen, setIsOpen] = useState(false);
   const styles = createStyles(theme);
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -60,9 +55,7 @@ const FAQItem: React.FC<FAQItemProps> = ({
 
     // Announce to screen readers
     if (!isOpen) {
-      AccessibilityInfo.announceForAccessibility(
-        `${question} açıldı. ${answer}`
-      );
+      AccessibilityInfo.announceForAccessibility(`${question} açıldı. ${answer}`);
     } else {
       AccessibilityInfo.announceForAccessibility(`${question} kapandı.`);
     }
@@ -76,18 +69,12 @@ const FAQItem: React.FC<FAQItemProps> = ({
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={question}
-        accessibilityHint={
-          isOpen ? 'Soruyu kapatmak için dokunun' : 'Cevabı görmek için dokunun'
-        }
+        accessibilityHint={isOpen ? 'Soruyu kapatmak için dokunun' : 'Cevabı görmek için dokunun'}
         accessibilityState={{ expanded: isOpen }}
       >
         <Text style={styles.faqQuestion}>{question}</Text>
         <Animated.View style={{ transform: [{ rotate }] }}>
-          <Ionicons
-            name="chevron-down-outline"
-            size={24}
-            color={theme.colors.primary}
-          />
+          <Ionicons name="chevron-down-outline" size={24} color={theme.colors.primary} />
         </Animated.View>
       </TouchableOpacity>
 
@@ -174,8 +161,7 @@ const EnhancedHelpScreen: React.FC = () => {
         Destek
       </Text>
       <Text style={styles.paragraph} accessibilityRole="text">
-        Aradığınız cevabı bulamadınız mı? Destek ekibimizle iletişime geçmekten
-        çekinmeyin.
+        Aradığınız cevabı bulamadınız mı? Destek ekibimizle iletişime geçmekten çekinmeyin.
       </Text>
 
       <TouchableOpacity

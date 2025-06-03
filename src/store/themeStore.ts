@@ -15,16 +15,15 @@ interface ThemeState {
   toggleTheme: () => void;
 }
 
-const getThemeObjectByName = (themeName: ThemeName): AppTheme => {
-  return themeName === 'light' ? lightTheme : darkTheme;
-};
+const getThemeObjectByName = (themeName: ThemeName): AppTheme =>
+  themeName === 'light' ? lightTheme : darkTheme;
 
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
       activeThemeName: 'light', // Default theme
       activeTheme: lightTheme, // Default theme object
-      setTheme: themeName => {
+      setTheme: (themeName) => {
         set({
           activeThemeName: themeName,
           activeTheme: getThemeObjectByName(themeName),
@@ -43,7 +42,7 @@ export const useThemeStore = create<ThemeState>()(
       name: 'app-theme-storage', // Name of the item in AsyncStorage
       storage: createJSONStorage(() => AsyncStorage),
       // Only persist the theme name, not the entire theme object
-      partialize: state => ({ activeThemeName: state.activeThemeName }),
+      partialize: (state) => ({ activeThemeName: state.activeThemeName }),
       // When rehydrating, set the activeTheme object based on the persisted name
       onRehydrateStorage: () => (state, _error) => {
         if (state) {

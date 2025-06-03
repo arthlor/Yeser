@@ -12,9 +12,7 @@ export interface EmailPasswordCredentials {
 }
 
 // --- Sign Up ---
-export const signUpWithEmail = async (
-  credentials: EmailPasswordCredentials
-) => {
+export const signUpWithEmail = async (credentials: EmailPasswordCredentials) => {
   // For Supabase, signUp typically takes an object with email, password, and optionally options (like data for user_metadata)
   const { data, error } = await supabase.auth.signUp({
     email: credentials.email,
@@ -26,9 +24,7 @@ export const signUpWithEmail = async (
 };
 
 // --- Sign In ---
-export const signInWithEmail = async (
-  credentials: EmailPasswordCredentials
-) => {
+export const signInWithEmail = async (credentials: EmailPasswordCredentials) => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email: credentials.email,
     password: credentials.password,
@@ -70,9 +66,7 @@ export const getCurrentSession = async (): Promise<Session | null> => {
 // --- On Auth State Change ---
 // This function allows you to subscribe to auth changes (SIGNED_IN, SIGNED_OUT, USER_UPDATED, etc.)
 // The callback will receive an event string and a session object (or null)
-export const onAuthStateChange = (
-  callback: (event: string, session: Session | null) => void
-) => {
+export const onAuthStateChange = (callback: (event: string, session: Session | null) => void) => {
   const { data: authListener } = supabase.auth.onAuthStateChange(callback);
   return authListener?.subscription;
   // To unsubscribe: subscription.unsubscribe()
@@ -126,17 +120,13 @@ export const signInWithGoogle = async (): Promise<{
         // const token_type = params.get('token_type');
 
         if (access_token && refresh_token) {
-          const { data: sessionData, error: setSessionError } =
-            await supabase.auth.setSession({
-              access_token,
-              refresh_token,
-            });
+          const { data: sessionData, error: setSessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
 
           if (setSessionError) {
-            console.error(
-              'Error setting session after Google Sign-In:',
-              setSessionError.message
-            );
+            console.error('Error setting session after Google Sign-In:', setSessionError.message);
             return { user: null, session: null, error: setSessionError };
           }
           // After setSession, onAuthStateChange should fire with SIGNED_IN.
@@ -173,8 +163,7 @@ export const signInWithGoogle = async (): Promise<{
       } else {
         // Handles response.type === 'error' or other unexpected types
         console.error('Google Sign-In WebBrowser Error:', response);
-        let errorMessage =
-          'An unexpected error occurred during Google Sign-In with WebBrowser.';
+        let errorMessage = 'An unexpected error occurred during Google Sign-In with WebBrowser.';
         if (response.type === 'error') {
           // response is WebBrowserAuthSessionErrorResult (Android launch error) OR WebBrowserAuthSessionCompleteResult (error in URL)
           if ('message' in response && typeof response.message === 'string') {
@@ -191,9 +180,7 @@ export const signInWithGoogle = async (): Promise<{
             if (respWithPossibleErrorDetails.errorCode)
               details.push(`Code: ${respWithPossibleErrorDetails.errorCode}`);
             if (respWithPossibleErrorDetails.errorMessage)
-              details.push(
-                `Message: ${respWithPossibleErrorDetails.errorMessage}`
-              );
+              details.push(`Message: ${respWithPossibleErrorDetails.errorMessage}`);
             if (details.length > 0) {
               errorMessage = `OAuth error: ${details.join(', ')}. URL: ${response.url}`;
             } else {

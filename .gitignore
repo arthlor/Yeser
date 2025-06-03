@@ -22,6 +22,9 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# iOS
+ios/
+
 # Metro
 .metro-health-check*
 
@@ -33,6 +36,9 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+
+# Android
+android/
 
 # macOS
 .DS_Store

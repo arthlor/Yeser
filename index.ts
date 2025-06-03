@@ -2,6 +2,7 @@ import 'react-native-gesture-handler';
 import 'expo-dev-client';
 
 import { registerRootComponent } from 'expo';
+// Removed Firebase JS SDK initialization
 
 import App from './src/App';
 

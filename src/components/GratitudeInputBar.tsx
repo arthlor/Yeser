@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Keyboard,
   LayoutAnimation,
@@ -9,7 +9,9 @@ import {
   View,
   Animated,
   Platform,
+  KeyboardEvent,
 } from 'react-native';
+
 import { useTheme } from '../providers/ThemeProvider';
 import { AppTheme } from '../themes/types';
 
@@ -18,6 +20,9 @@ interface GratitudeInputBarProps {
   placeholder?: string;
   buttonText?: string;
   error?: string | null;
+  disableKeyboardAnimation?: boolean;
+  onFocusChange?: (focused: boolean) => void;
+  disabled?: boolean;
 }
 
 const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
@@ -25,6 +30,9 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   placeholder = 'Bugün neye minnettarsın?',
   buttonText = 'Ekle',
   error,
+  disableKeyboardAnimation,
+  onFocusChange,
+  disabled,
 }) => {
   const { theme } = useTheme();
   const { colors } = theme;
@@ -32,129 +40,98 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   const getThemedStyles = (currentColors: AppTheme['colors']) =>
     StyleSheet.create({
       outerContainer: {
-        backgroundColor: currentColors.background,
-        paddingBottom: Platform.OS === 'ios' ? 20 : 0,
-        position: 'relative',
-      },
-      gradientOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 2,
-        backgroundColor: currentColors.primary,
-        opacity: 0.1, // Use primary color with opacity for subtle gradient hint
+        backgroundColor: 'transparent',
+        paddingVertical: theme.spacing.md,
       },
       container: {
         flexDirection: 'row',
-        alignItems: 'flex-end',
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 20,
-        backgroundColor: 'transparent',
+        alignItems: 'center',
+        paddingHorizontal: theme.spacing.lg,
+        gap: theme.spacing.md,
       },
       inputContainer: {
         flex: 1,
-        position: 'relative',
         backgroundColor: currentColors.surface,
-        borderRadius: 16,
-        borderWidth: 1.5,
+        borderRadius: theme.borderRadius.xl,
+        borderWidth: 2,
         borderColor: currentColors.outline,
-        marginRight: 12,
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
+        minHeight: 56,
         shadowColor: currentColors.shadow,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
+        shadowOpacity: 0.05,
         shadowRadius: 8,
-        elevation: 4,
-        transform: [{ scale: 1 }],
+        elevation: 2,
+        position: 'relative',
       },
-      errorText: {
-        color: currentColors.error,
-        fontSize: 12,
-        marginTop: 4,
-        marginLeft: 4, // Align with input container's horizontal padding or visual preference
-        fontWeight: '500',
+      // Gradient border container
+      gradientBorderContainer: {
+        position: 'absolute',
+        top: -3,
+        left: -3,
+        right: -3,
+        bottom: -3,
+        borderRadius: theme.borderRadius.xl + 3,
+        padding: 3,
+        zIndex: -1,
+      },
+      gradientBorder: {
+        flex: 1,
+        borderRadius: theme.borderRadius.xl,
+        backgroundColor: 'transparent',
       },
       inputContainerFocused: {
         borderColor: currentColors.primary,
         shadowColor: currentColors.primary,
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.1,
         shadowRadius: 12,
-        elevation: 6,
-        transform: [{ scale: 1.01 }],
+        elevation: 4,
       },
       input: {
-        minHeight: 52,
-        maxHeight: 120,
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 16,
         fontSize: 16,
-        lineHeight: 22,
+        lineHeight: 24,
         color: currentColors.onSurface,
         fontWeight: '400',
-        borderWidth: 0,
-      },
-      characterCount: {
-        position: 'absolute',
-        bottom: 8,
-        right: 12,
-        backgroundColor: currentColors.surface,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 8,
-      },
-      characterCountText: {
-        fontSize: 11,
-        color: currentColors.onSurfaceVariant,
-        fontWeight: '500',
+        margin: 0,
+        padding: 0,
       },
       button: {
-        height: 52,
-        borderRadius: 16,
-        paddingHorizontal: 20,
+        height: 56,
+        paddingHorizontal: theme.spacing.xl,
+        borderRadius: theme.borderRadius.xl,
         justifyContent: 'center',
         alignItems: 'center',
+        minWidth: 80,
         shadowColor: currentColors.shadow,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 6,
-        elevation: 4,
+        shadowRadius: 8,
+        elevation: 3,
       },
       buttonEnabled: {
         backgroundColor: currentColors.primary,
-        borderWidth: 1,
-        borderColor: currentColors.surface,
       },
       buttonDisabled: {
-        backgroundColor: currentColors.surfaceDisabled,
-        borderWidth: 1,
-        borderColor: currentColors.outline,
+        backgroundColor: currentColors.surfaceVariant,
         shadowOpacity: 0.03,
-      },
-      buttonContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
+        elevation: 1,
       },
       buttonText: {
-        color: colors.onPrimary,
+        color: currentColors.onPrimary,
         fontSize: 16,
         fontWeight: '600',
-        letterSpacing: 0.3,
+        letterSpacing: 0.5,
       },
       buttonTextDisabled: {
-        color: currentColors.onDisabled,
+        color: currentColors.onSurfaceVariant,
       },
-      buttonArrow: {
-        color: colors.onPrimary,
-        fontSize: 16,
-        fontWeight: '600',
-        marginLeft: 6,
-        opacity: 0.8,
-      },
-      buttonArrowDisabled: {
-        color: currentColors.onDisabled,
+      errorText: {
+        color: currentColors.error,
+        fontSize: 12,
+        marginTop: theme.spacing.xs,
+        marginLeft: theme.spacing.lg,
+        fontWeight: '500',
       },
     });
 
@@ -164,6 +141,36 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   const [inputText, setInputText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [scaleValue] = useState(new Animated.Value(1));
+
+  // Simplified keyboard handling - just track if keyboard is visible
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Animation values for gradient border effects
+  const borderPulse = useRef(new Animated.Value(0)).current;
+  const gradientOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (disableKeyboardAnimation) return;
+
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setIsKeyboardVisible(true);
+      }
+    );
+
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setIsKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, [disableKeyboardAnimation]);
 
   const handleSubmit = () => {
     if (inputText.trim()) {
@@ -188,22 +195,76 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
 
   const handleFocus = () => {
     setIsFocused(true);
+    onFocusChange?.(true);
+
+    // Start gradient border animations with consistent native driver usage
+    Animated.parallel([
+      // Opacity animation - cannot use native driver for opacity on gradient
+      Animated.timing(gradientOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+      // Color pulse animation - cannot use native driver for backgroundColor
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(borderPulse, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(borderPulse, {
+            toValue: 0,
+            duration: 2000,
+            useNativeDriver: false,
+          }),
+        ])
+      ),
+    ]).start();
   };
 
   const handleBlur = () => {
     setIsFocused(false);
+    onFocusChange?.(false);
+
+    // Stop all animations
+    borderPulse.stopAnimation();
+
+    Animated.timing(gradientOpacity, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
   };
 
-  const isButtonEnabled = inputText.trim().length > 0;
+  const isButtonEnabled = inputText.trim().length > 0 && !disabled;
 
   return (
     <View style={styles.outerContainer}>
-      <View style={styles.gradientOverlay} />
       <View style={styles.container}>
-        <View style={[
-          styles.inputContainer,
-          isFocused && styles.inputContainerFocused
-        ]}>
+        <View style={[styles.inputContainer, isFocused && styles.inputContainerFocused]}>
+          {/* Animated gradient border */}
+          <Animated.View
+            style={[
+              styles.gradientBorderContainer,
+              {
+                opacity: gradientOpacity,
+                backgroundColor: colors.primary + '30', // Fixed 30% opacity instead of interpolated
+              },
+            ]}
+          >
+            {/* Pulsing overlay for subtle animation */}
+            <Animated.View
+              style={[
+                styles.gradientBorder,
+                {
+                  backgroundColor: colors.primary + '20',
+                  opacity: borderPulse,
+                },
+              ]}
+            />
+          </Animated.View>
+
           <TextInput
             style={styles.input}
             value={inputText}
@@ -215,45 +276,32 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
             multiline
             textAlignVertical="top"
             maxLength={500}
+            accessibilityLabel={placeholder}
+            accessibilityHint="Gratitude entry input field"
+            accessibilityRole="text"
+            editable={!disabled}
           />
-          {inputText.length > 0 && !error && (
-            <View style={styles.characterCount}>
-              <Text style={styles.characterCountText}>
-                {inputText.length} / 500
-              </Text>
-            </View>
-          )}
-          {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
+
         <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
           <TouchableOpacity
             onPress={handleSubmit}
-            style={[
-              styles.button,
-              isButtonEnabled ? styles.buttonEnabled : styles.buttonDisabled
-            ]}
+            style={[styles.button, isButtonEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
             disabled={!isButtonEnabled}
             activeOpacity={0.8}
+            accessibilityLabel={buttonText}
+            accessibilityHint="Submit gratitude entry"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !isButtonEnabled }}
           >
-            <View style={styles.buttonContent}>
-              <Text
-                style={[
-                  styles.buttonText,
-                  !isButtonEnabled && styles.buttonTextDisabled,
-                ]}
-              >
-                {buttonText}
-              </Text>
-              <Text style={[
-                styles.buttonArrow,
-                !isButtonEnabled && styles.buttonArrowDisabled
-              ]}>
-                →
-              </Text>
-            </View>
+            <Text style={[styles.buttonText, !isButtonEnabled && styles.buttonTextDisabled]}>
+              {buttonText}
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+      {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 };

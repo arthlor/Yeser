@@ -138,9 +138,7 @@ const ThemedModal: React.FC<ThemedModalProps> = ({
 
   // Render the modal content
   const renderContent = () => {
-    const content = (
-      <View style={[styles.contentContainer, contentStyle]}>{children}</View>
-    );
+    const content = <View style={[styles.contentContainer, contentStyle]}>{children}</View>;
 
     if (scrollable) {
       return (
@@ -185,11 +183,7 @@ const ThemedModal: React.FC<ThemedModalProps> = ({
             accessibilityLabel={closeButtonAccessibilityLabel}
             accessibilityRole="button"
           >
-            <Icon
-              name="close"
-              size={24}
-              color={theme.colors.onSurfaceVariant}
-            />
+            <Icon name="close" size={24} color={theme.colors.onSurfaceVariant} />
           </TouchableOpacity>
         )}
       </View>
@@ -215,9 +209,7 @@ const ThemedModal: React.FC<ThemedModalProps> = ({
               <View style={[styles.container, containerStyle]}>
                 {renderHeader()}
                 {renderContent()}
-                {footer && (
-                  <View style={[styles.footer, footerStyle]}>{footer}</View>
-                )}
+                {footer && <View style={[styles.footer, footerStyle]}>{footer}</View>}
               </View>
             </KeyboardAvoidingView>
           </TouchableWithoutFeedback>

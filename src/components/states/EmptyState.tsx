@@ -1,17 +1,11 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../themes/types';
 
-export type EmptyStateProps = {
+export interface EmptyStateProps {
   /**
    * Title of the empty state
    */
@@ -41,7 +35,7 @@ export type EmptyStateProps = {
    * Additional styles for the container
    */
   style?: ViewStyle;
-};
+}
 
 /**
  * EmptyState is a component that displays a message when there's no data to show.
@@ -117,8 +111,8 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   return content;
 };
 
-const createStyles = (theme: AppTheme) => {
-  return StyleSheet.create({
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
     container: {
       padding: theme.spacing.large,
       alignItems: 'center',
@@ -156,6 +150,5 @@ const createStyles = (theme: AppTheme) => {
       color: theme.colors.onPrimary,
     },
   });
-};
 
 export default EmptyState;

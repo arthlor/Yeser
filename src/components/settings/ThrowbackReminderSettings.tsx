@@ -1,16 +1,13 @@
 import { Picker } from '@react-native-picker/picker';
 import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Switch from 'toggle-switch-react-native';
 
-import ThemedCard from '../ThemedCard';
 import { useTheme } from '../../providers/ThemeProvider';
-import type { AppTheme } from '../../themes/types';
+import ThemedCard from '../ThemedCard';
+
 import type { Profile } from '../../schemas/profileSchema';
+import type { AppTheme } from '../../themes/types';
 
 const frequencyOptions: { label: string; value: Profile['throwback_reminder_frequency'] }[] = [
   { label: 'Günlük', value: 'daily' },
@@ -35,7 +32,9 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  const [selectedFrequency, setSelectedFrequency] = useState<Profile['throwback_reminder_frequency']>(throwbackFrequency ?? 'weekly');
+  const [selectedFrequency, setSelectedFrequency] = useState<
+    Profile['throwback_reminder_frequency']
+  >(throwbackFrequency ?? 'weekly');
 
   useEffect(() => {
     setSelectedFrequency(throwbackFrequency ?? 'weekly');
@@ -72,7 +71,9 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
         <View style={styles.pickerContainer}>
           <Picker
             selectedValue={selectedFrequency}
-            onValueChange={(itemValue) => handleFrequencyChange(itemValue as Profile['throwback_reminder_frequency'])}
+            onValueChange={(itemValue) => {
+              handleFrequencyChange(itemValue as Profile['throwback_reminder_frequency']);
+            }}
             style={styles.picker}
             itemStyle={styles.pickerItem} // For iOS
             dropdownIconColor={theme.colors.text} // For Android dropdown arrow

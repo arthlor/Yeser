@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import ThemedCard from '../ThemedCard';
+
 import { useTheme, AppTheme } from '@/providers/ThemeProvider';
+
+import ThemedCard from '../ThemedCard';
 
 interface InspirationCardProps {
   title: string;
@@ -30,43 +32,44 @@ const InspirationCard: React.FC<InspirationCardProps> = ({ title, message }) => 
   );
 };
 
-const createStyles = (theme: AppTheme) => StyleSheet.create({
-  inspirationSection: {
-    paddingHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.lg,
-  },
-  inspirationCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-  },
-  inspirationContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: theme.spacing.lg,
-  },
-  inspirationIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: `${theme.colors.primary}1A`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing.md,
-  },
-  inspirationTextContainer: {
-    flex: 1,
-  },
-  inspirationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-  },
-  inspirationText: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    lineHeight: 21,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    inspirationSection: {
+      paddingHorizontal: theme.spacing.lg,
+      marginTop: theme.spacing.lg,
+    },
+    inspirationCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+    },
+    inspirationContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: theme.spacing.lg,
+    },
+    inspirationIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: `${theme.colors.primary}1A`,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: theme.spacing.md,
+    },
+    inspirationTextContainer: {
+      flex: 1,
+    },
+    inspirationTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: theme.spacing.xs,
+    },
+    inspirationText: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      lineHeight: 21,
+    },
+  });
 
 export default InspirationCard;

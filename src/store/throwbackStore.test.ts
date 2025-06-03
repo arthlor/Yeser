@@ -1,5 +1,6 @@
-import { useThrowbackStore, initialState } from './throwbackStore';
 import { getRandomGratitudeEntry } from '../api/gratitudeApi';
+
+import { useThrowbackStore, initialState } from './throwbackStore';
 
 // Mock the gratitudeService
 jest.mock('../api/gratitudeApi', () => ({
@@ -99,7 +100,14 @@ describe('throwbackStore', () => {
     it('should set isThrowbackVisible to false and clear randomEntry', () => {
       useThrowbackStore.setState({
         isThrowbackVisible: true,
-        randomEntry: { id: '1', entry_date: '2023-01-01', statements: ['A hidden statement'], created_at: '2023-01-01T00:00:00Z', updated_at: '2023-01-01T00:00:00Z', user_id: 'user_hide' },
+        randomEntry: {
+          id: '1',
+          entry_date: '2023-01-01',
+          statements: ['A hidden statement'],
+          created_at: '2023-01-01T00:00:00Z',
+          updated_at: '2023-01-01T00:00:00Z',
+          user_id: 'user_hide',
+        },
       });
       useThrowbackStore.getState().hideThrowback();
       expect(useThrowbackStore.getState().isThrowbackVisible).toBe(false);
@@ -111,7 +119,14 @@ describe('throwbackStore', () => {
     it('should reset the store to its initial state', () => {
       // Modify some state
       useThrowbackStore.setState({
-        randomEntry: { id: '1', entry_date: '2023-01-01', statements: ['Another statement'], created_at: '2023-01-01T00:00:00Z', updated_at: '2023-01-01T00:00:00Z', user_id: 'user_reset' },
+        randomEntry: {
+          id: '1',
+          entry_date: '2023-01-01',
+          statements: ['Another statement'],
+          created_at: '2023-01-01T00:00:00Z',
+          updated_at: '2023-01-01T00:00:00Z',
+          user_id: 'user_reset',
+        },
         isThrowbackVisible: true,
         isLoading: true,
         error: 'Some error',

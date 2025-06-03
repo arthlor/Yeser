@@ -7,7 +7,9 @@ import {
   Text,
   TextStyle,
   TouchableOpacity,
+  TouchableOpacityProps,
   View,
+  ViewProps,
   ViewStyle,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -15,7 +17,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useTheme } from '../providers/ThemeProvider';
 import { AppTheme } from '../themes/types';
 
-export type ListItemProps = {
+export interface ListItemProps {
   id: string;
   title: string;
   subtitle?: string;
@@ -25,7 +27,7 @@ export type ListItemProps = {
   accessibilityLabel?: string;
   accessibilityHint?: string;
   testID?: string;
-};
+}
 
 export type ThemedListProps<T extends ListItemProps> = Omit<
   FlatListProps<T>,
@@ -58,7 +60,7 @@ export type ThemedListProps<T extends ListItemProps> = Omit<
  * />
  * ```
  */
-function ThemedList<T extends ListItemProps>({
+const ThemedList = <T extends ListItemProps>({
   items,
   variant = 'default',
   showDividers = true,
@@ -68,13 +70,10 @@ function ThemedList<T extends ListItemProps>({
   emptyText = 'No items to display',
   onItemPress,
   ...rest
-}: ThemedListProps<T>) {
+}: ThemedListProps<T>) => {
   const { theme } = useTheme();
 
-  const styles = React.useMemo(
-    () => createStyles(theme, variant),
-    [theme, variant]
-  );
+  const styles = React.useMemo(() => createStyles(theme, variant), [theme, variant]);
 
   const renderItem = ({ item }: { item: T }) => {
     const handlePress = () => {
@@ -87,7 +86,9 @@ function ThemedList<T extends ListItemProps>({
 
     const hasOnPress = item.onPress || onItemPress;
 
-    const ItemContainer = hasOnPress ? TouchableOpacity : View;
+    const ItemContainer: React.ComponentType<TouchableOpacityProps | ViewProps> = hasOnPress
+      ? TouchableOpacity
+      : View;
 
     return (
       <ItemContainer
@@ -104,18 +105,14 @@ function ThemedList<T extends ListItemProps>({
               name={item.leftIcon}
               size={24}
               color={theme.colors.primary}
-              accessibilityElementsHidden={true}
+              accessibilityElementsHidden
               importantForAccessibility="no"
             />
           </View>
         )}
 
         <View style={styles.textContainer}>
-          <Text
-            style={[styles.title, titleStyle]}
-            numberOfLines={2}
-            accessibilityRole="text"
-          >
+          <Text style={[styles.title, titleStyle]} numberOfLines={2} accessibilityRole="text">
             {item.title}
           </Text>
 
@@ -136,7 +133,7 @@ function ThemedList<T extends ListItemProps>({
               name={item.rightIcon}
               size={20}
               color={theme.colors.textSecondary}
-              accessibilityElementsHidden={true}
+              accessibilityElementsHidden
               importantForAccessibility="no"
             />
           </View>
@@ -157,26 +154,21 @@ function ThemedList<T extends ListItemProps>({
     <FlatList
       data={items}
       renderItem={renderItem}
-      keyExtractor={item => item.id.toString()}
+      keyExtractor={(item) => item.id.toString()}
       contentContainerStyle={styles.listContent}
       ItemSeparatorComponent={showDividers ? renderDivider : null}
       ListEmptyComponent={<EmptyState message={emptyText} />}
       {...rest}
     />
   );
-}
+};
 
-const createStyles = (
-  theme: AppTheme,
-  variant: 'default' | 'compact' | 'card'
-) => {
+const createStyles = (theme: AppTheme, variant: 'default' | 'compact' | 'card') => {
   // Adjust padding based on variant
-  const itemPadding =
-    variant === 'compact' ? theme.spacing.small : theme.spacing.medium;
+  const itemPadding = variant === 'compact' ? theme.spacing.small : theme.spacing.medium;
 
   // Adjust background and border based on variant
-  const itemBackground =
-    variant === 'card' ? theme.colors.surface : 'transparent';
+  const itemBackground = variant === 'card' ? theme.colors.surface : 'transparent';
 
   const itemBorderRadius = variant === 'card' ? theme.borderRadius.medium : 0;
 

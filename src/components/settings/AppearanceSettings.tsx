@@ -1,13 +1,10 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Switch from 'toggle-switch-react-native';
 
-import ThemedCard from '../ThemedCard';
 import { useTheme } from '../../providers/ThemeProvider';
+import ThemedCard from '../ThemedCard';
+
 import type { AppTheme, ThemeName } from '../../themes/types';
 
 interface AppearanceSettingsProps {

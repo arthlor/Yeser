@@ -1,7 +1,9 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
-import { useProfileStore } from '../store/profileStore';
+import useStreakStore, { StreakState, StreakActions } from '../store/streakStore';
+
 import type { Streak } from '../schemas/streakSchema'; // Assuming Streak type has Date objects now
 
 interface UseStreakReturn {
@@ -13,40 +15,42 @@ interface UseStreakReturn {
 }
 
 const useStreak = (): UseStreakReturn => {
-  const streakData = useProfileStore((state) => state.streakData);
-  const streakLoading = useProfileStore((state) => state.streakDataLoading);
-  const streakError = useProfileStore((state) => state.streakDataError);
-
-  // Assuming state.refreshStreak is the actual function in the store to call for data refresh.
-  const storeRefreshAction = useProfileStore(state => state.refreshStreak);
+  const {
+    streakData,
+    streakDataLoading,
+    streakDataError,
+    refreshStreak: storeRefreshAction, // Renaming for clarity within the hook
+  } = useStreakStore(
+    useShallow((state: StreakState & StreakActions) => ({
+      streakData: state.streakData,
+      streakDataLoading: state.streakDataLoading,
+      streakDataError: state.streakDataError,
+      refreshStreak: state.refreshStreak,
+    }))
+  );
 
   // Define a single, memoized function to perform the refresh action.
-  // This function will be returned for both fetchStreak and refreshStreak.
   const executeRefresh = useCallback(async () => {
-    if (storeRefreshAction) {
-      await storeRefreshAction();
-    } else {
-      // It's good practice to handle the case where the action might not be available,
-      // though typically Zustand actions are always defined.
-      console.warn('useStreak: refreshStreak action is not available in the profile store.');
-      // Optionally, you could set an error state here or return a rejected promise.
-      // For now, it just logs a warning and does nothing.
-    }
-  }, [storeRefreshAction]); // Dependency: storeRefreshAction from Zustand selector
+    // storeRefreshAction is now directly from the destructured state and stable due to shallow compare
+    await storeRefreshAction();
+  }, [storeRefreshAction]);
 
   useFocusEffect(
     useCallback(() => {
-      // Call the unified refresh function on screen focus.
-      executeRefresh();
-    }, [executeRefresh]) // Dependency: our memoized executeRefresh function
+      // Only trigger a refresh if not already loading.
+      // streakDataLoading is from the store and reflects the current loading state.
+      if (!streakDataLoading) {
+        executeRefresh();
+      }
+    }, [executeRefresh, streakDataLoading]) // Added streakDataLoading
   );
 
   return {
     streak: streakData,
-    isLoading: streakLoading,
-    error: streakError,
-    fetchStreak: executeRefresh,   // Both properties point to the same function
-    refreshStreak: executeRefresh, // Consistent API for the consumer
+    isLoading: streakDataLoading, // Use the destructured name
+    error: streakDataError, // Use the destructured name
+    fetchStreak: executeRefresh,
+    refreshStreak: executeRefresh,
   };
 };
 

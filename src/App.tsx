@@ -17,8 +17,9 @@ import { ThemeProvider, useTheme } from './providers/ThemeProvider';
 import SplashScreen from './screens/EnhancedSplashScreen'; // Import SplashScreen
 import { analyticsService } from './services/analyticsService';
 import useAuthStore from './store/authStore'; // Corrected import for default export
+import { useGratitudeStore } from './store/gratitudeStore'; // Hypothetical: Assuming this store exists and provides total entry count
 import { ProfileState, useProfileStore } from './store/profileStore'; // Corrected import for named export and type
-import { useThrowbackStore } from './store/throwbackStore'; // Added for throwback
+import { useThrowbackStore, ThrowbackFrequency } from './store/throwbackStore'; // Added for throwback & import ThrowbackFrequency
 import { RootStackParamList } from './types/navigation'; // Import RootStackParamList
 
 // Define the linking configuration
@@ -26,9 +27,7 @@ import { RootStackParamList } from './types/navigation'; // Import RootStackPara
 // for the 'auth/confirm' path to work as intended.
 
 // Helper function to get the active route name
-const getActiveRouteName = (
-  state: NavigationState | undefined
-): string | undefined => {
+const getActiveRouteName = (state: NavigationState | undefined): string | undefined => {
   if (!state) {
     return undefined;
   }
@@ -76,36 +75,71 @@ const linking: LinkingOptions<RootStackParamList> = {
 };
 
 const AppContent: React.FC = () => {
-  const { theme, currentThemeName } = useTheme();
-  const throwbackStore = useThrowbackStore();
-  const fetchRandomEntry = throwbackStore.fetchRandomEntry;
-  const isThrowbackVisible = throwbackStore.isThrowbackVisible; // Corrected: Use isThrowbackVisible
-  const randomThrowbackEntry = throwbackStore.randomEntry;
+  const { theme, colorMode } = useTheme();
+  // Updated to use checkAndShowThrowbackIfNeeded
+  const {
+    isThrowbackVisible,
+    randomEntry: randomThrowbackEntry, // Renamed for clarity if randomEntry is used elsewhere
+    checkAndShowThrowbackIfNeeded,
+  } = useThrowbackStore();
 
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated); // Corrected: Removed parentheses
-  const profileId = useProfileStore((state: ProfileState) => state.id); // Check if profile is loaded by checking id
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const profileId = useProfileStore((state: ProfileState) => state.id);
+  const throwback_reminder_enabled = useProfileStore(
+    (state: ProfileState) => state.throwback_reminder_enabled
+  );
+  const throwback_reminder_frequency = useProfileStore(
+    (state: ProfileState) => state.throwback_reminder_frequency
+  );
+
+  // Get total entry count and fetch action from gratitude store
+  const totalEntryCount = useGratitudeStore((state) => state.totalEntries);
+  const fetchTotalEntriesCount = useGratitudeStore((state) => state.fetchTotalEntriesCount);
   const routeNameRef = React.useRef<string | undefined>(undefined);
 
+  // Effect 1: Log app open (runs once on mount)
   React.useEffect(() => {
     analyticsService.logAppOpen();
+  }, []);
 
-    // Only attempt to fetch throwback if user is authenticated and profile is loaded
+  // Effect 2: Fetch total entries count
+  React.useEffect(() => {
     if (isAuthenticated && profileId) {
-      // Simple 25% chance to show throwback on app content mount
-      // Consider making this configurable or based on user preferences later
-      if (Math.random() < 0.25) {
-        fetchRandomEntry();
-      }
+      fetchTotalEntriesCount();
     }
-  }, [isAuthenticated, profileId, fetchRandomEntry]);
+  }, [isAuthenticated, profileId, fetchTotalEntriesCount]);
+
+  // Effect 3: Check and show throwback
+  React.useEffect(() => {
+    // Only attempt to show throwback if user is authenticated, profile is loaded,
+    // throwback is enabled, frequency is set, AND totalEntryCount has been fetched (is not null)
+    if (
+      isAuthenticated &&
+      profileId &&
+      throwback_reminder_enabled !== undefined &&
+      throwback_reminder_frequency !== undefined &&
+      totalEntryCount !== null // Ensure count is fetched
+    ) {
+      checkAndShowThrowbackIfNeeded({
+        isEnabled: throwback_reminder_enabled,
+        frequency: throwback_reminder_frequency as ThrowbackFrequency,
+        totalEntryCount, // Pass the fetched count
+      });
+    }
+  }, [
+    isAuthenticated,
+    profileId,
+    throwback_reminder_enabled,
+    throwback_reminder_frequency,
+    totalEntryCount,
+    checkAndShowThrowbackIfNeeded,
+  ]);
 
   const navigationTheme = React.useMemo(
     () => ({
-      ...(currentThemeName === 'dark' ? NavigationDarkTheme : DefaultTheme),
+      ...(colorMode === 'dark' ? NavigationDarkTheme : DefaultTheme),
       colors: {
-        ...(currentThemeName === 'dark'
-          ? NavigationDarkTheme.colors
-          : DefaultTheme.colors),
+        ...(colorMode === 'dark' ? NavigationDarkTheme.colors : DefaultTheme.colors),
         primary: theme.colors.primary,
         background: theme.colors.background,
         card: theme.colors.surface, // In many themes, 'card' maps to 'surface' or 'background'
@@ -114,18 +148,17 @@ const AppContent: React.FC = () => {
         notification: theme.colors.primary, // Or theme.colors.error for error notifications
       },
     }),
-    [currentThemeName, theme] // Corrected: Removed DefaultTheme and NavigationDarkTheme from deps
+    [colorMode, theme] // Corrected: Removed DefaultTheme and NavigationDarkTheme from deps
   );
 
-  const statusBarStyle: StatusBarStyle =
-    currentThemeName === 'dark' ? 'light' : 'dark';
+  const statusBarStyle: StatusBarStyle = colorMode === 'dark' ? 'light' : 'dark';
 
   return (
     <NavigationContainer
       theme={navigationTheme}
       linking={linking}
       fallback={<SplashScreen />}
-      onStateChange={state => {
+      onStateChange={(state) => {
         // Corrected: Removed parentheses and added newline for block
         const previousRouteName = routeNameRef.current;
         const currentRouteName = getActiveRouteName(state);
@@ -138,6 +171,7 @@ const AppContent: React.FC = () => {
     >
       <StatusBar style={statusBarStyle} />
       <RootNavigator />
+      {/* Ensure randomThrowbackEntry is used here if it's the correct variable from the store */}
       {randomThrowbackEntry && isThrowbackVisible && <ThrowbackModal />}
     </NavigationContainer>
   );

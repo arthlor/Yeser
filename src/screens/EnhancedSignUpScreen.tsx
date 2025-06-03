@@ -1,19 +1,20 @@
 // src/screens/EnhancedSignUpScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useCallback, useEffect, useState } from 'react';
-import { signupSchema } from '../schemas/authSchemas';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Alert,
+  Animated,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  ScrollView, // Added
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Dimensions,
 } from 'react-native';
 
 import ErrorState from '../components/states/ErrorState';
@@ -22,15 +23,15 @@ import ThemedButton from '../components/ThemedButton';
 import ThemedCard from '../components/ThemedCard';
 import ThemedInput from '../components/ThemedInput';
 import { useTheme } from '../providers/ThemeProvider';
+import { signupSchema } from '../schemas/authSchemas';
 import { analyticsService } from '../services/analyticsService';
 import useAuthStore from '../store/authStore';
 import { AppTheme } from '../themes/types';
 import { AuthStackParamList } from '../types/navigation';
 
-type SignUpScreenNavigationProp = StackNavigationProp<
-  AuthStackParamList,
-  'SignUp'
->;
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+type SignUpScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'SignUp'>;
 
 interface Props {
   navigation: SignUpScreenNavigationProp;
@@ -58,6 +59,13 @@ const EnhancedSignUpScreen: React.FC<Props> = ({ navigation }) => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
 
+  // Animation refs
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const logoScaleAnim = useRef(new Animated.Value(0.8)).current;
+  const formSlideAnim = useRef(new Animated.Value(100)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
   // Check if screen reader is enabled
   useEffect(() => {
     const checkScreenReader = async () => {
@@ -80,24 +88,73 @@ const EnhancedSignUpScreen: React.FC<Props> = ({ navigation }) => {
 
   // Handle keyboard visibility
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        setIsKeyboardVisible(true);
-      }
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setIsKeyboardVisible(false);
-      }
-    );
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+      // Animate logo scale down when keyboard shows
+      Animated.timing(logoScaleAnim, {
+        toValue: 0.5,
+        duration: theme.animations.duration?.normal || 300,
+        useNativeDriver: true,
+      }).start();
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+      // Animate logo scale back when keyboard hides
+      Animated.timing(logoScaleAnim, {
+        toValue: 0.8,
+        duration: theme.animations.duration?.normal || 300,
+        useNativeDriver: true,
+      }).start();
+    });
 
     return () => {
       keyboardDidHideListener.remove();
       keyboardDidShowListener.remove();
     };
-  }, []);
+  }, [logoScaleAnim, theme.animations.duration]);
+
+  // Initial entrance animations
+  useEffect(() => {
+    const animateEntrance = () => {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: theme.animations.duration?.slow || 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: theme.animations.duration?.slow || 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoScaleAnim, {
+          toValue: 1,
+          duration: theme.animations.duration?.slow || 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(formSlideAnim, {
+          toValue: 0,
+          duration: theme.animations.duration?.slow || 500,
+          delay: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    };
+
+    animateEntrance();
+  }, [fadeAnim, slideAnim, logoScaleAnim, formSlideAnim, theme.animations.duration]);
+
+  // Form completion progress
+  useEffect(() => {
+    const filledFields = [username, email, password, confirmPassword].filter(Boolean).length;
+    const progress = filledFields / 4;
+
+    Animated.timing(progressAnim, {
+      toValue: progress,
+      duration: theme.animations.duration?.fast || 200,
+      useNativeDriver: false,
+    }).start();
+  }, [username, email, password, confirmPassword, progressAnim, theme.animations.duration]);
 
   // Log screen view
   useEffect(() => {
@@ -143,37 +200,37 @@ const EnhancedSignUpScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     clearError();
-    setSignUpAttempts(prev => prev + 1);
+    setSignUpAttempts((prev) => prev + 1);
 
     try {
       analyticsService.logEvent('signup_attempt', {
-        has_username: !!validationResult.data.username, // Use validated data
+        has_username: !!validationResult.data.username,
       });
 
       await signUpWithEmail({
-        email: validationResult.data.email, // Use validated data
-        password: validationResult.data.password, // Use validated data
+        email: validationResult.data.email,
+        password: validationResult.data.password,
         options: {
-          data: { username: validationResult.data.username }, // Use validated data
+          data: { username: validationResult.data.username },
         },
       });
 
       analyticsService.logEvent('signup_success');
 
       Alert.alert(
-        'Kayıt Başarılı!',
+        'Kayıt Başarılı! 🎉',
         'E-posta adresinize gönderilen doğrulama linkine tıklayarak hesabınızı aktive edebilirsiniz.',
         [
           {
             text: 'Tamam',
-            onPress: () => navigation.navigate('Login'),
+            onPress: () => {
+              navigation.navigate('Login');
+            },
             style: 'default',
           },
         ]
       );
     } catch (err: any) {
-      // Error is already handled by useAuthStore and displayed via the error prop
-      // Specific error handling for sign-up can be added here if needed
       analyticsService.logEvent('signup_failure', {
         error_message: err.message || 'Unknown error',
         attempts: signUpAttempts + 1,
@@ -196,6 +253,17 @@ const EnhancedSignUpScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('Login');
   }, [navigation]);
 
+  // Calculate form completion percentage for visual feedback
+  const getFormCompletionText = () => {
+    const filledFields = [username, email, password, confirmPassword].filter(Boolean).length;
+    const percentage = Math.round((filledFields / 4) * 100);
+
+    if (percentage === 0) return 'Başlayalım! 🚀';
+    if (percentage < 50) return `İyi gidiyorsun! %${percentage}`;
+    if (percentage < 100) return `Neredeyse bitti! %${percentage}`;
+    return 'Harika! Kayıt olmaya hazırsın! 🎉';
+  };
+
   // Render screen reader optimized version
   if (isScreenReaderEnabled) {
     return (
@@ -205,90 +273,92 @@ const EnhancedSignUpScreen: React.FC<Props> = ({ navigation }) => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
       >
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={styles.accessibleContainer}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title} accessibilityRole="header">
+          <Text style={styles.accessibleTitle} accessibilityRole="header">
             Hesap Oluştur
           </Text>
 
-          <Text style={styles.subtitle} accessibilityRole="text">
+          <Text style={styles.accessibleSubtitle} accessibilityRole="text">
             Yeşer'e katılın ve minnetinizi kaydedin.
           </Text>
 
-          <ThemedInput
-            label="Kullanıcı Adı"
-            value={username}
-            onChangeText={setUsername}
-            error={formErrors.username}
-            autoCapitalize="none"
-            accessibilityLabel="Kullanıcı adınızı girin"
-            accessibilityHint="Kullanıcı adınız en az 3 karakter olmalıdır"
-          />
-
-          <ThemedInput
-            label="E-posta Adresi"
-            value={email}
-            onChangeText={setEmail}
-            error={formErrors.email}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            accessibilityLabel="E-posta adresinizi girin"
-            accessibilityHint="Geçerli bir e-posta adresi giriniz"
-          />
-
-          <ThemedInput
-            label="Şifre"
-            value={password}
-            onChangeText={setPassword}
-            error={formErrors.password}
-            secureTextEntry
-            accessibilityLabel="Şifrenizi girin"
-            accessibilityHint="Şifreniz en az 6 karakter olmalıdır"
-          />
-
-          <ThemedInput
-            label="Şifre Tekrar"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            error={formErrors.confirmPassword}
-            secureTextEntry
-            accessibilityLabel="Şifrenizi tekrar girin"
-            accessibilityHint="Şifrenizi doğrulamak için tekrar girin"
-          />
-
-          {error && (
-            <ErrorState
-              title="Bir hata oluştu"
-              message={error}
-              onRetry={clearError}
-              retryLabel="Tekrar Dene"
+          <View style={styles.accessibleFormContainer}>
+            <ThemedInput
+              label="Kullanıcı Adı"
+              value={username}
+              onChangeText={setUsername}
+              error={formErrors.username}
+              autoCapitalize="none"
+              accessibilityLabel="Kullanıcı adınızı girin"
+              accessibilityHint="Kullanıcı adınız en az 3 karakter olmalıdır"
             />
-          )}
 
-          {isLoading ? (
-            <LoadingState message="Kaydolunuyor..." />
-          ) : (
-            <ThemedButton
-              title="Kaydol"
-              onPress={handleSignUp}
-              variant="primary"
-              style={styles.button}
-              accessibilityLabel="Kaydol butonu"
-              accessibilityHint="Hesap oluşturmak için dokunun"
+            <ThemedInput
+              label="E-posta Adresi"
+              value={email}
+              onChangeText={setEmail}
+              error={formErrors.email}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              accessibilityLabel="E-posta adresinizi girin"
+              accessibilityHint="Geçerli bir e-posta adresi giriniz"
             />
-          )}
 
-          <TouchableOpacity
-            onPress={navigateToLogin}
-            accessibilityLabel="Giriş ekranına git"
-            accessibilityHint="Zaten bir hesabınız varsa giriş yapın"
-            accessibilityRole="button"
-          >
-            <Text style={styles.linkText}>
-              Zaten bir hesabınız var mı? Giriş Yapın
-            </Text>
-          </TouchableOpacity>
+            <ThemedInput
+              label="Şifre"
+              value={password}
+              onChangeText={setPassword}
+              error={formErrors.password}
+              secureTextEntry
+              accessibilityLabel="Şifrenizi girin"
+              accessibilityHint="Şifreniz en az 6 karakter olmalıdır"
+            />
+
+            <ThemedInput
+              label="Şifre Tekrar"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              error={formErrors.confirmPassword}
+              secureTextEntry
+              accessibilityLabel="Şifrenizi tekrar girin"
+              accessibilityHint="Şifrenizi doğrulamak için tekrar girin"
+            />
+
+            {error && (
+              <ErrorState
+                title="Bir hata oluştu"
+                message={error}
+                onRetry={clearError}
+                retryLabel="Tekrar Dene"
+              />
+            )}
+
+            {isLoading ? (
+              <LoadingState message="Kaydolunuyor..." />
+            ) : (
+              <ThemedButton
+                title="Kaydol"
+                onPress={handleSignUp}
+                variant="primary"
+                style={styles.button}
+                accessibilityLabel="Kaydol butonu"
+                accessibilityHint="Hesap oluşturmak için dokunun"
+              />
+            )}
+
+            <TouchableOpacity
+              onPress={navigateToLogin}
+              accessibilityLabel="Giriş ekranına git"
+              accessibilityHint="Zaten bir hesabınız varsa giriş yapın"
+              accessibilityRole="button"
+              style={styles.accessibleLink}
+            >
+              <Text style={styles.linkText}>Zaten bir hesabınız var mı? Giriş Yapın</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     );
@@ -304,102 +374,212 @@ const EnhancedSignUpScreen: React.FC<Props> = ({ navigation }) => {
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
       >
-        <View style={styles.logoContainer}>
-          <Ionicons
-            name="leaf-outline"
-            size={64}
-            color={theme.colors.primary}
-            accessibilityLabel="Yeşer logo"
-          />
-        </View>
+        <Animated.View
+          style={[
+            styles.headerContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.logoContainer,
+              {
+                transform: [{ scale: logoScaleAnim }],
+              },
+            ]}
+          >
+            <View style={styles.logoBackground}>
+              <Ionicons
+                name="leaf-outline"
+                size={isKeyboardVisible ? 40 : 56}
+                color={theme.colors.primary}
+                accessibilityLabel="Yeşer logo"
+              />
+            </View>
+          </Animated.View>
 
-        <Text style={styles.title} accessibilityRole="header">
-          Hesap Oluştur
-        </Text>
+          <Animated.Text
+            style={[
+              styles.title,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+            accessibilityRole="header"
+          >
+            Hesap Oluştur
+          </Animated.Text>
 
-        <Text style={styles.subtitle} accessibilityRole="text">
-          Yeşer'e katılın ve minnetinizi kaydedin.
-        </Text>
+          <Animated.Text
+            style={[
+              styles.subtitle,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+            accessibilityRole="text"
+          >
+            Yeşer'e katılın ve minnetinizi kaydedin.
+          </Animated.Text>
 
-        <ThemedCard style={styles.formContainer}>
-          <ThemedInput
-            label="Kullanıcı Adı"
-            value={username}
-            onChangeText={setUsername}
-            error={formErrors.username}
-            autoCapitalize="none"
-            accessibilityLabel="Kullanıcı adınızı girin"
-            accessibilityHint="Kullanıcı adınız en az 3 karakter olmalıdır"
-          />
+          {/* Progress indicator */}
+          <Animated.View
+            style={[
+              styles.progressContainer,
+              {
+                opacity: fadeAnim,
+              },
+            ]}
+          >
+            <View style={styles.progressBackground}>
+              <Animated.View
+                style={[
+                  styles.progressBar,
+                  {
+                    width: progressAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.progressText}>{getFormCompletionText()}</Text>
+          </Animated.View>
+        </Animated.View>
 
-          <ThemedInput
-            label="E-posta Adresi"
-            value={email}
-            onChangeText={setEmail}
-            error={formErrors.email}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            accessibilityLabel="E-posta adresinizi girin"
-            accessibilityHint="Geçerli bir e-posta adresi giriniz"
-          />
+        <Animated.View
+          style={[
+            styles.formSection,
+            {
+              transform: [{ translateY: formSlideAnim }],
+              opacity: fadeAnim,
+            },
+          ]}
+        >
+          <ThemedCard variant="elevated" elevation="lg" style={styles.formContainer}>
+            <View style={styles.formContent}>
+              <ThemedInput
+                label="Kullanıcı Adı"
+                value={username}
+                onChangeText={setUsername}
+                error={formErrors.username}
+                autoCapitalize="none"
+                startIcon={
+                  <Ionicons name="person-outline" size={20} color={theme.colors.onSurfaceVariant} />
+                }
+                accessibilityLabel="Kullanıcı adınızı girin"
+                accessibilityHint="Kullanıcı adınız en az 3 karakter olmalıdır"
+                containerStyle={styles.inputContainer}
+              />
 
-          <ThemedInput
-            label="Şifre"
-            value={password}
-            onChangeText={setPassword}
-            error={formErrors.password}
-            secureTextEntry
-            accessibilityLabel="Şifrenizi girin"
-            accessibilityHint="Şifreniz en az 6 karakter olmalıdır"
-          />
+              <ThemedInput
+                label="E-posta Adresi"
+                value={email}
+                onChangeText={setEmail}
+                error={formErrors.email}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                startIcon={
+                  <Ionicons name="mail-outline" size={20} color={theme.colors.onSurfaceVariant} />
+                }
+                accessibilityLabel="E-posta adresinizi girin"
+                accessibilityHint="Geçerli bir e-posta adresi giriniz"
+                containerStyle={styles.inputContainer}
+              />
 
-          <ThemedInput
-            label="Şifre Tekrar"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            error={formErrors.confirmPassword}
-            secureTextEntry
-            accessibilityLabel="Şifrenizi tekrar girin"
-            accessibilityHint="Şifrenizi doğrulamak için tekrar girin"
-          />
+              <ThemedInput
+                label="Şifre"
+                value={password}
+                onChangeText={setPassword}
+                error={formErrors.password}
+                secureTextEntry
+                startIcon={
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={20}
+                    color={theme.colors.onSurfaceVariant}
+                  />
+                }
+                accessibilityLabel="Şifrenizi girin"
+                accessibilityHint="Şifreniz en az 6 karakter olmalıdır"
+                containerStyle={styles.inputContainer}
+              />
 
-          {error && (
-            <ErrorState
-              title="Bir hata oluştu"
-              message={error}
-              onRetry={clearError}
-              retryLabel="Tekrar Dene"
-            />
-          )}
+              <ThemedInput
+                label="Şifre Tekrar"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                error={formErrors.confirmPassword}
+                secureTextEntry
+                startIcon={
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={20}
+                    color={theme.colors.onSurfaceVariant}
+                  />
+                }
+                accessibilityLabel="Şifrenizi tekrar girin"
+                accessibilityHint="Şifrenizi doğrulamak için tekrar girin"
+                containerStyle={styles.inputContainer}
+              />
 
-          {isLoading ? (
-            <LoadingState message="Kaydolunuyor..." />
-          ) : (
-            <ThemedButton
-              title="Kaydol"
-              onPress={handleSignUp}
-              variant="primary"
-              style={styles.button}
-              accessibilityLabel="Kaydol butonu"
-              accessibilityHint="Hesap oluşturmak için dokunun"
-            />
-          )}
-        </ThemedCard>
+              {error && (
+                <ErrorState
+                  title="Bir hata oluştu"
+                  message={error}
+                  onRetry={clearError}
+                  retryLabel="Tekrar Dene"
+                />
+              )}
+
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <LoadingState message="Kaydolunuyor..." />
+                </View>
+              ) : (
+                <ThemedButton
+                  title="Kaydol"
+                  onPress={handleSignUp}
+                  variant="primary"
+                  style={styles.primaryButton}
+                  accessibilityLabel="Kaydol butonu"
+                  accessibilityHint="Hesap oluşturmak için dokunun"
+                />
+              )}
+            </View>
+          </ThemedCard>
+        </Animated.View>
 
         {!isKeyboardVisible && (
-          <View style={styles.footer}>
+          <Animated.View
+            style={[
+              styles.footerContainer,
+              {
+                opacity: fadeAnim,
+              },
+            ]}
+          >
             <TouchableOpacity
               onPress={navigateToLogin}
+              activeOpacity={0.7}
+              style={styles.footerLink}
               accessibilityLabel="Giriş ekranına git"
               accessibilityHint="Zaten bir hesabınız varsa giriş yapın"
               accessibilityRole="button"
             >
-              <Text style={styles.linkText}>
-                Zaten bir hesabınız var mı? Giriş Yapın
-              </Text>
+              <Text style={styles.linkText}>Zaten bir hesabınız var mı? </Text>
+              <Text style={styles.linkTextBold}>Giriş Yapın</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         )}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -408,51 +588,148 @@ const EnhancedSignUpScreen: React.FC<Props> = ({ navigation }) => {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    keyboardAvoidingWrapper: { // Added
+    keyboardAvoidingWrapper: {
       flex: 1,
       backgroundColor: theme.colors.background,
     },
     container: {
-      flexGrow: 1, // Changed for ScrollView
-      justifyContent: 'center',
-      alignItems: 'center',
-      // backgroundColor: theme.colors.background, // Removed, handled by wrapper
+      flexGrow: 1,
       paddingHorizontal: theme.spacing.large,
-      paddingVertical: theme.spacing.medium, // Added for better spacing
+      paddingVertical: theme.spacing.medium,
+    },
+    headerContainer: {
+      alignItems: 'center',
+      paddingTop: Platform.OS === 'ios' ? theme.spacing.large : theme.spacing.medium,
+      paddingBottom: theme.spacing.medium,
     },
     logoContainer: {
+      marginBottom: theme.spacing.medium,
+    },
+    logoBackground: {
+      width: 80,
+      height: 80,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...theme.elevation.md,
+      shadowColor: theme.colors.primary,
+    },
+    title: {
+      ...theme.typography.headlineMedium,
+      color: theme.colors.onBackground,
+      marginBottom: theme.spacing.small,
+      textAlign: 'center',
+      fontWeight: '700',
+    },
+    subtitle: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: theme.spacing.medium,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    progressContainer: {
+      width: '100%',
+      maxWidth: 300,
       alignItems: 'center',
       marginBottom: theme.spacing.medium,
     },
-    title: {
-      ...theme.typography.h1,
-      color: theme.colors.primary,
+    progressBackground: {
+      width: '100%',
+      height: 4,
+      backgroundColor: theme.colors.outlineVariant,
+      borderRadius: theme.borderRadius.full,
+      overflow: 'hidden',
       marginBottom: theme.spacing.small,
+    },
+    progressBar: {
+      height: '100%',
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.borderRadius.full,
+    },
+    progressText: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
     },
-    subtitle: {
-      ...theme.typography.body1,
-      color: theme.colors.textSecondary,
-      marginBottom: theme.spacing.large,
-      textAlign: 'center',
+    formSection: {
+      flex: 1,
+      width: '100%',
+      maxWidth: 400,
+      alignSelf: 'center',
     },
     formContainer: {
       width: '100%',
-      padding: theme.spacing.medium,
       marginBottom: theme.spacing.medium,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.large,
+    },
+    formContent: {
+      padding: theme.spacing.medium,
+    },
+    inputContainer: {
+      marginBottom: theme.spacing.medium,
+    },
+    loadingContainer: {
+      paddingVertical: theme.spacing.medium,
+    },
+    primaryButton: {
+      width: '100%',
+      marginTop: theme.spacing.medium,
+      paddingVertical: theme.spacing.medium + 2,
+      borderRadius: theme.borderRadius.medium,
+      ...theme.elevation.xs,
+    },
+    footerContainer: {
+      alignItems: 'center',
+      paddingTop: theme.spacing.medium,
+      paddingBottom: Platform.OS === 'ios' ? theme.spacing.xl : theme.spacing.large,
+    },
+    footerLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: theme.spacing.small,
+    },
+    linkText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+    },
+    linkTextBold: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.primary,
+      fontWeight: '600',
+    },
+
+    // Accessible styles for screen readers
+    accessibleContainer: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.large,
+      paddingVertical: theme.spacing.medium,
+    },
+    accessibleTitle: {
+      ...theme.typography.headlineMedium,
+      color: theme.colors.onBackground,
+      marginBottom: theme.spacing.medium,
+      textAlign: 'center',
+    },
+    accessibleSubtitle: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: theme.spacing.xl,
+      textAlign: 'center',
+    },
+    accessibleFormContainer: {
+      width: '100%',
+    },
+    accessibleLink: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.medium,
     },
     button: {
       width: '100%',
       marginTop: theme.spacing.medium,
-    },
-    footer: {
-      alignItems: 'center',
-      marginTop: theme.spacing.small,
-    },
-    linkText: {
-      color: theme.colors.primary,
-      ...theme.typography.body2,
-      textDecorationLine: 'underline',
     },
   });
 

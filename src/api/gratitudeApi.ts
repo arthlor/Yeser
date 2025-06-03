@@ -1,6 +1,5 @@
-import type { Database, Json } from '../types/supabase.types'; // Keep Json for raw Supabase data if needed
 import * as z from 'zod';
-import { supabase } from '../utils/supabaseClient';
+
 import {
   gratitudeEntrySchema,
   type GratitudeEntry, // This is now the primary type for a daily entry
@@ -12,9 +11,11 @@ import {
 // Base type from generated Supabase types for a row in gratitude_entries
 // This can still be useful for understanding the raw DB structure before validation/mapping
 import { rawGratitudeEntrySchema, type RawGratitudeEntry } from '../schemas/gratitudeEntrySchema';
+import { supabase } from '../utils/supabaseClient';
 
-export type GratitudeEntryRow =
-  Database['public']['Tables']['gratitude_entries']['Row'];
+import type { Database, Json } from '../types/supabase.types'; // Keep Json for raw Supabase data if needed
+
+export type GratitudeEntryRow = Database['public']['Tables']['gratitude_entries']['Row'];
 
 // RawSelectedGratitudeEntryData is no longer needed, RawGratitudeEntry from Zod schema will be used.
 
@@ -37,7 +38,9 @@ export const addStatement = async (
   if (!validationResult.success) {
     console.error('Invalid input for addStatement:', validationResult.error.flatten());
     // Optionally, throw a custom error or return a specific error object
-    throw new Error(`Invalid input: ${validationResult.error.flatten().fieldErrors.statement?.[0] || validationResult.error.flatten().fieldErrors.entry_date?.[0] || 'Validation failed'}`);
+    throw new Error(
+      `Invalid input: ${validationResult.error.flatten().fieldErrors.statement?.[0] || validationResult.error.flatten().fieldErrors.entry_date?.[0] || 'Validation failed'}`
+    );
   }
 
   const { error } = await supabase.rpc('add_gratitude_statement', {
@@ -92,10 +95,7 @@ export const editStatement = async (
  * Calls the `delete_gratitude_statement` RPC.
  * The RPC will also delete the parent `gratitude_entries` row if it becomes empty.
  */
-export const deleteStatement = async (
-  entryDate: string,
-  statementIndex: number
-): Promise<void> => {
+export const deleteStatement = async (entryDate: string, statementIndex: number): Promise<void> => {
   // Validate inputs for the RPC call (client-side)
   const validationResult = deleteStatementPayloadSchema.safeParse({
     entry_date: entryDate,
@@ -160,11 +160,8 @@ const mapAndValidateRawEntry = (
  * Fetches all gratitude daily entries for the current user, ordered by date.
  * Each entry contains an array of gratitude statements.
  */
-export const getGratitudeDailyEntries = async (): Promise<
-  GratitudeEntry[]
-> => {
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.getSession();
+export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !sessionData.session) {
     console.error('Error getting session or no active session:', sessionError);
     throw sessionError || new Error('No active session');
@@ -203,8 +200,7 @@ export const getGratitudeDailyEntries = async (): Promise<
 export const getGratitudeDailyEntryByDate = async (
   entryDate: string
 ): Promise<GratitudeEntry | null> => {
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.getSession();
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !sessionData.session) {
     console.error('Error getting session or no active session:', sessionError);
     throw sessionError || new Error('No active session');
@@ -234,10 +230,7 @@ export const getGratitudeDailyEntryByDate = async (
       ? mapAndValidateRawEntry(data as GratitudeEntryRow) // Use GratitudeEntryRow as it includes all potential fields from the table
       : null;
   } catch (error) {
-    console.error(
-      'Catch block error fetching gratitude daily entry by date:',
-      error
-    );
+    console.error('Catch block error fetching gratitude daily entry by date:', error);
     throw error;
   }
 };
@@ -246,12 +239,8 @@ export const getGratitudeDailyEntryByDate = async (
  * Fetches distinct entry dates for a given month and year for the current user.
  * Calls the `get_entry_dates_for_month` Supabase RPC.
  */
-export const getEntryDatesForMonth = async (
-  year: number,
-  month: number
-): Promise<string[]> => {
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.getSession();
+export const getEntryDatesForMonth = async (year: number, month: number): Promise<string[]> => {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !sessionData.session) {
     console.error('Error getting session or no active session:', sessionError);
     throw sessionError || new Error('No active session');
@@ -276,10 +265,7 @@ export const getEntryDatesForMonth = async (
     // The RPC returns an array of date strings (e.g., "YYYY-MM-DD")
     return data || []; // Ensure it returns an empty array if data is null/undefined
   } catch (error) {
-    console.error(
-      'Catch block error fetching entry dates for month:',
-      error
-    );
+    console.error('Catch block error fetching entry dates for month:', error);
     throw error;
   }
 };
@@ -289,8 +275,7 @@ export const getEntryDatesForMonth = async (
  * Calls the `get_random_gratitude_entry` SQL function.
  */
 export const getRandomGratitudeEntry = async (): Promise<GratitudeEntry | null> => {
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.getSession();
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !sessionData.session) {
     console.error('Error getting session or no active session:', sessionError);
     throw sessionError || new Error('No active session');
@@ -325,4 +310,28 @@ export const getRandomGratitudeEntry = async (): Promise<GratitudeEntry | null> 
     console.error('Catch block error fetching random gratitude entry:', error);
     throw error;
   }
+};
+
+// --- Function to get total entry count --- //
+
+/**
+ * Fetches the total count of gratitude entries for the current user.
+ * Calls the `get_user_gratitude_entries_count` RPC.
+ */
+export const getTotalGratitudeEntriesCount = async (): Promise<number> => {
+  const { data, error } = await supabase.rpc('get_user_gratitude_entries_count');
+
+  if (error) {
+    console.error('Error fetching total gratitude entries count:', error);
+    throw error;
+  }
+
+  // The RPC is expected to return an integer.
+  // If data is null or not a number, default to 0 or handle as an error.
+  if (typeof data === 'number') {
+    return data;
+  }
+
+  console.warn('Received unexpected data type for total entries count:', data);
+  return 0; // Fallback or consider throwing an error
 };

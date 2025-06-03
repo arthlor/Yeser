@@ -75,6 +75,16 @@ const enhancedLightColors: ThemeColors = {
   disabled: '#BDC3C7',
   onDisabled: '#7F8C8D',
 
+  // Advanced interaction states
+  hover: 'rgba(93, 176, 165, 0.08)',
+  pressed: 'rgba(93, 176, 165, 0.12)',
+  focus: 'rgba(93, 176, 165, 0.12)',
+  selected: 'rgba(93, 176, 165, 0.16)',
+
+  // Gradient colors
+  gradientStart: '#5DB0A5',
+  gradientEnd: '#4A8C80',
+
   // Legacy support
   text: '#1A1B1E',
   textSecondary: '#7F8C8D',
@@ -216,15 +226,25 @@ const elevation: ThemeElevation = {
 
 const animations: ThemeAnimations = {
   duration: {
+    instant: 0,
     fast: 150,
     normal: 250,
     slow: 350,
+    slower: 500,
   },
   easing: {
     linear: 'linear',
     easeIn: 'ease-in',
     easeOut: 'ease-out',
     easeInOut: 'ease-in-out',
+    easeInBack: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
+    easeOutBack: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+    easeInOutBack: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+  },
+  spring: {
+    gentle: { tension: 120, friction: 14 },
+    wobbly: { tension: 180, friction: 12 },
+    stiff: { tension: 210, friction: 20 },
   },
 };
 
@@ -261,6 +281,22 @@ const componentVariants: ComponentVariants = {
       backgroundColor: 'transparent',
       color: '#5DB0A5',
     },
+    outlined: {
+      backgroundColor: 'transparent',
+      color: '#5DB0A5',
+      borderWidth: 1,
+      borderColor: '#DDE2E5',
+    },
+    text: {
+      backgroundColor: 'transparent',
+      color: '#5DB0A5',
+    },
+    floating: {
+      backgroundColor: '#5DB0A5',
+      color: '#FFFFFF',
+      borderRadius: 28,
+      elevation: 6,
+    },
   },
   input: {
     default: {
@@ -278,6 +314,21 @@ const componentVariants: ComponentVariants = {
       borderColor: '#4CAF50',
       color: '#1A1B1E',
     },
+    warning: {
+      backgroundColor: '#FFFFFF',
+      borderColor: '#FF9800',
+      color: '#1A1B1E',
+    },
+    disabled: {
+      backgroundColor: '#F0F0F0',
+      borderColor: '#BDC3C7',
+      color: '#7F8C8D',
+    },
+    focused: {
+      backgroundColor: '#FFFFFF',
+      borderColor: '#5DB0A5',
+      color: '#1A1B1E',
+    },
   },
   card: {
     elevated: {
@@ -291,6 +342,84 @@ const componentVariants: ComponentVariants = {
     },
     filled: {
       backgroundColor: '#F7F7F7',
+    },
+    interactive: {
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#DDE2E5',
+      ...elevation.xs,
+    },
+    featured: {
+      backgroundColor: '#E8F4F2',
+      borderWidth: 1,
+      borderColor: '#5DB0A5',
+      ...elevation.md,
+    },
+  },
+  chip: {
+    filled: {
+      backgroundColor: '#5DB0A5',
+      color: '#FFFFFF',
+    },
+    outlined: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: '#DDE2E5',
+      color: '#1A1B1E',
+    },
+    selected: {
+      backgroundColor: '#E8F4F2',
+      color: '#1A4A42',
+    },
+    disabled: {
+      backgroundColor: '#F0F0F0',
+      color: '#7F8C8D',
+    },
+  },
+  avatar: {
+    small: {
+      width: 32,
+      height: 32,
+    },
+    medium: {
+      width: 48,
+      height: 48,
+    },
+    large: {
+      width: 64,
+      height: 64,
+    },
+    circular: {
+      borderRadius: 999,
+    },
+    rounded: {
+      borderRadius: 8,
+    },
+  },
+  badge: {
+    primary: {
+      backgroundColor: '#5DB0A5',
+      color: '#FFFFFF',
+    },
+    secondary: {
+      backgroundColor: '#A8A39D',
+      color: '#FFFFFF',
+    },
+    success: {
+      backgroundColor: '#4CAF50',
+      color: '#FFFFFF',
+    },
+    warning: {
+      backgroundColor: '#FF9800',
+      color: '#FFFFFF',
+    },
+    error: {
+      backgroundColor: '#E74C3C',
+      color: '#FFFFFF',
+    },
+    info: {
+      backgroundColor: '#2196F3',
+      color: '#FFFFFF',
     },
   },
 };

@@ -1,17 +1,11 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../themes/types';
 
-export type ErrorStateProps = {
+export interface ErrorStateProps {
   /**
    * Title of the error message
    */
@@ -41,7 +35,7 @@ export type ErrorStateProps = {
    * Additional styles for the container
    */
   style?: ViewStyle;
-};
+}
 
 /**
  * ErrorState is a component that displays an error message with an optional
@@ -111,8 +105,8 @@ const ErrorState: React.FC<ErrorStateProps> = ({
   return content;
 };
 
-const createStyles = (theme: AppTheme) => {
-  return StyleSheet.create({
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
     container: {
       padding: theme.spacing.large,
       alignItems: 'center',
@@ -147,6 +141,5 @@ const createStyles = (theme: AppTheme) => {
       color: theme.colors.onPrimary,
     },
   });
-};
 
 export default ErrorState;

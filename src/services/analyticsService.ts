@@ -32,10 +32,7 @@ const logEvent = async (
     await analytics.logEvent(eventName, params);
     // console.log(`Analytics: Event logged - ${eventName}`, params || '');
   } catch (error) {
-    console.error(
-      `Failed to log event '${eventName}' to Firebase Analytics`,
-      error
-    );
+    console.error(`Failed to log event '${eventName}' to Firebase Analytics`, error);
   }
 };
 

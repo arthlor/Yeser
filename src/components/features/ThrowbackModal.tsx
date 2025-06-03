@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'; // Correctly import useState and useEffect
-import { ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   ScrollView,
   StyleSheet,
@@ -17,7 +17,7 @@ import { formatDate as formatUtilityDate } from '../../utils/dateUtils';
 const ThrowbackModal: React.FC = () => {
   const {
     randomEntry,
-    isThrowbackVisible: isVisibleFromStore, // Renamed for clarity
+    isThrowbackVisible: isVisibleFromStore,
     hideThrowback,
     isLoading,
     error,
@@ -35,17 +35,11 @@ const ThrowbackModal: React.FC = () => {
     }
   }, [isVisibleFromStore, randomEntry]);
 
-  // If the store says not visible AND our local state agrees, render nothing.
   if (!isVisibleFromStore && !modalActuallyVisible) {
     return null;
   }
 
-  // If randomEntry is null but we are trying to show the modal (due to isVisibleFromStore being true),
-  // we should also return null or a loader. The useEffect above should handle setting
-  // modalActuallyVisible to false if randomEntry is null. This is an additional safeguard.
   if (!randomEntry && modalActuallyVisible) {
-    // This case should ideally be prevented by the useEffect logic,
-    // but as a safeguard, ensure modal is not shown.
     if (modalActuallyVisible) setModalActuallyVisible(false);
     return null;
   }
@@ -53,18 +47,21 @@ const ThrowbackModal: React.FC = () => {
   return (
     <Modal
       animationType="fade"
-      transparent={true}
-      visible={modalActuallyVisible} // Controlled by local state
+      transparent
+      visible={modalActuallyVisible}
       onRequestClose={() => {
-        hideThrowback(); // This will set isVisibleFromStore to false, useEffect will update modalActuallyVisible
+        hideThrowback();
       }}
     >
-      {/* Conditional content rendering based on loading, error, and data states */}
       {modalActuallyVisible && (
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
             {isLoading ? (
-              <ActivityIndicator size="large" color={theme.colors.primary} style={styles.activityIndicator} />
+              <ActivityIndicator
+                size="large"
+                color={theme.colors.primary}
+                style={styles.activityIndicator}
+              />
             ) : error ? (
               <>
                 <Text style={styles.modalTitle}>Bir Hata Oluştu</Text>
@@ -98,7 +95,6 @@ const ThrowbackModal: React.FC = () => {
                 </TouchableOpacity>
               </>
             ) : (
-              // Fallback if no entry but also no error and not loading (should be rare)
               <>
                 <Text style={styles.modalTitle}>✨ Bir Anı Parçacığı ✨</Text>
                 <Text style={styles.entryContent}>Görünecek bir anı bulunamadı.</Text>
@@ -126,89 +122,83 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: 'rgba(0,0,0,0.6)',
     },
     modalView: {
-      minHeight: 150, // Ensure modal has some height for loader/error
-      justifyContent: 'center', // Center content like loader/error text
-      margin: theme.spacing.medium,
+      minHeight: 150,
+      justifyContent: 'center',
+      margin: theme.spacing.lg,
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.xl,
-      padding: theme.spacing.large,
+      borderRadius: theme.borderRadius.lg,
+      padding: theme.spacing.xl,
       alignItems: 'center',
-      shadowColor: theme.colors.shadow || '#000000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 5,
       width: '90%',
       maxHeight: '80%',
     },
     modalTitle: {
-      ...theme.typography.h2,
+      fontSize: 20,
+      fontWeight: '700',
       color: theme.colors.primary,
-      marginBottom: theme.spacing.medium,
+      marginBottom: theme.spacing.lg,
       textAlign: 'center',
+      letterSpacing: -0.2,
     },
     entryScrollView: {
       width: '100%',
-      marginBottom: theme.spacing.medium,
+      marginBottom: theme.spacing.lg,
     },
     entryScrollContentContainer: {
       flexGrow: 1,
       justifyContent: 'center',
     },
     entryContainer: {
-      padding: theme.spacing.medium,
+      padding: theme.spacing.lg,
       backgroundColor: theme.colors.background,
-      borderRadius: theme.borderRadius.medium,
+      borderRadius: theme.borderRadius.md,
       width: '100%',
     },
     entryDate: {
-      ...theme.typography.caption,
-      color: theme.colors.textSecondary, // Preserved from viewed file
-      marginBottom: theme.spacing.small,
+      fontSize: 12,
+      fontWeight: '500',
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: theme.spacing.sm,
       textAlign: 'center',
-      fontStyle: 'italic', // Preserved from viewed file
+      fontStyle: 'italic',
+      opacity: 0.8,
     },
     entryContent: {
-      fontSize: theme.typography.bodyLarge.fontSize,
-      fontFamily: theme.typography.bodyLarge.fontFamily,
-      color: theme.colors.onSurfaceVariant,
+      fontSize: 16,
+      fontWeight: '400',
+      color: theme.colors.onSurface,
       textAlign: 'center',
-      marginBottom: theme.spacing.large,
+      marginBottom: theme.spacing.lg,
+      lineHeight: 24,
+      letterSpacing: 0.1,
     },
     errorText: {
-      fontSize: theme.typography.bodyMedium.fontSize,
-      fontFamily: theme.typography.bodyMedium.fontFamily,
+      fontSize: 14,
+      fontWeight: '400',
       color: theme.colors.error,
       textAlign: 'center',
-      marginVertical: theme.spacing.medium,
+      marginVertical: theme.spacing.md,
+      lineHeight: 20,
     },
     activityIndicator: {
-      marginVertical: theme.spacing.large,
-      ...theme.typography.body1, // Preserved from viewed file
-      color: theme.colors.text, // Preserved from viewed file
-      textAlign: 'left', // Preserved from viewed file
-      lineHeight: theme.typography.body1.fontSize
-        ? theme.typography.body1.fontSize * 1.6
-        : 24, // Preserved from viewed file
+      marginVertical: theme.spacing.lg,
     },
     button: {
-      borderRadius: theme.borderRadius.large,
-      paddingVertical: theme.spacing.medium, // Preserved from viewed file
-      paddingHorizontal: theme.spacing.xl, // Preserved from viewed file
-      elevation: 2,
-      marginTop: theme.spacing.small,
+      borderRadius: theme.borderRadius.lg,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.xl,
+      marginTop: theme.spacing.sm,
+      minWidth: 120,
     },
     buttonClose: {
       backgroundColor: theme.colors.primary,
     },
     textStyle: {
-      color: theme.colors.onPrimary, // Preserved from viewed file
-      fontWeight: 'bold', // Preserved from viewed file
+      color: theme.colors.onPrimary,
+      fontWeight: '600',
       textAlign: 'center',
-      ...theme.typography.button, // Preserved from viewed file
+      fontSize: 15,
+      letterSpacing: 0.1,
     },
   });
 

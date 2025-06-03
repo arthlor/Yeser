@@ -1,17 +1,10 @@
 import React from 'react';
-import {
-  DimensionValue,
-  StyleSheet,
-  Text,
-  TextStyle,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { DimensionValue, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 
 import { useTheme } from '../providers/ThemeProvider';
 import { AppTheme } from '../themes/types';
 
-export type ThemedDividerProps = {
+export interface ThemedDividerProps {
   /**
    * Optional label to display in the middle of the divider
    */
@@ -49,7 +42,7 @@ export type ThemedDividerProps = {
    * Accessibility label for screen readers
    */
   accessibilityLabel?: string;
-};
+}
 
 /**
  * ThemedDivider is a component that provides a consistent way to visually

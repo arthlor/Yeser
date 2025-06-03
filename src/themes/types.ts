@@ -79,6 +79,16 @@ export interface ThemeColors {
   disabled: string;
   onDisabled: string;
 
+  // Advanced interaction states
+  hover: string;
+  pressed: string;
+  focus: string;
+  selected: string;
+
+  // Gradient colors
+  gradientStart: string;
+  gradientEnd: string;
+
   // Legacy support
   text: string;
   textSecondary: string;
@@ -91,6 +101,33 @@ export interface ThemeColors {
   surfaceDisabled: string;
 }
 
+// Advanced semantic color groups
+export interface SemanticColorGroups {
+  brand: {
+    primary: string;
+    secondary: string;
+    tertiary: string;
+  };
+  neutral: {
+    50: string;
+    100: string;
+    200: string;
+    300: string;
+    400: string;
+    500: string;
+    600: string;
+    700: string;
+    800: string;
+    900: string;
+  };
+  feedback: {
+    success: string;
+    warning: string;
+    error: string;
+    info: string;
+  };
+}
+
 // Enhanced typography with more semantic styles
 export interface ThemeTypographyStyle {
   fontFamily?: string;
@@ -99,6 +136,7 @@ export interface ThemeTypographyStyle {
   lineHeight?: number;
   letterSpacing?: number;
   textTransform?: 'none' | 'capitalize' | 'uppercase' | 'lowercase';
+  textDecorationLine?: 'none' | 'underline' | 'line-through';
 }
 
 export interface ThemeTypography {
@@ -226,18 +264,50 @@ export interface ThemeElevation {
   };
 }
 
-// New: Animation/transition system
+// Enhanced Animation/transition system
 export interface ThemeAnimations {
   duration: {
+    instant: number; // 0ms
     fast: number; // 150ms
     normal: number; // 250ms
     slow: number; // 350ms
+    slower: number; // 500ms
   };
   easing: {
     linear: string;
     easeIn: string;
     easeOut: string;
     easeInOut: string;
+    easeInBack: string;
+    easeOutBack: string;
+    easeInOutBack: string;
+  };
+  spring: {
+    gentle: { tension: number; friction: number };
+    wobbly: { tension: number; friction: number };
+    stiff: { tension: number; friction: number };
+  };
+}
+
+// Motion tokens for consistent animations
+export interface MotionTokens {
+  fade: {
+    in: { opacity: number };
+    out: { opacity: number };
+  };
+  slide: {
+    up: { translateY: number };
+    down: { translateY: number };
+    left: { translateX: number };
+    right: { translateX: number };
+  };
+  scale: {
+    in: { scale: number };
+    out: { scale: number };
+  };
+  bounce: {
+    in: { scale: number };
+    out: { scale: number };
   };
 }
 
@@ -254,6 +324,14 @@ export interface ThemeBreakpoints {
 // Enhanced main theme interface
 export type ThemeName = 'light' | 'dark';
 
+// Accessibility features
+export interface AccessibilityFeatures {
+  reduceMotion: boolean;
+  highContrast: boolean;
+  largeText: boolean;
+  screenReader: boolean;
+}
+
 export interface AppTheme {
   name: 'light' | 'dark';
   colors: ThemeColors;
@@ -263,14 +341,19 @@ export interface AppTheme {
   elevation: ThemeElevation;
   animations: ThemeAnimations;
   breakpoints: ThemeBreakpoints;
+  motionTokens?: MotionTokens;
+  semanticColors?: SemanticColorGroups;
+  accessibility?: AccessibilityFeatures;
 }
 
-// Theme utility functions
+// Advanced theme utility functions
 export interface ThemeUtils {
   // Color utilities
   alpha: (color: string, opacity: number) => string;
   lighten: (color: string, amount: number) => string;
   darken: (color: string, amount: number) => string;
+  blend?: (color1: string, color2: string, ratio?: number) => string;
+  getContrastRatio?: (color1: string, color2: string) => number;
 
   // Responsive utilities
   getResponsiveValue: <T>(
@@ -283,6 +366,12 @@ export interface ThemeUtils {
 
   // Typography utilities
   getTypographyStyle: (variant: keyof ThemeTypography) => ThemeTypographyStyle;
+
+  // Animation utilities
+  createAnimationConfig?: (type: 'spring' | 'timing') => object;
+
+  // Elevation utilities
+  createCustomElevation?: (height: number, opacity?: number) => object;
 }
 
 // Theme context type for React
@@ -292,9 +381,12 @@ export interface ThemeContextType {
   setColorMode: (mode: ColorMode) => void;
   toggleColorMode: () => void;
   utils: ThemeUtils;
+  // Advanced features
+  accessibility: AccessibilityFeatures;
+  setAccessibility: (features: Partial<AccessibilityFeatures>) => void;
 }
 
-// Component variant system
+// Enhanced component variants with more states
 export interface ComponentVariants {
   button: {
     primary: object;
@@ -302,16 +394,45 @@ export interface ComponentVariants {
     tertiary: object;
     destructive: object;
     ghost: object;
+    outlined: object;
+    text: object;
+    floating: object;
   };
   input: {
     default: object;
     error: object;
     success: object;
+    warning: object;
+    disabled: object;
+    focused: object;
   };
   card: {
     elevated: object;
     outlined: object;
     filled: object;
+    interactive: object;
+    featured: object;
+  };
+  chip: {
+    filled: object;
+    outlined: object;
+    selected: object;
+    disabled: object;
+  };
+  avatar: {
+    small: object;
+    medium: object;
+    large: object;
+    circular: object;
+    rounded: object;
+  };
+  badge: {
+    primary: object;
+    secondary: object;
+    success: object;
+    warning: object;
+    error: object;
+    info: object;
   };
   // Add more component variants as needed
 }
@@ -320,7 +441,21 @@ export interface EnhancedAppTheme extends AppTheme {
   components: ComponentVariants;
 }
 
+// Theme configuration options
+export interface ThemeConfig {
+  preferredColorMode: ColorMode;
+  customColors?: Partial<ThemeColors>;
+  customTypography?: Partial<ThemeTypography>;
+  customSpacing?: Partial<ThemeSpacing>;
+  accessibility: AccessibilityFeatures;
+  animations: {
+    enabled: boolean;
+    reducedMotion: boolean;
+  };
+}
+
 // Example usage types
 export type ThemeColorKey = keyof ThemeColors;
 export type ThemeSpacingKey = keyof ThemeSpacing;
 export type ThemeRadiusKey = keyof ThemeBorderRadius;
+export type ThemeTypographyKey = keyof ThemeTypography;

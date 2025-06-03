@@ -10,10 +10,15 @@ jest.mock('react-native-safe-area-context', () => {
 
   return {
     // Provide the mocked context's Provider as SafeAreaProvider
-    SafeAreaProvider: ({ children, initialMetrics }: { children: React.ReactNode, initialMetrics?: any }) => {
+    SafeAreaProvider: ({
+      children,
+      initialMetrics,
+    }: {
+      children: React.ReactNode;
+      initialMetrics?: any;
+    }) =>
       // initialMetrics is part of the actual SafeAreaProvider props, mock it if necessary or ignore
-      return React.createElement(MockSafeAreaContext.Provider, { value: inset }, children);
-    },
+      React.createElement(MockSafeAreaContext.Provider, { value: inset }, children),
     // Export the mock context itself as SafeAreaContext
     SafeAreaContext: MockSafeAreaContext,
     // Mock the hooks to return consistent values
@@ -38,7 +43,8 @@ jest.mock('react-native-paper', () => {
   return {
     ...actualPaper, // Spread actual exports (this will include the actual PaperProvider)
     // PaperProvider is no longer overridden here, so the actual one will be used.
-    useTheme: () => ({ // Override useTheme with our specific mock theme
+    useTheme: () => ({
+      // Override useTheme with our specific mock theme
       ...actualPaper.MD3LightTheme, // Start with a base theme structure if needed, or build from scratch
       colors: {
         ...(actualPaper.MD3LightTheme?.colors || {}),
@@ -49,25 +55,68 @@ jest.mock('react-native-paper', () => {
       typography: {
         ...(actualPaper.MD3LightTheme?.typography || {}),
         // Ensure all variants are objects, even if empty, to prevent access errors before specific overrides
-        displayLarge: actualPaper.MD3LightTheme?.typography?.displayLarge || { fontFamily: '', fontSize: 0 },
-        displayMedium: actualPaper.MD3LightTheme?.typography?.displayMedium || { fontFamily: '', fontSize: 0 },
-        displaySmall: actualPaper.MD3LightTheme?.typography?.displaySmall || { fontFamily: '', fontSize: 0 },
-        headlineLarge: actualPaper.MD3LightTheme?.typography?.headlineLarge || { fontFamily: '', fontSize: 0 },
-        headlineMedium: actualPaper.MD3LightTheme?.typography?.headlineMedium || { fontFamily: '', fontSize: 0 },
-        headlineSmall: actualPaper.MD3LightTheme?.typography?.headlineSmall || { fontFamily: '', fontSize: 0 },
-        titleLarge: { // Our specific override
+        displayLarge: actualPaper.MD3LightTheme?.typography?.displayLarge || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        displayMedium: actualPaper.MD3LightTheme?.typography?.displayMedium || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        displaySmall: actualPaper.MD3LightTheme?.typography?.displaySmall || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        headlineLarge: actualPaper.MD3LightTheme?.typography?.headlineLarge || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        headlineMedium: actualPaper.MD3LightTheme?.typography?.headlineMedium || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        headlineSmall: actualPaper.MD3LightTheme?.typography?.headlineSmall || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        titleLarge: {
+          // Our specific override
           ...(actualPaper.MD3LightTheme?.typography?.titleLarge || {}),
           fontFamily: 'MockFontFamily-System',
           fontSize: 22,
         },
-        titleMedium: actualPaper.MD3LightTheme?.typography?.titleMedium || { fontFamily: '', fontSize: 0 },
-        titleSmall: actualPaper.MD3LightTheme?.typography?.titleSmall || { fontFamily: '', fontSize: 0 },
-        labelLarge: actualPaper.MD3LightTheme?.typography?.labelLarge || { fontFamily: '', fontSize: 0 },
-        labelMedium: actualPaper.MD3LightTheme?.typography?.labelMedium || { fontFamily: '', fontSize: 0 },
-        labelSmall: actualPaper.MD3LightTheme?.typography?.labelSmall || { fontFamily: '', fontSize: 0 },
-        bodyLarge: actualPaper.MD3LightTheme?.typography?.bodyLarge || { fontFamily: '', fontSize: 0 },
-        bodyMedium: actualPaper.MD3LightTheme?.typography?.bodyMedium || { fontFamily: '', fontSize: 0 },
-        bodySmall: actualPaper.MD3LightTheme?.typography?.bodySmall || { fontFamily: '', fontSize: 0 },
+        titleMedium: actualPaper.MD3LightTheme?.typography?.titleMedium || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        titleSmall: actualPaper.MD3LightTheme?.typography?.titleSmall || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        labelLarge: actualPaper.MD3LightTheme?.typography?.labelLarge || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        labelMedium: actualPaper.MD3LightTheme?.typography?.labelMedium || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        labelSmall: actualPaper.MD3LightTheme?.typography?.labelSmall || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        bodyLarge: actualPaper.MD3LightTheme?.typography?.bodyLarge || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        bodyMedium: actualPaper.MD3LightTheme?.typography?.bodyMedium || {
+          fontFamily: '',
+          fontSize: 0,
+        },
+        bodySmall: actualPaper.MD3LightTheme?.typography?.bodySmall || {
+          fontFamily: '',
+          fontSize: 0,
+        },
       },
       dark: false,
       roundness: 4,

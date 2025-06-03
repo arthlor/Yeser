@@ -1,15 +1,11 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
+import { useTheme } from '../../providers/ThemeProvider';
 import ThemedCard from '../ThemedCard';
 import ThemedDivider from '../ThemedDivider';
-import { useTheme } from '../../providers/ThemeProvider';
+
 import type { AppTheme } from '../../themes/types';
 
 interface AboutSettingsProps {
@@ -49,7 +45,12 @@ const AboutSettings: React.FC<AboutSettingsProps> = ({
       {settingItems.map((item, index) => (
         <React.Fragment key={item.label}>
           <TouchableOpacity style={styles.settingItem} onPress={item.action}>
-            <Icon name={item.icon} size={22} color={theme.colors.textSecondary} style={styles.icon} />
+            <Icon
+              name={item.icon}
+              size={22}
+              color={theme.colors.textSecondary}
+              style={styles.icon}
+            />
             <Text style={styles.settingText}>{item.label}</Text>
             <Icon name="chevron-right" size={22} color={theme.colors.textSecondary} />
           </TouchableOpacity>

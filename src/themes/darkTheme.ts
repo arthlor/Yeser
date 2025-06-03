@@ -13,78 +13,89 @@ import {
 // Enhanced Dark Theme Implementation
 const enhancedDarkColors: ThemeColors = {
   // Brand colors
-  primary: '#66C5B9', // Brighter Muted Teal
-  onPrimary: '#00382F', // Dark Teal for text on primary
-  primaryVariant: '#85D4C9', // Lighter Muted Teal (can be used for hover/focus)
-  primaryContainer: '#005043', // Dark Teal container
-  onPrimaryContainer: '#97F0E1', // Light Teal text on primary container
+  primary: '#BB86FC',
+  onPrimary: '#000000',
+  primaryVariant: '#985EFF',
+  primaryContainer: '#4C2C8A',
+  onPrimaryContainer: '#E5D4FF',
 
-  secondary: '#B8BEC0', // Lightened Grey for dark theme secondary
-  onSecondary: '#283336', // Dark Grey for text on secondary
-  secondaryContainer: '#3E494C', // Dark Grey container
-  onSecondaryContainer: '#D4D8DA', // Light Grey text on secondary container
+  secondary: '#03DAC6',
+  onSecondary: '#000000',
+  secondaryContainer: '#2C5B5A',
+  onSecondaryContainer: '#A7F2E8',
 
-  tertiary: '#D4B283', // Muted Gold/Brown
-  onTertiary: '#3C2E1A', // Dark Brown for text on tertiary
-  tertiaryContainer: '#524023', // Dark Gold/Brown container
-  onTertiaryContainer: '#FDE0B9', // Light Gold/Brown text on tertiary container
+  tertiary: '#FF6B6B',
+  onTertiary: '#000000',
+  tertiaryContainer: '#8B1E3F',
+  onTertiaryContainer: '#FFCCD2',
 
-  accent: '#F8C9B0', // Light Peach
-  onAccent: '#4A352A', // Dark Warm Brown for text on accent
-  accentContainer: '#614030', // Dark Peach/Brown container
-  onAccentContainer: '#FFDBC9', // Light Peach text on accent container
+  // Accent colors
+  accent: '#FFD93D',
+  onAccent: '#1A1A1A',
+  accentContainer: '#B8860B',
+  onAccentContainer: '#FFF8DC',
 
   // Surfaces
-  background: '#1A1B1E', // Very Dark Cool Grey (almost black)
-  onBackground: '#E3E3E6', // Light Grey for text
-  surface: '#252A2D', // Dark Cool Grey (slightly lighter than background)
-  onSurface: '#E3E3E6', // Light Grey for text on surface
-  surfaceVariant: '#3A3F42', // Slightly different dark grey
-  onSurfaceVariant: '#B8BFC2', // Lighter grey for text on surfaceVariant
-  surfaceTint: '#66C5B9', // Primary color for tinting
-  inverseSurface: '#E3E3E6', // Light Grey for inverse surface
-  inverseOnSurface: '#1A1B1E', // Dark Grey for text on inverse surface
+  background: '#121212',
+  onBackground: '#E1E1E1',
+  surface: '#1E1E1E',
+  onSurface: '#E1E1E1',
+  surfaceVariant: '#2A2A2A',
+  onSurfaceVariant: '#C7C7C7',
+  surfaceTint: '#BB86FC',
+  inverseSurface: '#E1E1E1',
+  inverseOnSurface: '#121212',
 
   // Content colors
-  outline: '#8A9093', // Medium Grey for outlines
-  outlineVariant: '#3E4549', // Darker Grey for outline variants (current border)
-  scrim: 'rgba(0, 0, 0, 0.6)', // Darker scrim for dark mode
+  outline: '#9B9B9B',
+  outlineVariant: '#4A4A4A',
+  scrim: '#000000',
 
   // State colors with containers
-  success: '#7EDC82', // Brighter Green
-  onSuccess: '#00390A', // Dark Green for text on success
-  successContainer: '#005214', // Darker Green container
-  onSuccessContainer: '#9AF59C', // Light Green text on success container
+  success: '#00C851',
+  onSuccess: '#003D1A',
+  successContainer: '#1B5E20',
+  onSuccessContainer: '#B8E6C1',
 
-  warning: '#FFB84D', // Brighter Orange
-  onWarning: '#452B00', // Dark Orange for text on warning
-  warningContainer: '#663F00', // Darker Orange container
-  onWarningContainer: '#FFDDB5', // Light Orange text on warning container
+  warning: '#FFD54F',
+  onWarning: '#332900',
+  warningContainer: '#8D6E63',
+  onWarningContainer: '#FFF8E1',
 
-  error: '#F17C6F', // Brighter Red (current error)
-  onError: '#5B0C0C', // Dark Red for text on error
-  errorContainer: '#7A1B1B', // Darker Red container
-  onErrorContainer: '#FFDAD6', // Light Red text on error container
+  error: '#CF6679',
+  onError: '#690005',
+  errorContainer: '#93000A',
+  onErrorContainer: '#FFDAD6',
 
-  info: '#6AB7FF', // Brighter Blue
-  onInfo: '#002F5E', // Dark Blue for text on info
-  infoContainer: '#004680', // Darker Blue container
-  onInfoContainer: '#C3E7FF', // Light Blue text on info container
+  info: '#2196F3',
+  onInfo: '#0D47A1',
+  infoContainer: '#1565C0',
+  onInfoContainer: '#E3F2FD',
 
   // Interaction states
-  disabled: '#5E686D', // Medium-Dark Grey (current disabled)
-  onDisabled: '#A8B0B4', // Medium-Light Grey for text on disabled (current textSecondary)
+  disabled: '#6A6A6A',
+  onDisabled: '#2A2A2A',
 
-  // Legacy support (map from old theme where possible)
-  text: '#E3E3E6', // Main text color (Light Grey)
-  textSecondary: '#A8B0B4', // Medium-Light Grey
-  border: '#3E4549', // Dark Grey
-  inputBackground: '#2C3135', // Dark Grey (for inputs)
-  inputText: '#E3E3E6', // Light Grey
-  danger: '#E57373', // Softer Bright Red
-  onDanger: '#430000', // Dark Red for text on danger
-  shadow: 'rgba(0, 0, 0, 0.5)', // Darker shadow for dark mode
-  surfaceDisabled: '#2C2C2C', // Dark gray for skeleton/disabled surfaces
+  // Advanced interaction states
+  hover: '#2A2A2A',
+  pressed: '#404040',
+  focus: '#505050',
+  selected: '#3A3A3A',
+
+  // Gradient colors
+  gradientStart: '#BB86FC',
+  gradientEnd: '#03DAC6',
+
+  // Legacy support
+  text: '#E1E1E1',
+  textSecondary: '#B0B0B0',
+  border: '#4A4A4A',
+  inputBackground: '#2A2A2A',
+  inputText: '#E1E1E1',
+  danger: '#CF6679',
+  onDanger: '#690005',
+  shadow: '#000000',
+  surfaceDisabled: '#1A1A1A',
 };
 
 const enhancedTypography: ThemeTypography = {
@@ -218,15 +229,25 @@ const darkElevation: ThemeElevation = {
 
 const animations: ThemeAnimations = {
   duration: {
+    instant: 0,
     fast: 150,
     normal: 250,
     slow: 350,
+    slower: 500,
   },
   easing: {
     linear: 'linear',
     easeIn: 'ease-in',
     easeOut: 'ease-out',
     easeInOut: 'ease-in-out',
+    easeInBack: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
+    easeOutBack: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+    easeInOutBack: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+  },
+  spring: {
+    gentle: { tension: 120, friction: 14 },
+    wobbly: { tension: 180, friction: 12 },
+    stiff: { tension: 200, friction: 10 },
   },
 };
 
@@ -263,6 +284,21 @@ const componentVariants: ComponentVariants = {
       backgroundColor: 'transparent',
       color: enhancedDarkColors.primary,
     },
+    outlined: {
+      backgroundColor: 'transparent',
+      color: enhancedDarkColors.primary,
+      borderWidth: 1,
+      borderColor: enhancedDarkColors.outline,
+    },
+    text: {
+      backgroundColor: 'transparent',
+      color: enhancedDarkColors.primary,
+    },
+    floating: {
+      backgroundColor: enhancedDarkColors.primaryContainer,
+      color: enhancedDarkColors.onPrimaryContainer,
+      ...darkElevation.lg,
+    },
   },
   input: {
     default: {
@@ -280,6 +316,21 @@ const componentVariants: ComponentVariants = {
       borderColor: enhancedDarkColors.success,
       color: enhancedDarkColors.inputText,
     },
+    warning: {
+      backgroundColor: enhancedDarkColors.inputBackground,
+      borderColor: enhancedDarkColors.warning,
+      color: enhancedDarkColors.inputText,
+    },
+    disabled: {
+      backgroundColor: enhancedDarkColors.surfaceDisabled,
+      borderColor: enhancedDarkColors.disabled,
+      color: enhancedDarkColors.onDisabled,
+    },
+    focused: {
+      backgroundColor: enhancedDarkColors.inputBackground,
+      borderColor: enhancedDarkColors.primary,
+      color: enhancedDarkColors.inputText,
+    },
   },
   card: {
     elevated: {
@@ -294,6 +345,37 @@ const componentVariants: ComponentVariants = {
     filled: {
       backgroundColor: enhancedDarkColors.surfaceVariant,
     },
+    interactive: {
+      backgroundColor: enhancedDarkColors.surfaceVariant,
+      borderWidth: 1,
+      borderColor: enhancedDarkColors.outline,
+    },
+    featured: {
+      backgroundColor: enhancedDarkColors.primaryContainer,
+      borderWidth: 1,
+      borderColor: enhancedDarkColors.primary,
+    },
+  },
+  chip: {
+    filled: {},
+    outlined: {},
+    selected: {},
+    disabled: {},
+  },
+  avatar: {
+    small: {},
+    medium: {},
+    large: {},
+    circular: {},
+    rounded: {},
+  },
+  badge: {
+    primary: {},
+    secondary: {},
+    success: {},
+    warning: {},
+    error: {},
+    info: {},
   },
 };
 

@@ -1,3 +1,5 @@
+import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
 import React from 'react';
 import {
   StyleSheet,
@@ -10,11 +12,10 @@ import {
   ImageStyle,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
-import { AppTheme } from '@/themes/types';
-import { useTheme } from '@/providers/ThemeProvider';
+
 import ThemedCard from '@/components/ThemedCard';
+import { useTheme } from '@/providers/ThemeProvider';
+import { AppTheme } from '@/themes/types';
 
 // Define a more specific type for the throwback entry prop
 interface ThrowbackEntryData {
@@ -46,7 +47,7 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.surfaceVariant,
       borderRadius: theme.borderRadius.md,
       marginHorizontal: theme.spacing.lg,
-      marginTop: theme.spacing.md, 
+      marginTop: theme.spacing.md,
     } as ViewStyle,
     loadingTextMini: {
       ...theme.typography.bodySmall,
@@ -62,7 +63,7 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.errorContainer,
       borderRadius: theme.borderRadius.md,
       marginHorizontal: theme.spacing.lg,
-      marginTop: theme.spacing.md, 
+      marginTop: theme.spacing.md,
     } as ViewStyle,
     throwbackErrorText: {
       ...theme.typography.bodyMedium,
@@ -72,9 +73,9 @@ const createStyles = (theme: AppTheme) =>
     } as TextStyle,
     throwbackCard: {
       marginHorizontal: theme.spacing.lg,
-      marginTop: theme.spacing.md, 
-      padding: theme.spacing.md, 
-      backgroundColor: theme.colors.surfaceVariant, 
+      marginTop: theme.spacing.md,
+      padding: theme.spacing.md,
+      backgroundColor: theme.colors.surfaceVariant,
     } as ViewStyle,
     throwbackHeader: {
       flexDirection: 'row',
@@ -120,7 +121,8 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
     );
   }
 
-  if (error && !throwbackEntry) { // Show error only if no entry is present
+  if (error && !throwbackEntry) {
+    // Show error only if no entry is present
     return (
       <View style={styles.throwbackErrorContainer}>
         <Icon name="alert-circle-outline" size={20} color={theme.colors.onErrorContainer} />
@@ -136,14 +138,14 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
 
   return (
     <View style={styles.container}>
-      <ThemedCard style={styles.throwbackCard} elevation='xs'>
+      <ThemedCard style={styles.throwbackCard} elevation="xs">
         <TouchableOpacity onPress={onNavigateToThrowback} activeOpacity={0.7}>
           <View style={styles.throwbackHeader}>
             <Icon name="history" size={20} color={theme.colors.primary} />
             <Text style={styles.throwbackTitleText}>Geçmişten Bir Anı</Text>
           </View>
           <Text style={styles.throwbackContentText} numberOfLines={2}>
-            {throwbackEntry.statements[0] || 'Geçmişten bir şükran ifadeniz var.'}
+            {throwbackEntry.statements?.[0] || 'Geçmişten bir şükran ifadeniz var.'}
           </Text>
           <Text style={styles.throwbackDateText}>
             {format(new Date(throwbackEntry.entry_date), 'dd MMMM yyyy', { locale: tr })}

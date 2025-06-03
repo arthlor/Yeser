@@ -1,39 +1,54 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ZodError } from 'zod';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
+
+import {
   getGratitudeDailyEntryByDate,
   addStatement as apiAddStatement,
   editStatement as apiEditStatement,
-  deleteStatement as apiDeleteStatement
+  deleteStatement as apiDeleteStatement,
+  getTotalGratitudeEntriesCount, // Added import
   // GratitudeEntry will be imported from schemas
 } from '@/api/gratitudeApi';
+
 import { gratitudeEntrySchema, type GratitudeEntry } from '../schemas/gratitudeEntrySchema';
 
 // If GratitudeDailyEntry or GratitudeStatement are not directly exported or need adjustment,
 // we can define them here or import them if they exist elsewhere in a suitable form.
 // For now, we assume they are available from gratitudeApi.ts as per previous work.
 
-interface GratitudeStoreState {
+export interface GratitudeStoreState {
   entries: Record<string, GratitudeEntry | null>; // Keyed by date string YYYY-MM-DD
   isLoading: boolean;
   error: string | null;
+  totalEntries: number | null; // Added
+  totalEntriesLoading: boolean; // Added
+  totalEntriesError: string | null; // Added
   fetchEntry: (date: string) => Promise<void>;
   addStatement: (date: string, statementText: string) => Promise<GratitudeEntry | null>;
-  updateStatement: (date: string, statementIndex: number, newText: string) => Promise<GratitudeEntry | null>;
+  updateStatement: (
+    date: string,
+    statementIndex: number,
+    newText: string
+  ) => Promise<GratitudeEntry | null>;
   removeStatement: (date: string, statementIndex: number) => Promise<GratitudeEntry | null>;
   setEntries: (entries: Record<string, GratitudeEntry | null>) => void; // For initializing or resetting
+  fetchTotalEntriesCount: () => Promise<void>; // Added
 }
 
-export const useGratitudeStore = create(
+export const useGratitudeStore = create<GratitudeStoreState>()(
   persist<GratitudeStoreState>(
     (set, get) => ({
-      // Type for set and get: 
+      // Type for set and get:
       // set: (partial: Partial<GratitudeStoreState> | ((state: GratitudeStoreState) => Partial<GratitudeStoreState>), replace?: boolean) => void
       // get: () => GratitudeStoreState
       entries: {},
       isLoading: false,
       error: null,
+      totalEntries: null,
+      totalEntriesLoading: false,
+      totalEntriesError: null,
 
       fetchEntry: async (date: string) => {
         set({ isLoading: true, error: null });
@@ -42,26 +57,30 @@ export const useGratitudeStore = create(
           if (rawEntry) {
             const parsedEntry = gratitudeEntrySchema.parse(rawEntry);
             // Successfully parsed, now use parsedEntry
-            set((state: GratitudeStoreState) => ({ 
+            set((state: GratitudeStoreState) => ({
               entries: { ...state.entries, [date]: parsedEntry },
-              isLoading: false 
+              isLoading: false,
             }));
           } else {
             // If no entry, ensure it's represented as such or cleared
             set((state: GratitudeStoreState) => ({
               entries: { ...state.entries, [date]: null }, // Store null if no entry exists
-              isLoading: false
+              isLoading: false,
             }));
           }
         } catch (e: any) {
           console.error('Failed to fetch entry:', e);
-          let errorMessage = 'Girişler yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.';
+          let errorMessage =
+            'Girişler yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.';
           if (e instanceof Error) {
             errorMessage = e.message;
           }
           // Check if it's a ZodError for more specific feedback
-          if (e.constructor.name === 'ZodError') { // A more robust check might be needed if ZodError is not directly importable here
-            errorMessage = 'Alınan veri beklenen formatta değil: ' + e.errors.map((err: any) => `${err.path.join('.')} (${err.message})`).join(', ');
+          if (e.constructor.name === 'ZodError') {
+            // A more robust check might be needed if ZodError is not directly importable here
+            errorMessage =
+              'Alınan veri beklenen formatta değil: ' +
+              e.errors.map((err: any) => `${err.path.join('.')} (${err.message})`).join(', ');
           }
           set({ isLoading: false, error: errorMessage });
         }
@@ -81,7 +100,7 @@ export const useGratitudeStore = create(
           // Constructing a completely new entry
           optimisticEntry = {
             id: `temp-${Date.now()}`, // Temporary ID
-            user_id: 'temp-user-id',   // Placeholder, backend handles actual user_id
+            user_id: 'temp-user-id', // Placeholder, backend handles actual user_id
             entry_date: date,
             statements: [statementText],
             created_at: new Date().toISOString(),
@@ -111,7 +130,9 @@ export const useGratitudeStore = create(
           } else {
             // This case implies an issue if backend is expected to return the entry
             // Fallback to refetch or handle as an error
-            console.warn('Add statement: Backend did not return an entry. Reverting optimistic update.');
+            console.warn(
+              'Add statement: Backend did not return an entry. Reverting optimistic update.'
+            );
             set((state: GratitudeStoreState) => ({
               entries: { ...state.entries, [date]: originalEntry }, // Rollback
               isLoading: false,
@@ -121,12 +142,14 @@ export const useGratitudeStore = create(
           }
         } catch (e: any) {
           console.error('Failed to add statement, rolling back:', e);
-          let errorMessage = 'Minnet ifadeniz eklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.';
-          if (e instanceof Error) {
+          let errorMessage =
+            'Minnet ifadeniz eklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.';
+          if (e instanceof ZodError) {
+            errorMessage =
+              'Alınan veri beklenen formatta değil: ' +
+              e.issues.map((issue) => `${issue.path.join('.')} (${issue.message})`).join(', ');
+          } else if (e instanceof Error) {
             errorMessage = e.message;
-          }
-          if (e.constructor.name === 'ZodError') {
-            errorMessage = 'Sunucudan alınan ifade verisi beklenen formatta değil: ' + e.errors.map((err: any) => `${err.path.join('.')} (${err.message})`).join(', ');
           }
           // Rollback on error
           set((state: GratitudeStoreState) => ({
@@ -138,12 +161,23 @@ export const useGratitudeStore = create(
         }
       },
 
-      updateStatement: async (date: string, statementIndex: number, newText: string): Promise<GratitudeEntry | null> => {
+      updateStatement: async (
+        date: string,
+        statementIndex: number,
+        newText: string
+      ): Promise<GratitudeEntry | null> => {
         const originalEntry = get().entries[date];
 
-        if (!originalEntry || statementIndex < 0 || statementIndex >= originalEntry.statements.length) {
+        if (
+          !originalEntry ||
+          statementIndex < 0 ||
+          statementIndex >= originalEntry.statements.length
+        ) {
           console.error('Update statement: Invalid entry or statement index.');
-          set({ isLoading: false, error: 'Geçersiz giriş veya ifade indeksi nedeniyle güncelleme yapılamıyor.' });
+          set({
+            isLoading: false,
+            error: 'Geçersiz giriş veya ifade indeksi nedeniyle güncelleme yapılamıyor.',
+          });
           return null;
         }
 
@@ -179,22 +213,28 @@ export const useGratitudeStore = create(
           } else {
             // If backendEntry is null after an edit, it implies the entry might have been deleted concurrently
             // or an issue occurred. Revert to optimistic or handle as error.
-            console.warn('Update statement: Backend did not return an entry post-edit. Reverting to optimistic or original.');
+            console.warn(
+              'Update statement: Backend did not return an entry post-edit. Reverting to optimistic or original.'
+            );
             set((state: GratitudeStoreState) => ({
               entries: { ...state.entries, [date]: originalEntry }, // Rollback to original pre-optimistic state
               isLoading: false,
-              error: 'Güncelleme onayı alınamadı: Düzenleme sonrası giriş bulunamadı. Liste yenilenmiş olabilir.',
+              error:
+                'Güncelleme onayı alınamadı: Düzenleme sonrası giriş bulunamadı. Liste yenilenmiş olabilir.',
             }));
             return null;
           }
         } catch (e: any) {
           console.error('Failed to update statement, rolling back:', e);
-          let errorMessage = 'Minnet ifadeniz güncellenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.';
+          let errorMessage =
+            'Minnet ifadeniz güncellenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.';
           if (e instanceof Error) {
             errorMessage = e.message;
           }
           if (e.constructor.name === 'ZodError') {
-            errorMessage = 'Sunucudan alınan güncellenmiş ifade verisi beklenen formatta değil: ' + e.errors.map((err: any) => `${err.path.join('.')} (${err.message})`).join(', ');
+            errorMessage =
+              'Sunucudan alınan güncellenmiş ifade verisi beklenen formatta değil: ' +
+              e.errors.map((err: any) => `${err.path.join('.')} (${err.message})`).join(', ');
           }
           // Rollback on error
           set((state: GratitudeStoreState) => ({
@@ -206,16 +246,28 @@ export const useGratitudeStore = create(
         }
       },
 
-      removeStatement: async (date: string, statementIndex: number): Promise<GratitudeEntry | null> => {
+      removeStatement: async (
+        date: string,
+        statementIndex: number
+      ): Promise<GratitudeEntry | null> => {
         const originalEntry = get().entries[date];
 
-        if (!originalEntry || statementIndex < 0 || statementIndex >= originalEntry.statements.length) {
+        if (
+          !originalEntry ||
+          statementIndex < 0 ||
+          statementIndex >= originalEntry.statements.length
+        ) {
           console.error('Remove statement: Invalid entry or statement index.');
-          set({ isLoading: false, error: 'Geçersiz giriş veya ifade indeksi nedeniyle silme işlemi yapılamıyor.' });
+          set({
+            isLoading: false,
+            error: 'Geçersiz giriş veya ifade indeksi nedeniyle silme işlemi yapılamıyor.',
+          });
           return null;
         }
 
-        const newStatements = originalEntry.statements.filter((_, index) => index !== statementIndex);
+        const newStatements = originalEntry.statements.filter(
+          (_, index) => index !== statementIndex
+        );
         let optimisticEntryOrNull: GratitudeEntry | null;
 
         if (newStatements.length === 0) {
@@ -259,12 +311,15 @@ export const useGratitudeStore = create(
           }
         } catch (e: any) {
           console.error('Failed to remove statement, rolling back:', e);
-          let errorMessage = 'Minnet ifadeniz silinemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.';
+          let errorMessage =
+            'Minnet ifadeniz silinemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.';
           if (e instanceof Error) {
             errorMessage = e.message;
           }
           if (e.constructor.name === 'ZodError') {
-            errorMessage = 'Sunucudan alınan silinmiş ifade sonrası veri beklenen formatta değil: ' + e.errors.map((err: any) => `${err.path.join('.')} (${err.message})`).join(', ');
+            errorMessage =
+              'Sunucudan alınan silinmiş ifade sonrası veri beklenen formatta değil: ' +
+              e.errors.map((err: any) => `${err.path.join('.')} (${err.message})`).join(', ');
           }
           // Rollback on error
           set((state: GratitudeStoreState) => ({
@@ -272,12 +327,27 @@ export const useGratitudeStore = create(
             isLoading: false,
             error: errorMessage,
           }));
-          return null;
+          return null; // Added missing return for removeStatement
         }
       },
-      
+
       setEntries: (entries: Record<string, GratitudeEntry | null>) => {
         set({ entries, isLoading: false, error: null });
+      },
+
+      fetchTotalEntriesCount: async () => {
+        set({ totalEntriesLoading: true, totalEntriesError: null });
+        try {
+          const count = await getTotalGratitudeEntriesCount();
+          set({ totalEntries: count, totalEntriesLoading: false });
+        } catch (e: any) {
+          console.error('Failed to fetch total entries count:', e);
+          let errorMessage = 'Toplam giriş sayısı alınamadı.';
+          if (e instanceof Error) {
+            errorMessage = e.message;
+          }
+          set({ totalEntriesLoading: false, totalEntriesError: errorMessage });
+        }
       },
     }),
     {
@@ -286,8 +356,6 @@ export const useGratitudeStore = create(
     }
   )
 );
-
-
 
 // Example of how to use (for documentation or testing):
 // const { entries, fetchEntry, addStatement } = useGratitudeStore.getState();

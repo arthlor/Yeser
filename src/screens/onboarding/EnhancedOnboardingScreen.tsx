@@ -20,10 +20,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../themes/types';
 import { RootStackParamList } from '../../types/navigation';
 
-type OnboardingScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'Onboarding'
->;
+type OnboardingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Onboarding'>;
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -74,11 +71,15 @@ const EnhancedOnboardingScreen: React.FC = () => {
   const flatListRef = useRef<FlatList>(null);
   const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
 
+  // Animation refs
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const dotsAnim = useRef(new Animated.Value(0)).current;
+
   // Check if screen reader is enabled
   useEffect(() => {
     const checkScreenReader = async () => {
-      const screenReaderEnabled =
-        await AccessibilityInfo.isScreenReaderEnabled();
+      const screenReaderEnabled = await AccessibilityInfo.isScreenReaderEnabled();
       setIsScreenReaderEnabled(screenReaderEnabled);
     };
 
@@ -94,6 +95,32 @@ const EnhancedOnboardingScreen: React.FC = () => {
       subscription.remove();
     };
   }, []);
+
+  // Initial entrance animations
+  useEffect(() => {
+    const animateEntrance = () => {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: theme.animations.duration?.slow || 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: theme.animations.duration?.slow || 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dotsAnim, {
+          toValue: 1,
+          duration: theme.animations.duration?.normal || 400,
+          delay: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    };
+
+    animateEntrance();
+  }, [fadeAnim, slideAnim, dotsAnim, theme.animations.duration]);
 
   const handleContinueToReminderSetup = useCallback(() => {
     navigation.navigate('OnboardingReminderSetup');
@@ -129,73 +156,112 @@ const EnhancedOnboardingScreen: React.FC = () => {
     }
   }, [currentIndex]);
 
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
-      if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-        setCurrentIndex(viewableItems[0].index);
-      }
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+      setCurrentIndex(viewableItems[0].index);
     }
-  ).current;
+  }).current;
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   const renderItem = useCallback(
     ({ item, index }: { item: OnboardingSlide; index: number }) => (
-      <View
-        style={styles.slide}
+      <Animated.View
+        style={[
+          styles.slide,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
         accessibilityLabel={`Onboarding ekranı ${index + 1}/${onboardingSlides.length}: ${item.title}`}
         accessibilityRole="none"
       >
         {item.icon && (
-          <View style={styles.iconContainer}>
-            <Ionicons
-              name={item.icon as React.ComponentProps<typeof Ionicons>['name']}
-              size={80}
-              color={theme.colors.primary}
-              accessibilityLabel={`${item.title} ikonu`}
-            />
-          </View>
-        )}
-
-        <Text style={styles.title} accessibilityRole="header">
-          {item.title}
-        </Text>
-
-        <Text style={styles.description} accessibilityRole="text">
-          {item.description}
-        </Text>
-
-        {item.privacyNote && (
-          <ThemedCard
-            variant="outlined"
-            style={styles.privacyCard}
-            accessibilityLabel={item.privacyNote}
+          <Animated.View
+            style={[
+              styles.iconContainer,
+              {
+                transform: [
+                  {
+                    scale: fadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.8, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
           >
-            <View style={styles.privacyContent}>
+            <View style={styles.iconBackground}>
               <Ionicons
-                name="shield-checkmark-outline"
-                size={20}
+                name={item.icon as React.ComponentProps<typeof Ionicons>['name']}
+                size={64}
                 color={theme.colors.primary}
-                style={styles.privacyIcon}
+                accessibilityLabel={`${item.title} ikonu`}
               />
-              <Text style={styles.privacyNote}>{item.privacyNote}</Text>
             </View>
-          </ThemedCard>
+          </Animated.View>
         )}
 
-        {item.showButton && (
-          <ThemedButton
-            title="Hadi Başlayalım!"
-            onPress={handleContinueToReminderSetup}
-            variant="primary"
-            style={styles.button}
-            accessibilityLabel="Hatırlatıcı ayarlarına geç"
-            accessibilityHint="Günlük hatırlatıcı ayarlarına gitmek için dokunun"
-          />
-        )}
-      </View>
+        <Animated.View
+          style={[
+            styles.contentContainer,
+            {
+              opacity: fadeAnim,
+              transform: [
+                {
+                  translateY: slideAnim.interpolate({
+                    inputRange: [0, 50],
+                    outputRange: [0, 30],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Text style={styles.title} accessibilityRole="header">
+            {item.title}
+          </Text>
+
+          <Text style={styles.description} accessibilityRole="text">
+            {item.description}
+          </Text>
+
+          {item.privacyNote && (
+            <ThemedCard
+              variant="elevated"
+              elevation="sm"
+              style={styles.privacyCard}
+              accessibilityLabel={item.privacyNote}
+            >
+              <View style={styles.privacyContent}>
+                <View style={styles.privacyIconContainer}>
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={24}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text style={styles.privacyNote}>{item.privacyNote}</Text>
+              </View>
+            </ThemedCard>
+          )}
+
+          {item.showButton && (
+            <ThemedButton
+              title="Hadi Başlayalım! 🚀"
+              onPress={handleContinueToReminderSetup}
+              variant="primary"
+              style={styles.primaryButton}
+              accessibilityLabel="Hatırlatıcı ayarlarına geç"
+              accessibilityHint="Günlük hatırlatıcı ayarlarına gitmek için dokunun"
+            />
+          )}
+        </Animated.View>
+      </Animated.View>
     ),
-    [handleContinueToReminderSetup, styles, theme.colors.primary]
+    [handleContinueToReminderSetup, styles, theme.colors.primary, fadeAnim, slideAnim]
   );
 
   // Render a more accessible version for screen readers
@@ -203,9 +269,7 @@ const EnhancedOnboardingScreen: React.FC = () => {
     return (
       <View style={styles.container}>
         <View style={styles.accessibleContent}>
-          <Text style={styles.accessibleTitle}>
-            {onboardingSlides[currentIndex].title}
-          </Text>
+          <Text style={styles.accessibleTitle}>{onboardingSlides[currentIndex].title}</Text>
 
           <Text style={styles.accessibleDescription}>
             {onboardingSlides[currentIndex].description}
@@ -229,18 +293,12 @@ const EnhancedOnboardingScreen: React.FC = () => {
             )}
 
             <ThemedButton
-              title={
-                currentIndex === onboardingSlides.length - 1
-                  ? 'Başla'
-                  : 'Sonraki'
-              }
+              title={currentIndex === onboardingSlides.length - 1 ? 'Başla' : 'Sonraki'}
               onPress={handleNext}
               variant="primary"
               style={styles.navigationButton}
               accessibilityLabel={
-                currentIndex === onboardingSlides.length - 1
-                  ? 'Başla'
-                  : 'Sonraki ekrana git'
+                currentIndex === onboardingSlides.length - 1 ? 'Başla' : 'Sonraki ekrana git'
               }
             />
           </View>
@@ -262,17 +320,32 @@ const EnhancedOnboardingScreen: React.FC = () => {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        keyExtractor={item => item.key}
+        keyExtractor={(item) => item.key}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         style={styles.flatList}
-        scrollEnabled={true}
+        scrollEnabled
         bounces={false}
         decelerationRate="fast"
         accessibilityRole="scrollbar"
       />
 
-      <View style={styles.paginationContainer}>
+      <Animated.View
+        style={[
+          styles.paginationContainer,
+          {
+            opacity: dotsAnim,
+            transform: [
+              {
+                translateY: dotsAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         {onboardingSlides.map((_, index) => (
           <TouchableOpacity
             key={index}
@@ -284,6 +357,7 @@ const EnhancedOnboardingScreen: React.FC = () => {
                 });
               }
             }}
+            style={styles.paginationDotTouchable}
             accessibilityLabel={`Sayfa ${index + 1}`}
             accessibilityRole="button"
             accessibilityHint={`${index + 1}. sayfaya git`}
@@ -291,16 +365,28 @@ const EnhancedOnboardingScreen: React.FC = () => {
             <Animated.View
               style={[
                 styles.paginationDot,
-                currentIndex === index
-                  ? styles.paginationDotActive
-                  : styles.paginationDotInactive,
+                currentIndex === index ? styles.paginationDotActive : styles.paginationDotInactive,
+                {
+                  transform: [
+                    {
+                      scale: currentIndex === index ? 1.2 : 1,
+                    },
+                  ],
+                },
               ]}
             />
           </TouchableOpacity>
         ))}
-      </View>
+      </Animated.View>
 
-      <View style={styles.navigationContainer}>
+      <Animated.View
+        style={[
+          styles.navigationContainer,
+          {
+            opacity: dotsAnim,
+          },
+        ]}
+      >
         {currentIndex < onboardingSlides.length - 1 && (
           <TouchableOpacity
             onPress={handleSkip}
@@ -321,14 +407,10 @@ const EnhancedOnboardingScreen: React.FC = () => {
             accessibilityRole="button"
             accessibilityHint="Sonraki sayfaya git"
           >
-            <Ionicons
-              name="arrow-forward"
-              size={24}
-              color={theme.colors.onPrimary}
-            />
+            <Ionicons name="arrow-forward" size={24} color={theme.colors.onPrimary} />
           </TouchableOpacity>
         )}
-      </View>
+      </Animated.View>
     </View>
   );
 };
@@ -348,83 +430,98 @@ const createStyles = (theme: AppTheme) =>
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.large,
-      paddingBottom: theme.spacing.large * 2,
-      paddingTop: theme.spacing.large,
+      paddingBottom: theme.spacing.large * 3,
+      paddingTop: theme.spacing.xl,
     },
     iconContainer: {
+      marginBottom: theme.spacing.xl,
+    },
+    iconBackground: {
       width: 120,
       height: 120,
-      borderRadius: 60,
-      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: theme.spacing.large,
-      elevation: 3,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+      ...theme.elevation.lg,
+      shadowColor: theme.colors.primary,
+    },
+    contentContainer: {
+      alignItems: 'center',
+      width: '100%',
+      maxWidth: 400,
     },
     title: {
-      ...theme.typography.h1,
-      color: theme.colors.primary,
+      ...theme.typography.headlineLarge,
+      color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.large,
+      fontWeight: '700',
     },
     description: {
-      ...theme.typography.body1,
-      color: theme.colors.textSecondary,
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      marginBottom: theme.spacing.large,
-      lineHeight: theme.typography.body1.lineHeight
-        ? theme.typography.body1.lineHeight * 1.5
-        : 24,
+      marginBottom: theme.spacing.xl,
+      lineHeight: 26,
+      paddingHorizontal: theme.spacing.medium,
     },
     privacyCard: {
-      marginTop: theme.spacing.medium,
-      marginBottom: theme.spacing.large,
+      marginBottom: theme.spacing.xl,
       width: '90%',
-      padding: theme.spacing.small,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.large,
     },
     privacyContent: {
       flexDirection: 'row',
       alignItems: 'center',
+      padding: theme.spacing.medium,
     },
-    privacyIcon: {
-      marginRight: theme.spacing.small,
+    privacyIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: theme.spacing.medium,
     },
     privacyNote: {
-      ...theme.typography.caption,
-      color: theme.colors.textSecondary,
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
       flex: 1,
+      lineHeight: 20,
     },
-    button: {
-      marginTop: theme.spacing.large,
+    primaryButton: {
       width: '80%',
-      alignSelf: 'center',
+      paddingVertical: theme.spacing.medium + 2,
+      borderRadius: theme.borderRadius.large,
+      ...theme.elevation.md,
     },
     paginationContainer: {
       position: 'absolute',
-      bottom: theme.spacing.large * 2,
+      bottom: theme.spacing.large * 2.5,
       left: 0,
       right: 0,
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
     },
+    paginationDotTouchable: {
+      padding: theme.spacing.small,
+    },
     paginationDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      marginHorizontal: theme.spacing.xs,
-      marginVertical: theme.spacing.small,
+      width: 8,
+      height: 8,
+      borderRadius: theme.borderRadius.full,
     },
     paginationDotActive: {
       backgroundColor: theme.colors.primary,
-      transform: [{ scale: 1.2 }],
+      width: 24,
+      borderRadius: theme.borderRadius.full,
     },
     paginationDotInactive: {
-      backgroundColor: theme.colors.border,
+      backgroundColor: theme.colors.outlineVariant,
     },
     navigationContainer: {
       position: 'absolute',
@@ -437,24 +534,24 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing.large,
     },
     skipButton: {
-      padding: theme.spacing.small,
+      paddingVertical: theme.spacing.medium,
+      paddingHorizontal: theme.spacing.large,
+      borderRadius: theme.borderRadius.medium,
     },
     skipButtonText: {
-      ...theme.typography.button,
-      color: theme.colors.textSecondary,
+      ...theme.typography.labelLarge,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '600',
     },
     nextButton: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
+      width: 56,
+      height: 56,
+      borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
-      elevation: 2,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
+      ...theme.elevation.md,
+      shadowColor: theme.colors.primary,
     },
     // Accessible styles for screen readers
     accessibleContent: {
@@ -464,25 +561,26 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
     },
     accessibleTitle: {
-      ...theme.typography.h1,
-      color: theme.colors.primary,
+      ...theme.typography.headlineMedium,
+      color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.large,
+      fontWeight: '700',
     },
     accessibleDescription: {
-      ...theme.typography.body1,
-      color: theme.colors.textSecondary,
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       marginBottom: theme.spacing.large,
+      lineHeight: 24,
     },
     accessiblePrivacyNote: {
-      ...theme.typography.caption,
-      color: theme.colors.textSecondary,
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
       textAlign: 'center',
       marginBottom: theme.spacing.large,
       padding: theme.spacing.medium,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.primaryContainer,
       borderRadius: theme.borderRadius.medium,
     },
     accessibleNavigation: {
@@ -496,8 +594,8 @@ const createStyles = (theme: AppTheme) =>
       marginHorizontal: theme.spacing.small,
     },
     accessiblePagination: {
-      ...theme.typography.caption,
-      color: theme.colors.textSecondary,
+      ...theme.typography.labelMedium,
+      color: theme.colors.onSurfaceVariant,
       marginTop: theme.spacing.large,
     },
   });

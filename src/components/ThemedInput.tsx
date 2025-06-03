@@ -136,17 +136,13 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
         </Animated.Text>
       )}
 
-      <Animated.View
-        style={[styles.inputContainer, inputContainerStyle, { borderColor }]}
-      >
+      <Animated.View style={[styles.inputContainer, inputContainerStyle, { borderColor }]}>
         {startIcon && <View style={styles.iconStart}>{startIcon}</View>}
 
         <TextInput
           style={[styles.input, style]}
           placeholderTextColor={
-            inputState === 'disabled'
-              ? theme.colors.disabled
-              : theme.colors.textSecondary
+            inputState === 'disabled' ? theme.colors.disabled : theme.colors.textSecondary
           }
           onFocus={handleFocus}
           onBlur={handleBlur}
@@ -168,15 +164,9 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
           style={[
             styles.message,
             messageStyle,
-            error
-              ? styles.errorMessage
-              : success
-                ? styles.successMessage
-                : styles.helperMessage,
+            error ? styles.errorMessage : success ? styles.successMessage : styles.helperMessage,
           ]}
-          accessibilityLabel={
-            error ? `Error: ${error}` : success ? `Success: ${success}` : helper
-          }
+          accessibilityLabel={error ? `Error: ${error}` : success ? `Success: ${success}` : helper}
         >
           {message}
         </Text>
@@ -185,12 +175,8 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
   );
 };
 
-const createStyles = (
-  theme: AppTheme,
-  state: InputState,
-  _isFocused: boolean
-) => {
-  return StyleSheet.create({
+const createStyles = (theme: AppTheme, state: InputState, _isFocused: boolean) =>
+  StyleSheet.create({
     container: {
       marginBottom: theme.spacing.md,
     },
@@ -204,9 +190,7 @@ const createStyles = (
       borderWidth: 1,
       borderRadius: theme.borderRadius.sm,
       backgroundColor:
-        state === 'disabled'
-          ? theme.colors.surfaceDisabled
-          : theme.colors.inputBackground,
+        state === 'disabled' ? theme.colors.surfaceDisabled : theme.colors.inputBackground,
       borderColor:
         state === 'error'
           ? theme.colors.error
@@ -218,8 +202,7 @@ const createStyles = (
     },
     input: {
       flex: 1,
-      color:
-        state === 'disabled' ? theme.colors.onDisabled : theme.colors.inputText,
+      color: state === 'disabled' ? theme.colors.onDisabled : theme.colors.inputText,
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
       ...theme.typography.bodyMedium,
@@ -244,6 +227,5 @@ const createStyles = (
       color: theme.colors.textSecondary,
     },
   });
-};
 
 export default ThemedInput;

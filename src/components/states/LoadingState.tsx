@@ -1,16 +1,10 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../themes/types';
 
-export type LoadingStateProps = {
+export interface LoadingStateProps {
   /**
    * Message to display below the loading indicator
    */
@@ -30,7 +24,7 @@ export type LoadingStateProps = {
    * Additional styles for the container
    */
   style?: ViewStyle;
-};
+}
 
 /**
  * LoadingState is a component that displays a loading indicator with an optional message.
@@ -56,18 +50,11 @@ const LoadingState: React.FC<LoadingStateProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const styles = React.useMemo(
-    () => createStyles(theme, overlay),
-    [theme, overlay]
-  );
+  const styles = React.useMemo(() => createStyles(theme, overlay), [theme, overlay]);
 
   const content = (
     <View style={[styles.container, style]} accessibilityRole="progressbar">
-      <ActivityIndicator
-        size={size}
-        color={theme.colors.primary}
-        accessibilityLabel="Loading"
-      />
+      <ActivityIndicator size={size} color={theme.colors.primary} accessibilityLabel="Loading" />
       {message && (
         <Text style={styles.message} accessibilityRole="text">
           {message}
@@ -79,8 +66,8 @@ const LoadingState: React.FC<LoadingStateProps> = ({
   return content;
 };
 
-const createStyles = (theme: AppTheme, overlay: boolean) => {
-  return StyleSheet.create({
+const createStyles = (theme: AppTheme, overlay: boolean) =>
+  StyleSheet.create({
     container: {
       padding: theme.spacing.large,
       alignItems: 'center',
@@ -102,6 +89,5 @@ const createStyles = (theme: AppTheme, overlay: boolean) => {
       textAlign: 'center',
     },
   });
-};
 
 export default LoadingState;

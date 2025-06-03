@@ -2,6 +2,7 @@
 import { AuthError, Session, User } from '@supabase/supabase-js';
 
 import { supabase } from '../utils/supabaseClient';
+
 import {
   EmailPasswordCredentials,
   getCurrentSession,
@@ -34,8 +35,7 @@ const mockSupabaseSignIn = supabase.auth.signInWithPassword as jest.Mock;
 const mockSupabaseSignOut = supabase.auth.signOut as jest.Mock;
 const mockSupabaseGetUser = supabase.auth.getUser as jest.Mock;
 const mockSupabaseGetSession = supabase.auth.getSession as jest.Mock;
-const mockSupabaseOnAuthStateChange = supabase.auth
-  .onAuthStateChange as jest.Mock;
+const mockSupabaseOnAuthStateChange = supabase.auth.onAuthStateChange as jest.Mock;
 const mockSupabaseSignInWithOAuth = supabase.auth.signInWithOAuth as jest.Mock;
 
 describe('authService - signUpWithEmail', () => {
@@ -367,10 +367,7 @@ describe('authService - getCurrentSession', () => {
 
     expect(mockSupabaseGetSession).toHaveBeenCalledTimes(1);
     expect(result).toBeNull();
-    expect(console.error).toHaveBeenCalledWith(
-      'Error getting session:',
-      mockError.message
-    );
+    expect(console.error).toHaveBeenCalledWith('Error getting session:', mockError.message);
   });
 });
 
@@ -380,7 +377,7 @@ describe('authService - onAuthStateChange', () => {
 
   beforeEach(() => {
     mockSupabaseOnAuthStateChange.mockClear(); // Reset call count before each test
-    mockSupabaseOnAuthStateChange.mockImplementation(callback => {
+    mockSupabaseOnAuthStateChange.mockImplementation((callback) => {
       // Capture the callback provided by the SUT (System Under Test)
       mockUserCallback = callback;
       // Return the structure expected by the SUT
@@ -495,9 +492,7 @@ describe('authService - onAuthStateChange', () => {
     } else {
       // This case should ideally not be hit if Supabase behaves as expected
       // and our mock is set up correctly for this test.
-      throw new Error(
-        'Subscription was not defined, check mock setup for onAuthStateChange.'
-      );
+      throw new Error('Subscription was not defined, check mock setup for onAuthStateChange.');
     }
   });
 });
@@ -519,8 +514,7 @@ describe('authService - signInWithGoogle', () => {
   });
 
   it('should return FeatureDisabledError if supabase.auth.signInWithOAuth provides a URL (WebBrowser part is disabled)', async () => {
-    const mockOAuthUrl =
-      'https://supabase.io/auth/v1/authorize?provider=google';
+    const mockOAuthUrl = 'https://supabase.io/auth/v1/authorize?provider=google';
     mockSupabaseSignInWithOAuth.mockResolvedValueOnce({
       data: { url: mockOAuthUrl, provider: 'google' },
       error: null,
@@ -587,9 +581,7 @@ describe('authService - signInWithGoogle', () => {
 
   it('should return AuthCatchError if supabase.auth.signInWithOAuth throws an unexpected error', async () => {
     const unexpectedErrorMessage = 'Unexpected Supabase Error';
-    mockSupabaseSignInWithOAuth.mockRejectedValueOnce(
-      new Error(unexpectedErrorMessage)
-    );
+    mockSupabaseSignInWithOAuth.mockRejectedValueOnce(new Error(unexpectedErrorMessage));
 
     const result = await signInWithGoogle();
 

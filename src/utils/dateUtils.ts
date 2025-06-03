@@ -10,7 +10,7 @@ import { tr } from 'date-fns/locale';
  */
 export const formatDate = (
   date: string | Date,
-  formatString: string = 'yyyy-MM-dd',
+  formatString = 'yyyy-MM-dd',
   localeString: 'tr' | 'en-US' = 'tr'
 ): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -22,9 +22,7 @@ export const formatDate = (
  * Gets the current date formatted as YYYY-MM-DD.
  * @returns The current date string.
  */
-export const getCurrentFormattedDate = (): string => {
-  return formatDate(new Date());
-};
+export const getCurrentFormattedDate = (): string => formatDate(new Date());
 
 /**
  * Parses a time string (HH:MM:SS) into a Date object.

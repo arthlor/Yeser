@@ -80,9 +80,7 @@ const getStyles = (
       color: textColor,
       fontSize: theme.typography.button.fontSize,
       fontWeight: theme.typography.button.fontWeight,
-      fontFamily:
-        theme.typography.button.fontFamily ||
-        theme.typography.fontFamilyRegular,
+      fontFamily: theme.typography.button.fontFamily || theme.typography.fontFamilyRegular,
     } as TextStyle, // Type assertion for clarity
     loadingIndicator: {
       marginLeft: isLoading && variant !== 'ghost' ? theme.spacing.small : 0, // Add space if title is also present

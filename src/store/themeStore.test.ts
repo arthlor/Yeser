@@ -1,7 +1,9 @@
-import { useThemeStore } from './themeStore';
-import { lightTheme } from '../themes/lightTheme';
-import { darkTheme } from '../themes/darkTheme';
 import { act } from 'react-test-renderer';
+
+import { darkTheme } from '../themes/darkTheme';
+import { lightTheme } from '../themes/lightTheme';
+
+import { useThemeStore } from './themeStore';
 
 // Mock the theme objects for simplicity in testing, if needed, or use actuals
 // For this case, using actuals is fine as they are simple objects.

@@ -52,7 +52,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
   const { data: totalEntriesCount } = useGratitudeTotalCount();
   
   React.useEffect(() => {
-    console.log('HomeScreen Debug - Total gratitude entries:', totalEntriesCount);
+    logger.debug('HomeScreen Debug - Total gratitude entries:', totalEntriesCount);
   }, [totalEntriesCount]);
 
   // Extract data from TanStack Query responses

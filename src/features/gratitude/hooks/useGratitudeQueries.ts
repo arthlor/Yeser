@@ -9,6 +9,7 @@ import { queryKeys } from '@/api/queryKeys';
 import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 import useAuthStore from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/utils/debugConfig';
 
 export const useGratitudeEntries = () => {
   const user = useAuthStore((state) => state.user);
@@ -60,7 +61,7 @@ export const useRandomGratitudeEntry = () => {
   const query = useQuery<GratitudeEntry | null, Error>({
     queryKey: queryKeys.randomGratitudeEntry(user?.id),
     queryFn: async () => {
-      console.log('useRandomGratitudeEntry: Starting query', { 
+      logger.debug('useRandomGratitudeEntry: Starting query', { 
         userId: user?.id,
         userExists: !!user,
         queryEnabled: !!user?.id,
@@ -69,7 +70,7 @@ export const useRandomGratitudeEntry = () => {
       
       try {
         const result = await getRandomGratitudeEntry();
-        console.log('useRandomGratitudeEntry: Query completed successfully', {
+        logger.debug('useRandomGratitudeEntry: Query completed successfully', {
           hasResult: !!result,
           entryDate: result?.entry_date,
           statementsCount: result?.statements?.length,
@@ -78,7 +79,7 @@ export const useRandomGratitudeEntry = () => {
         });
         return result;
       } catch (error) {
-        console.error('useRandomGratitudeEntry: Query failed', {
+        logger.error('useRandomGratitudeEntry: Query failed', {
           error: error instanceof Error ? error.message : String(error),
           userId: user?.id,
           stack: error instanceof Error ? error.stack : undefined
@@ -89,7 +90,7 @@ export const useRandomGratitudeEntry = () => {
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes - random entry can be cached briefly
     retry: (failureCount, error) => {
-      console.log('useRandomGratitudeEntry: Retry attempt', { 
+      logger.debug('useRandomGratitudeEntry: Retry attempt', { 
         failureCount, 
         error: error?.message,
         willRetry: failureCount < 2
@@ -100,7 +101,7 @@ export const useRandomGratitudeEntry = () => {
   });
 
   // Additional debugging for query state
-  console.log('useRandomGratitudeEntry: Query state', {
+  logger.debug('useRandomGratitudeEntry: Query state', {
     isEnabled: query.isLoading !== undefined, // Query is active
     isLoading: query.isLoading,
     isFetching: query.isFetching,

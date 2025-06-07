@@ -1,3 +1,5 @@
+import { logger } from '@/utils/debugConfig';
+
 /**
  * Debug and logging configuration for the Yeser app
  * Provides structured logging with different levels and conditional output
@@ -45,19 +47,19 @@ class Logger {
 
   debug(message: string, context?: LogContext) {
     if (this.logLevel <= 0) {
-      console.log(this.formatMessage('DEBUG', message, context), context);
+      logger.debug(this.formatMessage('DEBUG', message, context), context);
     }
   }
 
   info(message: string, context?: LogContext) {
     if (this.logLevel <= 1) {
-      console.info(this.formatMessage('INFO', message, context), context);
+      logger.info(this.formatMessage('INFO', message, context), context);
     }
   }
 
   warn(message: string, context?: LogContext) {
     if (this.logLevel <= 2) {
-      console.warn(this.formatMessage('WARN', message, context), context);
+      logger.warn(this.formatMessage('WARN', message, context), context);
     }
   }
 
@@ -65,10 +67,10 @@ class Logger {
     if (this.logLevel <= 3) {
       if (context instanceof Error) {
         // Handle Error objects separately
-        console.error(this.formatMessage('ERROR', message), context);
+        logger.error(this.formatMessage('ERROR', message), context);
       } else {
         // Handle LogContext objects
-        console.error(this.formatMessage('ERROR', message, context), context);
+        logger.error(this.formatMessage('ERROR', message, context), context);
       }
     }
   }

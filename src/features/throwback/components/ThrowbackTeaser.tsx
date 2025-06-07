@@ -16,6 +16,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { logger } from '@/utils/debugConfig';
 
 // Define a more specific type for the throwback entry prop
 interface ThrowbackEntryData {
@@ -174,7 +175,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
 
   // Debug logging
   React.useEffect(() => {
-    console.log('ThrowbackTeaser Debug:', {
+    logger.debug('ThrowbackTeaser Debug:', {
       hasEntry: !!throwbackEntry,
       isLoading,
       error: error?.substring(0, 100), // Log first 100 chars of error
@@ -228,7 +229,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
         <TouchableOpacity 
           style={styles.placeholderCard}
           onPress={() => {
-            console.log('ThrowbackTeaser: Manual refresh triggered by user tap');
+            logger.debug('ThrowbackTeaser: Manual refresh triggered by user tap');
             onRefresh?.();
           }}
           activeOpacity={0.7}

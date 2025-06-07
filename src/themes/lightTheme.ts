@@ -1,100 +1,113 @@
 import {
-  ComponentVariants,
-  EnhancedAppTheme,
-  ThemeAnimations,
+  AppTheme,
   ThemeBorderRadius,
-  ThemeBreakpoints,
   ThemeColors,
   ThemeElevation,
   ThemeSpacing,
   ThemeTypography,
 } from './types';
 
-// Enhanced Light Theme Implementation
+// Softer Light Theme - Easier on the Eyes
 const enhancedLightColors: ThemeColors = {
-  // Brand colors
-  primary: '#5DB0A5',
-  onPrimary: '#FFFFFF',
-  primaryVariant: '#4A8C80',
-  primaryContainer: '#E8F4F2',
-  onPrimaryContainer: '#1A4A42',
+  // Brand colors - Softer, warmer green tones
+  primary: '#0F766E', // Deeper, more muted teal-green
+  onPrimary: '#F0FDFA', // Soft mint instead of pure white
+  primaryVariant: '#0D9488', // Slightly brighter variant
+  primaryContainer: '#F0FDFA', // Very soft mint container
+  onPrimaryContainer: '#042F2E',
 
-  secondary: '#A8A39D',
-  onSecondary: '#FFFFFF',
-  secondaryContainer: '#F0EDE9',
-  onSecondaryContainer: '#3D3A37',
+  secondary: '#92400E', // Warm amber-brown 
+  onSecondary: '#FEF3C7', // Soft cream instead of white
+  secondaryContainer: '#FEF3C7', // Light warm container
+  onSecondaryContainer: '#451A03',
 
-  tertiary: '#8B7355',
-  onTertiary: '#FFFFFF',
-  tertiaryContainer: '#F2E6D3',
-  onTertiaryContainer: '#2D2419',
+  tertiary: '#0369A1', // Softer blue tertiary
+  onTertiary: '#E0F2FE', // Soft blue tint
+  tertiaryContainer: '#E0F2FE',
+  onTertiaryContainer: '#0C4A6E',
 
-  accent: '#F5B89A',
-  onAccent: '#6B4F43',
-  accentContainer: '#FDF0EA',
-  onAccentContainer: '#3A2B21',
+  accent: '#CA8A04', // More muted amber accent
+  onAccent: '#FEF3C7',
+  accentContainer: '#FEF3C7',
+  onAccentContainer: '#713F12',
 
-  // Surfaces
-  background: '#FEFEFE',
-  onBackground: '#1A1B1E',
-  surface: '#FFFFFF',
-  onSurface: '#1A1B1E',
-  surfaceVariant: '#F7F7F7',
-  onSurfaceVariant: '#464749',
-  surfaceTint: '#5DB0A5',
-  inverseSurface: '#2F3033',
-  inverseOnSurface: '#F1F0F4',
+  // Surfaces - Warmer, softer backgrounds
+  background: '#F8FAFC', // Soft blue-gray instead of pure white
+  onBackground: '#1E293B', // Softer dark text
+  surface: '#FFFFFF', // Keep pure white for cards but reduce usage
+  onSurface: '#1E293B',
+  surfaceVariant: '#F1F5F9', // Warm gray-blue variant
+  onSurfaceVariant: '#475569', // Softer contrast
+  surfaceTint: '#0F766E',
+  inverseSurface: '#334155',
+  inverseOnSurface: '#F8FAFC',
 
-  // Content colors
-  outline: '#DDE2E5',
-  outlineVariant: '#F0F0F0',
-  scrim: 'rgba(0, 0, 0, 0.5)',
+  // Enhanced surface levels for softer hierarchy
+  surfaceElevated: '#FEFEFE', // Very slightly off-white
+  surfaceContainer: '#F8FAFC', // Same as background for continuity
+  surfaceBright: '#FFFFFF', // Pure white for emphasis
+  surfaceDim: '#F1F5F9', // Dimmed surface
 
-  // State colors with containers
-  success: '#4CAF50',
-  onSuccess: '#FFFFFF',
-  successContainer: '#E8F5E8',
-  onSuccessContainer: '#1B4B1D',
+  // Content colors - Softer borders and outlines
+  outline: '#CBD5E1', // Much softer outline
+  outlineVariant: '#E2E8F0', // Very light outline
+  scrim: 'rgba(15, 23, 42, 0.5)', // Warmer scrim
 
-  warning: '#FF9800',
-  onWarning: '#FFFFFF',
-  warningContainer: '#FFF3E0',
-  onWarningContainer: '#B8680D',
+  // Enhanced border system for softer appearance
+  borderLight: '#F1F5F9', // Very light borders
+  borderMedium: '#E2E8F0', // Medium borders  
+  borderStrong: '#CBD5E1', // Strong but not harsh borders
 
-  error: '#E74C3C',
-  onError: '#FFFFFF',
-  errorContainer: '#FFEBEE',
-  onErrorContainer: '#C62828',
+  // State colors - Softer, more muted
+  success: '#059669', // Deeper green, less bright
+  onSuccess: '#F0FDF4', // Soft green tint
+  successContainer: '#ECFDF5', // Light green container
+  onSuccessContainer: '#064E3B',
 
-  info: '#2196F3',
-  onInfo: '#FFFFFF',
-  infoContainer: '#E3F2FD',
-  onInfoContainer: '#0D47A1',
+  warning: '#D97706', // Warmer, less bright amber
+  onWarning: '#FEF3C7', // Soft cream
+  warningContainer: '#FEF3C7',
+  onWarningContainer: '#92400E',
+
+  error: '#DC2626', // Softer red
+  onError: '#FEF2F2', // Soft pink tint
+  errorContainer: '#FEF2F2',
+  onErrorContainer: '#7F1D1D',
+
+  info: '#0284C7', // Softer blue info
+  onInfo: '#E0F2FE', // Soft blue tint
+  infoContainer: '#E0F2FE',
+  onInfoContainer: '#0369A1',
 
   // Interaction states
-  disabled: '#BDC3C7',
-  onDisabled: '#7F8C8D',
+  disabled: '#94A3B8', // Softer disabled
+  onDisabled: '#64748B',
 
-  // Advanced interaction states
-  hover: 'rgba(93, 176, 165, 0.08)',
-  pressed: 'rgba(93, 176, 165, 0.12)',
-  focus: 'rgba(93, 176, 165, 0.12)',
-  selected: 'rgba(93, 176, 165, 0.16)',
+  // Advanced interaction states - Very gentle
+  hover: 'rgba(15, 118, 110, 0.04)', // Ultra-subtle hover
+  pressed: 'rgba(15, 118, 110, 0.08)',
+  focus: 'rgba(15, 118, 110, 0.12)',
+  selected: 'rgba(15, 118, 110, 0.06)',
+  
+  // Enhanced interaction states
+  hoverStrong: 'rgba(15, 118, 110, 0.10)', // Stronger but still subtle
+  focusRing: '#0F766E', // Focus ring color
+  activeState: 'rgba(15, 118, 110, 0.15)', // Active state
 
-  // Gradient colors
-  gradientStart: '#5DB0A5',
-  gradientEnd: '#4A8C80',
+  // Gradient colors - Softer gradient
+  gradientStart: '#0F766E',
+  gradientEnd: '#059669',
 
-  // Legacy support
-  text: '#1A1B1E',
-  textSecondary: '#7F8C8D',
-  border: '#DDE2E5',
-  inputBackground: '#FFFFFF',
-  inputText: '#1A1B1E',
-  danger: '#C0392B',
-  onDanger: '#FFFFFF',
-  shadow: 'rgba(0, 0, 0, 0.1)',
-  surfaceDisabled: '#F0F0F0',
+  // Legacy support - updated for softer theme
+  text: '#1E293B', // Softer dark text
+  textSecondary: '#64748B', // Warmer secondary text
+  border: '#E2E8F0', // Much softer border
+  inputBackground: '#FEFEFE', // Very slightly off-white
+  inputText: '#1E293B',
+  danger: '#DC2626',
+  onDanger: '#FEF2F2',
+  shadow: 'rgba(15, 23, 42, 0.08)', // Softer shadow
+  surfaceDisabled: '#F1F5F9',
 };
 
 const enhancedTypography: ThemeTypography = {
@@ -109,27 +122,27 @@ const enhancedTypography: ThemeTypography = {
   displayMedium: { fontSize: 45, fontWeight: '400', lineHeight: 52 },
   displaySmall: { fontSize: 36, fontWeight: '400', lineHeight: 44 },
 
-  // Headlines
-  headlineLarge: { fontSize: 32, fontWeight: '600', lineHeight: 40 },
-  headlineMedium: { fontSize: 28, fontWeight: '600', lineHeight: 36 },
-  headlineSmall: { fontSize: 24, fontWeight: '600', lineHeight: 32 },
+  // Headlines - Enhanced for better hierarchy
+  headlineLarge: { fontSize: 32, fontWeight: '700', lineHeight: 40, letterSpacing: -0.5 },
+  headlineMedium: { fontSize: 28, fontWeight: '600', lineHeight: 36, letterSpacing: -0.3 },
+  headlineSmall: { fontSize: 24, fontWeight: '600', lineHeight: 32, letterSpacing: -0.2 },
 
-  // Titles
-  titleLarge: { fontSize: 22, fontWeight: '500', lineHeight: 28 },
-  titleMedium: { fontSize: 18, fontWeight: '500', lineHeight: 24 },
-  titleSmall: { fontSize: 16, fontWeight: '500', lineHeight: 20 },
+  // Titles - More refined
+  titleLarge: { fontSize: 22, fontWeight: '600', lineHeight: 28, letterSpacing: -0.1 },
+  titleMedium: { fontSize: 18, fontWeight: '600', lineHeight: 24 },
+  titleSmall: { fontSize: 16, fontWeight: '600', lineHeight: 20 },
 
-  // Body text
-  bodyLarge: { fontSize: 16, fontWeight: '400', lineHeight: 24 },
-  bodyMedium: { fontSize: 14, fontWeight: '400', lineHeight: 20 },
-  bodySmall: { fontSize: 12, fontWeight: '400', lineHeight: 16 },
+  // Body text - Improved readability
+  bodyLarge: { fontSize: 16, fontWeight: '400', lineHeight: 26, letterSpacing: 0.1 },
+  bodyMedium: { fontSize: 14, fontWeight: '400', lineHeight: 22, letterSpacing: 0.1 },
+  bodySmall: { fontSize: 12, fontWeight: '400', lineHeight: 18, letterSpacing: 0.2 },
 
-  // Labels
-  labelLarge: { fontSize: 14, fontWeight: '500', lineHeight: 20 },
-  labelMedium: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
+  // Labels - Better contrast
+  labelLarge: { fontSize: 14, fontWeight: '600', lineHeight: 20, letterSpacing: 0.1 },
+  labelMedium: { fontSize: 12, fontWeight: '600', lineHeight: 16, letterSpacing: 0.3 },
   labelSmall: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '600',
     lineHeight: 16,
     letterSpacing: 0.5,
   },
@@ -158,10 +171,12 @@ const enhancedSpacing: ThemeSpacing = {
   xxl: 48,
   xxxl: 64,
 
-  // Semantic spacing
+  // Semantic spacing - updated for modern mobile layouts with better hierarchy
   component: 16,
-  section: 32,
-  page: 24,
+  section: 28, // Increased for better breathing room
+  page: 16, // Back to 16px for optimal balance
+  content: 12, // Increased for better content spacing
+  edge: 6, // Slightly more edge spacing
 
   // Legacy support
   small: 8,
@@ -185,6 +200,7 @@ const enhancedBorderRadius: ThemeBorderRadius = {
   large: 16,
 };
 
+// Softer elevation with gentler shadows
 const elevation: ThemeElevation = {
   none: {
     shadowOffset: { width: 0, height: 0 },
@@ -194,244 +210,62 @@ const elevation: ThemeElevation = {
   },
   xs: {
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.03, // Ultra-subtle shadow
+    shadowRadius: 3,
     elevation: 1,
   },
   sm: {
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
+    shadowOpacity: 0.04, // Very gentle shadow
+    shadowRadius: 6,
     elevation: 2,
   },
   md: {
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 8,
+    shadowOpacity: 0.06, // Soft shadow
+    shadowRadius: 12,
     elevation: 4,
   },
   lg: {
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
+    shadowOpacity: 0.08, // Gentle shadow
+    shadowRadius: 20,
     elevation: 8,
   },
   xl: {
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
+    shadowOpacity: 0.1, // Comfortable shadow
+    shadowRadius: 28,
     elevation: 12,
   },
-};
-
-const animations: ThemeAnimations = {
-  duration: {
-    instant: 0,
-    fast: 150,
-    normal: 250,
-    slow: 350,
-    slower: 500,
-  },
-  easing: {
-    linear: 'linear',
-    easeIn: 'ease-in',
-    easeOut: 'ease-out',
-    easeInOut: 'ease-in-out',
-    easeInBack: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
-    easeOutBack: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-    easeInOutBack: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-  },
-  spring: {
-    gentle: { tension: 120, friction: 14 },
-    wobbly: { tension: 180, friction: 12 },
-    stiff: { tension: 210, friction: 20 },
-  },
-};
-
-const breakpoints: ThemeBreakpoints = {
-  xs: 0,
-  sm: 576,
-  md: 768,
-  lg: 992,
-  xl: 1200,
-  xxl: 1400,
-};
-
-const componentVariants: ComponentVariants = {
-  button: {
-    primary: {
-      backgroundColor: '#5DB0A5',
-      color: '#FFFFFF',
-    },
-    secondary: {
-      backgroundColor: '#A8A39D',
-      color: '#FFFFFF',
-    },
-    tertiary: {
-      backgroundColor: 'transparent',
-      color: '#5DB0A5',
-      borderWidth: 1,
-      borderColor: '#5DB0A5',
-    },
-    destructive: {
-      backgroundColor: '#E74C3C',
-      color: '#FFFFFF',
-    },
-    ghost: {
-      backgroundColor: 'transparent',
-      color: '#5DB0A5',
-    },
-    outlined: {
-      backgroundColor: 'transparent',
-      color: '#5DB0A5',
-      borderWidth: 1,
-      borderColor: '#DDE2E5',
-    },
-    text: {
-      backgroundColor: 'transparent',
-      color: '#5DB0A5',
-    },
-    floating: {
-      backgroundColor: '#5DB0A5',
-      color: '#FFFFFF',
-      borderRadius: 28,
-      elevation: 6,
-    },
-  },
-  input: {
-    default: {
-      backgroundColor: '#FFFFFF',
-      borderColor: '#DDE2E5',
-      color: '#1A1B1E',
-    },
-    error: {
-      backgroundColor: '#FFFFFF',
-      borderColor: '#E74C3C',
-      color: '#1A1B1E',
-    },
-    success: {
-      backgroundColor: '#FFFFFF',
-      borderColor: '#4CAF50',
-      color: '#1A1B1E',
-    },
-    warning: {
-      backgroundColor: '#FFFFFF',
-      borderColor: '#FF9800',
-      color: '#1A1B1E',
-    },
-    disabled: {
-      backgroundColor: '#F0F0F0',
-      borderColor: '#BDC3C7',
-      color: '#7F8C8D',
-    },
-    focused: {
-      backgroundColor: '#FFFFFF',
-      borderColor: '#5DB0A5',
-      color: '#1A1B1E',
-    },
-  },
+  // 🆕 Enhanced shadow for cards and interactive elements
   card: {
-    elevated: {
-      backgroundColor: '#FFFFFF',
-      ...elevation.sm,
-    },
-    outlined: {
-      backgroundColor: '#FFFFFF',
-      borderWidth: 1,
-      borderColor: '#DDE2E5',
-    },
-    filled: {
-      backgroundColor: '#F7F7F7',
-    },
-    interactive: {
-      backgroundColor: '#FFFFFF',
-      borderWidth: 1,
-      borderColor: '#DDE2E5',
-      ...elevation.xs,
-    },
-    featured: {
-      backgroundColor: '#E8F4F2',
-      borderWidth: 1,
-      borderColor: '#5DB0A5',
-      ...elevation.md,
-    },
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12, // Beautiful card shadow from DailyEntryScreen
+    shadowRadius: 16,
+    elevation: 6,
   },
-  chip: {
-    filled: {
-      backgroundColor: '#5DB0A5',
-      color: '#FFFFFF',
-    },
-    outlined: {
-      backgroundColor: 'transparent',
-      borderWidth: 1,
-      borderColor: '#DDE2E5',
-      color: '#1A1B1E',
-    },
-    selected: {
-      backgroundColor: '#E8F4F2',
-      color: '#1A4A42',
-    },
-    disabled: {
-      backgroundColor: '#F0F0F0',
-      color: '#7F8C8D',
-    },
+  // 🆕 Enhanced shadow for floating elements
+  floating: {
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  avatar: {
-    small: {
-      width: 32,
-      height: 32,
-    },
-    medium: {
-      width: 48,
-      height: 48,
-    },
-    large: {
-      width: 64,
-      height: 64,
-    },
-    circular: {
-      borderRadius: 999,
-    },
-    rounded: {
-      borderRadius: 8,
-    },
-  },
-  badge: {
-    primary: {
-      backgroundColor: '#5DB0A5',
-      color: '#FFFFFF',
-    },
-    secondary: {
-      backgroundColor: '#A8A39D',
-      color: '#FFFFFF',
-    },
-    success: {
-      backgroundColor: '#4CAF50',
-      color: '#FFFFFF',
-    },
-    warning: {
-      backgroundColor: '#FF9800',
-      color: '#FFFFFF',
-    },
-    error: {
-      backgroundColor: '#E74C3C',
-      color: '#FFFFFF',
-    },
-    info: {
-      backgroundColor: '#2196F3',
-      color: '#FFFFFF',
-    },
+  // 🆕 Enhanced shadow for overlays and modals
+  overlay: {
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.16,
+    shadowRadius: 32,
+    elevation: 16,
   },
 };
 
-export const lightTheme: EnhancedAppTheme = {
+export const lightTheme: AppTheme = {
   name: 'light',
   colors: enhancedLightColors,
   typography: enhancedTypography,
   spacing: enhancedSpacing,
   borderRadius: enhancedBorderRadius,
   elevation,
-  animations,
-  breakpoints,
-  components: componentVariants,
 };

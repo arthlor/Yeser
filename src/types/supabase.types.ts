@@ -140,6 +140,10 @@ export interface Database {
         Args: { p_user_id: string };
         Returns: number;
       };
+      check_username_availability: {
+        Args: { p_username: string };
+        Returns: boolean;
+      };
       delete_gratitude_statement: {
         Args: { p_entry_date: string; p_statement_index: number };
         Returns: undefined;

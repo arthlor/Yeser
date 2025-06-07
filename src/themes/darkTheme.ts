@@ -1,101 +1,114 @@
 import {
-  ComponentVariants,
-  EnhancedAppTheme,
-  ThemeAnimations,
+  AppTheme,
   ThemeBorderRadius,
-  ThemeBreakpoints,
   ThemeColors,
   ThemeElevation,
   ThemeSpacing,
   ThemeTypography,
 } from './types';
 
-// Enhanced Dark Theme Implementation
+// Enhanced Dark Theme with Better Button Colors
 const enhancedDarkColors: ThemeColors = {
-  // Brand colors
-  primary: '#BB86FC',
-  onPrimary: '#000000',
-  primaryVariant: '#985EFF',
-  primaryContainer: '#4C2C8A',
-  onPrimaryContainer: '#E5D4FF',
+  // Brand colors - More sophisticated for dark mode buttons
+  primary: '#2DD4BF', // More muted teal-green, less overwhelming
+  onPrimary: '#0F172A', // Dark text on light buttons
+  primaryVariant: '#14B8A6',
+  primaryContainer: '#164E63', // Darker container for surface-based buttons
+  onPrimaryContainer: '#67E8F9', // Light text on dark containers
 
-  secondary: '#03DAC6',
-  onSecondary: '#000000',
-  secondaryContainer: '#2C5B5A',
-  onSecondaryContainer: '#A7F2E8',
+  secondary: '#A78BFA', // Softer purple secondary
+  onSecondary: '#1E1B4B',
+  secondaryContainer: '#312E81',
+  onSecondaryContainer: '#C4B5FD',
 
-  tertiary: '#FF6B6B',
-  onTertiary: '#000000',
-  tertiaryContainer: '#8B1E3F',
-  onTertiaryContainer: '#FFCCD2',
+  tertiary: '#60A5FA', // Softer blue tertiary
+  onTertiary: '#1E3A8A',
+  tertiaryContainer: '#1E40AF',
+  onTertiaryContainer: '#DBEAFE',
 
   // Accent colors
-  accent: '#FFD93D',
-  onAccent: '#1A1A1A',
-  accentContainer: '#B8860B',
-  onAccentContainer: '#FFF8DC',
+  accent: '#FBBF24', // Warm amber accent
+  onAccent: '#92400E',
+  accentContainer: '#92400E',
+  onAccentContainer: '#FEF3C7',
 
-  // Surfaces
-  background: '#121212',
-  onBackground: '#E1E1E1',
-  surface: '#1E1E1E',
-  onSurface: '#E1E1E1',
-  surfaceVariant: '#2A2A2A',
-  onSurfaceVariant: '#C7C7C7',
-  surfaceTint: '#BB86FC',
-  inverseSurface: '#E1E1E1',
-  inverseOnSurface: '#121212',
+  // Surfaces - Enhanced for better button treatment
+  background: '#0F172A', // Deep slate background
+  onBackground: '#F1F5F9', // Light text
+  surface: '#1E293B', // Elevated surface for buttons
+  onSurface: '#F1F5F9',
+  surfaceVariant: '#334155', // More distinct variant for button containers
+  onSurfaceVariant: '#CBD5E1', // Better contrast
+  surfaceTint: '#2DD4BF',
+  inverseSurface: '#F1F5F9',
+  inverseOnSurface: '#0F172A',
 
-  // Content colors
-  outline: '#9B9B9B',
-  outlineVariant: '#4A4A4A',
-  scrim: '#000000',
+  // Enhanced surface levels for button treatment
+  surfaceElevated: '#374151', // Elevated surface for primary buttons
+  surfaceContainer: '#475569', // Container surface for secondary actions
+  surfaceBright: '#475569', // Bright surface variant
+  surfaceDim: '#1E293B', // Dimmed surface
 
-  // State colors with containers
-  success: '#00C851',
-  onSuccess: '#003D1A',
-  successContainer: '#1B5E20',
-  onSuccessContainer: '#B8E6C1',
+  // Content colors - More visible in dark mode
+  outline: '#64748B', // More visible outline for outline buttons
+  outlineVariant: '#475569', // Secondary outline
+  scrim: 'rgba(0, 0, 0, 0.8)',
 
-  warning: '#FFD54F',
-  onWarning: '#332900',
-  warningContainer: '#8D6E63',
-  onWarningContainer: '#FFF8E1',
+  // Enhanced border system for dark mode
+  borderLight: '#374151', // Light borders
+  borderMedium: '#475569', // Medium borders  
+  borderStrong: '#64748B', // Strong borders
 
-  error: '#CF6679',
-  onError: '#690005',
-  errorContainer: '#93000A',
-  onErrorContainer: '#FFDAD6',
+  // State colors with containers - More muted for dark mode
+  success: '#10B981', // Muted green success
+  onSuccess: '#FFFFFF',
+  successContainer: '#065F46',
+  onSuccessContainer: '#A7F3D0',
 
-  info: '#2196F3',
-  onInfo: '#0D47A1',
-  infoContainer: '#1565C0',
-  onInfoContainer: '#E3F2FD',
+  warning: '#F59E0B', // Amber warning
+  onWarning: '#FFFFFF',
+  warningContainer: '#92400E',
+  onWarningContainer: '#FEF3C7',
+
+  error: '#F87171', // Softer red for dark mode
+  onError: '#FFFFFF',
+  errorContainer: '#7F1D1D',
+  onErrorContainer: '#FEE2E2',
+
+  info: '#60A5FA', // Softer blue info
+  onInfo: '#FFFFFF',
+  infoContainer: '#1E40AF',
+  onInfoContainer: '#DBEAFE',
 
   // Interaction states
-  disabled: '#6A6A6A',
-  onDisabled: '#2A2A2A',
+  disabled: '#64748B',
+  onDisabled: '#94A3B8',
 
-  // Advanced interaction states
-  hover: '#2A2A2A',
-  pressed: '#404040',
-  focus: '#505050',
-  selected: '#3A3A3A',
+  // Advanced interaction states - Better for dark mode buttons
+  hover: 'rgba(45, 212, 191, 0.08)', // Subtle teal hover
+  pressed: 'rgba(45, 212, 191, 0.12)',
+  focus: 'rgba(45, 212, 191, 0.16)',
+  selected: 'rgba(45, 212, 191, 0.12)',
+  
+  // Enhanced interaction states for better button feedback
+  hoverStrong: 'rgba(45, 212, 191, 0.15)', // Stronger hover for primary buttons
+  focusRing: '#2DD4BF', // Focus ring color
+  activeState: 'rgba(45, 212, 191, 0.20)', // Active state for pressed buttons
 
-  // Gradient colors
-  gradientStart: '#BB86FC',
-  gradientEnd: '#03DAC6',
+  // Gradient colors - More subtle for dark mode
+  gradientStart: '#2DD4BF',
+  gradientEnd: '#14B8A6',
 
-  // Legacy support
-  text: '#E1E1E1',
-  textSecondary: '#B0B0B0',
-  border: '#4A4A4A',
-  inputBackground: '#2A2A2A',
-  inputText: '#E1E1E1',
-  danger: '#CF6679',
-  onDanger: '#690005',
-  shadow: '#000000',
-  surfaceDisabled: '#1A1A1A',
+  // Legacy support - updated for better dark theme
+  text: '#F1F5F9',
+  textSecondary: '#CBD5E1',
+  border: '#64748B', // More visible border
+  inputBackground: '#374151', // Better input background
+  inputText: '#F1F5F9',
+  danger: '#F87171',
+  onDanger: '#FFFFFF',
+  shadow: 'rgba(0, 0, 0, 0.5)',
+  surfaceDisabled: '#374151', // Better disabled surface
 };
 
 const enhancedTypography: ThemeTypography = {
@@ -110,27 +123,27 @@ const enhancedTypography: ThemeTypography = {
   displayMedium: { fontSize: 45, fontWeight: '400', lineHeight: 52 },
   displaySmall: { fontSize: 36, fontWeight: '400', lineHeight: 44 },
 
-  // Headlines
-  headlineLarge: { fontSize: 32, fontWeight: '600', lineHeight: 40 },
-  headlineMedium: { fontSize: 28, fontWeight: '600', lineHeight: 36 },
-  headlineSmall: { fontSize: 24, fontWeight: '600', lineHeight: 32 },
+  // Headlines - Enhanced for better hierarchy
+  headlineLarge: { fontSize: 32, fontWeight: '700', lineHeight: 40, letterSpacing: -0.5 },
+  headlineMedium: { fontSize: 28, fontWeight: '600', lineHeight: 36, letterSpacing: -0.3 },
+  headlineSmall: { fontSize: 24, fontWeight: '600', lineHeight: 32, letterSpacing: -0.2 },
 
-  // Titles
-  titleLarge: { fontSize: 22, fontWeight: '500', lineHeight: 28 },
-  titleMedium: { fontSize: 18, fontWeight: '500', lineHeight: 24 },
-  titleSmall: { fontSize: 16, fontWeight: '500', lineHeight: 20 },
+  // Titles - More refined
+  titleLarge: { fontSize: 22, fontWeight: '600', lineHeight: 28, letterSpacing: -0.1 },
+  titleMedium: { fontSize: 18, fontWeight: '600', lineHeight: 24 },
+  titleSmall: { fontSize: 16, fontWeight: '600', lineHeight: 20 },
 
-  // Body text
-  bodyLarge: { fontSize: 16, fontWeight: '400', lineHeight: 24 },
-  bodyMedium: { fontSize: 14, fontWeight: '400', lineHeight: 20 },
-  bodySmall: { fontSize: 12, fontWeight: '400', lineHeight: 16 },
+  // Body text - Improved readability
+  bodyLarge: { fontSize: 16, fontWeight: '400', lineHeight: 26, letterSpacing: 0.1 },
+  bodyMedium: { fontSize: 14, fontWeight: '400', lineHeight: 22, letterSpacing: 0.1 },
+  bodySmall: { fontSize: 12, fontWeight: '400', lineHeight: 18, letterSpacing: 0.2 },
 
-  // Labels
-  labelLarge: { fontSize: 14, fontWeight: '500', lineHeight: 20 },
-  labelMedium: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
+  // Labels - Better contrast
+  labelLarge: { fontSize: 14, fontWeight: '600', lineHeight: 20, letterSpacing: 0.1 },
+  labelMedium: { fontSize: 12, fontWeight: '600', lineHeight: 16, letterSpacing: 0.3 },
   labelSmall: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '600',
     lineHeight: 16,
     letterSpacing: 0.5,
   },
@@ -159,10 +172,12 @@ const enhancedSpacing: ThemeSpacing = {
   xxl: 48,
   xxxl: 64,
 
-  // Semantic spacing
+  // Semantic spacing - updated for modern mobile layouts with better hierarchy
   component: 16,
-  section: 32,
-  page: 24,
+  section: 28, // Increased for better breathing room
+  page: 16, // Back to 16px for optimal balance
+  content: 12, // Increased for better content spacing
+  edge: 6, // Slightly more edge spacing
 
   // Legacy support
   small: 8,
@@ -186,8 +201,7 @@ const enhancedBorderRadius: ThemeBorderRadius = {
   large: 16,
 };
 
-// Elevation for Dark Theme (shadows are often more subtle or use a light glow)
-// For simplicity, using black shadows with adjusted opacity.
+// Enhanced elevation for Dark Theme with better shadows
 const darkElevation: ThemeElevation = {
   none: {
     shadowOffset: { width: 0, height: 0 },
@@ -197,196 +211,62 @@ const darkElevation: ThemeElevation = {
   },
   xs: {
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2, // Slightly higher opacity for visibility
+    shadowOpacity: 0.3, // More visible in dark mode
     shadowRadius: 2,
     elevation: 1,
   },
   sm: {
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.35,
     shadowRadius: 4,
     elevation: 2,
   },
   md: {
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.24,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 4,
   },
   lg: {
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.26,
+    shadowOpacity: 0.45,
     shadowRadius: 16,
     elevation: 8,
   },
   xl: {
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.28,
+    shadowOpacity: 0.5,
     shadowRadius: 24,
     elevation: 12,
   },
-};
-
-const animations: ThemeAnimations = {
-  duration: {
-    instant: 0,
-    fast: 150,
-    normal: 250,
-    slow: 350,
-    slower: 500,
-  },
-  easing: {
-    linear: 'linear',
-    easeIn: 'ease-in',
-    easeOut: 'ease-out',
-    easeInOut: 'ease-in-out',
-    easeInBack: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
-    easeOutBack: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-    easeInOutBack: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-  },
-  spring: {
-    gentle: { tension: 120, friction: 14 },
-    wobbly: { tension: 180, friction: 12 },
-    stiff: { tension: 200, friction: 10 },
-  },
-};
-
-const breakpoints: ThemeBreakpoints = {
-  xs: 0,
-  sm: 576,
-  md: 768,
-  lg: 992,
-  xl: 1200,
-  xxl: 1400,
-};
-
-const componentVariants: ComponentVariants = {
-  button: {
-    primary: {
-      backgroundColor: enhancedDarkColors.primary,
-      color: enhancedDarkColors.onPrimary,
-    },
-    secondary: {
-      backgroundColor: enhancedDarkColors.secondary,
-      color: enhancedDarkColors.onSecondary,
-    },
-    tertiary: {
-      backgroundColor: 'transparent',
-      color: enhancedDarkColors.primary,
-      borderWidth: 1,
-      borderColor: enhancedDarkColors.primary,
-    },
-    destructive: {
-      backgroundColor: enhancedDarkColors.error,
-      color: enhancedDarkColors.onError,
-    },
-    ghost: {
-      backgroundColor: 'transparent',
-      color: enhancedDarkColors.primary,
-    },
-    outlined: {
-      backgroundColor: 'transparent',
-      color: enhancedDarkColors.primary,
-      borderWidth: 1,
-      borderColor: enhancedDarkColors.outline,
-    },
-    text: {
-      backgroundColor: 'transparent',
-      color: enhancedDarkColors.primary,
-    },
-    floating: {
-      backgroundColor: enhancedDarkColors.primaryContainer,
-      color: enhancedDarkColors.onPrimaryContainer,
-      ...darkElevation.lg,
-    },
-  },
-  input: {
-    default: {
-      backgroundColor: enhancedDarkColors.inputBackground,
-      borderColor: enhancedDarkColors.outline,
-      color: enhancedDarkColors.inputText,
-    },
-    error: {
-      backgroundColor: enhancedDarkColors.inputBackground,
-      borderColor: enhancedDarkColors.error,
-      color: enhancedDarkColors.inputText,
-    },
-    success: {
-      backgroundColor: enhancedDarkColors.inputBackground,
-      borderColor: enhancedDarkColors.success,
-      color: enhancedDarkColors.inputText,
-    },
-    warning: {
-      backgroundColor: enhancedDarkColors.inputBackground,
-      borderColor: enhancedDarkColors.warning,
-      color: enhancedDarkColors.inputText,
-    },
-    disabled: {
-      backgroundColor: enhancedDarkColors.surfaceDisabled,
-      borderColor: enhancedDarkColors.disabled,
-      color: enhancedDarkColors.onDisabled,
-    },
-    focused: {
-      backgroundColor: enhancedDarkColors.inputBackground,
-      borderColor: enhancedDarkColors.primary,
-      color: enhancedDarkColors.inputText,
-    },
-  },
+  // 🆕 Enhanced shadow for cards and interactive elements (adapted for dark mode)
   card: {
-    elevated: {
-      backgroundColor: enhancedDarkColors.surface,
-      ...darkElevation.sm, // Use dark theme elevation
-    },
-    outlined: {
-      backgroundColor: enhancedDarkColors.surface,
-      borderWidth: 1,
-      borderColor: enhancedDarkColors.outline,
-    },
-    filled: {
-      backgroundColor: enhancedDarkColors.surfaceVariant,
-    },
-    interactive: {
-      backgroundColor: enhancedDarkColors.surfaceVariant,
-      borderWidth: 1,
-      borderColor: enhancedDarkColors.outline,
-    },
-    featured: {
-      backgroundColor: enhancedDarkColors.primaryContainer,
-      borderWidth: 1,
-      borderColor: enhancedDarkColors.primary,
-    },
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25, // Higher opacity needed for dark mode visibility
+    shadowRadius: 16,
+    elevation: 6,
   },
-  chip: {
-    filled: {},
-    outlined: {},
-    selected: {},
-    disabled: {},
+  // 🆕 Enhanced shadow for floating elements (adapted for dark mode)
+  floating: {
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.30,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  avatar: {
-    small: {},
-    medium: {},
-    large: {},
-    circular: {},
-    rounded: {},
-  },
-  badge: {
-    primary: {},
-    secondary: {},
-    success: {},
-    warning: {},
-    error: {},
-    info: {},
+  // 🆕 Enhanced shadow for overlays and modals (adapted for dark mode)
+  overlay: {
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.35,
+    shadowRadius: 32,
+    elevation: 16,
   },
 };
 
-export const darkTheme: EnhancedAppTheme = {
+export const darkTheme: AppTheme = {
   name: 'dark',
   colors: enhancedDarkColors,
   typography: enhancedTypography,
   spacing: enhancedSpacing,
   borderRadius: enhancedBorderRadius,
   elevation: darkElevation,
-  animations,
-  breakpoints,
-  components: componentVariants,
 };

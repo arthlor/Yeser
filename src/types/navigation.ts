@@ -6,7 +6,7 @@ import { GratitudeEntry } from '../schemas/gratitudeEntrySchema';
 // Define ParamList types for each navigator
 
 // For the authentication flow (e.g., Login, SignUp)
-export interface AuthStackParamList {
+export interface AuthStackParamList extends Record<string, object | undefined> {
   Login: undefined; // No params expected for Login screen
   SignUp: undefined; // No params expected for SignUp screen
   EmailConfirm: { token?: string; type?: string } | undefined; // For email verification deep link
@@ -14,7 +14,7 @@ export interface AuthStackParamList {
 }
 
 // For the main application flow (once authenticated)
-export interface MainAppStackParamList {
+export interface MainAppStackParamList extends Record<string, object | undefined> {
   Home: undefined; // Example: Home screen after login
   GratitudeEntry: { date: string }; // Example: Screen to add/edit an entry for a specific date
   PastEntries: undefined; // Example: Screen to view list of past entries
@@ -23,7 +23,7 @@ export interface MainAppStackParamList {
 }
 
 // For the Tab navigator within the main app flow
-export interface MainAppTabParamList {
+export interface MainAppTabParamList extends Record<string, object | undefined> {
   HomeTab: undefined; // Home screen with today's summary and quick actions
   DailyEntryTab:
     | {
@@ -38,7 +38,7 @@ export interface MainAppTabParamList {
 }
 
 // For the Root Navigator that decides between Auth and MainApp
-export interface RootStackParamList {
+export interface RootStackParamList extends Record<string, object | undefined> {
   // Authentication flow
   Auth: NavigatorScreenParams<AuthStackParamList>;
 
@@ -46,8 +46,7 @@ export interface RootStackParamList {
   MainApp: NavigatorScreenParams<MainAppTabParamList>;
 
   // Onboarding flow
-  Onboarding: undefined; // Initial onboarding screen
-  OnboardingReminderSetup: undefined; // Reminder setup during onboarding
+  Onboarding: undefined; // Enhanced interactive onboarding flow
 
   // Modal and overlay screens
   ReminderSettings: undefined; // Notification preferences
@@ -55,6 +54,7 @@ export interface RootStackParamList {
     entry: GratitudeEntry;
     allowEdit?: boolean; // Whether editing is allowed
   }; // Full entry display with optional editing
+  StreakDetails: undefined; // Dedicated streak system explanation and progress screen
 
   // Legal and informational screens
   PrivacyPolicy: undefined; // Privacy policy document

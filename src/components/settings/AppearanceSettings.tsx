@@ -1,9 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Switch from 'toggle-switch-react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '../../providers/ThemeProvider';
-import ThemedCard from '../ThemedCard';
+import { getPrimaryShadow } from '@/themes/utils';
 
 import type { AppTheme, ThemeName } from '../../themes/types';
 
@@ -19,40 +19,115 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  // Determine if the dark theme is active for the switch state
   const isDarkThemeActive = activeThemeName === 'dark';
 
   return (
-    <ThemedCard style={styles.card}>
-      <View style={styles.settingItem}>
-        <Text style={styles.settingText}>Koyu Tema</Text>
-        <Switch
-          isOn={isDarkThemeActive}
-          onColor={theme.colors.primary}
-          offColor={theme.colors.border}
-          size="medium"
-          onToggle={onToggleTheme} // Directly use the passed toggler
-        />
-      </View>
-    </ThemedCard>
+    <View style={styles.settingCard}>
+      <TouchableOpacity style={styles.settingRow} onPress={onToggleTheme}>
+        <View style={styles.settingInfo}>
+          <View style={styles.iconContainer}>
+            <Icon
+              name={isDarkThemeActive ? 'weather-night' : 'weather-sunny'}
+              size={20}
+              color={theme.colors.primary}
+            />
+          </View>
+          <View style={styles.textContainer}>
+            <Text style={styles.settingTitle}>Görünüm</Text>
+            <Text style={styles.settingDescription}>
+              {isDarkThemeActive ? 'Koyu tema' : 'Açık tema'}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.toggleContainer}>
+          <View
+            style={[
+              styles.toggle,
+              {
+                backgroundColor: isDarkThemeActive
+                  ? theme.colors.primary
+                  : theme.colors.surfaceVariant,
+              },
+            ]}
+          >
+            <Animated.View
+              style={[
+                styles.toggleThumb,
+                {
+                  backgroundColor: theme.colors.surface,
+                  transform: [
+                    {
+                      translateX: isDarkThemeActive ? 22 : 2,
+                    },
+                  ],
+                },
+              ]}
+            />
+          </View>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    card: {
-      marginBottom: theme.spacing.medium,
+    settingCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      marginBottom: theme.spacing.sm,
+      marginHorizontal: theme.spacing.md,
+      // 🌟 Medium primary shadow for interactive setting cards
+      ...getPrimaryShadow.medium(theme),
     },
-    settingItem: {
+    settingRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: theme.spacing.medium,
+      justifyContent: 'space-between',
+      padding: theme.spacing.md,
     },
-    settingText: {
-      fontSize: 16,
-      color: theme.colors.text,
-      fontFamily: theme.typography.fontFamilyRegular,
+    settingInfo: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    iconContainer: {
+      width: 36,
+      height: 36,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: theme.spacing.sm,
+    },
+    textContainer: {
+      flex: 1,
+    },
+    settingTitle: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
+      marginBottom: theme.spacing.xs / 2,
+    },
+    settingDescription: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      lineHeight: 20,
+    },
+    toggleContainer: {
+      marginLeft: theme.spacing.sm,
+    },
+    toggle: {
+      width: 50,
+      height: 30,
+      borderRadius: 15,
+      justifyContent: 'center',
+      padding: 2,
+    },
+    toggleThumb: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
     },
   });
 

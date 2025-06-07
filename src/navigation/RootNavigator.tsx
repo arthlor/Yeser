@@ -1,45 +1,88 @@
 // src/navigation/RootNavigator.tsx
-import { createBottomTabNavigator, BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { EventArg, RouteProp } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { EventArg } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+
 import React, { useEffect } from 'react';
-import { Platform, View } from 'react-native'; // Added for OS-specific padding
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Assuming useTheme is here
+import { Platform, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { useTheme } from '../providers/ThemeProvider';
-
-// Import enhanced screens
-import EnhancedCalendarViewScreen from '../screens/EnhancedCalendarViewScreen';
-import DailyEntryScreen from '../screens/EnhancedDailyEntryScreen'; // Import DailyEntryScreen
-import EntryDetailScreen from '../screens/EnhancedEntryDetailScreen';
-import EnhancedHelpScreen from '../screens/EnhancedHelpScreen';
-import EnhancedHomeScreen from '../screens/EnhancedHomeScreen';
-import EnhancedPastEntriesScreen from '../screens/EnhancedPastEntriesScreen';
-import PrivacyPolicyScreen from '../screens/EnhancedPrivacyPolicyScreen'; // Import PrivacyPolicyScreen
-import ReminderSettingsScreen from '../screens/EnhancedReminderSettingsScreen'; // Import EnhancedReminderSettingsScreen
-import SettingsScreen from '../screens/EnhancedSettingsScreen';
-import EnhancedSplashScreen from '../screens/EnhancedSplashScreen';
-import TermsOfServiceScreen from '../screens/EnhancedTermsOfServiceScreen'; // Import TermsOfServiceScreen
-import OnboardingReminderSetupScreen from '../screens/onboarding/EnhancedOnboardingReminderSetupScreen'; // Import OnboardingReminderSetupScreen
-import OnboardingScreen from '../screens/onboarding/EnhancedOnboardingScreen'; // Import OnboardingScreen
-import useAuthStore, { AuthState } from '../store/authStore';
-import { useProfileStore, ProfileState, ProfileActions } from '../store/profileStore';
-import { MainAppTabParamList, RootStackParamList } from '../types/navigation'; // Updated to MainAppTabParamList
-import { hapticFeedback } from '../utils/hapticFeedback';
-
 import AuthNavigator from './AuthNavigator';
+import { useUserProfile } from '../hooks';
+import { useTheme } from '../providers/ThemeProvider';
+// Import screens from new locations
+import CalendarViewScreen from '../features/calendar/screens/CalendarViewScreen';
+import DailyEntryScreen from '../features/gratitude/screens/DailyEntryScreen';
+import EntryDetailScreen from '../features/gratitude/screens/EntryDetailScreen';
+import HelpScreen from '../features/settings/screens/HelpScreen';
+import HomeScreen from '../features/home/screens/HomeScreen';
+import PastEntriesScreen from '../features/calendar/screens/PastEntriesScreen';
+import PrivacyPolicyScreen from '../features/settings/screens/PrivacyPolicyScreen';
+import ReminderSettingsScreen from '../features/settings/screens/ReminderSettingsScreen';
+import SettingsScreen from '../features/settings/screens/SettingsScreen';
+import SplashScreen from '../features/auth/screens/SplashScreen';
+import TermsOfServiceScreen from '../features/settings/screens/TermsOfServiceScreen';
+import OnboardingFlowScreen from '../features/onboarding/screens/EnhancedOnboardingFlowScreen';
+import useAuthStore, { AuthState } from '../store/authStore';
+import { MainAppTabParamList, RootStackParamList } from '../types/navigation';
+import { hapticFeedback } from '../utils/hapticFeedback';
+import { getPrimaryShadow } from '@/themes/utils';
+import { AppTheme } from '@/themes/types';
 
 // Define the Main App Tab Navigator
 const Tab = createBottomTabNavigator<MainAppTabParamList>();
 
+const createTabBarStyles = (theme: AppTheme, insets: { bottom: number }) =>
+  StyleSheet.create({
+    tabBar: {
+      backgroundColor: theme.colors.surface,
+      borderTopLeftRadius: 0, // Edge-to-edge at top
+      borderTopRightRadius: 0, // Edge-to-edge at top
+      height: Platform.OS === 'ios' ? 85 + insets.bottom : 70 + insets.bottom,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: Platform.OS === 'ios' ? theme.spacing.sm : theme.spacing.md,
+      paddingHorizontal: 0, // Edge-to-edge horizontally
+      // Modern edge-to-edge styling with subtle border
+      borderTopColor: theme.colors.outline + '10',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      ...getPrimaryShadow.floating(theme),
+    },
+    tabBarBackground: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: theme.colors.surface,
+      // Edge-to-edge background
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.outline + '10',
+    },
+    tabBarItem: {
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.md,
+      marginHorizontal: theme.spacing.xs, // Minimal spacing between items
+      flex: 1,
+    },
+    tabBarLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      marginTop: 2,
+      marginBottom: Platform.OS === 'ios' ? 0 : 4,
+      textAlign: 'center',
+    },
+  });
+
 const MainAppNavigator: React.FC = () => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const tabBarStyles = React.useMemo(() => createTabBarStyles(theme, insets), [theme, insets]);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color, size: _size }) => {
           let iconName = '';
 
           if (route.name === 'HomeTab') {
@@ -57,58 +100,37 @@ const MainAppNavigator: React.FC = () => {
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
-        tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopWidth: 0, // Remove default border
-          height: Platform.OS === 'ios' ? 85 + insets.bottom : 70 + insets.bottom,
-          paddingTop: theme.spacing.sm || 12,
-          paddingBottom: Platform.OS === 'ios' ? theme.spacing.sm || 12 : theme.spacing.md || 16,
-          paddingHorizontal: theme.spacing.md || 16,
-          shadowColor: theme.colors.shadow || theme.colors.onBackground,
-          shadowOffset: { width: 0, height: -3 },
-          shadowOpacity: 0.15,
-          shadowRadius: 8,
-          elevation: 8,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-        },
+        tabBarStyle: tabBarStyles.tabBar,
         tabBarShowLabel: true,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          marginTop: 2,
-          marginBottom: Platform.OS === 'ios' ? 0 : 4,
-        },
-        tabBarItemStyle: {
-          paddingVertical: theme.spacing.xs || 6,
-          borderRadius: 16,
-          marginHorizontal: 2,
-        },
-        tabBarBackground: () => (
-          <View
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: theme.colors.surface,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-            }}
-          />
-        ),
+        tabBarLabelStyle: tabBarStyles.tabBarLabel,
+        tabBarItemStyle: tabBarStyles.tabBarItem,
+        tabBarBackground: () => <View style={tabBarStyles.tabBarBackground} />,
         headerShown: false,
+        // Modern transition animations
+        cardStyleInterpolator: ({ current, layouts }: any) => {
+          return {
+            cardStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
+            },
+          };
+        },
       })}
     >
       <Tab.Screen
         name="HomeTab"
-        component={EnhancedHomeScreen}
-        options={({ navigation, route }) => ({
+        component={HomeScreen}
+        options={({ navigation: _navigation, route: _route }) => ({
           title: 'Ana Sayfa',
           tabBarAccessibilityLabel: 'Ana Sayfa sekmesi',
           listeners: {
-            tabPress: (e: EventArg<'tabPress', true>) => {
+            tabPress: (_e: EventArg<'tabPress', true>) => {
               hapticFeedback.light();
             },
           },
@@ -117,11 +139,11 @@ const MainAppNavigator: React.FC = () => {
       <Tab.Screen
         name="DailyEntryTab"
         component={DailyEntryScreen}
-        options={({ navigation, route }) => ({
+        options={({ navigation: _navigation, route: _route }) => ({
           title: 'Yeni Kayıt',
           tabBarAccessibilityLabel: 'Yeni günlük kayıt oluştur',
           listeners: {
-            tabPress: (e: EventArg<'tabPress', true>) => {
+            tabPress: (_e: EventArg<'tabPress', true>) => {
               hapticFeedback.medium(); // Medium haptic for primary action
             },
           },
@@ -129,12 +151,12 @@ const MainAppNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="PastEntriesTab"
-        component={EnhancedPastEntriesScreen}
-        options={({ navigation, route }) => ({
-          title: 'Geçmiş',
+        component={PastEntriesScreen}
+        options={({ navigation: _navigation, route: _route }) => ({
+          title: 'Minnetlerim',
           tabBarAccessibilityLabel: 'Geçmiş kayıtları görüntüle',
           listeners: {
-            tabPress: (e: EventArg<'tabPress', true>) => {
+            tabPress: (_e: EventArg<'tabPress', true>) => {
               hapticFeedback.light();
             },
           },
@@ -142,12 +164,12 @@ const MainAppNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="CalendarTab"
-        component={EnhancedCalendarViewScreen}
-        options={({ navigation, route }) => ({
+        component={CalendarViewScreen}
+        options={({ navigation: _navigation, route: _route }) => ({
           title: 'Takvim',
           tabBarAccessibilityLabel: 'Takvim görünümü',
           listeners: {
-            tabPress: (e: EventArg<'tabPress', true>) => {
+            tabPress: (_e: EventArg<'tabPress', true>) => {
               hapticFeedback.light();
             },
           },
@@ -156,17 +178,16 @@ const MainAppNavigator: React.FC = () => {
       <Tab.Screen
         name="SettingsTab"
         component={SettingsScreen}
-        options={({ navigation, route }) => ({
+        options={({ navigation: _navigation, route: _route }) => ({
           title: 'Ayarlar',
           tabBarAccessibilityLabel: 'Uygulama ayarları',
           listeners: {
-            tabPress: (e: EventArg<'tabPress', true>) => {
+            tabPress: (_e: EventArg<'tabPress', true>) => {
               hapticFeedback.light();
             },
           },
         })}
       />
-      {/* Add other main app tabs here */}
     </Tab.Navigator>
   );
 };
@@ -174,106 +195,140 @@ const MainAppNavigator: React.FC = () => {
 // Define the Root Stack that switches between Auth, MainApp, and Loading
 const Root = createStackNavigator<RootStackParamList>();
 
+const createRootStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    headerStyle: {
+      backgroundColor: theme.colors.surface,
+      // Edge-to-edge header styling with subtle border
+      borderBottomColor: theme.colors.outline + '10',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      ...getPrimaryShadow.small(theme),
+    },
+    headerTitleStyle: {
+      fontFamily: theme.typography.titleLarge.fontFamily,
+      fontSize: theme.typography.titleLarge.fontSize,
+      fontWeight: '600',
+      color: theme.colors.onSurface,
+    },
+    cardStyle: {
+      backgroundColor: theme.colors.background,
+    },
+  });
+
 const RootNavigator: React.FC = () => {
-  const { theme } = useTheme(); // Moved useTheme to the top
-  const isAuthenticated = useAuthStore((state: AuthState) => state.isAuthenticated);
-  const authIsLoading = useAuthStore((state: AuthState) => state.isLoading);
-  const initializeAuth = useAuthStore((state: AuthState) => state.initializeAuth);
-  const profileId = useProfileStore((state: ProfileState & ProfileActions) => state.id);
-  const onboarded = useProfileStore((state: ProfileState & ProfileActions) => state.onboarded);
-  const fetchProfile = useProfileStore(
-    (state: ProfileState & ProfileActions) => state.fetchProfile
-  );
-  const profileIsLoading = useProfileStore((state: ProfileState & ProfileActions) => state.loading);
-  const profileInitialFetchAttempted = useProfileStore(
-    (state: ProfileState & ProfileActions) => state.initialProfileFetchAttempted
-  );
-  // Throwback store integration
-  // Effect to fetch profile data when user is authenticated and profile is not yet loaded
-  // This is a simplified fetch trigger; a more robust solution might involve profileApi.getProfile
-  // and setting it in the store, which should happen after login/auth state change.
-  useEffect(() => {
-    console.log(
-      `[RootNavigator] useEffect for fetchProfile: isAuthenticated=${isAuthenticated}, profileId=${profileId}, profileIsLoading=${profileIsLoading}, profileInitialFetchAttempted=${profileInitialFetchAttempted}`
-    );
-    // profileStore.fetchProfile now internally checks if it should run based on its own state (loading, attempted, authUserId)
-    // We just need to ensure it's called when the user is authenticated.
-    // The profileStore's subscription to authStore handles resetting its state (like initialProfileFetchAttempted) on user change.
-    if (isAuthenticated && !profileInitialFetchAttempted && !profileIsLoading) {
-      console.log('[RootNavigator] Conditions met, calling profileStore.fetchProfile()...');
-      fetchProfile(); // fetchProfile from profileStore will manage its own initialProfileFetchAttempted flag
-    }
-  }, [
-    isAuthenticated,
-    fetchProfile, // from profileStore, should be stable
-    profileInitialFetchAttempted, // from profileStore
-    profileIsLoading, // from profileStore
-    profileId, // Added: profileId is used in the console.log inside the effect
-  ]);
+  const { theme } = useTheme();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authIsLoading = useAuthStore((state) => state.isLoading);
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
+
+  // TanStack Query hook replacing useProfileStore
+  const { profile, isLoadingProfile } = useUserProfile();
+  const profileId = profile?.id;
+  const onboarded = profile?.onboarded;
+
+  // Add minimum splash screen duration to prevent race conditions and improve UX
+  const [minimumTimeElapsed, setMinimumTimeElapsed] = React.useState(false);
+
+  const rootStyles = React.useMemo(() => createRootStyles(theme), [theme]);
 
   useEffect(() => {
-    initializeAuth();
-
+    void initializeAuth();
     // Call initializeAuth only once on mount as its definition is stable.
-  }, [initializeAuth]); // Added initializeAuth to dependency array
+  }, [initializeAuth]);
 
-  // Show splash screen if auth is loading, or if user is authenticated but profile is still loading or not yet fetched.
-  // After profileStore resets (due to auth change), profileId will be null and profileInitialFetchAttempted will be false.
-  // fetchProfile will be called, setting profileIsLoading to true.
+  // Start minimum splash duration timer
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinimumTimeElapsed(true);
+    }, 3000); // 3 seconds minimum duration for better animation showcase
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show splash screen if auth is loading, profile is loading, or minimum time hasn't elapsed
+  // This prevents race conditions and ensures consistent loading experience
   if (authIsLoading) {
-    console.log('[RootNavigator] Showing Splash: Auth is loading.');
-    return <EnhancedSplashScreen />;
+    return <SplashScreen />;
   }
-  if (isAuthenticated && (profileIsLoading || (!profileId && !profileInitialFetchAttempted))) {
-    // If authenticated: show splash if profile is actively loading OR
-    // if there's no profileId AND the initial fetch hasn't been marked as attempted yet by profileStore.
-    // This covers the brief period after login before fetchProfile kicks in or completes.
-    console.log(
-      `[RootNavigator] Showing Splash: isAuthenticated=${isAuthenticated}, profileIsLoading=${profileIsLoading}, profileId=${profileId}, profileInitialFetchAttempted=${profileInitialFetchAttempted}`
-    );
-    return <EnhancedSplashScreen />;
+  if (isAuthenticated && (isLoadingProfile || !profileId)) {
+    // If authenticated: show splash if profile is actively loading OR if there's no profileId yet
+    // TanStack Query will automatically fetch the profile when user is authenticated
+    return <SplashScreen />;
   }
+  if (!minimumTimeElapsed) {
+    // Ensure minimum loading time for smooth UX and to prevent race conditions
+    return <SplashScreen />;
+  }
+
   return (
     <Root.Navigator
       screenOptions={{
         headerShown: false, // Default for most root screens
-        headerStyle: {
-          backgroundColor: theme.colors.surface,
-          borderBottomWidth: 0, // Remove default border
-          shadowColor: theme.colors.shadow,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 4,
-        },
+        headerStyle: rootStyles.headerStyle,
         headerTintColor: theme.colors.onSurface,
-        headerTitleStyle: {
-          fontFamily: theme.typography.titleLarge.fontFamily,
-          fontSize: theme.typography.titleLarge.fontSize,
-          fontWeight: '600',
-        },
-        cardStyle: {
-          backgroundColor: theme.colors.background,
-        },
+        headerTitleStyle: rootStyles.headerTitleStyle,
+        cardStyle: rootStyles.cardStyle,
         presentation: 'card',
         gestureEnabled: true,
         gestureDirection: 'horizontal',
+        // Modern stack transitions with edge-to-edge support
+        cardStyleInterpolator: ({ current, layouts }: any) => {
+          return {
+            cardStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
+            },
+          };
+        },
+        // Enhanced header with edge-to-edge principles
+        headerTitleAlign: 'center',
+        headerLeftContainerStyle: {
+          paddingLeft: theme.spacing.md,
+        },
+        headerRightContainerStyle: {
+          paddingRight: theme.spacing.md,
+        },
       }}
     >
       {!isAuthenticated ? (
-        <Root.Screen name="Auth" component={AuthNavigator} />
-      ) : !onboarded ? ( // Use selected onboarded status
-        // User is authenticated but not onboarded - show the onboarding flow
-        // This group will handle the two-step onboarding
+        <Root.Screen 
+          name="Auth" 
+          component={AuthNavigator}
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+      ) : !onboarded ? (
+        // User is authenticated but not onboarded - show the enhanced onboarding flow
         <Root.Group>
-          <Root.Screen name="Onboarding" component={OnboardingScreen} />
-          <Root.Screen name="OnboardingReminderSetup" component={OnboardingReminderSetupScreen} />
+          <Root.Screen 
+            name="Onboarding" 
+            component={OnboardingFlowScreen}
+            options={{
+              headerShown: false,
+              gestureEnabled: false,
+            }}
+          />
         </Root.Group>
       ) : (
         // User is authenticated and onboarded
-        <Root.Screen name="MainApp" component={MainAppNavigator} />
+        <Root.Screen 
+          name="MainApp" 
+          component={MainAppNavigator}
+          options={{
+            headerShown: false,
+          }}
+        />
       )}
-      {/* ReminderSettingsScreen is available in the stack but needs a navigation trigger */}
+      
+      {/* Modal screens with enhanced edge-to-edge styling */}
       <Root.Screen
         name="ReminderSettings"
         component={ReminderSettingsScreen}
@@ -282,6 +337,21 @@ const RootNavigator: React.FC = () => {
           title: 'Hatırlatıcı Ayarları',
           presentation: 'modal',
           headerTitleAlign: 'center',
+          gestureEnabled: true,
+          cardStyleInterpolator: ({ current }: any) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateY: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [600, 0],
+                    }),
+                  },
+                ],
+              },
+            };
+          },
         }}
       />
       <Root.Screen
@@ -291,6 +361,7 @@ const RootNavigator: React.FC = () => {
           headerShown: true,
           title: 'Günlük Detayı',
           headerTitleAlign: 'center',
+          gestureEnabled: true,
         }}
       />
       <Root.Screen
@@ -301,6 +372,21 @@ const RootNavigator: React.FC = () => {
           title: 'Gizlilik Politikası',
           presentation: 'modal',
           headerTitleAlign: 'center',
+          gestureEnabled: true,
+          cardStyleInterpolator: ({ current }: any) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateY: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [600, 0],
+                    }),
+                  },
+                ],
+              },
+            };
+          },
         }}
       />
       <Root.Screen
@@ -311,19 +397,48 @@ const RootNavigator: React.FC = () => {
           title: 'Kullanım Koşulları',
           presentation: 'modal',
           headerTitleAlign: 'center',
+          gestureEnabled: true,
+          cardStyleInterpolator: ({ current }: any) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateY: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [600, 0],
+                    }),
+                  },
+                ],
+              },
+            };
+          },
         }}
       />
       <Root.Screen
         name="Help"
-        component={EnhancedHelpScreen}
+        component={HelpScreen}
         options={{
           headerShown: true,
           title: 'Yardım ve SSS',
           presentation: 'modal',
           headerTitleAlign: 'center',
+          gestureEnabled: true,
+          cardStyleInterpolator: ({ current }: any) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateY: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [600, 0],
+                    }),
+                  },
+                ],
+              },
+            };
+          },
         }}
       />
-      {/* Settings screen is now a tab */}
     </Root.Navigator>
   );
 };

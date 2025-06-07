@@ -4,6 +4,8 @@ import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
 import { supabase } from '../utils/supabaseClient'; // Ensure this path is correct for your Supabase client
+import { logger } from '@/utils/debugConfig';
+import { handleAPIError } from '@/utils/apiHelpers';
 
 const EXPORT_FUNCTION_NAME = 'export-user-data';
 
@@ -19,27 +21,26 @@ export const prepareUserExportFile = async (): Promise<{
   message?: string;
 }> => {
   try {
-    console.log(`Invoking Supabase function: ${EXPORT_FUNCTION_NAME}`);
-    const { data, error: invokeError } = await supabase.functions.invoke(EXPORT_FUNCTION_NAME, {
-      // Supabase Edge Functions invoked via the client library are typically POST requests.
-      // The Edge Function is set up to handle the user context from the Authorization header.
-    });
+    logger.debug(`Invoking Supabase function: ${EXPORT_FUNCTION_NAME}`);
+    const { data, error: invokeError } = await supabase.functions.invoke(EXPORT_FUNCTION_NAME, {});
 
     if (invokeError) {
-      console.error(`Error invoking ${EXPORT_FUNCTION_NAME} function:`, invokeError.message);
-      throw new Error(invokeError.message || `Failed to invoke ${EXPORT_FUNCTION_NAME} function.`);
+      // Ensure invokeError is an instance of Error before passing
+      const errorToHandle =
+        invokeError instanceof Error ? invokeError : new Error(String(invokeError.message));
+      throw handleAPIError(errorToHandle, `invoke ${EXPORT_FUNCTION_NAME}`);
     }
 
-    // Check if the data object itself represents a server-side error response
     if (typeof data === 'object' && data !== null && data.error) {
       const serverError = data.error;
-      console.error(`Server-side error from ${EXPORT_FUNCTION_NAME}:`, serverError);
+      logger.error('Server-side error from export function', { extra: { serverError } });
       throw new Error(String(serverError) || 'An error occurred during data export on the server.');
     }
 
-    // data should be the actual array of gratitude entries (already a JS object/array)
     if (data === null || data === undefined) {
-      console.error('Unexpected data format from export function. Expected data, received:', data);
+      logger.error('Unexpected data format from export function. Expected data, received:', {
+        extra: { data },
+      });
       throw new Error('No data received from export function or unexpected format.');
     }
 
@@ -57,17 +58,16 @@ export const prepareUserExportFile = async (): Promise<{
       encoding: FileSystem.EncodingType.UTF8,
     });
 
-    console.log('User data successfully saved to temporary file:', fileUri);
+    logger.debug('User data successfully saved to temporary file:', { fileUri });
     return {
       success: true,
       filePath: fileUri,
       filename: generatedFilename,
       message: 'Data prepared successfully.',
     };
-  } catch (err: any) {
-    console.error('Client-side error during data export preparation:', err);
-    const errorMessage = err.message || 'An unexpected error occurred during data export.';
-    return { success: false, message: errorMessage };
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'prepare user export file');
   }
 };
 
@@ -89,15 +89,19 @@ export const shareExportedFile = async (
       UTI: Platform.OS === 'ios' ? 'public.json' : undefined, // UTI for iOS, Android infers from mimeType
     });
     return { success: true, message: 'Data shared successfully.' };
-  } catch (error: any) {
-    console.error('Error sharing file:', error);
-    // error.message might be empty for user cancellation on iOS
-    const userCancelled = Platform.OS === 'ios' && !error.message;
-    if (userCancelled) {
-      console.log('User cancelled sharing.');
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    // The user cancellation is a specific flow, not a generic error.
+    // It should be handled before passing to the generic error handler.
+    const isUserCancellation =
+      err.message.includes('cancelled') || // Android
+      (Platform.OS === 'ios' && err.message.includes('Sharing has been cancelled')); // iOS
+
+    if (isUserCancellation) {
+      logger.debug('User cancelled sharing.');
       return { success: false, message: 'Sharing cancelled by user.' };
     }
-    return { success: false, message: error.message || 'Failed to share data.' };
+    throw handleAPIError(err, 'share exported file');
   }
 };
 
@@ -107,8 +111,9 @@ export const shareExportedFile = async (
 export const cleanupTemporaryFile = async (filePath: string): Promise<void> => {
   try {
     await FileSystem.deleteAsync(filePath, { idempotent: true });
-    console.log('Temporary file deleted:', filePath);
-  } catch (error) {
-    console.error('Error deleting temporary file:', filePath, error);
+    logger.debug('Temporary file deleted:', { filePath });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'delete temporary file');
   }
 };

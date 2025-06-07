@@ -1,8 +1,10 @@
 // src/store/authStore.ts
 import { User as SupabaseUser } from '@supabase/supabase-js';
+
 import { create } from 'zustand';
 
 import * as authService from '../services/authService'; // Import all from authService
+import { logger } from '@/utils/debugConfig';
 
 import type { EmailPasswordCredentials } from '../services/authService';
 
@@ -46,7 +48,6 @@ const useAuthStore = create<AuthState>((set, _get) => ({
 
       // Subscribe to auth state changes
       authListenerSubscription = authService.onAuthStateChange((event, session) => {
-        console.log('Auth event:', event, session);
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
           set({
             isAuthenticated: true,
@@ -73,7 +74,7 @@ const useAuthStore = create<AuthState>((set, _get) => ({
         }
       });
     } catch (e: unknown) {
-      console.error('Error in initializeAuth:', e);
+      logger.error('Error in initializeAuth:', e as Error);
       let errorMessage = 'Failed to initialize auth';
       if (
         typeof e === 'object' &&
@@ -117,7 +118,7 @@ const useAuthStore = create<AuthState>((set, _get) => ({
       // State will be updated by onAuthStateChange listener for SIGNED_IN (if auto-confirm is on)
       // Or user needs to confirm email
       // set({ isLoading: false, error: null }); // User might not be authenticated yet
-      console.log('Sign up successful, user needs to confirm email or is auto-confirmed.');
+      logger.debug('Sign up successful, user needs to confirm email or is auto-confirmed.');
       set({ isLoading: false }); // Let onAuthStateChange handle user state
     } else {
       set({ isLoading: false, error: error?.message || 'Sign up failed' });
@@ -133,7 +134,7 @@ const useAuthStore = create<AuthState>((set, _get) => ({
       // On successful initiation of OAuth, Supabase handles the redirect.
       // The onAuthStateChange listener will handle the SIGNED_IN event when the user returns to the app.
       // isLoading will be set to false by the onAuthStateChange handler or if an error occurs.
-      console.log('Google login initiated. Waiting for OAuth callback.');
+      logger.debug('Google login initiated. Waiting for OAuth callback.');
     }
   },
 

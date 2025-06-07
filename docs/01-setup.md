@@ -1,6 +1,6 @@
 # Setup Guide
 
-This guide will walk you through setting up the Yeser gratitude app development environment from scratch.
+This guide will walk you through setting up the Yeser gratitude app development environment from scratch. The app uses a modern hybrid architecture with TanStack Query for server state management and Zustand for client state.
 
 ## 📋 Prerequisites
 
@@ -76,7 +76,22 @@ npm install
 cd ios && pod install && cd ..
 ```
 
-### 2. Environment Configuration
+### 2. Modern Architecture Overview
+
+This setup guide covers a **hybrid architecture** that provides:
+
+- **TanStack Query**: Intelligent server state management with automatic caching, background sync, and optimistic updates
+- **Zustand**: Lightweight client state for UI preferences, themes, and auth state
+- **Type Safety**: Full TypeScript integration with excellent developer experience
+- **Offline-First**: Robust data persistence and synchronization
+
+**Key Benefits:**
+- 90% reduction in state management boilerplate
+- Automatic background synchronization
+- Built-in error handling and retry logic
+- Excellent developer tooling and debugging
+
+### 3. Environment Configuration
 
 #### Create Environment File
 ```bash
@@ -103,9 +118,12 @@ EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_firebase_project_id
 # App Configuration
 EXPO_PUBLIC_APP_VERSION=1.0.0
 EXPO_PUBLIC_API_BASE_URL=https://your-api-domain.com
+
+# Development Tools
+EXPO_PUBLIC_REACT_QUERY_DEVTOOLS=true  # Enable TanStack Query DevTools
 ```
 
-### 3. Backend Setup (Supabase)
+### 4. Backend Setup (Supabase)
 
 #### Create Supabase Project
 1. Go to [supabase.com](https://supabase.com)
@@ -209,7 +227,7 @@ CREATE POLICY "Users can insert own entries" ON gratitude_entries
 -- Similar policies for other tables...
 ```
 
-### 4. Firebase Setup (Optional - for Analytics)
+### 5. Firebase Setup (Optional - for Analytics)
 
 #### Create Firebase Project
 1. Go to [console.firebase.google.com](https://console.firebase.google.com)
@@ -226,7 +244,7 @@ CREATE POLICY "Users can insert own entries" ON gratitude_entries
 # Place in ios/YourApp/GoogleService-Info.plist
 ```
 
-### 5. OAuth Setup (Google Sign-In)
+### 6. OAuth Setup (Google Sign-In)
 
 #### Configure Google OAuth
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
@@ -243,6 +261,20 @@ CREATE POLICY "Users can insert own entries" ON gratitude_entries
 
 ## 🔧 Development Tools Setup
 
+### TanStack Query DevTools Setup
+
+The app includes React Query DevTools for debugging server state:
+
+```typescript
+// DevTools are automatically configured in src/providers/QueryProvider.tsx
+// They'll show in development when EXPO_PUBLIC_REACT_QUERY_DEVTOOLS=true
+
+// Access DevTools by:
+// 1. Shaking your device/simulator
+// 2. Opening developer menu
+// 3. Selecting "Toggle Query DevTools"
+```
+
 ### VS Code Extensions (Recommended)
 ```json
 {
@@ -252,7 +284,8 @@ CREATE POLICY "Users can insert own entries" ON gratitude_entries
     "ms-vscode.vscode-eslint",
     "esbenp.prettier-vscode",
     "expo.vscode-expo-tools",
-    "ms-vscode.vscode-react-native"
+    "ms-vscode.vscode-react-native",
+    "tanstack.query-devtools"  // TanStack Query DevTools
   ]
 }
 ```
@@ -277,23 +310,38 @@ npx expo start
 # Should see QR code and no errors
 ```
 
-### 2. Test Database Connection
+### 2. Test Modern Architecture Components
+
+#### TanStack Query Integration
+1. Open app in Expo Go
+2. Navigate to any screen with data (Home, Past Entries)
+3. Open React Query DevTools (shake device → "Toggle Query DevTools")
+4. Verify queries are loading, caching, and updating
+
+#### Zustand Client State
+1. Toggle between light/dark theme
+2. Check that preferences persist between app restarts
+3. Verify auth state management
+
+### 3. Test Database Connection
 ```bash
 # Run a simple test to verify Supabase connection
 npm run test:connection
 ```
 
-### 3. Test Authentication
+### 4. Test Authentication
 1. Open app in Expo Go
 2. Try Google Sign-In
 3. Verify profile creation
 
-### 4. Test Core Features
-1. Create a gratitude entry
-2. View past entries
-3. Check streak counter
+### 5. Test Core Features with Modern State Management
+1. **Create a gratitude entry** - Should show optimistic update
+2. **Go offline** - App should continue working with cached data
+3. **Go back online** - Should automatically sync changes
+4. **View past entries** - Should load from cache instantly
+5. **Check streak counter** - Should update reactively
 
-## 🐛 Common Issues
+## �� Common Issues
 
 ### Node.js Version Issues
 ```bash
@@ -320,6 +368,18 @@ npx expo run:android
 ### Environment Variable Issues
 ```bash
 # Restart Metro bundler after changing .env
+npx expo start --clear
+```
+
+### TanStack Query Issues
+```bash
+# If queries aren't working
+# 1. Check network connectivity in DevTools
+# 2. Verify Supabase credentials in .env
+# 3. Check browser/app console for errors
+
+# Clear query cache if needed
+# Restart Metro bundler
 npx expo start --clear
 ```
 

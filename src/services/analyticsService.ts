@@ -1,4 +1,5 @@
 import { getAnalytics } from '@react-native-firebase/analytics';
+import { logger } from '@/utils/debugConfig';
 
 const analytics = getAnalytics();
 
@@ -13,9 +14,9 @@ const logScreenView = async (screenName: string): Promise<void> => {
       screen_name: screenName,
       screen_class: screenName, // Often same as screen_name for RN apps
     });
-    // console.log(`Analytics: Screen view logged - ${screenName}`);
+    // logger.debug(`Analytics: Screen view logged - ${screenName}`);
   } catch (error) {
-    console.error('Failed to log screen view to Firebase Analytics', error);
+    logger.error('Failed to log screen view to Firebase Analytics', error as Error);
   }
 };
 
@@ -30,9 +31,9 @@ const logEvent = async (
 ): Promise<void> => {
   try {
     await analytics.logEvent(eventName, params);
-    // console.log(`Analytics: Event logged - ${eventName}`, params || '');
+    // logger.debug(`Analytics: Event logged - ${eventName}`, params || '');
   } catch (error) {
-    console.error(`Failed to log event '${eventName}' to Firebase Analytics`, error);
+    logger.error(`Failed to log event '${eventName}' to Firebase Analytics`, error as Error);
   }
 };
 
@@ -43,9 +44,9 @@ const logEvent = async (
 const logAppOpen = async (): Promise<void> => {
   try {
     await analytics.logAppOpen();
-    // console.log('Analytics: App open event logged');
+    // logger.debug('Analytics: App open event logged');
   } catch (error) {
-    console.error('Failed to log app_open event to Firebase Analytics', error);
+    logger.error('Failed to log app_open event to Firebase Analytics', error as Error);
   }
 };
 

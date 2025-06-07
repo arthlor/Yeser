@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { logger } from '@/utils/debugConfig';
 
 /**
  * Utility functions for haptic feedback
@@ -12,7 +13,7 @@ export const hapticFeedback = {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
-      console.warn('Haptic feedback not supported', error);
+      logger.warn('Haptic feedback not supported', { error });
     }
   },
 
@@ -23,7 +24,7 @@ export const hapticFeedback = {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (error) {
-      console.warn('Haptic feedback not supported', error);
+      logger.warn('Haptic feedback not supported', { error });
     }
   },
 
@@ -34,7 +35,7 @@ export const hapticFeedback = {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     } catch (error) {
-      console.warn('Haptic feedback not supported', error);
+      logger.warn('Haptic feedback not supported', { error });
     }
   },
 
@@ -45,7 +46,7 @@ export const hapticFeedback = {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.warn('Haptic feedback not supported', error);
+      logger.warn('Haptic feedback not supported', { error });
     }
   },
 
@@ -56,7 +57,7 @@ export const hapticFeedback = {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     } catch (error) {
-      console.warn('Haptic feedback not supported', error);
+      logger.warn('Haptic feedback not supported', { error });
     }
   },
 
@@ -67,7 +68,7 @@ export const hapticFeedback = {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } catch (error) {
-      console.warn('Haptic feedback not supported', error);
+      logger.warn('Haptic feedback not supported', { error });
     }
   },
 };

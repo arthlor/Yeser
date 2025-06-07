@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto'; // Required for Supabase to work in Rea
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/utils/debugConfig';
 
 import type { Database } from '../types/supabase.types.ts';
 
@@ -15,7 +16,7 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
 if (!supabaseUrl || !supabaseAnonKey) {
   const errorMessage =
     'Supabase URL or Anon Key is missing. Make sure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY are set in your .env file and accessible.';
-  console.error(errorMessage);
+  logger.error(errorMessage);
   throw new Error(errorMessage);
 }
 

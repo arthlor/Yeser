@@ -1,118 +1,107 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
+import ThemedCard from '@/shared/components/ui/ThemedCard';
+import LoadingSkeleton, { CircularSkeleton, TextSkeleton } from '@/shared/components/ui/LoadingSkeleton';
 
 interface PastEntriesSkeletonLoaderProps {
   count?: number;
 }
 
-const createStyles = (theme: AppTheme) =>
-  StyleSheet.create({
-    loaderContainer: {
-      paddingTop: theme.spacing.md,
-    },
-    container: {
-      paddingHorizontal: theme.spacing.md,
-      marginBottom: theme.spacing.sm,
-    },
-    card: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      padding: theme.spacing.lg,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '20',
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: theme.spacing.md,
-    },
-    dateSection: {
-      flex: 1,
-    },
-    placeholder: {
-      backgroundColor: theme.colors.surfaceVariant + '80',
-      borderRadius: theme.borderRadius.sm,
-    },
-    relativeDatePlaceholder: {
-      width: '55%',
-      height: 16,
-      marginBottom: 4,
-    },
-    fullDatePlaceholder: {
-      width: '75%',
-      height: 12,
-    },
-    iconPlaceholder: {
-      width: 18,
-      height: 18,
-      borderRadius: 9,
-    },
-    contentSection: {
-      marginBottom: theme.spacing.lg,
-    },
-    contentLine1: {
-      width: '100%',
-      height: 14,
-      marginBottom: theme.spacing.xs,
-    },
-    contentLine2: {
-      width: '85%',
-      height: 14,
-      marginBottom: theme.spacing.xs,
-    },
-    contentLine3: {
-      width: '65%',
-      height: 14,
-    },
-    footer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    statsPlaceholder: {
-      width: '20%',
-      height: 12,
-    },
-    tagPlaceholder: {
-      width: 45,
-      height: 18,
-      borderRadius: theme.borderRadius.full,
-    },
-  });
+interface SkeletonItemProps {
+  isRecent: boolean;
+}
 
-const SkeletonItem: React.FC = () => {
+const SkeletonItem: React.FC<SkeletonItemProps> = ({ isRecent }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
+      <ThemedCard
+        variant="elevated"
+        density="standard"
+        elevation="xs"
+        style={styles.edgeToEdgeCard}
+      >
         {/* Header skeleton */}
         <View style={styles.header}>
           <View style={styles.dateSection}>
-            <View style={[styles.placeholder, styles.relativeDatePlaceholder]} />
-            <View style={[styles.placeholder, styles.fullDatePlaceholder]} />
+            <View style={styles.dateHeader}>
+              <LoadingSkeleton 
+                variant="rounded" 
+                width="65%" 
+                height={22} 
+                borderRadius={theme.borderRadius.xs}
+              />
+              {isRecent && (
+                <CircularSkeleton width={8} height={8} />
+              )}
+            </View>
+            <LoadingSkeleton 
+              variant="rounded" 
+              width="45%" 
+              height={12}
+              borderRadius={theme.borderRadius.xs}
+            />
           </View>
-          <View style={[styles.placeholder, styles.iconPlaceholder]} />
+          <CircularSkeleton width={20} height={20} />
         </View>
 
         {/* Content skeleton */}
         <View style={styles.contentSection}>
-          <View style={[styles.placeholder, styles.contentLine1]} />
-          <View style={[styles.placeholder, styles.contentLine2]} />
-          <View style={[styles.placeholder, styles.contentLine3]} />
+          <TextSkeleton height={16} style={{ marginBottom: theme.spacing.xs }} />
+          <TextSkeleton height={16} width="90%" style={{ marginBottom: theme.spacing.xs }} />
+          <TextSkeleton height={16} width="70%" style={{ marginBottom: theme.spacing.xs }} />
+          
+          {/* Content meta skeleton */}
+          <View style={styles.contentMeta}>
+            <CircularSkeleton width={16} height={16} />
+            <LoadingSkeleton 
+              variant="rounded" 
+              width={80} 
+              height={12}
+              borderRadius={theme.borderRadius.xs}
+            />
+          </View>
         </View>
 
         {/* Footer skeleton */}
         <View style={styles.footer}>
-          <View style={[styles.placeholder, styles.statsPlaceholder]} />
-          <View style={[styles.placeholder, styles.tagPlaceholder]} />
+          <View style={styles.statsContainer}>
+            <View style={styles.statGroup}>
+              <CircularSkeleton width={16} height={16} />
+              <LoadingSkeleton 
+                variant="rounded" 
+                width={45} 
+                height={12}
+                borderRadius={theme.borderRadius.xs}
+              />
+            </View>
+            <View style={styles.statGroup}>
+              <CircularSkeleton width={16} height={16} />
+              <LoadingSkeleton 
+                variant="rounded" 
+                width={45} 
+                height={12}
+                borderRadius={theme.borderRadius.xs}
+              />
+            </View>
+          </View>
+          
+          <View style={styles.qualityContainer}>
+            <LoadingSkeleton 
+              variant="rounded" 
+              width={50} 
+              height={18}
+              borderRadius={theme.borderRadius.sm}
+            />
+            <CircularSkeleton width={16} height={16} />
+          </View>
         </View>
-      </View>
+      </ThemedCard>
     </View>
   );
 };
@@ -124,10 +113,74 @@ const PastEntriesSkeletonLoader: React.FC<PastEntriesSkeletonLoaderProps> = ({ c
   return (
     <View style={styles.loaderContainer}>
       {Array.from({ length: count }).map((_, index) => (
-        <SkeletonItem key={`skeleton-${index}`} />
+        <SkeletonItem 
+          key={`skeleton-${index}`} 
+          isRecent={index < 3}
+        />
       ))}
     </View>
   );
 };
+
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    loaderContainer: {
+      paddingTop: theme.spacing.md,
+    },
+    container: {
+      paddingHorizontal: 0,
+      marginBottom: theme.spacing.md,
+    },
+    edgeToEdgeCard: {
+      borderRadius: 0,
+      borderWidth: 0,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outline + '10',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: theme.spacing.lg,
+    },
+    dateSection: {
+      flex: 1,
+    },
+    dateHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      marginBottom: theme.spacing.xxs,
+    },
+    contentSection: {
+      marginBottom: theme.spacing.lg,
+    },
+    contentMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      marginTop: theme.spacing.xs,
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    statsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    statGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+    },
+    qualityContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+  });
 
 export default PastEntriesSkeletonLoader;

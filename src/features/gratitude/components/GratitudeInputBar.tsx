@@ -1,0 +1,343 @@
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+import { useTheme } from '@/providers/ThemeProvider';
+import { AppTheme } from '@/themes/types';
+import { getPrimaryShadow } from '@/themes/utils';
+import { logger } from '@/utils/debugConfig';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+interface GratitudeInputBarProps {
+  onSubmit: (text: string) => void;
+  placeholder?: string;
+  error?: string | null;
+  disabled?: boolean;
+  autoFocus?: boolean;
+}
+
+const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
+  onSubmit,
+  placeholder = 'Bugün neye minnettarsın?',
+  error,
+  disabled = false,
+  autoFocus = false,
+}) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme, disabled);
+  const inputRef = useRef<TextInput>(null);
+
+  const [inputText, setInputText] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  
+  // Animation values for enhanced interactivity  
+  const gradientAnim = useRef(new Animated.Value(0)).current;
+
+  // Robust auto-focus without interference
+  useEffect(() => {
+    if (autoFocus && inputRef.current && !disabled) {
+      const timer = setTimeout(() => {
+        if (inputRef.current) {
+          logger.debug('GratitudeInputBar: Attempting auto-focus...');
+          inputRef.current.focus();
+        }
+      }, 300); // Longer delay for stability
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus, disabled]);
+
+  // Removed pulse animation for cleaner UX
+
+  // Gradient animation for focus state
+  useEffect(() => {
+    Animated.timing(gradientAnim, {
+      toValue: isFocused ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [isFocused, gradientAnim]);
+
+  const handleSubmit = () => {
+    logger.debug('GratitudeInputBar: Submit button pressed', { text: inputText.trim() });
+    if (inputText.trim() && !disabled) {
+      onSubmit(inputText.trim());
+      setInputText('');
+      
+      // Keep focus for continuous input - with error handling
+      setTimeout(() => {
+        if (inputRef.current) {
+          logger.debug('GratitudeInputBar: Re-focusing after submit');
+          inputRef.current.focus();
+        }
+      }, 100);
+    }
+  };
+
+  const handleFocus = () => {
+    logger.debug('GratitudeInputBar: Input focused');
+    setIsFocused(true);
+  };
+
+  const handleBlur = () => {
+    logger.debug('GratitudeInputBar: Input blurred');
+    setIsFocused(false);
+  };
+
+  const handleChangeText = (text: string) => {
+    logger.debug('GratitudeInputBar: Text changed', { text });
+    setInputText(text);
+  };
+
+  const isButtonEnabled = inputText.trim().length > 0 && !disabled;
+
+  return (
+    <View style={styles.container}>
+      {/* Striking Header Section with Gradient Background */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View style={styles.iconContainer}>
+            <Icon name="heart-plus" size={24} color={theme.colors.onPrimary} />
+          </View>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>Minnet Ekle</Text>
+            <Text style={styles.headerSubtitle}>Bugün minnettarlık hissettiğin anları paylaş</Text>
+          </View>
+        </View>
+        <View style={styles.headerRight}>
+          <View style={styles.characterCountContainer}>
+            <Text style={styles.characterCount}>
+              {inputText.length}/500
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Enhanced Input Section with Gradient Border */}
+      <Animated.View 
+        style={[
+          styles.inputContainer,
+          {
+            borderColor: gradientAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [theme.colors.outline + '40', theme.colors.primary + '80'],
+            }),
+            backgroundColor: gradientAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [theme.colors.surfaceVariant + '30', theme.colors.primaryContainer + '20'],
+            }),
+          }
+        ]}
+      >
+        <TextInput
+          ref={inputRef}
+          style={styles.input}
+          value={inputText}
+          onChangeText={handleChangeText}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+          placeholderTextColor={theme.colors.onSurfaceVariant + '60'}
+          multiline={true}
+          textAlignVertical="top"
+          maxLength={500}
+          editable={!disabled}
+          scrollEnabled={false}
+          returnKeyType="send"
+          onSubmitEditing={handleSubmit}
+          blurOnSubmit={false}
+          autoCorrect={true}
+          autoCapitalize="sentences"
+          keyboardType="default"
+          selectionColor={theme.colors.primary}
+          autoFocus={false} // We handle this manually
+        />
+        
+        <TouchableOpacity
+          onPress={handleSubmit}
+          style={[
+            styles.button,
+            isButtonEnabled ? styles.buttonEnabled : styles.buttonDisabled
+          ]}
+          disabled={!isButtonEnabled}
+          activeOpacity={0.8}
+        >
+          <Icon 
+            name={isButtonEnabled ? "send" : "send-outline"} 
+            size={20} 
+            color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant} 
+          />
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Inspirational Call to Action */}
+      {!inputText && !isFocused && (
+        <View style={styles.callToAction}>
+          <Text style={styles.callToActionText}>
+            ✨ Her minnet, hayatına pozitif enerji katar
+          </Text>
+        </View>
+      )}
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle" size={16} color={theme.colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
+const createStyles = (theme: AppTheme, disabled: boolean = false) =>
+  StyleSheet.create({
+    // Enhanced edge-to-edge container with striking design
+    container: {
+      borderRadius: 0,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 0,
+      borderTopWidth: 2,
+      borderBottomWidth: 2,
+      borderTopColor: theme.colors.primary + '20',
+      borderBottomColor: theme.colors.primary + '20',
+      overflow: 'hidden',
+      opacity: disabled ? 0.6 : 1,
+      ...getPrimaryShadow.card(theme),
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.md,
+      backgroundColor: `linear-gradient(135deg, ${theme.colors.primary}15, ${theme.colors.primaryContainer}25)`,
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+      flex: 1,
+    },
+    iconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...getPrimaryShadow.small(theme),
+    },
+    titleContainer: {
+      flex: 1,
+    },
+    headerRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    headerTitle: {
+      ...theme.typography.titleLarge,
+      color: theme.colors.onSurface,
+      fontWeight: '700',
+      marginBottom: 2,
+    },
+    headerSubtitle: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '400',
+      opacity: 0.8,
+    },
+    characterCountContainer: {
+      backgroundColor: theme.colors.primary + '15',
+      borderRadius: theme.borderRadius.md,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '30',
+    },
+    characterCount: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.primary,
+      fontWeight: '600',
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.lg,
+      gap: theme.spacing.md,
+      minHeight: 100,
+      borderWidth: 2,
+      borderTopWidth: 0,
+      borderBottomWidth: 0,
+      borderLeftWidth: 0,
+      borderRightWidth: 0,
+    },
+    input: {
+      flex: 1,
+      fontSize: 18,
+      fontFamily: theme.typography.fontFamilyRegular,
+      color: theme.colors.onSurface,
+      minHeight: 60,
+      maxHeight: 140,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      borderWidth: 2,
+      borderColor: theme.colors.outline + '30',
+      borderRadius: theme.borderRadius.lg,
+      backgroundColor: theme.colors.surface,
+      textAlignVertical: 'top',
+      lineHeight: 26,
+      fontWeight: '400',
+      ...getPrimaryShadow.small(theme),
+    },
+    button: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...getPrimaryShadow.medium(theme),
+    },
+    buttonEnabled: {
+      backgroundColor: theme.colors.primary,
+    },
+    buttonDisabled: {
+      backgroundColor: theme.colors.surfaceVariant,
+    },
+    callToAction: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      backgroundColor: theme.colors.primaryContainer + '20',
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.primary + '10',
+    },
+    callToActionText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.primary,
+      fontStyle: 'italic',
+      textAlign: 'center',
+      fontWeight: '500',
+    },
+    errorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.md,
+      gap: theme.spacing.xs,
+    },
+    errorText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.error,
+      fontWeight: '500',
+      flex: 1,
+    },
+  });
+
+export default GratitudeInputBar;

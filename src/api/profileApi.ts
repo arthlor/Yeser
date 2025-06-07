@@ -1,15 +1,15 @@
-import * as z from 'zod';
-
 import {
-  profileSchema,
   Profile,
-  updateProfileSchema,
-  UpdateProfilePayload,
-  rawProfileDataSchema, // Added import
+  profileSchema,
   RawProfileData, // Added import
+  rawProfileDataSchema, // Added import
+  UpdateProfilePayload,
+  updateProfileSchema,
 } from '../schemas/profileSchema';
-import { TablesUpdate, Tables } from '../types/supabase.types';
+import { TablesUpdate } from '../types/supabase.types';
 import { supabase } from '../utils/supabaseClient';
+import { logger } from '@/utils/debugConfig';
+import { handleAPIError } from '@/utils/apiHelpers';
 
 // Removed local RawProfileData interface, will use inferred type from Zod schema
 
@@ -19,64 +19,86 @@ const mapAndValidateRawProfile = (validatedRawData: RawProfileData): Profile => 
   const dataForZod = {
     ...validatedRawData, // validatedRawData now only has updated_at from the DB for timestamps
     created_at: validatedRawData.updated_at, // Use updated_at as the source for created_at
+    // Map snake_case database field to camelCase app field
+    useVariedPrompts: validatedRawData.use_varied_prompts,
     // updated_at is already present in validatedRawData and will be passed through
   };
-  // No need to delete 'inserted_at' as it's no longer part of RawProfileData
+  // Remove the snake_case field to avoid conflicts
+  delete (dataForZod as Partial<typeof dataForZod>).use_varied_prompts;
+  
   const validationResult = profileSchema.safeParse(dataForZod);
   if (!validationResult.success) {
-    console.error('Profile data validation failed:', validationResult.error.flatten());
+    logger.error('Profile data validation failed:', {
+      extra: validationResult.error.flatten(),
+    });
     // It's often better to throw the specific ZodError for more detailed context upstream
     throw new Error(`Invalid profile data: ${validationResult.error.toString()}`);
   }
   return validationResult.data;
 };
 
+// Function to check if a username is available
+export const checkUsernameAvailability = async (username: string): Promise<boolean> => {
+  try {
+    logger.debug(`Checking username availability for: "${username}"`);
+
+    // Use the database function that bypasses RLS
+    const { data, error } = await supabase.rpc('check_username_availability', {
+      p_username: username,
+    });
+
+    if (error) {
+      throw handleAPIError(new Error(error.message), 'check username availability');
+    }
+
+    // The function returns true if available, false if taken
+    return Boolean(data);
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'check username availability');
+  }
+};
+
 // Function to get the user's profile
 export const getProfile = async (): Promise<Profile | null> => {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError || !sessionData.session) {
-    console.error('Error getting session or no active session:', sessionError);
-    throw sessionError || new Error('No active session');
-  }
-
-  const { user } = sessionData.session;
-  if (!user) {
-    throw new Error('No user found in session');
-  }
-
   try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      throw new Error('No active session');
+    }
+
+    const { user } = sessionData.session;
+    if (!user) {
+      throw new Error('No user found in session');
+    }
     const { data, error, status } = await supabase
       .from('profiles')
       .select(
-        'id, username, onboarded, reminder_enabled, reminder_time, throwback_reminder_enabled, throwback_reminder_frequency, updated_at, daily_gratitude_goal'
+        'id, username, onboarded, reminder_enabled, reminder_time, throwback_reminder_enabled, throwback_reminder_frequency, throwback_reminder_time, updated_at, daily_gratitude_goal, use_varied_prompts'
       )
       .eq('id', user.id)
       .single();
 
     if (error && status !== 406) {
-      // 406 status means no rows found, which is a valid case for a new user
-      console.error('Error fetching profile:', error);
-      throw error;
+      throw handleAPIError(new Error(error.message), 'fetch profile');
     }
 
     if (data) {
-      // Validate raw data from Supabase first
       const rawValidationResult = rawProfileDataSchema.safeParse(data);
       if (!rawValidationResult.success) {
-        console.error(
-          'Raw profile data validation failed on fetch:',
-          rawValidationResult.error.flatten()
-        );
+        logger.error('Raw profile data validation failed on fetch:', {
+          extra: rawValidationResult.error.flatten(),
+        });
         throw new Error(
           `Invalid raw profile data from DB: ${rawValidationResult.error.toString()}`
         );
       }
       return mapAndValidateRawProfile(rawValidationResult.data);
     }
-    return null; // No profile found, could be a new user
-  } catch (error) {
-    console.error('Catch block error fetching profile:', error);
-    throw error;
+    return null;
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'fetch profile');
   }
 };
 
@@ -84,70 +106,61 @@ export const getProfile = async (): Promise<Profile | null> => {
 export const updateProfile = async (
   profileUpdates: UpdateProfilePayload
 ): Promise<Profile | null> => {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError || !sessionData.session) {
-    console.error('Error getting session or no active session:', sessionError);
-    throw sessionError || new Error('No active session');
-  }
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      throw new Error('No active session');
+    }
 
-  const { user } = sessionData.session;
-  if (!user) {
-    throw new Error('No user found in session');
-  }
+    const { user } = sessionData.session;
+    if (!user) {
+      throw new Error('No user found in session');
+    }
 
-  // Validate the input payload first
-  const validationResult = updateProfileSchema.safeParse(profileUpdates);
-  if (!validationResult.success) {
-    console.error('Update profile payload validation failed:', validationResult.error.flatten());
-    throw new Error(`Invalid update profile payload: ${validationResult.error.toString()}`);
-  }
-  const { reminder_time, useVariedPrompts, ...otherValidatedUpdates } = validationResult.data;
+    // Validate the input payload first
+    const validationResult = updateProfileSchema.safeParse(profileUpdates);
+    if (!validationResult.success) {
+      logger.error('Update profile payload validation failed:', {
+        extra: validationResult.error.flatten(),
+      });
+      throw new Error(`Invalid update profile payload: ${validationResult.error.toString()}`);
+    }
+    const { reminder_time, useVariedPrompts, ...otherValidatedUpdates } = validationResult.data;
 
-  // Prepare the payload for Supabase, explicitly typing to match Supabase's expected Update type.
-  const payloadForSupabase: TablesUpdate<'profiles'> = {
-    ...otherValidatedUpdates,
-  };
+    const payloadForSupabase: TablesUpdate<'profiles'> = {
+      ...otherValidatedUpdates,
+    };
 
-  if (useVariedPrompts !== undefined) {
-    payloadForSupabase.use_varied_prompts = useVariedPrompts;
-  }
+    if (useVariedPrompts !== undefined) {
+      payloadForSupabase.use_varied_prompts = useVariedPrompts;
+    }
 
-  // Handle reminder_time separately due to null vs undefined mismatch with Supabase types
-  if (reminder_time !== undefined) {
-    if (reminder_time === null) {
-      // Supabase client expects `string | undefined`, but DB allows null.
-      // Cast to `any` for this specific assignment if reminder_time is null.
-      (payloadForSupabase as any).reminder_time = null;
-    } else {
-      // If it's a string, assign it directly.
+    if (reminder_time !== undefined) {
       payloadForSupabase.reminder_time = reminder_time;
     }
-  }
-  // If reminder_time was undefined from validationResult.data, it's correctly omitted.
-
-  try {
     const { data, error } = await supabase
       .from('profiles')
       .update(payloadForSupabase)
       .eq('id', user.id)
       .select(
-        'id, username, onboarded, reminder_enabled, reminder_time, throwback_reminder_enabled, throwback_reminder_frequency, updated_at, daily_gratitude_goal'
+        'id, username, onboarded, reminder_enabled, reminder_time, throwback_reminder_enabled, throwback_reminder_frequency, throwback_reminder_time, updated_at, daily_gratitude_goal, use_varied_prompts'
       )
       .single();
 
     if (error) {
-      console.error('Error updating profile:', error);
-      throw error;
+      if (error.code === '23505' && error.message.includes('profiles_username_key')) {
+        throw new Error('Bu kullanıcı adı zaten kullanılıyor. Lütfen farklı bir kullanıcı adı seçin.');
+      }
+      throw handleAPIError(new Error(error.message), 'update profile');
     }
 
     if (data) {
       // Validate raw data from Supabase first
       const rawValidationResult = rawProfileDataSchema.safeParse(data);
       if (!rawValidationResult.success) {
-        console.error(
-          'Raw profile data validation failed on update:',
-          rawValidationResult.error.flatten()
-        );
+        logger.error('Raw profile data validation failed on update:', {
+          extra: rawValidationResult.error.flatten(),
+        });
         throw new Error(
           `Invalid raw profile data from DB after update: ${rawValidationResult.error.toString()}`
         );
@@ -155,8 +168,8 @@ export const updateProfile = async (
       return mapAndValidateRawProfile(rawValidationResult.data);
     }
     return null;
-  } catch (error) {
-    console.error('Catch block error updating profile:', error);
-    throw error;
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'update profile');
   }
 };

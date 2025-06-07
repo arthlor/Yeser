@@ -1,8 +1,10 @@
 // src/services/authService.ts
 import { AuthError, Session, User } from '@supabase/supabase-js';
+
 import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from '../utils/supabaseClient';
+import { logger } from '@/utils/debugConfig';
 
 // Custom interface for email/password credentials, as UserCredentials might not be exported or match needed structure
 export interface EmailPasswordCredentials {
@@ -57,7 +59,7 @@ export const getCurrentUser = async (): Promise<{
 export const getCurrentSession = async (): Promise<Session | null> => {
   const { data, error } = await supabase.auth.getSession();
   if (error) {
-    console.error('Error getting session:', error.message);
+    logger.error('Error getting session:', error);
     return null;
   }
   return data.session;
@@ -88,7 +90,7 @@ export const signInWithGoogle = async (): Promise<{
     });
 
     if (oauthError) {
-      console.error('Google Sign-In OAuth Error:', oauthError.message);
+      logger.error('Google Sign-In OAuth Error:', oauthError);
       return { user: null, session: null, error: oauthError };
     }
 
@@ -101,7 +103,7 @@ export const signInWithGoogle = async (): Promise<{
       if (response.type === 'success' && response.url) {
         const hashFragment = response.url.split('#')[1];
         if (!hashFragment) {
-          console.error('Google Sign-In: No hash fragment in redirect URL');
+          logger.error('Google Sign-In: No hash fragment in redirect URL');
           return {
             user: null,
             session: null,
@@ -126,19 +128,19 @@ export const signInWithGoogle = async (): Promise<{
           });
 
           if (setSessionError) {
-            console.error('Error setting session after Google Sign-In:', setSessionError.message);
+            logger.error('Error setting session after Google Sign-In:', setSessionError);
             return { user: null, session: null, error: setSessionError };
           }
           // After setSession, onAuthStateChange should fire with SIGNED_IN.
           // The sessionData from setSession contains the user and session.
-          console.log('Session successfully set after Google Sign-In.');
+          logger.debug('Session successfully set after Google Sign-In.');
           return {
             user: sessionData?.user ?? null,
             session: sessionData?.session ?? null,
             error: null,
           };
         } else {
-          console.error(
+          logger.error(
             'Google Sign-In: access_token or refresh_token missing in redirect URL fragment'
           );
           return {
@@ -151,7 +153,7 @@ export const signInWithGoogle = async (): Promise<{
           };
         }
       } else if (response.type === 'cancel' || response.type === 'dismiss') {
-        console.log('Google Sign-In cancelled by user.');
+        logger.debug('Google Sign-In cancelled by user.');
         return {
           user: null,
           session: null,
@@ -162,7 +164,7 @@ export const signInWithGoogle = async (): Promise<{
         };
       } else {
         // Handles response.type === 'error' or other unexpected types
-        console.error('Google Sign-In WebBrowser Error:', response);
+        logger.error('Google Sign-In WebBrowser Error:', response);
         let errorMessage = 'An unexpected error occurred during Google Sign-In with WebBrowser.';
         if (response.type === 'error') {
           // response is WebBrowserAuthSessionErrorResult (Android launch error) OR WebBrowserAuthSessionCompleteResult (error in URL)
@@ -178,9 +180,9 @@ export const signInWithGoogle = async (): Promise<{
               errorMessage?: string | null;
             };
             if (respWithPossibleErrorDetails.errorCode)
-              details.push(`Code: ${respWithPossibleErrorDetails.errorCode}`);
+              {details.push(`Code: ${respWithPossibleErrorDetails.errorCode}`);}
             if (respWithPossibleErrorDetails.errorMessage)
-              details.push(`Message: ${respWithPossibleErrorDetails.errorMessage}`);
+              {details.push(`Message: ${respWithPossibleErrorDetails.errorMessage}`);}
             if (details.length > 0) {
               errorMessage = `OAuth error: ${details.join(', ')}. URL: ${response.url}`;
             } else {
@@ -219,7 +221,7 @@ export const signInWithGoogle = async (): Promise<{
     } else if (typeof err === 'string') {
       errorMessage = err;
     }
-    console.error('Unexpected error in signInWithGoogle:', errorMessage);
+    logger.error('Unexpected error in signInWithGoogle:', new Error(errorMessage));
     return {
       user: null,
       session: null,

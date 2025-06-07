@@ -3,6 +3,8 @@ import { ActivityIndicator, StyleSheet, Text, View, ViewStyle } from 'react-nati
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../themes/types';
+import { ScreenLayout } from '../../shared/components/layout';
+import { getPrimaryShadow } from '@/themes/utils';
 
 export interface LoadingStateProps {
   /**
@@ -21,6 +23,13 @@ export interface LoadingStateProps {
   overlay?: boolean;
 
   /**
+   * Whether to render as a full screen with ScreenLayout
+   * When true, renders with ScreenLayout wrapper for screen-level usage
+   * When false, renders as inline component
+   */
+  fullScreen?: boolean;
+
+  /**
    * Additional styles for the container
    */
   style?: ViewStyle;
@@ -32,11 +41,14 @@ export interface LoadingStateProps {
  *
  * @example
  * ```tsx
- * // Simple loading state
+ * // Simple loading state (inline)
  * <LoadingState />
  *
- * // Loading state with message
+ * // Loading state with message (inline)
  * <LoadingState message="Loading your data..." />
+ *
+ * // Full-screen loading state
+ * <LoadingState fullScreen message="Loading your profile..." />
  *
  * // Loading overlay
  * <LoadingState overlay={true} message="Please wait" />
@@ -46,11 +58,12 @@ const LoadingState: React.FC<LoadingStateProps> = ({
   message,
   size = 'large',
   overlay = false,
+  fullScreen = false,
   style,
 }) => {
   const { theme } = useTheme();
 
-  const styles = React.useMemo(() => createStyles(theme, overlay), [theme, overlay]);
+  const styles = React.useMemo(() => createStyles(theme, overlay, fullScreen), [theme, overlay, fullScreen]);
 
   const content = (
     <View style={[styles.container, style]} accessibilityRole="progressbar">
@@ -63,15 +76,40 @@ const LoadingState: React.FC<LoadingStateProps> = ({
     </View>
   );
 
+  // Full-screen mode with ScreenLayout integration
+  if (fullScreen) {
+    return (
+      <ScreenLayout scrollable={false} showsVerticalScrollIndicator={false} edges={['top']} edgeToEdge={true}>
+        {content}
+      </ScreenLayout>
+    );
+  }
+
+  // Regular inline usage
   return content;
 };
 
-const createStyles = (theme: AppTheme, overlay: boolean) =>
+const createStyles = (theme: AppTheme, overlay: boolean, fullScreen: boolean) =>
   StyleSheet.create({
     container: {
-      padding: theme.spacing.large,
-      alignItems: 'center',
-      justifyContent: 'center',
+      ...(fullScreen ? {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: theme.spacing.page,
+      } : {
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.borderRadius.lg,
+        padding: theme.spacing.md,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: theme.colors.outline + '25',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: theme.spacing.medium,
+        minHeight: 120,
+        // 🌟 Beautiful primary shadow for loading state card
+        ...getPrimaryShadow.card(theme),
+      }),
       ...(overlay && {
         position: 'absolute',
         top: 0,

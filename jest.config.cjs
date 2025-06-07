@@ -1,6 +1,7 @@
 // jest.config.js
 module.exports = {
   preset: 'jest-expo',
+  testEnvironment: 'jsdom',
   transform: {
     '^.+\.(js|jsx|ts|tsx)$': 'babel-jest',
   },
@@ -19,11 +20,11 @@ module.exports = {
     'node',
   ],
   // Optional: If you have a setup file (e.g., for global mocks or polyfills)
-  setupFilesAfterEnv: ['./jest-setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/jest-setup.ts'],
 
   // Important for React Native projects to transform (or not ignore) certain node_modules
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|expo-modules-core|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@rneui/.*|@react-native-firebase/.*|pako|react-native-url-polyfill|toggle-switch-react-native|react-native-paper))'
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|expo-modules-core|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@rneui/.*|@react-native-firebase/.*|pako|react-native-url-polyfill|toggle-switch-react-native|react-native-paper|@tanstack/react-query|zustand|msw))'
   ],
 
   // Optional: If you need to mock assets like images or fonts
@@ -43,6 +44,32 @@ module.exports = {
     '!src/types/**/*', // Exclude all files in src/types
     '!src/navigation/**/*', // Example: Exclude navigation files if they are mostly boilerplate
     '!src/utils/supabaseClient.ts', // Example: Exclude supabase client setup
+    '!src/**/__tests__/**',
+    '!src/**/__mocks__/**',
+    '!src/**/constants/**',
   ],
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
+  
+  // Coverage thresholds
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+    // Specific thresholds for critical areas
+    './src/hooks/': {
+      branches: 90,
+      functions: 90,
+      lines: 90,
+      statements: 90,
+    },
+    './src/store/': {
+      branches: 85,
+      functions: 85,
+      lines: 85,
+      statements: 85,
+    },
+  },
 };

@@ -1,3 +1,4 @@
+// .prettierrc.cjs (Your existing Prettier config - looks good)
 module.exports = {
   printWidth: 100,
   tabWidth: 2,
@@ -5,9 +6,9 @@ module.exports = {
   jsxSingleQuote: false, // Explicitly false for JSX attributes (double quotes)
   trailingComma: 'es5',
   semi: true,
-  arrowParens: 'always', // Changed from 'avoid'
+  arrowParens: 'always',
   bracketSpacing: true,
-  bracketSameLine: false, // Kept as it doesn't conflict, common default
-  endOfLine: 'lf', // Explicitly set for consistency
+  bracketSameLine: false,
+  endOfLine: 'lf',
   useTabs: false,
 };

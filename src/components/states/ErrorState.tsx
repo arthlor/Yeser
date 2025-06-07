@@ -4,6 +4,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../themes/types';
+import { ScreenLayout } from '../../shared/components/layout';
+import { getPrimaryShadow } from '@/themes/utils';
 
 export interface ErrorStateProps {
   /**
@@ -32,6 +34,13 @@ export interface ErrorStateProps {
   onRetry?: () => void;
 
   /**
+   * Whether to render as a full screen with ScreenLayout
+   * When true, renders with ScreenLayout wrapper for screen-level usage
+   * When false, renders as inline component with card styling
+   */
+  fullScreen?: boolean;
+
+  /**
    * Additional styles for the container
    */
   style?: ViewStyle;
@@ -43,15 +52,22 @@ export interface ErrorStateProps {
  *
  * @example
  * ```tsx
- * // Simple error state
+ * // Simple error state (inline with card styling)
  * <ErrorState message="Something went wrong" />
  *
- * // Error state with retry button
+ * // Full-screen error state
  * <ErrorState
+ *   fullScreen
  *   title="Connection Error"
  *   message="Unable to connect to the server"
  *   icon="wifi-off"
  *   onRetry={() => fetchData()}
+ * />
+ *
+ * // Inline error state with retry
+ * <ErrorState
+ *   message="Failed to load data"
+ *   onRetry={() => refetch()}
  * />
  * ```
  */
@@ -61,11 +77,12 @@ const ErrorState: React.FC<ErrorStateProps> = ({
   icon = 'alert-circle',
   retryLabel = 'Try Again',
   onRetry,
+  fullScreen = false,
   style,
 }) => {
   const { theme } = useTheme();
 
-  const styles = React.useMemo(() => createStyles(theme), [theme]);
+  const styles = React.useMemo(() => createStyles(theme, fullScreen), [theme, fullScreen]);
 
   const content = (
     <View
@@ -75,7 +92,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
     >
       <MaterialCommunityIcons
         name={icon}
-        size={48}
+        size={fullScreen ? 64 : 48}
         color={theme.colors.error}
         style={styles.icon}
       />
@@ -102,18 +119,38 @@ const ErrorState: React.FC<ErrorStateProps> = ({
     </View>
   );
 
+  // Full-screen mode with ScreenLayout integration
+  if (fullScreen) {
+    return (
+      <ScreenLayout scrollable={false} showsVerticalScrollIndicator={false} edges={['top']} edgeToEdge={true}>
+        {content}
+      </ScreenLayout>
+    );
+  }
+
+  // Regular inline usage with card styling
   return content;
 };
 
-const createStyles = (theme: AppTheme) =>
+const createStyles = (theme: AppTheme, fullScreen: boolean) =>
   StyleSheet.create({
     container: {
-      padding: theme.spacing.large,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.medium,
-      margin: theme.spacing.medium,
+      ...(fullScreen ? {
+        flex: 1,
+        paddingHorizontal: theme.spacing.page,
+        backgroundColor: 'transparent',
+      } : {
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.borderRadius.lg,
+        padding: theme.spacing.md,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: theme.colors.outline + '25',
+        margin: theme.spacing.medium,
+        // 🌟 Beautiful primary shadow for error state card
+        ...getPrimaryShadow.card(theme),
+      }),
     },
     icon: {
       marginBottom: theme.spacing.medium,

@@ -1,10 +1,11 @@
 // src/navigation/AuthNavigator.tsx
 import { createStackNavigator } from '@react-navigation/stack';
+
 import React from 'react';
 
-import LoginScreen from '../screens/EnhancedLoginScreen';
-import SignUpScreen from '../screens/EnhancedSignUpScreen'; // Import SignUpScreen
 import { AuthStackParamList } from '../types/navigation';
+import LoginScreen from '../features/auth/screens/LoginScreen';
+import SignUpScreen from '../features/auth/screens/SignUpScreen';
 
 const Stack = createStackNavigator<AuthStackParamList>();
 

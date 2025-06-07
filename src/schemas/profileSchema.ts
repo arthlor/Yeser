@@ -25,6 +25,19 @@ export const rawProfileDataSchema = z.object({
   ),
   throwback_reminder_enabled: z.boolean(),
   throwback_reminder_frequency: z.enum(['daily', 'weekly', 'monthly', 'disabled']),
+  throwback_reminder_time: z.preprocess(
+    (val) => {
+      if (typeof val === 'string') {
+        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+        return timeRegex.test(val) ? val : null;
+      }
+      return val;
+    },
+    z
+      .string()
+      .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, 'Invalid time format, expected HH:MM:SS')
+      .nullable()
+  ),
   updated_at: z
     .string()
     .datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
@@ -61,6 +74,20 @@ export const profileSchema = z.object({
   ),
   throwback_reminder_enabled: z.boolean().optional(),
   throwback_reminder_frequency: z.enum(['daily', 'weekly', 'monthly', 'disabled']).optional(),
+  throwback_reminder_time: z.preprocess(
+    (val) => {
+      if (typeof val === 'string') {
+        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+        return timeRegex.test(val) ? val : null;
+      }
+      return val;
+    },
+    z
+      .string()
+      .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, 'Invalid time format, expected HH:MM:SS')
+      .optional()
+      .nullable()
+  ),
   created_at: z
     .string()
     .datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
@@ -84,15 +111,18 @@ export const updateProfileSchema = z.object({
     .nullable(),
   onboarded: z.boolean().optional(),
   reminder_enabled: z.boolean().optional(),
-  // For reminder_time, allowing null means the user wants to clear it.
-  // If undefined, it means no change. If a string, it's an update.
+  // Note: reminder_time has NOT NULL constraint in database, so null is not allowed
+  // If reminder is disabled, we keep the existing time value but set reminder_enabled to false
   reminder_time: z
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, 'Invalid time format, expected HH:MM:SS')
-    .nullable()
-    .optional(),
+    .optional(), // Remove .nullable() since DB doesn't allow null
   throwback_reminder_enabled: z.boolean().optional(),
   throwback_reminder_frequency: z.enum(['daily', 'weekly', 'monthly', 'disabled']).optional(),
+  throwback_reminder_time: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, 'Invalid time format, expected HH:MM:SS')
+    .optional(), // Consistent with reminder_time
   daily_gratitude_goal: z.number().int().positive().optional().nullable(),
   useVariedPrompts: z.boolean().optional(),
 });

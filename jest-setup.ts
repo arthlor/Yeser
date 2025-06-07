@@ -1,51 +1,137 @@
+import 'react-native-gesture-handler/jestSetup';
+import 'whatwg-fetch';
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
+
+import React from 'react';
+
+// TODO: Re-enable MSW when polyfill issues are resolved
+// import { server } from './src/__mocks__/server';
+
+// Mock setImmediate for React Native animations
+global.setImmediate =
+  global.setImmediate ||
+  ((fn: (...args: any[]) => void, ...args: any[]) => global.setTimeout(fn, 0, ...args));
+
+// Mock React Native Animated API
+jest.mock('react-native', () => {
+  // Get the actual React Native module
+  const actualRN = jest.requireActual('react-native');
+
+  // Mock just the parts we need to avoid DevMenu issues
+  return {
+    Platform: actualRN.Platform,
+    Dimensions: actualRN.Dimensions,
+    StyleSheet: actualRN.StyleSheet,
+    View: actualRN.View,
+    Text: actualRN.Text,
+    TextInput: actualRN.TextInput,
+    TouchableOpacity: actualRN.TouchableOpacity,
+    TouchableWithoutFeedback: actualRN.TouchableWithoutFeedback,
+    Pressable: actualRN.Pressable,
+    ScrollView: actualRN.ScrollView,
+    Image: actualRN.Image,
+    ActivityIndicator: actualRN.ActivityIndicator,
+    Alert: {
+      alert: jest.fn(),
+    },
+    AccessibilityInfo: {
+      addEventListener: jest.fn(() => ({
+        remove: jest.fn(),
+      })),
+      isReduceMotionEnabled: jest.fn(() => Promise.resolve(false)),
+      isScreenReaderEnabled: jest.fn(() => Promise.resolve(false)),
+    },
+    Animated: {
+      timing: jest.fn(() => ({
+        start: jest.fn((callback?: (result: { finished: boolean }) => void) => {
+          if (callback) {callback({ finished: true });}
+        }),
+      })),
+      Value: jest.fn(() => ({
+        interpolate: jest.fn(() => 'mockInterpolatedValue'),
+        setValue: jest.fn(),
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        removeAllListeners: jest.fn(),
+      })),
+      View: actualRN.View,
+      Text: actualRN.Text,
+    },
+  };
+});
+
+// Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
+// Mock React Navigation
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useNavigation: () => ({
+    navigate: jest.fn(),
+    goBack: jest.fn(),
+    dispatch: jest.fn(),
+    setOptions: jest.fn(),
+    isFocused: jest.fn(() => true),
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+  }),
+  useRoute: () => ({
+    params: {},
+    key: 'test-route',
+    name: 'TestScreen',
+  }),
+  useFocusEffect: jest.fn(),
+}));
+
+// Mock React Navigation Stack
+jest.mock('@react-navigation/stack', () => ({
+  createStackNavigator: () => ({
+    Navigator: 'StackNavigator',
+    Screen: 'StackScreen',
+  }),
+}));
+
+// Mock React Navigation Bottom Tabs
+jest.mock('@react-navigation/bottom-tabs', () => ({
+  createBottomTabNavigator: () => ({
+    Navigator: 'TabNavigator',
+    Screen: 'TabScreen',
+  }),
+}));
+
+// Mock Safe Area Context
 jest.mock('react-native-safe-area-context', () => {
-  const React = require('react');
+  const mockReact = jest.requireActual('react');
   const inset = { top: 0, right: 0, bottom: 0, left: 0 };
 
-  // Create a new mock context object for SafeArea
-  const MockSafeAreaContext = React.createContext(inset);
+  const MockSafeAreaContext = mockReact.createContext(inset);
 
   return {
-    // Provide the mocked context's Provider as SafeAreaProvider
     SafeAreaProvider: ({
       children,
       initialMetrics,
     }: {
       children: React.ReactNode;
       initialMetrics?: any;
-    }) =>
-      // initialMetrics is part of the actual SafeAreaProvider props, mock it if necessary or ignore
-      React.createElement(MockSafeAreaContext.Provider, { value: inset }, children),
-    // Export the mock context itself as SafeAreaContext
+    }) => mockReact.createElement(MockSafeAreaContext.Provider, { value: inset }, children),
     SafeAreaContext: MockSafeAreaContext,
-    // Mock the hooks to return consistent values
     useSafeAreaInsets: () => inset,
     useSafeAreaFrame: () => ({ x: 0, y: 0, width: 390, height: 844 }),
-    // Provide initialWindowMetrics as it's often expected by consumers like react-navigation
     initialWindowMetrics: {
       frame: { x: 0, y: 0, width: 390, height: 844 },
       insets: inset,
     },
-    // If other specific exports are needed, they can be added here, e.g.:
-    // EdgeInsetsPropType: jest.fn(),
-    // RectPropType: jest.fn(),
   };
 });
 
-// Mock react-native-paper globally using jest.requireActual
+// Mock React Native Paper
 jest.mock('react-native-paper', () => {
   const actualPaper = jest.requireActual('react-native-paper');
-  // React import might not be needed here anymore if PaperProvider is not explicitly mocked
 
   return {
-    ...actualPaper, // Spread actual exports (this will include the actual PaperProvider)
-    // PaperProvider is no longer overridden here, so the actual one will be used.
+    ...actualPaper,
     useTheme: () => ({
-      // Override useTheme with our specific mock theme
-      ...actualPaper.MD3LightTheme, // Start with a base theme structure if needed, or build from scratch
+      ...actualPaper.MD3LightTheme,
       colors: {
         ...(actualPaper.MD3LightTheme?.colors || {}),
         primary: 'mockPrimaryColor',
@@ -54,7 +140,12 @@ jest.mock('react-native-paper', () => {
       },
       typography: {
         ...(actualPaper.MD3LightTheme?.typography || {}),
-        // Ensure all variants are objects, even if empty, to prevent access errors before specific overrides
+        titleLarge: {
+          ...(actualPaper.MD3LightTheme?.typography?.titleLarge || {}),
+          fontFamily: 'MockFontFamily-System',
+          fontSize: 22,
+        },
+        // Add other typography variants as needed
         displayLarge: actualPaper.MD3LightTheme?.typography?.displayLarge || {
           fontFamily: '',
           fontSize: 0,
@@ -78,12 +169,6 @@ jest.mock('react-native-paper', () => {
         headlineSmall: actualPaper.MD3LightTheme?.typography?.headlineSmall || {
           fontFamily: '',
           fontSize: 0,
-        },
-        titleLarge: {
-          // Our specific override
-          ...(actualPaper.MD3LightTheme?.typography?.titleLarge || {}),
-          fontFamily: 'MockFontFamily-System',
-          fontSize: 22,
         },
         titleMedium: actualPaper.MD3LightTheme?.typography?.titleMedium || {
           fontFamily: '',
@@ -120,7 +205,6 @@ jest.mock('react-native-paper', () => {
       },
       dark: false,
       roundness: 4,
-      // Add any other specific theme properties from MD3LightTheme that might be essential
       version: actualPaper.MD3LightTheme?.version || 3,
       isV3: actualPaper.MD3LightTheme?.isV3 !== undefined ? actualPaper.MD3LightTheme.isV3 : true,
       animation: actualPaper.MD3LightTheme?.animation || { scale: 1 },
@@ -128,4 +212,78 @@ jest.mock('react-native-paper', () => {
   };
 });
 
-// You can add other global Jest setup configurations here if needed
+// Mock Expo modules
+jest.mock('expo-constants', () => ({
+  expoConfig: {
+    extra: {
+      supabaseUrl: 'https://test.supabase.co',
+      supabaseAnonKey: 'test-key',
+    },
+  },
+}));
+
+jest.mock('expo-web-browser', () => ({
+  openBrowserAsync: jest.fn(() => Promise.resolve()),
+  dismissBrowser: jest.fn(() => Promise.resolve()),
+  WebBrowserResult: {
+    type: 'opened',
+  },
+}));
+
+jest.mock('expo-notifications', () => ({
+  requestPermissionsAsync: jest.fn(),
+  getPermissionsAsync: jest.fn(),
+  setNotificationHandler: jest.fn(),
+  addNotificationReceivedListener: jest.fn(),
+  addNotificationResponseReceivedListener: jest.fn(),
+  removeAllNotificationListeners: jest.fn(),
+}));
+
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn(),
+  notificationAsync: jest.fn(),
+  selectionAsync: jest.fn(),
+}));
+
+// Mock React Native Calendars
+jest.mock('react-native-calendars', () => ({
+  Calendar: 'Calendar',
+  CalendarList: 'CalendarList',
+  Agenda: 'Agenda',
+}));
+
+// Mock React Native Vector Icons
+jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'MaterialCommunityIcons');
+
+// Mock Supabase Client
+jest.mock('./src/utils/supabaseClient', () => ({
+  supabase: {
+    auth: {
+      signInWithPassword: jest.fn(),
+      signUp: jest.fn(),
+      signOut: jest.fn(),
+      getSession: jest.fn(),
+      onAuthStateChange: jest.fn(),
+    },
+    from: jest.fn(() => ({
+      select: jest.fn(),
+      insert: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      rpc: jest.fn(),
+    })),
+  },
+}));
+
+// Setup MSW - TODO: Re-enable when polyfill issues are resolved
+// beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+// afterEach(() => server.resetHandlers());
+// afterAll(() => server.close());
+
+// Global test utilities
+global.console = {
+  ...console,
+  // Suppress console.error and console.warn in tests unless needed
+  error: jest.fn(),
+  warn: jest.fn(),
+};

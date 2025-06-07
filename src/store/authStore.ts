@@ -4,6 +4,8 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
 import * as authService from '../services/authService'; // Import all from authService
+import { cacheService } from '@/services/cacheService';
+import { queryClient } from '@/api/queryClient';
 import { logger } from '@/utils/debugConfig';
 
 import type { EmailPasswordCredentials } from '../services/authService';
@@ -129,7 +131,22 @@ const useAuthStore = create<AuthState>((set, _get) => ({
     set({ isLoading: true, error: null });
     const { error } = await authService.signInWithGoogle();
     if (error) {
-      set({ isLoading: false, error: error.message || 'Google login failed' });
+      // Check if user cancelled OAuth flow
+      if (error.name === 'AuthCancelledError') {
+        // Don't treat cancellation as an error - it's a normal user action
+        set({
+          isLoading: false,
+          error: null, // Clear error since cancellation is not an error
+        });
+        // Log cancellation for analytics
+        logger.debug('Google OAuth cancelled by user');
+      } else {
+        // Handle other OAuth errors normally
+        set({
+          isLoading: false,
+          error: error.message || 'Google login failed',
+        });
+      }
     } else {
       // On successful initiation of OAuth, Supabase handles the redirect.
       // The onAuthStateChange listener will handle the SIGNED_IN event when the user returns to the app.
@@ -140,10 +157,31 @@ const useAuthStore = create<AuthState>((set, _get) => ({
 
   logout: async () => {
     set({ isLoading: true, error: null });
+
+    // Get current user ID before logout for cache clearing
+    const currentUser = _get().user;
+    const userId = currentUser?.id;
+
     const { error } = await authService.signOut();
     if (error) {
       set({ isLoading: false, error: error.message || 'Logout failed' });
     } else {
+      // Proactively clear all cached data for this user
+      if (userId) {
+        try {
+          logger.debug('Clearing cache for user on logout', { userId });
+          cacheService.invalidateAfterMutation('logout', userId);
+
+          // Additional cleanup - clear all queries
+          queryClient.clear();
+
+          logger.debug('Cache cleared successfully on logout');
+        } catch (cacheError) {
+          logger.error('Error clearing cache on logout:', cacheError as Error);
+          // Don't fail logout because of cache clearing errors
+        }
+      }
+
       // State will be updated by onAuthStateChange listener for SIGNED_OUT
       // set({ isAuthenticated: false, user: null, isLoading: false, error: null });
     }

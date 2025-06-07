@@ -3,14 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  Alert,
-  Keyboard,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, Keyboard, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { ScreenContent, ScreenLayout, ScreenSection } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
@@ -20,6 +13,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
 import { loginSchema } from '@/schemas/authSchemas';
 import { analyticsService } from '@/services/analyticsService';
+import * as authService from '@/services/authService';
 import useAuthStore from '@/store/authStore';
 import { AppTheme } from '@/themes/types';
 import { AuthStackParamList, RootStackParamList } from '@/types/navigation';
@@ -102,15 +96,37 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
     try {
       analyticsService.logEvent('login_attempt', { method: 'google' });
-      await loginWithGoogle();
-      analyticsService.logEvent('login_success', { method: 'google' });
-    } catch {
+
+      const result = await authService.signInWithGoogle();
+
+      if (result.error) {
+        if (result.error.name === 'AuthCancelledError') {
+          // User cancelled OAuth - show friendly feedback
+          Alert.alert(
+            'Giriş İptal Edildi',
+            'Google ile giriş işlemi iptal edildi. İstediğiniz zaman tekrar deneyebilirsiniz.',
+            [{ text: 'Tamam', style: 'default' }],
+            { cancelable: true }
+          );
+          analyticsService.logEvent('login_cancelled', { method: 'google' });
+        } else {
+          // Other OAuth errors will be handled by the auth store
+          analyticsService.logEvent('login_failure', {
+            method: 'google',
+            attempts: loginAttempts + 1,
+            error: result.error.message,
+          });
+        }
+      } else if (result.user) {
+        analyticsService.logEvent('login_success', { method: 'google' });
+      }
+    } catch (loginError) {
       analyticsService.logEvent('login_failure', {
         method: 'google',
         attempts: loginAttempts + 1,
       });
     }
-  }, [clearError, loginWithGoogle, loginAttempts]);
+  }, [clearError, loginAttempts]);
 
   // Navigate to sign up screen
   const navigateToSignUp = useCallback(() => {
@@ -149,17 +165,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </View>
 
-            <Text
-              style={styles.title}
-              accessibilityRole="header"
-            >
+            <Text style={styles.title} accessibilityRole="header">
               Yeşer'e Hoş Geldin!
             </Text>
 
-            <Text
-              style={styles.subtitle}
-              accessibilityRole="text"
-            >
+            <Text style={styles.subtitle} accessibilityRole="text">
               Minnettarlık yolculuğuna başla.
             </Text>
           </View>
@@ -167,8 +177,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Form Section */}
         <ScreenSection spacing="large">
-          <ThemedCard 
-            variant="elevated" 
+          <ThemedCard
+            variant="elevated"
             density="comfortable"
             elevation="card"
             style={styles.formCard}
@@ -186,10 +196,13 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 isRequired={true}
                 showValidationIcon={true}
                 validationState={
-                  emailError ? 'error' : 
-                  email && email.includes('@') && email.includes('.') ? 'success' : 'default'
+                  emailError
+                    ? 'error'
+                    : email && email.includes('@') && email.includes('.')
+                      ? 'success'
+                      : 'default'
                 }
-                helperText={!emailError ? "Kayıtlı e-posta adresinizi girin" : undefined}
+                helperText={!emailError ? 'Kayıtlı e-posta adresinizi girin' : undefined}
                 showClearButton={true}
               />
 
@@ -204,10 +217,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 isRequired={true}
                 showValidationIcon={true}
                 validationState={
-                  passwordError ? 'error' : 
-                  password && password.length >= 8 ? 'success' : 'default'
+                  passwordError ? 'error' : password && password.length >= 8 ? 'success' : 'default'
                 }
-                helperText={!passwordError ? "En az 8 karakter olmalıdır" : undefined}
+                helperText={!passwordError ? 'En az 8 karakter olmalıdır' : undefined}
                 showClearButton={false} // Don't show clear for password
               />
 
@@ -243,8 +255,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.dividerLine} />
           </View>
 
-          <ThemedCard 
-            variant="elevated" 
+          <ThemedCard
+            variant="elevated"
             density="standard"
             elevation="card"
             style={styles.socialCard}

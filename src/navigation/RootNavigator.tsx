@@ -29,6 +29,7 @@ import { MainAppTabParamList, RootStackParamList } from '../types/navigation';
 import { hapticFeedback } from '../utils/hapticFeedback';
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme } from '@/themes/types';
+import { analyticsService } from '@/services/analyticsService';
 
 // Define the Main App Tab Navigator
 const Tab = createBottomTabNavigator<MainAppTabParamList>();
@@ -132,6 +133,10 @@ const MainAppNavigator: React.FC = () => {
           listeners: {
             tabPress: (_e: EventArg<'tabPress', true>) => {
               hapticFeedback.light();
+              analyticsService.logEvent('tab_navigation', {
+                tab_name: 'HomeTab',
+                target_screen: 'home',
+              });
             },
           },
         })}
@@ -145,6 +150,10 @@ const MainAppNavigator: React.FC = () => {
           listeners: {
             tabPress: (_e: EventArg<'tabPress', true>) => {
               hapticFeedback.medium(); // Medium haptic for primary action
+              analyticsService.logEvent('tab_navigation', {
+                tab_name: 'DailyEntryTab',
+                target_screen: 'daily_entry',
+              });
             },
           },
         })}
@@ -158,6 +167,10 @@ const MainAppNavigator: React.FC = () => {
           listeners: {
             tabPress: (_e: EventArg<'tabPress', true>) => {
               hapticFeedback.light();
+              analyticsService.logEvent('tab_navigation', {
+                tab_name: 'PastEntriesTab',
+                target_screen: 'past_entries',
+              });
             },
           },
         })}
@@ -171,6 +184,10 @@ const MainAppNavigator: React.FC = () => {
           listeners: {
             tabPress: (_e: EventArg<'tabPress', true>) => {
               hapticFeedback.light();
+              analyticsService.logEvent('tab_navigation', {
+                tab_name: 'CalendarTab',
+                target_screen: 'calendar',
+              });
             },
           },
         })}
@@ -184,6 +201,10 @@ const MainAppNavigator: React.FC = () => {
           listeners: {
             tabPress: (_e: EventArg<'tabPress', true>) => {
               hapticFeedback.light();
+              analyticsService.logEvent('tab_navigation', {
+                tab_name: 'SettingsTab',
+                target_screen: 'settings',
+              });
             },
           },
         })}
@@ -297,8 +318,8 @@ const RootNavigator: React.FC = () => {
       }}
     >
       {!isAuthenticated ? (
-        <Root.Screen 
-          name="Auth" 
+        <Root.Screen
+          name="Auth"
           component={AuthNavigator}
           options={{
             headerShown: false,
@@ -308,8 +329,8 @@ const RootNavigator: React.FC = () => {
       ) : !onboarded ? (
         // User is authenticated but not onboarded - show the enhanced onboarding flow
         <Root.Group>
-          <Root.Screen 
-            name="Onboarding" 
+          <Root.Screen
+            name="Onboarding"
             component={OnboardingFlowScreen}
             options={{
               headerShown: false,
@@ -319,15 +340,15 @@ const RootNavigator: React.FC = () => {
         </Root.Group>
       ) : (
         // User is authenticated and onboarded
-        <Root.Screen 
-          name="MainApp" 
+        <Root.Screen
+          name="MainApp"
           component={MainAppNavigator}
           options={{
             headerShown: false,
           }}
         />
       )}
-      
+
       {/* Modal screens with enhanced edge-to-edge styling */}
       <Root.Screen
         name="ReminderSettings"

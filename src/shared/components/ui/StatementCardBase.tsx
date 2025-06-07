@@ -1,7 +1,16 @@
-import React, { useCallback, useMemo, useRef } from 'react';
-import { Animated, Dimensions, Platform, ViewStyle } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import {
@@ -34,6 +43,261 @@ export interface InteractiveStatementCardProps extends BaseStatementCardProps {
   confirmDelete?: boolean;
   maxLength?: number;
 }
+
+// 🎯 ROBUST THREE DOTS MENU COMPONENT - SIMPLIFIED AND RELIABLE
+interface ThreeDotsMenuProps {
+  onEdit?: () => void;
+  onDelete?: () => void;
+  isVisible?: boolean;
+  hapticFeedback?: boolean;
+}
+
+export const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = React.memo(
+  ({ onEdit, onDelete, isVisible = true, hapticFeedback = true }) => {
+    const { theme } = useTheme();
+    const { triggerHaptic } = useHapticFeedback(hapticFeedback);
+
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuAnim = useRef(new Animated.Value(0)).current;
+    const styles = useMemo(() => createRobustMenuStyles(theme), [theme]);
+
+    // 🛡️ OPTIMIZED STATE MANAGEMENT - Prevent render-time side effects
+    const closeMenu = useCallback(() => {
+      Animated.spring(menuAnim, {
+        toValue: 0,
+        tension: 300,
+        friction: 30,
+        useNativeDriver: true,
+      }).start();
+      // Set state immediately to prevent timing issues
+      setIsMenuOpen(false);
+    }, [menuAnim]);
+
+    const openMenu = useCallback(() => {
+      setIsMenuOpen(true);
+      Animated.spring(menuAnim, {
+        toValue: 1,
+        tension: 300,
+        friction: 30,
+        useNativeDriver: true,
+      }).start();
+    }, [menuAnim]);
+
+    // 🔄 SIMPLIFIED TOGGLE - Remove try/catch that may cause side effects
+    const toggleMenu = useCallback(() => {
+      triggerHaptic('light');
+      if (isMenuOpen) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    }, [isMenuOpen, closeMenu, openMenu, triggerHaptic]);
+
+    // 🛡️ ENHANCED VISIBILITY CONTROL - Fix shadow/ghost menu issue
+    useEffect(() => {
+      if (!isVisible) {
+        // Immediately reset animation and state when becoming invisible
+        setIsMenuOpen(false);
+        menuAnim.setValue(0);
+      }
+    }, [isVisible, menuAnim]);
+
+    // Enhanced action handlers with simplified error handling
+    const handleEdit = useCallback(() => {
+      triggerHaptic('selection');
+      closeMenu();
+      // Use setTimeout to defer execution and avoid scheduling conflicts
+      setTimeout(() => onEdit?.(), 0);
+    }, [onEdit, triggerHaptic, closeMenu]);
+
+    const handleDelete = useCallback(() => {
+      triggerHaptic('warning');
+      closeMenu();
+      // Use setTimeout to defer execution and avoid scheduling conflicts
+      setTimeout(() => onDelete?.(), 0);
+    }, [onDelete, triggerHaptic, closeMenu]);
+
+    // 🛡️ SIMPLIFIED BACKDROP DISMISSAL
+    const handleBackdropPress = useCallback(() => {
+      triggerHaptic('light');
+      closeMenu();
+    }, [triggerHaptic, closeMenu]);
+
+    // Force cleanup on visibility change to prevent shadow menus
+    if (!isVisible) {
+      // Ensure clean state when not visible
+      if (isMenuOpen) {
+        setIsMenuOpen(false);
+        menuAnim.setValue(0);
+      }
+      return null;
+    }
+
+    return (
+      <View style={styles.container}>
+        {/* 🛡️ BULLETPROOF BACKDROP - Enhanced touch handling */}
+        {isMenuOpen && (
+          <TouchableOpacity
+            style={styles.backdrop}
+            onPress={handleBackdropPress}
+            activeOpacity={1}
+            accessibilityLabel="Menüyü kapat"
+            accessibilityRole="button"
+          />
+        )}
+
+        {/* 🎯 ROBUST MENU BUTTON - Enhanced touch targets */}
+        <TouchableOpacity
+          style={styles.dotsButton}
+          onPress={toggleMenu}
+          activeOpacity={0.6}
+          accessibilityLabel="Seçenekler menüsü"
+          accessibilityRole="button"
+          accessibilityHint="Düzenleme ve silme seçeneklerini görmek için dokunun"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Icon name="dots-vertical" size={18} color={theme.colors.onSurfaceVariant} />
+        </TouchableOpacity>
+
+        {/* 🎯 ROBUST DROPDOWN MENU - Enhanced animations and positioning */}
+        <Animated.View
+          style={[
+            styles.menu,
+            {
+              opacity: menuAnim,
+              transform: [
+                {
+                  scale: menuAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.95, 1],
+                    extrapolate: 'clamp',
+                  }),
+                },
+                {
+                  translateY: menuAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-8, 0],
+                    extrapolate: 'clamp',
+                  }),
+                },
+              ],
+            },
+          ]}
+          pointerEvents={isMenuOpen ? 'auto' : 'none'}
+        >
+          {/* 🎨 ICON-ONLY ACTIONS - Clean minimal design */}
+          <View style={styles.menuItemsContainer}>
+            {/* Edit Action - Icon Only */}
+            {onEdit && (
+              <TouchableOpacity
+                style={styles.iconMenuItem}
+                onPress={handleEdit}
+                activeOpacity={0.7}
+                accessibilityLabel="Düzenle"
+                accessibilityRole="button"
+                accessibilityHint="Bu minnet ifadesini düzenle"
+              >
+                <Icon name="pencil" size={16} color={theme.colors.primary} />
+              </TouchableOpacity>
+            )}
+
+            {/* Delete Action - Icon Only */}
+            {onDelete && (
+              <TouchableOpacity
+                style={styles.iconMenuItem}
+                onPress={handleDelete}
+                activeOpacity={0.7}
+                accessibilityLabel="Sil"
+                accessibilityRole="button"
+                accessibilityHint="Bu minnet ifadesini sil"
+              >
+                <Icon name="trash-can" size={16} color={theme.colors.error} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </Animated.View>
+      </View>
+    );
+  }
+);
+
+ThreeDotsMenu.displayName = 'ThreeDotsMenu';
+
+// 🎨 ROBUST MENU STYLES - SIMPLIFIED AND RELIABLE
+const createRobustMenuStyles = (theme: AppTheme) => {
+  const spacing = semanticSpacing(theme);
+
+  return StyleSheet.create({
+    container: {
+      position: 'relative',
+      zIndex: 99999, // Extremely high z-index for bulletproof layering
+      elevation: 15, // Higher Android elevation
+    } as ViewStyle,
+
+    backdrop: {
+      position: 'absolute',
+      top: -2000, // Larger coverage area
+      left: -2000,
+      right: -2000,
+      bottom: -2000,
+      zIndex: 99998, // Just below container
+      backgroundColor: alpha(theme.colors.surface, 0), // Transparent using theme
+    } as ViewStyle,
+
+    dotsButton: {
+      width: 36, // Reduced from 44px for more compact design
+      height: 36,
+      borderRadius: theme.borderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: alpha(theme.colors.onSurfaceVariant, 0.06), // Reduced opacity for subtlety
+      // Enhanced visual design with smaller shadows
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.08,
+      shadowRadius: 3,
+      elevation: 1,
+    } as ViewStyle,
+
+    menu: {
+      position: 'absolute',
+      top: 40, // Adjusted for smaller button (36px + 4px gap)
+      right: 0,
+      backgroundColor: getSurfaceColor(theme, 'elevated'),
+      borderRadius: theme.borderRadius.md,
+      paddingHorizontal: spacing.elementGap,
+      paddingVertical: spacing.elementGap / 2,
+      maxWidth: 100, // Smaller width for icon-only layout
+      zIndex: 99999, // Match container z-index for consistency
+      // Enhanced shadows for better depth
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.16,
+      shadowRadius: 12,
+      elevation: 8,
+      // Better border definition
+      borderWidth: 1,
+      borderColor: getBorderColor(theme, 'light'),
+    } as ViewStyle,
+
+    menuItemsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center', // Center the icons
+      gap: spacing.contentGap, // Add gap between icons
+    } as ViewStyle,
+
+    iconMenuItem: {
+      width: 32, // Smaller touch target
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    } as ViewStyle,
+
+    // Loading indicator
+    loadingIndicator: {} as ViewStyle,
+  });
+};
 
 // 📱 EDGE-TO-EDGE LAYOUT HOOK
 export const useResponsiveLayout = () => {
@@ -277,9 +541,9 @@ export const useStatementCardAnimations = () => {
   // Enhanced press animations with better physics - MEMOIZED
   const animatePressIn = useCallback(() => {
     Animated.spring(pressAnim, {
-      toValue: 0.96,
-      tension: 400,
-      friction: 25,
+      toValue: 0.97,
+      tension: 500,
+      friction: 30,
       useNativeDriver: true,
     }).start();
   }, [pressAnim]);
@@ -287,8 +551,8 @@ export const useStatementCardAnimations = () => {
   const animatePressOut = useCallback(() => {
     Animated.spring(pressAnim, {
       toValue: 1,
-      tension: 400,
-      friction: 25,
+      tension: 500,
+      friction: 30,
       useNativeDriver: true,
     }).start();
   }, [pressAnim]);

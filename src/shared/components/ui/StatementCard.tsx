@@ -26,6 +26,7 @@ import {
   textColors,
   unifiedShadows,
 } from '@/themes/utils';
+import { ThreeDotsMenu } from './StatementCardBase';
 
 // Simplified props interface focusing on core functionality
 export interface StatementCardProps {
@@ -96,14 +97,12 @@ const StatementCard: React.FC<StatementCardProps> = ({
 
   // Local state management
   const [localStatement, setLocalStatement] = useState(statement);
-  const [showContextMenu, setShowContextMenu] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(animateEntrance ? 0 : 1)).current;
   const scaleAnim = useRef(new Animated.Value(animateEntrance ? 0.95 : 1)).current;
   const pressAnim = useRef(new Animated.Value(1)).current;
   const editingAnim = useRef(new Animated.Value(0)).current;
-  const contextMenuAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
@@ -206,17 +205,8 @@ const StatementCard: React.FC<StatementCardProps> = ({
     }
   };
 
-  // Action handlers
-  const handleEdit = () => {
-    triggerHaptic('light');
-    setShowContextMenu(false);
-    onEdit?.();
-  };
-
+  // Enhanced action handlers with confirmation for delete
   const handleDelete = () => {
-    triggerHaptic('warning');
-    setShowContextMenu(false);
-
     if (confirmDelete) {
       Alert.alert('Minneti Sil', 'Bu minnet ifadesini silmek istediğinizden emin misiniz?', [
         {
@@ -239,6 +229,25 @@ const StatementCard: React.FC<StatementCardProps> = ({
     }
   };
 
+  // Press animation handlers
+  const handlePressIn = () => {
+    Animated.spring(pressAnim, {
+      toValue: 0.98,
+      tension: 300,
+      friction: 20,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(pressAnim, {
+      toValue: 1,
+      tension: 300,
+      friction: 20,
+      useNativeDriver: true,
+    }).start();
+  };
+
   const handleSave = async () => {
     if (!localStatement.trim()) {
       triggerHaptic('warning');
@@ -259,41 +268,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
   const handleCancel = () => {
     triggerHaptic('light');
     setLocalStatement(statement); // Reset to original
-    setShowContextMenu(false);
     onCancel?.();
-  };
-
-  // Context menu toggle
-  const toggleContextMenu = () => {
-    triggerHaptic('light');
-    const newShowState = !showContextMenu;
-    setShowContextMenu(newShowState);
-
-    Animated.spring(contextMenuAnim, {
-      toValue: newShowState ? 1 : 0,
-      tension: 150,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  // Press animation handlers
-  const handlePressIn = () => {
-    Animated.spring(pressAnim, {
-      toValue: 0.98,
-      tension: 300,
-      friction: 20,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(pressAnim, {
-      toValue: 1,
-      tension: 300,
-      friction: 20,
-      useNativeDriver: true,
-    }).start();
   };
 
   // Enhanced variant styles with editing state
@@ -347,69 +322,6 @@ const StatementCard: React.FC<StatementCardProps> = ({
 
   const variantStyles = getVariantStyles();
 
-  // Render context menu
-  const renderContextMenu = () => {
-    if (!showContextMenu || isEditing) {
-      return null;
-    }
-
-    const hasActions = onEdit || onDelete;
-    if (!hasActions) {
-      return null;
-    }
-
-    return (
-      <>
-        {/* Backdrop */}
-        <TouchableOpacity
-          style={styles.contextMenuBackdrop}
-          onPress={() => setShowContextMenu(false)}
-          activeOpacity={1}
-        />
-
-        {/* Context Menu */}
-        <Animated.View
-          style={[
-            styles.contextMenu,
-            {
-              opacity: contextMenuAnim,
-              transform: [
-                {
-                  scale: contextMenuAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.8, 1],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          {onEdit && (
-            <TouchableOpacity
-              style={styles.contextMenuItem}
-              onPress={handleEdit}
-              activeOpacity={0.7}
-            >
-              <Icon name="pencil-outline" size={20} color={theme.colors.primary} />
-              <Text style={[styles.contextMenuText, { color: theme.colors.primary }]}>Düzenle</Text>
-            </TouchableOpacity>
-          )}
-
-          {onDelete && (
-            <TouchableOpacity
-              style={[styles.contextMenuItem, styles.destructiveMenuItem]}
-              onPress={handleDelete}
-              activeOpacity={0.7}
-            >
-              <Icon name="delete-outline" size={20} color={theme.colors.error} />
-              <Text style={[styles.contextMenuText, { color: theme.colors.error }]}>Sil</Text>
-            </TouchableOpacity>
-          )}
-        </Animated.View>
-      </>
-    );
-  };
-
   // Render editing action buttons
   const renderEditingActions = () => {
     if (!isEditing) {
@@ -455,19 +367,16 @@ const StatementCard: React.FC<StatementCardProps> = ({
       ]}
     >
       <View style={variantStyles.content}>
-        {/* Header with More Options Button */}
-        {!isEditing && (onEdit || onDelete) && (
-          <View style={styles.headerRow}>
+        {/* Three Dots Menu - Only show if actions are available */}
+        {(onEdit || onDelete) && (
+          <View style={styles.headerSection}>
             <View style={styles.headerSpacer} />
-            <TouchableOpacity
-              style={styles.moreOptionsButton}
-              onPress={toggleContextMenu}
-              activeOpacity={0.7}
-              accessibilityLabel="Daha fazla seçenek"
-              accessibilityRole="button"
-            >
-              <Icon name="dots-horizontal" size={20} color={theme.colors.onSurfaceVariant} />
-            </TouchableOpacity>
+            <ThreeDotsMenu
+              onEdit={onEdit}
+              onDelete={handleDelete}
+              isVisible={!isEditing}
+              hapticFeedback={hapticFeedback}
+            />
           </View>
         )}
 
@@ -540,9 +449,6 @@ const StatementCard: React.FC<StatementCardProps> = ({
         {/* Editing Action Buttons */}
         {renderEditingActions()}
       </View>
-
-      {/* Context Menu */}
-      {renderContextMenu()}
     </Animated.View>
   );
 
@@ -580,7 +486,7 @@ const createStyles = (theme: AppTheme) => {
       borderWidth: 0,
       marginHorizontal: spacing.contentGap,
       marginVertical: spacing.sectionGap,
-      overflow: 'hidden',
+      overflow: 'visible',
       ...shadows.card,
       // Enhanced shadow for more depth
       shadowOffset: { width: 0, height: 4 },
@@ -593,6 +499,7 @@ const createStyles = (theme: AppTheme) => {
       paddingHorizontal: spacing.cardPadding + 4,
       paddingVertical: spacing.sectionGap + 2,
       position: 'relative',
+      overflow: 'visible',
     } as ViewStyle,
 
     defaultStatement: {
@@ -616,7 +523,7 @@ const createStyles = (theme: AppTheme) => {
       borderLeftColor: theme.colors.primary,
       marginHorizontal: spacing.contentGap,
       marginVertical: spacing.sectionGap,
-      overflow: 'hidden',
+      overflow: 'visible',
       ...shadows.floating,
       // Enhanced shadow for premium feel
       shadowOffset: { width: 0, height: 6 },
@@ -629,6 +536,7 @@ const createStyles = (theme: AppTheme) => {
       paddingHorizontal: spacing.cardPadding + 6,
       paddingVertical: spacing.sectionGap + 4,
       position: 'relative',
+      overflow: 'visible',
     } as ViewStyle,
 
     highlightedStatement: {
@@ -655,7 +563,7 @@ const createStyles = (theme: AppTheme) => {
       borderColor: getBorderColor(theme, 'light'),
       marginHorizontal: spacing.contentGap,
       marginVertical: spacing.elementGap,
-      overflow: 'hidden',
+      overflow: 'visible',
       ...shadows.subtle,
       // Refined minimal shadow
       shadowOffset: { width: 0, height: 2 },
@@ -680,23 +588,19 @@ const createStyles = (theme: AppTheme) => {
       textAlign: 'left',
     } as TextStyle,
 
-    // Header row with more options button
-    headerRow: {
+    // Enhanced header with more options button
+    headerSection: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      justifyContent: 'flex-end',
+      alignItems: 'flex-start',
       marginBottom: spacing.elementGap,
-      minHeight: 24,
+      minHeight: 48, // Ensure adequate space for menu button
+      overflow: 'visible', // Allow menu to overflow
+      zIndex: 100, // Ensure proper stacking
     } as ViewStyle,
 
     headerSpacer: {
       flex: 1,
-    } as ViewStyle,
-
-    moreOptionsButton: {
-      padding: spacing.elementGap,
-      borderRadius: theme.borderRadius.sm,
-      backgroundColor: theme.colors.surface,
     } as ViewStyle,
 
     // Quote Icon - Enhanced with better positioning and styling
@@ -785,62 +689,11 @@ const createStyles = (theme: AppTheme) => {
       backgroundColor: theme.colors.primary + '60',
     } as ViewStyle,
 
-    // Context Menu styles - Enhanced with modern glassmorphism effect
-    contextMenuBackdrop: {
-      position: 'absolute',
-      top: -1000,
-      left: -1000,
-      right: -1000,
-      bottom: -1000,
-      zIndex: 100,
-    } as ViewStyle,
-
-    contextMenu: {
-      position: 'absolute',
-      top: spacing.contentGap + 32,
-      right: spacing.contentGap,
-      backgroundColor: getSurfaceColor(theme, 'elevated'),
-      borderRadius: theme.borderRadius.lg,
-      padding: spacing.contentGap,
-      minWidth: 140,
-      zIndex: 101,
-      ...shadows.overlay,
-      borderWidth: 1,
-      borderColor: getBorderColor(theme, 'medium'),
-      // Enhanced shadow for floating effect
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.15,
-      shadowRadius: 24,
-      elevation: 6,
-    } as ViewStyle,
-
-    contextMenuItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: spacing.contentGap + 2,
-      paddingVertical: spacing.contentGap,
-      borderRadius: theme.borderRadius.md,
-      gap: spacing.contentGap,
-      marginVertical: 2,
-    } as ViewStyle,
-
-    destructiveMenuItem: {
-      marginTop: spacing.elementGap / 2,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline + '20',
-      paddingTop: spacing.elementGap + 2,
-    } as ViewStyle,
-
-    contextMenuText: {
-      ...typography.button.primary,
-      fontWeight: '500',
-    } as TextStyle,
-
     // Editing Action Buttons - Enhanced with better visual hierarchy
     editingActions: {
       flexDirection: 'row',
-      gap: spacing.contentGap + 2,
-      marginTop: spacing.sectionGap + 2,
+      gap: spacing.contentGap,
+      marginTop: spacing.sectionGap,
       paddingTop: spacing.sectionGap,
       borderTopWidth: 1,
       borderTopColor: getBorderColor(theme, 'light'),
@@ -848,11 +701,11 @@ const createStyles = (theme: AppTheme) => {
 
     editingButton: {
       flex: 1,
-      paddingVertical: spacing.contentGap + 4,
-      borderRadius: theme.borderRadius.lg,
+      paddingVertical: spacing.contentGap + 2,
+      borderRadius: theme.borderRadius.md,
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 48,
+      minHeight: 42,
       ...shadows.subtle,
     } as ViewStyle,
 
@@ -865,17 +718,17 @@ const createStyles = (theme: AppTheme) => {
     saveButton: {
       backgroundColor: theme.colors.primary,
       ...shadows.card,
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
       elevation: 2,
     } as ViewStyle,
 
     editingButtonText: {
       fontFamily: 'Lora-SemiBold',
-      fontSize: 16,
+      fontSize: 15,
       fontWeight: '600',
-      letterSpacing: 0.3,
+      letterSpacing: 0.2,
     } as TextStyle,
   });
 };

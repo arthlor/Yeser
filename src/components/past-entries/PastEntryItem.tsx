@@ -149,7 +149,7 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
                   <Text style={styles.contentLabel}>İlk Minnet</Text>
                 </View>
 
-                {/* 🚀 ENHANCED Statement Card Preview with Interactive Features */}
+                {/* 🚀 ENHANCED Statement Card Preview - READ-ONLY MODE */}
                 <StatementCard
                   statement={entry.statements[0]}
                   variant="minimal"
@@ -161,6 +161,8 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
                   accessibilityLabel={`Minnet önizleme: ${entry.statements[0]}`}
                   hapticFeedback={false} // Simplified feedback
                   style={styles.previewCard}
+                  // 🚫 REMOVED: No edit/delete functionality in past entries
+                  // onEdit and onDelete props removed for read-only display
                 />
 
                 {hasMore && (

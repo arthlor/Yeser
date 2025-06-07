@@ -20,23 +20,16 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 // If they are objects, this type should be adjusted.
 interface DailyEntryStatementListProps {
   statements: string[]; // Adjust if statements are objects
-  editingStatementIndex: number | null;
-  onEdit: (index: number) => void;
-  onDelete: (index: number) => void;
-  onSave: (index: number, text: string) => void;
-  onCancel: () => void;
   isToday: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  // 🚫 REMOVED: All editing props removed since this is now read-only
+  // editingStatementIndex, onEdit, onDelete, onSave, onCancel removed
+  // Editing is handled by the parent DailyEntryScreen component
 }
 
 const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
   statements,
-  editingStatementIndex,
-  onEdit,
-  onDelete,
-  onSave,
-  onCancel,
   isToday,
   onRefresh,
   isRefreshing = false,
@@ -97,15 +90,8 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
           variant="minimal"
           showQuotes={false}
           animateEntrance={false} // Already animated by parent
-          // Interactive features
-          isEditing={editingStatementIndex === index}
-          onEdit={() => onEdit(index)}
-          onDelete={() => onDelete(index)}
-          onCancel={onCancel}
-          onSave={async (updatedText: string) => onSave(index, updatedText)}
-          // Configuration for minimal list variant
-          enableInlineEdit={true}
-          confirmDelete={false} // Parent handles confirmation
+          // Configuration for minimal list variant - READ-ONLY MODE
+          enableInlineEdit={false} // Disabled: handled by parent screen
           maxLength={500}
           // Accessibility
           accessibilityLabel={`Minnet ${index + 1}: ${item}`}
@@ -113,6 +99,9 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
           style={{
             marginBottom: theme.spacing.sm,
           }}
+          // 🚫 REMOVED: Edit/delete functionality to prevent conflicts
+          // isEditing, onEdit, onDelete, onCancel, onSave removed
+          // All editing is handled by the parent DailyEntryScreen
         />
       </Animated.View>
     );

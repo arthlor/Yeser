@@ -113,6 +113,11 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     setStreakDetailsVisible(true);
   }, []);
 
+  const handleWhyGratitudePress = useCallback(() => {
+    analyticsService.logEvent('navigate_to_why_gratitude', { source: 'home_action_cards' });
+    navigation.navigate('WhyGratitude');
+  }, [navigation]);
+
   return (
     <>
       <ScreenLayout
@@ -156,6 +161,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
           onNavigateToCalendar={() => {
             navigation.navigate('CalendarTab');
           }}
+          onNavigateToWhyGratitude={handleWhyGratitudePress}
         />
 
         {/* 4. Geçmişten Anılar (Throwback Memories) */}

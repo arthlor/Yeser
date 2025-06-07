@@ -1,4 +1,9 @@
-import { addStatement, deleteStatement, editStatement } from '@/api/gratitudeApi';
+import {
+  addStatement,
+  deleteEntireEntry,
+  deleteStatement,
+  editStatement,
+} from '@/api/gratitudeApi';
 import { queryKeys } from '@/api/queryKeys';
 import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 import { cacheService } from '@/services/cacheService';
@@ -22,10 +27,9 @@ interface DeleteStatementPayload {
   statementIndex: number;
 }
 
-// Payload for deleting all statements of an entry
-interface DeleteAllStatementsPayload {
+// Payload for deleting entire entry (atomic operation)
+interface DeleteEntireEntryPayload {
   entryDate: string;
-  numStatements: number; // Number of statements to delete
 }
 
 interface AddStatementContext {
@@ -137,32 +141,46 @@ export const useGratitudeMutations = () => {
     },
   });
 
-  // New mutation for deleting all statements of an entry
-  const deleteAllStatementsForEntryMutation = useMutation<
+  // Atomic mutation for deleting entire entry (much more efficient)
+  const deleteEntireEntryMutation = useMutation<
     void, // Returns nothing on success
     Error,
-    DeleteAllStatementsPayload
+    DeleteEntireEntryPayload
   >({
-    mutationFn: async ({ entryDate, numStatements }) => {
+    mutationFn: async ({ entryDate }) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
-      // Loop to delete all statements. This assumes the API deletes at index 0 and shifts others.
-      // A dedicated backend API to delete an entire entry by date/ID would be more efficient.
-      for (let i = 0; i < numStatements; i++) {
-        await deleteStatement(entryDate, 0); // Always delete the statement at index 0
-      }
+      // Use atomic deletion operation - single API call instead of multiple
+      await deleteEntireEntry(entryDate);
     },
     onError: (err, _variables, _context) => {
-      handleMutationError(err, 'delete all statements for entry');
+      handleMutationError(err, 'delete entire gratitude entry');
     },
     onSuccess: (_, { entryDate }) => {
       if (user?.id) {
-        cacheService.invalidateAfterMutation('delete_statement', user.id, { entryDate });
+        cacheService.invalidateAfterMutation('delete_entry', user.id, { entryDate });
       }
     },
-    // Consider adding onMutate for optimistic updates if UX requires immediate feedback
-    // Consider onError for more specific error handling/rollback if needed
+    // Optimistic update: immediately remove entry from cache
+    onMutate: async ({ entryDate }) => {
+      if (!user?.id) {
+        return;
+      }
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.gratitudeEntry(user.id, entryDate),
+      });
+
+      // Optimistically remove entry
+      queryClient.setQueryData(queryKeys.gratitudeEntry(user.id, entryDate), null);
+
+      // Also invalidate related queries for immediate UI update
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.gratitudeEntries(user.id),
+      });
+    },
   });
 
   return {
@@ -178,9 +196,9 @@ export const useGratitudeMutations = () => {
     isDeletingStatement: deleteStatementMutation.isPending,
     deleteStatementError: deleteStatementMutation.error,
 
-    // Export new mutation
-    deleteAllStatementsForEntry: deleteAllStatementsForEntryMutation.mutate,
-    isDeletingEntry: deleteAllStatementsForEntryMutation.isPending,
-    deleteEntryError: deleteAllStatementsForEntryMutation.error,
+    // Export atomic entry deletion mutation
+    deleteEntireEntry: deleteEntireEntryMutation.mutate,
+    isDeletingEntry: deleteEntireEntryMutation.isPending,
+    deleteEntryError: deleteEntireEntryMutation.error,
   };
 };

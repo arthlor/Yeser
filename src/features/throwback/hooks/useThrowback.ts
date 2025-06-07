@@ -90,7 +90,7 @@ export const useThrowbackMutations = () => {
       queryClient.setQueryData(queryKeys.randomGratitudeEntry(user?.id), newEntry);
     },
 
-    onError: error => {
+    onError: (error) => {
       logger.error('[useThrowbackMutations] Error fetching random entry:', error);
       handleMutationError(error, 'fetch new random entry');
     },
@@ -187,7 +187,7 @@ export const useThrowbackLogic = () => {
  * Main throwback hook that combines all functionality
  * Replaces the old throwbackStore with TanStack Query + client state logic
  */
-export const useThrowback = (settings?: ThrowbackSettings & { totalEntryCount?: number }) => {
+export const useThrowback = (_settings?: ThrowbackSettings & { totalEntryCount?: number }) => {
   const { fetchNewRandomEntry, isFetchingRandomEntry, clearRandomEntry } = useThrowbackMutations();
   const { shouldShowThrowback, setLastThrowbackTime } = useThrowbackLogic();
 

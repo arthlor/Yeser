@@ -63,15 +63,8 @@ const EnhancedEntryDetailScreen: React.FC<{
     error: entryError,
   } = useGratitudeEntry(entryDate);
 
-  // Mutation hooks for editing and deleting operations
-  const {
-    editStatement,
-    isEditingStatement,
-    editStatementError,
-    deleteStatement,
-    isDeletingStatement,
-    deleteStatementError,
-  } = useGratitudeMutations();
+  // Mutation hooks for editing operations only (delete removed for past entries)
+  const { editStatement, isEditingStatement, editStatementError } = useGratitudeMutations();
 
   // Local state for editing
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
@@ -128,12 +121,6 @@ const EnhancedEntryDetailScreen: React.FC<{
       Alert.alert('Hata', 'Minnet ifadesi düzenlenirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
   }, [editStatementError]);
-
-  useEffect(() => {
-    if (deleteStatementError) {
-      Alert.alert('Hata', 'Minnet ifadesi silinirken bir hata oluştu. Lütfen tekrar deneyin.');
-    }
-  }, [deleteStatementError]);
 
   useEffect(() => {
     // Start animations immediately when component mounts or data changes
@@ -225,35 +212,6 @@ const EnhancedEntryDetailScreen: React.FC<{
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  };
-
-  const handleDeleteStatement = async (index: number) => {
-    Alert.alert('Sil', 'Bu minnet ifadesini silmek istediğinizden emin misiniz?', [
-      { text: 'İptal', style: 'cancel' },
-      {
-        text: 'Sil',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteStatement({
-              entryDate: entryDate,
-              statementIndex: index,
-            });
-
-            if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-              UIManager.setLayoutAnimationEnabledExperimental(true);
-            }
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          } catch (error) {
-            Alert.alert('Hata', 'Silme işlemi başarısız oldu');
-            logger.error(
-              'Delete statement error:',
-              error instanceof Error ? error : new Error(String(error))
-            );
-          }
-        },
-      },
-    ]);
   };
 
   const handleRefresh = async () => {
@@ -494,9 +452,8 @@ const EnhancedEntryDetailScreen: React.FC<{
                     index={index} // Sequence indicators for better reading flow
                     totalCount={gratitudeItems.length}
                     isEditing={editingStatementIndex === index}
-                    isLoading={isEditingStatement || isDeletingStatement}
+                    isLoading={isEditingStatement}
                     onEdit={() => handleEditStatement(index)}
-                    onDelete={() => handleDeleteStatement(index)}
                     onCancel={handleCancelEditingStatement}
                     onSave={(updatedText: string) => handleSaveEditedStatement(index, updatedText)}
                     // Enhanced detail configuration

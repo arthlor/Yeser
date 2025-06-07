@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react';
+import { StyleSheet } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -15,7 +16,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureHandlerRootView style={styles.gestureHandler}>
           <QueryClientProvider client={queryClient}>
             <GlobalErrorProvider>{children}</GlobalErrorProvider>
           </QueryClientProvider>
@@ -24,3 +25,9 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
     </ErrorBoundary>
   );
 };
+
+const styles = StyleSheet.create({
+  gestureHandler: {
+    flex: 1,
+  },
+});

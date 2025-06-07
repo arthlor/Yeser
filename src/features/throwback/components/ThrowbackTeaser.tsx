@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   StyleSheet,
   Text,
   TextStyle,
@@ -30,153 +31,6 @@ interface ThrowbackTeaserProps {
   onRefresh?: () => void; // Refresh to get a new random entry
 }
 
-const createStyles = (theme: AppTheme) =>
-  StyleSheet.create({
-    container: {
-      marginBottom: theme.spacing.md,
-    } as ViewStyle,
-    // Edge-to-edge loading card with improved padding
-    loadingCard: {
-      borderRadius: 0,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 0,
-      borderTopWidth: 1,
-      borderBottomWidth: 1,
-      borderTopColor: theme.colors.outline + '10',
-      borderBottomColor: theme.colors.outline + '10',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 80,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      ...getPrimaryShadow.card(theme),
-    } as ViewStyle,
-    loadingTextMini: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurfaceVariant,
-      marginLeft: theme.spacing.md,
-      fontWeight: '500',
-    } as TextStyle,
-    // Edge-to-edge error card with improved styling
-    errorCard: {
-      borderRadius: 0,
-      backgroundColor: theme.colors.errorContainer,
-      borderWidth: 0,
-      borderTopWidth: 1,
-      borderBottomWidth: 1,
-      borderTopColor: theme.colors.outline + '10',
-      borderBottomColor: theme.colors.outline + '10',
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      minHeight: 80,
-      ...getPrimaryShadow.card(theme),
-    } as ViewStyle,
-    throwbackErrorText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onErrorContainer,
-      marginLeft: theme.spacing.md,
-      flexShrink: 1,
-      fontWeight: '500',
-      lineHeight: 22,
-    } as TextStyle,
-    // Edge-to-edge placeholder card with better visual hierarchy
-    placeholderCard: {
-      borderRadius: 0,
-      borderWidth: 0,
-      borderTopWidth: 2,
-      borderBottomWidth: 2,
-      borderStyle: 'dashed',
-      borderTopColor: theme.colors.outline + '30',
-      borderBottomColor: theme.colors.outline + '30',
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xl,
-      minHeight: 120,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.surface + '80',
-      ...getPrimaryShadow.card(theme),
-    } as ViewStyle,
-    placeholderHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: theme.spacing.md,
-    } as ViewStyle,
-    placeholderTitle: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onSurfaceVariant,
-      marginLeft: theme.spacing.md,
-      fontWeight: '700',
-      textAlign: 'center',
-    } as TextStyle,
-    placeholderText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurfaceVariant,
-      lineHeight: 22,
-      textAlign: 'center',
-      opacity: 0.8,
-      fontWeight: '400',
-      letterSpacing: 0.1,
-    } as TextStyle,
-    // Header section for statement card
-    statementHeader: {
-      borderRadius: 0,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 0,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.outline + '10',
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.outline + '15',
-      ...getPrimaryShadow.card(theme),
-    } as ViewStyle,
-    headerContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    } as ViewStyle,
-    headerLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
-    } as ViewStyle,
-    headerTitle: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.primary,
-      marginLeft: theme.spacing.md,
-      fontWeight: '700',
-      letterSpacing: -0.2,
-    } as TextStyle,
-    refreshButton: {
-      width: 36,
-      height: 36,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primaryContainer + '40',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.primary + '30',
-      alignItems: 'center',
-      justifyContent: 'center',
-      ...getPrimaryShadow.small(theme),
-    } as ViewStyle,
-    errorContentContainer: {
-      flex: 1,
-    } as ViewStyle,
-    errorRetryText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onErrorContainer,
-      fontSize: 12,
-      opacity: 0.8,
-      marginTop: 4,
-    } as TextStyle,
-    statementCardStyle: {
-      marginHorizontal: theme.spacing.lg, // Add horizontal margin to match design
-      marginVertical: 0, // Remove vertical margin since header handles spacing
-    } as ViewStyle,
-  });
-
 const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
   throwbackEntry,
   isLoading,
@@ -184,7 +38,57 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
   onRefresh,
 }) => {
   const { theme } = useTheme();
-  const styles = React.useMemo(() => createStyles(theme), [theme]);
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
+  // Optimized animation values to prevent flickering
+  const refreshRotation = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Enhanced refresh handler with controlled animation
+  const handleRefresh = useCallback(() => {
+    if (!onRefresh) {
+      return;
+    }
+
+    // Simple refresh button rotation
+    Animated.timing(refreshRotation, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start(() => {
+      refreshRotation.setValue(0);
+    });
+
+    onRefresh();
+  }, [onRefresh, refreshRotation]);
+
+  // Controlled pulse animation for loading state only
+  React.useEffect(() => {
+    if (isLoading) {
+      pulseAnim.setValue(1);
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 0.98,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
+      return () => {
+        pulseAnimation.stop();
+        pulseAnim.setValue(1);
+      };
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [isLoading, pulseAnim]);
 
   // Debug logging
   React.useEffect(() => {
@@ -203,25 +107,41 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
     });
   }, [throwbackEntry, isLoading, error]);
 
+  // Enhanced loading state with better visual feedback
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            transform: [{ scale: pulseAnim }],
+          },
+        ]}
+      >
         <View style={styles.loadingCard}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text style={styles.loadingTextMini}>Geçmişten bir anı yükleniyor...</Text>
+          <View style={styles.loadingIconContainer}>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          </View>
+          <View style={styles.loadingContent}>
+            <Text style={styles.loadingTitle}>Geçmişten Anılar</Text>
+            <Text style={styles.loadingSubtitle}>Güzel bir anı yükleniyor...</Text>
+          </View>
         </View>
-      </View>
+      </Animated.View>
     );
   }
 
+  // Enhanced error state with better visual hierarchy
   if (error && !throwbackEntry) {
-    // Show error only if no entry is present
     return (
       <View style={styles.container}>
-        <TouchableOpacity style={styles.errorCard} onPress={onRefresh} activeOpacity={0.7}>
-          <Icon name="alert-circle-outline" size={20} color={theme.colors.onErrorContainer} />
-          <View style={styles.errorContentContainer}>
-            <Text style={styles.throwbackErrorText}>{error}</Text>
+        <TouchableOpacity style={styles.errorCard} onPress={onRefresh} activeOpacity={0.8}>
+          <View style={styles.errorIconContainer}>
+            <Icon name="alert-circle-outline" size={24} color={theme.colors.onErrorContainer} />
+          </View>
+          <View style={styles.errorContent}>
+            <Text style={styles.errorTitle}>Anı Yüklenemedi</Text>
+            <Text style={styles.errorSubtitle}>{error}</Text>
             {onRefresh && <Text style={styles.errorRetryText}>Tekrar denemek için dokunun</Text>}
           </View>
         </TouchableOpacity>
@@ -229,8 +149,8 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
     );
   }
 
+  // Enhanced placeholder state with inspiring design
   if (!throwbackEntry) {
-    // Show placeholder when no data available
     return (
       <View style={styles.container}>
         <TouchableOpacity
@@ -239,45 +159,67 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
             logger.debug('ThrowbackTeaser: Manual refresh triggered by user tap');
             onRefresh?.();
           }}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <View style={styles.placeholderHeader}>
-            <Icon name="history" size={24} color={theme.colors.onSurfaceVariant} />
-            <Text style={styles.placeholderTitle}>Geçmişten Anılar</Text>
+          <View style={styles.placeholderIconContainer}>
+            <Icon name="history" size={32} color={theme.colors.primary} />
           </View>
-          <Text style={styles.placeholderText}>
-            Minnet kayıtlarınız arttıkça, burada geçmişten güzel anılarınızı göreceksiniz ✨
-          </Text>
+          <View style={styles.placeholderContent}>
+            <Text style={styles.placeholderTitle}>Geçmişten Anılar</Text>
+            <Text style={styles.placeholderSubtitle}>
+              Minnet kayıtlarınız arttıkça, burada geçmişten güzel anılarınızı göreceksiniz
+            </Text>
+            <View style={styles.placeholderHint}>
+              <Icon name="sparkles" size={16} color={theme.colors.tertiary} />
+              <Text style={styles.placeholderHintText}>Başlamak için dokunun</Text>
+            </View>
+          </View>
         </TouchableOpacity>
       </View>
     );
   }
 
+  // Enhanced main content with stable rendering
   return (
     <View style={styles.container}>
-      {/* Header Section */}
-      <View style={styles.statementHeader}>
+      {/* Enhanced Header Section */}
+      <View style={styles.headerCard}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <Icon name="history" size={22} color={theme.colors.primary} />
+            <View style={styles.headerIconContainer}>
+              <Icon name="history" size={22} color={theme.colors.primary} />
+            </View>
             <Text style={styles.headerTitle}>Geçmişten Bir Anı</Text>
           </View>
           <TouchableOpacity
             style={styles.refreshButton}
-            onPress={onRefresh}
-            activeOpacity={0.7}
+            onPress={handleRefresh}
+            activeOpacity={0.8}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-            ) : (
-              <Icon name="refresh" size={20} color={theme.colors.primary} />
-            )}
+            <Animated.View
+              style={{
+                transform: [
+                  {
+                    rotate: refreshRotation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg'],
+                    }),
+                  },
+                ],
+              }}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <Icon name="refresh" size={20} color={theme.colors.primary} />
+              )}
+            </Animated.View>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Beautiful Statement Display Card */}
+      {/* Enhanced Statement Display Card */}
       <StatementDisplayCard
         statement={throwbackEntry.statements?.[0] || 'Geçmişten bir minnet ifadeniz var.'}
         date={throwbackEntry.entry_date}
@@ -285,11 +227,250 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
         showQuotes={true}
         showTimestamp={true}
         animateEntrance={true}
-        numberOfLines={3}
+        numberOfLines={4}
+        edgeToEdge={true}
         style={styles.statementCardStyle}
       />
     </View>
   );
 };
+
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      marginBottom: theme.spacing.lg,
+    } as ViewStyle,
+
+    // Enhanced loading card with better visual hierarchy
+    loadingCard: {
+      borderRadius: 0,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 0,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.outlineVariant,
+      borderBottomColor: theme.colors.outlineVariant,
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 80,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      ...getPrimaryShadow.card(theme),
+    } as ViewStyle,
+
+    loadingIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: theme.spacing.md,
+    } as ViewStyle,
+
+    loadingContent: {
+      flex: 1,
+    } as ViewStyle,
+
+    loadingTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '700',
+      marginBottom: theme.spacing.xs,
+    } as TextStyle,
+
+    loadingSubtitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '500',
+      opacity: 0.8,
+    } as TextStyle,
+
+    // Enhanced error card with better design
+    errorCard: {
+      borderRadius: 0,
+      backgroundColor: theme.colors.errorContainer,
+      borderWidth: 0,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.error,
+      borderBottomColor: theme.colors.error,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      minHeight: 80,
+      ...getPrimaryShadow.card(theme),
+    } as ViewStyle,
+
+    errorIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.onErrorContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: theme.spacing.md,
+      opacity: 0.15,
+    } as ViewStyle,
+
+    errorContent: {
+      flex: 1,
+    } as ViewStyle,
+
+    errorTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onErrorContainer,
+      fontWeight: '700',
+      marginBottom: theme.spacing.xs,
+    } as TextStyle,
+
+    errorSubtitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onErrorContainer,
+      fontWeight: '500',
+      lineHeight: 20,
+      opacity: 0.9,
+    } as TextStyle,
+
+    errorRetryText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onErrorContainer,
+      fontSize: 12,
+      opacity: 0.7,
+      marginTop: theme.spacing.xs,
+      fontStyle: 'italic',
+    } as TextStyle,
+
+    // Enhanced placeholder card with inspiring design
+    placeholderCard: {
+      borderRadius: 0,
+      borderWidth: 0,
+      borderTopWidth: 2,
+      borderBottomWidth: 2,
+      borderStyle: 'dashed',
+      borderTopColor: theme.colors.outline,
+      borderBottomColor: theme.colors.outline,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.xl,
+      minHeight: 140,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
+      ...getPrimaryShadow.card(theme),
+    } as ViewStyle,
+
+    placeholderIconContainer: {
+      width: 64,
+      height: 64,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: theme.spacing.lg,
+    } as ViewStyle,
+
+    placeholderContent: {
+      alignItems: 'center',
+    } as ViewStyle,
+
+    placeholderTitle: {
+      ...theme.typography.titleLarge,
+      color: theme.colors.onSurface,
+      fontWeight: '700',
+      textAlign: 'center',
+      marginBottom: theme.spacing.sm,
+    } as TextStyle,
+
+    placeholderSubtitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      lineHeight: 22,
+      textAlign: 'center',
+      opacity: 0.8,
+      fontWeight: '400',
+      letterSpacing: 0.1,
+      marginBottom: theme.spacing.md,
+    } as TextStyle,
+
+    placeholderHint: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.tertiaryContainer,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.full,
+      gap: theme.spacing.xs,
+    } as ViewStyle,
+
+    placeholderHintText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.onTertiaryContainer,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    } as TextStyle,
+
+    // Enhanced header card with better visual hierarchy
+    headerCard: {
+      borderRadius: 0,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 0,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.outlineVariant,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outlineVariant,
+      ...getPrimaryShadow.card(theme),
+    } as ViewStyle,
+
+    headerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    } as ViewStyle,
+
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    } as ViewStyle,
+
+    headerIconContainer: {
+      width: 36,
+      height: 36,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: theme.spacing.md,
+    } as ViewStyle,
+
+    headerTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.primary,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    } as TextStyle,
+
+    refreshButton: {
+      width: 40,
+      height: 40,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...getPrimaryShadow.small(theme),
+    } as ViewStyle,
+
+    // Enhanced statement card styling
+    statementCardStyle: {
+      marginHorizontal: 0,
+      marginVertical: 0,
+    } as ViewStyle,
+  });
 
 export default ThrowbackTeaser;

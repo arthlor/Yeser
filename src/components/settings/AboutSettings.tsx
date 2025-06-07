@@ -11,17 +11,25 @@ interface AboutSettingsProps {
   onNavigateToPrivacyPolicy: () => void;
   onNavigateToTermsOfService: () => void;
   onNavigateToHelp: () => void;
+  onNavigateToWhyGratitude: () => void;
 }
 
 const AboutSettings: React.FC<AboutSettingsProps> = ({
   onNavigateToPrivacyPolicy,
   onNavigateToTermsOfService,
   onNavigateToHelp,
+  onNavigateToWhyGratitude,
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
   const settingItems = [
+    {
+      label: 'Minnetin Gücü',
+      icon: 'heart-outline',
+      action: onNavigateToWhyGratitude,
+      description: 'Minnettarlığın bilimsel faydalarını keşfedin',
+    },
     {
       label: 'Gizlilik Politikası',
       icon: 'shield-check-outline',

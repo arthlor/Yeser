@@ -17,6 +17,7 @@ import {
   formatStatementDate,
   InteractiveStatementCardProps,
   StatementCardWrapper,
+  ThreeDotsMenu,
   useHapticFeedback,
   useResponsiveLayout,
   useStatementCardAnimations,
@@ -114,11 +115,6 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
     const { relativeTime, isRecent } = formatStatementDate(date);
 
     // Action handlers with enhanced haptic feedback
-    const handleEdit = () => {
-      triggerHaptic('selection');
-      onEdit?.();
-    };
-
     const handleDelete = () => {
       triggerHaptic('warning');
 
@@ -173,8 +169,6 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
         onPress();
       }
     };
-
-    // REMOVED: Enhanced context menu toggle - using inline actions instead
 
     // Get variant-specific styles with enhanced design
     const getVariantStyles = () => {
@@ -242,8 +236,6 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
       );
     };
 
-    // REMOVED: Enhanced context menu rendering - using inline actions instead
-
     // Enhanced editing action buttons - MINIMAL DESIGN
     const renderEditingActions = () => {
       if (!isEditing) {
@@ -289,11 +281,18 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
         edgeToEdge={edgeToEdge}
       >
         <View style={variantStyles.content}>
-          {/* Enhanced header with sequence and actions */}
+          {/* Enhanced header with sequence and three dots menu */}
           <View style={styles.headerSection}>
             {renderSequenceIndicator()}
 
-            {/* REMOVE context menu - use inline actions instead */}
+            <View style={styles.headerRight}>
+              <ThreeDotsMenu
+                onEdit={onEdit}
+                onDelete={handleDelete}
+                isVisible={!isEditing}
+                hapticFeedback={hapticFeedback}
+              />
+            </View>
           </View>
 
           {/* Enhanced statement content */}
@@ -327,36 +326,6 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
               </Text>
             )}
           </View>
-
-          {/* Enhanced inline actions */}
-          {!isEditing && (onEdit || onDelete) && (
-            <View style={styles.actionButtons} pointerEvents="box-none">
-              {onEdit && (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.editButton]}
-                  onPress={handleEdit}
-                  activeOpacity={0.6}
-                  accessibilityLabel="Düzenle"
-                  accessibilityRole="button"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Icon name="pencil" size={16} color={theme.colors.primary} />
-                </TouchableOpacity>
-              )}
-              {onDelete && (
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.deleteButton]}
-                  onPress={handleDelete}
-                  activeOpacity={0.6}
-                  accessibilityLabel="Sil"
-                  accessibilityRole="button"
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Icon name="delete" size={16} color={theme.colors.error} />
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
 
           {/* Enhanced meta information */}
           {!isEditing && (
@@ -430,12 +399,14 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       borderColor: theme.colors.outline + '30',
       borderRadius: theme.borderRadius.lg,
       marginBottom: theme.spacing.md,
+      overflow: 'visible', // CRITICAL: Allow menu to overflow
     } as ViewStyle,
 
     detailedContent: {
       paddingHorizontal: sharedStyles.layout.getAdaptivePadding('md'),
       paddingVertical: sharedStyles.layout.getAdaptivePadding('sm'),
       position: 'relative',
+      overflow: 'visible', // CRITICAL: Allow menu to overflow
     } as ViewStyle,
 
     detailedStatement: {
@@ -460,11 +431,13 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       borderColor: theme.colors.outline + '25',
       borderRadius: theme.borderRadius.md,
       marginBottom: theme.spacing.sm,
+      overflow: 'visible', // CRITICAL: Allow menu to overflow
     } as ViewStyle,
 
     compactContent: {
       paddingHorizontal: sharedStyles.layout.getAdaptivePadding('md'),
       paddingVertical: sharedStyles.layout.getAdaptivePadding('sm'),
+      overflow: 'visible', // CRITICAL: Allow menu to overflow
     } as ViewStyle,
 
     compactStatement: {
@@ -485,11 +458,13 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       borderRadius: theme.borderRadius.md,
       marginHorizontal: 0,
       marginBottom: theme.spacing.sm,
+      overflow: 'visible', // CRITICAL: Allow menu to overflow
     } as ViewStyle,
 
     elegantContent: {
       paddingHorizontal: sharedStyles.layout.getAdaptivePadding('lg'),
       paddingVertical: sharedStyles.layout.getAdaptivePadding('md'),
+      overflow: 'visible', // CRITICAL: Allow menu to overflow
     } as ViewStyle,
 
     elegantStatement: {
@@ -504,17 +479,19 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
     // Enhanced Header Section
     headerSection: {
       flexDirection: 'row',
-      justifyContent: 'flex-start',
-      alignItems: 'center',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
       marginBottom: sharedStyles.spacing.elementGap,
+      minHeight: 48, // Ensure adequate space for menu button
+      overflow: 'visible', // Allow menu to overflow
+      zIndex: 100, // Ensure proper stacking
     } as ViewStyle,
 
-    moreOptionsButton: {
-      padding: sharedStyles.spacing.elementGap + 2,
-      borderRadius: theme.borderRadius.md,
-      backgroundColor: theme.colors.surfaceVariant + '50',
-      minWidth: 40,
-      alignItems: 'center',
+    headerRight: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      overflow: 'visible', // Allow menu to overflow
+      zIndex: 100, // Ensure proper stacking
     } as ViewStyle,
 
     // Enhanced Sequence Indicator
@@ -664,15 +641,15 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: sharedStyles.layout.getAdaptivePadding('sm'),
-      borderRadius: theme.borderRadius.lg,
-      minHeight: 44,
-      gap: sharedStyles.spacing.elementGap,
+      borderRadius: theme.borderRadius.md,
+      minHeight: 40,
+      gap: sharedStyles.spacing.elementGap - 2,
       ...sharedStyles.shadows.subtle,
     } as ViewStyle,
 
     cancelButton: {
       backgroundColor: theme.colors.surfaceVariant,
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.outline + '40',
     } as ViewStyle,
 
@@ -683,43 +660,10 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
 
     editingButtonText: {
       fontFamily: 'Lora-SemiBold',
-      fontSize: 15,
-      fontWeight: '700',
-      letterSpacing: 0.3,
+      fontSize: 14,
+      fontWeight: '600',
+      letterSpacing: 0.2,
     },
-
-    // Enhanced action buttons
-    actionButtons: {
-      position: 'absolute',
-      top: sharedStyles.spacing.contentGap,
-      right: sharedStyles.spacing.contentGap,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: sharedStyles.spacing.elementGap,
-      zIndex: 10,
-      elevation: 5, // Android elevation for proper layering
-    } as ViewStyle,
-
-    actionButton: {
-      width: 40, // Slightly larger for better touch
-      height: 40,
-      borderRadius: theme.borderRadius.full,
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...sharedStyles.shadows.subtle,
-    } as ViewStyle,
-
-    editButton: {
-      backgroundColor: theme.colors.primaryContainer,
-      borderWidth: 1,
-      borderColor: theme.colors.primary + '30',
-    } as ViewStyle,
-
-    deleteButton: {
-      backgroundColor: theme.colors.errorContainer,
-      borderWidth: 1,
-      borderColor: theme.colors.error + '30',
-    } as ViewStyle,
   });
 
 StatementDetailCard.displayName = 'StatementDetailCard';

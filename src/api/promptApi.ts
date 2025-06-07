@@ -47,45 +47,22 @@ export const getMultipleRandomActivePrompts = async (
   limit: number = 10
 ): Promise<DailyPrompt[]> => {
   try {
-    // TODO: Consider implementing server-side shuffling for better performance
-    // This would involve creating a PostgreSQL RPC function like:
-    // CREATE OR REPLACE FUNCTION get_multiple_random_active_prompts(p_limit INTEGER)
-    // RETURNS SETOF daily_prompts AS $$
-    // BEGIN
-    //   RETURN QUERY
-    //   SELECT * FROM daily_prompts
-    //   WHERE is_active = true
-    //   ORDER BY RANDOM()
-    //   LIMIT p_limit;
-    // END;
-    // $$ LANGUAGE plpgsql;
-    //
-    // For now, using client-side shuffling which works well for small datasets
-
-    const { data, error } = await supabase
-      .from('daily_prompts')
-      .select('id, prompt_text_tr, prompt_text_en, category')
-      .eq('is_active', true);
+    // Use server-side RPC function for optimal performance and scalability
+    const { data, error } = await supabase.rpc('get_multiple_random_active_prompts', {
+      p_limit: limit,
+    });
 
     if (error) {
       throw handleAPIError(new Error(error.message), 'fetch multiple random active prompts');
     }
 
     if (data && Array.isArray(data) && data.length > 0) {
-      // Optimized Fisher-Yates shuffle algorithm for client-side randomization
-      const shuffled = [...data];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-
-      logger.debug('Client-side prompt shuffling completed', {
-        totalAvailable: data.length,
+      logger.debug('Server-side prompt fetching completed', {
         requested: limit,
-        returned: Math.min(limit, shuffled.length),
+        returned: data.length,
       });
 
-      return shuffled.slice(0, limit) as DailyPrompt[];
+      return data as DailyPrompt[];
     }
 
     logger.warn('No random active prompts found or unexpected response format.');

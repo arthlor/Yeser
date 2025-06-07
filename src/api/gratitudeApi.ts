@@ -131,6 +131,34 @@ export const deleteStatement = async (entryDate: string, statementIndex: number)
   }
 };
 
+/**
+ * Deletes an entire gratitude entry by date (atomic operation)
+ * This is more efficient than deleting individual statements when removing a whole entry
+ * Calls the `delete_gratitude_entry_by_date` RPC.
+ */
+export const deleteEntireEntry = async (entryDate: string): Promise<void> => {
+  try {
+    // Validate the date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(entryDate)) {
+      throw new Error('Invalid date format, expected YYYY-MM-DD');
+    }
+
+    const { error } = await supabase.rpc('delete_gratitude_entry_by_date', {
+      p_entry_date: entryDate,
+    });
+
+    if (error) {
+      throw handleAPIError(new Error(error.message), 'delete entire gratitude entry');
+    }
+
+    logger.debug('Successfully deleted entire entry', { entryDate });
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'delete entire gratitude entry');
+  }
+};
+
 // --- Updated functions to fetch gratitude data --- //
 
 /**
@@ -368,27 +396,17 @@ export const getRandomGratitudeEntry = async (): Promise<GratitudeEntry | null> 
 
 /**
  * Fetches the total count of gratitude entries for the current user.
- * Calls the `get_user_gratitude_entries_count` RPC.
+ * Uses optimized RPC function for better performance than SELECT(*) with count.
  */
 export const getTotalGratitudeEntriesCount = async (): Promise<number> => {
   try {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData.session) {
-      throw new Error('No active session');
-    }
-    const { user } = sessionData.session;
-    if (!user) {
-      throw new Error('No user found in session');
-    }
-    const { count, error } = await supabase
-      .from('gratitude_entries')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
+    const { data, error } = await supabase.rpc('get_user_gratitude_entries_count');
 
     if (error) {
       throw handleAPIError(new Error(error.message), 'fetch total gratitude entries count');
     }
-    return count ?? 0;
+
+    return data || 0;
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     throw handleAPIError(error, 'fetch total gratitude entries count');

@@ -32,9 +32,11 @@ export interface BenefitCardProps {
   title: string;
   description: string;
   stat: string | null;
+  ctaPrompt: string | null;
   index: number;
   initialExpanded?: boolean;
   testID?: string;
+  onCtaPress?: (prompt: string) => void;
 }
 
 // Analytics event types for the feature
@@ -50,10 +52,18 @@ export interface WhyGratitudeAnalyticsEvents {
     index: number;
     user_id?: string;
   };
+  benefit_card_cta_pressed: {
+    benefit_id: number;
+    title: string;
+    prompt: string;
+    index: number;
+    user_id?: string;
+  };
   cta_button_pressed: {
     prompt?: string | null;
     user_streak?: number;
     user_id?: string;
+    source?: 'main_button' | 'benefit_card';
   };
   navigation_to_journal: {
     source: 'why_gratitude';

@@ -188,6 +188,10 @@ export type Database = {
         Args: { p_username: string };
         Returns: boolean;
       };
+      delete_gratitude_entry_by_date: {
+        Args: { p_entry_date: string };
+        Returns: undefined;
+      };
       delete_gratitude_statement: {
         Args: { p_entry_date: string; p_statement_index: number };
         Returns: undefined;
@@ -203,6 +207,18 @@ export type Database = {
       get_entry_dates_for_month: {
         Args: { p_user_id: string; p_year: number; p_month: number };
         Returns: string[];
+      };
+      get_multiple_random_active_prompts: {
+        Args: { p_limit?: number };
+        Returns: {
+          category: string | null;
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          prompt_text_en: string | null;
+          prompt_text_tr: string;
+          updated_at: string;
+        }[];
       };
       get_random_active_prompt: {
         Args: Record<PropertyKey, never>;

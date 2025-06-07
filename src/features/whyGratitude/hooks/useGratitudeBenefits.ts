@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getGratitudeBenefits } from '@/api/whyGratitudeApi';
 import { queryKeys } from '@/api/queryKeys';
 import { logger } from '@/utils/debugConfig';
-import type { GratitudeBenefit } from '@/features/whyGratitude/types';
+// GratitudeBenefit type is available from types file when needed
 
 /**
  * Custom hook to fetch and cache the gratitude benefits content.

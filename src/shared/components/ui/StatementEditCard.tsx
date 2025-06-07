@@ -10,6 +10,7 @@ import {
   formatStatementDate,
   InteractiveStatementCardProps,
   StatementCardWrapper,
+  ThreeDotsMenu,
   useHapticFeedback,
   useResponsiveLayout,
   useStatementCardAnimations,
@@ -217,7 +218,7 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
           activeOpacity={0.8}
           accessibilityLabel="İptal"
         >
-          <Icon name="close" size={18} color={theme.colors.onSurfaceVariant} />
+          <Icon name="close" size={16} color={theme.colors.onSurfaceVariant} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -231,7 +232,7 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
           disabled={!localStatement.trim() || isOverLimit}
           accessibilityLabel="Kaydet"
         >
-          <Icon name="check" size={18} color={theme.colors.onPrimary} />
+          <Icon name="check" size={16} color={theme.colors.onPrimary} />
         </TouchableOpacity>
       </View>
     );
@@ -248,35 +249,15 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
       edgeToEdge={edgeToEdge}
     >
       <View style={variantStyles.content}>
-        {/* Floating action buttons */}
-        {!isEditing && (onEdit || onDelete) && (
-          <View style={styles.actionButtons} pointerEvents="box-none">
-            {onEdit && (
-              <TouchableOpacity
-                style={[styles.actionButton, styles.editButton]}
-                onPress={onEdit}
-                activeOpacity={0.6}
-                accessibilityLabel="Düzenle"
-                accessibilityRole="button"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Icon name="pencil-outline" size={16} color={theme.colors.primary} />
-              </TouchableOpacity>
-            )}
-            {onDelete && (
-              <TouchableOpacity
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={onDelete}
-                activeOpacity={0.6}
-                accessibilityLabel="Sil"
-                accessibilityRole="button"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Icon name="delete-outline" size={16} color={theme.colors.error} />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+        {/* Three Dots Menu - Positioned in top-right */}
+        <View style={styles.headerSection}>
+          <ThreeDotsMenu
+            onEdit={onEdit}
+            onDelete={onDelete}
+            isVisible={!isEditing}
+            hapticFeedback={hapticFeedback}
+          />
+        </View>
 
         {/* Enhanced statement content */}
         <View style={styles.statementContainer}>
@@ -397,12 +378,14 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       borderColor: theme.colors.outline + '30',
       borderRadius: theme.borderRadius.lg,
       marginBottom: theme.spacing.md,
+      overflow: 'visible',
     } as ViewStyle,
 
     primaryContent: {
       paddingHorizontal: sharedStyles.layout.getAdaptivePadding('md'),
       paddingVertical: sharedStyles.layout.getAdaptivePadding('sm'),
       position: 'relative',
+      overflow: 'visible',
     } as ViewStyle,
 
     primaryStatement: {
@@ -420,11 +403,13 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       borderColor: theme.colors.outline + '25',
       borderRadius: theme.borderRadius.md,
       marginBottom: theme.spacing.sm,
+      overflow: 'visible',
     } as ViewStyle,
 
     secondaryContent: {
       paddingHorizontal: sharedStyles.layout.getAdaptivePadding('md'),
       paddingVertical: sharedStyles.layout.getAdaptivePadding('sm'),
+      overflow: 'visible',
     } as ViewStyle,
 
     secondaryStatement: {
@@ -441,11 +426,13 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       borderColor: theme.colors.outline + '25',
       borderRadius: theme.borderRadius.md,
       marginBottom: theme.spacing.sm,
+      overflow: 'visible',
     } as ViewStyle,
 
     minimalContent: {
       paddingHorizontal: sharedStyles.layout.getAdaptivePadding('md'),
       paddingVertical: sharedStyles.layout.getAdaptivePadding('sm'),
+      overflow: 'visible',
     } as ViewStyle,
 
     minimalStatement: {
@@ -454,39 +441,6 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       fontStyle: 'italic',
       textAlign: 'left',
     },
-
-    // Floating action buttons
-    actionButtons: {
-      position: 'absolute',
-      top: sharedStyles.spacing.contentGap,
-      right: sharedStyles.spacing.contentGap,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: sharedStyles.spacing.elementGap,
-      zIndex: 10,
-      elevation: 5, // Android elevation for proper layering
-    } as ViewStyle,
-
-    actionButton: {
-      width: 40, // Slightly larger for better touch
-      height: 40,
-      borderRadius: theme.borderRadius.full,
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...sharedStyles.shadows.subtle,
-    } as ViewStyle,
-
-    editButton: {
-      backgroundColor: theme.colors.primaryContainer,
-      borderWidth: 1,
-      borderColor: theme.colors.primary + '30',
-    } as ViewStyle,
-
-    deleteButton: {
-      backgroundColor: theme.colors.errorContainer,
-      borderWidth: 1,
-      borderColor: theme.colors.error + '30',
-    } as ViewStyle,
 
     // Enhanced Statement Container
     statementContainer: {
@@ -621,15 +575,15 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: sharedStyles.layout.getAdaptivePadding('sm'),
-      borderRadius: theme.borderRadius.lg,
-      minHeight: 44,
-      gap: sharedStyles.spacing.elementGap,
+      borderRadius: theme.borderRadius.md,
+      minHeight: 40,
+      gap: sharedStyles.spacing.elementGap - 2,
       ...sharedStyles.shadows.subtle,
     } as ViewStyle,
 
     cancelButton: {
       backgroundColor: theme.colors.surfaceVariant,
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.outline + '40',
     } as ViewStyle,
 
@@ -640,9 +594,9 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
 
     editingButtonText: {
       fontFamily: 'Lora-SemiBold',
-      fontSize: 15,
-      fontWeight: '700',
-      letterSpacing: 0.3,
+      fontSize: 14,
+      fontWeight: '600',
+      letterSpacing: 0.2,
     },
 
     errorInput: {
@@ -659,9 +613,9 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
 
     // Compact editing buttons
     compactButton: {
-      width: 40,
-      height: 40,
-      borderRadius: theme.borderRadius.lg,
+      width: 36,
+      height: 36,
+      borderRadius: theme.borderRadius.md,
       alignItems: 'center',
       justifyContent: 'center',
       ...sharedStyles.shadows.subtle,
@@ -669,6 +623,18 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
 
     disabledButton: {
       opacity: 0.5,
+    } as ViewStyle,
+
+    // Three Dots Menu
+    headerSection: {
+      position: 'absolute',
+      top: sharedStyles.spacing.contentGap,
+      right: sharedStyles.spacing.contentGap,
+      zIndex: 1000, // High z-index for proper layering
+      elevation: 10, // Android elevation for proper layering
+      overflow: 'visible', // Allow menu to overflow
+      minHeight: 48, // Ensure adequate space for menu button
+      minWidth: 48, // Ensure adequate space for menu button
     } as ViewStyle,
   });
 

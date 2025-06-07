@@ -714,7 +714,7 @@ export const validateTheme = (theme: AppTheme): string[] => {
  * Theme generation utilities for consistent color schemes
  */
 export const generateThemeVariants = (baseColors: { primary: string; background: string }) => {
-  const { primary, background } = baseColors;
+  const { primary } = baseColors;
 
   return {
     primaryVariant: darken(primary, 0.1),

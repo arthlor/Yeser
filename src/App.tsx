@@ -79,51 +79,57 @@ const AppContent: React.FC = () => {
 
   React.useEffect(() => {
     void analyticsService.logAppOpen();
-    
+
     // Initialize notification service on app start
-    notificationService.initialize().then(hasPermissions => {
+    notificationService.initialize().then((hasPermissions) => {
       logger.debug('Notifications initialized:', { extra: { hasPermissions } });
     });
 
     // Set up notification response received listener
-    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       logger.debug('Notification response received:', { extra: { response } });
-      
+
       const categoryIdentifier = response.notification.request.content.categoryIdentifier;
       const notificationData = response.notification.request.content.data;
-      
+
       // Handle different notification types
-      if (categoryIdentifier === 'DAILY_REMINDER' && notificationData?.action === 'open_daily_entry') {
+      if (
+        categoryIdentifier === 'DAILY_REMINDER' &&
+        notificationData?.action === 'open_daily_entry'
+      ) {
         // Navigate to daily entry screen
         if (navigationRef.current && isAuthenticated) {
           const today = new Date().toISOString().split('T')[0];
-          
+
           // Navigate to DailyEntryTab with today's date
           navigationRef.current.navigate('MainApp', {
             screen: 'DailyEntryTab',
-            params: { date: today }
+            params: { date: today },
           });
-          
+
           // Log analytics
           analyticsService.logEvent('notification_daily_reminder_tapped', {
             date: today,
             notification_data: JSON.stringify(notificationData),
           });
-          
+
           logger.debug('Navigated to daily entry from notification', { extra: { date: today } });
         }
-      } else if (categoryIdentifier === 'THROWBACK_REMINDER' && notificationData?.action === 'open_past_entries') {
+      } else if (
+        categoryIdentifier === 'THROWBACK_REMINDER' &&
+        notificationData?.action === 'open_past_entries'
+      ) {
         // Navigate to past entries or calendar
         if (navigationRef.current && isAuthenticated) {
           navigationRef.current.navigate('MainApp', {
-            screen: 'PastEntriesTab'
+            screen: 'PastEntriesTab',
           });
-          
+
           // Log analytics
           analyticsService.logEvent('notification_throwback_reminder_tapped', {
             notification_data: JSON.stringify(notificationData),
           });
-          
+
           logger.debug('Navigated to past entries from notification');
         }
       } else {
@@ -134,11 +140,11 @@ const AppContent: React.FC = () => {
             notificationData,
           },
         });
-        
+
         // Just navigate to home if authenticated
         if (navigationRef.current && isAuthenticated) {
           navigationRef.current.navigate('MainApp', {
-            screen: 'HomeTab'
+            screen: 'HomeTab',
           });
         }
       }
@@ -148,30 +154,6 @@ const AppContent: React.FC = () => {
       subscription.remove();
     };
   }, [isAuthenticated]);
-
-  // Disabled: Automatic throwback modal conflicts with inline ThrowbackTeaser
-  // React.useEffect(() => {
-  //   if (
-  //     isAuthenticated &&
-  //     profile?.id &&
-  //     profile.throwback_reminder_enabled !== undefined &&
-  //     profile.throwback_reminder_frequency !== undefined &&
-  //     totalEntryCount !== undefined
-  //   ) {
-  //     void checkAndShowThrowbackIfNeeded({
-  //       isEnabled: profile.throwback_reminder_enabled,
-  //       frequency: profile.throwback_reminder_frequency,
-  //       totalEntryCount,
-  //     });
-  //   }
-  // }, [
-  //   isAuthenticated,
-  //   profile?.id,
-  //   profile?.throwback_reminder_enabled,
-  //   profile?.throwback_reminder_frequency,
-  //   totalEntryCount,
-  //   checkAndShowThrowbackIfNeeded,
-  // ]);
 
   const navigationTheme = React.useMemo(
     () => ({
@@ -209,11 +191,6 @@ const AppContent: React.FC = () => {
     >
       <StatusBar style={statusBarStyle} />
       <RootNavigator />
-      {/* Disabled: ThrowbackModal conflicts with inline ThrowbackTeaser on HomeScreen */}
-      {/* <ThrowbackModal
-        isVisible={randomEntry !== null && hasRandomEntry}
-        onClose={hideThrowback}
-      /> */}
     </NavigationContainer>
   );
 };

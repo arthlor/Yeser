@@ -34,6 +34,7 @@ interface RootStackParamListFixed extends Record<string, object | undefined> {
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
   Help: undefined;
+  WhyGratitude: undefined;
 }
 
 type SettingsScreenNavigationProp = BottomTabNavigationProp<
@@ -242,6 +243,10 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('Help');
   };
 
+  const navigateToWhyGratitude = () => {
+    navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('WhyGratitude');
+  };
+
   return (
     <ScreenLayout edges={['top']} edgeToEdge={true}>
       <ScreenContent
@@ -369,6 +374,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             onNavigateToPrivacyPolicy={navigateToPrivacyPolicy}
             onNavigateToTermsOfService={navigateToTermsOfService}
             onNavigateToHelp={navigateToHelp}
+            onNavigateToWhyGratitude={navigateToWhyGratitude}
           />
         </View>
 

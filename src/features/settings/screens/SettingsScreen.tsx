@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -62,13 +56,8 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [isExporting, setIsExporting] = useState(false);
 
   // TanStack Query - Replace Zustand profile store
-  const {
-    profile,
-    isLoadingProfile,
-    profileError,
-    updateProfile,
-    refetchProfile,
-  } = useUserProfile();
+  const { profile, isLoadingProfile, profileError, updateProfile, refetchProfile } =
+    useUserProfile();
 
   const { logout } = useAuthStore();
   const { colorMode, toggleColorMode } = useTheme();
@@ -127,12 +116,12 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     try {
       // Update the profile in the database
       updateProfile(settings);
-      
+
       // Also update the notification scheduling
       if (settings.reminder_enabled && settings.reminder_time) {
         const [hours, minutes] = settings.reminder_time.split(':').map(Number);
         const result = await notificationService.scheduleDailyReminder(hours, minutes, true);
-        
+
         if (!result.success) {
           logger.error(
             'Failed to schedule daily reminder:',
@@ -174,21 +163,24 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         throwback_reminder_frequency: settings.throwback_reminder_frequency || 'weekly',
         throwback_reminder_time: settings.throwback_reminder_time,
       });
-      
+
       // Also update the notification scheduling
-      if (settings.throwback_reminder_enabled && settings.throwback_reminder_frequency !== 'disabled') {
-        // Parse time from database format (HH:MM:SS) 
+      if (
+        settings.throwback_reminder_enabled &&
+        settings.throwback_reminder_frequency !== 'disabled'
+      ) {
+        // Parse time from database format (HH:MM:SS)
         const timeString = settings.throwback_reminder_time || '10:00:00';
         const [hours, minutes] = timeString.split(':').map(Number);
         const frequency = settings.throwback_reminder_frequency || 'weekly';
-        
+
         const result = await notificationService.scheduleThrowbackReminder(
-          hours, 
-          minutes, 
-          true, 
+          hours,
+          minutes,
+          true,
           frequency as 'daily' | 'weekly' | 'monthly'
         );
-        
+
         if (!result.success) {
           logger.error(
             'Failed to schedule throwback reminder:',
@@ -223,9 +215,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const navigateToPrivacyPolicy = () => {
-    navigation
-      .getParent<StackNavigationProp<RootStackParamListFixed>>()
-      ?.navigate('PrivacyPolicy');
+    navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('PrivacyPolicy');
   };
 
   const navigateToTermsOfService = () => {
@@ -240,7 +230,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <ScreenLayout edges={['top']} edgeToEdge={true}>
-      <ScreenContent 
+      <ScreenContent
         isLoading={isLoadingProfile && !profile}
         error={profileError && !profile ? 'Ayarlar yüklenirken bir hata oluştu.' : null}
         onRetry={refetchProfile}
@@ -277,14 +267,14 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           />
 
           <AppearanceSettings
-                      activeThemeName={colorMode as ThemeName}
-          onToggleTheme={toggleColorMode}
+            activeThemeName={colorMode as ThemeName}
+            onToggleTheme={toggleColorMode}
           />
 
           {/* Varied Prompts Setting */}
           <View style={styles.settingCard}>
-            <TouchableOpacity 
-              style={styles.settingRow} 
+            <TouchableOpacity
+              style={styles.settingRow}
               onPress={() => handleVariedPromptsUpdate(!profile?.useVariedPrompts)}
               activeOpacity={0.7}
             >
@@ -341,7 +331,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.textContainer}>
                   <Text style={styles.settingTitle}>Verileri Dışa Aktar</Text>
                   <Text style={styles.settingDescription}>
-                    Tüm şükran günlüğü verilerinizi JSON formatında indirin
+                    Tüm minnet günlüğü verilerinizi PDF formatında indirin
                   </Text>
                 </View>
               </View>
@@ -390,8 +380,9 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: theme.spacing.lg,
     },
     sectionTitle: {
+      fontFamily: 'Lora-Medium',
       fontSize: 20,
-      fontWeight: '700',
+      fontWeight: '600',
       color: theme.colors.onBackground,
       marginBottom: theme.spacing.sm,
       marginHorizontal: theme.spacing.md,

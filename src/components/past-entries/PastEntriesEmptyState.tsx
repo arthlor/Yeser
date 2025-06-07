@@ -11,13 +11,13 @@ interface PastEntriesEmptyStateProps {}
 
 /**
  * Enhanced Past Entries Empty State with Edge-to-Edge Design
- * 
+ *
  * DESIGN PHILOSOPHY:
  * 1. INSPIRATION ZONE: Edge-to-edge inspiring empty state with comprehensive guidance
  * 2. VISUAL DEPTH: Enhanced shadows and elevation for modern feel
  * 3. ONBOARDING GUIDANCE: Clear step-by-step instructions and benefits
  * 4. TYPOGRAPHY HIERARCHY: Consistent with established design system
- * 
+ *
  * UX ENHANCEMENTS:
  * - Edge-to-edge card design with proper spacing
  * - Enhanced illustration with sparkling effects
@@ -30,8 +30,8 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
 
   return (
     <View style={styles.emptyZone}>
-      <ThemedCard 
-        variant="outlined" 
+      <ThemedCard
+        variant="outlined"
         density="comfortable"
         elevation="card"
         style={styles.emptyCard}
@@ -43,10 +43,30 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
               <Icon name="book-outline" size={72} color={theme.colors.primary + '60'} />
             </View>
             <View style={styles.sparkleContainer}>
-              <Icon name="star-outline" size={20} color={theme.colors.primary + '40'} style={styles.sparkle1} />
-              <Icon name="star-outline" size={16} color={theme.colors.primary + '40'} style={styles.sparkle2} />
-              <Icon name="star-outline" size={14} color={theme.colors.primary + '40'} style={styles.sparkle3} />
-              <Icon name="star-outline" size={12} color={theme.colors.primary + '40'} style={styles.sparkle4} />
+              <Icon
+                name="star-outline"
+                size={20}
+                color={theme.colors.primary + '40'}
+                style={styles.sparkle1}
+              />
+              <Icon
+                name="star-outline"
+                size={16}
+                color={theme.colors.primary + '40'}
+                style={styles.sparkle2}
+              />
+              <Icon
+                name="star-outline"
+                size={14}
+                color={theme.colors.primary + '40'}
+                style={styles.sparkle3}
+              />
+              <Icon
+                name="star-outline"
+                size={12}
+                color={theme.colors.primary + '40'}
+                style={styles.sparkle4}
+              />
             </View>
           </View>
 
@@ -54,8 +74,8 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
           <View style={styles.headerSection}>
             <Text style={styles.title}>Minnet yolculuğuna başla</Text>
             <Text style={styles.description}>
-              İlk şükran kaydını oluşturup hayatındaki güzel anları keşfetmeye başla. 
-              Her gün küçük mutlulukları fark etmek seni daha pozitif kılacak.
+              İlk minnet kaydını oluşturup hayatındaki güzel anları keşfetmeye başla. Her gün küçük
+              mutlulukları fark etmek seni daha pozitif kılacak.
             </Text>
           </View>
 
@@ -65,7 +85,7 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
               <Icon name="map-marker-path" size={20} color={theme.colors.primary} />
               <Text style={styles.guidanceTitle}>Nasıl Başlarım?</Text>
             </View>
-            
+
             <View style={styles.stepsContainer}>
               <View style={styles.guidanceItem}>
                 <View style={styles.stepBadge}>
@@ -73,12 +93,14 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
                 </View>
                 <View style={styles.stepContent}>
                   <Text style={styles.stepTitle}>Günlük kayıt sayfasına git</Text>
-                  <Text style={styles.stepDescription}>Alt menüden "Günlük Kayıt" sekmesine dokun</Text>
+                  <Text style={styles.stepDescription}>
+                    Alt menüden "Günlük Kayıt" sekmesine dokun
+                  </Text>
                 </View>
               </View>
-              
+
               <View style={styles.stepConnector} />
-              
+
               <View style={styles.guidanceItem}>
                 <View style={styles.stepBadge}>
                   <Text style={styles.stepText}>2</Text>
@@ -88,16 +110,18 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
                   <Text style={styles.stepDescription}>Bugün için şükrettiğin 3 şeyi paylaş</Text>
                 </View>
               </View>
-              
+
               <View style={styles.stepConnector} />
-              
+
               <View style={styles.guidanceItem}>
                 <View style={styles.stepBadge}>
                   <Text style={styles.stepText}>3</Text>
                 </View>
                 <View style={styles.stepContent}>
                   <Text style={styles.stepTitle}>İlerlemeni takip et</Text>
-                  <Text style={styles.stepDescription}>Gelişimini izle ve günlük hedefine ulaş</Text>
+                  <Text style={styles.stepDescription}>
+                    Gelişimini izle ve günlük hedefine ulaş
+                  </Text>
                 </View>
               </View>
             </View>
@@ -109,7 +133,7 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
               <Icon name="gift-outline" size={20} color={theme.colors.success} />
               <Text style={styles.benefitsTitle}>Faydaları</Text>
             </View>
-            
+
             <View style={styles.benefitsList}>
               <View style={styles.benefitItem}>
                 <View style={styles.benefitIcon}>
@@ -117,14 +141,14 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
                 </View>
                 <Text style={styles.benefitText}>Mutluluk artışı</Text>
               </View>
-              
+
               <View style={styles.benefitItem}>
                 <View style={styles.benefitIcon}>
                   <Icon name="brain" size={16} color={theme.colors.info} />
                 </View>
                 <Text style={styles.benefitText}>Pozitif bakış</Text>
               </View>
-              
+
               <View style={styles.benefitItem}>
                 <View style={styles.benefitIcon}>
                   <Icon name="trending-up" size={16} color={theme.colors.success} />
@@ -154,7 +178,7 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
           <View style={styles.tipContent}>
             <Text style={styles.tipTitle}>💡 Bilimsel Gerçek</Text>
             <Text style={styles.tipText}>
-              Günde 3 şükran kaydı tutmak, 8 hafta sonunda %25 mutluluk artışı sağlar!
+              Günde 3 minnet kaydı tutmak, 8 hafta sonunda %25 mutluluk artışı sağlar!
             </Text>
           </View>
         </View>
@@ -177,14 +201,13 @@ const createStyles = (theme: AppTheme) =>
       borderStyle: 'dashed',
       borderColor: theme.colors.outline + '30',
       backgroundColor: theme.colors.surface + '80',
-      marginHorizontal: -theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
+      ...getPrimaryShadow.card(theme),
     },
     emptyContent: {
       alignItems: 'center',
       // Padding handled by density="comfortable"
     },
-    
+
     // Enhanced Illustration
     illustrationContainer: {
       position: 'relative',
@@ -228,7 +251,7 @@ const createStyles = (theme: AppTheme) =>
       bottom: 50,
       right: 20,
     },
-    
+
     // Enhanced Header Section
     headerSection: {
       alignItems: 'center',
@@ -250,7 +273,7 @@ const createStyles = (theme: AppTheme) =>
       lineHeight: 24,
       letterSpacing: 0.1,
     },
-    
+
     // Enhanced Guidance Section
     guidanceSection: {
       width: '100%',
@@ -315,7 +338,7 @@ const createStyles = (theme: AppTheme) =>
       marginLeft: 15,
       marginVertical: theme.spacing.xs,
     },
-    
+
     // Enhanced Benefits Section
     benefitsSection: {
       width: '100%',
@@ -359,7 +382,7 @@ const createStyles = (theme: AppTheme) =>
       textAlign: 'center',
       fontWeight: '500',
     },
-    
+
     // Enhanced Motivation Section
     motivationSection: {
       alignItems: 'center',
@@ -384,7 +407,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       fontWeight: '600',
     },
-    
+
     // Enhanced Tip Section
     tipSection: {
       paddingTop: theme.spacing.lg,

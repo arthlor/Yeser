@@ -27,7 +27,7 @@ const EnhancedSplashScreen: React.FC = () => {
   const logoSlideAnim = useRef(new Animated.Value(-50)).current;
   const bottomSlideAnim = useRef(new Animated.Value(50)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  
+
   // Lottie animation ref
   const lottieRef = useRef<LottieView>(null);
 
@@ -101,34 +101,28 @@ const EnhancedSplashScreen: React.FC = () => {
   }, [fadeAnim, scaleAnim, logoSlideAnim, bottomSlideAnim, pulseAnim]);
 
   return (
-    <ScreenLayout 
-      scrollable={false} 
-              edges={['top']}
-      edgeToEdge={true}
-      style={styles.container}
-    >
-      <Animated.View 
+    <ScreenLayout scrollable={false} edges={['top']} edgeToEdge={true} style={styles.container}>
+      <Animated.View
         style={[
           styles.content,
           {
             opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }]
-          }
+            transform: [{ scale: scaleAnim }],
+          },
         ]}
       >
         {/* Background Gradient Overlay */}
         <View style={styles.backgroundOverlay} />
-        
+
         {/* Main Content Container */}
         <View style={styles.mainContent}>
-          
           {/* Logo Section */}
-          <Animated.View 
+          <Animated.View
             style={[
               styles.logoSection,
               {
-                transform: [{ translateY: logoSlideAnim }]
-              }
+                transform: [{ translateY: logoSlideAnim }],
+              },
             ]}
           >
             {/* App Logo with Enhanced Typography */}
@@ -144,23 +138,18 @@ const EnhancedSplashScreen: React.FC = () => {
             </View>
 
             {/* Subtitle */}
-            <Animated.Text 
-              style={[
-                styles.subtitle,
-                { opacity: fadeAnim }
-              ]}
-            >
+            <Animated.Text style={[styles.subtitle, { opacity: fadeAnim }]}>
               Minnettarlık Yolculuğun
             </Animated.Text>
           </Animated.View>
 
           {/* Lottie Animation Section */}
-          <Animated.View 
+          <Animated.View
             style={[
               styles.animationContainer,
               {
-                transform: [{ scale: pulseAnim }]
-              }
+                transform: [{ scale: pulseAnim }],
+              },
             ]}
           >
             {/* Beautiful flower bloom animation */}
@@ -173,30 +162,21 @@ const EnhancedSplashScreen: React.FC = () => {
               resizeMode="contain"
               speed={0.8} // Slightly slower for more elegant feel
             />
-            
+
             {/* Fallback loading indicator if Lottie fails */}
             <View style={styles.fallbackContainer}>
-              <Animated.View 
-                style={[
-                  styles.loadingIndicator,
-                  {
-                    transform: [{ scale: pulseAnim }]
-                  }
-                ]}
-              />
-              <View style={styles.loadingRing} />
+              {/* Green dot and loading ring removed as requested */}
             </View>
           </Animated.View>
-
         </View>
 
         {/* Bottom Section */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.bottomSection,
             {
-              transform: [{ translateY: bottomSlideAnim }]
-            }
+              transform: [{ translateY: bottomSlideAnim }],
+            },
           ]}
         >
           {/* Loading Text */}
@@ -214,7 +194,6 @@ const EnhancedSplashScreen: React.FC = () => {
           {/* App Version */}
           <Text style={styles.versionText}>v1.0.0</Text>
         </Animated.View>
-
       </Animated.View>
     </ScreenLayout>
   );
@@ -301,22 +280,7 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    loadingIndicator: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: theme.colors.primary,
-      ...getPrimaryShadow.floating(theme),
-    },
-    loadingRing: {
-      position: 'absolute',
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      borderWidth: 2,
-      borderColor: theme.colors.primary + '30',
-      borderStyle: 'dashed',
-    },
+
     bottomSection: {
       alignItems: 'center',
       width: '100%',

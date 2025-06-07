@@ -97,30 +97,25 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
           variant="minimal"
           showQuotes={false}
           animateEntrance={false} // Already animated by parent
-          
           // Interactive features
           isEditing={editingStatementIndex === index}
           onEdit={() => onEdit(index)}
           onDelete={() => onDelete(index)}
           onCancel={onCancel}
           onSave={async (updatedText: string) => onSave(index, updatedText)}
-          
           // Configuration for minimal list variant
           enableSwipeActions={false}
           enableLongPress={false}
           enableInlineEdit={true}
           enableQuickActions={true}
-          
           // Visual configuration
           showActionOverlay={false}
           actionPosition="bottom"
           confirmDelete={false} // Parent handles confirmation
           maxLength={500}
-          
           // Accessibility
-          accessibilityLabel={`Şükran ${index + 1}: ${item}`}
+          accessibilityLabel={`Minnet ${index + 1}: ${item}`}
           hapticFeedback={false}
-          
           style={{
             marginBottom: theme.spacing.sm,
           }}
@@ -141,12 +136,12 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
             />
           </View>
           <Text style={styles.emptyTitle}>
-            {isToday ? 'İlk şükranını ekle!' : 'O gün henüz şükran eklemedin'}
+            {isToday ? 'İlk minnetini ekle!' : 'O gün henüz minnet eklemedin'}
           </Text>
           <Text style={styles.emptySubtitle}>
             {isToday
               ? 'Bugün minnettarlık hissettiğin anları yazarak güne başla.'
-              : 'Bu tarihte henüz bir şükran ifadesi bulunmuyor.'}
+              : 'Bu tarihte henüz bir minnet ifadesi bulunmuyor.'}
           </Text>
         </View>
       </ThemedCard>
@@ -175,7 +170,6 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
             />
           ) : undefined
         }
-        
         // Performance optimizations
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}

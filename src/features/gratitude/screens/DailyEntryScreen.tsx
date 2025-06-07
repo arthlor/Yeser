@@ -58,13 +58,11 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   const [manualDate, setManualDate] = useState<Date | null>(null);
 
-  const initialDate = route?.params?.initialDate 
-    ? new Date(route.params.initialDate) 
-    : new Date();
+  const initialDate = route?.params?.initialDate ? new Date(route.params.initialDate) : new Date();
 
   const effectiveDate = manualDate || initialDate;
   const finalDateString = effectiveDate.toISOString().split('T')[0];
-  
+
   // Create a setter function for when user manually changes date
   const setEntryDate = useCallback((newDate: Date) => {
     setManualDate(newDate);
@@ -99,7 +97,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   // Enhanced animations - More delightful and engaging
   const masterFadeAnim = useRef(new Animated.Value(0)).current;
   const heroSlideAnim = useRef(new Animated.Value(-50)).current;
-  
+
   // New animations for enhanced UX
   const progressRingAnim = useRef(new Animated.Value(0)).current;
   const celebrationAnim = useRef(new Animated.Value(0)).current;
@@ -112,11 +110,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     error: promptError,
     isUsingDefault,
   } = usePromptText();
-  
-  const {
-    fetchNewPrompt,
-    isFetchingNewPrompt,
-  } = usePromptMutations();
+
+  const { fetchNewPrompt, isFetchingNewPrompt } = usePromptMutations();
 
   // Computed values
   const statements = currentEntry?.statements || [];
@@ -129,26 +124,29 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   // Show error alerts for mutation failures
   useEffect(() => {
     if (addStatementError) {
-      Alert.alert('Hata', 'Şükran ifadesi eklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+      Alert.alert('Hata', 'Minnet ifadesi eklenirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
   }, [addStatementError]);
 
   useEffect(() => {
     if (editStatementError) {
-      Alert.alert('Hata', 'Şükran ifadesi düzenlenirken bir hata oluştu. Lütfen tekrar deneyin.');
+      Alert.alert('Hata', 'Minnet ifadesi düzenlenirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
   }, [editStatementError]);
 
   useEffect(() => {
     if (deleteStatementError) {
-      Alert.alert('Hata', 'Şükran ifadesi silinirken bir hata oluştu. Lütfen tekrar deneyin.');
+      Alert.alert('Hata', 'Minnet ifadesi silinirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
   }, [deleteStatementError]);
 
   // Show entry loading error if exists
   useEffect(() => {
     if (entryError) {
-      Alert.alert('Hata', 'Günlük minnet kayıtları yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.');
+      Alert.alert(
+        'Hata',
+        'Günlük minnet kayıtları yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.'
+      );
     }
   }, [entryError]);
 
@@ -156,7 +154,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   useEffect(() => {
     if (isGoalComplete && !wasGoalJustCompleted.current) {
       wasGoalJustCompleted.current = true;
-      
+
       // Celebration animation
       Animated.sequence([
         Animated.timing(celebrationAnim, {
@@ -202,25 +200,28 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   }, [masterFadeAnim, heroSlideAnim, progressRingAnim, progressPercentage]);
 
   // Handle statement operations with enhanced UX
-  const handleAddStatement = useCallback((statementText: string) => {
-    try {
-      gratitudeStatementSchema.parse(statementText);
-      setStatementInputError(null);
-      
-      addStatement(
-        { entryDate: finalDateString, statement: statementText },
-        {
-          onSuccess: () => {
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          },
+  const handleAddStatement = useCallback(
+    (statementText: string) => {
+      try {
+        gratitudeStatementSchema.parse(statementText);
+        setStatementInputError(null);
+
+        addStatement(
+          { entryDate: finalDateString, statement: statementText },
+          {
+            onSuccess: () => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            },
+          }
+        );
+      } catch (error) {
+        if (error instanceof ZodError) {
+          setStatementInputError(error.issues[0]?.message || 'Invalid statement');
         }
-      );
-    } catch (error) {
-      if (error instanceof ZodError) {
-        setStatementInputError(error.issues[0]?.message || 'Invalid statement');
       }
-    }
-  }, [finalDateString, addStatement]);
+    },
+    [finalDateString, addStatement]
+  );
 
   const handleEditStatement = useCallback((index: number) => {
     setEditingStatementIndex(index);
@@ -230,13 +231,13 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     async (index: number, updatedText: string) => {
       try {
         gratitudeStatementSchema.parse(updatedText);
-        
-               editStatement({ 
-         entryDate: finalDateString, 
-         statementIndex: index, 
-         updatedStatement: updatedText 
-       });
-        
+
+        editStatement({
+          entryDate: finalDateString,
+          statementIndex: index,
+          updatedStatement: updatedText,
+        });
+
         setEditingStatementIndex(null);
       } catch (error) {
         if (error instanceof ZodError) {
@@ -251,11 +252,9 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     setEditingStatementIndex(null);
   }, []);
 
-  const handleDeleteStatement = useCallback((index: number) => {
-    Alert.alert(
-      'Minnet Kaydını Sil',
-      'Bu şükür ifadesini silmek istediğinizden emin misiniz?',
-      [
+  const handleDeleteStatement = useCallback(
+    (index: number) => {
+      Alert.alert('Minnet Kaydını Sil', 'Bu şükür ifadesini silmek istediğinizden emin misiniz?', [
         { text: 'İptal', style: 'cancel' },
         {
           text: 'Sil',
@@ -265,16 +264,20 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           },
         },
-      ]
-    );
-  }, [finalDateString, deleteStatement]);
+      ]);
+    },
+    [finalDateString, deleteStatement]
+  );
 
-  const handleDateChange = useCallback((event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setEntryDate(selectedDate);
-    }
-  }, [setEntryDate]);
+  const handleDateChange = useCallback(
+    (event: DateTimePickerEvent, selectedDate?: Date) => {
+      setShowDatePicker(Platform.OS === 'ios');
+      if (selectedDate) {
+        setEntryDate(selectedDate);
+      }
+    },
+    [setEntryDate]
+  );
 
   const handleRefresh = useCallback(async () => {
     await refetchEntry();
@@ -298,12 +301,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   return (
     <>
-             <StatusBar 
-         barStyle="default" 
-         backgroundColor="transparent" 
-         translucent 
-       />
-      
+      <StatusBar barStyle="default" backgroundColor="transparent" translucent />
+
       <ScreenLayout
         edges={['top']}
         scrollable={true}
@@ -333,8 +332,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             },
           ]}
         >
-          <ThemedCard 
-            variant="elevated" 
+          <ThemedCard
+            variant="elevated"
             density="comfortable"
             elevation="floating"
             style={styles.heroCard}
@@ -347,12 +346,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               <View style={styles.dateSection}>
                 <Icon name="calendar-today" size={24} color={theme.colors.primary} />
                 <View style={styles.dateTextContainer}>
-                  <Text style={styles.dateText}>
-                    {formatDate(effectiveDate)}
-                  </Text>
-                  <Text style={styles.dateSubtext}>
-                    {isToday ? 'Bugün' : 'Geçmiş tarih'}
-                  </Text>
+                  <Text style={styles.dateText}>{formatDate(effectiveDate)}</Text>
+                  <Text style={styles.dateSubtext}>{isToday ? 'Bugün' : 'Geçmiş tarih'}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -373,14 +368,18 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                           inputRange: [0, 1],
                           outputRange: ['0%', `${Math.min(progressPercentage, 100)}%`],
                         }),
-                        backgroundColor: isGoalComplete ? theme.colors.success : theme.colors.primary,
+                        backgroundColor: isGoalComplete
+                          ? theme.colors.success
+                          : theme.colors.primary,
                       },
                     ]}
                   />
                 </View>
               </View>
               <Text style={styles.progressLabel}>
-                {isGoalComplete ? '🎉 Hedef tamamlandı!' : `${Math.round(progressPercentage)}% tamamlandı`}
+                {isGoalComplete
+                  ? '🎉 Hedef tamamlandı!'
+                  : `${Math.round(progressPercentage)}% tamamlandı`}
               </Text>
             </View>
           </ThemedCard>
@@ -394,7 +393,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           placeholder={
             isToday
               ? isAddingStatement
-                ? 'Şükran ifadesi ekleniyor...'
+                ? 'Minnet ifadesi ekleniyor...'
                 : 'Bugün neye minnettar olduğunuzu yazın...'
               : 'Geçmiş tarihler için yeni kayıt ekleyemezsiniz'
           }
@@ -433,12 +432,12 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                 <Text style={styles.statementsCountText}>{statements.length}</Text>
               </View>
             </View>
-            
+
             {/* Beautiful Statement Cards */}
             <View style={styles.statementsContainer}>
               {statements.map((statement, index) => (
-                <Animated.View 
-                  key={index} 
+                <Animated.View
+                  key={index}
                   style={[
                     styles.statementWrapper,
                     {
@@ -447,7 +446,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                         {
                           translateY: masterFadeAnim.interpolate({
                             inputRange: [0, 1],
-                            outputRange: [20 + (index * 5), 0],
+                            outputRange: [20 + index * 5, 0],
                           }),
                         },
                       ],
@@ -463,31 +462,20 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                     onPress={() => handleEditStatement(index)}
                     date={formatDate(effectiveDate)}
                     numberOfLines={4} // Limit lines for better UX
-                    
-                    // ✨ NEW: Enhanced Interactive Features
+                    // Enhanced Interactive Features
                     isEditing={editingStatementIndex === index}
                     isLoading={isEditingStatement || isDeletingStatement}
                     onEdit={() => handleEditStatement(index)}
                     onDelete={() => handleDeleteStatement(index)}
                     onCancel={handleCancelEditingStatement}
                     onSave={(updatedText: string) => handleSaveEditedStatement(index, updatedText)}
-                    
-                    // ✨ NEW: Interaction Configuration - Button-Based Approach
-                    enableSwipeActions={false} // Disabled per user preference
-                    enableLongPress={false} // Simplified interaction
+                    // Interaction Configuration
                     enableInlineEdit={true} // Enable for hero display
-                    enableQuickActions={true} // Small polished buttons
-                    
-                    // ✨ NEW: Visual Enhancement Options - Clean Button Interface
-                    showActionOverlay={false} // Use quick action buttons instead
-                    actionPosition="bottom"
                     confirmDelete={true}
                     maxLength={500}
-                    
-                    // ✨ NEW: Accessibility & Feedback
-                    accessibilityLabel={`Ana şükran ${index + 1}: ${statement}`}
+                    // Accessibility & Feedback
+                    accessibilityLabel={`Ana minnet ${index + 1}: ${statement}`}
                     hapticFeedback={false} // Simplified feedback
-                    
                     style={{
                       marginBottom: theme.spacing.md,
                     }}
@@ -499,8 +487,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         ) : (
           /* Empty State */
           <View style={styles.emptyStateContainer}>
-            <ThemedCard 
-              variant="outlined" 
+            <ThemedCard
+              variant="outlined"
               density="comfortable"
               elevation="card"
               style={styles.emptyStateCard}
@@ -512,12 +500,12 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                   color={theme.colors.primary + '40'}
                 />
                 <Text style={styles.emptyStateTitle}>
-                  {isToday ? 'İlk şükranını ekle!' : 'O gün henüz şükran eklemedin'}
+                  {isToday ? 'İlk minnetini ekle!' : 'O gün henüz minnet eklemedin'}
                 </Text>
                 <Text style={styles.emptyStateSubtitle}>
                   {isToday
                     ? 'Bugün minnettarlık hissettiğin anları yazarak güne başla.'
-                    : 'Bu tarihte henüz bir şükran ifadesi bulunmuyor.'}
+                    : 'Bu tarihte henüz bir minnet ifadesi bulunmuyor.'}
                 </Text>
               </View>
             </ThemedCard>
@@ -653,7 +641,7 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '500',
       textAlign: 'center',
     },
-    
+
     // Hero Section Styles
     heroSection: {
       marginBottom: theme.spacing.md,

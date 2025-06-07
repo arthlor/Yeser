@@ -54,25 +54,15 @@ const ScreenSection: React.FC<ScreenSectionProps> = ({
             headerComponent
           ) : (
             <>
-              {title && (
-                <Text style={[styles.title, titleStyle]}>
-                  {title}
-                </Text>
-              )}
-              {subtitle && (
-                <Text style={[styles.subtitle, subtitleStyle]}>
-                  {subtitle}
-                </Text>
-              )}
+              {title && <Text style={[styles.title, titleStyle]}>{title}</Text>}
+              {subtitle && <Text style={[styles.subtitle, subtitleStyle]}>{subtitle}</Text>}
             </>
           )}
         </View>
       )}
 
       {/* Section Content */}
-      <View style={[styles.content, contentStyle]}>
-        {children}
-      </View>
+      <View style={[styles.content, contentStyle]}>{children}</View>
 
       {/* Optional Divider */}
       {showDivider && <View style={styles.divider} />}
@@ -140,14 +130,16 @@ const createStyles = (
       marginBottom: theme.spacing.md,
     },
     title: {
+      fontFamily: 'Lora-Medium',
       fontSize: 20,
-      fontWeight: '700',
+      fontWeight: '600',
       color: theme.colors.onBackground,
       marginBottom: theme.spacing.xs,
       letterSpacing: -0.3,
       lineHeight: 24,
     },
     subtitle: {
+      fontFamily: 'Inter-Regular',
       fontSize: 14,
       fontWeight: '500',
       color: theme.colors.onSurfaceVariant,
@@ -166,4 +158,4 @@ const createStyles = (
   });
 };
 
-export default ScreenSection; 
+export default ScreenSection;

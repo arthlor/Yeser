@@ -1,13 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { 
-  Animated, 
-  Easing,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet, 
-  Text, 
-  View 
-} from 'react-native';
+import { Animated, Easing, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, IconButton } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -28,7 +20,11 @@ interface CompletionStepProps {
   };
 }
 
-export const CompletionStep: React.FC<CompletionStepProps> = ({ onComplete, onBack, userSummary }) => {
+export const CompletionStep: React.FC<CompletionStepProps> = ({
+  onComplete,
+  onBack,
+  userSummary,
+}) => {
   const { theme } = useTheme();
 
   // Animation values
@@ -59,7 +55,7 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({ onComplete, onBa
           useNativeDriver: true,
         }),
       ]),
-      
+
       // Delayed celebration animation
       Animated.timing(celebrationAnim, {
         toValue: 1,
@@ -124,7 +120,7 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({ onComplete, onBa
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={false}
@@ -148,10 +144,7 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({ onComplete, onBa
             styles.content,
             {
               opacity: fadeAnim,
-              transform: [
-                { translateY: slideAnim },
-                { scale: scaleAnim },
-              ],
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
             },
           ]}
         >
@@ -332,7 +325,6 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.text,
       textAlign: 'center',
       marginBottom: theme.spacing.sm,
-      fontWeight: 'bold',
     },
     congratsSubtitle: {
       ...theme.typography.bodyLarge,
@@ -412,7 +404,6 @@ const createStyles = (theme: AppTheme) =>
     },
     buttonText: {
       ...theme.typography.bodyMedium,
-      fontWeight: 'bold',
     },
   });
 

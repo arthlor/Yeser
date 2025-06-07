@@ -71,7 +71,7 @@ const ThemedDivider: React.FC<ThemedDividerProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const dividerColor = color || theme.colors.border;
+  const dividerColor = color || theme.colors.outline;
 
   const styles = React.useMemo(
     () => createStyles(theme, variant, thickness, dividerColor),
@@ -139,8 +139,12 @@ const createStyles = (
       backgroundColor: color,
     },
     label: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.textSecondary,
+      fontFamily: 'Inter-Regular', // Sans-serif for divider labels - better readability
+      fontSize: theme.typography.bodySmall.fontSize,
+      fontWeight: theme.typography.bodySmall.fontWeight,
+      lineHeight: theme.typography.bodySmall.lineHeight,
+      letterSpacing: theme.typography.bodySmall.letterSpacing,
+      color: theme.colors.onSurfaceVariant, // Better semantic color
       marginHorizontal: theme.spacing.sm, // 8px modern spacing
     },
   });

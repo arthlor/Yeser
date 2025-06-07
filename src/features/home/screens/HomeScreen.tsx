@@ -3,7 +3,11 @@ import DailyInspiration from '../components/DailyInspiration';
 import HeroSection from '../components/HeroSection';
 import ThrowbackTeaser from '@/features/throwback/components/ThrowbackTeaser';
 import StreakDetailsScreen from '@/features/streak/screens/StreakDetailsScreen';
-import { useGratitudeEntry, useGratitudeTotalCount, useRandomGratitudeEntry } from '@/features/gratitude/hooks';
+import {
+  useGratitudeEntry,
+  useGratitudeTotalCount,
+  useRandomGratitudeEntry,
+} from '@/features/gratitude/hooks';
 import { useStreakData } from '@/features/streak/hooks';
 import { useUserProfile } from '@/shared/hooks';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -50,7 +54,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
   // Debug: Check total gratitude entries count
   const { data: totalEntriesCount } = useGratitudeTotalCount();
-  
+
   React.useEffect(() => {
     logger.debug('HomeScreen Debug - Total gratitude entries:', totalEntriesCount);
   }, [totalEntriesCount]);
@@ -65,9 +69,15 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
   const getGreeting = useCallback(() => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) {return 'Günaydın';}
-    if (hour >= 12 && hour < 17) {return 'Tünaydın';}
-    if (hour >= 17 && hour < 22) {return 'İyi akşamlar';}
+    if (hour >= 5 && hour < 12) {
+      return 'Günaydın';
+    }
+    if (hour >= 12 && hour < 17) {
+      return 'Tünaydın';
+    }
+    if (hour >= 17 && hour < 22) {
+      return 'İyi akşamlar';
+    }
     return 'İyi geceler';
   }, []);
 
@@ -107,7 +117,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
   // Today's Featured Statements Component
   const TodaysFeaturedStatements = useCallback(() => {
     const styles = createStyles(theme);
-    
+
     if (!todaysEntry?.statements || todaysEntry.statements.length === 0) {
       return null;
     }
@@ -117,8 +127,8 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
     return (
       <View style={styles.featuredContainer}>
-        <ThemedCard 
-          variant="elevated" 
+        <ThemedCard
+          variant="elevated"
           density="comfortable"
           elevation="card"
           style={styles.featuredCard}
@@ -126,7 +136,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
           <View style={styles.featuredHeader}>
             <View style={styles.featuredHeaderLeft}>
               <Icon name="star-circle" size={20} color={theme.colors.primary} />
-              <Text style={styles.featuredTitle}>Bugünkü Öne Çıkan Şükran</Text>
+              <Text style={styles.featuredTitle}>Bugünkü Öne Çıkan Minnet</Text>
             </View>
             <TouchableOpacity
               onPress={handleNewEntryPress}
@@ -146,17 +156,14 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
             animateEntrance={true}
             numberOfLines={3}
             onPress={handleNewEntryPress}
-            
             // ✨ NEW: Enhanced Interactive Features for Featured Display - Simplified
             enableSwipeActions={false} // Disabled per user preference
             enableLongPress={false} // Simplified interaction
             enableInlineEdit={false} // Disable for home screen
             enableQuickActions={false} // Disable for home screen
-            
             // ✨ NEW: Accessibility & Feedback
-            accessibilityLabel={`Öne çıkan şükran: ${featuredStatement}`}
+            accessibilityLabel={`Öne çıkan minnet: ${featuredStatement}`}
             hapticFeedback={false} // Simplified feedback
-            
             style={styles.featuredStatementCard}
           />
 
@@ -164,7 +171,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
             <View style={styles.featuredFooter}>
               <Icon name="heart-multiple" size={14} color={theme.colors.primary} />
               <Text style={styles.featuredFooterText}>
-                +{todaysEntry.statements.length - 1} şükran daha
+                +{todaysEntry.statements.length - 1} minnet daha
               </Text>
             </View>
           )}
@@ -173,72 +180,76 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     );
   }, [todaysEntry, theme, handleNewEntryPress]);
 
-  const createStyles = useCallback((theme: any) => StyleSheet.create({
-    featuredContainer: {
-      marginBottom: theme.spacing.md,
-    },
-    featuredCard: {
-      borderRadius: 0,
-      backgroundColor: theme.colors.surface,
-      borderTopWidth: 1,
-      borderBottomWidth: 1,
-      borderTopColor: theme.colors.outline + '10',
-      borderBottomColor: theme.colors.outline + '10',
-      ...getPrimaryShadow.card(theme),
-    },
-    featuredHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.outline + '15',
-      // Padding handled by density="comfortable"
-    },
-    featuredHeaderLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
-    },
-    featuredTitle: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onSurface,
-      marginLeft: theme.spacing.sm,
-      fontWeight: '700',
-    },
-    featuredAction: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.borderRadius.md,
-      backgroundColor: theme.colors.primaryContainer + '40',
-    },
-    featuredActionText: {
-      ...theme.typography.labelMedium,
-      color: theme.colors.primary,
-      marginLeft: theme.spacing.xs,
-      fontWeight: '600',
-    },
-    featuredStatementCard: {
-      marginTop: 0,
-      borderTopWidth: 0,
-      borderRadius: 0,
-    },
-    featuredFooter: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline + '15',
-    },
-    featuredFooterText: {
-      ...theme.typography.labelMedium,
-      color: theme.colors.primary,
-      marginLeft: theme.spacing.xs,
-      fontWeight: '600',
-    },
-  }), [theme]);
+  const createStyles = useCallback(
+    (theme: any) =>
+      StyleSheet.create({
+        featuredContainer: {
+          marginBottom: theme.spacing.md,
+        },
+        featuredCard: {
+          borderRadius: 0,
+          backgroundColor: theme.colors.surface,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderTopColor: theme.colors.outline + '10',
+          borderBottomColor: theme.colors.outline + '10',
+          ...getPrimaryShadow.card(theme),
+        },
+        featuredHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: theme.colors.outline + '15',
+          // Padding handled by density="comfortable"
+        },
+        featuredHeaderLeft: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          flex: 1,
+        },
+        featuredTitle: {
+          ...theme.typography.titleMedium,
+          color: theme.colors.onSurface,
+          marginLeft: theme.spacing.sm,
+          fontWeight: '700',
+        },
+        featuredAction: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: theme.spacing.sm,
+          paddingVertical: theme.spacing.xs,
+          borderRadius: theme.borderRadius.md,
+          backgroundColor: theme.colors.primaryContainer + '40',
+        },
+        featuredActionText: {
+          ...theme.typography.labelMedium,
+          color: theme.colors.primary,
+          marginLeft: theme.spacing.xs,
+          fontWeight: '600',
+        },
+        featuredStatementCard: {
+          marginTop: 0,
+          borderTopWidth: 0,
+          borderRadius: 0,
+        },
+        featuredFooter: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: theme.spacing.md,
+          paddingVertical: theme.spacing.sm,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: theme.colors.outline + '15',
+        },
+        featuredFooterText: {
+          ...theme.typography.labelMedium,
+          color: theme.colors.primary,
+          marginLeft: theme.spacing.xs,
+          fontWeight: '600',
+        },
+      }),
+    [theme]
+  );
 
   return (
     <>
@@ -270,10 +281,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
         />
 
         {/* 2. Daily Inspiration - Replaces Quick Add */}
-        <DailyInspiration
-          currentCount={todaysGratitudeCount}
-          dailyGoal={dailyGoal}
-        />
+        <DailyInspiration currentCount={todaysGratitudeCount} dailyGoal={dailyGoal} />
 
         {/* 2.5. Today's Featured Statements (shown when there are statements) */}
         <TodaysFeaturedStatements />
@@ -293,10 +301,14 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
         {/* 4. Geçmişten Anılar (Throwback Memories) */}
         <ThrowbackTeaser
-          throwbackEntry={throwbackEntry ? {
-            statements: throwbackEntry.statements || [],
-            entry_date: throwbackEntry.entry_date || new Date().toISOString().split('T')[0],
-          } : null}
+          throwbackEntry={
+            throwbackEntry
+              ? {
+                  statements: throwbackEntry.statements || [],
+                  entry_date: throwbackEntry.entry_date || new Date().toISOString().split('T')[0],
+                }
+              : null
+          }
           isLoading={throwbackLoading}
           error={throwbackError ? throwbackError.message : null}
           onRefresh={handleThrowbackRefresh}

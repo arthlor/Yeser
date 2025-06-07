@@ -131,7 +131,6 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.text,
       textAlign: 'center',
       marginBottom: theme.spacing.lg,
-      fontWeight: 'bold',
       lineHeight: 36,
     },
     subtitle: {
@@ -190,7 +189,6 @@ const createStyles = (theme: AppTheme) =>
     },
     buttonText: {
       ...theme.typography.bodyMedium,
-      fontWeight: 'bold',
     },
   });
 

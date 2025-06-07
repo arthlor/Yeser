@@ -119,12 +119,10 @@ export const queryKeys = {
   all: ['yeser'] as const,
 
   // User profile queries
-  profile: (userId?: string) => 
-    [...queryKeys.all, 'profile', userId] as const,
+  profile: (userId?: string) => [...queryKeys.all, 'profile', userId] as const,
 
   // Gratitude entry queries
-  gratitudeEntries: (userId?: string) => 
-    [...queryKeys.all, 'gratitudeEntries', userId] as const,
+  gratitudeEntries: (userId?: string) => [...queryKeys.all, 'gratitudeEntries', userId] as const,
   gratitudeEntry: (userId: string | undefined, entryDate: string) =>
     [...queryKeys.gratitudeEntries(userId), { entryDate }] as const,
   gratitudeEntriesByMonth: (userId: string | undefined, year: number, month: number) =>
@@ -133,17 +131,15 @@ export const queryKeys = {
     [...queryKeys.gratitudeEntries(userId), 'totalCount'] as const,
 
   // Streak queries
-  streaks: (userId?: string) => 
-    [...queryKeys.all, 'streaks', userId] as const,
+  streaks: (userId?: string) => [...queryKeys.all, 'streaks', userId] as const,
 
   // Random/throwback queries
   randomGratitudeEntry: (userId?: string) =>
     [...queryKeys.all, 'randomGratitudeEntry', userId] as const,
 
   // Daily prompt queries
-  currentPrompt: (userId?: string) => 
-    [...queryKeys.all, 'currentPrompt', userId] as const,
-  multiplePrompts: (userId?: string, limit?: number) => 
+  currentPrompt: (userId?: string) => [...queryKeys.all, 'currentPrompt', userId] as const,
+  multiplePrompts: (userId?: string, limit?: number) =>
     [...queryKeys.all, 'multiplePrompts', userId, limit] as const,
 } as const;
 
@@ -155,14 +151,15 @@ export const queryKeyHelpers = {
     queryKeys.gratitudeEntries(userId),
     queryKeys.streaks(userId),
   ],
-  
+
   // Invalidate entry-related data
-  invalidateEntryData: (userId: string, entryDate?: string) => [
-    queryKeys.gratitudeEntries(userId),
-    entryDate ? queryKeys.gratitudeEntry(userId, entryDate) : null,
-    queryKeys.streaks(userId),
-    queryKeys.gratitudeTotalCount(userId),
-  ].filter(Boolean),
+  invalidateEntryData: (userId: string, entryDate?: string) =>
+    [
+      queryKeys.gratitudeEntries(userId),
+      entryDate ? queryKeys.gratitudeEntry(userId, entryDate) : null,
+      queryKeys.streaks(userId),
+      queryKeys.gratitudeTotalCount(userId),
+    ].filter(Boolean),
 };
 ```
 
@@ -183,8 +180,11 @@ import type { Profile, RawProfileData } from '@/types/profile';
  */
 export const getProfile = async (): Promise<Profile | null> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
       logger.error('User not authenticated:', authError?.message);
       return null;
@@ -192,7 +192,8 @@ export const getProfile = async (): Promise<Profile | null> => {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select(`
+      .select(
+        `
         id,
         email,
         full_name,
@@ -208,7 +209,8 @@ export const getProfile = async (): Promise<Profile | null> => {
         use_varied_prompts,
         created_at,
         updated_at
-      `)
+      `
+      )
       .eq('id', user.id)
       .single();
 
@@ -237,9 +239,12 @@ export const updateProfile = async (updates: Partial<Profile>): Promise<Profile>
   try {
     // Validate updates
     const validatedUpdates = updateProfileSchema.parse(updates);
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
@@ -276,7 +281,8 @@ export const updateProfile = async (updates: Partial<Profile>): Promise<Profile>
       .from('profiles')
       .update(payloadForSupabase)
       .eq('id', user.id)
-      .select(`
+      .select(
+        `
         id,
         email,
         full_name,
@@ -292,7 +298,8 @@ export const updateProfile = async (updates: Partial<Profile>): Promise<Profile>
         use_varied_prompts,
         created_at,
         updated_at
-      `)
+      `
+      )
       .single();
 
     if (error) {
@@ -322,10 +329,10 @@ const mapAndValidateRawProfile = (validatedRawData: RawProfileData): Profile => 
     // Map snake_case database field to camelCase app field
     useVariedPrompts: validatedRawData.use_varied_prompts,
   };
-  
+
   // Remove the snake_case field to avoid conflicts
   delete (dataForZod as any).use_varied_prompts;
-  
+
   return profileSchema.parse(dataForZod);
 };
 ```
@@ -341,22 +348,22 @@ interface Profile {
   avatarUrl: string | null;
   username: string | null;
   onboarded: boolean;
-  
+
   // Gratitude preferences
   dailyGratitudeGoal: number;
-  
+
   // Daily reminder settings
   reminderEnabled: boolean;
   reminderTime: string; // HH:MM:SS format
-  
+
   // Enhanced throwback reminder system
   throwbackReminderEnabled: boolean;
   throwbackReminderFrequency: 'disabled' | 'daily' | 'weekly' | 'monthly';
   throwbackReminderTime: string; // HH:MM:SS format
-  
+
   // Varied prompts system
   useVariedPrompts: boolean; // Database prompts vs standard message
-  
+
   // Timestamps
   createdAt: string;
   updatedAt: string;
@@ -366,44 +373,45 @@ interface Profile {
 const profileExamples = {
   // Basic profile with default settings
   basic: {
-    id: "550e8400-e29b-41d4-a716-446655440000",
-    email: "user@example.com",
-    fullName: "John Doe",
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    email: 'user@example.com',
+    fullName: 'John Doe',
     avatarUrl: null,
-    username: "johndoe",
+    username: 'johndoe',
     onboarded: true,
     dailyGratitudeGoal: 3,
     reminderEnabled: true,
-    reminderTime: "20:00:00",
+    reminderTime: '20:00:00',
     throwbackReminderEnabled: true,
-    throwbackReminderFrequency: "weekly",
-    throwbackReminderTime: "10:00:00",
+    throwbackReminderFrequency: 'weekly',
+    throwbackReminderTime: '10:00:00',
     useVariedPrompts: false,
-    createdAt: "2024-01-15T10:30:00.000Z",
-    updatedAt: "2024-01-15T10:30:00.000Z"
+    createdAt: '2024-01-15T10:30:00.000Z',
+    updatedAt: '2024-01-15T10:30:00.000Z',
   },
-  
+
   // Advanced user with comprehensive settings
   advanced: {
-    id: "550e8400-e29b-41d4-a716-446655440001",
-    email: "advanced@example.com",
-    fullName: "Jane Smith",
-    avatarUrl: "https://example.com/avatar.jpg",
-    username: "janesmith",
+    id: '550e8400-e29b-41d4-a716-446655440001',
+    email: 'advanced@example.com',
+    fullName: 'Jane Smith',
+    avatarUrl: 'https://example.com/avatar.jpg',
+    username: 'janesmith',
     onboarded: true,
     dailyGratitudeGoal: 5,
     reminderEnabled: true,
-    reminderTime: "08:30:00",
+    reminderTime: '08:30:00',
     throwbackReminderEnabled: true,
-    throwbackReminderFrequency: "daily",
-    throwbackReminderTime: "19:00:00",
+    throwbackReminderFrequency: 'daily',
+    throwbackReminderTime: '19:00:00',
     useVariedPrompts: true, // Using database prompts
-    createdAt: "2024-01-10T09:15:00.000Z",
-    updatedAt: "2024-01-20T14:22:00.000Z"
-  }
+    createdAt: '2024-01-10T09:15:00.000Z',
+    updatedAt: '2024-01-20T14:22:00.000Z',
+  },
 };
 ```
-```
+
+````
 
 ## 📝 Gratitude API
 
@@ -423,7 +431,7 @@ import type { GratitudeEntry } from '@/types/gratitude';
 export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
@@ -452,7 +460,7 @@ export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
 export const getGratitudeDailyEntryByDate = async (entryDate: string): Promise<GratitudeEntry | null> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
@@ -486,7 +494,7 @@ export const getGratitudeDailyEntryByDate = async (entryDate: string): Promise<G
 export const addStatement = async (entryDate: string, statement: string): Promise<GratitudeEntry> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
@@ -523,7 +531,7 @@ export const editStatement = async (
 ): Promise<GratitudeEntry> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
@@ -560,7 +568,7 @@ export const deleteStatement = async (
 ): Promise<GratitudeEntry | null> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
@@ -594,7 +602,7 @@ export const deleteStatement = async (
 export const getEntryDatesForMonth = async (year: number, month: number): Promise<string[]> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
@@ -629,7 +637,7 @@ export const getEntryDatesForMonth = async (year: number, month: number): Promis
 export const getTotalGratitudeEntriesCount = async (): Promise<number> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
@@ -657,7 +665,7 @@ export const getTotalGratitudeEntriesCount = async (): Promise<number> => {
 export const getRandomGratitudeEntry = async (): Promise<GratitudeEntry | null> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
@@ -681,7 +689,7 @@ export const getRandomGratitudeEntry = async (): Promise<GratitudeEntry | null> 
     throw error;
   }
 };
-```
+````
 
 ## 💡 Prompts API (Varied Prompts System)
 
@@ -722,7 +730,9 @@ export const getRandomActivePrompt = async (): Promise<DailyPrompt | null> => {
  * Fetches multiple random active daily prompts from the backend.
  * Used for enhanced prompt experience with swipe navigation.
  */
-export const getMultipleRandomActivePrompts = async (limit: number = 10): Promise<DailyPrompt[]> => {
+export const getMultipleRandomActivePrompts = async (
+  limit: number = 10
+): Promise<DailyPrompt[]> => {
   try {
     // Fetch all active prompts first, then randomize in JavaScript
     // This avoids PostgreSQL random() function syntax issues
@@ -750,9 +760,9 @@ export const getMultipleRandomActivePrompts = async (limit: number = 10): Promis
 
     // Return the requested number of prompts
     const selectedPrompts = shuffled.slice(0, Math.min(limit, shuffled.length));
-    
+
     // Validate each prompt
-    return selectedPrompts.map(prompt => dailyPromptSchema.parse(prompt));
+    return selectedPrompts.map((prompt) => dailyPromptSchema.parse(prompt));
   } catch (error) {
     logger.error('Unexpected error in getMultipleRandomActivePrompts:', error);
     throw error;
@@ -795,29 +805,29 @@ interface DailyPrompt {
 const promptExamples = {
   // Basic daily prompt
   beginner: {
-    id: "550e8400-e29b-41d4-a716-446655440002",
-    promptTextTr: "Bugün seni mutlu eden küçük bir şey neydi?",
-    promptTextEn: "What small thing made you happy today?",
-    category: "daily_life",
-    difficultyLevel: "beginner",
+    id: '550e8400-e29b-41d4-a716-446655440002',
+    promptTextTr: 'Bugün seni mutlu eden küçük bir şey neydi?',
+    promptTextEn: 'What small thing made you happy today?',
+    category: 'daily_life',
+    difficultyLevel: 'beginner',
     isActive: true,
     usageCount: 42,
-    createdAt: "2024-01-10T09:00:00.000Z",
-    updatedAt: "2024-01-20T14:30:00.000Z"
+    createdAt: '2024-01-10T09:00:00.000Z',
+    updatedAt: '2024-01-20T14:30:00.000Z',
   },
-  
+
   // Advanced reflection prompt
   advanced: {
-    id: "550e8400-e29b-41d4-a716-446655440003",
-    promptTextTr: "Hangi kaybın sana en çok öğretti?",
-    promptTextEn: "What loss taught you the most?",
-    category: "wisdom",
-    difficultyLevel: "advanced",
+    id: '550e8400-e29b-41d4-a716-446655440003',
+    promptTextTr: 'Hangi kaybın sana en çok öğretti?',
+    promptTextEn: 'What loss taught you the most?',
+    category: 'wisdom',
+    difficultyLevel: 'advanced',
     isActive: true,
     usageCount: 8,
-    createdAt: "2024-01-10T09:00:00.000Z",
-    updatedAt: "2024-01-15T10:15:00.000Z"
-  }
+    createdAt: '2024-01-10T09:00:00.000Z',
+    updatedAt: '2024-01-15T10:15:00.000Z',
+  },
 };
 
 // Usage in components with user preference integration
@@ -828,20 +838,21 @@ const getPromptBasedOnUserSettings = async (profile: Profile): Promise<DailyProm
   } else {
     // User uses standard prompt - return default message
     return {
-      id: "default",
-      promptTextTr: "Bugün neye şükrediyorsun?",
-      promptTextEn: "What are you grateful for today?",
-      category: "standard",
-      difficultyLevel: "beginner",
+      id: 'default',
+      promptTextTr: 'Bugün neye şükrediyorsun?',
+      promptTextEn: 'What are you grateful for today?',
+      category: 'standard',
+      difficultyLevel: 'beginner',
       isActive: true,
       usageCount: 0,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     } as DailyPrompt;
   }
 };
 ```
-```
+
+````
 
 ## 📊 Streak API
 
@@ -858,7 +869,7 @@ import type { StreakData } from '@/types/streak';
 export const getStreakData = async (): Promise<StreakData> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
@@ -889,20 +900,22 @@ export const getStreakData = async (): Promise<StreakData> => {
     throw error;
   }
 };
-```
+````
 
 ## 💾 User Data Export API
 
 **File**: `src/api/userDataApi.ts`
 
 ```typescript
+import * as FileSystem from 'expo-file-system';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import { supabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 
 /**
- * Prepares user data for export
+ * Prepares user data for PDF export
  */
 export const prepareUserExportFile = async (): Promise<{
   success: boolean;
@@ -911,102 +924,90 @@ export const prepareUserExportFile = async (): Promise<{
   message?: string;
 }> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      throw new Error('User not authenticated');
+    // Fetch data from Supabase Edge Function
+    const { data, error: invokeError } = await supabase.functions.invoke('export-user-data', {});
+
+    if (invokeError || !data) {
+      throw new Error('Failed to fetch user data');
     }
 
-    // Fetch all user data
-    const [profileResult, entriesResult] = await Promise.allSettled([
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('gratitude_entries').select('*').eq('user_id', user.id).order('entry_date', { ascending: true })
-    ]);
+    // Create HTML template for PDF
+    const htmlContent = createPDFTemplate(data);
 
-    // Prepare export data
-    const exportData = {
-      export_date: new Date().toISOString(),
-      user_id: user.id,
-      profile: profileResult.status === 'fulfilled' ? profileResult.value.data : null,
-      gratitude_entries: entriesResult.status === 'fulfilled' ? entriesResult.value.data : [],
-      metadata: {
-        app_version: '1.0.0',
-        export_format: 'json',
-        total_entries: entriesResult.status === 'fulfilled' ? entriesResult.value.data?.length || 0 : 0,
-      }
-    };
+    // Generate PDF from HTML
+    const { uri: pdfUri } = await Print.printToFileAsync({
+      html: htmlContent,
+      base64: false,
+      margins: { left: 20, top: 20, right: 20, bottom: 20 },
+    });
 
-    // Create file
-    const filename = `yeser_export_${new Date().toISOString().split('T')[0]}.json`;
-    const filePath = `${FileSystem.documentDirectory}${filename}`;
-    
-    await FileSystem.writeAsStringAsync(
-      filePath,
-      JSON.stringify(exportData, null, 2),
-      { encoding: FileSystem.EncodingType.UTF8 }
-    );
+    const filename = `yeser_export_${new Date().toISOString().split('T')[0]}.pdf`;
+    const directory = FileSystem.cacheDirectory + 'exports/';
+    await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
+    const finalFileUri = directory + filename;
+
+    // Move PDF to exports directory
+    await FileSystem.moveAsync({ from: pdfUri, to: finalFileUri });
 
     return {
       success: true,
-      filePath,
+      filePath: finalFileUri,
       filename,
-      message: 'Export file created successfully'
+      message: 'PDF prepared successfully.',
     };
   } catch (error) {
-    logger.error('Error preparing export file:', error);
+    logger.error('Error preparing PDF export:', error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Unknown error occurred'
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
     };
   }
 };
 
 /**
- * Shares the exported file
+ * Shares the exported PDF file
  */
-export const shareExportedFile = async (filePath: string, filename: string): Promise<{
+export const shareExportedFile = async (
+  filePath: string,
+  filename: string
+): Promise<{
   success: boolean;
   message?: string;
 }> => {
   try {
     const isAvailable = await Sharing.isAvailableAsync();
-    
+
     if (!isAvailable) {
       throw new Error('Sharing is not available on this device');
     }
 
     await Sharing.shareAsync(filePath, {
-      mimeType: 'application/json',
-      dialogTitle: 'Export Yeser Data',
-      UTI: 'public.json',
+      mimeType: 'application/pdf',
+      dialogTitle: `Paylaş: ${filename}`,
+      UTI: Platform.OS === 'ios' ? 'com.adobe.pdf' : undefined,
     });
 
     return {
       success: true,
-      message: 'File shared successfully'
+      message: 'PDF shared successfully',
     };
   } catch (error) {
-    logger.error('Error sharing export file:', error);
+    logger.error('Error sharing PDF file:', error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to share file'
+      message: error instanceof Error ? error.message : 'Failed to share file',
     };
   }
 };
 
 /**
- * Cleans up temporary export file
+ * Creates beautifully formatted HTML template for PDF export
+ * Includes user profile, statistics, and all gratitude entries organized by month
  */
-export const cleanupTemporaryFile = async (filePath: string): Promise<void> => {
-  try {
-    const fileInfo = await FileSystem.getInfoAsync(filePath);
-    if (fileInfo.exists) {
-      await FileSystem.deleteAsync(filePath);
-      logger.debug('Temporary export file cleaned up');
-    }
-  } catch (error) {
-    logger.warn('Failed to cleanup temporary file:', error);
-  }
+const createPDFTemplate = (data: any): string => {
+  // Template includes responsive design, Turkish localization,
+  // grouped entries by month, statistics, and professional styling
+  // (Full implementation in src/api/userDataApi.ts)
 };
 ```
 
@@ -1025,19 +1026,19 @@ interface APIError {
 // Error handling utility
 export const handleAPIError = (error: any, operation: string): never => {
   logger.error(`API Error in ${operation}:`, error);
-  
+
   if (error?.code === 'PGRST116') {
     throw new Error('Resource not found');
   }
-  
+
   if (error?.status === 401) {
     throw new Error('Authentication required');
   }
-  
+
   if (error?.status === 403) {
     throw new Error('Access denied');
   }
-  
+
   throw new Error(error?.message || `Failed to ${operation}`);
 };
 
@@ -1061,7 +1062,7 @@ const retryConfig = {
     if (error?.status >= 400 && error?.status < 500) {
       return false;
     }
-    
+
     // Retry up to 3 times for server errors
     return failureCount < 3;
   },
@@ -1100,7 +1101,7 @@ const appDataSchema = z.object({
 // Transform function
 const transformData = (rawData: any) => {
   const validated = rawDataSchema.parse(rawData);
-  
+
   return appDataSchema.parse({
     id: validated.user_id + '_' + validated.entry_date,
     userId: validated.user_id,
@@ -1143,16 +1144,15 @@ const addStatementMutation = useMutation({
   onMutate: async ({ entryDate, statement }) => {
     // Cancel outgoing refetches
     await queryClient.cancelQueries({ queryKey: queryKeys.gratitudeEntry(user?.id, entryDate) });
-    
+
     // Snapshot previous value
     const previousEntry = queryClient.getQueryData(queryKeys.gratitudeEntry(user?.id, entryDate));
-    
+
     // Optimistically update
-    queryClient.setQueryData(
-      queryKeys.gratitudeEntry(user?.id, entryDate),
-      (old) => old ? { ...old, statements: [...old.statements, statement] } : null
+    queryClient.setQueryData(queryKeys.gratitudeEntry(user?.id, entryDate), (old) =>
+      old ? { ...old, statements: [...old.statements, statement] } : null
     );
-    
+
     return { previousEntry };
   },
   onError: (err, variables, context) => {
@@ -1166,7 +1166,9 @@ const addStatementMutation = useMutation({
   },
   onSettled: (data, error, variables) => {
     // Always refetch after error or success
-    queryClient.invalidateQueries({ queryKey: queryKeys.gratitudeEntry(user?.id, variables.entryDate) });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.gratitudeEntry(user?.id, variables.entryDate),
+    });
   },
 });
 ```
@@ -1179,13 +1181,13 @@ const addStatementMutation = useMutation({
 // Future: Real-time updates with Supabase subscriptions
 export const useGratitudeSubscription = (entryDate: string) => {
   const queryClient = useQueryClient();
-  
+
   useEffect(() => {
     const subscription = supabase
       .from('gratitude_entries')
       .on('*', (payload) => {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.gratitudeEntry(payload.new.user_id, entryDate) 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.gratitudeEntry(payload.new.user_id, entryDate),
         });
       })
       .subscribe();
@@ -1203,12 +1205,11 @@ export const useInfiniteGratitudeEntries = () => {
   return useInfiniteQuery({
     queryKey: queryKeys.gratitudeEntries(),
     queryFn: ({ pageParam = 0 }) => getGratitudeEntries({ offset: pageParam }),
-    getNextPageParam: (lastPage, pages) => 
-      lastPage.length === 20 ? pages.length * 20 : undefined,
+    getNextPageParam: (lastPage, pages) => (lastPage.length === 20 ? pages.length * 20 : undefined),
   });
 };
 ```
 
 ---
 
-This API architecture provides a **robust, type-safe, and performant** foundation for the Yeser gratitude app, with intelligent caching, optimistic updates, and comprehensive error handling through TanStack Query v5.80.2 integration. 
+This API architecture provides a **robust, type-safe, and performant** foundation for the Yeser gratitude app, with intelligent caching, optimistic updates, and comprehensive error handling through TanStack Query v5.80.2 integration.

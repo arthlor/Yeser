@@ -18,7 +18,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '../../../providers/ThemeProvider';
 import { AppTheme } from '../../../themes/types';
-import { getPrimaryShadow } from '../../../themes/utils';
+import { unifiedShadows } from '../../../themes/utils';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'full';
 
@@ -226,7 +226,11 @@ const ThemedModal: React.FC<ThemedModalProps> = ({
   );
 };
 
-const createStyles = (theme: AppTheme, size: ModalSize, density: 'compact' | 'standard' | 'comfortable') => {
+const createStyles = (
+  theme: AppTheme,
+  size: ModalSize,
+  density: 'compact' | 'standard' | 'comfortable'
+) => {
   // Calculate modal width based on size
   let modalWidth: DimensionValue = '80%';
   let maxHeight: DimensionValue = '70%';
@@ -295,8 +299,8 @@ const createStyles = (theme: AppTheme, size: ModalSize, density: 'compact' | 'st
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
       overflow: 'hidden',
-      // 🌟 Beautiful primary shadow for modal overlay
-      ...getPrimaryShadow.overlay(theme),
+      // 🌟 Beautiful unified shadow for modal overlay
+      ...unifiedShadows(theme).overlay,
     },
     header: {
       flexDirection: 'row',
@@ -312,7 +316,11 @@ const createStyles = (theme: AppTheme, size: ModalSize, density: 'compact' | 'st
     },
     title: {
       flex: 1,
-      ...theme.typography.titleLarge,
+      fontFamily: 'Lora-Medium', // Serif for modal titles - consistent journal hierarchy
+      fontSize: theme.typography.titleLarge.fontSize,
+      fontWeight: '600', // Adjusted for serif readability
+      lineHeight: theme.typography.titleLarge.lineHeight,
+      letterSpacing: theme.typography.titleLarge.letterSpacing,
       color: theme.colors.onSurface,
     },
     closeButton: {

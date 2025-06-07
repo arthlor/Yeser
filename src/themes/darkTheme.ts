@@ -7,158 +7,253 @@ import {
   ThemeTypography,
 } from './types';
 
-// Enhanced Dark Theme with Better Button Colors
+// Verdant Serenity Dark Theme - Natural & Sophisticated
 const enhancedDarkColors: ThemeColors = {
-  // Brand colors - More sophisticated for dark mode buttons
-  primary: '#2DD4BF', // More muted teal-green, less overwhelming
-  onPrimary: '#0F172A', // Dark text on light buttons
-  primaryVariant: '#14B8A6',
-  primaryContainer: '#164E63', // Darker container for surface-based buttons
-  onPrimaryContainer: '#67E8F9', // Light text on dark containers
+  // Brand colors - Brighter Teal-Green for dark mode visibility (The "Growth")
+  primary: '#2DD4BF', // Brighter, more vibrant teal for contrast in dark mode
+  onPrimary: '#0F172A', // Dark text on bright primary
+  primaryVariant: '#14B8A6', // Slightly deeper teal variant
+  primaryContainer: '#164E63', // Darker teal container for surface-based elements
+  onPrimaryContainer: '#67E8F9', // Light teal text on dark containers
 
-  secondary: '#A78BFA', // Softer purple secondary
-  onSecondary: '#1E1B4B',
-  secondaryContainer: '#312E81',
-  onSecondaryContainer: '#C4B5FD',
+  // Warm, lighter Amber for dark mode (The "Gratitude")
+  secondary: '#FBBF24', // Lighter, warmer amber for dark mode visibility
+  onSecondary: '#92400E', // Dark amber text on bright secondary
+  secondaryContainer: '#92400E', // Dark amber container
+  onSecondaryContainer: '#FEF3C7', // Light cream on dark amber container
 
-  tertiary: '#60A5FA', // Softer blue tertiary
-  onTertiary: '#1E3A8A',
-  tertiaryContainer: '#1E40AF',
-  onTertiaryContainer: '#DBEAFE',
+  // Harmonious blue tertiary for dark mode
+  tertiary: '#60A5FA', // Lighter blue for dark mode visibility
+  onTertiary: '#1E3A8A', // Dark blue text on bright tertiary
+  tertiaryContainer: '#1E40AF', // Dark blue container
+  onTertiaryContainer: '#DBEAFE', // Light blue on dark container
 
-  // Accent colors
-  accent: '#FBBF24', // Warm amber accent
-  onAccent: '#92400E',
-  accentContainer: '#92400E',
-  onAccentContainer: '#FEF3C7',
+  // Accent colors - Warm amber variations
+  accent: '#FBBF24', // Bright amber accent for visibility
+  onAccent: '#92400E', // Dark text on bright accent
+  accentContainer: '#92400E', // Dark amber container
+  onAccentContainer: '#FEF3C7', // Light text on dark container
 
-  // Surfaces - Enhanced for better button treatment
-  background: '#0F172A', // Deep slate background
-  onBackground: '#F1F5F9', // Light text
-  surface: '#1E293B', // Elevated surface for buttons
-  onSurface: '#F1F5F9',
-  surfaceVariant: '#334155', // More distinct variant for button containers
-  onSurfaceVariant: '#CBD5E1', // Better contrast
-  surfaceTint: '#2DD4BF',
-  inverseSurface: '#F1F5F9',
-  inverseOnSurface: '#0F172A',
+  // Surfaces - Deep, sophisticated Desaturated Slate-Blue (The "Calm")
+  background: '#0F172A', // Deep, dark desaturated slate-blue (not pure black)
+  onBackground: '#F1F5F9', // Light text for comfortable reading
+  surface: '#1E293B', // Elevated desaturated blue surface for cards
+  onSurface: '#F1F5F9', // Light text on elevated surfaces
+  surfaceVariant: '#334155', // More distinct desaturated blue variant
+  onSurfaceVariant: '#CBD5E1', // Light text with good contrast
+  surfaceTint: '#2DD4BF', // Bright teal tint
+  inverseSurface: '#F1F5F9', // Light inverse surface
+  inverseOnSurface: '#0F172A', // Dark text on light inverse
 
-  // Enhanced surface levels for button treatment
-  surfaceElevated: '#374151', // Elevated surface for primary buttons
-  surfaceContainer: '#475569', // Container surface for secondary actions
-  surfaceBright: '#475569', // Bright surface variant
-  surfaceDim: '#1E293B', // Dimmed surface
+  // Enhanced surface levels - Sophisticated blue hierarchy
+  surfaceElevated: '#374151', // Elevated desaturated blue for primary elements
+  surfaceContainer: '#475569', // Container desaturated blue for secondary actions
+  surfaceBright: '#475569', // Bright surface variant for emphasis
+  surfaceDim: '#1E293B', // Dimmed surface for subtle backgrounds
 
-  // Content colors - More visible in dark mode
-  outline: '#64748B', // More visible outline for outline buttons
-  outlineVariant: '#475569', // Secondary outline
-  scrim: 'rgba(0, 0, 0, 0.8)',
+  // Content colors - Sophisticated slate-blue tones
+  outline: '#64748B', // More visible desaturated blue outline
+  outlineVariant: '#475569', // Secondary desaturated blue outline
+  scrim: 'rgba(0, 0, 0, 0.8)', // Deep scrim for overlays
 
-  // Enhanced border system for dark mode
-  borderLight: '#374151', // Light borders
-  borderMedium: '#475569', // Medium borders  
-  borderStrong: '#64748B', // Strong borders
+  // Enhanced border system for sophisticated dark mode
+  borderLight: '#374151', // Light desaturated blue borders
+  borderMedium: '#475569', // Medium desaturated blue borders
+  borderStrong: '#64748B', // Strong but elegant borders
 
-  // State colors with containers - More muted for dark mode
-  success: '#10B981', // Muted green success
-  onSuccess: '#FFFFFF',
-  successContainer: '#065F46',
-  onSuccessContainer: '#A7F3D0',
+  // State colors - Natural harmonies optimized for dark mode
+  success: '#10B981', // Brighter emerald for dark mode visibility
+  onSuccess: '#FFFFFF', // White text on success
+  successContainer: '#065F46', // Dark green container
+  onSuccessContainer: '#A7F3D0', // Light green on dark container
 
-  warning: '#F59E0B', // Amber warning
-  onWarning: '#FFFFFF',
-  warningContainer: '#92400E',
-  onWarningContainer: '#FEF3C7',
+  warning: '#FBBF24', // Same as secondary - bright amber for consistency
+  onWarning: '#92400E', // Dark text on bright warning
+  warningContainer: '#92400E', // Dark amber container
+  onWarningContainer: '#FEF3C7', // Light cream on dark container
 
-  error: '#F87171', // Softer red for dark mode
-  onError: '#FFFFFF',
-  errorContainer: '#7F1D1D',
-  onErrorContainer: '#FEE2E2',
+  error: '#F87171', // Softer red optimized for dark mode
+  onError: '#7F1D1D', // Dark red text
+  errorContainer: '#7F1D1D', // Dark red container
+  onErrorContainer: '#FEE2E2', // Light pink on dark container
 
-  info: '#60A5FA', // Softer blue info
-  onInfo: '#FFFFFF',
-  infoContainer: '#1E40AF',
-  onInfoContainer: '#DBEAFE',
+  info: '#60A5FA', // Bright blue that harmonizes with tertiary
+  onInfo: '#1E3A8A', // Dark blue text
+  infoContainer: '#1E40AF', // Dark blue container
+  onInfoContainer: '#DBEAFE', // Light blue on dark container
 
-  // Interaction states
-  disabled: '#64748B',
-  onDisabled: '#94A3B8',
+  // Interaction states - Using bright teal for visibility
+  disabled: '#64748B', // Muted desaturated blue for disabled
+  onDisabled: '#94A3B8', // Lighter text on disabled
 
-  // Advanced interaction states - Better for dark mode buttons
-  hover: 'rgba(45, 212, 191, 0.08)', // Subtle teal hover
-  pressed: 'rgba(45, 212, 191, 0.12)',
-  focus: 'rgba(45, 212, 191, 0.16)',
-  selected: 'rgba(45, 212, 191, 0.12)',
-  
-  // Enhanced interaction states for better button feedback
-  hoverStrong: 'rgba(45, 212, 191, 0.15)', // Stronger hover for primary buttons
-  focusRing: '#2DD4BF', // Focus ring color
-  activeState: 'rgba(45, 212, 191, 0.20)', // Active state for pressed buttons
+  // Advanced interaction states - Optimized for dark mode
+  hover: 'rgba(45, 212, 191, 0.08)', // Subtle bright teal hover
+  pressed: 'rgba(45, 212, 191, 0.12)', // More pronounced press
+  focus: 'rgba(45, 212, 191, 0.16)', // Clear focus indication
+  selected: 'rgba(45, 212, 191, 0.12)', // Distinct selection state
 
-  // Gradient colors - More subtle for dark mode
-  gradientStart: '#2DD4BF',
-  gradientEnd: '#14B8A6',
+  // Enhanced interaction states for sophisticated feedback
+  hoverStrong: 'rgba(45, 212, 191, 0.15)', // Stronger hover for primary elements
+  focusRing: '#2DD4BF', // Bright teal focus ring
+  activeState: 'rgba(45, 212, 191, 0.20)', // Clear active state
 
-  // Legacy support - updated for better dark theme
-  text: '#F1F5F9',
-  textSecondary: '#CBD5E1',
-  border: '#64748B', // More visible border
-  inputBackground: '#374151', // Better input background
-  inputText: '#F1F5F9',
-  danger: '#F87171',
-  onDanger: '#FFFFFF',
-  shadow: 'rgba(0, 0, 0, 0.5)',
-  surfaceDisabled: '#374151', // Better disabled surface
+  // Gradient colors - Natural teal harmony for dark mode
+  gradientStart: '#2DD4BF', // Bright teal start
+  gradientEnd: '#14B8A6', // Harmonious deeper teal end
+
+  // Legacy support - updated for sophisticated dark theme
+  text: '#F1F5F9', // Light, comfortable text for reading
+  textSecondary: '#CBD5E1', // Secondary text with good contrast
+  border: '#64748B', // Visible but not harsh borders
+  inputBackground: '#374151', // Sophisticated desaturated blue input background
+  inputText: '#F1F5F9', // Light text in inputs
+  danger: '#F87171', // Consistent with error
+  onDanger: '#7F1D1D', // Dark text on danger
+  shadow: 'rgba(0, 0, 0, 0.5)', // Deep shadow for elevation
+  surfaceDisabled: '#374151', // Sophisticated disabled surface
 };
 
 const enhancedTypography: ThemeTypography = {
-  // Font families (assuming same as light theme, adjust if specific dark mode fonts are used)
-  fontFamilyRegular: 'Inter-Regular',
-  fontFamilyMedium: 'Inter-Medium',
-  fontFamilyBold: 'Inter-Bold',
-  fontFamilyMono: 'JetBrainsMono-Regular',
+  // Font families - Verdant Serenity Typography System (same as light theme)
+  fontFamilyRegular: 'Inter-Regular', // Clean sans-serif for body text
+  fontFamilyMedium: 'Inter-Medium', // Medium weight sans-serif
+  fontFamilyBold: 'Inter-Bold', // Bold sans-serif
+  fontFamilyMono: 'JetBrainsMono-Regular', // Monospace for code
 
-  // Display styles
-  displayLarge: { fontSize: 57, fontWeight: '400', lineHeight: 64 },
-  displayMedium: { fontSize: 45, fontWeight: '400', lineHeight: 52 },
-  displaySmall: { fontSize: 36, fontWeight: '400', lineHeight: 44 },
+  // Enhanced font families for journal feel
+  fontFamilySerif: 'Lora-Regular', // Serif for headlines and journal titles
+  fontFamilySerifMedium: 'Lora-Medium', // Medium serif weight
+  fontFamilySerifBold: 'Lora-Bold', // Bold serif for emphasis
 
-  // Headlines - Enhanced for better hierarchy
-  headlineLarge: { fontSize: 32, fontWeight: '700', lineHeight: 40, letterSpacing: -0.5 },
-  headlineMedium: { fontSize: 28, fontWeight: '600', lineHeight: 36, letterSpacing: -0.3 },
-  headlineSmall: { fontSize: 24, fontWeight: '600', lineHeight: 32, letterSpacing: -0.2 },
+  // Display styles - Using serif for journal-like feel
+  displayLarge: {
+    fontFamily: 'Lora-Bold',
+    fontSize: 57,
+    fontWeight: '700',
+    lineHeight: 64,
+    letterSpacing: -0.25,
+  },
+  displayMedium: {
+    fontFamily: 'Lora-Bold',
+    fontSize: 45,
+    fontWeight: '700',
+    lineHeight: 52,
+    letterSpacing: -0.2,
+  },
+  displaySmall: {
+    fontFamily: 'Lora-Medium',
+    fontSize: 36,
+    fontWeight: '600',
+    lineHeight: 44,
+    letterSpacing: -0.1,
+  },
 
-  // Titles - More refined
-  titleLarge: { fontSize: 22, fontWeight: '600', lineHeight: 28, letterSpacing: -0.1 },
-  titleMedium: { fontSize: 18, fontWeight: '600', lineHeight: 24 },
-  titleSmall: { fontSize: 16, fontWeight: '600', lineHeight: 20 },
+  // Headlines - Serif fonts for reflective, journal-like feel
+  headlineLarge: {
+    fontFamily: 'Lora-Bold',
+    fontSize: 32,
+    fontWeight: '700',
+    lineHeight: 40,
+    letterSpacing: -0.5,
+  },
+  headlineMedium: {
+    fontFamily: 'Lora-Medium',
+    fontSize: 28,
+    fontWeight: '600',
+    lineHeight: 36,
+    letterSpacing: -0.3,
+  },
+  headlineSmall: {
+    fontFamily: 'Lora-Medium',
+    fontSize: 24,
+    fontWeight: '600',
+    lineHeight: 32,
+    letterSpacing: -0.2,
+  },
 
-  // Body text - Improved readability
-  bodyLarge: { fontSize: 16, fontWeight: '400', lineHeight: 26, letterSpacing: 0.1 },
-  bodyMedium: { fontSize: 14, fontWeight: '400', lineHeight: 22, letterSpacing: 0.1 },
-  bodySmall: { fontSize: 12, fontWeight: '400', lineHeight: 18, letterSpacing: 0.2 },
+  // Titles - Mixed approach: Serif for large titles, Sans-serif for smaller UI titles
+  titleLarge: {
+    fontFamily: 'Lora-Medium',
+    fontSize: 22,
+    fontWeight: '600',
+    lineHeight: 28,
+    letterSpacing: -0.1,
+  },
+  titleMedium: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  titleSmall: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
 
-  // Labels - Better contrast
-  labelLarge: { fontSize: 14, fontWeight: '600', lineHeight: 20, letterSpacing: 0.1 },
-  labelMedium: { fontSize: 12, fontWeight: '600', lineHeight: 16, letterSpacing: 0.3 },
+  // Body text - Clean sans-serif for optimal readability
+  bodyLarge: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 26,
+    letterSpacing: 0.1,
+  },
+  bodyMedium: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    fontWeight: '400',
+    lineHeight: 22,
+    letterSpacing: 0.1,
+  },
+  bodySmall: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 18,
+    letterSpacing: 0.2,
+  },
+
+  // Labels - Sans-serif for UI elements and buttons
+  labelLarge: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    letterSpacing: 0.1,
+  },
+  labelMedium: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+    letterSpacing: 0.3,
+  },
   labelSmall: {
+    fontFamily: 'Inter-Medium',
     fontSize: 11,
     fontWeight: '600',
     lineHeight: 16,
     letterSpacing: 0.5,
   },
 
-  // Legacy support
-  h1: { fontSize: 32, fontWeight: 'bold' },
-  h2: { fontSize: 24, fontWeight: 'bold' },
-  h3: { fontSize: 20, fontWeight: 'bold' },
-  body1: { fontSize: 16 },
-  body2: { fontSize: 14 },
-  button: { fontSize: 16, fontWeight: '500' },
-  caption: { fontSize: 12 },
-  overline: { fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' },
-  subtitle1: { fontSize: 18, fontWeight: '500' },
-  label: { fontSize: 14, fontWeight: '500' },
+  // Legacy support - Updated for mixed typography approach
+  h1: { fontFamily: 'Lora-Bold', fontSize: 32, fontWeight: 'bold' },
+  h2: { fontFamily: 'Lora-Medium', fontSize: 24, fontWeight: '600' },
+  h3: { fontFamily: 'Lora-Medium', fontSize: 20, fontWeight: '600' },
+  body1: { fontFamily: 'Inter-Regular', fontSize: 16 },
+  body2: { fontFamily: 'Inter-Regular', fontSize: 14 },
+  button: { fontFamily: 'Inter-Medium', fontSize: 16, fontWeight: '500' },
+  caption: { fontFamily: 'Inter-Regular', fontSize: 12 },
+  overline: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  subtitle1: { fontFamily: 'Lora-Regular', fontSize: 18, fontWeight: '500' },
+  label: { fontFamily: 'Inter-Medium', fontSize: 14, fontWeight: '500' },
 };
 
 const enhancedSpacing: ThemeSpacing = {
@@ -249,7 +344,7 @@ const darkElevation: ThemeElevation = {
   // 🆕 Enhanced shadow for floating elements (adapted for dark mode)
   floating: {
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.30,
+    shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 8,
   },

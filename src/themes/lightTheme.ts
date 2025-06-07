@@ -7,157 +7,253 @@ import {
   ThemeTypography,
 } from './types';
 
-// Softer Light Theme - Easier on the Eyes
+// Verdant Serenity Light Theme - Natural & Uplifting
 const enhancedLightColors: ThemeColors = {
-  // Brand colors - Softer, warmer green tones
-  primary: '#0F766E', // Deeper, more muted teal-green
+  // Brand colors - Deep, calming Teal-Green (The "Growth")
+  primary: '#0F766E', // Deep, muted teal - sophisticated and balanced
   onPrimary: '#F0FDFA', // Soft mint instead of pure white
-  primaryVariant: '#0D9488', // Slightly brighter variant
+  primaryVariant: '#0D9488', // Slightly brighter teal variant
   primaryContainer: '#F0FDFA', // Very soft mint container
-  onPrimaryContainer: '#042F2E',
+  onPrimaryContainer: '#042F2E', // Deep teal text on container
 
-  secondary: '#92400E', // Warm amber-brown 
+  // Warm, muted Gold/Amber Secondary (The "Gratitude")
+  secondary: '#D97706', // Warm, rich amber - represents optimism and warmth
   onSecondary: '#FEF3C7', // Soft cream instead of white
-  secondaryContainer: '#FEF3C7', // Light warm container
-  onSecondaryContainer: '#451A03',
+  secondaryContainer: '#FEF3C7', // Light warm amber container
+  onSecondaryContainer: '#451A03', // Deep amber text on container
 
-  tertiary: '#0369A1', // Softer blue tertiary
+  // Tertiary & Calm - Harmonious with the palette
+  tertiary: '#0369A1', // Calming blue that harmonizes with teal
   onTertiary: '#E0F2FE', // Soft blue tint
-  tertiaryContainer: '#E0F2FE',
-  onTertiaryContainer: '#0C4A6E',
+  tertiaryContainer: '#E0F2FE', // Light blue container
+  onTertiaryContainer: '#0C4A6E', // Deep blue text
 
+  // Accent colors - Using amber variations
   accent: '#CA8A04', // More muted amber accent
   onAccent: '#FEF3C7',
-  accentContainer: '#FEF3C7',
+  accentContainer: '#FEF3C7', // Light amber container
   onAccentContainer: '#713F12',
 
-  // Surfaces - Warmer, softer backgrounds
-  background: '#F8FAFC', // Soft blue-gray instead of pure white
-  onBackground: '#1E293B', // Softer dark text
-  surface: '#FFFFFF', // Keep pure white for cards but reduce usage
-  onSurface: '#1E293B',
+  // Surfaces - Soft, warm Off-White/Linen (The "Calm")
+  background: '#F8FAFC', // Soft, warm off-white (not pure white)
+  onBackground: '#1E293B', // Softer dark text for comfort
+  surface: '#FEFEFE', // Very slightly off-white for cards with subtle lift
+  onSurface: '#1E293B', // Consistent with background text
   surfaceVariant: '#F1F5F9', // Warm gray-blue variant
-  onSurfaceVariant: '#475569', // Softer contrast
-  surfaceTint: '#0F766E',
-  inverseSurface: '#334155',
-  inverseOnSurface: '#F8FAFC',
+  onSurfaceVariant: '#475569', // Softer contrast for secondary text
+  surfaceTint: '#0F766E', // Primary teal tint
+  inverseSurface: '#334155', // Warm dark slate
+  inverseOnSurface: '#F8FAFC', // Light on inverse
 
-  // Enhanced surface levels for softer hierarchy
-  surfaceElevated: '#FEFEFE', // Very slightly off-white
+  // Enhanced surface levels for natural hierarchy
+  surfaceElevated: '#FFFFFF', // Pure white for elevated cards
   surfaceContainer: '#F8FAFC', // Same as background for continuity
-  surfaceBright: '#FFFFFF', // Pure white for emphasis
-  surfaceDim: '#F1F5F9', // Dimmed surface
+  surfaceBright: '#FFFFFF', // Brightest surface for emphasis
+  surfaceDim: '#F1F5F9', // Dimmed surface for subtle backgrounds
 
-  // Content colors - Softer borders and outlines
-  outline: '#CBD5E1', // Much softer outline
-  outlineVariant: '#E2E8F0', // Very light outline
-  scrim: 'rgba(15, 23, 42, 0.5)', // Warmer scrim
+  // Content colors - Soft, natural borders
+  outline: '#CBD5E1', // Much softer outline, natural feeling
+  outlineVariant: '#E2E8F0', // Very light outline for subtle separation
+  scrim: 'rgba(15, 23, 42, 0.5)', // Warm scrim
 
-  // Enhanced border system for softer appearance
-  borderLight: '#F1F5F9', // Very light borders
-  borderMedium: '#E2E8F0', // Medium borders  
+  // Enhanced border system for organic feel
+  borderLight: '#F1F5F9', // Very light borders that barely show
+  borderMedium: '#E2E8F0', // Medium borders for gentle separation
   borderStrong: '#CBD5E1', // Strong but not harsh borders
 
-  // State colors - Softer, more muted
-  success: '#059669', // Deeper green, less bright
+  // State colors - Natural, harmonious with the palette
+  success: '#059669', // Deeper green that harmonizes with teal
   onSuccess: '#F0FDF4', // Soft green tint
   successContainer: '#ECFDF5', // Light green container
   onSuccessContainer: '#064E3B',
 
-  warning: '#D97706', // Warmer, less bright amber
+  warning: '#D97706', // Same as secondary - warm amber for consistency
   onWarning: '#FEF3C7', // Soft cream
-  warningContainer: '#FEF3C7',
+  warningContainer: '#FEF3C7', // Light amber container
   onWarningContainer: '#92400E',
 
-  error: '#DC2626', // Softer red
+  error: '#DC2626', // Warm red that doesn't clash with palette
   onError: '#FEF2F2', // Soft pink tint
-  errorContainer: '#FEF2F2',
+  errorContainer: '#FEF2F2', // Light red container
   onErrorContainer: '#7F1D1D',
 
-  info: '#0284C7', // Softer blue info
+  info: '#0284C7', // Blue that harmonizes with tertiary
   onInfo: '#E0F2FE', // Soft blue tint
-  infoContainer: '#E0F2FE',
+  infoContainer: '#E0F2FE', // Light blue container
   onInfoContainer: '#0369A1',
 
-  // Interaction states
-  disabled: '#94A3B8', // Softer disabled
+  // Interaction states - Using primary teal for cohesion
+  disabled: '#94A3B8', // Softer disabled state
   onDisabled: '#64748B',
 
-  // Advanced interaction states - Very gentle
-  hover: 'rgba(15, 118, 110, 0.04)', // Ultra-subtle hover
+  // Advanced interaction states - Very gentle and natural
+  hover: 'rgba(15, 118, 110, 0.04)', // Ultra-subtle teal hover
   pressed: 'rgba(15, 118, 110, 0.08)',
   focus: 'rgba(15, 118, 110, 0.12)',
   selected: 'rgba(15, 118, 110, 0.06)',
-  
-  // Enhanced interaction states
-  hoverStrong: 'rgba(15, 118, 110, 0.10)', // Stronger but still subtle
-  focusRing: '#0F766E', // Focus ring color
+
+  // Enhanced interaction states for better feedback
+  hoverStrong: 'rgba(15, 118, 110, 0.10)', // Stronger but still gentle
+  focusRing: '#0F766E', // Teal focus ring
   activeState: 'rgba(15, 118, 110, 0.15)', // Active state
 
-  // Gradient colors - Softer gradient
-  gradientStart: '#0F766E',
-  gradientEnd: '#059669',
+  // Gradient colors - Natural teal to amber harmony
+  gradientStart: '#0F766E', // Deep teal start
+  gradientEnd: '#059669', // Harmonious green end
 
-  // Legacy support - updated for softer theme
-  text: '#1E293B', // Softer dark text
+  // Legacy support - updated for natural theme
+  text: '#1E293B', // Softer dark text for comfortable reading
   textSecondary: '#64748B', // Warmer secondary text
-  border: '#E2E8F0', // Much softer border
-  inputBackground: '#FEFEFE', // Very slightly off-white
+  border: '#E2E8F0', // Much softer border for organic feel
+  inputBackground: '#FEFEFE', // Very slightly off-white for inputs
   inputText: '#1E293B',
-  danger: '#DC2626',
+  danger: '#DC2626', // Consistent with error
   onDanger: '#FEF2F2',
-  shadow: 'rgba(15, 23, 42, 0.08)', // Softer shadow
-  surfaceDisabled: '#F1F5F9',
+  shadow: 'rgba(15, 23, 42, 0.08)', // Softer shadow for gentle elevation
+  surfaceDisabled: '#F1F5F9', // Light disabled surface
 };
 
 const enhancedTypography: ThemeTypography = {
-  // Font families
-  fontFamilyRegular: 'Inter-Regular',
-  fontFamilyMedium: 'Inter-Medium',
-  fontFamilyBold: 'Inter-Bold',
-  fontFamilyMono: 'JetBrainsMono-Regular',
+  // Font families - Verdant Serenity Typography System
+  fontFamilyRegular: 'Inter-Regular', // Clean sans-serif for body text
+  fontFamilyMedium: 'Inter-Medium', // Medium weight sans-serif
+  fontFamilyBold: 'Inter-Bold', // Bold sans-serif
+  fontFamilyMono: 'JetBrainsMono-Regular', // Monospace for code
 
-  // Display styles
-  displayLarge: { fontSize: 57, fontWeight: '400', lineHeight: 64 },
-  displayMedium: { fontSize: 45, fontWeight: '400', lineHeight: 52 },
-  displaySmall: { fontSize: 36, fontWeight: '400', lineHeight: 44 },
+  // Enhanced font families for journal feel
+  fontFamilySerif: 'Lora-Regular', // Serif for headlines and journal titles
+  fontFamilySerifMedium: 'Lora-Medium', // Medium serif weight
+  fontFamilySerifBold: 'Lora-Bold', // Bold serif for emphasis
 
-  // Headlines - Enhanced for better hierarchy
-  headlineLarge: { fontSize: 32, fontWeight: '700', lineHeight: 40, letterSpacing: -0.5 },
-  headlineMedium: { fontSize: 28, fontWeight: '600', lineHeight: 36, letterSpacing: -0.3 },
-  headlineSmall: { fontSize: 24, fontWeight: '600', lineHeight: 32, letterSpacing: -0.2 },
+  // Display styles - Using serif for journal-like feel
+  displayLarge: {
+    fontFamily: 'Lora-Bold',
+    fontSize: 57,
+    fontWeight: '700',
+    lineHeight: 64,
+    letterSpacing: -0.25,
+  },
+  displayMedium: {
+    fontFamily: 'Lora-Bold',
+    fontSize: 45,
+    fontWeight: '700',
+    lineHeight: 52,
+    letterSpacing: -0.2,
+  },
+  displaySmall: {
+    fontFamily: 'Lora-Medium',
+    fontSize: 36,
+    fontWeight: '600',
+    lineHeight: 44,
+    letterSpacing: -0.1,
+  },
 
-  // Titles - More refined
-  titleLarge: { fontSize: 22, fontWeight: '600', lineHeight: 28, letterSpacing: -0.1 },
-  titleMedium: { fontSize: 18, fontWeight: '600', lineHeight: 24 },
-  titleSmall: { fontSize: 16, fontWeight: '600', lineHeight: 20 },
+  // Headlines - Serif fonts for reflective, journal-like feel
+  headlineLarge: {
+    fontFamily: 'Lora-Bold',
+    fontSize: 32,
+    fontWeight: '700',
+    lineHeight: 40,
+    letterSpacing: -0.5,
+  },
+  headlineMedium: {
+    fontFamily: 'Lora-Medium',
+    fontSize: 28,
+    fontWeight: '600',
+    lineHeight: 36,
+    letterSpacing: -0.3,
+  },
+  headlineSmall: {
+    fontFamily: 'Lora-Medium',
+    fontSize: 24,
+    fontWeight: '600',
+    lineHeight: 32,
+    letterSpacing: -0.2,
+  },
 
-  // Body text - Improved readability
-  bodyLarge: { fontSize: 16, fontWeight: '400', lineHeight: 26, letterSpacing: 0.1 },
-  bodyMedium: { fontSize: 14, fontWeight: '400', lineHeight: 22, letterSpacing: 0.1 },
-  bodySmall: { fontSize: 12, fontWeight: '400', lineHeight: 18, letterSpacing: 0.2 },
+  // Titles - Mixed approach: Serif for large titles, Sans-serif for smaller UI titles
+  titleLarge: {
+    fontFamily: 'Lora-Medium',
+    fontSize: 22,
+    fontWeight: '600',
+    lineHeight: 28,
+    letterSpacing: -0.1,
+  },
+  titleMedium: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  titleSmall: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
 
-  // Labels - Better contrast
-  labelLarge: { fontSize: 14, fontWeight: '600', lineHeight: 20, letterSpacing: 0.1 },
-  labelMedium: { fontSize: 12, fontWeight: '600', lineHeight: 16, letterSpacing: 0.3 },
+  // Body text - Clean sans-serif for optimal readability
+  bodyLarge: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 26,
+    letterSpacing: 0.1,
+  },
+  bodyMedium: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    fontWeight: '400',
+    lineHeight: 22,
+    letterSpacing: 0.1,
+  },
+  bodySmall: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 18,
+    letterSpacing: 0.2,
+  },
+
+  // Labels - Sans-serif for UI elements and buttons
+  labelLarge: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    letterSpacing: 0.1,
+  },
+  labelMedium: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+    letterSpacing: 0.3,
+  },
   labelSmall: {
+    fontFamily: 'Inter-Medium',
     fontSize: 11,
     fontWeight: '600',
     lineHeight: 16,
     letterSpacing: 0.5,
   },
 
-  // Legacy support
-  h1: { fontSize: 32, fontWeight: 'bold' },
-  h2: { fontSize: 24, fontWeight: 'bold' },
-  h3: { fontSize: 20, fontWeight: 'bold' },
-  body1: { fontSize: 16 },
-  body2: { fontSize: 14 },
-  button: { fontSize: 16, fontWeight: '500' },
-  caption: { fontSize: 12 },
-  overline: { fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' },
-  subtitle1: { fontSize: 18, fontWeight: '500' },
-  label: { fontSize: 14, fontWeight: '500' },
+  // Legacy support - Updated for mixed typography approach
+  h1: { fontFamily: 'Lora-Bold', fontSize: 32, fontWeight: 'bold' },
+  h2: { fontFamily: 'Lora-Medium', fontSize: 24, fontWeight: '600' },
+  h3: { fontFamily: 'Lora-Medium', fontSize: 20, fontWeight: '600' },
+  body1: { fontFamily: 'Inter-Regular', fontSize: 16 },
+  body2: { fontFamily: 'Inter-Regular', fontSize: 14 },
+  button: { fontFamily: 'Inter-Medium', fontSize: 16, fontWeight: '500' },
+  caption: { fontFamily: 'Inter-Regular', fontSize: 12 },
+  overline: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  subtitle1: { fontFamily: 'Lora-Regular', fontSize: 18, fontWeight: '500' },
+  label: { fontFamily: 'Inter-Medium', fontSize: 14, fontWeight: '500' },
 };
 
 const enhancedSpacing: ThemeSpacing = {

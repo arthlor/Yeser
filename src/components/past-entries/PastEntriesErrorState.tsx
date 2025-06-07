@@ -15,13 +15,13 @@ interface PastEntriesErrorStateProps {
 
 /**
  * Enhanced Past Entries Error State with Edge-to-Edge Design
- * 
+ *
  * DESIGN PHILOSOPHY:
  * 1. ERROR RECOVERY ZONE: Edge-to-edge error state with comprehensive recovery guidance
  * 2. VISUAL DEPTH: Enhanced shadows and elevation for modern feel
  * 3. CONTEXTUAL HELP: Smart error detection with appropriate guidance
  * 4. TYPOGRAPHY HIERARCHY: Consistent with established design system
- * 
+ *
  * UX ENHANCEMENTS:
  * - Edge-to-edge card design with proper spacing
  * - Enhanced error icon with visual feedback
@@ -35,8 +35,12 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
   // Enhanced error type detection with better messaging
   const getErrorInfo = () => {
     const errorLower = error.toLowerCase();
-    
-    if (errorLower.includes('network') || errorLower.includes('connection') || errorLower.includes('internet')) {
+
+    if (
+      errorLower.includes('network') ||
+      errorLower.includes('connection') ||
+      errorLower.includes('internet')
+    ) {
       return {
         icon: 'wifi-off',
         title: 'Bağlantı Sorunu',
@@ -46,7 +50,7 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
         color: theme.colors.warning,
       };
     }
-    
+
     if (errorLower.includes('timeout') || errorLower.includes('slow')) {
       return {
         icon: 'clock-alert',
@@ -57,7 +61,7 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
         color: theme.colors.warning,
       };
     }
-    
+
     if (errorLower.includes('auth') || errorLower.includes('unauthorized')) {
       return {
         icon: 'account-alert',
@@ -68,7 +72,7 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
         color: theme.colors.error,
       };
     }
-    
+
     // Generic error
     return {
       icon: 'alert-circle',
@@ -84,8 +88,8 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
 
   return (
     <View style={styles.errorZone}>
-      <ThemedCard 
-        variant="outlined" 
+      <ThemedCard
+        variant="outlined"
         density="comfortable"
         elevation="overlay"
         style={styles.errorCard}
@@ -97,16 +101,16 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
               <Icon name={errorInfo.icon} size={64} color={errorInfo.color} />
             </View>
             <View style={styles.alertContainer}>
-              <Icon 
-                name="alert-circle-outline" 
-                size={16} 
-                color={errorInfo.color + '60'} 
+              <Icon
+                name="alert-circle-outline"
+                size={16}
+                color={errorInfo.color + '60'}
                 style={styles.alertIcon1}
               />
-              <Icon 
-                name="alert-circle-outline" 
-                size={12} 
-                color={errorInfo.color + '40'} 
+              <Icon
+                name="alert-circle-outline"
+                size={12}
+                color={errorInfo.color + '40'}
                 style={styles.alertIcon2}
               />
             </View>
@@ -116,7 +120,7 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
           <View style={styles.messageSection}>
             <Text style={styles.errorTitle}>{errorInfo.title}</Text>
             <Text style={styles.errorMessage}>{errorInfo.message}</Text>
-            
+
             {/* Technical Details for Development */}
             {__DEV__ && (
               <View style={styles.technicalSection}>
@@ -146,17 +150,15 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
               <Icon name="tools" size={16} color={theme.colors.info} />
               <Text style={styles.troubleshootingTitle}>Sorun Giderme</Text>
             </View>
-            
+
             <View style={styles.helpList}>
               <View style={styles.helpItem}>
                 <View style={styles.helpBullet}>
                   <Icon name="circle" size={6} color={theme.colors.primary} />
                 </View>
-                <Text style={styles.helpText}>
-                  Uygulamayı kapatıp yeniden açmayı deneyin
-                </Text>
+                <Text style={styles.helpText}>Uygulamayı kapatıp yeniden açmayı deneyin</Text>
               </View>
-              
+
               {errorInfo.type === 'network' && (
                 <View style={styles.helpItem}>
                   <View style={styles.helpBullet}>
@@ -167,25 +169,21 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
                   </Text>
                 </View>
               )}
-              
+
               {errorInfo.type === 'auth' && (
                 <View style={styles.helpItem}>
                   <View style={styles.helpBullet}>
                     <Icon name="circle" size={6} color={theme.colors.error} />
                   </View>
-                  <Text style={styles.helpText}>
-                    Çıkış yapıp tekrar giriş yapmayı deneyin
-                  </Text>
+                  <Text style={styles.helpText}>Çıkış yapıp tekrar giriş yapmayı deneyin</Text>
                 </View>
               )}
-              
+
               <View style={styles.helpItem}>
                 <View style={styles.helpBullet}>
                   <Icon name="circle" size={6} color={theme.colors.info} />
                 </View>
-                <Text style={styles.helpText}>
-                  Sorun devam ederse daha sonra tekrar deneyin
-                </Text>
+                <Text style={styles.helpText}>Sorun devam ederse daha sonra tekrar deneyin</Text>
               </View>
             </View>
           </View>
@@ -196,19 +194,24 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
               <Icon name="information-outline" size={16} color={theme.colors.onSurfaceVariant} />
               <Text style={styles.statusTitle}>Sistem Durumu</Text>
             </View>
-            
+
             <View style={styles.statusGrid}>
               <View style={styles.statusItem}>
                 <View style={[styles.statusDot, { backgroundColor: theme.colors.success }]} />
                 <Text style={styles.statusText}>Uygulama</Text>
                 <Text style={styles.statusValue}>Çalışıyor</Text>
               </View>
-              
+
               <View style={styles.statusItem}>
-                <View style={[
-                  styles.statusDot, 
-                  { backgroundColor: errorInfo.type === 'network' ? theme.colors.error : theme.colors.warning }
-                ]} />
+                <View
+                  style={[
+                    styles.statusDot,
+                    {
+                      backgroundColor:
+                        errorInfo.type === 'network' ? theme.colors.error : theme.colors.warning,
+                    },
+                  ]}
+                />
                 <Text style={styles.statusText}>Veri</Text>
                 <Text style={styles.statusValue}>
                   {errorInfo.type === 'network' ? 'Bağlantı Yok' : 'Geçici Hata'}
@@ -236,15 +239,13 @@ const createStyles = (theme: AppTheme) =>
       borderStyle: 'dashed',
       borderColor: theme.colors.error + '30',
       backgroundColor: theme.colors.surface,
-      marginHorizontal: -theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
       ...getPrimaryShadow.card(theme),
     },
     errorContent: {
       alignItems: 'center',
       // Padding handled by density="comfortable"
     },
-    
+
     // Enhanced Illustration
     illustrationContainer: {
       position: 'relative',
@@ -278,7 +279,7 @@ const createStyles = (theme: AppTheme) =>
       bottom: 20,
       left: 30,
     },
-    
+
     // Enhanced Message Section
     messageSection: {
       alignItems: 'center',
@@ -301,7 +302,7 @@ const createStyles = (theme: AppTheme) =>
       letterSpacing: 0.1,
       marginBottom: theme.spacing.lg,
     },
-    
+
     // Technical Section for Development
     technicalSection: {
       width: '100%',
@@ -328,7 +329,7 @@ const createStyles = (theme: AppTheme) =>
       fontFamily: 'monospace',
       lineHeight: 18,
     },
-    
+
     // Enhanced Action Section
     actionSection: {
       width: '100%',
@@ -338,7 +339,7 @@ const createStyles = (theme: AppTheme) =>
     retryButton: {
       width: '100%',
     },
-    
+
     // Enhanced Troubleshooting Section
     troubleshootingSection: {
       width: '100%',
@@ -375,7 +376,7 @@ const createStyles = (theme: AppTheme) =>
       lineHeight: 18,
       fontWeight: '500',
     },
-    
+
     // Enhanced Status Section
     statusSection: {
       width: '100%',

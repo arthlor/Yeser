@@ -1,6 +1,6 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       daily_prompts: {
@@ -69,6 +69,7 @@ export interface Database {
           reminder_time: string;
           throwback_reminder_enabled: boolean;
           throwback_reminder_frequency: string;
+          throwback_reminder_time: string | null;
           updated_at: string;
           use_varied_prompts: boolean;
           username: string | null;
@@ -81,6 +82,7 @@ export interface Database {
           reminder_time?: string;
           throwback_reminder_enabled?: boolean;
           throwback_reminder_frequency?: string;
+          throwback_reminder_time?: string | null;
           updated_at?: string;
           use_varied_prompts?: boolean;
           username?: string | null;
@@ -93,6 +95,7 @@ export interface Database {
           reminder_time?: string;
           throwback_reminder_enabled?: boolean;
           throwback_reminder_frequency?: string;
+          throwback_reminder_time?: string | null;
           updated_at?: string;
           use_varied_prompts?: boolean;
           username?: string | null;
@@ -130,7 +133,9 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: Record<never, never>;
+    Views: {
+      [_ in never]: never;
+    };
     Functions: {
       add_gratitude_statement: {
         Args: { p_entry_date: string; p_statement: string };
@@ -183,6 +188,10 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      normalize_turkish: {
+        Args: { input_text: string };
+        Returns: string;
+      };
       recalculate_user_streak: {
         Args: { p_user_id: string };
         Returns: undefined;
@@ -192,10 +201,14 @@ export interface Database {
         Returns: undefined;
       };
     };
-    Enums: Record<never, never>;
-    CompositeTypes: Record<never, never>;
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-}
+};
 
 type DefaultSchema = Database[Extract<keyof Database, 'public'>];
 

@@ -108,11 +108,12 @@ export const config = {
 
 // Debug configuration in development
 if (__DEV__) {
-  console.group('🔧 Environment Configuration');
+  logger.debug('🔧 Environment Configuration');
   logger.debug('Environment:', { environment: config.app.environment });
   logger.debug('Supabase URL:', { status: config.supabase.url ? '✅ Set' : '❌ Missing' });
-  logger.debug('Firebase Project:', { status: config.firebase.projectId ? '✅ Set' : '❌ Missing' });
+  logger.debug('Firebase Project:', {
+    status: config.firebase.projectId ? '✅ Set' : '❌ Missing',
+  });
   logger.debug('Analytics Enabled:', { enabled: config.features.analytics });
   logger.debug('Debug Mode:', { enabled: config.debug.enabled });
-  console.groupEnd();
 }

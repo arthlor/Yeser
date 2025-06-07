@@ -1,58 +1,38 @@
 # Testing Guide
 
-This document provides comprehensive testing strategies for the Yeser gratitude app, focusing on the modern hybrid architecture with TanStack Query and Zustand.
+This document provides comprehensive testing strategies and patterns for the Yeser gratitude app, with special focus on TanStack Query integration and React Native testing best practices.
 
-## 🧪 Testing Architecture Overview
+## 🧪 Testing Strategy Overview
 
-The testing strategy covers multiple layers of the application:
+The Yeser app follows a **modern testing pyramid** approach optimized for TanStack Query and React Native:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    E2E TESTING                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
-│  │   Detox     │  │  Critical   │  │  User       │     │
-│  │   Tests     │  │  Journeys   │  │  Flows      │     │
-│  └─────────────┘  └─────────────┘  └─────────────┘     │
+│                    E2E TESTS                            │
+│               Critical User Journeys                    │
+│                     (Detox)                             │
 └─────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────┐
-│                 INTEGRATION TESTING                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
-│  │  Component  │  │    Hook     │  │    Query    │     │
-│  │    Tests    │  │Integration  │  │ Interaction │     │
-│  └─────────────┘  └─────────────┘  └─────────────┘     │
+│                 INTEGRATION TESTS                       │
+│            Hook + Component Integration                 │
+│              TanStack Query Flows                       │
 └─────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────┐
-│                   UNIT TESTING                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
-│  │TanStack Qry │  │  Zustand    │  │ Components  │     │
-│  │   Hooks     │  │   Stores    │  │ (Isolated)  │     │
-│  └─────────────┘  └─────────────┘  └─────────────┘     │
-└─────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────┐
-│                    API TESTING                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
-│  │     MSW     │  │  Supabase   │  │    Mock     │     │
-│  │   Mocking   │  │   Client    │  │ Functions   │     │
-│  └─────────────┘  └─────────────┘  └─────────────┘     │
+│                   UNIT TESTS                            │
+│        Components, Hooks, Utilities, API Layer         │
+│               React Testing Library                     │
 └─────────────────────────────────────────────────────────┘
 ```
+
+### Testing Principles
+
+- ✅ **Test Behavior, Not Implementation**: Focus on what users see and do
+- ✅ **Mock External Dependencies**: Supabase, Firebase, device APIs
+- ✅ **TanStack Query Testing**: Proper query/mutation testing patterns
+- ✅ **Accessibility Testing**: Ensure app works for all users
+- ✅ **Performance Testing**: Monitor query performance and rendering
 
 ## 🛠️ Testing Setup
-
-### Dependencies
-
-```json
-{
-  "devDependencies": {
-    "@testing-library/react-native": "^12.0.0",
-    "@testing-library/jest-native": "^5.4.0",
-    "@testing-library/react-hooks": "^8.0.1",
-    "jest": "^29.0.0",
-    "msw": "^2.0.0",
-    "msw/native": "^2.0.0"
-  }
-}
-```
 
 ### Jest Configuration
 
@@ -60,19 +40,15 @@ The testing strategy covers multiple layers of the application:
 // jest.config.cjs
 module.exports = {
   preset: 'jest-expo',
-  setupFilesAfterEnv: ['<rootDir>/jest-setup.ts'],
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
   transformIgnorePatterns: [
-    'node_modules/(?!(jest-)?@expo|@tanstack/react-query|expo|expo-*|@unimodules/.*|.*expo.*)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@tanstack/react-query)',
   ],
-  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest-setup.ts', '@testing-library/jest-native/extend-expect'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
-    '!src/**/__tests__/**',
-    '!src/**/types/**',
+    '!src/**/__tests__/**/*',
+    '!src/**/*.test.{ts,tsx}',
   ],
   coverageThreshold: {
     global: {
@@ -82,75 +58,79 @@ module.exports = {
       statements: 70,
     },
   },
+  testEnvironment: 'jsdom',
 };
 ```
 
-### Test Setup
+### Test Setup File
 
 ```typescript
 // jest-setup.ts
-import '@testing-library/jest-native/extend-expect';
 import 'react-native-gesture-handler/jestSetup';
-import { server } from './src/__mocks__/server';
+import '@testing-library/jest-native/extend-expect';
 
-// Mock React Navigation
-jest.mock('@react-navigation/native', () => ({
-  ...jest.requireActual('@react-navigation/native'),
-  useNavigation: () => ({
-    navigate: jest.fn(),
-    goBack: jest.fn(),
-  }),
-}));
+// Mock React Native modules
+jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
-// Mock expo modules
-jest.mock('expo-constants', () => ({
-  expoConfig: {
-    extra: {
-      supabaseUrl: 'https://test.supabase.co',
-      supabaseAnonKey: 'test-key',
-    },
-  },
+// Mock Expo modules
+jest.mock('expo-notifications', () => ({
+  getDefaultNotificationChannel: jest.fn(),
+  scheduleNotificationAsync: jest.fn(),
+  cancelAllScheduledNotificationsAsync: jest.fn(),
 }));
 
-// Setup MSW
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-```
+// Mock Haptic Feedback
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn(),
+  notificationAsync: jest.fn(),
+}));
 
-## 🔌 Testing TanStack Query Hooks
+// Silence console warnings in tests
+global.console.warn = jest.fn();
+global.console.error = jest.fn();
 
-### Query Hooks Testing
+// Setup TanStack Query testing
+import { QueryClient } from '@tanstack/react-query';
 
-```typescript
-// src/hooks/__tests__/useUserProfile.test.ts
-import { renderHook, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useUserProfile } from '../useUserProfile';
-import { mockProfile } from '../../__mocks__/mockData';
-
-// Test wrapper with QueryClient
-const createTestQueryClient = () =>
+export const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
-        cacheTime: 0,
+        gcTime: Infinity,
       },
       mutations: {
         retry: false,
       },
     },
   });
+```
+
+## 📊 TanStack Query Testing Patterns
+
+### Query Hook Testing
+
+```typescript
+// __tests__/hooks/useUserProfile.test.ts
+import { renderHook, waitFor } from '@testing-library/react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { getProfile } from '@/api/profileApi';
+
+// Mock the API
+jest.mock('@/api/profileApi');
+const mockGetProfile = getProfile as jest.MockedFunction<typeof getProfile>;
 
 const createWrapper = () => {
-  const queryClient = createTestQueryClient();
-  
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
@@ -159,370 +139,155 @@ const createWrapper = () => {
 };
 
 describe('useUserProfile', () => {
-  it('should fetch user profile on mount', async () => {
-    const wrapper = createWrapper();
-    
-    const { result } = renderHook(() => useUserProfile(), { wrapper });
-    
-    // Initially loading
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should fetch user profile successfully', async () => {
+    const mockProfile = {
+      id: '123',
+      username: 'testuser',
+      onboarded: true,
+      dailyGratitudeGoal: 3,
+    };
+
+    mockGetProfile.mockResolvedValueOnce(mockProfile);
+
+    const { result } = renderHook(() => useUserProfile(), {
+      wrapper: createWrapper(),
+    });
+
     expect(result.current.isLoading).toBe(true);
-    expect(result.current.profile).toBe(null);
-    
-    // Wait for data to load
+
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
-    
+
     expect(result.current.profile).toEqual(mockProfile);
-    expect(result.current.error).toBe(null);
+    expect(result.current.error).toBeNull();
   });
-  
-  it('should handle error states', async () => {
-    // Mock API error
-    server.use(
-      rest.post('*/rpc/get_profile', (req, res, ctx) => {
-        return res(
-          ctx.status(500),
-          ctx.json({ error: { message: 'Profile not found' } })
-        );
-      })
-    );
-    
-    const wrapper = createWrapper();
-    const { result } = renderHook(() => useUserProfile(), { wrapper });
-    
+
+  it('should handle profile fetch error', async () => {
+    const errorMessage = 'Failed to fetch profile';
+    mockGetProfile.mockRejectedValueOnce(new Error(errorMessage));
+
+    const { result } = renderHook(() => useUserProfile(), {
+      wrapper: createWrapper(),
+    });
+
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
-    
-    expect(result.current.error).toBeTruthy();
-    expect(result.current.profile).toBe(null);
-  });
-  
-  it('should not fetch when user is not authenticated', () => {
-    // Mock unauthenticated state
-    jest.mock('../../store/authStore', () => ({
-      useAuthStore: () => ({ user: null }),
-    }));
-    
-    const wrapper = createWrapper();
-    const { result } = renderHook(() => useUserProfile(), { wrapper });
-    
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.profile).toBe(null);
+
+    expect(result.current.profile).toBeNull();
+    expect(result.current.error?.message).toBe(errorMessage);
   });
 });
 ```
 
-### Mutation Hooks Testing
+### Mutation Hook Testing
 
 ```typescript
-// src/hooks/__tests__/useGratitudeMutations.test.ts
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+// __tests__/hooks/useGratitudeMutations.test.ts
+import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useGratitudeMutations } from '../useGratitudeMutations';
-import { useGratitudeEntry } from '../useGratitudeQueries';
+import { useGratitudeMutations } from '@/hooks/useGratitudeMutations';
+import { addStatement } from '@/api/gratitudeApi';
+
+jest.mock('@/api/gratitudeApi');
+const mockAddStatement = addStatement as jest.MockedFunction<typeof addStatement>;
 
 describe('useGratitudeMutations', () => {
   let queryClient: QueryClient;
-  let wrapper: React.ComponentType<{ children: React.ReactNode }>;
-  
+
   beforeEach(() => {
-    queryClient = createTestQueryClient();
-    wrapper = ({ children }) => (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    );
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    jest.clearAllMocks();
   });
+
+  const createWrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
 
   it('should add statement with optimistic update', async () => {
     const entryDate = '2024-01-15';
-    const newStatement = 'Test gratitude statement';
-    
-    // First, set up existing entry data
-    const { result: entryResult } = renderHook(
-      () => useGratitudeEntry(entryDate),
-      { wrapper }
-    );
-    
-    // Wait for initial data
-    await waitFor(() => {
-      expect(entryResult.current.isLoading).toBe(false);
+    const statement = 'I am grateful for testing';
+    const mockEntry = {
+      id: '123',
+      entryDate,
+      statements: [statement],
+      userId: 'user123',
+    };
+
+    mockAddStatement.mockResolvedValueOnce(mockEntry);
+
+    const { result } = renderHook(() => useGratitudeMutations(entryDate), {
+      wrapper: createWrapper,
     });
-    
-    // Now test the mutation
-    const { result: mutationResult } = renderHook(
-      () => useGratitudeMutations(),
-      { wrapper }
-    );
-    
-    // Perform mutation
-    act(() => {
-      mutationResult.current.addStatement({
-        entryDate,
-        statement: newStatement,
-      });
+
+    await act(async () => {
+      result.current.addStatement({ entryDate, statement });
     });
-    
-    // Check optimistic update
-    expect(mutationResult.current.isAddingStatement).toBe(true);
-    
-    // Check that the UI was optimistically updated
-    const updatedEntry = queryClient.getQueryData(['gratitudeEntry', entryDate]);
-    expect(updatedEntry?.statements).toContain(newStatement);
-    
-    // Wait for mutation to complete
-    await waitFor(() => {
-      expect(mutationResult.current.isAddingStatement).toBe(false);
-    });
-  });
-  
-  it('should rollback optimistic update on error', async () => {
-    const entryDate = '2024-01-15';
-    const newStatement = 'Test statement';
-    
-    // Mock API error
-    server.use(
-      rest.post('*/rpc/add_gratitude_statement', (req, res, ctx) => {
-        return res(
-          ctx.status(500),
-          ctx.json({ error: { message: 'Database error' } })
-        );
-      })
-    );
-    
-    const { result } = renderHook(() => useGratitudeMutations(), { wrapper });
-    
-    // Get initial state
-    const initialEntry = queryClient.getQueryData(['gratitudeEntry', entryDate]);
-    
-    // Perform mutation
-    act(() => {
-      result.current.addStatement({ entryDate, statement: newStatement });
-    });
-    
-    // Wait for mutation to fail
+
+    expect(result.current.isAddingStatement).toBe(true);
+
     await waitFor(() => {
       expect(result.current.isAddingStatement).toBe(false);
     });
-    
-    // Check that optimistic update was rolled back
-    const finalEntry = queryClient.getQueryData(['gratitudeEntry', entryDate]);
-    expect(finalEntry).toEqual(initialEntry);
-  });
-});
-```
 
-### Query Invalidation Testing
-
-```typescript
-// src/hooks/__tests__/queryInvalidation.test.ts
-import { renderHook, act } from '@testing-library/react-native';
-import { QueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../../api/queryKeys';
-
-describe('Query Invalidation', () => {
-  let queryClient: QueryClient;
-  
-  beforeEach(() => {
-    queryClient = createTestQueryClient();
+    expect(mockAddStatement).toHaveBeenCalledWith(entryDate, statement);
   });
 
-  it('should invalidate related queries after adding statement', async () => {
-    const userId = 'user-123';
+  it('should handle mutation error with rollback', async () => {
     const entryDate = '2024-01-15';
-    
-    // Set up spies
-    const invalidateQueriesSpy = jest.spyOn(queryClient, 'invalidateQueries');
-    
-    const { result } = renderHook(
-      () => useGratitudeMutations(),
-      { wrapper: createWrapper() }
-    );
-    
-    // Perform mutation
-    act(() => {
-      result.current.addStatement({
-        entryDate,
-        statement: 'Test statement',
-      });
+    const statement = 'Test statement';
+    const errorMessage = 'Network error';
+
+    mockAddStatement.mockRejectedValueOnce(new Error(errorMessage));
+
+    const { result } = renderHook(() => useGratitudeMutations(entryDate), {
+      wrapper: createWrapper,
     });
-    
+
+    await act(async () => {
+      result.current.addStatement({ entryDate, statement });
+    });
+
     await waitFor(() => {
       expect(result.current.isAddingStatement).toBe(false);
     });
-    
-    // Check that correct queries were invalidated
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.gratitudeEntry(userId, entryDate),
-    });
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.gratitudeEntries(userId),
-    });
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.streaks(userId),
-    });
-  });
-});
-```
 
-## 🏪 Testing Zustand Stores
-
-### Auth Store Testing
-
-```typescript
-// src/store/__tests__/authStore.test.ts
-import { act, renderHook } from '@testing-library/react-native';
-import { useAuthStore } from '../authStore';
-
-// Mock auth service
-jest.mock('../../services/authService', () => ({
-  signInWithEmail: jest.fn(),
-  signOut: jest.fn(),
-  getCurrentSession: jest.fn(),
-  onAuthStateChange: jest.fn(),
-}));
-
-describe('useAuthStore', () => {
-  beforeEach(() => {
-    // Reset store state
-    useAuthStore.setState({
-      isAuthenticated: false,
-      user: null,
-      isLoading: true,
-      error: null,
-    });
-  });
-
-  it('should handle login correctly', async () => {
-    const { result } = renderHook(() => useAuthStore());
-    
-    const credentials = {
-      email: 'test@example.com',
-      password: 'password123',
-    };
-    
-    // Mock successful login
-    const mockUser = { id: 'user-123', email: 'test@example.com' };
-    require('../../services/authService').signInWithEmail.mockResolvedValue({
-      user: mockUser,
-    });
-    
-    await act(async () => {
-      await result.current.loginWithEmail(credentials);
-    });
-    
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.user).toEqual(mockUser);
-    expect(result.current.error).toBe(null);
-  });
-  
-  it('should handle login error', async () => {
-    const { result } = renderHook(() => useAuthStore());
-    
-    const credentials = {
-      email: 'test@example.com',
-      password: 'wrongpassword',
-    };
-    
-    // Mock login error
-    require('../../services/authService').signInWithEmail.mockRejectedValue(
-      new Error('Invalid credentials')
-    );
-    
-    await act(async () => {
-      await result.current.loginWithEmail(credentials);
-    });
-    
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBe(null);
-    expect(result.current.error).toBe('Invalid credentials');
-  });
-  
-  it('should handle logout', async () => {
-    const { result } = renderHook(() => useAuthStore());
-    
-    // Set authenticated state
-    act(() => {
-      useAuthStore.setState({
-        isAuthenticated: true,
-        user: { id: 'user-123', email: 'test@example.com' },
-      });
-    });
-    
-    await act(async () => {
-      await result.current.logout();
-    });
-    
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBe(null);
-  });
-});
-```
-
-### Theme Store Testing
-
-```typescript
-// src/store/__tests__/themeStore.test.ts
-import { act, renderHook } from '@testing-library/react-native';
-import { useThemeStore } from '../themeStore';
-
-describe('useThemeStore', () => {
-  beforeEach(() => {
-    // Reset store state
-    useThemeStore.setState({
-      activeThemeName: 'light',
-      activeTheme: lightTheme,
-    });
-  });
-
-  it('should set theme correctly', () => {
-    const { result } = renderHook(() => useThemeStore());
-    
-    act(() => {
-      result.current.setTheme('dark');
-    });
-    
-    expect(result.current.activeThemeName).toBe('dark');
-    expect(result.current.activeTheme).toEqual(darkTheme);
-  });
-  
-  it('should toggle theme', () => {
-    const { result } = renderHook(() => useThemeStore());
-    
-    // Start with light theme
-    expect(result.current.activeThemeName).toBe('light');
-    
-    act(() => {
-      result.current.toggleTheme();
-    });
-    
-    expect(result.current.activeThemeName).toBe('dark');
-    
-    act(() => {
-      result.current.toggleTheme();
-    });
-    
-    expect(result.current.activeThemeName).toBe('light');
+    // Verify error handling
+    expect(mockAddStatement).toHaveBeenCalledWith(entryDate, statement);
   });
 });
 ```
 
 ## 🧩 Component Testing
 
-### Testing Components with TanStack Query
+### Testing TanStack Query-Powered Components
 
 ```typescript
-// src/components/__tests__/GratitudeEntryForm.test.tsx
+// __tests__/components/UserProfileCard.test.tsx
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { GratitudeEntryForm } from '../GratitudeEntryForm';
+import { UserProfileCard } from '@/components/features/UserProfileCard';
+import { useUserProfile } from '@/hooks/useUserProfile';
+
+// Mock the hook
+jest.mock('@/hooks/useUserProfile');
+const mockUseUserProfile = useUserProfile as jest.MockedFunction<typeof useUserProfile>;
 
 const createTestWrapper = () => {
-  const queryClient = createTestQueryClient();
-  
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
@@ -530,469 +295,385 @@ const createTestWrapper = () => {
   );
 };
 
-describe('GratitudeEntryForm', () => {
-  it('should submit statement successfully', async () => {
-    const Wrapper = createTestWrapper();
-    
-    const { getByTestId } = render(
-      <Wrapper>
-        <GratitudeEntryForm entryDate="2024-01-15" />
-      </Wrapper>
-    );
-    
-    const input = getByTestId('statement-input');
-    const submitButton = getByTestId('submit-button');
-    
-    // Type statement
-    fireEvent.changeText(input, 'I am grateful for testing');
-    
-    // Submit form
-    fireEvent.press(submitButton);
-    
-    // Check loading state
-    expect(getByTestId('loading-indicator')).toBeTruthy();
-    
-    // Wait for submission to complete
-    await waitFor(() => {
-      expect(getByTestId('success-message')).toBeTruthy();
-    });
-  });
-  
-  it('should show error message on submission failure', async () => {
-    // Mock API error
-    server.use(
-      rest.post('*/rpc/add_gratitude_statement', (req, res, ctx) => {
-        return res(ctx.status(500), ctx.json({ error: { message: 'Network error' } }));
-      })
-    );
-    
-    const Wrapper = createTestWrapper();
-    
-    const { getByTestId } = render(
-      <Wrapper>
-        <GratitudeEntryForm entryDate="2024-01-15" />
-      </Wrapper>
-    );
-    
-    const input = getByTestId('statement-input');
-    const submitButton = getByTestId('submit-button');
-    
-    fireEvent.changeText(input, 'Test statement');
-    fireEvent.press(submitButton);
-    
-    await waitFor(() => {
-      expect(getByTestId('error-message')).toBeTruthy();
-    });
-  });
-  
-  it('should disable input during submission', async () => {
-    const Wrapper = createTestWrapper();
-    
-    const { getByTestId } = render(
-      <Wrapper>
-        <GratitudeEntryForm entryDate="2024-01-15" />
-      </Wrapper>
-    );
-    
-    const input = getByTestId('statement-input');
-    const submitButton = getByTestId('submit-button');
-    
-    fireEvent.changeText(input, 'Test statement');
-    fireEvent.press(submitButton);
-    
-    // During submission, form should be disabled
-    expect(submitButton.props.disabled).toBe(true);
-    
-    await waitFor(() => {
-      expect(submitButton.props.disabled).toBe(false);
-    });
-  });
-});
-```
-
-### Testing Components with Zustand
-
-```typescript
-// src/components/__tests__/ThemeToggle.test.tsx
-import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
-import { ThemeToggle } from '../ThemeToggle';
-import { useThemeStore } from '../../store/themeStore';
-
-jest.mock('../../store/themeStore');
-
-describe('ThemeToggle', () => {
-  const mockToggleTheme = jest.fn();
-  
+describe('UserProfileCard', () => {
   beforeEach(() => {
-    (useThemeStore as jest.Mock).mockReturnValue({
-      activeThemeName: 'light',
-      toggleTheme: mockToggleTheme,
-    });
+    jest.clearAllMocks();
   });
 
-  it('should toggle theme when pressed', () => {
-    const { getByTestId } = render(<ThemeToggle />);
-    
-    const toggleButton = getByTestId('theme-toggle');
-    
-    fireEvent.press(toggleButton);
-    
-    expect(mockToggleTheme).toHaveBeenCalledTimes(1);
+  it('should display loading state', () => {
+    mockUseUserProfile.mockReturnValue({
+      profile: null,
+      isLoading: true,
+      error: null,
+      updateProfile: jest.fn(),
+      isUpdatingProfile: false,
+    });
+
+    render(<UserProfileCard />, { wrapper: createTestWrapper() });
+
+    expect(screen.getByText('Loading profile...')).toBeTruthy();
+    expect(screen.getByTestId('loading-indicator')).toBeTruthy();
   });
-  
-  it('should display current theme', () => {
-    const { getByText } = render(<ThemeToggle />);
-    
-    expect(getByText('Light Theme')).toBeTruthy();
-  });
-});
-```
 
-## 🔄 Integration Testing
-
-### Testing Hook + Component Integration
-
-```typescript
-// src/components/__tests__/HomeScreen.integration.test.ts
-import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { HomeScreen } from '../HomeScreen';
-import { mockProfile, mockEntry, mockStreak } from '../../__mocks__/mockData';
-
-describe('HomeScreen Integration', () => {
-  it('should load and display all data correctly', async () => {
-    const queryClient = createTestQueryClient();
-    
-    const { getByTestId, getByText } = render(
-      <QueryClientProvider client={queryClient}>
-        <HomeScreen />
-      </QueryClientProvider>
-    );
-    
-    // Check loading state
-    expect(getByTestId('loading-indicator')).toBeTruthy();
-    
-    // Wait for data to load
-    await waitFor(() => {
-      expect(getByText(`Welcome, ${mockProfile.username}!`)).toBeTruthy();
-    });
-    
-    // Check that all data is displayed
-    expect(getByText(`Current Streak: ${mockStreak.current_streak}`)).toBeTruthy();
-    expect(getByText('Today\'s Gratitude')).toBeTruthy();
-    
-    // Check that today's statements are displayed
-    mockEntry.statements.forEach(statement => {
-      expect(getByText(statement)).toBeTruthy();
-    });
-  });
-  
-  it('should handle error states gracefully', async () => {
-    // Mock API errors
-    server.use(
-      rest.post('*/rpc/get_profile', (req, res, ctx) => {
-        return res(ctx.status(500), ctx.json({ error: { message: 'Profile error' } }));
-      })
-    );
-    
-    const queryClient = createTestQueryClient();
-    
-    const { getByTestId } = render(
-      <QueryClientProvider client={queryClient}>
-        <HomeScreen />
-      </QueryClientProvider>
-    );
-    
-    await waitFor(() => {
-      expect(getByTestId('error-state')).toBeTruthy();
-    });
-  });
-});
-```
-
-### Testing Cross-Store Communication
-
-```typitten
-// src/__tests__/authProfileIntegration.test.ts
-import { renderHook, act, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuthStore } from '../store/authStore';
-import { useUserProfile } from '../hooks/useUserProfile';
-
-describe('Auth + Profile Integration', () => {
-  it('should fetch profile when user logs in', async () => {
-    const queryClient = createTestQueryClient();
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    );
-    
-    const { result: authResult } = renderHook(() => useAuthStore());
-    const { result: profileResult } = renderHook(() => useUserProfile(), { wrapper });
-    
-    // Initially no user, no profile query
-    expect(authResult.current.user).toBe(null);
-    expect(profileResult.current.isLoading).toBe(false);
-    expect(profileResult.current.profile).toBe(null);
-    
-    // Mock successful login
-    const mockUser = { id: 'user-123', email: 'test@example.com' };
-    require('../services/authService').signInWithEmail.mockResolvedValue({
-      user: mockUser,
-    });
-    
-    // Login
-    await act(async () => {
-      await authResult.current.loginWithEmail({
-        email: 'test@example.com',
-        password: 'password',
-      });
-    });
-    
-    // User should be authenticated
-    expect(authResult.current.isAuthenticated).toBe(true);
-    expect(authResult.current.user).toEqual(mockUser);
-    
-    // Profile query should now be enabled and loading
-    await waitFor(() => {
-      expect(profileResult.current.isLoading).toBe(true);
-    });
-    
-    // Profile should load
-    await waitFor(() => {
-      expect(profileResult.current.profile).toBeTruthy();
-    });
-  });
-  
-  it('should clear queries when user logs out', async () => {
-    const queryClient = createTestQueryClient();
-    const clearSpy = jest.spyOn(queryClient, 'clear');
-    
-    const { result } = renderHook(() => useAuthStore());
-    
-    // Set authenticated state
-    act(() => {
-      useAuthStore.setState({
-        isAuthenticated: true,
-        user: { id: 'user-123', email: 'test@example.com' },
-      });
-    });
-    
-    // Logout
-    await act(async () => {
-      await result.current.logout();
-    });
-    
-    // Query cache should be cleared
-    expect(clearSpy).toHaveBeenCalled();
-  });
-});
-```
-
-## 🎭 Mock Service Worker (MSW) Setup
-
-### API Mocking
-
-```typescript
-// src/__mocks__/server.ts
-import { setupServer } from 'msw/native';
-import { rest } from 'msw';
-import { mockProfile, mockEntries, mockStreak } from './mockData';
-
-export const handlers = [
-  // Profile API
-  rest.post('*/rpc/get_profile', (req, res, ctx) => {
-    return res(ctx.json(mockProfile));
-  }),
-  
-  rest.post('*/rpc/update_profile', (req, res, ctx) => {
-    const updates = req.body as Partial<Profile>;
-    return res(ctx.json({ ...mockProfile, ...updates }));
-  }),
-  
-  // Gratitude API
-  rest.post('*/rpc/get_gratitude_entry_by_date', (req, res, ctx) => {
-    const { entry_date } = req.body as { entry_date: string };
-    const entry = mockEntries.find(e => e.entry_date === entry_date);
-    return res(ctx.json(entry || null));
-  }),
-  
-  rest.post('*/rpc/add_gratitude_statement', (req, res, ctx) => {
-    const { entry_date, statement_text } = req.body as { 
-      entry_date: string; 
-      statement_text: string; 
+  it('should display profile data', async () => {
+    const mockProfile = {
+      id: '123',
+      username: 'testuser',
+      fullName: 'Test User',
+      dailyGratitudeGoal: 3,
+      reminderEnabled: true,
+      reminderTime: '20:00:00',
     };
-    
-    const existingEntry = mockEntries.find(e => e.entry_date === entry_date);
-    
-    if (existingEntry) {
-      const updatedEntry = {
-        ...existingEntry,
-        statements: [...existingEntry.statements, statement_text],
-      };
-      return res(ctx.json(updatedEntry));
-    } else {
-      const newEntry = {
-        id: `entry-${Date.now()}`,
-        user_id: 'user-123',
-        entry_date,
-        statements: [statement_text],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      return res(ctx.json(newEntry));
-    }
-  }),
-  
-  // Streak API
-  rest.post('*/rpc/get_user_streak', (req, res, ctx) => {
-    return res(ctx.json(mockStreak));
-  }),
-  
-  // Error handlers for testing error states
-  rest.post('*/rpc/get_profile_error', (req, res, ctx) => {
-    return res(
-      ctx.status(500),
-      ctx.json({ error: { message: 'Profile not found' } })
-    );
-  }),
-];
 
-export const server = setupServer(...handlers);
-```
-
-### Mock Data
-
-```typescript
-// src/__mocks__/mockData.ts
-export const mockProfile: Profile = {
-  id: 'profile-123',
-  username: 'Test User',
-  onboarded: true,
-  reminder_enabled: true,
-  reminder_time: '09:00',
-  throwback_reminder_enabled: false,
-  throwback_reminder_frequency: 'weekly',
-  daily_gratitude_goal: 3,
-  useVariedPrompts: true,
-};
-
-export const mockEntries: GratitudeEntry[] = [
-  {
-    id: 'entry-1',
-    user_id: 'user-123',
-    entry_date: '2024-01-15',
-    statements: [
-      'I am grateful for my family',
-      'I am grateful for good health',
-      'I am grateful for this beautiful day',
-    ],
-    created_at: '2024-01-15T09:00:00Z',
-    updated_at: '2024-01-15T09:00:00Z',
-  },
-];
-
-export const mockStreak: Streak = {
-  current_streak: 7,
-  longest_streak: 21,
-  last_entry_date: '2024-01-15',
-};
-```
-
-## 🚀 Performance Testing
-
-### Query Performance Testing
-
-```typescript
-// src/__tests__/performance/queryPerformance.test.ts
-import { renderHook, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useGratitudeEntries } from '../../hooks/useGratitudeQueries';
-
-describe('Query Performance', () => {
-  it('should cache query results efficiently', async () => {
-    const queryClient = createTestQueryClient();
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    );
-    
-    // Track network requests
-    let requestCount = 0;
-    server.use(
-      rest.post('*/rpc/get_all_gratitude_entries', (req, res, ctx) => {
-        requestCount++;
-        return res(ctx.json(mockEntries));
-      })
-    );
-    
-    // First render - should make network request
-    const { result: result1 } = renderHook(() => useGratitudeEntries(), { wrapper });
-    
-    await waitFor(() => {
-      expect(result1.current.isLoading).toBe(false);
+    mockUseUserProfile.mockReturnValue({
+      profile: mockProfile,
+      isLoading: false,
+      error: null,
+      updateProfile: jest.fn(),
+      isUpdatingProfile: false,
     });
-    
-    expect(requestCount).toBe(1);
-    
-    // Second render - should use cache
-    const { result: result2 } = renderHook(() => useGratitudeEntries(), { wrapper });
-    
-    await waitFor(() => {
-      expect(result2.current.isLoading).toBe(false);
-    });
-    
-    // Should not make another network request
-    expect(requestCount).toBe(1);
-    
-    // Both should have same data
-    expect(result1.current.data).toEqual(result2.current.data);
+
+    render(<UserProfileCard showEditButton={true} />, { wrapper: createTestWrapper() });
+
+    expect(screen.getByText('Test User')).toBeTruthy();
+    expect(screen.getByText('3 statements')).toBeTruthy();
+    expect(screen.getByText('Enabled (20:00:00)')).toBeTruthy();
+    expect(screen.getByText('Edit')).toBeTruthy();
   });
-  
-  it('should handle large datasets efficiently', async () => {
-    const largeDataset = Array.from({ length: 1000 }, (_, i) => ({
-      ...mockEntries[0],
-      id: `entry-${i}`,
-      entry_date: `2024-01-${(i % 30) + 1}`,
-    }));
-    
-    server.use(
-      rest.post('*/rpc/get_all_gratitude_entries', (req, res, ctx) => {
-        return res(ctx.json(largeDataset));
-      })
-    );
-    
-    const start = performance.now();
-    
-    const { result } = renderHook(() => useGratitudeEntries(), { 
-      wrapper: createWrapper() 
+
+  it('should display error state', () => {
+    mockUseUserProfile.mockReturnValue({
+      profile: null,
+      isLoading: false,
+      error: new Error('Failed to load profile'),
+      updateProfile: jest.fn(),
+      isUpdatingProfile: false,
     });
-    
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
-    
-    const end = performance.now();
-    const duration = end - start;
-    
-    // Should load large dataset in reasonable time
-    expect(duration).toBeLessThan(2000); // 2 seconds
-    expect(result.current.data).toHaveLength(1000);
+
+    render(<UserProfileCard />, { wrapper: createTestWrapper() });
+
+    expect(screen.getByText('Failed to load profile')).toBeTruthy();
   });
 });
 ```
 
-## 🏃‍♂️ E2E Testing
-
-### Critical User Journeys
+### Testing Form Components
 
 ```typescript
-// e2e/criticalJourneys.e2e.js
-describe('Critical User Journeys', () => {
+// __tests__/components/GratitudeStatementForm.test.tsx
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { GratitudeStatementForm } from '@/components/features/GratitudeStatementForm';
+import { useGratitudeMutations } from '@/hooks/useGratitudeMutations';
+
+jest.mock('@/hooks/useGratitudeMutations');
+const mockUseGratitudeMutations = useGratitudeMutations as jest.MockedFunction<typeof useGratitudeMutations>;
+
+describe('GratitudeStatementForm', () => {
+  const mockAddStatement = jest.fn();
+
+  beforeEach(() => {
+    mockUseGratitudeMutations.mockReturnValue({
+      addStatement: mockAddStatement,
+      isAddingStatement: false,
+      editStatement: jest.fn(),
+      deleteStatement: jest.fn(),
+    });
+  });
+
+  it('should submit valid statement', async () => {
+    const onSubmitSuccess = jest.fn();
+    const entryDate = '2024-01-15';
+
+    render(
+      <GratitudeStatementForm
+        entryDate={entryDate}
+        onSubmitSuccess={onSubmitSuccess}
+      />
+    );
+
+    const input = screen.getByTestId('statement-input');
+    const submitButton = screen.getByTestId('submit-button');
+
+    fireEvent.changeText(input, 'I am grateful for this test');
+    fireEvent.press(submitButton);
+
+    expect(mockAddStatement).toHaveBeenCalledWith(
+      { entryDate, statement: 'I am grateful for this test' },
+      expect.any(Object)
+    );
+  });
+
+  it('should show validation error for empty statement', async () => {
+    render(<GratitudeStatementForm entryDate="2024-01-15" />);
+
+    const submitButton = screen.getByTestId('submit-button');
+    fireEvent.press(submitButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('error-message')).toBeTruthy();
+      expect(screen.getByText('Please enter a gratitude statement')).toBeTruthy();
+    });
+  });
+
+  it('should disable form during submission', () => {
+    mockUseGratitudeMutations.mockReturnValue({
+      addStatement: mockAddStatement,
+      isAddingStatement: true,
+      editStatement: jest.fn(),
+      deleteStatement: jest.fn(),
+    });
+
+    render(<GratitudeStatementForm entryDate="2024-01-15" />);
+
+    expect(screen.getByTestId('submit-button')).toBeDisabled();
+    expect(screen.getByTestId('loading-indicator')).toBeTruthy();
+  });
+});
+```
+
+## 🔌 API Layer Testing
+
+### Mocking Supabase
+
+```typescript
+// __tests__/api/gratitudeApi.test.ts
+import { getGratitudeDailyEntries, addStatement } from '@/api/gratitudeApi';
+import { supabase } from '@/utils/supabaseClient';
+
+// Mock Supabase client
+jest.mock('@/utils/supabaseClient', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn(),
+    },
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      single: jest.fn(),
+    })),
+    rpc: jest.fn(),
+  },
+}));
+
+const mockSupabase = supabase as jest.Mocked<typeof supabase>;
+
+describe('gratitudeApi', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // Mock authenticated user
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'user123' } },
+      error: null,
+    });
+  });
+
+  describe('getGratitudeDailyEntries', () => {
+    it('should fetch entries successfully', async () => {
+      const mockEntries = [
+        {
+          id: '1',
+          user_id: 'user123',
+          entry_date: '2024-01-15',
+          statements: ['Statement 1', 'Statement 2'],
+        },
+      ];
+
+      const mockQuery = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockResolvedValue({ data: mockEntries, error: null }),
+      };
+
+      mockSupabase.from.mockReturnValue(mockQuery as any);
+
+      const result = await getGratitudeDailyEntries();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].statements).toEqual(['Statement 1', 'Statement 2']);
+      expect(mockSupabase.from).toHaveBeenCalledWith('gratitude_entries');
+    });
+
+    it('should handle fetch error', async () => {
+      const mockQuery = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Database error' },
+        }),
+      };
+
+      mockSupabase.from.mockReturnValue(mockQuery as any);
+
+      await expect(getGratitudeDailyEntries()).rejects.toThrow(
+        'Failed to fetch entries: Database error'
+      );
+    });
+  });
+
+  describe('addStatement', () => {
+    it('should add statement via RPC', async () => {
+      const mockResult = [
+        {
+          id: '123',
+          user_id: 'user123',
+          entry_date: '2024-01-15',
+          statements: ['New statement'],
+        },
+      ];
+
+      mockSupabase.rpc.mockResolvedValue({ data: mockResult, error: null });
+
+      const result = await addStatement('2024-01-15', 'New statement');
+
+      expect(result.statements).toContain('New statement');
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('add_gratitude_statement', {
+        p_user_id: 'user123',
+        p_entry_date: '2024-01-15',
+        p_statement: 'New statement',
+      });
+    });
+  });
+});
+```
+
+## 🎯 Integration Testing
+
+### Hook + Component Integration
+
+```typescript
+// __tests__/integration/gratitudeFlow.test.tsx
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { DailyEntryScreen } from '@/screens/DailyEntryScreen';
+import * as gratitudeApi from '@/api/gratitudeApi';
+
+jest.mock('@/api/gratitudeApi');
+const mockGratitudeApi = gratitudeApi as jest.Mocked<typeof gratitudeApi>;
+
+describe('Gratitude Flow Integration', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    jest.clearAllMocks();
+  });
+
+  const renderWithProviders = (component: React.ReactElement) => {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        {component}
+      </QueryClientProvider>
+    );
+  };
+
+  it('should complete full gratitude entry flow', async () => {
+    // Mock initial empty state
+    mockGratitudeApi.getGratitudeDailyEntryByDate.mockResolvedValue(null);
+
+    // Mock successful statement addition
+    const mockEntry = {
+      id: '123',
+      userId: 'user123',
+      entryDate: '2024-01-15',
+      statements: ['I am grateful for testing'],
+    };
+    mockGratitudeApi.addStatement.mockResolvedValue(mockEntry);
+
+    renderWithProviders(<DailyEntryScreen />);
+
+    // Verify initial state
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).toBeNull();
+    });
+
+    // Add a gratitude statement
+    const input = screen.getByTestId('statement-input');
+    const submitButton = screen.getByTestId('submit-button');
+
+    fireEvent.changeText(input, 'I am grateful for testing');
+    fireEvent.press(submitButton);
+
+    // Verify optimistic update
+    expect(screen.getByText('Adding your gratitude statement...')).toBeTruthy();
+
+    // Wait for completion
+    await waitFor(() => {
+      expect(screen.queryByText('Adding your gratitude statement...')).toBeNull();
+    });
+
+    // Verify API call
+    expect(mockGratitudeApi.addStatement).toHaveBeenCalledWith(
+      expect.any(String),
+      'I am grateful for testing'
+    );
+  });
+});
+```
+
+## 🚀 E2E Testing with Detox
+
+### Detox Configuration
+
+```javascript
+// detox.config.js
+module.exports = {
+  testRunner: 'jest',
+  runnerConfig: 'e2e/jest.config.js',
+  apps: {
+    'ios.debug': {
+      type: 'ios.app',
+      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/yeser.app',
+      build:
+        'xcodebuild -workspace ios/yeser.xcworkspace -scheme yeser -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build',
+    },
+    'android.debug': {
+      type: 'android.apk',
+      binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
+      build: 'cd android && ./gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug',
+    },
+  },
+  devices: {
+    simulator: {
+      type: 'ios.simulator',
+      device: {
+        type: 'iPhone 14',
+      },
+    },
+    emulator: {
+      type: 'android.emulator',
+      device: {
+        avdName: 'Pixel_4_API_30',
+      },
+    },
+  },
+  configurations: {
+    'ios.sim.debug': {
+      device: 'simulator',
+      app: 'ios.debug',
+    },
+    'android.emu.debug': {
+      device: 'emulator',
+      app: 'android.debug',
+    },
+  },
+};
+```
+
+### E2E Test Examples
+
+```typescript
+// e2e/gratitudeFlow.e2e.ts
+import { device, element, by, expect as detoxExpect, waitFor } from 'detox';
+
+describe('Gratitude Entry Flow', () => {
   beforeAll(async () => {
     await device.launchApp();
   });
@@ -1001,197 +682,174 @@ describe('Critical User Journeys', () => {
     await device.reloadReactNative();
   });
 
-  it('should complete full gratitude entry flow', async () => {
-    // Login
-    await element(by.id('email-input')).typeText('test@example.com');
-    await element(by.id('password-input')).typeText('password123');
-    await element(by.id('login-button')).tap();
-    
-    // Wait for home screen
+  it('should complete onboarding and add gratitude entry', async () => {
+    // Wait for app to load
+    await waitFor(element(by.id('welcome-screen')))
+      .toBeVisible()
+      .withTimeout(5000);
+
+    // Complete onboarding
+    await element(by.id('start-onboarding-button')).tap();
+    await element(by.id('next-button')).tap();
+    await element(by.id('finish-onboarding-button')).tap();
+
+    // Navigate to daily entry
     await waitFor(element(by.id('home-screen')))
       .toBeVisible()
-      .withTimeout(5000);
-    
-    // Navigate to daily entry
+      .withTimeout(3000);
+
     await element(by.id('daily-entry-tab')).tap();
-    
+
     // Add gratitude statement
-    await element(by.id('statement-input')).typeText('I am grateful for automated testing');
-    await element(by.id('add-statement-button')).tap();
-    
-    // Verify statement was added
-    await waitFor(element(by.text('I am grateful for automated testing')))
+    await element(by.id('statement-input')).typeText('I am grateful for end-to-end testing');
+    await element(by.id('submit-button')).tap();
+
+    // Verify success
+    await waitFor(element(by.text('I am grateful for end-to-end testing')))
       .toBeVisible()
       .withTimeout(3000);
-    
-    // Check streak was updated
+
+    // Verify streak update
     await element(by.id('home-tab')).tap();
-    await waitFor(element(by.id('streak-counter')))
+    await detoxExpect(element(by.id('current-streak'))).toHaveText('1');
+  });
+
+  it('should display throwback modal', async () => {
+    // Assuming user has entries
+    await element(by.id('throwback-button')).tap();
+
+    await waitFor(element(by.id('throwback-modal')))
       .toBeVisible()
       .withTimeout(3000);
-  });
-  
-  it('should handle offline scenarios', async () => {
-    // Enable airplane mode
-    await device.setURLBlacklist(['.*']);
-    
-    // Try to add statement while offline
-    await element(by.id('daily-entry-tab')).tap();
-    await element(by.id('statement-input')).typeText('Offline gratitude');
-    await element(by.id('add-statement-button')).tap();
-    
-    // Should show optimistic update
-    await waitFor(element(by.text('Offline gratitude')))
-      .toBeVisible()
-      .withTimeout(1000);
-    
-    // Disable airplane mode
-    await device.setURLBlacklist([]);
-    
-    // Should sync when back online
-    await waitFor(element(by.id('sync-indicator')))
+
+    await detoxExpect(element(by.text('Memory Lane'))).toBeVisible();
+
+    // Close modal
+    await element(by.id('close-throwback-modal')).tap();
+
+    await waitFor(element(by.id('throwback-modal')))
       .not.toBeVisible()
-      .withTimeout(5000);
+      .withTimeout(1000);
   });
 });
 ```
 
-## 📊 Coverage and Quality
+## 📈 Performance Testing
 
-### Coverage Configuration
+### Measuring Component Render Time
 
-```javascript
-// jest.config.cjs - coverage section
-module.exports = {
-  // ... other config
-  collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/__tests__/**',
-    '!src/**/__mocks__/**',
-    '!src/**/types/**',
-    '!src/**/constants/**',
-  ],
-  coverageThreshold: {
-    global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80,
-    },
-    // Specific thresholds for critical areas
-    './src/hooks/': {
-      branches: 90,
-      functions: 90,
-      lines: 90,
-      statements: 90,
-    },
-    './src/store/': {
-      branches: 85,
-      functions: 85,
-      lines: 85,
-      statements: 85,
-    },
-  },
-};
+```typescript
+// __tests__/performance/componentPerformance.test.tsx
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import { performance } from 'perf_hooks';
+import { GratitudeStatementsList } from '@/components/features/GratitudeStatementsList';
+
+describe('Component Performance', () => {
+  it('should render large lists efficiently', async () => {
+    const largeStatementList = Array.from({ length: 100 }, (_, i) => `Statement ${i + 1}`);
+
+    const mockEntry = {
+      id: '123',
+      entryDate: '2024-01-15',
+      statements: largeStatementList,
+    };
+
+    const startTime = performance.now();
+
+    render(<GratitudeStatementsList entry={mockEntry} />);
+
+    const endTime = performance.now();
+    const renderTime = endTime - startTime;
+
+    // Should render in under 100ms
+    expect(renderTime).toBeLessThan(100);
+  });
+});
 ```
 
-### Quality Gates
+## 🎯 Test Coverage and Quality
 
-```bash
-# package.json scripts
-{
-  "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:ci": "jest --coverage --watchAll=false",
-    "test:integration": "jest --testPathPattern=integration",
-    "test:e2e": "detox test",
-    "test:performance": "jest --testPathPattern=performance"
-  }
+### Coverage Requirements
+
+```javascript
+// jest.config.js coverage thresholds
+coverageThreshold: {
+  global: {
+    branches: 80,
+    functions: 80,
+    lines: 80,
+    statements: 80,
+  },
+  // Specific thresholds for critical areas
+  'src/api/': {
+    branches: 90,
+    functions: 90,
+    lines: 90,
+    statements: 90,
+  },
+  'src/hooks/': {
+    branches: 85,
+    functions: 85,
+    lines: 85,
+    statements: 85,
+  },
 }
 ```
 
-## 🔮 Advanced Testing Patterns
+### Running Tests
 
-### Testing Real-time Features
+```bash
+# Unit tests
+npm run test
 
-```typescript
-// Testing Supabase realtime + TanStack Query integration
-it('should update cache when realtime event occurs', async () => {
-  const queryClient = createTestQueryClient();
-  
-  // Mock realtime subscription
-  const mockSubscription = {
-    unsubscribe: jest.fn(),
-  };
-  
-  const mockSupabase = {
-    from: jest.fn(() => ({
-      on: jest.fn(() => ({
-        subscribe: jest.fn(() => mockSubscription),
-      })),
-    })),
-  };
-  
-  // Test that cache is invalidated on realtime event
-  const invalidateQueriesSpy = jest.spyOn(queryClient, 'invalidateQueries');
-  
-  // Simulate realtime event
-  const realtimeCallback = jest.fn();
-  mockSupabase.from().on().subscribe.mockImplementation((callback) => {
-    realtimeCallback = callback;
-    return mockSubscription;
-  });
-  
-  // Trigger realtime event
-  realtimeCallback({
-    eventType: 'UPDATE',
-    new: { id: 'entry-1', statements: ['Updated statement'] },
-  });
-  
-  expect(invalidateQueriesSpy).toHaveBeenCalled();
-});
+# Watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+
+# E2E tests
+npm run test:e2e
+
+# All tests
+npm run test:all
 ```
 
-### Testing Error Boundaries
+## 🔧 Testing Best Practices
 
-```typescript
-// Testing error recovery and fallback states
-it('should show error boundary when query fails catastrophically', async () => {
-  const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
-    const [hasError, setHasError] = React.useState(false);
-    
-    if (hasError) {
-      return <Text testID="error-boundary">Something went wrong</Text>;
-    }
-    
-    return <>{children}</>;
-  };
-  
-  // Mock catastrophic failure
-  server.use(
-    rest.post('*/rpc/get_profile', (req, res, ctx) => {
-      return res(ctx.networkError('Network completely failed'));
-    })
-  );
-  
-  const { getByTestId } = render(
-    <ErrorBoundary>
-      <QueryClientProvider client={createTestQueryClient()}>
-        <HomeScreen />
-      </QueryClientProvider>
-    </ErrorBoundary>
-  );
-  
-  await waitFor(() => {
-    expect(getByTestId('error-boundary')).toBeTruthy();
-  });
-});
+### Do's and Don'ts
+
+✅ **Do:**
+
+- Test user-facing behavior, not implementation details
+- Use proper act() wrapping for async operations
+- Mock external dependencies (APIs, device features)
+- Test loading, success, and error states
+- Use accessible selectors (testID, role, label)
+- Test optimistic updates and rollbacks
+
+❌ **Don't:**
+
+- Test internal component state directly
+- Mock components you want to test
+- Write tests that duplicate component logic
+- Test third-party library internals
+- Ignore accessibility in tests
+
+### Test Organization
+
+```
+__tests__/
+├── components/          # Component unit tests
+├── hooks/              # Hook unit tests
+├── api/                # API layer tests
+├── integration/        # Feature integration tests
+├── e2e/               # End-to-end tests
+├── performance/       # Performance tests
+└── utils/             # Test utilities and helpers
 ```
 
 ---
 
-This comprehensive testing guide provides patterns and strategies for thoroughly testing the modern TanStack Query + Zustand architecture, ensuring reliability, performance, and maintainability of the Yeser gratitude app. 
-This comprehensive testing guide provides all the tools and practices needed to maintain high-quality, reliable code in the Yeser gratitude app through effective testing strategies. 
+This testing guide provides comprehensive patterns for testing the modern TanStack Query + React Native architecture, ensuring robust quality assurance for the Yeser gratitude app.

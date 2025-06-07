@@ -225,9 +225,13 @@ const createStyles = (theme: AppTheme, variant: 'default' | 'compact' | 'card') 
       justifyContent: 'center',
     },
     title: {
-      ...theme.typography.bodyLarge,
+      fontFamily: 'Lora-Regular',
+      fontSize: theme.typography.bodyLarge.fontSize,
+      fontWeight: '500',
+      lineHeight: theme.typography.bodyLarge.lineHeight,
+      letterSpacing: -0.1,
       color: theme.colors.text,
-      marginBottom: theme.spacing.xs, // 4px modern minimal spacing
+      marginBottom: theme.spacing.xs,
     },
     subtitle: {
       ...theme.typography.bodySmall,

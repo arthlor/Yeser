@@ -125,14 +125,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     return {
       primary: `${timeElements.icon} ${greeting}, ${displayName}`,
       secondary: `${timeElements.timeText} yeni başlangıçlar yapın`,
-      accent: 'Bugünün ilk şükranını bekliyoruz ✨',
+      accent: 'Bugünün ilk minnetini bekliyoruz ✨',
     };
   };
 
   const getMotivationalSubtext = () => {
     if (currentCount === 0) {
       return {
-        main: 'Bugünün ilk şükranını ekleyerek güne başlayın',
+        main: 'Bugünün ilk minnetini ekleyerek güne başlayın',
         sub: 'Küçük adımlar, büyük değişimler yaratır',
       };
     }
@@ -141,7 +141,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     if (isGoalComplete) {
       return {
         main: 'Günlük hedefinizi tamamladınız! 🎊',
-        sub: 'İstersen daha fazla şükran ekleyebilirsiniz',
+        sub: 'İstersen daha fazla minnet ekleyebilirsiniz',
       };
     }
 
@@ -149,15 +149,19 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     const progressPercentage = Math.round((currentCount / dailyGoal) * 100);
 
     return {
-      main: `Hedefe ${remaining} şükran kaldı (${progressPercentage}% tamamlandı)`,
-      sub: 'Her şükran, kalbinizi daha da güçlendirir',
+      main: `Hedefe ${remaining} minnet kaldı (${progressPercentage}% tamamlandı)`,
+      sub: 'Her minnet, kalbinizi daha da güçlendirir',
     };
   };
 
   const getProgressColor = () => {
     const isGoalComplete = currentCount >= dailyGoal;
-    if (isGoalComplete) {return theme.colors.success;}
-    if (currentCount >= dailyGoal * 0.7) {return theme.colors.warning;}
+    if (isGoalComplete) {
+      return theme.colors.success;
+    }
+    if (currentCount >= dailyGoal * 0.7) {
+      return theme.colors.warning;
+    }
     return theme.colors.primary;
   };
 
@@ -207,8 +211,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({
       ]}
     >
       {/* Edge-to-Edge Hero Card */}
-      <ThemedCard 
-        variant="elevated" 
+      <ThemedCard
+        variant="elevated"
         density="comfortable"
         elevation="floating"
         style={styles.heroCard}
@@ -220,7 +224,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
             <Text style={styles.secondaryGreeting}>{greeting_data.secondary}</Text>
             <Text style={styles.accentText}>{greeting_data.accent}</Text>
           </View>
-          
+
           {/* Motivational Progress Section */}
           <View style={styles.motivationSection}>
             <Text style={styles.motivationMain}>{motivation.main}</Text>
@@ -243,11 +247,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                 {statusMessage}
               </Text>
               {canExtendToday && status === 'grace_period' && (
-                <Icon
-                  name="chevron-right"
-                  size={16}
-                  color={getStatusColor()}
-                />
+                <Icon name="chevron-right" size={16} color={getStatusColor()} />
               )}
             </View>
           </View>

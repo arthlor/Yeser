@@ -58,11 +58,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Geri git"
           >
-            <Icon
-              name="arrow-left"
-              size={24}
-              color={theme.colors.onBackground}
-            />
+            <Icon name="arrow-left" size={24} color={theme.colors.onBackground} />
           </TouchableOpacity>
         ) : leftComponent ? (
           leftComponent
@@ -136,6 +132,7 @@ const createStyles = (theme: AppTheme, variant: 'default' | 'large' | 'minimal')
     title: {
       fontSize: isLarge ? 24 : 18,
       fontWeight: isLarge ? '700' : '600',
+      fontFamily: isLarge ? 'Lora-Medium' : 'Lora-Regular',
       color: theme.colors.onBackground,
       textAlign: 'center',
       letterSpacing: isLarge ? -0.5 : 0,
@@ -152,4 +149,4 @@ const createStyles = (theme: AppTheme, variant: 'default' | 'large' | 'minimal')
   });
 };
 
-export default ScreenHeader; 
+export default ScreenHeader;

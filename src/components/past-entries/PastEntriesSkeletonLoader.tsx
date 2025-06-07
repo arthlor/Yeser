@@ -4,7 +4,10 @@ import { StyleSheet, View } from 'react-native';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
-import LoadingSkeleton, { CircularSkeleton, TextSkeleton } from '@/shared/components/ui/LoadingSkeleton';
+import LoadingSkeleton, {
+  CircularSkeleton,
+  TextSkeleton,
+} from '@/shared/components/ui/LoadingSkeleton';
 
 interface PastEntriesSkeletonLoaderProps {
   count?: number;
@@ -22,7 +25,7 @@ const SkeletonItem: React.FC<SkeletonItemProps> = ({ isRecent }) => {
     <View style={styles.container}>
       <ThemedCard
         variant="elevated"
-        density="standard"
+        density="comfortable"
         elevation="xs"
         style={styles.edgeToEdgeCard}
       >
@@ -30,19 +33,17 @@ const SkeletonItem: React.FC<SkeletonItemProps> = ({ isRecent }) => {
         <View style={styles.header}>
           <View style={styles.dateSection}>
             <View style={styles.dateHeader}>
-              <LoadingSkeleton 
-                variant="rounded" 
-                width="65%" 
-                height={22} 
+              <LoadingSkeleton
+                variant="rounded"
+                width="65%"
+                height={22}
                 borderRadius={theme.borderRadius.xs}
               />
-              {isRecent && (
-                <CircularSkeleton width={8} height={8} />
-              )}
+              {isRecent && <CircularSkeleton width={8} height={8} />}
             </View>
-            <LoadingSkeleton 
-              variant="rounded" 
-              width="45%" 
+            <LoadingSkeleton
+              variant="rounded"
+              width="45%"
               height={12}
               borderRadius={theme.borderRadius.xs}
             />
@@ -55,13 +56,13 @@ const SkeletonItem: React.FC<SkeletonItemProps> = ({ isRecent }) => {
           <TextSkeleton height={16} style={{ marginBottom: theme.spacing.xs }} />
           <TextSkeleton height={16} width="90%" style={{ marginBottom: theme.spacing.xs }} />
           <TextSkeleton height={16} width="70%" style={{ marginBottom: theme.spacing.xs }} />
-          
+
           {/* Content meta skeleton */}
           <View style={styles.contentMeta}>
             <CircularSkeleton width={16} height={16} />
-            <LoadingSkeleton 
-              variant="rounded" 
-              width={80} 
+            <LoadingSkeleton
+              variant="rounded"
+              width={80}
               height={12}
               borderRadius={theme.borderRadius.xs}
             />
@@ -73,28 +74,28 @@ const SkeletonItem: React.FC<SkeletonItemProps> = ({ isRecent }) => {
           <View style={styles.statsContainer}>
             <View style={styles.statGroup}>
               <CircularSkeleton width={16} height={16} />
-              <LoadingSkeleton 
-                variant="rounded" 
-                width={45} 
+              <LoadingSkeleton
+                variant="rounded"
+                width={45}
                 height={12}
                 borderRadius={theme.borderRadius.xs}
               />
             </View>
             <View style={styles.statGroup}>
               <CircularSkeleton width={16} height={16} />
-              <LoadingSkeleton 
-                variant="rounded" 
-                width={45} 
+              <LoadingSkeleton
+                variant="rounded"
+                width={45}
                 height={12}
                 borderRadius={theme.borderRadius.xs}
               />
             </View>
           </View>
-          
+
           <View style={styles.qualityContainer}>
-            <LoadingSkeleton 
-              variant="rounded" 
-              width={50} 
+            <LoadingSkeleton
+              variant="rounded"
+              width={50}
               height={18}
               borderRadius={theme.borderRadius.sm}
             />
@@ -113,10 +114,7 @@ const PastEntriesSkeletonLoader: React.FC<PastEntriesSkeletonLoaderProps> = ({ c
   return (
     <View style={styles.loaderContainer}>
       {Array.from({ length: count }).map((_, index) => (
-        <SkeletonItem 
-          key={`skeleton-${index}`} 
-          isRecent={index < 3}
-        />
+        <SkeletonItem key={`skeleton-${index}`} isRecent={index < 3} />
       ))}
     </View>
   );

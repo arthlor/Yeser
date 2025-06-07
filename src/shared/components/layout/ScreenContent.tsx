@@ -57,9 +57,7 @@ const ScreenContent: React.FC<ScreenContentProps> = ({
     return (
       <View style={[styles.container, styles.centeredContainer, style]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        {loadingText && (
-          <Text style={styles.loadingText}>{loadingText}</Text>
-        )}
+        {loadingText && <Text style={styles.loadingText}>{loadingText}</Text>}
       </View>
     );
   }
@@ -71,9 +69,7 @@ const ScreenContent: React.FC<ScreenContentProps> = ({
         <View style={styles.stateContainer}>
           <Text style={styles.stateIcon}>⚠️</Text>
           <Text style={styles.stateTitle}>{errorTitle}</Text>
-          <Text style={styles.stateSubtitle}>
-            {error || errorSubtitle}
-          </Text>
+          <Text style={styles.stateSubtitle}>{error || errorSubtitle}</Text>
           {onRetry && (
             <ThemedButton
               title={retryText}
@@ -104,14 +100,8 @@ const ScreenContent: React.FC<ScreenContentProps> = ({
 
   // Content State
   return (
-    <View style={[
-      styles.container,
-      centerContent && styles.centeredContainer,
-      style
-    ]}>
-      <View style={[styles.content, contentStyle]}>
-        {children}
-      </View>
+    <View style={[styles.container, centerContent && styles.centeredContainer, style]}>
+      <View style={[styles.content, contentStyle]}>{children}</View>
     </View>
   );
 };
@@ -139,8 +129,9 @@ const createStyles = (theme: AppTheme, centerContent: boolean) =>
       marginBottom: theme.spacing.lg,
     },
     stateTitle: {
+      fontFamily: 'Lora-Medium',
       fontSize: 20,
-      fontWeight: '700',
+      fontWeight: '600',
       color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.sm,
@@ -148,6 +139,7 @@ const createStyles = (theme: AppTheme, centerContent: boolean) =>
       lineHeight: 24,
     },
     stateSubtitle: {
+      fontFamily: 'Inter-Regular',
       fontSize: 16,
       fontWeight: '500',
       color: theme.colors.onSurfaceVariant,
@@ -156,6 +148,7 @@ const createStyles = (theme: AppTheme, centerContent: boolean) =>
       marginBottom: theme.spacing.xl,
     },
     loadingText: {
+      fontFamily: 'Inter-Regular',
       fontSize: 16,
       fontWeight: '500',
       color: theme.colors.onSurfaceVariant,
@@ -167,4 +160,4 @@ const createStyles = (theme: AppTheme, centerContent: boolean) =>
     },
   });
 
-export default ScreenContent; 
+export default ScreenContent;

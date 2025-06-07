@@ -92,7 +92,7 @@ const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({
             style={[
               styles.meterFill,
               {
-                width: `${(requirements.filter(r => r.met).length / requirements.length) * 100}%`,
+                width: `${(requirements.filter((r) => r.met).length / requirements.length) * 100}%`,
                 backgroundColor: getStrengthColor(),
               },
             ]}
@@ -121,9 +121,12 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: theme.spacing.sm,
     },
     title: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurface,
+      fontFamily: 'Lora-Medium',
+      fontSize: theme.typography.bodyMedium.fontSize,
       fontWeight: '600',
+      color: theme.colors.onSurface,
+      letterSpacing: -0.1,
+      lineHeight: 18,
     },
     strengthText: {
       ...theme.typography.labelSmall,
@@ -159,4 +162,4 @@ const createStyles = (theme: AppTheme) =>
     },
   });
 
-export default PasswordStrengthIndicator; 
+export default PasswordStrengthIndicator;

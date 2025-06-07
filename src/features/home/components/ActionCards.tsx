@@ -68,7 +68,7 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
 
       if (currentCount === 0) {
         return {
-          title: 'Bugünün İlk Şükranını Ekle',
+          title: 'Bugünün İlk Minnetini Ekle',
           subtitle: 'Güne minnetle başlayın',
           icon: 'plus-circle',
           progressText: 'Henüz başlamadınız',
@@ -80,8 +80,8 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
       }
 
       return {
-        title: 'Bugünün Şükranlarını Tamamla',
-        subtitle: `${dailyGoal - currentCount} şükran daha`,
+        title: 'Bugünün Minnetlerini Tamamla',
+        subtitle: `${dailyGoal - currentCount} minnet daha`,
         icon: 'heart-plus',
         progressText: `${Math.round(progress * 100)}% tamamlandı`,
       };
@@ -94,7 +94,7 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
         {/* Enhanced Primary Action Card - Only show when goal not completed */}
         {primaryAction && (
           <Animated.View style={{ transform: [{ scale: primaryCardScale }] }}>
-            <ThemedCard 
+            <ThemedCard
               variant="elevated"
               density="comfortable"
               elevation="floating"
@@ -143,15 +143,17 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
         )}
 
         {/* Enhanced Secondary Action Cards - Edge-to-Edge Container */}
-        <ThemedCard 
-          variant="elevated" 
+        <ThemedCard
+          variant="elevated"
           density="compact"
           elevation="card"
           style={styles.secondaryCardsContainer}
         >
           <View style={styles.secondaryCardsGrid}>
             {/* Enhanced Past Entries Card */}
-            <Animated.View style={[styles.cardWrapper, { transform: [{ scale: pastEntriesScale }] }]}>
+            <Animated.View
+              style={[styles.cardWrapper, { transform: [{ scale: pastEntriesScale }] }]}
+            >
               <ThemedCard
                 density="compact"
                 elevation="xs"
@@ -164,7 +166,12 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                 }}
               >
                 <View style={styles.secondaryCardContent}>
-                  <View style={[styles.secondaryIconContainer, { backgroundColor: theme.colors.primaryContainer }]}>
+                  <View
+                    style={[
+                      styles.secondaryIconContainer,
+                      { backgroundColor: theme.colors.primaryContainer },
+                    ]}
+                  >
                     <Icon name="history" size={20} color={theme.colors.primary} />
                   </View>
                   <Text style={styles.secondaryCardTitle}>Geçmiş</Text>
@@ -188,7 +195,12 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                 }}
               >
                 <View style={styles.secondaryCardContent}>
-                  <View style={[styles.secondaryIconContainer, { backgroundColor: theme.colors.secondaryContainer }]}>
+                  <View
+                    style={[
+                      styles.secondaryIconContainer,
+                      { backgroundColor: theme.colors.secondaryContainer },
+                    ]}
+                  >
                     <Icon name="calendar-month" size={20} color={theme.colors.secondary} />
                   </View>
                   <Text style={styles.secondaryCardTitle}>Takvim</Text>

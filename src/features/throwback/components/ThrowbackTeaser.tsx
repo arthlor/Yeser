@@ -179,12 +179,14 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
       hasEntry: !!throwbackEntry,
       isLoading,
       error: error?.substring(0, 100), // Log first 100 chars of error
-      entryData: throwbackEntry ? {
-        date: throwbackEntry.entry_date,
-        statementsCount: throwbackEntry.statements?.length,
-        firstStatement: throwbackEntry.statements?.[0]?.substring(0, 50)
-      } : null,
-      timestamp: new Date().toISOString()
+      entryData: throwbackEntry
+        ? {
+            date: throwbackEntry.entry_date,
+            statementsCount: throwbackEntry.statements?.length,
+            firstStatement: throwbackEntry.statements?.[0]?.substring(0, 50),
+          }
+        : null,
+      timestamp: new Date().toISOString(),
     });
   }, [throwbackEntry, isLoading, error]);
 
@@ -203,16 +205,14 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
     // Show error only if no entry is present
     return (
       <View style={styles.container}>
-        <TouchableOpacity 
-          style={styles.errorCard}
-          onPress={onRefresh}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.errorCard} onPress={onRefresh} activeOpacity={0.7}>
           <Icon name="alert-circle-outline" size={20} color={theme.colors.onErrorContainer} />
           <View style={{ flex: 1 }}>
             <Text style={styles.throwbackErrorText}>{error}</Text>
             {onRefresh && (
-              <Text style={[styles.throwbackErrorText, { fontSize: 12, opacity: 0.8, marginTop: 4 }]}>
+              <Text
+                style={[styles.throwbackErrorText, { fontSize: 12, opacity: 0.8, marginTop: 4 }]}
+              >
                 Tekrar denemek için dokunun
               </Text>
             )}
@@ -226,7 +226,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
     // Show placeholder when no data available
     return (
       <View style={styles.container}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.placeholderCard}
           onPress={() => {
             logger.debug('ThrowbackTeaser: Manual refresh triggered by user tap');
@@ -257,7 +257,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
             <Icon name="history" size={22} color={theme.colors.primary} />
             <Text style={styles.headerTitle}>Geçmişten Bir Anı</Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.refreshButton}
             onPress={onRefresh}
             activeOpacity={0.7}
@@ -274,7 +274,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
 
       {/* Beautiful Statement Card */}
       <StatementCard
-        statement={throwbackEntry.statements?.[0] || 'Geçmişten bir şükran ifadeniz var.'}
+        statement={throwbackEntry.statements?.[0] || 'Geçmişten bir minnet ifadeniz var.'}
         date={formattedDate}
         variant="highlighted"
         showQuotes={true}

@@ -30,7 +30,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  
+
   // Swipe state
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
@@ -74,7 +74,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
   const getAllInspirationItems = (): InspirationItem[] => {
     const hour = new Date().getHours();
     const progress = currentCount / dailyGoal;
-    
+
     // Goal completed inspirations
     if (currentCount >= dailyGoal) {
       return [
@@ -82,14 +82,15 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
           id: 'celebration-1',
           icon: 'star-circle',
           title: 'Günlük Hedefinizi Tamamladınız! 🎉',
-          message: 'Minnettarlığınız bugün güzelce çiçeklenmiş. İstersen daha fazla şükran ekleyebilirsiniz.',
+          message:
+            'Minnettarlığınız bugün güzelce çiçeklenmiş. İstersen daha fazla minnet ekleyebilirsiniz.',
           color: theme.colors.success,
         },
         {
           id: 'celebration-2',
           icon: 'trophy',
           title: 'Harika Bir Başarı! ✨',
-          message: 'Bugünkü minnet yolculuğunuz tamamlandı. Kalbiniz şükranla dolu.',
+          message: 'Bugünkü minnet yolculuğunuz tamamlandı. Kalbiniz minnetle dolu.',
           color: theme.colors.success,
         },
         {
@@ -110,7 +111,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
           id: 'celebration-5',
           icon: 'diamond',
           title: 'Değerli Bir Kazanım! 💎',
-          message: 'Her şükran bir değerli taş gibi. Bugün hazinenizi tamamladınız.',
+          message: 'Her minnet bir değerli taş gibi. Bugün hazinenizi tamamladınız.',
           color: theme.colors.success,
         },
         {
@@ -130,7 +131,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
           id: 'progress-1',
           icon: 'heart-pulse',
           title: 'Güzel İlerliyorsunuz! 💫',
-          message: 'Her şükran kalbinizi güçlendiriyor. Devam edin, hedefinize çok yakınsınız.',
+          message: 'Her minnet kalbinizi güçlendiriyor. Devam edin, hedefinize çok yakınsınız.',
           color: theme.colors.primary,
         },
         {
@@ -144,14 +145,14 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
           id: 'progress-3',
           icon: 'chart-line',
           title: 'Başarılı Adımlar! 📈',
-          message: `${Math.round(progress * 100)}% tamamlandı! Her şükran sizi hedefnize yaklaştırıyor.`,
+          message: `${Math.round(progress * 100)}% tamamlandı! Her minnet sizi hedefnize yaklaştırıyor.`,
           color: theme.colors.primary,
         },
         {
           id: 'progress-4',
           icon: 'triangle',
           title: 'Zirveye Doğru Yürüyorsunuz! ⛰️',
-          message: 'Her şükran sizi minnettarlık zirvesine bir adım daha yaklaştırıyor.',
+          message: 'Her minnet sizi minnettarlık zirvesine bir adım daha yaklaştırıyor.',
           color: theme.colors.secondary,
         },
         {
@@ -177,8 +178,9 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
         {
           id: 'morning-1',
           icon: 'weather-sunny',
-          title: 'Güne Şükranla Başlayın 🌅',
-          message: 'Her yeni gün, yeni şükranlar keşfetmek için bir fırsattır. Bugün hangi güzellikleri fark edeceksiniz?',
+          title: 'Güne Minnetle Başlayın 🌅',
+          message:
+            'Her yeni gün, yeni minnetler keşfetmek için bir fırsattır. Bugün hangi güzellikleri fark edeceksiniz?',
           color: theme.colors.primary,
         },
         {
@@ -213,20 +215,21 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
           id: 'morning-6',
           icon: 'rainbow',
           title: 'Renkli Bir Gün Başlıyor 🌈',
-          message: 'Her şükran hayatınıza yeni bir renk katıyor. Bugün paleti nasıl renklendireceiz?',
+          message:
+            'Her minnet hayatınıza yeni bir renk katıyor. Bugün paleti nasıl renklendireceiz?',
           color: theme.colors.tertiary,
         },
       ];
     }
 
-    // Afternoon inspirations  
+    // Afternoon inspirations
     if (hour >= 12 && hour < 17) {
       return [
         {
           id: 'afternoon-1',
           icon: 'heart-outline',
           title: 'Günün Ortasında Bir Mola 🌞',
-          message: 'Şu ana kadar yaşadığınız güzel anlar için bir şükran duygusal durumu yaşayın.',
+          message: 'Şu ana kadar yaşadığınız güzel anlar için bir minnet duygusal durumu yaşayın.',
           color: theme.colors.primary,
         },
         {
@@ -247,7 +250,8 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
           id: 'afternoon-4',
           icon: 'fountain',
           title: 'Berrak Düşünceler 💧',
-          message: 'Öğlen saatlerinin berraklığında, kalbinizdeki şükran çeşmesinin sesini dinleyin.',
+          message:
+            'Öğlen saatlerinin berraklığında, kalbinizdeki minnet çeşmesinin sesini dinleyin.',
           color: theme.colors.primary,
         },
         {
@@ -274,7 +278,8 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
           id: 'evening-1',
           icon: 'weather-sunset',
           title: 'Günün Güzelliklerini Hatırlayın 🌆',
-          message: 'Akşam saatlerinde, bugün size sevgi getiren anları düşünmek için mükemmel bir zaman.',
+          message:
+            'Akşam saatlerinde, bugün size sevgi getiren anları düşünmek için mükemmel bir zaman.',
           color: theme.colors.primary,
         },
         {
@@ -288,7 +293,8 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
           id: 'evening-3',
           icon: 'home-heart',
           title: 'Sıcak Yuva Hissi 🏠',
-          message: 'Akşam sakinliğinde, size güven veren insanlar ve yerler için şükran duygularınızı hatırlayın.',
+          message:
+            'Akşam sakinliğinde, size güven veren insanlar ve yerler için minnet duygularınızı hatırlayın.',
           color: theme.colors.tertiary,
         },
         {
@@ -328,7 +334,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
         id: 'night-2',
         icon: 'star',
         title: 'Yıldızlar Gibi Parlayan Anılar ⭐',
-        message: 'Her şükran, gecenin karanlığında parlayan bir yıldız gibidir.',
+        message: 'Her minnet, gecenin karanlığında parlayan bir yıldız gibidir.',
         color: theme.colors.secondary,
       },
       {
@@ -341,7 +347,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
       {
         id: 'night-4',
         icon: 'moon',
-        title: 'Ayışığında Şükranlar 🌕',
+        title: 'Ayışığında Minnetler 🌕',
         message: 'Ayın yumuşak ışığı gibi, minnettarlığınız da kalbinizi yumuşakça aydınlatır.',
         color: theme.colors.primary,
       },
@@ -349,7 +355,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
         id: 'night-5',
         icon: 'firefly',
         title: 'Ateş Böcekleri Gibi 🪲',
-        message: 'Gece karanlığında, her şükran küçük bir ışık gibi umut saçar.',
+        message: 'Gece karanlığında, her minnet küçük bir ışık gibi umut saçar.',
         color: theme.colors.secondary,
       },
       {
@@ -373,13 +379,9 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
             { transform: [{ scale: currentIndex === index ? pulseAnim : 1 }] },
           ]}
         >
-          <Icon 
-            name={item.icon} 
-            size={20} 
-            color={item.color}
-          />
+          <Icon name={item.icon} size={20} color={item.color} />
         </Animated.View>
-        
+
         <View style={styles.textContainer}>
           <Text style={styles.title}>{item.title}</Text>
           <Text style={styles.message}>{item.message}</Text>
@@ -405,8 +407,8 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
         },
       ]}
     >
-      <ThemedCard 
-        variant="elevated" 
+      <ThemedCard
+        variant="elevated"
         density="comfortable"
         elevation="card"
         style={styles.inspirationCard}
@@ -425,7 +427,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
           snapToAlignment="center"
           decelerationRate="fast"
         />
-        
+
         {/* Page indicators */}
         {inspirationItems.length > 1 && (
           <View style={styles.paginationContainer}>
@@ -435,11 +437,10 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
                 style={[
                   styles.paginationDot,
                   {
-                    backgroundColor: currentIndex === index 
-                      ? theme.colors.primary 
-                      : theme.colors.outline + '40',
+                    backgroundColor:
+                      currentIndex === index ? theme.colors.primary : theme.colors.outline + '40',
                     transform: [{ scale: currentIndex === index ? 1.2 : 1 }],
-                  }
+                  },
                 ]}
               />
             ))}
@@ -516,4 +517,4 @@ const createStyles = (theme: AppTheme) =>
     },
   });
 
-export default DailyInspiration; 
+export default DailyInspiration;

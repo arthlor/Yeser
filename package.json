@@ -75,7 +75,8 @@
     "toggle-switch-react-native": "^3.3.0",
     "url-lite": "^1.0.2",
     "zod": "^3.25.48",
-    "zustand": "^5.0.5"
+    "zustand": "^5.0.5",
+    "expo-print": "~14.1.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

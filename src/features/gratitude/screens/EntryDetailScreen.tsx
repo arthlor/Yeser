@@ -2,16 +2,16 @@ import { CompositeNavigationProp, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { 
-  Alert, 
+import {
+  Alert,
   Animated,
-  LayoutAnimation, 
-  Platform, 
-  RefreshControl, 
-  StyleSheet, 
-  Text, 
-  UIManager, 
-  View 
+  LayoutAnimation,
+  Platform,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  UIManager,
+  View,
 } from 'react-native';
 
 import ErrorState from '@/shared/components/ui/ErrorState';
@@ -22,7 +22,7 @@ import { useGratitudeEntry, useGratitudeMutations } from '../hooks';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { RootStackParamList } from '@/types/navigation';
-import { ScreenLayout} from '@/shared/components/layout';
+import { ScreenLayout } from '@/shared/components/layout';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
 import { ZodError } from 'zod';
@@ -90,19 +90,19 @@ const EnhancedEntryDetailScreen: React.FC<{
     if (!entry.entry_date) {
       return { formattedDate: 'Tarih bilgisi yok', relativeTime: '' };
     }
-    
+
     const entryDateObj = new Date(entry.entry_date);
     const today = new Date();
     const diffTime = today.getTime() - entryDateObj.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     const formattedDate = entryDateObj.toLocaleDateString('tr-TR', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       weekday: 'long',
     });
-    
+
     let relativeTime = '';
     if (diffDays === 0) {
       relativeTime = 'Bugün';
@@ -117,7 +117,7 @@ const EnhancedEntryDetailScreen: React.FC<{
       const months = Math.floor(diffDays / 30);
       relativeTime = `${months} ay önce`;
     }
-    
+
     return { formattedDate, relativeTime };
   };
 
@@ -126,20 +126,20 @@ const EnhancedEntryDetailScreen: React.FC<{
   // Error handling for mutations
   useEffect(() => {
     if (editStatementError) {
-      Alert.alert('Hata', 'Şükran ifadesi düzenlenirken bir hata oluştu. Lütfen tekrar deneyin.');
+      Alert.alert('Hata', 'Minnet ifadesi düzenlenirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
   }, [editStatementError]);
 
   useEffect(() => {
     if (deleteStatementError) {
-      Alert.alert('Hata', 'Şükran ifadesi silinirken bir hata oluştu. Lütfen tekrar deneyin.');
+      Alert.alert('Hata', 'Minnet ifadesi silinirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
   }, [deleteStatementError]);
 
   useEffect(() => {
     // Start animations immediately when component mounts or data changes
     setAnimationsReady(true);
-    
+
     // Header animations
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -157,19 +157,19 @@ const EnhancedEntryDetailScreen: React.FC<{
 
   // Handle initial loading state
   if (isLoadingEntry) {
-    return (
-      <LoadingState 
-        fullScreen={true}
-        message="Minnet kayıtları yükleniyor..."
-      />
-    );
+    return <LoadingState fullScreen={true} message="Minnet kayıtları yükleniyor..." />;
   }
 
   // Handle error state
   if (entryError) {
     return (
-      <ScreenLayout scrollable={false} showsVerticalScrollIndicator={false} edges={['top']} edgeToEdge={true}>
-        <ErrorState 
+      <ScreenLayout
+        scrollable={false}
+        showsVerticalScrollIndicator={false}
+        edges={['top']}
+        edgeToEdge={true}
+      >
+        <ErrorState
           title="Yüklenemedi"
           message="Minnet kayıtları yüklenirken bir hata oluştu. Lütfen tekrar deneyin."
           icon="calendar-alert"
@@ -212,7 +212,10 @@ const EnhancedEntryDetailScreen: React.FC<{
         Alert.alert('Hata', error.errors[0]?.message || 'Geçersiz girdi');
       } else {
         Alert.alert('Hata', 'Bir hata oluştu');
-        logger.error('Edit statement error:', error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          'Edit statement error:',
+          error instanceof Error ? error : new Error(String(error))
+        );
       }
     }
   };
@@ -226,33 +229,32 @@ const EnhancedEntryDetailScreen: React.FC<{
   };
 
   const handleDeleteStatement = async (index: number) => {
-    Alert.alert(
-      'Sil',
-      'Bu minnet ifadesini silmek istediğinizden emin misiniz?',
-      [
-        { text: 'İptal', style: 'cancel' },
-        {
-          text: 'Sil',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteStatement({
-                entryDate: entryDate,
-                statementIndex: index,
-              });
+    Alert.alert('Sil', 'Bu minnet ifadesini silmek istediğinizden emin misiniz?', [
+      { text: 'İptal', style: 'cancel' },
+      {
+        text: 'Sil',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteStatement({
+              entryDate: entryDate,
+              statementIndex: index,
+            });
 
-              if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-                UIManager.setLayoutAnimationEnabledExperimental(true);
-              }
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            } catch (error) {
-              Alert.alert('Hata', 'Silme işlemi başarısız oldu');
-              logger.error('Delete statement error:', error instanceof Error ? error : new Error(String(error)));
+            if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+              UIManager.setLayoutAnimationEnabledExperimental(true);
             }
-          },
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          } catch (error) {
+            Alert.alert('Hata', 'Silme işlemi başarısız oldu');
+            logger.error(
+              'Delete statement error:',
+              error instanceof Error ? error : new Error(String(error))
+            );
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleRefresh = async () => {
@@ -267,7 +269,7 @@ const EnhancedEntryDetailScreen: React.FC<{
 
   // Enhanced Empty State Component
   const EmptyStateEnhanced = () => (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.emptyStateContainer,
         {
@@ -276,50 +278,50 @@ const EnhancedEntryDetailScreen: React.FC<{
         },
       ]}
     >
-      <ThemedCard 
-        variant="outlined" 
+      <ThemedCard
+        variant="outlined"
         density="comfortable"
         elevation="card"
         style={styles.emptyStateCard}
       >
         <View style={styles.emptyState}>
           <View style={styles.emptyIconContainer}>
-            <MaterialCommunityIcons 
-              name="heart-outline" 
-              size={72} 
-              color={theme.colors.primary + '60'} 
+            <MaterialCommunityIcons
+              name="heart-outline"
+              size={72}
+              color={theme.colors.primary + '60'}
             />
             <View style={styles.sparkleContainer}>
-              <MaterialCommunityIcons 
-                name="star-outline" 
-                size={16} 
-                color={theme.colors.primary + '40'} 
+              <MaterialCommunityIcons
+                name="star-outline"
+                size={16}
+                color={theme.colors.primary + '40'}
                 style={styles.sparkle1}
               />
-              <MaterialCommunityIcons 
-                name="star-outline" 
-                size={12} 
-                color={theme.colors.primary + '40'} 
+              <MaterialCommunityIcons
+                name="star-outline"
+                size={12}
+                color={theme.colors.primary + '40'}
                 style={styles.sparkle2}
               />
-              <MaterialCommunityIcons 
-                name="star-outline" 
-                size={14} 
-                color={theme.colors.primary + '40'} 
+              <MaterialCommunityIcons
+                name="star-outline"
+                size={14}
+                color={theme.colors.primary + '40'}
                 style={styles.sparkle3}
               />
             </View>
           </View>
           <Text style={styles.emptyTitle}>Bu günün hikayesi henüz yazılmamış</Text>
           <Text style={styles.emptySubtitle}>
-            Bu özel güne ait şükran kayıtları henüz yok.{'\n'}
+            Bu özel güne ait minnet kayıtları henüz yok.{'\n'}
             Geri dönüp o günün güzel anılarını paylaşabilirsin!
           </Text>
           <View style={styles.emptyQuote}>
-            <MaterialCommunityIcons 
-              name="format-quote-open" 
-              size={20} 
-              color={theme.colors.primary + '60'} 
+            <MaterialCommunityIcons
+              name="format-quote-open"
+              size={20}
+              color={theme.colors.primary + '60'}
             />
             <Text style={styles.emptyQuoteText}>
               "Her gün, minnettarlık için{'\n'}yeni fırsatlar sunar."
@@ -331,9 +333,9 @@ const EnhancedEntryDetailScreen: React.FC<{
   );
 
   return (
-    <ScreenLayout 
-      scrollable={true} 
-      showsVerticalScrollIndicator={false} 
+    <ScreenLayout
+      scrollable={true}
+      showsVerticalScrollIndicator={false}
       density="compact"
       edges={['top']}
       edgeToEdge={true}
@@ -348,7 +350,7 @@ const EnhancedEntryDetailScreen: React.FC<{
       }
     >
       {/* 🎯 ENHANCED HERO ZONE: Edge-to-Edge Header */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.heroZone,
           {
@@ -357,8 +359,8 @@ const EnhancedEntryDetailScreen: React.FC<{
           },
         ]}
       >
-        <ThemedCard 
-          variant="elevated" 
+        <ThemedCard
+          variant="elevated"
           density="comfortable"
           elevation="floating"
           style={styles.heroCard}
@@ -371,60 +373,64 @@ const EnhancedEntryDetailScreen: React.FC<{
                     {new Date(entry.entry_date || new Date()).getDate()}
                   </Text>
                   <Text style={styles.monthText}>
-                    {new Date(entry.entry_date || new Date()).toLocaleDateString('tr-TR', { month: 'short' }).toUpperCase()}
+                    {new Date(entry.entry_date || new Date())
+                      .toLocaleDateString('tr-TR', { month: 'short' })
+                      .toUpperCase()}
                   </Text>
                 </View>
                 <View style={styles.dateInfo}>
                   <Text style={styles.dateText}>{formattedDate}</Text>
                   <View style={styles.relativeDateContainer}>
-                    <MaterialCommunityIcons 
-                      name="clock-outline" 
-                      size={14} 
-                      color={theme.colors.onSurfaceVariant} 
+                    <MaterialCommunityIcons
+                      name="clock-outline"
+                      size={14}
+                      color={theme.colors.onSurfaceVariant}
                     />
                     <Text style={styles.relativeDateText}>{relativeTime}</Text>
                   </View>
                 </View>
               </View>
-              
+
               <View style={styles.statsSection}>
                 <View style={styles.countBadge}>
-                  <MaterialCommunityIcons 
-                    name="heart" 
-                    size={16} 
-                    color={theme.colors.primary} 
-                  />
+                  <MaterialCommunityIcons name="heart" size={16} color={theme.colors.primary} />
                   <Text style={styles.countText}>{gratitudeItems.length}</Text>
                 </View>
                 <Text style={styles.countLabel}>minnet kaydı</Text>
               </View>
             </View>
-            
+
             {gratitudeItems.length > 0 && (
               <View style={styles.progressSection}>
                 <View style={styles.progressHeader}>
                   <Text style={styles.progressTitle}>
-                    {gratitudeItems.length >= 3 
-                      ? '🎉 O gün hedef tamamlanmıştı!' 
-                      : `Hedefe ${3 - gratitudeItems.length} kaldı`
-                    }
+                    {gratitudeItems.length >= 3
+                      ? '🎉 O gün hedef tamamlanmıştı!'
+                      : `Hedefe ${3 - gratitudeItems.length} kaldı`}
                   </Text>
                 </View>
                 <View style={styles.progressLineContainer}>
                   <View style={styles.progressLine}>
-                    <View 
+                    <View
                       style={[
                         styles.progressLineFill,
-                        { 
+                        {
                           width: `${Math.min((gratitudeItems.length / 3) * 100, 100)}%`,
-                          backgroundColor: gratitudeItems.length >= 3 ? theme.colors.success : theme.colors.primary,
-                        }
-                      ]} 
+                          backgroundColor:
+                            gratitudeItems.length >= 3
+                              ? theme.colors.success
+                              : theme.colors.primary,
+                        },
+                      ]}
                     />
                   </View>
                   {gratitudeItems.length >= 3 && (
                     <View style={styles.goalCompleteIndicator}>
-                      <MaterialCommunityIcons name="check-circle" size={16} color={theme.colors.success} />
+                      <MaterialCommunityIcons
+                        name="check-circle"
+                        size={16}
+                        color={theme.colors.success}
+                      />
                     </View>
                   )}
                 </View>
@@ -437,25 +443,29 @@ const EnhancedEntryDetailScreen: React.FC<{
       {/* 🎯 ENHANCED CONTENT ZONE: Edge-to-Edge Statements Display */}
       {gratitudeItems.length > 0 ? (
         <View style={styles.contentZone}>
-          <ThemedCard 
-            variant="elevated" 
+          <ThemedCard
+            variant="elevated"
             density="standard"
             elevation="card"
             style={styles.statementsCard}
           >
             <View style={styles.statementsHeader}>
               <View style={styles.statementsHeaderLeft}>
-                <MaterialCommunityIcons name="format-list-bulleted" size={20} color={theme.colors.onSurface} />
+                <MaterialCommunityIcons
+                  name="format-list-bulleted"
+                  size={20}
+                  color={theme.colors.onSurface}
+                />
                 <Text style={styles.statementsTitle}>O günkü minnetlerin</Text>
               </View>
               <View style={styles.statementsCounter}>
                 <Text style={styles.statementsCountText}>{gratitudeItems.length}</Text>
               </View>
             </View>
-            
+
             <View style={styles.statementsContainer}>
               {gratitudeItems.map((item, index) => (
-                <Animated.View 
+                <Animated.View
                   key={index}
                   style={[
                     styles.statementWrapper,
@@ -465,7 +475,7 @@ const EnhancedEntryDetailScreen: React.FC<{
                         {
                           translateY: fadeAnim.interpolate({
                             inputRange: [0, 1],
-                            outputRange: [20 + (index * 5), 0],
+                            outputRange: [20 + index * 5, 0],
                           }),
                         },
                         {
@@ -485,31 +495,20 @@ const EnhancedEntryDetailScreen: React.FC<{
                     showQuotes={true}
                     animateEntrance={false} // Already animated by parent
                     onPress={() => handleEditStatement(index)}
-                    
-                    // ✨ NEW: Enhanced Interactive Features  
+                    // Enhanced Interactive Features
                     isEditing={editingStatementIndex === index}
                     isLoading={isEditingStatement || isDeletingStatement}
                     onEdit={() => handleEditStatement(index)}
                     onDelete={() => handleDeleteStatement(index)}
                     onCancel={handleCancelEditingStatement}
                     onSave={(updatedText: string) => handleSaveEditedStatement(index, updatedText)}
-                    
-                    // ✨ NEW: Interaction Configuration - Button-Based Approach
-                    enableSwipeActions={false} // Disabled per user preference
-                    enableLongPress={false} // Simplified interaction
+                    // Interaction Configuration
                     enableInlineEdit={true}
-                    enableQuickActions={true} // Small polished buttons
-                    
-                    // ✨ NEW: Visual Enhancement Options - Clean Button Interface
-                    showActionOverlay={false} // Use quick action buttons instead
-                    actionPosition="bottom"
                     confirmDelete={true}
                     maxLength={500}
-                    
-                    // ✨ NEW: Accessibility & Feedback
-                    accessibilityLabel={`Şükran ${index + 1}: ${item}`}
+                    // Accessibility & Feedback
+                    accessibilityLabel={`Minnet ${index + 1}: ${item}`}
                     hapticFeedback={false} // Simplified feedback
-                    
                     style={{
                       marginBottom: theme.spacing.md,
                     }}
@@ -626,7 +625,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       fontWeight: '500',
     },
-    
+
     // Enhanced Progress Section
     progressSection: {
       borderTopWidth: 1,

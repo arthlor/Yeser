@@ -127,11 +127,16 @@ export interface ThemeTypographyStyle {
 }
 
 export interface ThemeTypography {
-  // Font families
+  // Font families - Enhanced for Verdant Serenity
   fontFamilyRegular: string;
   fontFamilyMedium: string;
   fontFamilyBold: string;
   fontFamilyMono: string;
+
+  // Serif font families for journal feel
+  fontFamilySerif?: string; // Optional serif for headlines
+  fontFamilySerifMedium?: string; // Optional medium serif
+  fontFamilySerifBold?: string; // Optional bold serif
 
   // Display styles
   displayLarge: ThemeTypographyStyle;

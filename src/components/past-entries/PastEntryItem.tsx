@@ -17,13 +17,13 @@ interface PastEntryItemProps {
 
 /**
  * Enhanced Past Entry Item with Edge-to-Edge Design
- * 
+ *
  * DESIGN PHILOSOPHY:
  * 1. CONTENT ZONE: Edge-to-edge entry cards with rich preview content
  * 2. VISUAL DEPTH: Enhanced shadows and elevation for modern feel
  * 3. INTERACTION STATES: Better visual feedback and micro-interactions
  * 4. TYPOGRAPHY HIERARCHY: Consistent with established design system
- * 
+ *
  * UX ENHANCEMENTS:
  * - Edge-to-edge card design with proper spacing
  * - Enhanced content preview with better readability
@@ -73,7 +73,7 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
   const getEnhancedContentPreview = () => {
     if (!entry.statements || entry.statements.length === 0) {
       return {
-        preview: 'Bu tarihe ait henüz bir şükran kaydı eklenmemiş.',
+        preview: 'Bu tarihe ait henüz bir minnet kaydı eklenmemiş.',
         hasMore: false,
         isEmpty: true,
       };
@@ -81,10 +81,9 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
 
     // Create a more engaging preview
     const firstStatement = entry.statements[0];
-    const preview = firstStatement.length > 120 
-      ? firstStatement.substring(0, 120) + '...' 
-      : firstStatement;
-    
+    const preview =
+      firstStatement.length > 120 ? firstStatement.substring(0, 120) + '...' : firstStatement;
+
     return {
       preview,
       hasMore: entry.statements.length > 1,
@@ -100,17 +99,12 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
 
   return (
     <View style={styles.itemContainer}>
-      <ThemedCard
-        variant="elevated"
-        density="compact"
-        elevation="xs"
-        style={styles.entryCard}
-      >
+      <ThemedCard variant="elevated" density="comfortable" elevation="xs" style={styles.entryCard}>
         <TouchableOpacity
           onPress={handlePress}
           style={styles.cardContent}
           activeOpacity={0.8}
-          accessibilityLabel={`Şükran kaydı: ${getRelativeDate(entryDate)}`}
+          accessibilityLabel={`Minnet kaydı: ${getRelativeDate(entryDate)}`}
           accessibilityHint="Detayları görüntülemek için dokunun"
         >
           {/* Enhanced Header Section */}
@@ -118,9 +112,7 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
             <View style={styles.dateSection}>
               <View style={styles.dateHeader}>
                 <View style={styles.dateDisplayBadge}>
-                  <Text style={styles.dayNumber}>
-                    {entryDate.getDate()}
-                  </Text>
+                  <Text style={styles.dayNumber}>{entryDate.getDate()}</Text>
                   <Text style={styles.monthText}>
                     {entryDate.toLocaleDateString('tr-TR', { month: 'short' }).toUpperCase()}
                   </Text>
@@ -154,9 +146,9 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
               <>
                 <View style={styles.contentHeader}>
                   <Icon name="format-quote-open" size={16} color={theme.colors.primary + '60'} />
-                  <Text style={styles.contentLabel}>İlk Şükran</Text>
+                  <Text style={styles.contentLabel}>İlk Minnet</Text>
                 </View>
-                
+
                 {/* 🚀 ENHANCED Statement Card Preview with Interactive Features */}
                 <StatementCard
                   statement={entry.statements[0]}
@@ -165,24 +157,16 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
                   animateEntrance={false}
                   numberOfLines={2}
                   onPress={() => onPress(entry)}
-                  
-                  // ✨ NEW: Enhanced Interactive Features for Preview - Simplified
-                  enableSwipeActions={false} // Disabled per user preference  
-                  enableLongPress={false} // Simplified interaction
-                  enableInlineEdit={false} // Disable for preview
-                  enableQuickActions={false} // Disable for preview
-                  
-                  // ✨ NEW: Accessibility & Feedback
-                  accessibilityLabel={`Şükran önizleme: ${entry.statements[0]}`}
+                  // ✨ Accessibility & Feedback
+                  accessibilityLabel={`Minnet önizleme: ${entry.statements[0]}`}
                   hapticFeedback={false} // Simplified feedback
-                  
                   style={styles.previewCard}
                 />
-                
+
                 {hasMore && (
                   <View style={styles.contentMeta}>
                     <Icon name="plus-circle-outline" size={14} color={theme.colors.primary} />
-                    <Text style={styles.moreText}>+{statementCount - 1} şükran daha</Text>
+                    <Text style={styles.moreText}>+{statementCount - 1} minnet daha</Text>
                   </View>
                 )}
               </>
@@ -197,21 +181,18 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
           <View style={styles.footerSection}>
             <View style={styles.progressContainer}>
               <View style={styles.progressLine}>
-                <View 
+                <View
                   style={[
                     styles.progressFill,
-                    { 
+                    {
                       width: `${Math.min((statementCount / 3) * 100, 100)}%`,
                       backgroundColor: isGoalComplete ? theme.colors.success : theme.colors.primary,
-                    }
-                  ]} 
+                    },
+                  ]}
                 />
               </View>
               <Text style={styles.progressText}>
-                {isGoalComplete 
-                  ? '🎉 Günlük hedef tamamlandı' 
-                  : `${3 - statementCount} daha gerek`
-                }
+                {isGoalComplete ? '🎉 Günlük hedef tamamlandı' : `${3 - statementCount} daha gerek`}
               </Text>
             </View>
 
@@ -221,11 +202,7 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
                   <Icon name="star" size={12} color={theme.colors.warning} />
                 </View>
               )}
-              <Icon 
-                name="chevron-right" 
-                size={20} 
-                color={theme.colors.onSurfaceVariant} 
-              />
+              <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
             </View>
           </View>
         </TouchableOpacity>
@@ -246,14 +223,13 @@ const createStyles = (theme: AppTheme) =>
       borderTopWidth: 1,
       borderBottomWidth: 1,
       borderColor: theme.colors.outline + '10',
-      paddingHorizontal: 0,
       paddingVertical: 0,
       ...getPrimaryShadow.card(theme),
     },
     cardContent: {
-      // Padding handled by density="compact"
+      // Padding now handled by density="comfortable"
     },
-    
+
     // Enhanced Header Section
     headerSection: {
       flexDirection: 'row',
@@ -333,7 +309,7 @@ const createStyles = (theme: AppTheme) =>
       fontSize: 9,
       letterSpacing: 0.8,
     },
-    
+
     // Enhanced Stats Section
     statsSection: {
       alignItems: 'center',
@@ -359,7 +335,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       fontWeight: '500',
     },
-    
+
     // Enhanced Content Section
     contentSection: {
       marginBottom: theme.spacing.md,
@@ -403,7 +379,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.primary,
       fontWeight: '600',
     },
-    
+
     // Enhanced Footer Section
     footerSection: {
       flexDirection: 'row',

@@ -27,7 +27,7 @@ interface ErrorStateProps {
 /**
  * 🎯 ENHANCED ERROR STATE COMPONENT
  * Beautiful, actionable error states with contextual help and recovery options
- * 
+ *
  * Features:
  * - Pre-configured error types with appropriate messaging
  * - Multiple recovery actions (retry, go back, contact support)
@@ -74,18 +74,12 @@ const ErrorState: React.FC<ErrorStateProps> = ({
       {/* Error Content */}
       <View style={styles.content}>
         {/* Title */}
-        <Text 
-          style={styles.title}
-          accessibilityRole="header"
-        >
+        <Text style={styles.title} accessibilityRole="header">
           {finalTitle}
         </Text>
 
         {/* Message */}
-        <Text 
-          style={styles.message}
-          accessibilityRole="text"
-        >
+        <Text style={styles.message} accessibilityRole="text">
           {finalMessage}
         </Text>
       </View>
@@ -95,14 +89,14 @@ const ErrorState: React.FC<ErrorStateProps> = ({
         <View style={styles.actions}>
           {/* Primary action - Retry */}
           {onRetry && (
-                         <ThemedButton
-               title={retryText}
-               onPress={onRetry}
-               variant="primary"
-               size={compact ? 'compact' : 'standard'}
-               iconLeft="refresh"
-               style={styles.primaryAction}
-             />
+            <ThemedButton
+              title={retryText}
+              onPress={onRetry}
+              variant="primary"
+              size={compact ? 'compact' : 'standard'}
+              iconLeft="refresh"
+              style={styles.primaryAction}
+            />
           )}
 
           {/* Secondary actions */}
@@ -115,7 +109,6 @@ const ErrorState: React.FC<ErrorStateProps> = ({
                 size={compact ? 'compact' : 'standard'}
                 iconLeft="arrow-left"
                 style={styles.secondaryAction}
-
               />
             )}
 
@@ -127,7 +120,6 @@ const ErrorState: React.FC<ErrorStateProps> = ({
                 size={compact ? 'compact' : 'standard'}
                 iconLeft="help-circle-outline"
                 style={styles.secondaryAction}
-
               />
             )}
           </View>
@@ -212,17 +204,24 @@ const createStyles = (theme: AppTheme, compact: boolean) => {
     },
 
     title: {
-      ...typography.content.headline.small,
+      fontFamily: 'Lora-Medium',
+      fontSize: typography.content.headline.small.fontSize,
+      fontWeight: '600',
+      lineHeight: typography.content.headline.small.lineHeight,
+      letterSpacing: typography.content.headline.small.letterSpacing,
       color: colors.primary,
       textAlign: 'center',
       marginBottom: spacing.elementGap,
     },
 
     message: {
-      ...typography.content.body.medium,
+      fontFamily: 'Inter-Regular',
+      fontSize: typography.content.body.medium.fontSize,
+      fontWeight: typography.content.body.medium.fontWeight,
+      lineHeight: 22,
+      letterSpacing: typography.content.body.medium.letterSpacing,
       color: colors.secondary,
       textAlign: 'center',
-      lineHeight: 22,
     },
 
     actions: {
@@ -283,4 +282,4 @@ export const RetryError: React.FC<Omit<ErrorStateProps, 'type'>> = (props) => (
   <ErrorState type="generic" showContactSupport {...props} />
 );
 
-export default ErrorState; 
+export default ErrorState;

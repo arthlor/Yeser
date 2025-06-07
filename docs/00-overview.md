@@ -14,7 +14,7 @@ Welcome to the comprehensive documentation for **Yeser**, a React Native gratitu
 - 🎯 **Varied Prompts (Çeşitli Öneriler)**: Daily inspiration with randomized gratitude prompts from database
 - 🌙 **Dark/Light Themes**: Complete theming system with user preferences
 - 🔔 **Smart Notifications**: Customizable daily reminders and throwback alerts with frequency settings
-- 📊 **Data Export**: Complete user data export functionality
+- 📊 **Data Export**: Complete user data export functionality in PDF format
 - 🔒 **Secure Authentication**: Google OAuth and email/password authentication
 - 📱 **Cross-Platform**: Native iOS and Android experience with Expo
 - ⚡ **Intelligent Caching**: Automatic background sync with offline support via TanStack Query
@@ -24,40 +24,46 @@ Welcome to the comprehensive documentation for **Yeser**, a React Native gratitu
 
 ### Technology Stack
 
-| Category | Technology | Purpose |
-|----------|------------|---------|
-| **Frontend** | React Native + Expo | Cross-platform mobile development |
-| **Backend** | Supabase (PostgreSQL) | Database, authentication, real-time |
-| **Server State** | TanStack Query v5.80.2 | Intelligent data fetching, caching, synchronization |
-| **Client State** | Zustand | Lightweight client-side state (auth, theme) |
-| **UI Framework** | React Native Paper | Material Design components |
-| **Navigation** | React Navigation v6 | Screen navigation and routing |
-| **Validation** | Zod | Type-safe schema validation |
-| **Analytics** | Firebase Analytics | User behavior tracking |
-| **Notifications** | Expo Notifications | Push and local notifications |
-| **Authentication** | Supabase Auth + Google OAuth | User authentication |
-| **Storage** | AsyncStorage | Local data persistence |
+| Category           | Technology                   | Purpose                                             |
+| ------------------ | ---------------------------- | --------------------------------------------------- |
+| **Frontend**       | React Native + Expo          | Cross-platform mobile development                   |
+| **Backend**        | Supabase (PostgreSQL)        | Database, authentication, real-time                 |
+| **Server State**   | TanStack Query v5.80.2       | Intelligent data fetching, caching, synchronization |
+| **Client State**   | Zustand                      | Lightweight client-side state (auth, theme)         |
+| **UI Framework**   | React Native Paper           | Material Design components                          |
+| **Navigation**     | React Navigation v6          | Screen navigation and routing                       |
+| **Validation**     | Zod                          | Type-safe schema validation                         |
+| **Analytics**      | Firebase Analytics           | User behavior tracking                              |
+| **Notifications**  | Expo Notifications           | Push and local notifications                        |
+| **Authentication** | Supabase Auth + Google OAuth | User authentication                                 |
+| **Storage**        | AsyncStorage                 | Local data persistence                              |
 
 ## 📚 Documentation Structure
 
 This documentation is organized into focused modules for different aspects of the application:
 
 ### 🚀 Getting Started
+
 - **[Setup Guide](./01-setup.md)** - Complete installation and configuration guide
 - **[Environment Configuration](./10-environment.md)** - Environment variables and configuration management
 
 ### 🏗️ Architecture & Design
+
 - **[Architecture Guide](./02-architecture.md)** - Modern hybrid state management with TanStack Query + Zustand
 - **[API Documentation](./03-api.md)** - Backend integration and API reference
 - **[Database Documentation](./09-database.md)** - Supabase schema, RPC functions, and security
 
-### 🧩 Development Guides  
-- **[Component Guide](./05-components.md)** - UI components, design system, and hook implementation patterns
-- **[Development Workflow](./06-development.md)** - Coding standards, Git workflow, and best practices
+### 🧩 Development Guides
+
+- **[Component Guide](./04-components.md)** - UI components, design system, and hook implementation patterns
+- **[Development Workflow](./05-development.md)** - Coding standards, Git workflow, and best practices
 
 ### 📖 Additional Resources
-- **[Testing Guide](./07-testing.md)** - Testing strategies and patterns
-- **[Deployment Guide](./08-deployment.md)** - Deployment and release processes
+
+- **[Testing Guide](./06-testing.md)** - Testing strategies and patterns
+- **[Deployment Guide](./07-deployment.md)** - Deployment and release processes
+- **[Database Documentation](./08-database.md)** - Supabase schema, RPC functions, and security
+- **[Environment Configuration](./09-environment.md)** - Environment variables and configuration management
 - **Main README** - Project overview and quick start
 - **Contributing Guidelines** - How to contribute to the project
 - **Troubleshooting** - Common issues and solutions
@@ -65,24 +71,28 @@ This documentation is organized into focused modules for different aspects of th
 ## 🗂️ Quick Navigation
 
 ### For New Developers
+
 1. Start with **[Setup Guide](./01-setup.md)** to get the development environment running
 2. Read **[Architecture Guide](./02-architecture.md)** to understand the modern hybrid state management system
-3. Follow **[Development Workflow](./06-development.md)** for coding standards and practices
+3. Follow **[Development Workflow](./05-development.md)** for coding standards and practices
 
 ### For Backend Developers
-1. **[Database Documentation](./09-database.md)** - Complete schema and RPC functions
+
+1. **[Database Documentation](./08-database.md)** - Complete schema and RPC functions
 2. **[API Documentation](./03-api.md)** - Backend integration patterns
-3. **[Environment Configuration](./10-environment.md)** - Backend service setup
+3. **[Environment Configuration](./09-environment.md)** - Backend service setup
 
 ### For Frontend Developers
-1. **[Component Guide](./05-components.md)** - UI components, theming, and hook patterns
+
+1. **[Component Guide](./04-components.md)** - UI components, theming, and hook patterns
 2. **[Architecture Guide](./02-architecture.md)** - Understand the modern hybrid state management system
-3. **[Development Workflow](./06-development.md)** - Frontend development practices
+3. **[Development Workflow](./05-development.md)** - Frontend development practices
 
 ### For DevOps/Deployment
-1. **[Environment Configuration](./10-environment.md)** - Environment management
+
+1. **[Environment Configuration](./09-environment.md)** - Environment management
 2. **[Setup Guide](./01-setup.md)** - Infrastructure requirements
-3. **[Deployment Guide](./08-deployment.md)** - CI/CD and deployment
+3. **[Deployment Guide](./07-deployment.md)** - CI/CD and deployment
 
 ## 🎯 Modern Application Architecture Overview
 
@@ -131,46 +141,53 @@ This documentation is organized into focused modules for different aspects of th
 ## 🔄 Modern Data Flow Overview
 
 ### Hybrid State Management Flow
+
 ```
-User Interaction → TanStack Query/Zustand → Intelligent Caching → 
+User Interaction → TanStack Query/Zustand → Intelligent Caching →
 Background Sync → Optimistic Updates → UI Update
 ```
 
 ### Server State Flow (TanStack Query)
+
 ```
-Component → Query Hook → Cache Check → API Call (if needed) → 
+Component → Query Hook → Cache Check → API Call (if needed) →
 Automatic Caching → Background Refetch → UI Update
 ```
 
 ### Client State Flow (Zustand)
+
 ```
-User Action → Zustand Store → Immediate Update → 
+User Action → Zustand Store → Immediate Update →
 AsyncStorage Persistence → UI Re-render
 ```
 
 ### Authentication & Profile Flow
+
 ```
-User Login → Google OAuth/Email → Supabase Auth → 
-Client State Update → Query Enablement → Profile Fetch → 
+User Login → Google OAuth/Email → Supabase Auth →
+Client State Update → Query Enablement → Profile Fetch →
 Navigation to Main App
 ```
 
 ### Gratitude Entry Flow (with Optimistic Updates)
+
 ```
-User Input → Optimistic UI Update → TanStack Mutation → 
-API Layer → Supabase RPC → Database → Cache Invalidation → 
+User Input → Optimistic UI Update → TanStack Mutation →
+API Layer → Supabase RPC → Database → Cache Invalidation →
 Background Sync → Streak Update
 ```
 
 ### Notification Flow
+
 ```
-Settings Update → Profile Mutation → Notification Service → 
+Settings Update → Profile Mutation → Notification Service →
 Platform-specific Scheduling → User Notification → App Open
 ```
 
 ### Varied Prompts Flow
+
 ```
-Settings Toggle → Profile Update → Prompt Query Invalidation → 
+Settings Toggle → Profile Update → Prompt Query Invalidation →
 Database Fetch → Random Selection → Cache → UI Display → Swipe Navigation
 ```
 
@@ -178,36 +195,38 @@ Database Fetch → Random Selection → Cache → UI Display → Swipe Navigatio
 
 ### Performance Improvements
 
-| **Feature** | **Before** | **After** | **Improvement** |
-|-------------|------------|-----------|-----------------|
-| **Data Fetching** | Manual API calls | Intelligent caching | **90% less code** |
-| **Loading States** | Manual tracking | Automatic states | **100% automated** |
-| **Error Handling** | Try/catch everywhere | Built-in boundaries | **Consistent & robust** |
-| **Background Sync** | None | Automatic stale-while-revalidate | **New capability** |
-| **Optimistic Updates** | Manual rollback | Automatic error recovery | **Bulletproof UX** |
-| **Offline Support** | Limited | Automatic cache persistence | **Enhanced capability** |
+| **Feature**            | **Before**           | **After**                        | **Improvement**         |
+| ---------------------- | -------------------- | -------------------------------- | ----------------------- |
+| **Data Fetching**      | Manual API calls     | Intelligent caching              | **90% less code**       |
+| **Loading States**     | Manual tracking      | Automatic states                 | **100% automated**      |
+| **Error Handling**     | Try/catch everywhere | Built-in boundaries              | **Consistent & robust** |
+| **Background Sync**    | None                 | Automatic stale-while-revalidate | **New capability**      |
+| **Optimistic Updates** | Manual rollback      | Automatic error recovery         | **Bulletproof UX**      |
+| **Offline Support**    | Limited              | Automatic cache persistence      | **Enhanced capability** |
 
 ### Developer Experience
 
-| **Metric** | **Before** | **After** | **Improvement** |
-|------------|------------|-----------|-----------------|
-| **Boilerplate** | ~50 lines per operation | ~5-10 lines | **80% reduction** |
+| **Metric**           | **Before**                | **After**              | **Improvement**          |
+| -------------------- | ------------------------- | ---------------------- | ------------------------ |
+| **Boilerplate**      | ~50 lines per operation   | ~5-10 lines            | **80% reduction**        |
 | **State Management** | Manual cache invalidation | Intelligent auto-cache | **Infinite improvement** |
-| **Testing** | Complex store mocking | Hook-level testing | **Simplified patterns** |
-| **Type Safety** | Manual type guards | Automatic inference | **Enhanced safety** |
+| **Testing**          | Complex store mocking     | Hook-level testing     | **Simplified patterns**  |
+| **Type Safety**      | Manual type guards        | Automatic inference    | **Enhanced safety**      |
 
 ## 📊 Key Metrics & Analytics
 
 The application tracks various metrics for user engagement and app performance:
 
 ### User Engagement Metrics
+
 - Daily active users and retention rates
 - Gratitude entry frequency and streak lengths
 - Feature usage (throwbacks, varied prompts, themes)
 - User journey completion rates
 - Notification interaction rates
 
-### Technical Metrics  
+### Technical Metrics
+
 - App performance (startup time, navigation speed)
 - Error rates and crash analytics
 - API response times and success rates
@@ -216,6 +235,7 @@ The application tracks various metrics for user engagement and app performance:
 - Notification delivery success rates
 
 ### Business Metrics
+
 - User onboarding completion rates
 - Feature adoption rates (varied prompts, throwback reminders)
 - User satisfaction and app store ratings
@@ -224,6 +244,7 @@ The application tracks various metrics for user engagement and app performance:
 ## 🛡️ Security & Privacy
 
 ### Data Protection
+
 - **End-to-End Security**: All data encrypted in transit and at rest
 - **Row Level Security**: Database-level access control via Supabase RLS
 - **Authentication**: Secure OAuth flows with token refresh
@@ -231,6 +252,7 @@ The application tracks various metrics for user engagement and app performance:
 - **Query Security**: Authenticated queries with automatic session validation
 
 ### Compliance
+
 - **GDPR Compliance**: Data export and deletion capabilities
 - **Privacy by Design**: User data minimization and purpose limitation
 - **Transparent Privacy Policy**: Clear data usage disclosure
@@ -238,6 +260,7 @@ The application tracks various metrics for user engagement and app performance:
 ## 🎯 Performance Optimizations
 
 ### Frontend Optimizations
+
 - **Intelligent Caching**: TanStack Query automatic cache management
 - **Optimistic Updates**: Instant UI feedback with error rollback
 - **Component Memoization**: React.memo and useMemo for expensive operations
@@ -246,6 +269,7 @@ The application tracks various metrics for user engagement and app performance:
 - **Bundle Splitting**: Code splitting for faster initial load
 
 ### Backend Optimizations
+
 - **Database Indexing**: Optimized queries with strategic indexes
 - **Query Deduplication**: Automatic request deduplication
 - **Stale-While-Revalidate**: Fresh data without blocking UI
@@ -253,6 +277,7 @@ The application tracks various metrics for user engagement and app performance:
 - **CDN Integration**: Asset delivery optimization
 
 ### State Management Optimizations
+
 - **Selective Subscriptions**: Granular state updates
 - **Background Synchronization**: Non-blocking data updates
 - **Cache Persistence**: Offline-first data availability
@@ -261,6 +286,7 @@ The application tracks various metrics for user engagement and app performance:
 ## 🔮 Future Roadmap
 
 ### Planned Features
+
 - **Social Features**: Friend connections and shared gratitude
 - **Advanced Analytics**: Personal insight dashboards with TanStack Query
 - **Habit Tracking**: Integration with broader wellness metrics
@@ -269,6 +295,7 @@ The application tracks various metrics for user engagement and app performance:
 - **Advanced Reminder Customization**: Location-based and context-aware reminders
 
 ### Technical Improvements
+
 - **Real-time Subscriptions**: Supabase realtime + TanStack Query integration
 - **Infinite Scrolling**: TanStack Query infinite queries for large datasets
 - **Advanced Offline**: Mutation queue for offline write operations
@@ -277,6 +304,7 @@ The application tracks various metrics for user engagement and app performance:
 - **Internationalization**: Multi-language support
 
 ### State Management Enhancements
+
 - **Suspense Integration**: React Suspense for data fetching
 - **Background Sync**: Advanced offline-to-online synchronization
 - **Real-time Updates**: Live data synchronization across devices
@@ -287,13 +315,15 @@ The application tracks various metrics for user engagement and app performance:
 We welcome contributions to the Yeser gratitude app! Please read our contributing guidelines and follow the development workflow outlined in this documentation.
 
 ### Getting Started
+
 1. Fork the repository
-2. Follow the **[Setup Guide](./01-setup.md)** 
+2. Follow the **[Setup Guide](./01-setup.md)**
 3. Review **[Architecture Guide](./02-architecture.md)** to understand the state management architecture
 4. Follow the **[Development Workflow](./06-development.md)**
 5. Create a feature branch and submit a pull request
 
 ### Areas for Contribution
+
 - **Bug Fixes**: Help improve app stability
 - **Feature Development**: Implement new functionality using TanStack Query patterns
 - **Documentation**: Improve and expand documentation
@@ -314,4 +344,4 @@ For questions, issues, or contributions:
 
 This documentation is maintained by the Yeser development team and is updated with each release. For the latest version, always refer to the repository's documentation folder.
 
-**Happy coding! 🚀** 
+**Happy coding! 🚀**

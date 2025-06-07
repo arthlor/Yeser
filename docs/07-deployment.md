@@ -1,693 +1,227 @@
 # Deployment Guide
 
-This document provides comprehensive guidance for building, deploying, and releasing the Yeser gratitude app across different environments and platforms.
+This document provides comprehensive deployment strategies and processes for the Yeser gratitude app, covering EAS Build, CI/CD pipelines, and app store deployment.
 
-## 🚀 Deployment Overview
+## 🚀 Deployment Architecture Overview
 
-The Yeser app follows a multi-environment deployment strategy with automated CI/CD pipelines for consistent and reliable releases.
+The Yeser app uses a modern deployment pipeline with:
 
-### Deployment Environments
+- **EAS Build**: Expo Application Services for building iOS and Android apps
+- **GitHub Actions**: CI/CD pipeline for automated testing and deployment
+- **Environment Management**: Separate development, staging, and production environments
+- **Automated Testing**: Quality gates before deployment
+- **App Store Connect & Google Play Console**: Distribution platforms
 
 ```
-Development → Staging → Production
-     ↓           ↓          ↓
-   Dev Builds  Preview    App Store
-   TestFlight  Builds     Google Play
+┌─────────────────────────────────────────────────────────┐
+│                    SOURCE CODE                          │
+│    ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│    │   GitHub    │  │   Feature   │  │    Main     │   │
+│    │Repository   │  │  Branches   │  │   Branch    │   │
+│    └─────────────┘  └─────────────┘  └─────────────┘   │
+└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                   CI/CD PIPELINE                        │
+│    ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│    │ GitHub      │  │   Testing   │  │ Build &     │   │
+│    │ Actions     │  │   & QA      │  │ Deploy      │   │
+│    └─────────────┘  └─────────────┘  └─────────────┘   │
+└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                     EAS BUILD                           │
+│    ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│    │Development  │  │   Staging   │  │ Production  │   │
+│    │   Build     │  │    Build    │  │   Build     │   │
+│    └─────────────┘  └─────────────┘  └─────────────┘   │
+└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                  APP DISTRIBUTION                       │
+│    ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│    │  TestFlight │  │ Google Play │  │ App Store   │   │
+│    │(iOS Beta)   │  │ Internal    │  │  Connect    │   │
+│    └─────────────┘  └─────────────┘  └─────────────┘   │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Platform Support
+## 🔧 EAS Build Configuration
 
-| Platform | Deployment Method | Distribution |
-|----------|-------------------|--------------|
-| **iOS** | Expo Application Services (EAS) | App Store, TestFlight |
-| **Android** | EAS Build + Google Play Console | Google Play Store, Internal Testing |
-| **Web** | Vercel/Netlify | PWA Distribution |
-
-## 🏗️ Build Configuration
-
-### EAS Build Configuration
+### EAS Configuration File
 
 ```json
 // eas.json
 {
+  "$schema": "https://json.schemastore.org/eas.json",
   "cli": {
-    "version": ">= 3.0.0"
+    "version": ">= 5.0.0"
   },
   "build": {
     "development": {
-      "developmentClient": true,
       "distribution": "internal",
+      "android": {
+        "gradleCommand": ":app:assembleDebug"
+      },
+      "ios": {
+        "buildConfiguration": "Debug"
+      },
+      "channel": "development",
       "env": {
-        "EXPO_PUBLIC_APP_ENVIRONMENT": "development"
+        "EXPO_PUBLIC_ENV": "development"
       }
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_APP_ENVIRONMENT": "staging"
+        "EXPO_PUBLIC_ENV": "staging"
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_APP_ENVIRONMENT": "production"
-      }
-    },
-    "production-ios": {
-      "extends": "production",
-      "ios": {
-        "resourceClass": "m1-medium"
-      }
-    },
-    "production-android": {
-      "extends": "production",
+        "EXPO_PUBLIC_ENV": "production"
+      },
+      "autoIncrement": true,
       "android": {
-        "resourceClass": "medium"
+        "buildType": "aab"
       }
     }
   },
   "submit": {
     "production": {
-      "ios": {
-        "appleId": "your-apple-id@email.com",
-        "ascAppId": "your-asc-app-id",
-        "appleTeamId": "your-apple-team-id"
-      },
       "android": {
-        "serviceAccountKeyPath": "../path/to/api-key.json",
-        "track": "internal"
+        "serviceAccountKeyPath": "../secrets/google-play-service-account.json",
+        "track": "internal",
+        "changesNotSentForReview": false
+      },
+      "ios": {
+        "appleId": "your-apple-id@example.com",
+        "ascAppId": "1234567890",
+        "appleTeamId": "ABCD123456"
       }
     }
   }
 }
 ```
 
-### App Configuration
-
-```json
-// app.json
-{
-  "expo": {
-    "name": "Yeser",
-    "slug": "yeser-gratitude",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.yeser.gratitude",
-      "buildNumber": "1",
-      "infoPlist": {
-        "NSCameraUsageDescription": "This app does not use the camera.",
-        "NSMicrophoneUsageDescription": "This app does not use the microphone.",
-        "NSLocationWhenInUseUsageDescription": "This app does not use location.",
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLName": "yeser",
-            "CFBundleURLSchemes": ["yeser"]
-          }
-        ]
-      },
-      "googleServicesFile": "./ios/GoogleService-Info.plist"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
-      },
-      "package": "com.yeser.gratitude",
-      "versionCode": 1,
-      "permissions": [
-        "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.USE_EXACT_ALARM"
-      ],
-      "googleServicesFile": "./android/app/google-services.json",
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "yeser.app"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
-      ]
-    },
-    "web": {
-      "favicon": "./assets/favicon.png",
-      "bundler": "metro"
-    },
-    "plugins": [
-      "expo-router",
-      "expo-font",
-      "expo-localization",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#ffffff",
-          "defaultChannel": "default"
-        }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "deploymentTarget": "13.0"
-          },
-          "android": {
-            "compileSdkVersion": 34,
-            "targetSdkVersion": 34,
-            "minSdkVersion": 21
-          }
-        }
-      ]
-    ],
-    "extra": {
-      "router": {
-        "origin": false
-      },
-      "eas": {
-        "projectId": "your-eas-project-id"
-      }
-    },
-    "updates": {
-      "url": "https://u.expo.dev/your-eas-project-id"
-    },
-    "runtimeVersion": {
-      "policy": "sdkVersion"
-    }
-  }
-}
-```
-
-## 🔧 Build Scripts and Automation
-
-### Package.json Scripts
-
-```json
-{
-  "scripts": {
-    "start": "expo start",
-    "reset": "expo start --clear",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    
-    "build:development": "eas build --profile development --platform all",
-    "build:preview": "eas build --profile preview --platform all",
-    "build:production": "eas build --profile production --platform all",
-    "build:ios": "eas build --profile production-ios --platform ios",
-    "build:android": "eas build --profile production-android --platform android",
-    
-    "submit:ios": "eas submit --platform ios",
-    "submit:android": "eas submit --platform android",
-    "submit:all": "eas submit --platform all",
-    
-    "update:preview": "eas update --branch preview --message",
-    "update:production": "eas update --branch production --message",
-    
-    "prebuild": "npx expo prebuild",
-    "prebuild:clean": "npx expo prebuild --clean"
-  }
-}
-```
-
-### Environment-Specific Builds
-
-#### Development Builds
-
-```bash
-# Build development client for testing
-eas build --profile development --platform ios
-eas build --profile development --platform android
-
-# Install development build on device
-npx expo install --dev-client
-```
-
-#### Preview Builds
-
-```bash
-# Build preview for internal testing
-eas build --profile preview --platform all
-
-# Update preview build
-eas update --branch preview --message "Feature X testing"
-```
-
-#### Production Builds
-
-```bash
-# Build production ready apps
-eas build --profile production --platform all
-
-# Build platform-specific production
-eas build --profile production-ios --platform ios
-eas build --profile production-android --platform android
-```
-
-## 🎯 Release Strategy
-
-### Version Management
-
-#### Semantic Versioning
-
-```
-MAJOR.MINOR.PATCH
-  │     │     │
-  │     │     └─ Bug fixes
-  │     └─ New features (backward compatible)
-  └─ Breaking changes
-```
-
-Examples:
-- `1.0.0` - Initial release
-- `1.1.0` - New features added
-- `1.1.1` - Bug fixes
-- `2.0.0` - Breaking changes
-
-#### Version Bump Script
+### Environment-Specific App Configuration
 
 ```javascript
-// scripts/bump-version.js
-const fs = require('fs');
-const path = require('path');
+// app.config.js
+import 'dotenv/config';
 
-const PACKAGE_JSON = path.join(__dirname, '../package.json');
-const APP_JSON = path.join(__dirname, '../app.json');
+const IS_DEV = process.env.EXPO_PUBLIC_ENV === 'development';
+const IS_PREVIEW = process.env.EXPO_PUBLIC_ENV === 'staging';
 
-function bumpVersion(type = 'patch') {
-  // Read current versions
-  const package = JSON.parse(fs.readFileSync(PACKAGE_JSON, 'utf8'));
-  const app = JSON.parse(fs.readFileSync(APP_JSON, 'utf8'));
-  
-  const [major, minor, patch] = package.version.split('.').map(Number);
-  
-  let newVersion;
-  switch (type) {
-    case 'major':
-      newVersion = `${major + 1}.0.0`;
-      break;
-    case 'minor':
-      newVersion = `${major}.${minor + 1}.0`;
-      break;
-    case 'patch':
-      newVersion = `${major}.${minor}.${patch + 1}`;
-      break;
-    default:
-      throw new Error('Invalid version type');
-  }
-  
-  // Update package.json
-  package.version = newVersion;
-  fs.writeFileSync(PACKAGE_JSON, JSON.stringify(package, null, 2));
-  
-  // Update app.json
-  app.expo.version = newVersion;
-  app.expo.ios.buildNumber = String(parseInt(app.expo.ios.buildNumber) + 1);
-  app.expo.android.versionCode = app.expo.android.versionCode + 1;
-  fs.writeFileSync(APP_JSON, JSON.stringify(app, null, 2));
-  
-  console.log(`✅ Version bumped to ${newVersion}`);
-  console.log(`📱 iOS build number: ${app.expo.ios.buildNumber}`);
-  console.log(`🤖 Android version code: ${app.expo.android.versionCode}`);
-}
-
-const type = process.argv[2] || 'patch';
-bumpVersion(type);
-```
-
-### Release Workflow
-
-#### 1. Pre-Release Checklist
-
-```markdown
-- [ ] All tests passing
-- [ ] Code review completed
-- [ ] Version bumped appropriately
-- [ ] Changelog updated
-- [ ] Environment variables verified
-- [ ] Assets optimized
-- [ ] Performance tested
-- [ ] Security review completed
-```
-
-#### 2. Build Process
-
-```bash
-# 1. Update version
-npm run version:bump patch
-
-# 2. Run quality checks
-npm run lint
-npm run type-check
-npm run test
-
-# 3. Build production apps
-npm run build:production
-
-# 4. Submit to stores (after testing)
-npm run submit:all
-```
-
-#### 3. Release Notes Template
-
-```markdown
-## [1.1.0] - 2024-01-15
-
-### 🎉 New Features
-- Added dark theme support
-- Implemented data export functionality
-- New throwback memory feature
-
-### 🐛 Bug Fixes
-- Fixed streak calculation edge case
-- Resolved notification scheduling issue
-- Improved offline sync reliability
-
-### 🔧 Improvements
-- Enhanced performance on older devices
-- Updated UI animations
-- Improved accessibility
-
-### 📚 Technical
-- Upgraded React Native to 0.73
-- Updated Supabase SDK
-- Enhanced error handling
-```
-
-## 🏪 App Store Deployment
-
-### iOS App Store
-
-#### App Store Connect Setup
-
-1. **App Information**
-   ```
-   Name: Yeser - Gratitude Journal
-   Bundle ID: com.yeser.gratitude
-   SKU: yeser-gratitude-001
-   Category: Health & Fitness
-   ```
-
-2. **App Privacy**
-   ```
-   Data Collection: Contact Info, Health & Fitness, Usage Data
-   Data Linking: Only analytics data
-   Data Tracking: None
-   ```
-
-3. **App Review Information**
-   ```
-   Demo Account: Not required (no login needed for basic features)
-   Notes: Focus on gratitude journaling and personal wellness
-   ```
-
-#### TestFlight Distribution
-
-```bash
-# Build and submit to TestFlight
-eas build --profile production-ios --platform ios
-eas submit --platform ios --latest
-
-# Add external testers via App Store Connect
-# Internal testers get automatic access
-```
-
-#### Production Release
-
-```yaml
-# .github/workflows/ios-release.yml
-name: iOS Release
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  build-and-submit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build iOS app
-        run: eas build --profile production-ios --platform ios --non-interactive
-      
-      - name: Submit to App Store
-        run: eas submit --platform ios --latest --non-interactive
-```
-
-### Android Google Play
-
-#### Google Play Console Setup
-
-1. **App Details**
-   ```
-   App Name: Yeser - Gratitude Journal
-   Package Name: com.yeser.gratitude
-   Category: Health & Fitness
-   ```
-
-2. **Content Rating**
-   ```
-   Target Audience: Everyone
-   Content: No sensitive content
-   Ads: None
-   ```
-
-3. **Data Safety**
-   ```
-   Data Collection: Personal info for account creation
-   Data Sharing: None with third parties
-   Security: Data encrypted in transit and at rest
-   ```
-
-#### Internal Testing
-
-```bash
-# Build and submit to internal testing
-eas build --profile production-android --platform android
-eas submit --platform android --track internal --latest
-```
-
-#### Production Release
-
-```yaml
-# .github/workflows/android-release.yml
-name: Android Release
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  build-and-submit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-      
-      - name: Build Android app
-        run: eas build --profile production-android --platform android --non-interactive
-      
-      - name: Submit to Google Play
-        run: eas submit --platform android --track production --latest --non-interactive
-        env:
-          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
-```
-
-## 🌐 Web Deployment
-
-### Vercel Deployment
-
-```json
-// vercel.json
-{
-  "buildCommand": "expo export -p web",
-  "outputDirectory": "dist",
-  "devCommand": "expo start --web",
-  "framework": "expo",
-  "env": {
-    "EXPO_PUBLIC_APP_ENVIRONMENT": "production"
-  },
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
+export default {
+  expo: {
+    name: IS_DEV ? 'Yeser (Dev)' : IS_PREVIEW ? 'Yeser (Preview)' : 'Yeser',
+    slug: 'yeser-gratitude-app',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './src/assets/icon.png',
+    userInterfaceStyle: 'automatic',
+    splash: {
+      image: './src/assets/splash.png',
+      resizeMode: 'contain',
+      backgroundColor: '#ffffff',
+    },
+    assetBundlePatterns: ['**/*'],
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: IS_DEV
+        ? 'com.yeser.gratitude.dev'
+        : IS_PREVIEW
+          ? 'com.yeser.gratitude.preview'
+          : 'com.yeser.gratitude',
+      buildNumber: '1',
+      config: {
+        usesNonExemptEncryption: false,
+      },
+      infoPlist: {
+        NSUserTrackingUsageDescription:
+          'This allows us to provide personalized gratitude insights.',
+        NSCameraUsageDescription:
+          'Camera access is needed to add photos to your gratitude entries.',
+        NSPhotoLibraryUsageDescription:
+          'Photo library access is needed to select photos for your gratitude entries.',
+      },
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: './src/assets/adaptive-icon.png',
+        backgroundColor: '#FFFFFF',
+      },
+      package: IS_DEV
+        ? 'com.yeser.gratitude.dev'
+        : IS_PREVIEW
+          ? 'com.yeser.gratitude.preview'
+          : 'com.yeser.gratitude',
+      versionCode: 1,
+      permissions: [
+        'android.permission.CAMERA',
+        'android.permission.READ_EXTERNAL_STORAGE',
+        'android.permission.WRITE_EXTERNAL_STORAGE',
+        'android.permission.NOTIFICATIONS',
+      ],
+    },
+    web: {
+      favicon: './src/assets/favicon.png',
+    },
+    plugins: [
+      'expo-router',
+      [
+        'expo-notifications',
         {
-          "key": "X-Frame-Options",
-          "value": "DENY"
+          icon: './src/assets/notification-icon.png',
+          color: '#ffffff',
+          sounds: ['./src/assets/sounds/notification.wav'],
         },
+      ],
+      [
+        'expo-build-properties',
         {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### GitHub Actions Web Deployment
-
-```yaml
-# .github/workflows/web-deploy.yml
-name: Deploy Web App
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build web app
-        run: npx expo export -p web
-        env:
-          EXPO_PUBLIC_APP_ENVIRONMENT: production
-      
-      - name: Deploy to Vercel
-        uses: vercel/action@v1
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-```
-
-## 🔄 Over-the-Air Updates
-
-### EAS Updates Configuration
-
-```javascript
-// eas-updates.js
-module.exports = {
-  branches: {
-    production: {
-      channel: 'production',
-      runtime: 'native'
+          android: {
+            compileSdkVersion: 34,
+            targetSdkVersion: 34,
+            buildToolsVersion: '34.0.0',
+          },
+          ios: {
+            deploymentTarget: '13.0',
+          },
+        },
+      ],
+      [
+        '@react-native-google-signin/google-signin',
+        {
+          iosUrlScheme: IS_DEV
+            ? 'com.yeser.gratitude.dev'
+            : IS_PREVIEW
+              ? 'com.yeser.gratitude.preview'
+              : 'com.yeser.gratitude',
+        },
+      ],
+    ],
+    extra: {
+      eas: {
+        projectId: 'your-eas-project-id',
+      },
     },
-    preview: {
-      channel: 'preview',
-      runtime: 'native'
-    }
+    updates: {
+      url: 'https://u.expo.dev/your-eas-project-id',
+    },
+    runtimeVersion: {
+      policy: 'sdkVersion',
+    },
   },
-  updates: {
-    production: {
-      enabled: true,
-      checkAutomatically: 'ON_LOAD',
-      fallbackToCacheTimeout: 5000
-    },
-    preview: {
-      enabled: true,
-      checkAutomatically: 'ON_ERROR_RECOVERY',
-      fallbackToCacheTimeout: 2000
-    }
-  }
 };
 ```
 
-### Update Deployment
+## 🔄 CI/CD Pipeline
 
-```bash
-# Deploy JavaScript-only updates
-eas update --branch production --message "Bug fixes and improvements"
-eas update --branch preview --message "Feature testing"
-
-# Rollback updates if needed
-eas update --branch production --republish --message "Rollback to previous version"
-```
-
-### Update Integration
-
-```typescript
-// src/services/updateService.ts
-import * as Updates from 'expo-updates';
-import { Alert } from 'react-native';
-
-export const checkForUpdates = async (): Promise<void> => {
-  if (__DEV__) return;
-
-  try {
-    const update = await Updates.checkForUpdateAsync();
-    
-    if (update.isAvailable) {
-      await Updates.fetchUpdateAsync();
-      
-      Alert.alert(
-        'Update Available',
-        'A new version is available. Restart the app to apply updates.',
-        [
-          { text: 'Later', style: 'cancel' },
-          { text: 'Restart', onPress: () => Updates.reloadAsync() }
-        ]
-      );
-    }
-  } catch (error) {
-    console.error('Update check failed:', error);
-  }
-};
-
-export const getUpdateInfo = async () => {
-  const isUpdateAvailable = await Updates.checkForUpdateAsync();
-  const manifest = Updates.manifest;
-  
-  return {
-    isUpdateAvailable: isUpdateAvailable.isAvailable,
-    currentVersion: manifest?.version || 'Unknown',
-    updateId: manifest?.id || 'Unknown',
-    channel: Updates.channel || 'Unknown'
-  };
-};
-```
-
-## 🚦 CI/CD Pipeline
-
-### Complete GitHub Actions Workflow
+### GitHub Actions Workflow
 
 ```yaml
 # .github/workflows/ci-cd.yml
@@ -696,307 +230,713 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main, develop]
-    tags: ['v*']
   pull_request:
     branches: [main, develop]
 
-env:
-  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
 jobs:
   test:
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
-      - name: Run linting
+
+      - name: Run ESLint
         run: npm run lint
-      
-      - name: Run type checking
+
+      - name: Run TypeScript check
         run: npm run type-check
-      
-      - name: Run tests
-        run: npm run test:ci
-      
-      - name: Upload coverage
+
+      - name: Run unit tests
+        run: npm run test -- --coverage --watchAll=false
+
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          fail_ci_if_error: true
 
   build-preview:
-    needs: test
+    name: Build Preview
     runs-on: ubuntu-latest
+    needs: test
     if: github.ref == 'refs/heads/develop'
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build preview
-        run: eas build --profile preview --platform all --non-interactive
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  deploy-production:
-    needs: test
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          expo-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build production
-        run: eas build --profile production --platform all --non-interactive
-      
-      - name: Submit to stores
-        run: eas submit --platform all --latest --non-interactive
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
-
-  deploy-web:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v3
-      
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
       - name: Install dependencies
         run: npm ci
-      
-      - name: Build web
-        run: npx expo export -p web
-      
-      - name: Deploy to Vercel
-        uses: vercel/action@v1
+
+      - name: Build preview
+        run: eas build --platform all --profile preview --non-interactive
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+
+  build-production:
+    name: Build Production
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production
+        run: eas build --platform all --profile production --non-interactive
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.PRODUCTION_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PRODUCTION_SUPABASE_ANON_KEY }}
+
+  deploy-production:
+    name: Deploy to Stores
+    runs-on: ubuntu-latest
+    needs: build-production
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[deploy]')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Submit to App Stores
+        run: eas submit --platform all --profile production --non-interactive
 ```
 
-## 🔒 Security and Secrets Management
+### GitHub Secrets Configuration
 
-### Required Secrets
-
-#### GitHub Secrets
+Set up the following secrets in your GitHub repository:
 
 ```bash
-# Expo
+# Expo and EAS
 EXPO_TOKEN=your-expo-access-token
 
-# Apple
-APPLE_ID=your-apple-id@email.com
-APPLE_PASSWORD=app-specific-password
-ASC_APP_ID=your-app-store-connect-app-id
+# Supabase - Staging
+STAGING_SUPABASE_URL=https://your-staging-project.supabase.co
+STAGING_SUPABASE_ANON_KEY=your-staging-anon-key
 
-# Google
-GOOGLE_SERVICE_ACCOUNT_KEY=base64-encoded-service-account-key
+# Supabase - Production
+PRODUCTION_SUPABASE_URL=https://your-production-project.supabase.co
+PRODUCTION_SUPABASE_ANON_KEY=your-production-anon-key
 
-# Vercel
-VERCEL_TOKEN=your-vercel-token
-VERCEL_ORG_ID=your-vercel-org-id
-VERCEL_PROJECT_ID=your-vercel-project-id
+# Firebase - Production
+PRODUCTION_FIREBASE_API_KEY=your-firebase-api-key
+PRODUCTION_FIREBASE_PROJECT_ID=your-firebase-project-id
 
-# Supabase (if needed for builds)
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+# App Store Connect
+APPLE_ID=your-apple-id@example.com
+APPLE_TEAM_ID=ABCD123456
+ASC_APP_ID=1234567890
+
+# Google Play Console
+GOOGLE_PLAY_SERVICE_ACCOUNT_KEY=base64-encoded-service-account-json
 ```
 
-#### Environment-Specific Variables
+## 📱 Platform-Specific Deployment
+
+### iOS Deployment
+
+#### App Store Connect Setup
+
+1. **Create App Record**
+
+   ```bash
+   # App Store Connect Console
+   - Bundle ID: com.yeser.gratitude
+   - App Name: Yeser - Gratitude Journal
+   - Primary Language: English
+   - SKU: yeser-gratitude-001
+   ```
+
+2. **Configure App Information**
+
+   ```bash
+   # Required Information
+   - Privacy Policy URL
+   - App Category: Health & Fitness
+   - Content Rating: 4+
+   - App Description (4000 characters max)
+   - Keywords (100 characters max)
+   - Screenshots (all required sizes)
+   ```
+
+3. **Build and Submit**
+
+   ```bash
+   # Build for App Store
+   eas build --platform ios --profile production
+
+   # Submit to App Store Connect
+   eas submit --platform ios --profile production
+
+   # Or manual upload via Xcode
+   # 1. Download .ipa file from EAS
+   # 2. Use Transporter app or Xcode Organizer
+   ```
+
+#### TestFlight Beta Testing
 
 ```bash
-# Development
-EXPO_PUBLIC_SUPABASE_URL_DEV=https://dev-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV=dev-anon-key
+# Build for TestFlight
+eas build --platform ios --profile preview
 
-# Staging
-EXPO_PUBLIC_SUPABASE_URL_STAGING=https://staging-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY_STAGING=staging-anon-key
+# Submit to TestFlight
+eas submit --platform ios --profile preview
 
-# Production
-EXPO_PUBLIC_SUPABASE_URL_PROD=https://prod-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD=prod-anon-key
+# Manage beta testers in App Store Connect
+# - Internal Testing: App Store Connect users
+# - External Testing: Up to 10,000 external testers
 ```
 
-### Security Best Practices
+### Android Deployment
 
-1. **Secret Rotation**: Regularly rotate API keys and tokens
-2. **Least Privilege**: Grant minimum necessary permissions
-3. **Audit Logs**: Monitor access to sensitive operations
-4. **Environment Isolation**: Separate secrets by environment
-5. **Backup Secrets**: Securely store backup copies
+#### Google Play Console Setup
+
+1. **Create App**
+
+   ```bash
+   # Google Play Console
+   - App Name: Yeser - Gratitude Journal
+   - Default Language: English
+   - App Category: Health & Fitness
+   - Content Rating: Everyone
+   ```
+
+2. **Configure Store Listing**
+
+   ```bash
+   # Required Assets
+   - App Icon (512x512 PNG)
+   - Feature Graphic (1024x500 PNG)
+   - Screenshots (Phone, 7-inch Tablet, 10-inch Tablet)
+   - Short Description (80 characters)
+   - Full Description (4000 characters)
+   ```
+
+3. **Build and Submit**
+
+   ```bash
+   # Build for Play Store (AAB format)
+   eas build --platform android --profile production
+
+   # Submit to Google Play Console
+   eas submit --platform android --profile production
+
+   # Or manual upload
+   # 1. Download .aab file from EAS
+   # 2. Upload via Google Play Console
+   ```
+
+#### Internal Testing
+
+```bash
+# Build for internal testing
+eas build --platform android --profile preview
+
+# Upload to internal testing track
+eas submit --platform android --profile preview
+
+# Share with internal testers via email list
+```
+
+## 🌐 Environment Management
+
+### Environment Variables
+
+```typescript
+// src/config/environment.ts
+interface Environment {
+  production: boolean;
+  apiUrl: string;
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  firebaseConfig: {
+    apiKey: string;
+    authDomain: string;
+    projectId: string;
+    storageBucket: string;
+    messagingSenderId: string;
+    appId: string;
+  };
+}
+
+const development: Environment = {
+  production: false,
+  apiUrl: 'http://localhost:3000',
+  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL!,
+  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+  firebaseConfig: {
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY!,
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID!,
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID!,
+  },
+};
+
+const staging: Environment = {
+  production: false,
+  apiUrl: 'https://staging-api.yeser.app',
+  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL!,
+  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+  firebaseConfig: {
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY!,
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID!,
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID!,
+  },
+};
+
+const production: Environment = {
+  production: true,
+  apiUrl: 'https://api.yeser.app',
+  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL!,
+  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+  firebaseConfig: {
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY!,
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID!,
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID!,
+  },
+};
+
+const getEnvironment = (): Environment => {
+  const env = process.env.EXPO_PUBLIC_ENV || 'development';
+
+  switch (env) {
+    case 'staging':
+      return staging;
+    case 'production':
+      return production;
+    default:
+      return development;
+  }
+};
+
+export const environment = getEnvironment();
+```
+
+### Environment-Specific Configuration
+
+```bash
+# .env.development
+EXPO_PUBLIC_ENV=development
+EXPO_PUBLIC_SUPABASE_URL=https://dev-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=dev-anon-key
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=yeser-dev
+
+# .env.staging
+EXPO_PUBLIC_ENV=staging
+EXPO_PUBLIC_SUPABASE_URL=https://staging-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=staging-anon-key
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=yeser-staging
+
+# .env.production
+EXPO_PUBLIC_ENV=production
+EXPO_PUBLIC_SUPABASE_URL=https://prod-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=prod-anon-key
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=yeser-prod
+```
 
 ## 📊 Monitoring and Analytics
 
 ### Build Monitoring
 
 ```typescript
-// scripts/build-monitor.js
-const { exec } = require('child_process');
-const axios = require('axios');
+// src/utils/buildInfo.ts
+import Constants from 'expo-constants';
 
-async function monitorBuild(buildId) {
-  const checkStatus = async () => {
-    try {
-      const result = await exec(`eas build:view ${buildId} --json`);
-      const build = JSON.parse(result.stdout);
-      
-      console.log(`Build ${buildId}: ${build.status}`);
-      
-      if (build.status === 'finished') {
-        await notifySuccess(build);
-      } else if (build.status === 'errored') {
-        await notifyError(build);
-      } else {
-        setTimeout(checkStatus, 30000); // Check again in 30s
-      }
-    } catch (error) {
-      console.error('Failed to check build status:', error);
-    }
-  };
-  
-  checkStatus();
-}
+export const buildInfo = {
+  version: Constants.expoConfig?.version || 'unknown',
+  buildNumber:
+    Constants.expoConfig?.ios?.buildNumber ||
+    Constants.expoConfig?.android?.versionCode ||
+    'unknown',
+  environment: process.env.EXPO_PUBLIC_ENV || 'development',
+  buildDate: new Date().toISOString(),
+  easBuildId: Constants.expoConfig?.extra?.eas?.projectId || 'local',
+};
 
-async function notifySuccess(build) {
-  // Send success notification to Slack/Discord
-  await axios.post(process.env.SLACK_WEBHOOK_URL, {
-    text: `✅ Build ${build.id} completed successfully!`
-  });
-}
-
-async function notifyError(build) {
-  // Send error notification
-  await axios.post(process.env.SLACK_WEBHOOK_URL, {
-    text: `❌ Build ${build.id} failed: ${build.error?.message || 'Unknown error'}`
-  });
-}
+// Log build info on app start
+console.log('App Build Info:', buildInfo);
 ```
 
-### Deployment Analytics
+### Crash Reporting
 
 ```typescript
-// src/utils/deploymentAnalytics.ts
-import { analyticsService } from '@/services/analyticsService';
+// src/services/crashReporting.ts
+import * as Sentry from '@sentry/react-native';
+import { environment } from '@/config/environment';
 
-export const trackDeployment = async (version: string, platform: string) => {
-  await analyticsService.logEvent('app_deployment', {
-    version,
-    platform,
-    timestamp: new Date().toISOString(),
-    environment: process.env.EXPO_PUBLIC_APP_ENVIRONMENT
+// Initialize Sentry in production only
+if (environment.production) {
+  Sentry.init({
+    dsn: 'your-sentry-dsn',
+    environment: process.env.EXPO_PUBLIC_ENV,
+    enableAutoSessionTracking: true,
+    tracesSampleRate: 1.0,
   });
-};
-
-export const trackUpdate = async (updateId: string, channel: string) => {
-  await analyticsService.logEvent('app_update', {
-    updateId,
-    channel,
-    timestamp: new Date().toISOString()
-  });
-};
-```
-
-## 🐛 Troubleshooting Deployment Issues
-
-### Common Build Errors
-
-#### 1. Certificate Issues (iOS)
-
-```bash
-# Clear certificates and regenerate
-eas credentials --platform ios --clear-all
-eas build --profile production-ios --platform ios --clear-cache
-```
-
-#### 2. Android Keystore Issues
-
-```bash
-# Generate new keystore
-eas credentials --platform android
-# Follow prompts to generate new keystore
-```
-
-#### 3. Expo Updates Conflicts
-
-```bash
-# Clear update cache
-eas update --branch production --clear
-eas build --profile production --platform all --clear-cache
-```
-
-#### 4. Out of Memory Errors
-
-```json
-// eas.json - Increase resource class
-{
-  "build": {
-    "production-ios": {
-      "ios": {
-        "resourceClass": "m1-large"  // Upgrade from m1-medium
-      }
-    }
-  }
 }
+
+export const crashReporting = {
+  captureException: (error: Error, context?: any) => {
+    if (environment.production) {
+      Sentry.captureException(error, { extra: context });
+    } else {
+      console.error('Exception captured:', error, context);
+    }
+  },
+
+  captureMessage: (message: string, level: 'info' | 'warning' | 'error' = 'info') => {
+    if (environment.production) {
+      Sentry.captureMessage(message, level);
+    } else {
+      console.log(`[${level.toUpperCase()}] ${message}`);
+    }
+  },
+
+  setUser: (user: { id: string; email?: string }) => {
+    if (environment.production) {
+      Sentry.setUser(user);
+    }
+  },
+};
 ```
 
-### Debug Build Issues
+## 🔄 Over-the-Air Updates
+
+### Expo Updates Configuration
+
+```javascript
+// expo-updates configuration in app.config.js
+export default {
+  expo: {
+    // ... other config
+    updates: {
+      url: 'https://u.expo.dev/your-eas-project-id',
+      enabled: true,
+      checkAutomatically: 'ON_LOAD',
+      fallbackToCacheTimeout: 0,
+    },
+    runtimeVersion: {
+      policy: 'sdkVersion',
+    },
+  },
+};
+```
+
+### Update Management
+
+```typescript
+// src/services/updateService.ts
+import * as Updates from 'expo-updates';
+import { Alert } from 'react-native';
+
+export const updateService = {
+  checkForUpdates: async () => {
+    try {
+      const update = await Updates.checkForUpdateAsync();
+
+      if (update.isAvailable) {
+        Alert.alert(
+          'Update Available',
+          'A new version of the app is available. Would you like to download it?',
+          [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Update',
+              onPress: async () => {
+                await Updates.fetchUpdateAsync();
+                await Updates.reloadAsync();
+              },
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error checking for updates:', error);
+    }
+  },
+
+  forceUpdate: async () => {
+    try {
+      await Updates.fetchUpdateAsync();
+      await Updates.reloadAsync();
+    } catch (error) {
+      console.error('Error forcing update:', error);
+    }
+  },
+};
+```
+
+## 📋 Deployment Checklist
+
+### Pre-Deployment Checklist
+
+#### Code Quality
+
+- [ ] All tests passing (unit, integration, E2E)
+- [ ] Code coverage meets thresholds (>80%)
+- [ ] ESLint and TypeScript checks pass
+- [ ] Performance tests completed
+- [ ] Security scan completed
+
+#### Environment Preparation
+
+- [ ] Environment variables configured for target environment
+- [ ] Database migrations completed (if any)
+- [ ] Backend services deployed and healthy
+- [ ] CDN and asset optimization completed
+
+#### App Configuration
+
+- [ ] Version number incremented
+- [ ] Build number incremented (iOS)
+- [ ] Version code incremented (Android)
+- [ ] App icons and splash screens updated
+- [ ] Store listing assets prepared
+
+#### Platform Preparation
+
+- [ ] iOS certificates and provisioning profiles valid
+- [ ] Android keystore available and valid
+- [ ] App Store Connect app record configured
+- [ ] Google Play Console app configured
+
+### Post-Deployment Checklist
+
+#### Verification
+
+- [ ] App successfully builds on EAS
+- [ ] App installs correctly on test devices
+- [ ] Critical user flows tested
+- [ ] Push notifications working
+- [ ] Analytics tracking functional
+- [ ] Crash reporting configured
+
+#### Store Submission
+
+- [ ] App submitted to App Store Connect
+- [ ] App submitted to Google Play Console
+- [ ] Beta testing groups configured
+- [ ] Store listing information complete
+- [ ] Screenshots and metadata accurate
+
+#### Monitoring
+
+- [ ] Error tracking alerts configured
+- [ ] Performance monitoring active
+- [ ] User feedback collection enabled
+- [ ] Update mechanism tested
+- [ ] Rollback plan documented
+
+## 🚨 Emergency Procedures
+
+### Rollback Strategy
 
 ```bash
-# Enable verbose logging
-eas build --profile production --platform ios --non-interactive --verbose
+# Emergency rollback process
 
-# Check build logs
-eas build:view [build-id]
+# 1. Identify problematic build
+eas build:list --platform all --status=finished --limit=10
 
-# Download build artifacts
-eas build:download [build-id]
+# 2. Revert to previous version in stores
+# iOS: Use App Store Connect to rollback release
+# Android: Use Google Play Console to rollback release
+
+# 3. Deploy hotfix OTA update if needed
+eas update --branch production --message "Emergency hotfix"
+
+# 4. Notify users via in-app notification or push notification
 ```
 
-### Store Submission Issues
+### Incident Response
 
-#### App Store Rejection Checklist
+1. **Immediate Response (0-15 minutes)**
 
-- [ ] App follows Apple Human Interface Guidelines
-- [ ] No placeholder content or test data
-- [ ] All features work as described
-- [ ] Privacy policy accessible if collecting data
-- [ ] Age rating matches content
-- [ ] Screenshots show actual app functionality
+   - Identify the scope and impact
+   - Stop ongoing deployments
+   - Assess if rollback is needed
 
-#### Google Play Rejection Checklist
+2. **Short-term Response (15-60 minutes)**
 
-- [ ] App complies with Google Play policies
-- [ ] Target SDK version meets requirements
-- [ ] Data safety form completed accurately
-- [ ] Content rating matches app content
-- [ ] App signing configured correctly
+   - Implement rollback if necessary
+   - Deploy emergency fixes
+   - Monitor error rates and user reports
+
+3. **Resolution (1-24 hours)**
+
+   - Identify root cause
+   - Implement comprehensive fix
+   - Test thoroughly before re-deployment
+   - Update monitoring and alerting
+
+4. **Post-Incident (24-48 hours)**
+   - Conduct post-mortem analysis
+   - Update deployment procedures
+   - Improve monitoring and testing
+   - Communicate lessons learned
+
+## 📈 Performance Optimization
+
+### Build Optimization
+
+```javascript
+// metro.config.js - Optimize bundle size
+const { getDefaultConfig } = require('expo/metro-config');
+
+const config = getDefaultConfig(__dirname);
+
+// Enable tree shaking
+config.resolver.unstable_enablePackageExports = true;
+
+// Optimize assets
+config.transformer.minifierConfig = {
+  ecma: 8,
+  keep_fnames: true,
+  mangle: {
+    keep_fnames: true,
+  },
+};
+
+module.exports = config;
+```
+
+### Asset Optimization
+
+```bash
+# Image optimization script
+#!/bin/bash
+
+# Optimize PNG images
+find ./src/assets -name "*.png" -exec pngquant --quality=65-90 --ext .png --force {} \;
+
+# Optimize JPEG images
+find ./src/assets -name "*.jpg" -exec jpegoptim --max=85 --preserve --force {} \;
+
+# Generate WebP versions
+find ./src/assets -name "*.png" -o -name "*.jpg" | while read img; do
+  cwebp "$img" -o "${img%.*}.webp" -q 85
+done
+```
+
+## 🔮 Advanced Deployment Features
+
+### Feature Flags
+
+```typescript
+// src/services/featureFlags.ts
+import { environment } from '@/config/environment';
+
+interface FeatureFlags {
+  newOnboarding: boolean;
+  enhancedNotifications: boolean;
+  premiumFeatures: boolean;
+  analyticsV2: boolean;
+}
+
+const getFeatureFlags = (): FeatureFlags => {
+  if (environment.production) {
+    return {
+      newOnboarding: true,
+      enhancedNotifications: true,
+      premiumFeatures: false,
+      analyticsV2: false,
+    };
+  }
+
+  // Development/staging flags
+  return {
+    newOnboarding: true,
+    enhancedNotifications: true,
+    premiumFeatures: true,
+    analyticsV2: true,
+  };
+};
+
+export const featureFlags = getFeatureFlags();
+```
+
+### A/B Testing Integration
+
+```typescript
+// src/services/abTesting.ts
+import { environment } from '@/config/environment';
+
+export const abTesting = {
+  getVariant: (testName: string, userId: string): string => {
+    if (!environment.production) {
+      return 'control'; // Default for development
+    }
+
+    // Simple hash-based assignment
+    const hash = hashString(`${testName}_${userId}`);
+    return hash % 2 === 0 ? 'control' : 'variant';
+  },
+
+  trackEvent: (event: string, properties: Record<string, any>) => {
+    // Track A/B test events
+    console.log('A/B Test Event:', event, properties);
+  },
+};
+
+const hashString = (str: string): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+};
+```
 
 ---
 
-This comprehensive deployment guide provides all the necessary information for successfully building, testing, and releasing the Yeser gratitude app across multiple platforms and environments. 
+This deployment guide provides a comprehensive foundation for deploying the Yeser gratitude app across all platforms with automated CI/CD, proper environment management, and robust monitoring and rollback capabilities.

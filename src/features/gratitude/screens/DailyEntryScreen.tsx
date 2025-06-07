@@ -103,12 +103,11 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const celebrationAnim = useRef(new Animated.Value(0)).current;
 
   // TanStack Query hooks for prompts - with refresh functionality
-  const { useVariedPrompts, daily_gratitude_goal } = profile || {};
+  const { daily_gratitude_goal } = profile || {};
   const {
     promptText: currentPrompt,
     isLoading: promptLoading,
     error: promptError,
-    isUsingDefault,
   } = usePromptText();
 
   const { fetchNewPrompt, isFetchingNewPrompt } = usePromptMutations();

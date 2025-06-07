@@ -20,6 +20,7 @@ import { ScreenLayout } from '@/shared/components/layout';
 import { StatementCard } from '@/shared/components/ui';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { getPrimaryShadow } from '@/themes/utils';
+import type { AppTheme } from '@/themes/types';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -40,7 +41,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
   // TanStack Query hooks replacing Zustand stores
   const { profile } = useUserProfile();
-  const { data: streak, isLoading: streakDataLoading, refetch: refetchStreak } = useStreakData();
+  const { data: streak, refetch: refetchStreak } = useStreakData();
   const todayDateString = useMemo(() => new Date().toISOString().split('T')[0], []);
   const { data: todaysEntry, refetch: refetchEntry } = useGratitudeEntry(todayDateString);
 
@@ -56,7 +57,10 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
   const { data: totalEntriesCount } = useGratitudeTotalCount();
 
   React.useEffect(() => {
-    logger.debug('HomeScreen Debug - Total gratitude entries:', totalEntriesCount);
+    logger.debug('HomeScreen Debug - Total gratitude entries:', { 
+      totalEntriesCount,
+      component: 'HomeScreen'
+    });
   }, [totalEntriesCount]);
 
   // Extract data from TanStack Query responses
@@ -114,74 +118,9 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     setStreakDetailsVisible(true);
   }, []);
 
-  // Today's Featured Statements Component
-  const TodaysFeaturedStatements = useCallback(() => {
-    const styles = createStyles(theme);
-
-    if (!todaysEntry?.statements || todaysEntry.statements.length === 0) {
-      return null;
-    }
-
-    const featuredStatement = todaysEntry.statements[0]; // Show first statement as featured
-    const hasMore = todaysEntry.statements.length > 1;
-
-    return (
-      <View style={styles.featuredContainer}>
-        <ThemedCard
-          variant="elevated"
-          density="comfortable"
-          elevation="card"
-          style={styles.featuredCard}
-        >
-          <View style={styles.featuredHeader}>
-            <View style={styles.featuredHeaderLeft}>
-              <Icon name="star-circle" size={20} color={theme.colors.primary} />
-              <Text style={styles.featuredTitle}>Bugünkü Öne Çıkan Minnet</Text>
-            </View>
-            <TouchableOpacity
-              onPress={handleNewEntryPress}
-              style={styles.featuredAction}
-              activeOpacity={0.7}
-            >
-              <Icon name="plus-circle" size={16} color={theme.colors.primary} />
-              <Text style={styles.featuredActionText}>Daha Fazla</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* 🚀 ENHANCED Featured Statement with Interactive Features */}
-          <StatementCard
-            statement={featuredStatement}
-            variant="default"
-            showQuotes={true}
-            animateEntrance={true}
-            numberOfLines={3}
-            onPress={handleNewEntryPress}
-            // ✨ NEW: Enhanced Interactive Features for Featured Display - Simplified
-            enableSwipeActions={false} // Disabled per user preference
-            enableLongPress={false} // Simplified interaction
-            enableInlineEdit={false} // Disable for home screen
-            enableQuickActions={false} // Disable for home screen
-            // ✨ NEW: Accessibility & Feedback
-            accessibilityLabel={`Öne çıkan minnet: ${featuredStatement}`}
-            hapticFeedback={false} // Simplified feedback
-            style={styles.featuredStatementCard}
-          />
-
-          {hasMore && (
-            <View style={styles.featuredFooter}>
-              <Icon name="heart-multiple" size={14} color={theme.colors.primary} />
-              <Text style={styles.featuredFooterText}>
-                +{todaysEntry.statements.length - 1} minnet daha
-              </Text>
-            </View>
-          )}
-        </ThemedCard>
-      </View>
-    );
-  }, [todaysEntry, theme, handleNewEntryPress]);
-
+  // Create styles function - moved before TodaysFeaturedStatements
   const createStyles = useCallback(
-    (theme: any) =>
+    (theme: AppTheme) =>
       StyleSheet.create({
         featuredContainer: {
           marginBottom: theme.spacing.md,
@@ -248,8 +187,71 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
           fontWeight: '600',
         },
       }),
-    [theme]
+    []
   );
+
+  // Today's Featured Statements Component
+  const TodaysFeaturedStatements = useCallback(() => {
+    const styles = createStyles(theme);
+
+    if (!todaysEntry?.statements || todaysEntry.statements.length === 0) {
+      return null;
+    }
+
+    const featuredStatement = todaysEntry.statements[0]; // Show first statement as featured
+    const hasMore = todaysEntry.statements.length > 1;
+
+    return (
+      <View style={styles.featuredContainer}>
+        <ThemedCard
+          variant="elevated"
+          density="comfortable"
+          elevation="card"
+          style={styles.featuredCard}
+        >
+          <View style={styles.featuredHeader}>
+            <View style={styles.featuredHeaderLeft}>
+              <Icon name="star-circle" size={20} color={theme.colors.primary} />
+              <Text style={styles.featuredTitle}>Bugünkü Öne Çıkan Minnet</Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleNewEntryPress}
+              style={styles.featuredAction}
+              activeOpacity={0.7}
+            >
+              <Icon name="plus-circle" size={16} color={theme.colors.primary} />
+              <Text style={styles.featuredActionText}>Daha Fazla</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 🚀 ENHANCED Featured Statement with Interactive Features */}
+          <StatementCard
+            statement={featuredStatement}
+            variant="default"
+            showQuotes={true}
+            animateEntrance={true}
+            numberOfLines={3}
+            onPress={handleNewEntryPress}
+            // ✨ NEW: Enhanced Interactive Features for Featured Display - Simplified
+            enableInlineEdit={false} // Disable for home screen
+            // ✨ NEW: Accessibility & Feedback
+            accessibilityLabel={`Öne çıkan minnet: ${featuredStatement}`}
+            hapticFeedback={false} // Simplified feedback
+            style={styles.featuredStatementCard}
+          />
+
+          {hasMore && (
+            <View style={styles.featuredFooter}>
+              <Icon name="heart-multiple" size={14} color={theme.colors.primary} />
+              <Text style={styles.featuredFooterText}>
+                +{todaysEntry.statements.length - 1} minnet daha
+              </Text>
+            </View>
+          )}
+        </ThemedCard>
+      </View>
+    );
+  }, [todaysEntry, theme, handleNewEntryPress, createStyles]);
 
   return (
     <>

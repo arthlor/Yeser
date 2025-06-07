@@ -162,6 +162,19 @@ const createStyles = (theme: AppTheme) =>
       justifyContent: 'center',
       ...getPrimaryShadow.small(theme),
     } as ViewStyle,
+    errorContentContainer: {
+      flex: 1,
+    } as ViewStyle,
+    errorRetryText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onErrorContainer,
+      fontSize: 12,
+      opacity: 0.8,
+      marginTop: 4,
+    } as TextStyle,
+    statementCardStyle: {
+      borderTopWidth: 0,
+    } as ViewStyle,
   });
 
 const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
@@ -207,12 +220,10 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
       <View style={styles.container}>
         <TouchableOpacity style={styles.errorCard} onPress={onRefresh} activeOpacity={0.7}>
           <Icon name="alert-circle-outline" size={20} color={theme.colors.onErrorContainer} />
-          <View style={{ flex: 1 }}>
+          <View style={styles.errorContentContainer}>
             <Text style={styles.throwbackErrorText}>{error}</Text>
             {onRefresh && (
-              <Text
-                style={[styles.throwbackErrorText, { fontSize: 12, opacity: 0.8, marginTop: 4 }]}
-              >
+              <Text style={styles.errorRetryText}>
                 Tekrar denemek için dokunun
               </Text>
             )}
@@ -280,7 +291,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
         showQuotes={true}
         animateEntrance={true}
         numberOfLines={3}
-        style={{ borderTopWidth: 0 }} // Remove top border since header handles it
+        style={styles.statementCardStyle}
       />
     </View>
   );

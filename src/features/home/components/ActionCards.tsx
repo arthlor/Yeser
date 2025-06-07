@@ -9,7 +9,6 @@ import {
   Platform,
   StyleSheet,
   Text,
-  TouchableOpacity,
   Vibration,
   View,
 } from 'react-native';
@@ -23,21 +22,36 @@ interface ActionCardsProps {
   onNavigateToCalendar: () => void;
 }
 
-const ActionCards: React.FC<ActionCardsProps> = React.memo(
-  ({
-    currentCount,
-    dailyGoal,
-    onNavigateToEntry,
-    onNavigateToPastEntries,
-    onNavigateToCalendar,
-  }) => {
-    const { theme } = useTheme();
-    const styles = useMemo(() => createStyles(theme), [theme]);
+  const ActionCards: React.FC<ActionCardsProps> = React.memo(
+    ({
+      currentCount,
+      dailyGoal,
+      onNavigateToEntry,
+      onNavigateToPastEntries,
+      onNavigateToCalendar,
+    }) => {
+            const { theme } = useTheme();
+      const styles = useMemo(() => createStyles(theme), [theme]);
 
-    // Animation values for micro-interactions
-    const primaryCardScale = useRef(new Animated.Value(1)).current;
-    const pastEntriesScale = useRef(new Animated.Value(1)).current;
-    const calendarScale = useRef(new Animated.Value(1)).current;
+      // Animation values for micro-interactions
+      const primaryCardScale = useRef(new Animated.Value(1)).current;
+      const pastEntriesScale = useRef(new Animated.Value(1)).current;
+      const calendarScale = useRef(new Animated.Value(1)).current;
+
+      // Memoize dynamic styles to prevent object creation on every render
+      const dynamicStyles = useMemo(() => ({
+        primaryCardTransform: { transform: [{ scale: primaryCardScale }] },
+        pastEntriesTransform: [styles.cardWrapper, { transform: [{ scale: pastEntriesScale }] }],
+        calendarTransform: [styles.cardWrapper, { transform: [{ scale: calendarScale }] }],
+        primaryIconBg: [
+          styles.secondaryIconContainer,
+          { backgroundColor: theme.colors.primaryContainer },
+        ],
+        secondaryIconBg: [
+          styles.secondaryIconContainer,
+          { backgroundColor: theme.colors.secondaryContainer },
+        ],
+      }), [theme, primaryCardScale, pastEntriesScale, calendarScale, styles]);
 
     const handlePressIn = useCallback((animValue: Animated.Value) => {
       // Haptic feedback for iOS
@@ -93,7 +107,7 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
       <View style={styles.container}>
         {/* Enhanced Primary Action Card - Only show when goal not completed */}
         {primaryAction && (
-          <Animated.View style={{ transform: [{ scale: primaryCardScale }] }}>
+          <Animated.View style={dynamicStyles.primaryCardTransform}>
             <ThemedCard
               variant="elevated"
               density="comfortable"
@@ -151,9 +165,7 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
         >
           <View style={styles.secondaryCardsGrid}>
             {/* Enhanced Past Entries Card */}
-            <Animated.View
-              style={[styles.cardWrapper, { transform: [{ scale: pastEntriesScale }] }]}
-            >
+            <Animated.View style={dynamicStyles.pastEntriesTransform}>
               <ThemedCard
                 density="compact"
                 elevation="xs"
@@ -166,12 +178,7 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                 }}
               >
                 <View style={styles.secondaryCardContent}>
-                  <View
-                    style={[
-                      styles.secondaryIconContainer,
-                      { backgroundColor: theme.colors.primaryContainer },
-                    ]}
-                  >
+                  <View style={dynamicStyles.primaryIconBg}>
                     <Icon name="history" size={20} color={theme.colors.primary} />
                   </View>
                   <Text style={styles.secondaryCardTitle}>Geçmiş</Text>
@@ -182,7 +189,7 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
             </Animated.View>
 
             {/* Enhanced Calendar Card */}
-            <Animated.View style={[styles.cardWrapper, { transform: [{ scale: calendarScale }] }]}>
+            <Animated.View style={dynamicStyles.calendarTransform}>
               <ThemedCard
                 density="compact"
                 elevation="xs"
@@ -195,12 +202,7 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                 }}
               >
                 <View style={styles.secondaryCardContent}>
-                  <View
-                    style={[
-                      styles.secondaryIconContainer,
-                      { backgroundColor: theme.colors.secondaryContainer },
-                    ]}
-                  >
+                  <View style={dynamicStyles.secondaryIconBg}>
                     <Icon name="calendar-month" size={20} color={theme.colors.secondary} />
                   </View>
                   <Text style={styles.secondaryCardTitle}>Takvim</Text>

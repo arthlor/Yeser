@@ -3,30 +3,13 @@
  * Provides structured logging with different levels and conditional output
  */
 
-// Performance polyfill for React Native
-const getPerformanceNow = (): (() => number) => {
-  if (typeof performance !== 'undefined' && performance.now) {
-    return () => performance.now();
-  }
-  // Fallback for React Native
-  return () => Date.now();
-};
-
-const performanceNow = getPerformanceNow();
-
-interface LogLevel {
-  DEBUG: 0;
-  INFO: 1;
-  WARN: 2;
-  ERROR: 3;
-}
-
 interface LogContext {
   component?: string;
   action?: string;
   userId?: string;
   timestamp?: string;
-  [key: string]: any; // Allow any other string keys
+  extra?: Record<string, unknown>;
+  [key: string]: unknown; // Allow any other string keys
 }
 
 class Logger {

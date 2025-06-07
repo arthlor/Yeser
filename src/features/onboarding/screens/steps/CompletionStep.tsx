@@ -85,7 +85,7 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
     return () => {
       rotateAnimation.stop();
     };
-  }, [userSummary]);
+  }, [userSummary.username, userSummary.dailyGoal, userSummary.selectedTheme, userSummary.featuresEnabled, fadeAnim, slideAnim, scaleAnim, celebrationAnim, sparkleRotation]);
 
   const handleStartJourney = useCallback(() => {
     hapticFeedback.success();

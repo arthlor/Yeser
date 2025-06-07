@@ -242,7 +242,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
     try {
       await onSave?.(localStatement.trim());
       triggerHaptic('success');
-    } catch (error) {
+    } catch {
       triggerHaptic('error');
       Alert.alert('Hata', 'Minnet kaydedilirken bir hata oluştu.');
     }

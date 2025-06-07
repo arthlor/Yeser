@@ -1,10 +1,12 @@
 import React, { useRef, useState } from 'react';
 import {
   Animated,
+  NativeSyntheticEvent,
   Platform,
   StyleSheet,
   Text,
   TextInput,
+  TextInputFocusEventData,
   TextInputProps,
   TextStyle,
   TouchableOpacity,
@@ -94,7 +96,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
   );
 
   // Enhanced focus animation with scale effect
-  const handleFocus = (e: any) => {
+  const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(true);
     
     // 🔧 FIX: Use only native driver animations to avoid conflicts
@@ -111,7 +113,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
   };
 
   // Enhanced blur animation
-  const handleBlur = (e: any) => {
+  const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(false);
     
     // 🔧 FIX: Use only native driver animations to avoid conflicts

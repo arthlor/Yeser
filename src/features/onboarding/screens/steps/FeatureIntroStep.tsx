@@ -53,7 +53,7 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
       duration: 400,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   const handleFeatureToggle = useCallback(
     (feature: keyof FeaturePreferences, value: boolean | string) => {

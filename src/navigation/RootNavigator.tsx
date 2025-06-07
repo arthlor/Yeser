@@ -1,7 +1,7 @@
 // src/navigation/RootNavigator.tsx
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { EventArg } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, StackCardInterpolationProps } from '@react-navigation/stack';
 
 import React, { useEffect } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -24,7 +24,7 @@ import SettingsScreen from '../features/settings/screens/SettingsScreen';
 import SplashScreen from '../features/auth/screens/SplashScreen';
 import TermsOfServiceScreen from '../features/settings/screens/TermsOfServiceScreen';
 import OnboardingFlowScreen from '../features/onboarding/screens/EnhancedOnboardingFlowScreen';
-import useAuthStore, { AuthState } from '../store/authStore';
+import useAuthStore from '../store/authStore';
 import { MainAppTabParamList, RootStackParamList } from '../types/navigation';
 import { hapticFeedback } from '../utils/hapticFeedback';
 import { getPrimaryShadow } from '@/themes/utils';
@@ -107,7 +107,7 @@ const MainAppNavigator: React.FC = () => {
         tabBarBackground: () => <View style={tabBarStyles.tabBarBackground} />,
         headerShown: false,
         // Modern transition animations
-        cardStyleInterpolator: ({ current, layouts }: any) => {
+        cardStyleInterpolator: ({ current, layouts }: StackCardInterpolationProps) => {
           return {
             cardStyle: {
               transform: [
@@ -272,7 +272,7 @@ const RootNavigator: React.FC = () => {
         gestureEnabled: true,
         gestureDirection: 'horizontal',
         // Modern stack transitions with edge-to-edge support
-        cardStyleInterpolator: ({ current, layouts }: any) => {
+        cardStyleInterpolator: ({ current, layouts }: StackCardInterpolationProps) => {
           return {
             cardStyle: {
               transform: [
@@ -338,7 +338,7 @@ const RootNavigator: React.FC = () => {
           presentation: 'modal',
           headerTitleAlign: 'center',
           gestureEnabled: true,
-          cardStyleInterpolator: ({ current }: any) => {
+          cardStyleInterpolator: ({ current }: StackCardInterpolationProps) => {
             return {
               cardStyle: {
                 transform: [
@@ -373,7 +373,7 @@ const RootNavigator: React.FC = () => {
           presentation: 'modal',
           headerTitleAlign: 'center',
           gestureEnabled: true,
-          cardStyleInterpolator: ({ current }: any) => {
+          cardStyleInterpolator: ({ current }: StackCardInterpolationProps) => {
             return {
               cardStyle: {
                 transform: [
@@ -398,7 +398,7 @@ const RootNavigator: React.FC = () => {
           presentation: 'modal',
           headerTitleAlign: 'center',
           gestureEnabled: true,
-          cardStyleInterpolator: ({ current }: any) => {
+          cardStyleInterpolator: ({ current }: StackCardInterpolationProps) => {
             return {
               cardStyle: {
                 transform: [
@@ -423,7 +423,7 @@ const RootNavigator: React.FC = () => {
           presentation: 'modal',
           headerTitleAlign: 'center',
           gestureEnabled: true,
-          cardStyleInterpolator: ({ current }: any) => {
+          cardStyleInterpolator: ({ current }: StackCardInterpolationProps) => {
             return {
               cardStyle: {
                 transform: [

@@ -320,7 +320,7 @@ const createStyles = (
  * 🎨 VARIANT STYLING
  * Clean, predictable styling for each button variant
  */
-const getVariantStyles = (theme: AppTheme, variant: ButtonVariant, shadows: any) => {
+const getVariantStyles = (theme: AppTheme, variant: ButtonVariant, shadows: ReturnType<typeof unifiedShadows>) => {
   switch (variant) {
     case 'primary':
       return {
@@ -379,7 +379,7 @@ const getVariantStyles = (theme: AppTheme, variant: ButtonVariant, shadows: any)
  * 🔒 DISABLED STATE STYLING
  * Consistent disabled appearance across all variants
  */
-const getDisabledStyles = (theme: AppTheme, variant: ButtonVariant, baseStyles: any) => {
+const getDisabledStyles = (theme: AppTheme, variant: ButtonVariant, baseStyles: { container: ViewStyle; text: TextStyle }) => {
   const isTransparent = variant === 'outline' || variant === 'ghost';
   
   return {

@@ -105,7 +105,7 @@ const DayPreview: React.FC<DayPreviewProps> = ({
               animateEntrance={false}
               numberOfLines={2}
               onPress={onViewEntry}
-              style={{ marginVertical: 0, borderWidth: 0 }}
+              style={styles.statementCardStyle}
             />
             <TouchableOpacity
               onPress={onViewEntry}
@@ -182,6 +182,10 @@ const styles = StyleSheet.create({
   statementContainer: {
     paddingHorizontal: 16,
     paddingTop: 8,
+  },
+  statementCardStyle: {
+    marginVertical: 0,
+    borderWidth: 0,
   },
   actionFooter: {
     borderTopWidth: StyleSheet.hairlineWidth,

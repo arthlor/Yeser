@@ -69,31 +69,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   // Animation for step transitions (simplified)
   const stepAnim = useRef(new Animated.Value(1)).current;
 
-  useEffect(() => {
-    // Track onboarding start
-    analyticsService.logEvent('enhanced_onboarding_started', {
-      flow_version: '2.0',
-      total_steps: ONBOARDING_STEPS.length,
-    });
-
-    // Initial animation for first step
-    stepAnim.setValue(0);
-    Animated.timing(stepAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    // Handle Android back button
-    const handleBackPress = () => {
-      handleStepBack();
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-    return () => backHandler.remove();
-  }, []);
-
   // Animate step transitions
   const animateStepTransition = useCallback(() => {
     Animated.sequence([
@@ -109,6 +84,23 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
       }),
     ]).start();
   }, [stepAnim]);
+
+  // Navigate to previous step (moved before useEffect)
+  const handleStepBack = useCallback(() => {
+    const currentIndex = ONBOARDING_STEPS.indexOf(currentStep);
+    if (currentIndex > 0) {
+      const previousStep = ONBOARDING_STEPS[currentIndex - 1];
+      setCurrentStep(previousStep);
+      animateStepTransition();
+
+      // Track step back navigation
+      analyticsService.logEvent('onboarding_step_back', {
+        from_step: currentStep,
+        to_step: previousStep,
+        step_index: currentIndex,
+      });
+    }
+  }, [currentStep, animateStepTransition]);
 
   // Navigate to next step
   const handleStepNext = useCallback(
@@ -134,22 +126,30 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
     [currentStep, animateStepTransition]
   );
 
-  // Navigate to previous step
-  const handleStepBack = useCallback(() => {
-    const currentIndex = ONBOARDING_STEPS.indexOf(currentStep);
-    if (currentIndex > 0) {
-      const previousStep = ONBOARDING_STEPS[currentIndex - 1];
-      setCurrentStep(previousStep);
-      animateStepTransition();
+  useEffect(() => {
+    // Track onboarding start
+    analyticsService.logEvent('enhanced_onboarding_started', {
+      flow_version: '2.0',
+      total_steps: ONBOARDING_STEPS.length,
+    });
 
-      // Track step back navigation
-      analyticsService.logEvent('onboarding_step_back', {
-        from_step: currentStep,
-        to_step: previousStep,
-        step_index: currentIndex,
-      });
-    }
-  }, [currentStep, animateStepTransition]);
+    // Initial animation for first step
+    stepAnim.setValue(0);
+    Animated.timing(stepAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    // Handle Android back button
+    const handleBackPress = () => {
+      handleStepBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+    return () => backHandler.remove();
+  }, [stepAnim, handleStepBack]);
 
 
 

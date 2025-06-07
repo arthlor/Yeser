@@ -44,7 +44,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
       duration: 400,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   const handleGoalSelect = useCallback((goal: number) => {
     setSelectedGoal(goal);

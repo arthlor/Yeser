@@ -71,7 +71,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
       duration: 400,
       useNativeDriver: true,
     }).start();
-  }, []); // Separate animation effect
+  }, [fadeAnim]); // Separate animation effect
 
   // Check username availability on mount or when username changes
   useEffect(() => {
@@ -131,7 +131,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
       isAvailable,
       canContinue
     });
-  }, [username, validationError, isChecking, isAvailable]); // Remove canContinue as it's derived from other deps
+  }, [username, validationError, isChecking, isAvailable, canContinue]); // canContinue needed as it's used inside
 
   return (
           <ScreenLayout edges={['top']} edgeToEdge={true}>

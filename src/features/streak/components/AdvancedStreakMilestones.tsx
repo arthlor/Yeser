@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
+import { Animated, Dimensions, StyleSheet, Text, Vibration, View } from 'react-native';
 import { Easing } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
-import { getPrimaryShadow } from '@/themes/utils';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 
 interface AdvancedStreakMilestonesProps {

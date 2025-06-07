@@ -51,7 +51,7 @@ export interface RootStackParamList extends Record<string, object | undefined> {
   // Modal and overlay screens
   ReminderSettings: undefined; // Notification preferences
   EntryDetail: {
-    entry: GratitudeEntry;
+    entryDate: string; // Pass date instead of full object for better performance
     allowEdit?: boolean; // Whether editing is allowed
   }; // Full entry display with optional editing
   StreakDetails: undefined; // Dedicated streak system explanation and progress screen

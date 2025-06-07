@@ -7,6 +7,8 @@ export const queryKeys = {
 
   // Gratitude entry queries
   gratitudeEntries: (userId?: string) => [...queryKeys.all, 'gratitudeEntries', userId] as const,
+  gratitudeEntriesPaginated: (userId?: string, pageSize?: number) =>
+    [...queryKeys.gratitudeEntries(userId), 'paginated', pageSize] as const,
   gratitudeEntry: (userId: string | undefined, entryDate: string) =>
     [...queryKeys.gratitudeEntries(userId), { entryDate }] as const,
   gratitudeEntriesByMonth: (userId: string | undefined, year: number, month: number) =>

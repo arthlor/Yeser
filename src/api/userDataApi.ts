@@ -43,15 +43,18 @@ const createPDFTemplate = (data: ExportData): string => {
   const metadata = data.metadata || {};
 
   // Group entries by month for better organization
-  const entriesByMonth = entries.reduce((acc: Record<string, GratitudeEntry[]>, entry: GratitudeEntry) => {
-    const date = new Date(entry.entry_date);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    if (!acc[monthKey]) {
-      acc[monthKey] = [];
-    }
-    acc[monthKey].push(entry);
-    return acc;
-  }, {});
+  const entriesByMonth = entries.reduce(
+    (acc: Record<string, GratitudeEntry[]>, entry: GratitudeEntry) => {
+      const date = new Date(entry.entry_date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (!acc[monthKey]) {
+        acc[monthKey] = [];
+      }
+      acc[monthKey].push(entry);
+      return acc;
+    },
+    {}
+  );
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -482,13 +485,31 @@ export const shareExportedFile = async (
 
 /**
  * Cleans up (deletes) a temporary file.
+ * This function is designed to be safe for use in finally blocks and will never throw.
  */
 export const cleanupTemporaryFile = async (filePath: string): Promise<void> => {
   try {
+    if (!filePath || typeof filePath !== 'string') {
+      logger.debug('Invalid file path provided for cleanup:', { filePath });
+      return;
+    }
+
+    // Check if file exists before attempting deletion
+    const fileInfo = await FileSystem.getInfoAsync(filePath);
+    if (!fileInfo.exists) {
+      logger.debug('File does not exist, no cleanup needed:', { filePath });
+      return;
+    }
+
     await FileSystem.deleteAsync(filePath, { idempotent: true });
-    logger.debug('Temporary file deleted:', { filePath });
+    logger.debug('Temporary file successfully deleted:', { filePath });
   } catch (err: unknown) {
+    // Never throw in cleanup function - just log the error
     const error = err instanceof Error ? err : new Error(String(err));
-    throw handleAPIError(error, 'delete temporary file');
+    logger.error('Failed to cleanup temporary file (non-critical):', {
+      filePath,
+      error: error.message,
+      extra: { error },
+    });
   }
 };

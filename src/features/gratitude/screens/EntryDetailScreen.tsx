@@ -52,8 +52,7 @@ const EnhancedEntryDetailScreen: React.FC<{
   navigation: EntryDetailScreenNavigationProp;
 }> = ({ route }) => {
   const { theme } = useTheme();
-  const { entry } = route.params;
-  const entryDate = entry.entry_date || new Date().toISOString().split('T')[0];
+  const { entryDate } = route.params;
 
   // Live data fetching for real-time updates
   const {
@@ -83,15 +82,15 @@ const EnhancedEntryDetailScreen: React.FC<{
   const [animationsReady, setAnimationsReady] = useState(false);
 
   // Use live data or fallback to route params
-  const gratitudeItems = currentEntry?.statements || entry.statements || [];
+  const gratitudeItems = currentEntry?.statements || [];
 
   // Enhanced date formatting with relative time
   const formatEntryDate = () => {
-    if (!entry.entry_date) {
+    if (!entryDate) {
       return { formattedDate: 'Tarih bilgisi yok', relativeTime: '' };
     }
 
-    const entryDateObj = new Date(entry.entry_date);
+    const entryDateObj = new Date(entryDate);
     const today = new Date();
     const diffTime = today.getTime() - entryDateObj.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -370,10 +369,10 @@ const EnhancedEntryDetailScreen: React.FC<{
               <View style={styles.dateDisplayContainer}>
                 <View style={styles.dateDisplayBadge}>
                   <Text style={styles.dayNumber}>
-                    {new Date(entry.entry_date || new Date()).getDate()}
+                    {new Date(entryDate || new Date()).getDate()}
                   </Text>
                   <Text style={styles.monthText}>
-                    {new Date(entry.entry_date || new Date())
+                    {new Date(entryDate || new Date())
                       .toLocaleDateString('tr-TR', { month: 'short' })
                       .toUpperCase()}
                   </Text>

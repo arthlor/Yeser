@@ -1,6 +1,7 @@
 import {
   getEntryDatesForMonth,
   getGratitudeDailyEntries,
+  getGratitudeDailyEntriesPaginated,
   getGratitudeDailyEntryByDate,
   getRandomGratitudeEntry,
   getTotalGratitudeEntriesCount,
@@ -8,7 +9,7 @@ import {
 import { queryKeys } from '@/api/queryKeys';
 import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 import useAuthStore from '@/store/authStore';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { logger } from '@/utils/debugConfig';
 
 export const useGratitudeEntries = () => {
@@ -19,6 +20,21 @@ export const useGratitudeEntries = () => {
     queryFn: getGratitudeDailyEntries,
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 2, // 2 minutes - entries change more frequently
+  });
+};
+
+export const useGratitudeEntriesPaginated = (pageSize: number = 20) => {
+  const user = useAuthStore((state) => state.user);
+
+  return useInfiniteQuery({
+    queryKey: queryKeys.gratitudeEntriesPaginated(user?.id, pageSize),
+    queryFn: ({ pageParam = 0 }) => getGratitudeDailyEntriesPaginated(pageParam, pageSize),
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 2, // 2 minutes - entries change more frequently
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore ? lastPage.currentPage + 1 : undefined;
+    },
+    initialPageParam: 0,
   });
 };
 
@@ -61,13 +77,13 @@ export const useRandomGratitudeEntry = () => {
   const query = useQuery<GratitudeEntry | null, Error>({
     queryKey: queryKeys.randomGratitudeEntry(user?.id),
     queryFn: async () => {
-      logger.debug('useRandomGratitudeEntry: Starting query', { 
+      logger.debug('useRandomGratitudeEntry: Starting query', {
         userId: user?.id,
         userExists: !!user,
         queryEnabled: !!user?.id,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
+
       try {
         const result = await getRandomGratitudeEntry();
         logger.debug('useRandomGratitudeEntry: Query completed successfully', {
@@ -75,14 +91,14 @@ export const useRandomGratitudeEntry = () => {
           entryDate: result?.entry_date,
           statementsCount: result?.statements?.length,
           firstStatement: result?.statements?.[0]?.substring(0, 100),
-          fullResult: result // Log the full result for debugging
+          fullResult: result, // Log the full result for debugging
         });
         return result;
       } catch (error) {
         logger.error('useRandomGratitudeEntry: Query failed', {
           error: error instanceof Error ? error.message : String(error),
           userId: user?.id,
-          stack: error instanceof Error ? error.stack : undefined
+          stack: error instanceof Error ? error.stack : undefined,
         });
         throw error;
       }
@@ -90,10 +106,10 @@ export const useRandomGratitudeEntry = () => {
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes - random entry can be cached briefly
     retry: (failureCount, error) => {
-      logger.debug('useRandomGratitudeEntry: Retry attempt', { 
-        failureCount, 
+      logger.debug('useRandomGratitudeEntry: Retry attempt', {
+        failureCount,
         error: error?.message,
-        willRetry: failureCount < 2
+        willRetry: failureCount < 2,
       });
       return failureCount < 2; // Only retry twice
     },
@@ -108,7 +124,7 @@ export const useRandomGratitudeEntry = () => {
     hasData: !!query.data,
     hasError: !!query.error,
     status: query.status,
-    fetchStatus: query.fetchStatus
+    fetchStatus: query.fetchStatus,
   });
 
   return query;

@@ -2,12 +2,7 @@ import { CompositeNavigationProp, useNavigation } from '@react-navigation/native
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import { DateData } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -166,7 +161,7 @@ const EnhancedCalendarViewScreen: React.FC = () => {
         entry_id: selectedEntry.id,
       });
 
-      navigation.navigate('EntryDetail', { entry: selectedEntry });
+      navigation.navigate('EntryDetail', { entryDate: selectedEntry.entry_date });
     }
   };
 
@@ -177,9 +172,9 @@ const EnhancedCalendarViewScreen: React.FC = () => {
   const error = datesError?.message || entryError?.message || null;
 
   return (
-    <ScreenLayout 
-      scrollable={true} 
-              edges={['top']} 
+    <ScreenLayout
+      scrollable={true}
+      edges={['top']}
       density="compact"
       edgeToEdge={true}
       showsVerticalScrollIndicator={false}
@@ -236,36 +231,37 @@ const EnhancedCalendarViewScreen: React.FC = () => {
   );
 };
 
-const createStyles = (theme: AppTheme) => StyleSheet.create({
-  animatedContainer: {
-    flex: 1,
-  },
-  // Edge-to-Edge Guide Card
-  guideCard: {
-    borderRadius: 0,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 0,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderTopColor: theme.colors.outline + '10',
-    borderBottomColor: theme.colors.outline + '10',
-    marginTop: theme.spacing.md,
-    ...getPrimaryShadow.card(theme),
-  },
-  guideContent: {
-    flexDirection: 'row',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    alignItems: 'center',
-    gap: theme.spacing.md,
-  },
-  guideText: {
-    ...theme.typography.bodySmall,
-    color: theme.colors.onSurfaceVariant,
-    flex: 1,
-    lineHeight: 18,
-    opacity: 0.8,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    animatedContainer: {
+      flex: 1,
+    },
+    // Edge-to-Edge Guide Card
+    guideCard: {
+      borderRadius: 0,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 0,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderTopColor: theme.colors.outline + '10',
+      borderBottomColor: theme.colors.outline + '10',
+      marginTop: theme.spacing.md,
+      ...getPrimaryShadow.card(theme),
+    },
+    guideContent: {
+      flexDirection: 'row',
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    guideText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      flex: 1,
+      lineHeight: 18,
+      opacity: 0.8,
+    },
+  });
 
 export default EnhancedCalendarViewScreen;

@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { FlatList, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/providers/ThemeProvider';
-import { useGratitudeEntries } from '@/features/gratitude/hooks';
+import { useGratitudeEntriesPaginated } from '@/features/gratitude/hooks';
 import { analyticsService } from '@/services/analyticsService';
 import PastEntriesHeader from '@/components/past-entries/PastEntriesHeader';
 import PastEntryItem from '@/components/past-entries/PastEntryItem';
@@ -24,7 +24,7 @@ type PastEntriesScreenNavigationProp = CompositeNavigationProp<
 
 /**
  * Enhanced Past Entries Screen - Modern edge-to-edge UI with beautiful visual hierarchy.
- * 
+ *
  * Features:
  * - Full edge-to-edge design with proper safe area handling
  * - Floating header card with stats and progress
@@ -39,13 +39,27 @@ const PastEntriesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   const {
-    data: entries = [],
+    data,
     isLoading,
     isError,
     error,
     refetch,
     isRefetching,
-  } = useGratitudeEntries();
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGratitudeEntriesPaginated();
+
+  // Flatten the paginated data into a single array
+  const entries = useMemo(() => {
+    if (!data?.pages) {
+      return [];
+    }
+    return data.pages.flatMap((page) => page.entries);
+  }, [data]);
+
+  // Get total count from the first page (for future use)
+  // const totalCount = data?.pages?.[0]?.totalCount || 0;
 
   useEffect(() => {
     analyticsService.logScreenView('PastEntriesScreen');
@@ -59,6 +73,12 @@ const PastEntriesScreen: React.FC = () => {
     refetch();
   }, [refetch]);
 
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const handleEntryPress = useCallback(
     (entry: GratitudeEntry) => {
       analyticsService.logEvent('past_entry_selected', {
@@ -66,12 +86,10 @@ const PastEntriesScreen: React.FC = () => {
         entry_date: entry.entry_date !== undefined ? entry.entry_date : null,
       });
 
-      navigation.navigate('EntryDetail', { entry });
+      navigation.navigate('EntryDetail', { entryDate: entry.entry_date });
     },
     [navigation]
   );
-
-
 
   const renderItem = useCallback(
     ({ item, index }: { item: GratitudeEntry; index: number }) => (
@@ -92,7 +110,11 @@ const PastEntriesScreen: React.FC = () => {
   if (isLoading && !isRefetching) {
     return (
       <View style={styles.edgeToEdgeContainer}>
-        <StatusBar backgroundColor="transparent" translucent barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'} />
+        <StatusBar
+          backgroundColor="transparent"
+          translucent
+          barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
+        />
         <View style={styles.scrollableContent}>
           <PastEntriesHeader title="Minnet Kayıtlarınız" subtitle="Yükleniyor..." />
           <PastEntriesSkeletonLoader count={5} />
@@ -105,7 +127,11 @@ const PastEntriesScreen: React.FC = () => {
   if (isError && !isRefetching) {
     return (
       <View style={styles.edgeToEdgeContainer}>
-        <StatusBar backgroundColor="transparent" translucent barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'} />
+        <StatusBar
+          backgroundColor="transparent"
+          translucent
+          barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
+        />
         <View style={styles.scrollableContent}>
           <PastEntriesHeader title="Minnet Kayıtlarınız" />
           <PastEntriesErrorState
@@ -121,7 +147,11 @@ const PastEntriesScreen: React.FC = () => {
   if (entries.length === 0 && !isRefetching) {
     return (
       <View style={styles.edgeToEdgeContainer}>
-        <StatusBar backgroundColor="transparent" translucent barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'} />
+        <StatusBar
+          backgroundColor="transparent"
+          translucent
+          barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
+        />
         <View style={styles.scrollableContent}>
           <PastEntriesHeader title="Minnet Kayıtlarınız" />
           <PastEntriesEmptyState />
@@ -133,7 +163,11 @@ const PastEntriesScreen: React.FC = () => {
   // Main content with entries - Full edge-to-edge FlatList
   return (
     <View style={styles.edgeToEdgeContainer}>
-      <StatusBar backgroundColor="transparent" translucent barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'} />
+      <StatusBar
+        backgroundColor="transparent"
+        translucent
+        barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
+      />
       <FlatList
         data={entries}
         renderItem={renderItem}
@@ -164,12 +198,17 @@ const PastEntriesScreen: React.FC = () => {
         bounces={true}
         bouncesZoom={false}
         alwaysBounceVertical={true}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
       />
     </View>
   );
 };
 
-const createStyles = (theme: AppTheme, insets: { top: number; bottom: number; left: number; right: number }) =>
+const createStyles = (
+  theme: AppTheme,
+  insets: { top: number; bottom: number; left: number; right: number }
+) =>
   StyleSheet.create({
     // Edge-to-edge container with proper safe area handling
     edgeToEdgeContainer: {

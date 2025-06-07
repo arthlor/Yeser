@@ -201,6 +201,65 @@ export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
 };
 
 /**
+ * Fetches paginated gratitude daily entries for the current user, ordered by date.
+ * Each entry contains an array of gratitude statements.
+ *
+ * @param page - Page number (0-based)
+ * @param limit - Number of entries per page (default: 20)
+ * @returns Promise containing entries and pagination metadata
+ */
+export const getGratitudeDailyEntriesPaginated = async (
+  page: number = 0,
+  limit: number = 20
+): Promise<{
+  entries: GratitudeEntry[];
+  hasMore: boolean;
+  totalCount: number;
+  currentPage: number;
+}> => {
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      throw new Error('No active session');
+    }
+    const { user } = sessionData.session;
+    if (!user) {
+      throw new Error('No user found in session');
+    }
+
+    const offset = page * limit;
+
+    // Get total count for pagination metadata using existing function
+    const totalCount = await getTotalGratitudeEntriesCount();
+
+    // Get paginated entries
+    const { data, error } = await supabase
+      .from('gratitude_entries')
+      .select('id, user_id, entry_date, statements, created_at, updated_at')
+      .eq('user_id', user.id)
+      .order('entry_date', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      throw handleAPIError(new Error(error.message), 'fetch paginated gratitude daily entries');
+    }
+
+    const entries = data ? data.map(mapAndValidateRawEntry) : [];
+    const hasMore = totalCount ? offset + entries.length < totalCount : false;
+
+    return {
+      entries,
+      hasMore,
+      totalCount: totalCount || 0,
+      currentPage: page,
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'fetch paginated gratitude daily entries');
+  }
+};
+
+/**
  * Fetches a specific gratitude daily entry by date for the current user.
  */
 export const getGratitudeDailyEntryByDate = async (

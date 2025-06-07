@@ -1,6 +1,7 @@
 // Gratitude feature hooks
 export {
   useGratitudeEntries,
+  useGratitudeEntriesPaginated,
   useGratitudeEntry,
   useGratitudeTotalCount,
   useRandomGratitudeEntry,
@@ -16,4 +17,4 @@ export {
   usePromptText,
   usePromptSettings,
   STATIC_DEFAULT_PROMPT,
-} from './usePrompts'; 
+} from './usePrompts';

@@ -82,7 +82,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         return;
       }
 
+      // Store the temp file path for cleanup
       tempFilePath = prepareResult.filePath;
+
       const shareResult = await shareExportedFile(prepareResult.filePath, prepareResult.filename);
 
       if (shareResult.success) {
@@ -101,9 +103,21 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         error instanceof Error ? error.message : 'Beklenmedik bir hata oluştu.'
       );
     } finally {
+      // Guaranteed cleanup - this will never throw due to improved cleanupTemporaryFile
       if (tempFilePath) {
-        await cleanupTemporaryFile(tempFilePath);
+        try {
+          await cleanupTemporaryFile(tempFilePath);
+        } catch (cleanupError) {
+          // This should never happen with the improved cleanup function,
+          // but adding extra safety to prevent any issues in finally block
+          logger.error('Unexpected cleanup error (should not happen):', {
+            error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+            filePath: tempFilePath,
+          });
+        }
       }
+
+      // Always reset the loading state
       setIsExporting(false);
     }
   };

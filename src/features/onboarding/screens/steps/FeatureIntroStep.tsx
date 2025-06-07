@@ -1,13 +1,14 @@
 import { analyticsService } from '@/services/analyticsService';
 import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
-import { getPrimaryShadow } from '@/themes/utils';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { Ionicons } from '@expo/vector-icons';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Button, Card, IconButton, Switch } from 'react-native-paper';
+import { Button, IconButton } from 'react-native-paper';
+
+import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
 
 import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
 
@@ -83,7 +84,7 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
   }, [features, onNext]);
 
   return (
-          <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <ScreenLayout edges={['top']} edgeToEdge={true}>
       <Animated.View
         style={[
           styles.container,
@@ -144,10 +145,11 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
                     gibi yaratıcı sorular.
                   </Text>
                 </View>
-                <Switch
+                <ThemedSwitch
                   value={features.useVariedPrompts}
-                  onValueChange={(value) => handleFeatureToggle('useVariedPrompts', value)}
-                  color={theme.colors.primary}
+                  onValueChange={(value: boolean) => handleFeatureToggle('useVariedPrompts', value)}
+                  size="medium"
+                  testID="onboarding-varied-prompts-switch"
                 />
               </View>
             </View>
@@ -173,10 +175,11 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
                     bildirimler al.
                   </Text>
                 </View>
-                <Switch
+                <ThemedSwitch
                   value={features.throwbackEnabled}
-                  onValueChange={(value) => handleFeatureToggle('throwbackEnabled', value)}
-                  color={theme.colors.primary}
+                  onValueChange={(value: boolean) => handleFeatureToggle('throwbackEnabled', value)}
+                  size="medium"
+                  testID="onboarding-throwback-switch"
                 />
               </View>
 

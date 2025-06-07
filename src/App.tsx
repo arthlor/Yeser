@@ -23,6 +23,7 @@ import useAuthStore from './store/authStore';
 import { logger } from '@/utils/debugConfig';
 import { RootStackParamList } from './types/navigation';
 import { AppProviders } from './providers/AppProviders';
+import { ToastWrapper } from './providers/ToastWrapper';
 
 // Helper function to get the active route name
 const getActiveRouteName = (state: NavigationState | undefined): string | undefined => {
@@ -199,7 +200,9 @@ export default function App() {
   return (
     <AppProviders>
       <ThemeProvider>
-        <AppContent />
+        <ToastWrapper>
+          <AppContent />
+        </ToastWrapper>
       </ThemeProvider>
     </AppProviders>
   );

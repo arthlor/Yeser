@@ -1,8 +1,10 @@
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { parseTimeStringToValidDate } from '../../utils/dateUtils';
@@ -74,7 +76,7 @@ const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
 
   const toggleReminderSwitch = () => {
     const newEnabled = !reminderEnabled;
-    
+
     // Provide haptic feedback for toggle interaction
     hapticFeedback.light();
 
@@ -83,7 +85,7 @@ const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
       const minutes = String(selectedTime.getMinutes()).padStart(2, '0');
       const seconds = String(selectedTime.getSeconds()).padStart(2, '0');
       const formattedTime = `${hours}:${minutes}:${seconds}`;
-      
+
       onUpdateSettings({
         reminder_enabled: true,
         reminder_time: formattedTime,
@@ -123,21 +125,14 @@ const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
     }
   };
 
-  const handleNotificationScheduling = async (
-    enabled: boolean,
-    time: Date
-  ) => {
+  const handleNotificationScheduling = async (enabled: boolean, time: Date) => {
     try {
       const hour = time.getHours();
       const minute = time.getMinutes();
 
       if (enabled) {
         // Schedule daily reminder
-        const result = await notificationService.scheduleDailyReminder(
-          hour,
-          minute,
-          true
-        );
+        const result = await notificationService.scheduleDailyReminder(hour, minute, true);
 
         if (result.success) {
           logger.debug('Daily reminder scheduled successfully', {
@@ -145,20 +140,20 @@ const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
             minute,
             identifier: result.identifier,
           });
-          
+
           // Provide success haptic feedback
           hapticFeedback.success();
         } else {
           // Handle scheduling error
           logger.error('Failed to schedule daily reminder', result.error);
-          
+
           // Show error alert to user
           Alert.alert(
             'Bildirim Hatası',
             'Günlük hatırlatıcı ayarlanamadı. Lütfen bildirim izinlerini kontrol edin.',
             [{ text: 'Tamam', style: 'default' }]
           );
-          
+
           // Provide error haptic feedback
           hapticFeedback.error();
         }
@@ -169,14 +164,12 @@ const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
       }
     } catch (error) {
       logger.error('Error handling daily notification scheduling', error as Error);
-      
+
       // Show error alert to user
-      Alert.alert(
-        'Bildirim Hatası',
-        'Hatırlatıcı ayarlanırken bir hata oluştu.',
-        [{ text: 'Tamam', style: 'default' }]
-      );
-      
+      Alert.alert('Bildirim Hatası', 'Hatırlatıcı ayarlanırken bir hata oluştu.', [
+        { text: 'Tamam', style: 'default' },
+      ]);
+
       // Provide error haptic feedback
       hapticFeedback.error();
     }
@@ -189,83 +182,60 @@ const DailyReminderSettings: React.FC<DailyReminderSettingsProps> = ({
     })
     .replace(':', '.');
 
-
-
   return (
     <View style={styles.settingCard}>
-        <TouchableOpacity style={styles.settingRow} onPress={toggleReminderSwitch}>
-          <View style={styles.settingInfo}>
-            <View style={styles.iconContainer}>
-              <Icon name="bell-outline" size={20} color={theme.colors.primary} />
-            </View>
-            <View style={styles.textContainer}>
-              <Text style={styles.settingTitle}>Günlük Hatırlatıcı</Text>
-              <Text style={styles.settingDescription}>
-                {reminderEnabled ? `Her gün ${formattedSelectedTime}` : 'Kapalı'}
-              </Text>
-            </View>
+      <TouchableOpacity style={styles.settingRow} onPress={toggleReminderSwitch}>
+        <View style={styles.settingInfo}>
+          <View style={styles.iconContainer}>
+            <Icon name="bell-outline" size={20} color={theme.colors.primary} />
           </View>
-          <View style={styles.toggleContainer}>
-            <View
-              style={[
-                styles.toggle,
-                {
-                  backgroundColor: reminderEnabled
-                    ? theme.colors.primary
-                    : theme.colors.surfaceVariant,
-                },
-              ]}
-            >
-              <Animated.View
-                style={[
-                  styles.toggleThumb,
-                  {
-                    backgroundColor: theme.colors.surface,
-                    transform: [
-                      {
-                        translateX: reminderEnabled ? 22 : 2,
-                      },
-                    ],
-                  },
-                ]}
-              />
+          <View style={styles.textContainer}>
+            <Text style={styles.settingTitle}>Günlük Hatırlatıcı</Text>
+            <Text style={styles.settingDescription}>
+              {reminderEnabled ? `Her gün ${formattedSelectedTime}` : 'Kapalı'}
+            </Text>
+          </View>
+        </View>
+        <ThemedSwitch
+          value={reminderEnabled}
+          onValueChange={() => toggleReminderSwitch()}
+          size="medium"
+          testID="daily-reminder-switch"
+        />
+      </TouchableOpacity>
+
+      {reminderEnabled && (
+        <View style={styles.timeSection}>
+          <View style={styles.divider} />
+          <TouchableOpacity
+            style={styles.timePickerButton}
+            onPress={() => setShowTimePicker(true)}
+            accessibilityLabel={`Current reminder time: ${formattedSelectedTime}`}
+            accessibilityHint="Tap to change reminder time"
+            accessibilityRole="button"
+          >
+            <View style={styles.timePickerContent}>
+              <Icon name="clock-outline" size={18} color={theme.colors.onSurfaceVariant} />
+              <Text style={styles.timePickerButtonText}>Saat: {formattedSelectedTime}</Text>
+              <Icon name="chevron-right" size={18} color={theme.colors.onSurfaceVariant} />
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
+      )}
 
-        {reminderEnabled && (
-          <View style={styles.timeSection}>
-            <View style={styles.divider} />
-            <TouchableOpacity
-              style={styles.timePickerButton}
-              onPress={() => setShowTimePicker(true)}
-              accessibilityLabel={`Current reminder time: ${formattedSelectedTime}`}
-              accessibilityHint="Tap to change reminder time"
-              accessibilityRole="button"
-            >
-              <View style={styles.timePickerContent}>
-                <Icon name="clock-outline" size={18} color={theme.colors.onSurfaceVariant} />
-                <Text style={styles.timePickerButtonText}>Saat: {formattedSelectedTime}</Text>
-                <Icon name="chevron-right" size={18} color={theme.colors.onSurfaceVariant} />
-              </View>
-            </TouchableOpacity>
-
-          </View>
-        )}
-
-        {showTimePicker && (
-          <DateTimePicker
-            value={selectedTime}
-            mode="time"
-            is24Hour
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={onTimeChange}
-            textColor={theme.colors.onSurface}
-            accentColor={theme.colors.primary}
-            accessibilityLabel="Select reminder time"
-            accessibilityHint="Choose the time for daily reminders"
-          />
-        )}
+      {showTimePicker && (
+        <DateTimePicker
+          value={selectedTime}
+          mode="time"
+          is24Hour
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={onTimeChange}
+          textColor={theme.colors.onSurface}
+          accentColor={theme.colors.primary}
+          accessibilityLabel="Select reminder time"
+          accessibilityHint="Choose the time for daily reminders"
+        />
+      )}
     </View>
   );
 };
@@ -314,21 +284,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       lineHeight: 20,
     },
-    toggleContainer: {
-      marginLeft: theme.spacing.sm,
-    },
-    toggle: {
-      width: 50,
-      height: 30,
-      borderRadius: 15,
-      justifyContent: 'center',
-      padding: 2,
-    },
-    toggleThumb: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-    },
+
     timeSection: {
       marginTop: theme.spacing.sm,
       paddingBottom: theme.spacing.md,
@@ -355,7 +311,6 @@ const createStyles = (theme: AppTheme) =>
       marginLeft: theme.spacing.xs,
       fontWeight: '500',
     },
-
   });
 
 export default DailyReminderSettings;

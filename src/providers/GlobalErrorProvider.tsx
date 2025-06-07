@@ -1,10 +1,10 @@
 import React, { createContext, ReactNode, useContext } from 'react';
-import { Alert } from 'react-native';
 import { logger } from '@/utils/debugConfig';
 
 interface GlobalErrorContextType {
   handleMutationError: (error: Error, operation: string) => void;
-  showErrorAlert: (title: string, message: string) => void;
+  showError: (message: string) => void;
+  showSuccess: (message: string) => void;
 }
 
 const GlobalErrorContext = createContext<GlobalErrorContextType | null>(null);
@@ -19,9 +19,13 @@ export const useGlobalError = () => {
 
 interface Props {
   children: ReactNode;
+  toastHandlers?: {
+    showError: (message: string) => void;
+    showSuccess: (message: string) => void;
+  };
 }
 
-export const GlobalErrorProvider: React.FC<Props> = ({ children }) => {
+export const GlobalErrorProvider: React.FC<Props> = ({ children, toastHandlers }) => {
   const handleMutationError = (error: Error, operation: string) => {
     logger.error(`Global mutation error in ${operation}:`, error);
 
@@ -36,16 +40,30 @@ export const GlobalErrorProvider: React.FC<Props> = ({ children }) => {
       userMessage = 'Bu işlem için yetkiniz bulunmuyor.';
     }
 
-    showErrorAlert('Hata', userMessage);
+    showError(userMessage);
   };
 
-  const showErrorAlert = (title: string, message: string) => {
-    Alert.alert(title, message, [{ text: 'Tamam' }]);
+  const showError = (message: string) => {
+    if (toastHandlers?.showError) {
+      toastHandlers.showError(message);
+    } else {
+      // Fallback to console if toast not available
+      logger.warn('Error to display (no toast available):', { message });
+    }
+  };
+
+  const showSuccess = (message: string) => {
+    if (toastHandlers?.showSuccess) {
+      toastHandlers.showSuccess(message);
+    } else {
+      // Fallback to console if toast not available
+      logger.info('Success to display (no toast available):', { message });
+    }
   };
 
   return (
-    <GlobalErrorContext.Provider value={{ handleMutationError, showErrorAlert }}>
+    <GlobalErrorContext.Provider value={{ handleMutationError, showError, showSuccess }}>
       {children}
     </GlobalErrorContext.Provider>
   );
-}; 
+};

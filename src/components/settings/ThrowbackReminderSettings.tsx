@@ -2,8 +2,10 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import React, { useEffect, useState } from 'react';
-import { Alert, Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { notificationService } from '../../services/notificationService';
@@ -51,7 +53,7 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
 
   useEffect(() => {
     setSelectedFrequency(throwbackFrequency ?? 'weekly');
-    
+
     // Initialize time from database or default to 10:00:00
     const timeString = throwbackReminderTime || '10:00:00';
     const timeDate = parseTimeStringToValidDate(timeString);
@@ -61,10 +63,10 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
   const toggleThrowbackSwitch = () => {
     const newEnabled = !throwbackEnabled;
     const timeString = selectedTime.toTimeString().split(' ')[0]; // Get HH:MM:SS format
-    
+
     // Provide haptic feedback for toggle interaction
     hapticFeedback.light();
-    
+
     onUpdateSettings({
       throwback_reminder_enabled: newEnabled,
       throwback_reminder_frequency: selectedFrequency,
@@ -92,10 +94,10 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
   const handleFrequencyChange = (frequency: Profile['throwback_reminder_frequency']) => {
     setSelectedFrequency(frequency);
     const timeString = selectedTime.toTimeString().split(' ')[0]; // Get HH:MM:SS format
-    
+
     // Provide haptic feedback for selection change
     hapticFeedback.light();
-    
+
     onUpdateSettings({
       throwback_reminder_enabled: throwbackEnabled,
       throwback_reminder_frequency: frequency,
@@ -124,14 +126,14 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
 
   const handleTimeChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowTimePicker(false);
-    
+
     if (selectedDate && throwbackEnabled) {
       setSelectedTime(selectedDate);
       const timeString = selectedDate.toTimeString().split(' ')[0]; // Get HH:MM:SS format
-      
+
       // Provide haptic feedback for time selection
       hapticFeedback.light();
-      
+
       onUpdateSettings({
         throwback_reminder_enabled: throwbackEnabled,
         throwback_reminder_frequency: selectedFrequency,
@@ -167,7 +169,7 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
       const minute = time.getMinutes();
 
       if (enabled) {
-        // Schedule throwback reminder  
+        // Schedule throwback reminder
         const validFrequency = frequency !== 'disabled' ? frequency : 'weekly';
         const result = await notificationService.scheduleThrowbackReminder(
           hour,
@@ -183,20 +185,20 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
             frequency,
             identifier: result.identifier,
           });
-          
+
           // Provide success haptic feedback
           hapticFeedback.success();
         } else {
           // Handle scheduling error
           logger.error('Failed to schedule throwback reminder', result.error);
-          
+
           // Show error alert to user
           Alert.alert(
             'Bildirim Hatası',
             'Hatırlatıcı ayarlanamadı. Lütfen bildirim izinlerini kontrol edin.',
             [{ text: 'Tamam', style: 'default' }]
           );
-          
+
           // Provide error haptic feedback
           hapticFeedback.error();
         }
@@ -207,24 +209,22 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
       }
     } catch (error) {
       logger.error('Error handling throwback notification scheduling', error as Error);
-      
+
       // Show error alert to user
-      Alert.alert(
-        'Bildirim Hatası',
-        'Hatırlatıcı ayarlanırken bir hata oluştu.',
-        [{ text: 'Tamam', style: 'default' }]
-      );
-      
+      Alert.alert('Bildirim Hatası', 'Hatırlatıcı ayarlanırken bir hata oluştu.', [
+        { text: 'Tamam', style: 'default' },
+      ]);
+
       // Provide error haptic feedback
       hapticFeedback.error();
     }
   };
 
   const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString('tr-TR', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
     });
   };
 
@@ -237,7 +237,7 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
     if (!throwbackEnabled) {
       return 'Kapalı';
     }
-    
+
     const time = formatTime(selectedTime);
     switch (selectedFrequency) {
       case 'daily':
@@ -253,104 +253,81 @@ const ThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = ({
 
   return (
     <View style={styles.settingCard}>
-        <TouchableOpacity style={styles.settingRow} onPress={toggleThrowbackSwitch}>
-          <View style={styles.settingInfo}>
-            <View style={styles.iconContainer}>
-              <Icon name="history" size={20} color={theme.colors.primary} />
-            </View>
-            <View style={styles.textContainer}>
-              <Text style={styles.settingTitle}>Geçmiş Hatırlatıcı</Text>
-              <Text style={styles.settingDescription}>
-                {getScheduleDescription()}
-              </Text>
-            </View>
+      <TouchableOpacity style={styles.settingRow} onPress={toggleThrowbackSwitch}>
+        <View style={styles.settingInfo}>
+          <View style={styles.iconContainer}>
+            <Icon name="history" size={20} color={theme.colors.primary} />
           </View>
-          <View style={styles.toggleContainer}>
-            <View
-              style={[
-                styles.toggle,
-                {
-                  backgroundColor: throwbackEnabled
-                    ? theme.colors.primary
-                    : theme.colors.surfaceVariant,
-                },
-              ]}
+          <View style={styles.textContainer}>
+            <Text style={styles.settingTitle}>Geçmiş Hatırlatıcı</Text>
+            <Text style={styles.settingDescription}>{getScheduleDescription()}</Text>
+          </View>
+        </View>
+        <ThemedSwitch
+          value={throwbackEnabled}
+          onValueChange={() => toggleThrowbackSwitch()}
+          size="medium"
+          testID="throwback-reminder-switch"
+        />
+      </TouchableOpacity>
+
+      {throwbackEnabled && (
+        <View style={styles.frequencySection}>
+          <View style={styles.divider} />
+          <View style={styles.frequencyHeader}>
+            <Icon name="repeat" size={18} color={theme.colors.onSurfaceVariant} />
+            <Text style={styles.frequencyLabel}>Sıklık</Text>
+          </View>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={selectedFrequency}
+              onValueChange={(itemValue) => {
+                handleFrequencyChange(itemValue as Profile['throwback_reminder_frequency']);
+              }}
+              style={styles.picker}
+              itemStyle={styles.pickerItem}
+              dropdownIconColor={theme.colors.onSurface}
             >
-              <Animated.View
-                style={[
-                  styles.toggleThumb,
-                  {
-                    backgroundColor: theme.colors.surface,
-                    transform: [
-                      {
-                        translateX: throwbackEnabled ? 22 : 2,
-                      },
-                    ],
-                  },
-                ]}
-              />
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        {throwbackEnabled && (
-          <View style={styles.frequencySection}>
-            <View style={styles.divider} />
-            <View style={styles.frequencyHeader}>
-              <Icon name="repeat" size={18} color={theme.colors.onSurfaceVariant} />
-              <Text style={styles.frequencyLabel}>Sıklık</Text>
-            </View>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={selectedFrequency}
-                onValueChange={(itemValue) => {
-                  handleFrequencyChange(itemValue as Profile['throwback_reminder_frequency']);
-                }}
-                style={styles.picker}
-                itemStyle={styles.pickerItem}
-                dropdownIconColor={theme.colors.onSurface}
-              >
-                {frequencyOptions.map((option) => (
-                  <Picker.Item
-                    key={option.value}
-                    label={option.label}
-                    value={option.value}
-                    color={theme.colors.onSurface}
-                  />
-                ))}
-              </Picker>
-            </View>
-            
-            {/* Time Picker Section */}
-            <View style={styles.timeSection}>
-              <View style={styles.divider} />
-              <View style={styles.timeHeader}>
-                <Icon name="clock-outline" size={18} color={theme.colors.onSurfaceVariant} />
-                <Text style={styles.timeLabel}>Saat</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.timePickerButton}
-                onPress={() => setShowTimePicker(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.timeText}>{formatTime(selectedTime)}</Text>
-                <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
-              </TouchableOpacity>
-              
-              {showTimePicker && (
-                <DateTimePicker
-                  value={selectedTime}
-                  mode="time"
-                  is24Hour={true}
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleTimeChange}
-                  style={styles.timePicker}
+              {frequencyOptions.map((option) => (
+                <Picker.Item
+                  key={option.value}
+                  label={option.label}
+                  value={option.value}
+                  color={theme.colors.onSurface}
                 />
-              )}
-            </View>
-
+              ))}
+            </Picker>
           </View>
-        )}
+
+          {/* Time Picker Section */}
+          <View style={styles.timeSection}>
+            <View style={styles.divider} />
+            <View style={styles.timeHeader}>
+              <Icon name="clock-outline" size={18} color={theme.colors.onSurfaceVariant} />
+              <Text style={styles.timeLabel}>Saat</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.timePickerButton}
+              onPress={() => setShowTimePicker(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.timeText}>{formatTime(selectedTime)}</Text>
+              <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+            </TouchableOpacity>
+
+            {showTimePicker && (
+              <DateTimePicker
+                value={selectedTime}
+                mode="time"
+                is24Hour={true}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleTimeChange}
+                style={styles.timePicker}
+              />
+            )}
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -399,21 +376,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       lineHeight: 20,
     },
-    toggleContainer: {
-      marginLeft: theme.spacing.sm,
-    },
-    toggle: {
-      width: 50,
-      height: 30,
-      borderRadius: 15,
-      justifyContent: 'center',
-      padding: 2,
-    },
-    toggleThumb: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-    },
+
     frequencySection: {
       marginTop: theme.spacing.sm,
       paddingBottom: theme.spacing.md,
@@ -485,7 +448,6 @@ const createStyles = (theme: AppTheme) =>
       width: 200,
       height: 200,
     },
-
   });
 
 export default ThrowbackReminderSettings;

@@ -5,6 +5,8 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getBuildNumber, getVersion } from 'react-native-device-info';
 
+import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
+
 import { cleanupTemporaryFile, prepareUserExportFile, shareExportedFile } from '@/api/userDataApi';
 import AboutSettings from '@/components/settings/AboutSettings';
 import AccountSettings from '@/components/settings/AccountSettings';
@@ -308,32 +310,12 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                   </Text>
                 </View>
               </View>
-              <View style={styles.toggleContainer}>
-                <View
-                  style={[
-                    styles.toggle,
-                    {
-                      backgroundColor: profile?.useVariedPrompts
-                        ? theme.colors.primary
-                        : theme.colors.surfaceVariant,
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.toggleThumb,
-                      {
-                        backgroundColor: theme.colors.surface,
-                        transform: [
-                          {
-                            translateX: profile?.useVariedPrompts ? 22 : 2,
-                          },
-                        ],
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
+              <ThemedSwitch
+                value={profile?.useVariedPrompts ?? false}
+                onValueChange={(value) => handleVariedPromptsUpdate(value)}
+                size="medium"
+                testID="varied-prompts-switch"
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -472,22 +454,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       lineHeight: 20,
     },
-    toggleContainer: {
-      marginLeft: theme.spacing.sm,
-    },
-    toggle: {
-      width: 50,
-      height: 30,
-      borderRadius: 15,
-      justifyContent: 'center',
-      padding: 2,
-    },
-    toggleThumb: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      // ❌ Remove old elevation - inconsistent with primary shadow system
-    },
+
     actionContainer: {
       marginLeft: theme.spacing.sm,
     },

@@ -1,9 +1,10 @@
 import React from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
+import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
 
 import type { AppTheme, ThemeName } from '../../themes/types';
 
@@ -39,32 +40,12 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
             </Text>
           </View>
         </View>
-        <View style={styles.toggleContainer}>
-          <View
-            style={[
-              styles.toggle,
-              {
-                backgroundColor: isDarkThemeActive
-                  ? theme.colors.primary
-                  : theme.colors.surfaceVariant,
-              },
-            ]}
-          >
-            <Animated.View
-              style={[
-                styles.toggleThumb,
-                {
-                  backgroundColor: theme.colors.surface,
-                  transform: [
-                    {
-                      translateX: isDarkThemeActive ? 22 : 2,
-                    },
-                  ],
-                },
-              ]}
-            />
-          </View>
-        </View>
+        <ThemedSwitch
+          value={isDarkThemeActive}
+          onValueChange={onToggleTheme}
+          size="medium"
+          testID="appearance-theme-switch"
+        />
       </TouchableOpacity>
     </View>
   );
@@ -113,21 +94,6 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
       lineHeight: 20,
-    },
-    toggleContainer: {
-      marginLeft: theme.spacing.sm,
-    },
-    toggle: {
-      width: 50,
-      height: 30,
-      borderRadius: 15,
-      justifyContent: 'center',
-      padding: 2,
-    },
-    toggleThumb: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
     },
   });
 

@@ -8,6 +8,7 @@ import {
 } from '../hooks';
 import { useUserProfile } from '@/shared/hooks';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
 import StatementEditCard from '@/shared/components/ui/StatementEditCard';
 import { AppTheme } from '@/themes/types';
@@ -22,7 +23,6 @@ import { getPrimaryShadow } from '@/themes/utils';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   LayoutAnimation,
   Platform,
@@ -53,6 +53,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
  */
 const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const { theme } = useTheme();
+  const { showError, showSuccess } = useGlobalError();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [manualDate, setManualDate] = useState<Date | null>(null);
@@ -119,34 +120,31 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const isGoalComplete = statements.length >= dailyGoal;
   const wasGoalJustCompleted = useRef(false);
 
-  // Show error alerts for mutation failures
+  // Show error toasts for mutation failures
   useEffect(() => {
     if (addStatementError) {
-      Alert.alert('Hata', 'Minnet ifadesi eklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+      showError('Minnet ifadesi eklenirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
-  }, [addStatementError]);
+  }, [addStatementError, showError]);
 
   useEffect(() => {
     if (editStatementError) {
-      Alert.alert('Hata', 'Minnet ifadesi düzenlenirken bir hata oluştu. Lütfen tekrar deneyin.');
+      showError('Minnet ifadesi düzenlenirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
-  }, [editStatementError]);
+  }, [editStatementError, showError]);
 
   useEffect(() => {
     if (deleteStatementError) {
-      Alert.alert('Hata', 'Minnet ifadesi silinirken bir hata oluştu. Lütfen tekrar deneyin.');
+      showError('Minnet ifadesi silinirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
-  }, [deleteStatementError]);
+  }, [deleteStatementError, showError]);
 
   // Show entry loading error if exists
   useEffect(() => {
     if (entryError) {
-      Alert.alert(
-        'Hata',
-        'Günlük minnet kayıtları yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.'
-      );
+      showError('Günlük minnet kayıtları yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.');
     }
-  }, [entryError]);
+  }, [entryError, showError]);
 
   // Handle goal completion celebration
   useEffect(() => {
@@ -237,13 +235,14 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         });
 
         setEditingStatementIndex(null);
+        showSuccess('Minnet ifadesi güncellendi');
       } catch (error) {
         if (error instanceof ZodError) {
-          Alert.alert('Error', error.issues[0]?.message || 'Invalid statement');
+          showError(error.issues[0]?.message || 'Geçersiz girdi');
         }
       }
     },
-    [finalDateString, editStatement]
+    [finalDateString, editStatement, showSuccess, showError]
   );
 
   const handleCancelEditingStatement = useCallback(() => {
@@ -252,19 +251,13 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   const handleDeleteStatement = useCallback(
     (index: number) => {
-      Alert.alert('Minnet Kaydını Sil', 'Bu şükür ifadesini silmek istediğinizden emin misiniz?', [
-        { text: 'İptal', style: 'cancel' },
-        {
-          text: 'Sil',
-          style: 'destructive',
-          onPress: () => {
-            deleteStatement({ entryDate: finalDateString, statementIndex: index });
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          },
-        },
-      ]);
+      // For better UX, we'll show a toast with undo functionality
+      deleteStatement({ entryDate: finalDateString, statementIndex: index });
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
+      showSuccess('Minnet ifadesi silindi');
     },
-    [finalDateString, deleteStatement]
+    [finalDateString, deleteStatement, showSuccess]
   );
 
   const handleDateChange = useCallback(

@@ -72,8 +72,9 @@ export type TabScreenName = keyof MainAppTabParamList;
 export type RootScreenName = keyof RootStackParamList;
 
 // Navigation prop types for common use cases
-export type TabNavigationProp<T extends TabScreenName> = any; // Will be properly typed by navigation library
-export type RootNavigationProp<T extends RootScreenName> = any; // Will be properly typed by navigation library
+// These will be properly typed by the navigation library when used
+export type TabNavigationProp = unknown;
+export type RootNavigationProp = unknown;
 
 // You might also want to extend ReactNavigation's global type for useNavigation hook
 // declare global {

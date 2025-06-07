@@ -13,9 +13,7 @@ export const getGratitudeBenefits = async (): Promise<GratitudeBenefit[]> => {
   try {
     logger.debug('Fetching gratitude benefits from database');
 
-    // Using any for now since the table isn't in the generated types yet
-    // After migration, this will be properly typed
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('gratitude_benefits')
       .select('*')
       .eq('is_active', true)
@@ -50,11 +48,10 @@ export const getGratitudeBenefitById = async (id: number): Promise<GratitudeBene
   try {
     logger.debug(`Fetching gratitude benefit with ID: ${id}`);
 
-    // Using any for now since the table isn't in the generated types yet
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('gratitude_benefits')
       .select('*')
-      .eq('id', id.toString())
+      .eq('id', id)
       .eq('is_active', true)
       .single();
 

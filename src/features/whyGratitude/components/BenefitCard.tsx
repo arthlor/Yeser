@@ -26,15 +26,10 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
     }, []);
 
     const leftIconRenderer = useCallback(
-      (props: any) => (
-        <List.Icon
-          {...props}
-          icon={icon}
-          color={activeTheme.colors.primary}
-          accessibilityLabel={`${title} ikon`}
-        />
+      (props: Record<string, unknown>) => (
+        <List.Icon {...props} icon={icon} color={activeTheme.colors.primary} />
       ),
-      [icon, activeTheme.colors.primary, title]
+      [icon, activeTheme.colors.primary]
     );
 
     return (

@@ -33,6 +33,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      gratitude_benefits: {
+        Row: {
+          created_at: string | null;
+          cta_prompt_tr: string | null;
+          description_tr: string;
+          display_order: number;
+          icon: string;
+          id: number;
+          is_active: boolean | null;
+          stat_tr: string | null;
+          title_tr: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          cta_prompt_tr?: string | null;
+          description_tr: string;
+          display_order?: number;
+          icon: string;
+          id?: number;
+          is_active?: boolean | null;
+          stat_tr?: string | null;
+          title_tr: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          cta_prompt_tr?: string | null;
+          description_tr?: string;
+          display_order?: number;
+          icon?: string;
+          id?: number;
+          is_active?: boolean | null;
+          stat_tr?: string | null;
+          title_tr?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       gratitude_entries: {
         Row: {
           created_at: string;

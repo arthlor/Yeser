@@ -1,12 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
@@ -20,6 +13,12 @@ interface GratitudeInputBarProps {
   error?: string | null;
   disabled?: boolean;
   autoFocus?: boolean;
+  // New prompt functionality props
+  promptText?: string;
+  promptLoading?: boolean;
+  promptError?: string | null;
+  onRefreshPrompt?: () => void;
+  showPrompt?: boolean;
 }
 
 const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
@@ -28,6 +27,12 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   error,
   disabled = false,
   autoFocus = false,
+  // New prompt functionality props
+  promptText,
+  promptLoading,
+  promptError,
+  onRefreshPrompt,
+  showPrompt = true,
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme, disabled);
@@ -35,9 +40,19 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
 
   const [inputText, setInputText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  
-  // Animation values for enhanced interactivity  
+  const [fallbackPromptIndex, setFallbackPromptIndex] = useState(0);
+
+  // Animation values for enhanced interactivity
   const gradientAnim = useRef(new Animated.Value(0)).current;
+
+  // Fallback prompts for when varied prompts are disabled or unavailable
+  const fallbackPrompts = [
+    'Bugün hangi güzel anlar için şükrediyorsun?',
+    'Hayatındaki hangi kişiler seni mutlu ediyor?',
+    'Bugün seni gülümsetmiş olan şeyler neler?',
+    'Hangi deneyimler için minnettar hissediyorsun?',
+    'Bugün yaşadığın pozitif anları düşün...',
+  ];
 
   // Robust auto-focus without interference
   useEffect(() => {
@@ -68,7 +83,7 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
     if (inputText.trim() && !disabled) {
       onSubmit(inputText.trim());
       setInputText('');
-      
+
       // Keep focus for continuous input - with error handling
       setTimeout(() => {
         if (inputRef.current) {
@@ -94,7 +109,18 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
     setInputText(text);
   };
 
+  const handlePromptRefresh = () => {
+    if (onRefreshPrompt) {
+      onRefreshPrompt();
+    }
+    // Also cycle through fallback prompts for better UX
+    setFallbackPromptIndex((prev) => (prev + 1) % fallbackPrompts.length);
+  };
+
   const isButtonEnabled = inputText.trim().length > 0 && !disabled;
+
+  // Determine which prompt to display
+  const displayPrompt = promptText || fallbackPrompts[fallbackPromptIndex];
 
   return (
     <View style={styles.container}>
@@ -111,15 +137,13 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
         </View>
         <View style={styles.headerRight}>
           <View style={styles.characterCountContainer}>
-            <Text style={styles.characterCount}>
-              {inputText.length}/500
-            </Text>
+            <Text style={styles.characterCount}>{inputText.length}/500</Text>
           </View>
         </View>
       </View>
 
       {/* Enhanced Input Section with Gradient Border */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.inputContainer,
           {
@@ -129,9 +153,12 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
             }),
             backgroundColor: gradientAnim.interpolate({
               inputRange: [0, 1],
-              outputRange: [theme.colors.surfaceVariant + '30', theme.colors.primaryContainer + '20'],
+              outputRange: [
+                theme.colors.surfaceVariant + '30',
+                theme.colors.primaryContainer + '20',
+              ],
             }),
-          }
+          },
         ]}
       >
         <TextInput
@@ -157,30 +184,51 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
           selectionColor={theme.colors.primary}
           autoFocus={false} // We handle this manually
         />
-        
+
         <TouchableOpacity
           onPress={handleSubmit}
-          style={[
-            styles.button,
-            isButtonEnabled ? styles.buttonEnabled : styles.buttonDisabled
-          ]}
+          style={[styles.button, isButtonEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
           disabled={!isButtonEnabled}
           activeOpacity={0.8}
         >
-          <Icon 
-            name={isButtonEnabled ? "send" : "send-outline"} 
-            size={20} 
-            color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant} 
+          <Icon
+            name={isButtonEnabled ? 'send' : 'send-outline'}
+            size={20}
+            color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
           />
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Inspirational Call to Action */}
-      {!inputText && !isFocused && (
-        <View style={styles.callToAction}>
-          <Text style={styles.callToActionText}>
-            ✨ Her minnet, hayatına pozitif enerji katar
-          </Text>
+      {/* Subtle Inspirational Prompt */}
+      {!inputText && !isFocused && showPrompt && (
+        <View style={styles.promptContainer}>
+          {promptLoading ? (
+            <View style={styles.promptLoadingContainer}>
+              <Text style={styles.promptLoadingText}>💭 İlham verici soru yükleniyor...</Text>
+            </View>
+          ) : promptError ? (
+            <View style={styles.promptErrorContainer}>
+              <Text style={styles.promptText}>✨ {displayPrompt}</Text>
+              <TouchableOpacity
+                onPress={handlePromptRefresh}
+                style={styles.refreshButton}
+                activeOpacity={0.7}
+              >
+                <Icon name="refresh" size={16} color={theme.colors.primary} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.promptActiveContainer}>
+              <Text style={styles.promptText}>💡 {displayPrompt}</Text>
+              <TouchableOpacity
+                onPress={handlePromptRefresh}
+                style={styles.refreshButton}
+                activeOpacity={0.7}
+              >
+                <Icon name="refresh" size={16} color={theme.colors.primary} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
@@ -311,19 +359,48 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
     buttonDisabled: {
       backgroundColor: theme.colors.surfaceVariant,
     },
-    callToAction: {
+    // Subtle prompt styles
+    promptContainer: {
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      backgroundColor: theme.colors.primaryContainer + '20',
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.primary + '10',
+      paddingVertical: theme.spacing.sm,
+      backgroundColor: theme.colors.primaryContainer + '15',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.outline + '20',
     },
-    callToActionText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.primary,
+    promptLoadingContainer: {
+      alignItems: 'center',
+    },
+    promptLoadingText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
       fontStyle: 'italic',
       textAlign: 'center',
-      fontWeight: '500',
+    },
+    promptErrorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    promptActiveContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    promptText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurface,
+      fontStyle: 'italic',
+      flex: 1,
+      marginRight: theme.spacing.sm,
+      fontWeight: '400',
+      lineHeight: 18,
+    },
+    refreshButton: {
+      padding: theme.spacing.xs,
+      borderRadius: theme.borderRadius.sm,
+      backgroundColor: theme.colors.primary + '20',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     errorContainer: {
       flexDirection: 'row',

@@ -1,10 +1,3 @@
-import { StatementCard } from '@/shared/components/ui';
-import { useTheme } from '@/providers/ThemeProvider';
-import { AppTheme } from '@/themes/types';
-import { getPrimaryShadow } from '@/themes/utils';
-
-import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -15,7 +8,13 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+import { useTheme } from '@/providers/ThemeProvider';
+import StatementDisplayCard from '@/shared/components/ui/StatementDisplayCard';
+import { AppTheme } from '@/themes/types';
+import { getPrimaryShadow } from '@/themes/utils';
 import { logger } from '@/utils/debugConfig';
 
 // Define a more specific type for the throwback entry prop
@@ -173,7 +172,8 @@ const createStyles = (theme: AppTheme) =>
       marginTop: 4,
     } as TextStyle,
     statementCardStyle: {
-      borderTopWidth: 0,
+      marginHorizontal: theme.spacing.lg, // Add horizontal margin to match design
+      marginVertical: 0, // Remove vertical margin since header handles spacing
     } as ViewStyle,
   });
 
@@ -222,11 +222,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
           <Icon name="alert-circle-outline" size={20} color={theme.colors.onErrorContainer} />
           <View style={styles.errorContentContainer}>
             <Text style={styles.throwbackErrorText}>{error}</Text>
-            {onRefresh && (
-              <Text style={styles.errorRetryText}>
-                Tekrar denemek için dokunun
-              </Text>
-            )}
+            {onRefresh && <Text style={styles.errorRetryText}>Tekrar denemek için dokunun</Text>}
           </View>
         </TouchableOpacity>
       </View>
@@ -257,8 +253,6 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
     );
   }
 
-  const formattedDate = format(new Date(throwbackEntry.entry_date), 'dd MMMM yyyy', { locale: tr });
-
   return (
     <View style={styles.container}>
       {/* Header Section */}
@@ -283,12 +277,13 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
         </View>
       </View>
 
-      {/* Beautiful Statement Card */}
-      <StatementCard
+      {/* Beautiful Statement Display Card */}
+      <StatementDisplayCard
         statement={throwbackEntry.statements?.[0] || 'Geçmişten bir minnet ifadeniz var.'}
-        date={formattedDate}
-        variant="highlighted"
+        date={throwbackEntry.entry_date}
+        variant="inspiration"
         showQuotes={true}
+        showTimestamp={true}
         animateEntrance={true}
         numberOfLines={3}
         style={styles.statementCardStyle}

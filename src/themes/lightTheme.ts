@@ -51,15 +51,15 @@ const enhancedLightColors: ThemeColors = {
   surfaceBright: '#FFFFFF', // Brightest surface for emphasis
   surfaceDim: '#F1F5F9', // Dimmed surface for subtle backgrounds
 
-  // Content colors - Soft, natural borders
-  outline: '#CBD5E1', // Much softer outline, natural feeling
-  outlineVariant: '#E2E8F0', // Very light outline for subtle separation
+  // Content colors - Strengthened for better visibility while staying natural
+  outline: '#94A3B8', // Strengthened from #CBD5E1 for clear UI element definition
+  outlineVariant: '#CBD2DC', // Strengthened from #E2E8F0 for subtle but visible separation
   scrim: 'rgba(15, 23, 42, 0.5)', // Warm scrim
 
-  // Enhanced border system for organic feel
-  borderLight: '#F1F5F9', // Very light borders that barely show
-  borderMedium: '#E2E8F0', // Medium borders for gentle separation
-  borderStrong: '#CBD5E1', // Strong but not harsh borders
+  // Enhanced border system for better visual hierarchy
+  borderLight: '#E1E7ED', // Strengthened from #F1F5F9 - subtle but visible
+  borderMedium: '#CBD2DC', // Strengthened from #E2E8F0 - clear separation
+  borderStrong: '#94A3B8', // Strengthened from #CBD5E1 - strong definition
 
   // State colors - Natural, harmonious with the palette
   success: '#059669', // Deeper green that harmonizes with teal
@@ -101,10 +101,10 @@ const enhancedLightColors: ThemeColors = {
   gradientStart: '#0F766E', // Deep teal start
   gradientEnd: '#059669', // Harmonious green end
 
-  // Legacy support - updated for natural theme
+  // Legacy support - updated for improved hierarchy
   text: '#1E293B', // Softer dark text for comfortable reading
   textSecondary: '#64748B', // Warmer secondary text
-  border: '#E2E8F0', // Much softer border for organic feel
+  border: '#CBD2DC', // Strengthened from #E2E8F0 for better definition
   inputBackground: '#FEFEFE', // Very slightly off-white for inputs
   inputText: '#1E293B',
   danger: '#DC2626', // Consistent with error
@@ -296,7 +296,7 @@ const enhancedBorderRadius: ThemeBorderRadius = {
   large: 16,
 };
 
-// Softer elevation with gentler shadows
+// Improved elevation with better shadow visibility for light theme
 const elevation: ThemeElevation = {
   none: {
     shadowOffset: { width: 0, height: 0 },
@@ -306,52 +306,50 @@ const elevation: ThemeElevation = {
   },
   xs: {
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03, // Ultra-subtle shadow
+    shadowOpacity: 0.08, // Increased from 0.03 for better visibility
     shadowRadius: 3,
     elevation: 1,
   },
   sm: {
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04, // Very gentle shadow
+    shadowOpacity: 0.1, // Increased from 0.04 for clearer definition
     shadowRadius: 6,
     elevation: 2,
   },
   md: {
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06, // Soft shadow
+    shadowOpacity: 0.12, // Increased from 0.06 for better depth
     shadowRadius: 12,
     elevation: 4,
   },
   lg: {
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08, // Gentle shadow
+    shadowOpacity: 0.16, // Increased from 0.08 for clear elevation
     shadowRadius: 20,
     elevation: 8,
   },
   xl: {
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.1, // Comfortable shadow
+    shadowOpacity: 0.2, // Increased from 0.1 for strong elevation
     shadowRadius: 28,
     elevation: 12,
   },
-  // 🆕 Enhanced shadow for cards and interactive elements
+  // Enhanced shadows with improved visibility for light theme
   card: {
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12, // Beautiful card shadow from DailyEntryScreen
+    shadowOpacity: 0.18, // Increased from 0.12 for beautiful card depth
     shadowRadius: 16,
     elevation: 6,
   },
-  // 🆕 Enhanced shadow for floating elements
   floating: {
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
+    shadowOpacity: 0.22, // Increased from 0.14 for clear floating effect
     shadowRadius: 20,
     elevation: 8,
   },
-  // 🆕 Enhanced shadow for overlays and modals
   overlay: {
     shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.28, // Increased from 0.16 for strong overlay presence
     shadowRadius: 32,
     elevation: 16,
   },

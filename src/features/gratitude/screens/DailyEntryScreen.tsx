@@ -1,4 +1,3 @@
-import DailyEntryPrompt from '../components/DailyEntryPrompt';
 import GratitudeInputBar from '../components/GratitudeInputBar';
 
 import {
@@ -10,7 +9,7 @@ import {
 import { useUserProfile } from '@/shared/hooks';
 import { useTheme } from '@/providers/ThemeProvider';
 import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
-import { StatementCard } from '@/shared/components/ui';
+import StatementEditCard from '@/shared/components/ui/StatementEditCard';
 import { AppTheme } from '@/themes/types';
 import { MainAppTabParamList } from '@/types/navigation';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -50,7 +49,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 /**
  * Enhanced Daily Entry Screen - Beautiful Statement Cards Design
- * Now featuring StatementCard components for truly prominent statement display
+ * Now featuring StatementEditCard components optimized for daily entry editing
  */
 const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const { theme } = useTheme();
@@ -283,9 +282,12 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   }, [refetchEntry]);
 
   const handlePromptRefresh = useCallback(() => {
+    // Always allow refreshing prompts - for varied prompts, fetch new from API
+    // For static prompts, the component will cycle through fallback prompts
     if (profile?.useVariedPrompts) {
       fetchNewPrompt();
     }
+    // Note: For static prompts, refresh is handled within GratitudeInputBar component
   }, [fetchNewPrompt, profile?.useVariedPrompts]);
 
   // Date formatting
@@ -384,7 +386,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           </ThemedCard>
         </Animated.View>
 
-        {/* Input Section - Now Edge-to-Edge */}
+        {/* Input Section - Now Edge-to-Edge with Integrated Prompt */}
         <GratitudeInputBar
           onSubmit={handleAddStatement}
           error={statementInputError?.toString()}
@@ -396,17 +398,16 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                 : 'Bugün neye minnettar olduğunuzu yazın...'
               : 'Geçmiş tarihler için yeni kayıt ekleyemezsiniz'
           }
+          // Integrated prompt functionality
+          promptText={currentPrompt}
+          promptLoading={promptLoading || isFetchingNewPrompt}
+          promptError={promptError?.message || null}
+          onRefreshPrompt={handlePromptRefresh}
+          showPrompt={isToday && (profile?.useVariedPrompts ?? false)}
         />
 
-        {/* Prompt Section */}
-        <DailyEntryPrompt
-          promptText={currentPrompt}
-          isLoading={promptLoading || isFetchingNewPrompt}
-          error={promptError?.message || null}
-          isToday={isToday}
-          useVariedPrompts={profile?.useVariedPrompts || false}
-          onRefreshPrompt={handlePromptRefresh}
-        />
+        {/* Prompt Section - Now integrated into input bar for subtle experience */}
+        {/* DailyEntryPrompt component removed in favor of subtle integration */}
 
         {/* Loading Overlay for Entry Data */}
         {isLoadingEntry && (
@@ -452,32 +453,23 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                     },
                   ]}
                 >
-                  {/* 🚀 ENHANCED Hero StatementCard with Full Interactive Features */}
-                  <StatementCard
+                  {/* 🚀 ENHANCED StatementEditCard - Perfect for Daily Entry Editing */}
+                  <StatementEditCard
                     statement={statement}
-                    variant="default"
-                    showQuotes={true}
-                    animateEntrance={false} // Already animated by parent
-                    onPress={() => handleEditStatement(index)}
-                    date={formatDate(effectiveDate)}
-                    numberOfLines={4} // Limit lines for better UX
-                    // Enhanced Interactive Features
+                    variant="primary" // Enhanced editing variant for daily entries
+                    date={effectiveDate.toISOString()}
                     isEditing={editingStatementIndex === index}
                     isLoading={isEditingStatement || isDeletingStatement}
                     onEdit={() => handleEditStatement(index)}
                     onDelete={() => handleDeleteStatement(index)}
                     onCancel={handleCancelEditingStatement}
                     onSave={(updatedText: string) => handleSaveEditedStatement(index, updatedText)}
-                    // Interaction Configuration
-                    enableInlineEdit={true} // Enable for hero display
+                    // Enhanced editing configuration
+                    enableInlineEdit={true}
                     confirmDelete={true}
                     maxLength={500}
-                    // Accessibility & Feedback
-                    accessibilityLabel={`Ana minnet ${index + 1}: ${statement}`}
-                    hapticFeedback={false} // Simplified feedback
-                    style={{
-                      marginBottom: theme.spacing.md,
-                    }}
+                    // Accessibility
+                    accessibilityLabel={`Minnet ifadesi ${index + 1}: ${statement}`}
                   />
                 </Animated.View>
               ))}

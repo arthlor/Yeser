@@ -17,7 +17,15 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
-import { semanticSpacing, semanticTypography, textColors, unifiedShadows } from '@/themes/utils';
+import {
+  alpha,
+  getBorderColor,
+  getSurfaceColor,
+  semanticSpacing,
+  semanticTypography,
+  textColors,
+  unifiedShadows,
+} from '@/themes/utils';
 
 // Simplified props interface focusing on core functionality
 export interface StatementCardProps {
@@ -557,7 +565,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
   return CardContent;
 };
 
-// Enhanced styles with cleaner design system
+// Enhanced styles with elevated design system
 const createStyles = (theme: AppTheme) => {
   const spacing = semanticSpacing(theme);
   const typography = semanticTypography(theme);
@@ -565,87 +573,108 @@ const createStyles = (theme: AppTheme) => {
   const shadows = unifiedShadows(theme);
 
   return StyleSheet.create({
-    // Default Variant - Distinct card with margins
+    // Default Variant - Enhanced card with elegant shadows and typography
     defaultContainer: {
-      borderRadius: theme.borderRadius.lg,
-      backgroundColor: theme.colors.surface,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '20',
+      borderRadius: theme.borderRadius.xl,
+      backgroundColor: getSurfaceColor(theme, 'elevated'),
+      borderWidth: 0,
       marginHorizontal: spacing.contentGap,
-      marginVertical: spacing.elementGap,
+      marginVertical: spacing.sectionGap,
       overflow: 'hidden',
       ...shadows.card,
+      // Enhanced shadow for more depth
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 3,
     } as ViewStyle,
 
     defaultContent: {
-      paddingHorizontal: spacing.cardPadding,
-      paddingVertical: spacing.sectionGap,
+      paddingHorizontal: spacing.cardPadding + 4,
+      paddingVertical: spacing.sectionGap + 2,
+      position: 'relative',
     } as ViewStyle,
 
     defaultStatement: {
-      ...typography.content.headline.small,
-      fontFamily: 'Lora-Regular',
+      fontFamily: 'Lora-Medium',
+      fontSize: 18,
+      fontWeight: '500',
       color: colors.primary,
       fontStyle: 'italic',
-      fontWeight: '500',
-      lineHeight: 32,
-      letterSpacing: 0.3,
+      lineHeight: 28,
+      letterSpacing: 0.4,
       textAlign: 'left',
+      marginBottom: 4,
     } as TextStyle,
 
-    // Highlighted Variant - Special emphasis with left border
+    // Highlighted Variant - Premium card with gradient-like effect
     highlightedContainer: {
-      borderRadius: theme.borderRadius.lg,
-      backgroundColor: theme.colors.surfaceVariant + '20',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '20',
-      borderLeftWidth: 3,
+      borderRadius: theme.borderRadius.xl,
+      backgroundColor: alpha(theme.colors.primaryContainer, 0.08),
+      borderWidth: 0,
+      borderLeftWidth: 4,
       borderLeftColor: theme.colors.primary,
       marginHorizontal: spacing.contentGap,
-      marginVertical: spacing.elementGap,
+      marginVertical: spacing.sectionGap,
       overflow: 'hidden',
-      ...shadows.card,
+      ...shadows.floating,
+      // Enhanced shadow for premium feel
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.12,
+      shadowRadius: 16,
+      elevation: 4,
     } as ViewStyle,
 
     highlightedContent: {
-      paddingHorizontal: spacing.cardPadding,
-      paddingVertical: spacing.sectionGap,
+      paddingHorizontal: spacing.cardPadding + 6,
+      paddingVertical: spacing.sectionGap + 4,
+      position: 'relative',
     } as ViewStyle,
 
     highlightedStatement: {
-      ...typography.content.headline.medium,
-      fontFamily: 'Lora-Medium',
+      fontFamily: 'Lora-SemiBold',
+      fontSize: 20,
+      fontWeight: '600',
       color: colors.primary,
       fontStyle: 'italic',
-      fontWeight: '600',
-      lineHeight: 36,
-      letterSpacing: 0.4,
+      lineHeight: 32,
+      letterSpacing: 0.5,
       textAlign: 'center',
+      marginBottom: 6,
+      // Enhanced text shadow for depth
+      textShadowColor: alpha(theme.colors.shadow, 0.1),
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
     } as TextStyle,
 
-    // Minimal Variant - Compact design
+    // Minimal Variant - Clean, modern design with subtle borders
     minimalContainer: {
       borderRadius: theme.borderRadius.lg,
-      backgroundColor: theme.colors.surfaceVariant + '25',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '25',
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: getBorderColor(theme, 'light'),
       marginHorizontal: spacing.contentGap,
       marginVertical: spacing.elementGap,
       overflow: 'hidden',
       ...shadows.subtle,
+      // Refined minimal shadow
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
+      elevation: 1,
     } as ViewStyle,
 
     minimalContent: {
-      paddingHorizontal: spacing.contentGap * 1.5,
-      paddingVertical: spacing.contentGap,
+      paddingHorizontal: spacing.cardPadding,
+      paddingVertical: spacing.contentGap + 2,
     } as ViewStyle,
 
     minimalStatement: {
-      ...typography.content.body.large,
       fontFamily: 'Lora-Regular',
-      color: colors.primary,
-      fontStyle: 'italic',
+      fontSize: 16,
       fontWeight: '400',
+      color: colors.secondary,
+      fontStyle: 'italic',
       lineHeight: 24,
       letterSpacing: 0.2,
       textAlign: 'left',
@@ -667,17 +696,20 @@ const createStyles = (theme: AppTheme) => {
     moreOptionsButton: {
       padding: spacing.elementGap,
       borderRadius: theme.borderRadius.sm,
-      backgroundColor: 'transparent',
+      backgroundColor: theme.colors.surface,
     } as ViewStyle,
 
-    // Quote Icon
+    // Quote Icon - Enhanced with better positioning and styling
     quoteIconContainer: {
-      marginBottom: spacing.contentGap,
-      alignSelf: 'flex-start',
+      position: 'absolute',
+      top: -4,
+      left: -2,
+      zIndex: 1,
     } as ViewStyle,
 
     quoteIcon: {
-      opacity: 0.6,
+      opacity: 0.3,
+      transform: [{ scale: 1.2 }],
     },
 
     // Statement Container
@@ -706,28 +738,36 @@ const createStyles = (theme: AppTheme) => {
       marginTop: spacing.elementGap,
     } as TextStyle,
 
-    // Date Footer
+    // Date Footer - Enhanced with better visual hierarchy
     dateContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: spacing.contentGap,
+      justifyContent: 'flex-end',
+      marginTop: spacing.sectionGap,
       paddingTop: spacing.contentGap,
+      borderTopWidth: 1,
+      borderTopColor: getBorderColor(theme, 'light'),
     } as ViewStyle,
 
     dateLine: {
       flex: 1,
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: theme.colors.outline + '20',
+      height: 1,
+      backgroundColor: alpha(theme.colors.outline, 0.2),
       marginRight: spacing.contentGap,
     } as ViewStyle,
 
     dateText: {
-      fontFamily: 'Lora-Regular',
-      fontSize: 12,
-      fontWeight: '500',
-      color: colors.secondary,
+      fontFamily: 'Lora-Medium',
+      fontSize: 11,
+      fontWeight: '600',
+      color: alpha(colors.secondary, 0.8),
       fontStyle: 'italic',
-      letterSpacing: 0.5,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+      paddingHorizontal: spacing.elementGap,
+      paddingVertical: 2,
+      backgroundColor: alpha(theme.colors.surfaceVariant, 0.3),
+      borderRadius: theme.borderRadius.xs,
     } as TextStyle,
 
     // Loading indicator
@@ -745,7 +785,7 @@ const createStyles = (theme: AppTheme) => {
       backgroundColor: theme.colors.primary + '60',
     } as ViewStyle,
 
-    // Context Menu styles
+    // Context Menu styles - Enhanced with modern glassmorphism effect
     contextMenuBackdrop: {
       position: 'absolute',
       top: -1000,
@@ -757,25 +797,31 @@ const createStyles = (theme: AppTheme) => {
 
     contextMenu: {
       position: 'absolute',
-      top: spacing.contentGap + 24,
+      top: spacing.contentGap + 32,
       right: spacing.contentGap,
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.md,
-      padding: spacing.elementGap,
-      minWidth: 120,
+      backgroundColor: getSurfaceColor(theme, 'elevated'),
+      borderRadius: theme.borderRadius.lg,
+      padding: spacing.contentGap,
+      minWidth: 140,
       zIndex: 101,
-      ...shadows.floating,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '30',
+      ...shadows.overlay,
+      borderWidth: 1,
+      borderColor: getBorderColor(theme, 'medium'),
+      // Enhanced shadow for floating effect
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.15,
+      shadowRadius: 24,
+      elevation: 6,
     } as ViewStyle,
 
     contextMenuItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: spacing.contentGap,
-      paddingVertical: spacing.elementGap + 2,
-      borderRadius: theme.borderRadius.sm,
-      gap: spacing.elementGap,
+      paddingHorizontal: spacing.contentGap + 2,
+      paddingVertical: spacing.contentGap,
+      borderRadius: theme.borderRadius.md,
+      gap: spacing.contentGap,
+      marginVertical: 2,
     } as ViewStyle,
 
     destructiveMenuItem: {
@@ -790,39 +836,46 @@ const createStyles = (theme: AppTheme) => {
       fontWeight: '500',
     } as TextStyle,
 
-    // Editing Action Buttons
+    // Editing Action Buttons - Enhanced with better visual hierarchy
     editingActions: {
       flexDirection: 'row',
-      gap: spacing.contentGap,
-      marginTop: spacing.sectionGap,
-      paddingTop: spacing.contentGap,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline + '20',
+      gap: spacing.contentGap + 2,
+      marginTop: spacing.sectionGap + 2,
+      paddingTop: spacing.sectionGap,
+      borderTopWidth: 1,
+      borderTopColor: getBorderColor(theme, 'light'),
     } as ViewStyle,
 
     editingButton: {
       flex: 1,
-      paddingVertical: spacing.contentGap + 2,
-      borderRadius: theme.borderRadius.md,
+      paddingVertical: spacing.contentGap + 4,
+      borderRadius: theme.borderRadius.lg,
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 44,
+      minHeight: 48,
+      ...shadows.subtle,
     } as ViewStyle,
 
     cancelButton: {
-      backgroundColor: theme.colors.surfaceVariant,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '30',
+      backgroundColor: getSurfaceColor(theme, 'container'),
+      borderWidth: 1,
+      borderColor: getBorderColor(theme, 'medium'),
     } as ViewStyle,
 
     saveButton: {
       backgroundColor: theme.colors.primary,
-      ...shadows.subtle,
+      ...shadows.card,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 2,
     } as ViewStyle,
 
     editingButtonText: {
-      ...typography.button.primary,
+      fontFamily: 'Lora-SemiBold',
+      fontSize: 16,
       fontWeight: '600',
+      letterSpacing: 0.3,
     } as TextStyle,
   });
 };

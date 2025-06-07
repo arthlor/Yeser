@@ -164,7 +164,7 @@ export const signInWithGoogle = async (): Promise<{
         };
       } else {
         // Handles response.type === 'error' or other unexpected types
-        logger.error('Google Sign-In WebBrowser Error:', response);
+        logger.error('Google Sign-In WebBrowser Error:', { response: JSON.stringify(response) });
         let errorMessage = 'An unexpected error occurred during Google Sign-In with WebBrowser.';
         if (response.type === 'error') {
           // response is WebBrowserAuthSessionErrorResult (Android launch error) OR WebBrowserAuthSessionCompleteResult (error in URL)
@@ -179,10 +179,12 @@ export const signInWithGoogle = async (): Promise<{
               errorCode?: string | null;
               errorMessage?: string | null;
             };
-            if (respWithPossibleErrorDetails.errorCode)
-              {details.push(`Code: ${respWithPossibleErrorDetails.errorCode}`);}
-            if (respWithPossibleErrorDetails.errorMessage)
-              {details.push(`Message: ${respWithPossibleErrorDetails.errorMessage}`);}
+            if (respWithPossibleErrorDetails.errorCode) {
+              details.push(`Code: ${respWithPossibleErrorDetails.errorCode}`);
+            }
+            if (respWithPossibleErrorDetails.errorMessage) {
+              details.push(`Message: ${respWithPossibleErrorDetails.errorMessage}`);
+            }
             if (details.length > 0) {
               errorMessage = `OAuth error: ${details.join(', ')}. URL: ${response.url}`;
             } else {

@@ -51,15 +51,15 @@ const enhancedDarkColors: ThemeColors = {
   surfaceBright: '#475569', // Bright surface variant for emphasis
   surfaceDim: '#1E293B', // Dimmed surface for subtle backgrounds
 
-  // Content colors - Sophisticated slate-blue tones
-  outline: '#64748B', // More visible desaturated blue outline
-  outlineVariant: '#475569', // Secondary desaturated blue outline
+  // Content colors - Sophisticated slate-blue tones with enhanced definition
+  outline: '#7C8B9E', // Slightly strengthened from #64748B for better UI element definition
+  outlineVariant: '#5A6875', // Slightly strengthened from #475569 for improved visibility
   scrim: 'rgba(0, 0, 0, 0.8)', // Deep scrim for overlays
 
-  // Enhanced border system for sophisticated dark mode
-  borderLight: '#374151', // Light desaturated blue borders
-  borderMedium: '#475569', // Medium desaturated blue borders
-  borderStrong: '#64748B', // Strong but elegant borders
+  // Enhanced border system for sophisticated dark mode with better definition
+  borderLight: '#475569', // Enhanced from #374151 - more visible but still elegant
+  borderMedium: '#5A6875', // Enhanced from #475569 - clearer separation
+  borderStrong: '#7C8B9E', // Enhanced from #64748B - strong definition
 
   // State colors - Natural harmonies optimized for dark mode
   success: '#10B981', // Brighter emerald for dark mode visibility
@@ -101,10 +101,10 @@ const enhancedDarkColors: ThemeColors = {
   gradientStart: '#2DD4BF', // Bright teal start
   gradientEnd: '#14B8A6', // Harmonious deeper teal end
 
-  // Legacy support - updated for sophisticated dark theme
+  // Legacy support - updated for enhanced dark theme
   text: '#F1F5F9', // Light, comfortable text for reading
   textSecondary: '#CBD5E1', // Secondary text with good contrast
-  border: '#64748B', // Visible but not harsh borders
+  border: '#5A6875', // Enhanced from #64748B for better definition
   inputBackground: '#374151', // Sophisticated desaturated blue input background
   inputText: '#F1F5F9', // Light text in inputs
   danger: '#F87171', // Consistent with error

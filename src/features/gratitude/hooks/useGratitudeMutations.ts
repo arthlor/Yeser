@@ -44,7 +44,9 @@ export const useGratitudeMutations = () => {
     AddStatementContext
   >({
     mutationFn: async ({ entryDate, statement }) => {
-      if (!user?.id) {throw new Error('User not authenticated');}
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
       return addStatement(entryDate, statement);
     },
     onMutate: async ({ entryDate, statement }) => {
@@ -103,10 +105,12 @@ export const useGratitudeMutations = () => {
 
   const editStatementMutation = useMutation<void, Error, EditStatementPayload>({
     mutationFn: async ({ entryDate, statementIndex, updatedStatement }) => {
-      if (!user?.id) {throw new Error('User not authenticated');}
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
       return editStatement(entryDate, statementIndex, updatedStatement);
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, _context) => {
       handleMutationError(err, 'edit gratitude statement');
     },
     onSuccess: (_, { entryDate }) => {
@@ -118,10 +122,12 @@ export const useGratitudeMutations = () => {
 
   const deleteStatementMutation = useMutation<void, Error, DeleteStatementPayload>({
     mutationFn: async ({ entryDate, statementIndex }) => {
-      if (!user?.id) {throw new Error('User not authenticated');}
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
       return deleteStatement(entryDate, statementIndex);
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, _context) => {
       handleMutationError(err, 'delete gratitude statement');
     },
     onSuccess: (_, { entryDate }) => {
@@ -138,14 +144,16 @@ export const useGratitudeMutations = () => {
     DeleteAllStatementsPayload
   >({
     mutationFn: async ({ entryDate, numStatements }) => {
-      if (!user?.id) {throw new Error('User not authenticated');}
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
       // Loop to delete all statements. This assumes the API deletes at index 0 and shifts others.
       // A dedicated backend API to delete an entire entry by date/ID would be more efficient.
       for (let i = 0; i < numStatements; i++) {
         await deleteStatement(entryDate, 0); // Always delete the statement at index 0
       }
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, _context) => {
       handleMutationError(err, 'delete all statements for entry');
     },
     onSuccess: (_, { entryDate }) => {

@@ -104,13 +104,7 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
           onCancel={onCancel}
           onSave={async (updatedText: string) => onSave(index, updatedText)}
           // Configuration for minimal list variant
-          enableSwipeActions={false}
-          enableLongPress={false}
           enableInlineEdit={true}
-          enableQuickActions={true}
-          // Visual configuration
-          showActionOverlay={false}
-          actionPosition="bottom"
           confirmDelete={false} // Parent handles confirmation
           maxLength={500}
           // Accessibility

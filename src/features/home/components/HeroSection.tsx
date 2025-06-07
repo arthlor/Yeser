@@ -150,19 +150,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({
 
     return {
       main: `Hedefe ${remaining} minnet kaldı (${progressPercentage}% tamamlandı)`,
-      sub: 'Her minnet, kalbinizi daha da güçlendirir',
+      sub: '',
     };
-  };
-
-  const getProgressColor = () => {
-    const isGoalComplete = currentCount >= dailyGoal;
-    if (isGoalComplete) {
-      return theme.colors.success;
-    }
-    if (currentCount >= dailyGoal * 0.7) {
-      return theme.colors.warning;
-    }
-    return theme.colors.primary;
   };
 
   const greeting_data = getContextualGreeting();

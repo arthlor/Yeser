@@ -17,7 +17,7 @@ import {
 import ErrorState from '@/shared/components/ui/ErrorState';
 import LoadingState from '@/components/states/LoadingState';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
-import { StatementCard } from '@/shared/components/ui';
+import StatementDetailCard from '@/shared/components/ui/StatementDetailCard';
 import { useGratitudeEntry, useGratitudeMutations } from '../hooks';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
@@ -455,7 +455,7 @@ const EnhancedEntryDetailScreen: React.FC<{
                   size={20}
                   color={theme.colors.onSurface}
                 />
-                <Text style={styles.statementsTitle}>O günkü minnetlerin</Text>
+                <Text style={styles.statementsTitle}>O günkü minnetleriniz</Text>
               </View>
               <View style={styles.statementsCounter}>
                 <Text style={styles.statementsCountText}>{gratitudeItems.length}</Text>
@@ -487,30 +487,24 @@ const EnhancedEntryDetailScreen: React.FC<{
                     },
                   ]}
                 >
-                  {/* 🚀 ENHANCED StatementCard with Interactive Features */}
-                  <StatementCard
+                  {/* 🚀 ENHANCED StatementDetailCard - Perfect for Entry Detail Reading */}
+                  <StatementDetailCard
                     statement={item}
-                    variant="minimal"
-                    showQuotes={true}
-                    animateEntrance={false} // Already animated by parent
-                    onPress={() => handleEditStatement(index)}
-                    // Enhanced Interactive Features
+                    variant="detailed" // Enhanced readability for entry details
+                    index={index} // Sequence indicators for better reading flow
+                    totalCount={gratitudeItems.length}
                     isEditing={editingStatementIndex === index}
                     isLoading={isEditingStatement || isDeletingStatement}
                     onEdit={() => handleEditStatement(index)}
                     onDelete={() => handleDeleteStatement(index)}
                     onCancel={handleCancelEditingStatement}
                     onSave={(updatedText: string) => handleSaveEditedStatement(index, updatedText)}
-                    // Interaction Configuration
+                    // Enhanced detail configuration
                     enableInlineEdit={true}
                     confirmDelete={true}
                     maxLength={500}
-                    // Accessibility & Feedback
-                    accessibilityLabel={`Minnet ${index + 1}: ${item}`}
-                    hapticFeedback={false} // Simplified feedback
-                    style={{
-                      marginBottom: theme.spacing.md,
-                    }}
+                    // Accessibility
+                    accessibilityLabel={`Minnet ${index + 1} / ${gratitudeItems.length}: ${item}`}
                   />
                 </Animated.View>
               ))}
@@ -683,7 +677,7 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.md,
       marginBottom: theme.spacing.sm,
-      backgroundColor: 'transparent',
+      backgroundColor: theme.colors.surface,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.outline + '15',
     },

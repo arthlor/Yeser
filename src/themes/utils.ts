@@ -1,8 +1,4 @@
-import {
-  AppTheme,
-  ThemeTypography,
-  ThemeTypographyStyle,
-} from './types';
+import { AppTheme, ThemeTypography, ThemeTypographyStyle } from './types';
 
 /**
  * Enhanced color manipulation utilities
@@ -46,7 +42,9 @@ export const alpha = (color: string, opacity: number): string => {
 
 export const lighten = (color: string, amount: number): string => {
   const rgb = hexToRgb(color);
-  if (!rgb) {return color;}
+  if (!rgb) {
+    return color;
+  }
 
   const factor = 1 + Math.max(0, Math.min(1, amount));
   return rgbToHex(
@@ -58,7 +56,9 @@ export const lighten = (color: string, amount: number): string => {
 
 export const darken = (color: string, amount: number): string => {
   const rgb = hexToRgb(color);
-  if (!rgb) {return color;}
+  if (!rgb) {
+    return color;
+  }
 
   const factor = 1 - Math.max(0, Math.min(1, amount));
   return rgbToHex(
@@ -75,7 +75,9 @@ export const blend = (color1: string, color2: string, ratio = 0.5): string => {
   const rgb1 = hexToRgb(color1);
   const rgb2 = hexToRgb(color2);
 
-  if (!rgb1 || !rgb2) {return color1;}
+  if (!rgb1 || !rgb2) {
+    return color1;
+  }
 
   const r = Math.round(rgb1.r * (1 - ratio) + rgb2.r * ratio);
   const g = Math.round(rgb1.g * (1 - ratio) + rgb2.g * ratio);
@@ -87,7 +89,9 @@ export const blend = (color1: string, color2: string, ratio = 0.5): string => {
 export const getContrastRatio = (color1: string, color2: string): number => {
   const getLuminance = (color: string): number => {
     const rgb = hexToRgb(color);
-    if (!rgb) {return 0;}
+    if (!rgb) {
+      return 0;
+    }
 
     const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((c) => {
       c = c / 255;
@@ -108,7 +112,10 @@ export const getContrastRatio = (color1: string, color2: string): number => {
 /**
  * Enhanced color utilities for better theming
  */
-export const getBorderColor = (theme: AppTheme, variant: 'light' | 'medium' | 'strong' = 'medium'): string => {
+export const getBorderColor = (
+  theme: AppTheme,
+  variant: 'light' | 'medium' | 'strong' = 'medium'
+): string => {
   // Use enhanced border colors if available, fallback to outline variants
   switch (variant) {
     case 'light':
@@ -120,7 +127,10 @@ export const getBorderColor = (theme: AppTheme, variant: 'light' | 'medium' | 's
   }
 };
 
-export const getSurfaceColor = (theme: AppTheme, level: 'base' | 'elevated' | 'container' = 'base'): string => {
+export const getSurfaceColor = (
+  theme: AppTheme,
+  level: 'base' | 'elevated' | 'container' = 'base'
+): string => {
   switch (level) {
     case 'elevated':
       return theme.colors.surfaceElevated ?? lighten(theme.colors.surface, 0.02);
@@ -131,7 +141,10 @@ export const getSurfaceColor = (theme: AppTheme, level: 'base' | 'elevated' | 'c
   }
 };
 
-export const getInteractionColor = (theme: AppTheme, state: 'hover' | 'pressed' | 'focus' | 'selected'): string => {
+export const getInteractionColor = (
+  theme: AppTheme,
+  state: 'hover' | 'pressed' | 'focus' | 'selected'
+): string => {
   switch (state) {
     case 'hover':
       return theme.colors.hover;
@@ -176,7 +189,7 @@ export const semanticSpacing = (theme: AppTheme) => ({
   touchTarget: 44, // Minimum accessible touch target (iOS/Android standard)
   buttonHeight: {
     compact: 36,
-    standard: 44, 
+    standard: 44,
     large: 52,
   },
   buttonPadding: {
@@ -184,82 +197,87 @@ export const semanticSpacing = (theme: AppTheme) => ({
     standard: { horizontal: theme.spacing.lg, vertical: theme.spacing.xs },
     large: { horizontal: theme.spacing.xl, vertical: theme.spacing.sm },
   },
-  
+
   // Content spacing hierarchy
   elementGap: theme.spacing.xs, // 4px - Between related small elements (icons, labels)
-  contentGap: theme.spacing.sm, // 8px - Between content blocks in same section  
+  contentGap: theme.spacing.sm, // 8px - Between content blocks in same section
   sectionGap: theme.spacing.md, // 16px - Between different sections
   majorGap: theme.spacing.lg, // 24px - Between major content areas
-  
+
   // Container padding standards
   cardPadding: theme.spacing.md, // 16px - Standard card content padding
   modalPadding: theme.spacing.lg, // 24px - Modal and overlay content
   screenPadding: theme.spacing.page, // 16px - Screen edge padding (matches current)
   inputPadding: { horizontal: theme.spacing.md, vertical: theme.spacing.sm },
-  
+
   // List and item spacing
   listItemPadding: theme.spacing.md, // 16px - Standard list item padding
   listItemHeight: 56, // Standard list item height for consistency
   listGap: theme.spacing.xs, // 4px - Gap between list items
   dividerMargin: theme.spacing.sm, // 8px - Margin around dividers
-  
+
   // Form and input spacing
   fieldGap: theme.spacing.md, // 16px - Gap between form fields
   labelGap: theme.spacing.xs, // 4px - Gap between label and input
   helperGap: theme.spacing.xs, // 4px - Gap between input and helper text
-  
+
   // Navigation and header spacing
   headerPadding: theme.spacing.md, // 16px - Header content padding
   tabPadding: { horizontal: theme.spacing.lg, vertical: theme.spacing.sm },
-  
+
   // Icon and image spacing
   iconGap: theme.spacing.sm, // 8px - Gap between icon and text
   avatarGap: theme.spacing.md, // 16px - Gap around avatars
 });
 
 /**
- * 🎨 SIMPLIFIED SHADOW SYSTEM
- * Unified shadow strategy using neutral colors for clean appearance
+ * 🎨 THEME-AWARE UNIFIED SHADOW SYSTEM
+ * Unified shadow strategy using neutral colors with theme-appropriate strength
+ * Light theme gets stronger shadows for better depth perception
  * Use these instead of mixing different shadow approaches
  */
-export const unifiedShadows = (theme: AppTheme) => ({
-  none: {
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  
-  subtle: {
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  
-  card: {
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  
-  floating: {
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  
-  overlay: {
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-});
+export const unifiedShadows = (theme: AppTheme) => {
+  const isLightTheme = theme.name === 'light';
+
+  return {
+    none: {
+      shadowOpacity: 0,
+      elevation: 0,
+    },
+
+    subtle: {
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isLightTheme ? 0.08 : 0.02, // Stronger for light theme
+      shadowRadius: 2,
+      elevation: 1,
+    },
+
+    card: {
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isLightTheme ? 0.12 : 0.04, // Stronger for light theme
+      shadowRadius: 4,
+      elevation: 2,
+    },
+
+    floating: {
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isLightTheme ? 0.16 : 0.06, // Stronger for light theme
+      shadowRadius: 12,
+      elevation: 4,
+    },
+
+    overlay: {
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: isLightTheme ? 0.2 : 0.08, // Stronger for light theme
+      shadowRadius: 20,
+      elevation: 8,
+    },
+  };
+};
 
 /**
  * 🎯 ENHANCED COMPONENT UTILITIES
@@ -268,7 +286,7 @@ export const unifiedShadows = (theme: AppTheme) => ({
 export const componentStyles = (theme: AppTheme) => {
   const spacing = semanticSpacing(theme);
   const shadows = unifiedShadows(theme);
-  
+
   return {
     // Button styling helpers
     button: {
@@ -276,15 +294,15 @@ export const componentStyles = (theme: AppTheme) => {
       borderRadius: theme.borderRadius.lg,
       primaryShadow: shadows.subtle,
     },
-    
-    // Card styling helpers  
+
+    // Card styling helpers
     card: {
       borderRadius: theme.borderRadius.lg,
       padding: spacing.cardPadding,
       shadow: shadows.card,
       backgroundColor: theme.colors.surface,
     },
-    
+
     // Input styling helpers
     input: {
       minHeight: spacing.touchTarget,
@@ -294,14 +312,14 @@ export const componentStyles = (theme: AppTheme) => {
       focusedBorderColor: theme.colors.primary,
       backgroundColor: theme.colors.inputBackground,
     },
-    
+
     // List item styling helpers
     listItem: {
       minHeight: spacing.listItemHeight,
       padding: spacing.listItemPadding,
       borderRadius: theme.borderRadius.sm,
     },
-    
+
     // Modal styling helpers
     modal: {
       borderRadius: theme.borderRadius.xl,
@@ -341,7 +359,7 @@ export const semanticTypography = (theme: AppTheme) => ({
       letterSpacing: 0.25,
     },
   },
-  
+
   // Input and Form Text Styles
   input: {
     label: {
@@ -373,7 +391,7 @@ export const semanticTypography = (theme: AppTheme) => ({
       letterSpacing: 0.1,
     },
   },
-  
+
   // Card and Content Text Styles
   card: {
     title: {
@@ -405,7 +423,7 @@ export const semanticTypography = (theme: AppTheme) => ({
       letterSpacing: 0.4,
     },
   },
-  
+
   // Navigation and Header Text Styles
   navigation: {
     header: {
@@ -430,7 +448,7 @@ export const semanticTypography = (theme: AppTheme) => ({
       letterSpacing: 0.15,
     },
   },
-  
+
   // Content Hierarchy Styles
   content: {
     // Headlines
@@ -457,7 +475,7 @@ export const semanticTypography = (theme: AppTheme) => ({
         letterSpacing: 0.15,
       },
     },
-    
+
     // Body text
     body: {
       large: {
@@ -483,7 +501,7 @@ export const semanticTypography = (theme: AppTheme) => ({
       },
     },
   },
-  
+
   // State-specific text styles
   states: {
     disabled: {
@@ -510,28 +528,28 @@ export const textColors = (theme: AppTheme) => ({
   primary: theme.colors.onSurface,
   secondary: theme.colors.onSurfaceVariant,
   tertiary: theme.colors.outline,
-  
+
   // Interactive text colors
   interactive: theme.colors.primary,
   interactiveHover: theme.colors.primaryVariant,
   interactivePressed: theme.colors.primary,
-  
+
   // State text colors
   success: theme.colors.success,
   warning: theme.colors.warning,
   error: theme.colors.error,
   info: theme.colors.info,
-  
+
   // Contrast text colors
   onPrimary: theme.colors.onPrimary,
   onSecondary: theme.colors.onSecondary,
   onSurface: theme.colors.onSurface,
-  
+
   // Specialized text colors
   disabled: theme.colors.disabled,
   placeholder: theme.colors.onSurfaceVariant,
   brand: theme.colors.primary,
-  
+
   // Legacy support
   text: theme.colors.text,
   textSecondary: theme.colors.textSecondary,
@@ -547,14 +565,14 @@ export const accessibilityHelpers = (theme: AppTheme) => ({
     minHeight: 44,
     minWidth: 44,
   },
-  
+
   // Focus ring styles
   focusRing: {
     borderWidth: 2,
     borderColor: theme.colors.focus || theme.colors.primary,
     borderRadius: theme.borderRadius.sm,
   },
-  
+
   // High contrast text combinations
   highContrast: {
     onPrimary: {
@@ -570,7 +588,7 @@ export const accessibilityHelpers = (theme: AppTheme) => ({
       backgroundColor: theme.colors.success,
     },
   },
-  
+
   // Screen reader optimized styles
   screenReaderOnly: {
     position: 'absolute' as const,
@@ -680,7 +698,7 @@ export const validateTheme = (theme: AppTheme): string[] => {
   colorPairs.forEach(([bg, fg]) => {
     const bgColor = theme.colors[bg as keyof typeof theme.colors];
     const fgColor = theme.colors[fg as keyof typeof theme.colors];
-    
+
     if (bgColor && fgColor) {
       const contrast = getContrastRatio(bgColor, fgColor);
       if (contrast < 4.5) {
@@ -697,7 +715,7 @@ export const validateTheme = (theme: AppTheme): string[] => {
  */
 export const generateThemeVariants = (baseColors: { primary: string; background: string }) => {
   const { primary, background } = baseColors;
-  
+
   return {
     primaryVariant: darken(primary, 0.1),
     primaryContainer: alpha(primary, 0.12),
@@ -759,13 +777,14 @@ export const themeUtils = {
 };
 
 /**
- * 🌟 NEUTRAL SHADOW HELPERS
- * Beautiful neutral shadow effects for clean, professional appearance
- * Creates elegant shadows without color tinting
+ * 🌟 THEME-AWARE NEUTRAL SHADOW HELPERS
+ * Beautiful neutral shadow effects that adapt to theme
+ * Light theme gets stronger shadows for better depth perception
+ * Dark theme maintains current elegant shadow levels
  */
 
 /**
- * Get neutral shadow (for all components)
+ * Get theme-appropriate neutral shadow
  * Usage: ...getNeutralShadow.card(theme)
  */
 export const getNeutralShadow = {
@@ -773,61 +792,76 @@ export const getNeutralShadow = {
    * 🎪 Neutral Card Shadow - For content cards with clean shadows
    * Perfect for: Statement cards, feature cards, content blocks
    */
-  card: (theme: AppTheme) => ({
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
-  }),
+  card: (theme: AppTheme) => {
+    const isLightTheme = theme.name === 'light';
+    return {
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: isLightTheme ? 0.15 : 0.06, // Stronger for light theme
+      shadowRadius: 10,
+      elevation: 3,
+    };
+  },
 
   /**
-   * 🚀 Neutral Floating Shadow - For interactive floating elements  
+   * 🚀 Neutral Floating Shadow - For interactive floating elements
    * Perfect for: Input cards, FABs, prominent action elements
    */
-  floating: (theme: AppTheme) => ({
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 4,
-  }),
+  floating: (theme: AppTheme) => {
+    const isLightTheme = theme.name === 'light';
+    return {
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isLightTheme ? 0.2 : 0.08, // Stronger for light theme
+      shadowRadius: 14,
+      elevation: 4,
+    };
+  },
 
   /**
    * 🏷️ Neutral Small Shadow - For smaller UI elements
    * Perfect for: Badges, buttons, small interactive elements
    */
-  small: (theme: AppTheme) => ({
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
-  }),
+  small: (theme: AppTheme) => {
+    const isLightTheme = theme.name === 'light';
+    return {
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isLightTheme ? 0.08 : 0.03, // Stronger for light theme
+      shadowRadius: 3,
+      elevation: 1,
+    };
+  },
 
   /**
    * 📦 Neutral Medium Shadow - For standard containers
    * Perfect for: Settings cards, list containers, grouped content
    */
-  medium: (theme: AppTheme) => ({
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  }),
+  medium: (theme: AppTheme) => {
+    const isLightTheme = theme.name === 'light';
+    return {
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isLightTheme ? 0.12 : 0.05, // Stronger for light theme
+      shadowRadius: 8,
+      elevation: 2,
+    };
+  },
 
   /**
    * 🌟 Neutral Overlay Shadow - For modals and overlays
    * Perfect for: Modals, dropdowns, high-prominence overlays
    */
-  overlay: (theme: AppTheme) => ({
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.10,
-    shadowRadius: 20,
-    elevation: 8,
-  }),
+  overlay: (theme: AppTheme) => {
+    const isLightTheme = theme.name === 'light';
+    return {
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: isLightTheme ? 0.25 : 0.1, // Stronger for light theme
+      shadowRadius: 20,
+      elevation: 8,
+    };
+  },
 };
 
 // Keep getPrimaryShadow for backward compatibility but make it use neutral shadows

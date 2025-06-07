@@ -17,15 +17,10 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ScreenLayout } from '@/shared/components/layout';
-import { StatementCard } from '@/shared/components/ui';
-import ThemedCard from '@/shared/components/ui/ThemedCard';
-import { getPrimaryShadow } from '@/themes/utils';
-import type { AppTheme } from '@/themes/types';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, RefreshControl } from 'react-native';
 import { logger } from '@/utils/debugConfig';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabScreenProps<MainAppTabParamList, 'HomeTab'>['navigation'],
@@ -57,9 +52,9 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
   const { data: totalEntriesCount } = useGratitudeTotalCount();
 
   React.useEffect(() => {
-    logger.debug('HomeScreen Debug - Total gratitude entries:', { 
+    logger.debug('HomeScreen Debug - Total gratitude entries:', {
       totalEntriesCount,
-      component: 'HomeScreen'
+      component: 'HomeScreen',
     });
   }, [totalEntriesCount]);
 
@@ -118,141 +113,6 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     setStreakDetailsVisible(true);
   }, []);
 
-  // Create styles function - moved before TodaysFeaturedStatements
-  const createStyles = useCallback(
-    (theme: AppTheme) =>
-      StyleSheet.create({
-        featuredContainer: {
-          marginBottom: theme.spacing.md,
-        },
-        featuredCard: {
-          borderRadius: 0,
-          backgroundColor: theme.colors.surface,
-          borderTopWidth: 1,
-          borderBottomWidth: 1,
-          borderTopColor: theme.colors.outline + '10',
-          borderBottomColor: theme.colors.outline + '10',
-          ...getPrimaryShadow.card(theme),
-        },
-        featuredHeader: {
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: theme.colors.outline + '15',
-          // Padding handled by density="comfortable"
-        },
-        featuredHeaderLeft: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          flex: 1,
-        },
-        featuredTitle: {
-          ...theme.typography.titleMedium,
-          color: theme.colors.onSurface,
-          marginLeft: theme.spacing.sm,
-          fontWeight: '700',
-        },
-        featuredAction: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: theme.spacing.sm,
-          paddingVertical: theme.spacing.xs,
-          borderRadius: theme.borderRadius.md,
-          backgroundColor: theme.colors.primaryContainer + '40',
-        },
-        featuredActionText: {
-          ...theme.typography.labelMedium,
-          color: theme.colors.primary,
-          marginLeft: theme.spacing.xs,
-          fontWeight: '600',
-        },
-        featuredStatementCard: {
-          marginTop: 0,
-          borderTopWidth: 0,
-          borderRadius: 0,
-        },
-        featuredFooter: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: theme.spacing.md,
-          paddingVertical: theme.spacing.sm,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: theme.colors.outline + '15',
-        },
-        featuredFooterText: {
-          ...theme.typography.labelMedium,
-          color: theme.colors.primary,
-          marginLeft: theme.spacing.xs,
-          fontWeight: '600',
-        },
-      }),
-    []
-  );
-
-  // Today's Featured Statements Component
-  const TodaysFeaturedStatements = useCallback(() => {
-    const styles = createStyles(theme);
-
-    if (!todaysEntry?.statements || todaysEntry.statements.length === 0) {
-      return null;
-    }
-
-    const featuredStatement = todaysEntry.statements[0]; // Show first statement as featured
-    const hasMore = todaysEntry.statements.length > 1;
-
-    return (
-      <View style={styles.featuredContainer}>
-        <ThemedCard
-          variant="elevated"
-          density="comfortable"
-          elevation="card"
-          style={styles.featuredCard}
-        >
-          <View style={styles.featuredHeader}>
-            <View style={styles.featuredHeaderLeft}>
-              <Icon name="star-circle" size={20} color={theme.colors.primary} />
-              <Text style={styles.featuredTitle}>Bugünkü Öne Çıkan Minnet</Text>
-            </View>
-            <TouchableOpacity
-              onPress={handleNewEntryPress}
-              style={styles.featuredAction}
-              activeOpacity={0.7}
-            >
-              <Icon name="plus-circle" size={16} color={theme.colors.primary} />
-              <Text style={styles.featuredActionText}>Daha Fazla</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* 🚀 ENHANCED Featured Statement with Interactive Features */}
-          <StatementCard
-            statement={featuredStatement}
-            variant="default"
-            showQuotes={true}
-            animateEntrance={true}
-            numberOfLines={3}
-            onPress={handleNewEntryPress}
-            // ✨ NEW: Enhanced Interactive Features for Featured Display - Simplified
-            enableInlineEdit={false} // Disable for home screen
-            // ✨ NEW: Accessibility & Feedback
-            accessibilityLabel={`Öne çıkan minnet: ${featuredStatement}`}
-            hapticFeedback={false} // Simplified feedback
-            style={styles.featuredStatementCard}
-          />
-
-          {hasMore && (
-            <View style={styles.featuredFooter}>
-              <Icon name="heart-multiple" size={14} color={theme.colors.primary} />
-              <Text style={styles.featuredFooterText}>
-                +{todaysEntry.statements.length - 1} minnet daha
-              </Text>
-            </View>
-          )}
-        </ThemedCard>
-      </View>
-    );
-  }, [todaysEntry, theme, handleNewEntryPress, createStyles]);
-
   return (
     <>
       <ScreenLayout
@@ -284,9 +144,6 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
         {/* 2. Daily Inspiration - Replaces Quick Add */}
         <DailyInspiration currentCount={todaysGratitudeCount} dailyGoal={dailyGoal} />
-
-        {/* 2.5. Today's Featured Statements (shown when there are statements) */}
-        <TodaysFeaturedStatements />
 
         {/* 3. Enhanced Action Cards */}
         <ActionCards

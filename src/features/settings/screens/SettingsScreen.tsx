@@ -11,7 +11,7 @@ import AccountSettings from '@/components/settings/AccountSettings';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
 import DailyReminderSettings from '@/components/settings/DailyReminderSettings';
 import ThrowbackReminderSettings from '@/components/settings/ThrowbackReminderSettings';
-import { ScreenContent, ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { ScreenContent, ScreenLayout } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import { useUserProfile } from '@/shared/hooks';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -299,7 +299,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.textContainer}>
                   <Text style={styles.settingTitle}>Çeşitli Öneriler</Text>
                   <Text style={styles.settingDescription}>
-                    Günlük minnet önerilerini etkinleştir
+                    Günlük minnet yazma sayfasında yenilenebilir soru önerileri görüntüle
                   </Text>
                 </View>
               </View>

@@ -12,7 +12,7 @@ import {
 import { useThrowback } from '@/features/throwback/hooks/useThrowback';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
-import { getPrimaryShadow } from '@/themes/utils';
+import { alpha, getPrimaryShadow } from '@/themes/utils';
 import { formatDate as formatUtilityDate } from '@/utils/dateUtils';
 
 interface EnhancedThrowbackModalProps {
@@ -62,7 +62,9 @@ const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisib
   }
 
   if (!randomEntry && modalActuallyVisible) {
-    if (modalActuallyVisible) {setModalActuallyVisible(false);}
+    if (modalActuallyVisible) {
+      setModalActuallyVisible(false);
+    }
     return null;
   }
 
@@ -154,7 +156,7 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: 'rgba(0,0,0,0.6)',
+      backgroundColor: alpha(theme.colors.onSurface, 0.6),
     },
     modalView: {
       minHeight: 150,

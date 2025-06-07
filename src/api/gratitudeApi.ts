@@ -160,7 +160,7 @@ const mapAndValidateRawEntry = (
     return appLevelEntry;
   } catch (error) {
     logger.error('Failed to parse validated raw entry against application schema:', {
-      extra: error instanceof z.ZodError ? error.flatten() : error,
+      extra: error instanceof z.ZodError ? error.flatten() : { error: String(error) },
     });
     // logger.error('Data that failed application schema parsing:', rawValidationResult.data);
     throw new Error('Validated raw data failed application-level schema parsing.');

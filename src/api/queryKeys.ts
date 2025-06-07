@@ -19,6 +19,10 @@ export const queryKeys = {
   // Streak queries
   streaks: (userId?: string) => [...queryKeys.all, 'streaks', userId] as const,
 
+  // Gratitude benefits queries (Why Gratitude Matters screen)
+  gratitudeBenefits: () => [...queryKeys.all, 'gratitudeBenefits'] as const,
+  gratitudeBenefit: (id: number) => [...queryKeys.gratitudeBenefits(), { id }] as const,
+
   // Random/throwback queries
   randomGratitudeEntry: (userId?: string) =>
     [...queryKeys.all, 'randomGratitudeEntry', userId] as const,

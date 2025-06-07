@@ -61,6 +61,9 @@ export interface RootStackParamList extends Record<string, object | undefined> {
   TermsOfService: undefined; // Terms of service document
   Help: undefined; // Help documentation and FAQ
 
+  // Educational screens
+  WhyGratitude: undefined; // "Why Gratitude Matters" educational screen
+
   // Add other modal/overlay screens here
 }
 

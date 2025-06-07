@@ -24,6 +24,7 @@ import SettingsScreen from '../features/settings/screens/SettingsScreen';
 import SplashScreen from '../features/auth/screens/SplashScreen';
 import TermsOfServiceScreen from '../features/settings/screens/TermsOfServiceScreen';
 import OnboardingFlowScreen from '../features/onboarding/screens/EnhancedOnboardingFlowScreen';
+import { WhyGratitudeScreen } from '../features/whyGratitude';
 import useAuthStore from '../store/authStore';
 import { MainAppTabParamList, RootStackParamList } from '../types/navigation';
 import { hapticFeedback } from '../utils/hapticFeedback';
@@ -458,6 +459,15 @@ const RootNavigator: React.FC = () => {
               },
             };
           },
+        }}
+      />
+      <Root.Screen
+        name="WhyGratitude"
+        component={WhyGratitudeScreen}
+        options={{
+          headerShown: false, // Component handles its own header
+          gestureEnabled: true,
+          presentation: 'card',
         }}
       />
     </Root.Navigator>

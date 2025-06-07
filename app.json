@@ -4,24 +4,24 @@
     "slug": "yeser",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "src/assets/icon.png",
+    "icon": "src/assets/assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "src/assets/splash-icon.png",
+      "image": "src/assets/assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yeser"
+      "bundleIdentifier": "com.arthlor.yeser"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "src/assets/adaptive-icon.png",
+        "foregroundImage": "src/assets/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.yeser",
+      "package": "com.arthlor.yeser",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
@@ -30,41 +30,31 @@
       ]
     },
     "web": {
-      "favicon": "src/assets/favicon.png"
+      "favicon": "src/assets/assets/favicon.png"
     },
     "plugins": [
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
+          "icon": "./src/assets/assets/notification-icon.png",
           "color": "#5DB0A5",
           "defaultChannel": "yeser-reminders",
-          "sounds": ["./assets/notification-sound.wav"],
+          "sounds": ["./src/assets/assets/sounds/notification_sound.wav"],
           "androidMode": "default",
-          "androidCollapsedTitle": "Yeser",
+          "androidCollapsedTitle": "Yeşer",
           "iosDisplayInForeground": true
         }
       ],
-      [
-        "expo-font",
-        {
-          "fonts": [
-            "./assets/fonts/Inter-Regular.ttf",
-            "./assets/fonts/Inter-Medium.ttf",
-            "./assets/fonts/Inter-SemiBold.ttf",
-            "./assets/fonts/Inter-Bold.ttf"
-          ]
-        }
-      ],
+
       [
         "@react-native-google-signin/google-signin",
         {
-          "_comment": "CRITICAL: Replace with actual iOS reversed client ID from Google Cloud Console (e.g., com.googleusercontent.apps.123456789-abcdef...)",
-          "iosUrlScheme": "com.googleusercontent.apps.YOUR_IOS_CLIENT_ID"
+          "_comment": "iOS OAuth client ID from Google Cloud Console for Google Sign-In",
+          "iosUrlScheme": "com.googleusercontent.apps.384355046895-d6l39k419j64r0ur9l5jp7qr0dk28o3n"
         }
       ]
     ],
-    "scheme": "yeser",
+    "scheme": "yeserapp",
     "extra": {
       "eas": {
         "projectId": "your-project-id-here"

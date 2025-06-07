@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Keyboard, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Keyboard, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { ScreenContent, ScreenLayout, ScreenSection } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
@@ -13,7 +13,6 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
 import { loginSchema } from '@/schemas/authSchemas';
 import { analyticsService } from '@/services/analyticsService';
-import * as authService from '@/services/authService';
 import useAuthStore from '@/store/authStore';
 import { AppTheme } from '@/themes/types';
 import { AuthStackParamList, RootStackParamList } from '@/types/navigation';
@@ -96,37 +95,15 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
     try {
       analyticsService.logEvent('login_attempt', { method: 'google' });
-
-      const result = await authService.signInWithGoogle();
-
-      if (result.error) {
-        if (result.error.name === 'AuthCancelledError') {
-          // User cancelled OAuth - show friendly feedback
-          Alert.alert(
-            'Giriş İptal Edildi',
-            'Google ile giriş işlemi iptal edildi. İstediğiniz zaman tekrar deneyebilirsiniz.',
-            [{ text: 'Tamam', style: 'default' }],
-            { cancelable: true }
-          );
-          analyticsService.logEvent('login_cancelled', { method: 'google' });
-        } else {
-          // Other OAuth errors will be handled by the auth store
-          analyticsService.logEvent('login_failure', {
-            method: 'google',
-            attempts: loginAttempts + 1,
-            error: result.error.message,
-          });
-        }
-      } else if (result.user) {
-        analyticsService.logEvent('login_success', { method: 'google' });
-      }
-    } catch (loginError) {
+      await loginWithGoogle();
+      analyticsService.logEvent('login_success', { method: 'google' });
+    } catch {
       analyticsService.logEvent('login_failure', {
         method: 'google',
         attempts: loginAttempts + 1,
       });
     }
-  }, [clearError, loginAttempts]);
+  }, [clearError, loginWithGoogle, loginAttempts]);
 
   // Navigate to sign up screen
   const navigateToSignUp = useCallback(() => {
@@ -140,13 +117,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     navigation.getParent<StackNavigationProp<RootStackParamList>>()?.navigate('PrivacyPolicy');
   }, [navigation]);
 
-  // Navigate to password reset (placeholder for future implementation)
+  // Navigate to password reset screen
   const navigateToPasswordReset = useCallback(() => {
-    Alert.alert('Şifre Sıfırlama', 'Şifre sıfırlama özelliği yakında eklenecektir.', [
-      { text: 'Tamam', style: 'default' },
-    ]);
-    analyticsService.logEvent('password_reset_attempted');
-  }, []);
+    analyticsService.logEvent('navigate_to_password_reset');
+    navigation.navigate('ResetPassword');
+  }, [navigation]);
 
   return (
     <ScreenLayout keyboardAware={true} edges={['top']} density="comfortable" edgeToEdge={true}>

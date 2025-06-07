@@ -20,6 +20,8 @@ export interface AuthState {
   loginWithEmail: (credentials: EmailPasswordCredentials) => Promise<void>; // Updated login action
   loginWithGoogle: () => Promise<void>; // New action for Google login
   signUpWithEmail: (credentials: EmailPasswordCredentials) => Promise<void>; // New signup action
+  resetPassword: (email: string) => Promise<void>; // Reset password action
+  updatePassword: (newPassword: string) => Promise<void>; // Update password action
   logout: () => Promise<void>; // Updated logout action
   setLoading: (loading: boolean) => void;
   setError: (errorMessage: string | null) => void;
@@ -124,6 +126,28 @@ const useAuthStore = create<AuthState>((set, _get) => ({
       set({ isLoading: false }); // Let onAuthStateChange handle user state
     } else {
       set({ isLoading: false, error: error?.message || 'Sign up failed' });
+    }
+  },
+
+  resetPassword: async (email) => {
+    set({ isLoading: true, error: null });
+    const { error } = await authService.resetPassword(email);
+    if (error) {
+      set({ isLoading: false, error: error.message || 'Password reset failed' });
+    } else {
+      set({ isLoading: false, error: null });
+      logger.debug('Password reset email sent successfully');
+    }
+  },
+
+  updatePassword: async (newPassword) => {
+    set({ isLoading: true, error: null });
+    const { error } = await authService.updatePassword(newPassword);
+    if (error) {
+      set({ isLoading: false, error: error.message || 'Password update failed' });
+    } else {
+      set({ isLoading: false, error: null });
+      logger.debug('Password updated successfully');
     }
   },
 

@@ -19,6 +19,7 @@ import { ThemeProvider, useTheme } from './providers/ThemeProvider';
 import SplashScreen from './features/auth/screens/SplashScreen';
 import { analyticsService } from './services/analyticsService';
 import { notificationService } from './services/notificationService';
+import { firebaseService } from './services/firebaseService';
 import useAuthStore from './store/authStore';
 import { logger } from '@/utils/debugConfig';
 import { RootStackParamList } from './types/navigation';
@@ -40,7 +41,23 @@ const getActiveRouteName = (state: NavigationState | undefined): string | undefi
 };
 
 const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: [Linking.createURL('/')],
+  prefixes: [Linking.createURL('/'), 'yeserapp://'],
+  getInitialURL: async () => {
+    const url = await Linking.getInitialURL();
+    console.log('[DEBUG] Initial URL:', url);
+    return url;
+  },
+  subscribe: (listener) => {
+    const subscription = Linking.addEventListener('url', (event) => {
+      console.log('[DEBUG] Deep link received:', event.url);
+      // Parse URL to see parameters
+      const url = new URL(event.url);
+      console.log('[DEBUG] URL pathname:', url.pathname);
+      console.log('[DEBUG] URL search params:', Object.fromEntries(url.searchParams));
+      listener(event.url);
+    });
+    return () => subscription?.remove();
+  },
   config: {
     screens: {
       Auth: {
@@ -48,6 +65,24 @@ const linking: LinkingOptions<RootStackParamList> = {
         screens: {
           Login: 'login',
           SignUp: 'signup',
+          ResetPassword: 'reset-password',
+          SetNewPassword: {
+            path: 'set-new-password',
+            parse: {
+              access_token: (token: string) => {
+                console.log('[DEBUG] Parsing access_token:', token);
+                return token;
+              },
+              refresh_token: (token: string) => {
+                console.log('[DEBUG] Parsing refresh_token:', token);
+                return token;
+              },
+              type: (type: string) => {
+                console.log('[DEBUG] Parsing type:', type);
+                return type;
+              },
+            },
+          },
           EmailConfirm: 'verify-email',
         },
       },
@@ -79,7 +114,15 @@ const AppContent: React.FC = () => {
   const navigationRef = React.useRef<NavigationContainerRef<RootStackParamList> | null>(null);
 
   React.useEffect(() => {
-    void analyticsService.logAppOpen();
+    // Initialize Firebase first
+    firebaseService.initialize().then((isInitialized) => {
+      logger.debug('Firebase initialized:', { extra: { isInitialized } });
+
+      // Only log analytics if Firebase is properly initialized
+      if (isInitialized) {
+        void analyticsService.logAppOpen();
+      }
+    });
 
     // Initialize notification service on app start
     notificationService.initialize().then((hasPermissions) => {
@@ -188,6 +231,12 @@ const AppContent: React.FC = () => {
           void analyticsService.logScreenView(currentRouteName);
         }
         routeNameRef.current = currentRouteName;
+      }}
+      onReady={() => {
+        console.log('Navigation ready');
+      }}
+      onUnhandledAction={(action) => {
+        console.log('Unhandled navigation action:', action);
       }}
     >
       <StatusBar style={statusBarStyle} />

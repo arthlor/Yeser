@@ -1,7 +1,6 @@
-import { getAnalytics } from '@react-native-firebase/analytics';
+import analytics from '@react-native-firebase/analytics';
 import { logger } from '@/utils/debugConfig';
-
-const analytics = getAnalytics();
+import { firebaseService } from './firebaseService';
 
 /**
  * Logs a screen view event to Firebase Analytics.
@@ -10,7 +9,13 @@ const analytics = getAnalytics();
  */
 const logScreenView = async (screenName: string): Promise<void> => {
   try {
-    await analytics.logScreenView({
+    // Ensure Firebase is initialized before using analytics
+    if (!firebaseService.isFirebaseReady()) {
+      logger.warn('Firebase not ready, skipping screen view log');
+      return;
+    }
+
+    await analytics().logScreenView({
       screen_name: screenName,
       screen_class: screenName, // Often same as screen_name for RN apps
     });
@@ -30,7 +35,13 @@ const logEvent = async (
   params?: Record<string, string | number | boolean | null>
 ): Promise<void> => {
   try {
-    await analytics.logEvent(eventName, params);
+    // Ensure Firebase is initialized before using analytics
+    if (!firebaseService.isFirebaseReady()) {
+      logger.warn('Firebase not ready, skipping event log');
+      return;
+    }
+
+    await analytics().logEvent(eventName, params);
     // logger.debug(`Analytics: Event logged - ${eventName}`, params || '');
   } catch (error) {
     logger.error(`Failed to log event '${eventName}' to Firebase Analytics`, error as Error);
@@ -43,7 +54,13 @@ const logEvent = async (
  */
 const logAppOpen = async (): Promise<void> => {
   try {
-    await analytics.logAppOpen();
+    // Ensure Firebase is initialized before using analytics
+    if (!firebaseService.isFirebaseReady()) {
+      logger.warn('Firebase not ready, skipping app open log');
+      return;
+    }
+
+    await analytics().logAppOpen();
     // logger.debug('Analytics: App open event logged');
   } catch (error) {
     logger.error('Failed to log app_open event to Firebase Analytics', error as Error);

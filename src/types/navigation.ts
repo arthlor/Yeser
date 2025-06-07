@@ -9,6 +9,8 @@ import { GratitudeEntry } from '../schemas/gratitudeEntrySchema';
 export interface AuthStackParamList extends Record<string, object | undefined> {
   Login: undefined; // No params expected for Login screen
   SignUp: undefined; // No params expected for SignUp screen
+  ResetPassword: undefined; // Password reset screen
+  SetNewPassword: { access_token?: string; refresh_token?: string; type?: string } | undefined; // Set new password after reset
   EmailConfirm: { token?: string; type?: string } | undefined; // For email verification deep link
   // Add other auth screens here, e.g., ForgotPassword: undefined;
 }

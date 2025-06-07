@@ -34,6 +34,30 @@ export const signupSchema = z
 export type SignupFormInputs = z.infer<typeof signupSchema>;
 
 // Password strength helper for UI feedback
+export const resetPasswordSchema = z.object({
+  email: z.string().email('Geçersiz e-posta adresi.'),
+});
+
+export type ResetPasswordFormInputs = z.infer<typeof resetPasswordSchema>;
+
+export const setNewPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, 'Şifre en az 8 karakter olmalıdır.')
+      .regex(
+        passwordComplexityRegex,
+        'Şifre en az bir küçük harf, büyük harf, rakam ve özel karakter (@$!%*?&) içermelidir.'
+      ),
+    confirmPassword: z.string().min(8, 'Şifre onayı en az 8 karakter olmalıdır.'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Şifreler eşleşmiyor.',
+    path: ['confirmPassword'],
+  });
+
+export type SetNewPasswordFormInputs = z.infer<typeof setNewPasswordSchema>;
+
 export const getPasswordStrength = (password: string) => {
   const hasMinLength = password.length >= 8;
   const hasLowercase = /[a-z]/.test(password);
@@ -49,8 +73,8 @@ export const getPasswordStrength = (password: string) => {
     { met: hasSymbol, text: 'Özel karakter (@$!%*?&)' },
   ];
 
-  const metCount = requirements.filter(req => req.met).length;
-  
+  const metCount = requirements.filter((req) => req.met).length;
+
   let strength: 'weak' | 'fair' | 'good' | 'strong' = 'weak';
   if (metCount >= 5) {
     strength = 'strong';

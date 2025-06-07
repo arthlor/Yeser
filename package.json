@@ -21,7 +21,13 @@
     "fix:all": "npm run fix:console && npm run fix:styles && npm run fix:typescript && npm run fix:eslint",
     "lint:fix": "eslint src/ --fix",
     "lint:check": "eslint src/ --max-warnings=0",
-    "quality:report": "eslint src/ --format=json > lint-report.json && echo 'Quality report generated: lint-report.json'"
+    "quality:report": "eslint src/ --format=json > lint-report.json && echo 'Quality report generated: lint-report.json'",
+    "cleanup:styles": "node scripts/cleanup-unused-styles.js",
+    "cleanup:types": "node scripts/fix-any-types.js",
+    "cleanup:hooks": "node scripts/fix-hook-dependencies.js",
+    "cleanup:lint": "node scripts/lint-cleanup.js",
+    "cleanup:phase2": "npm run cleanup:styles && npm run cleanup:types && npm run cleanup:hooks && npm run cleanup:lint",
+    "analyze:safe": "node scripts/analyze-only.cjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.1.2",

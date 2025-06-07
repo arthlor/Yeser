@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Animated,
   Dimensions,
@@ -85,10 +85,10 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
     return Math.max(0, Math.min(100, progress));
   };
 
-  const handleGoBack = (): void => {
+  const handleGoBack = useCallback((): void => {
     hapticFeedback.light();
     navigation.goBack();
-  };
+  }, [navigation]);
 
   const currentMilestone = getCurrentMilestone();
   const nextMilestone = getNextMilestone();

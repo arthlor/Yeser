@@ -5,20 +5,20 @@ import LottieView from 'lottie-react-native';
 
 import splashAnimation from '@/assets/animations/splash.json';
 
-import { ScreenContent, ScreenLayout } from '@/shared/components/layout';
+import { ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
 import { analyticsService } from '@/services/analyticsService';
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme } from '@/themes/types';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  const { width: screenWidth } = Dimensions.get('window');
 
 /**
  * Premium splash screen with Lottie animations
  * Features sophisticated animations and modern design
  */
 const EnhancedSplashScreen: React.FC = () => {
-  const { theme, colorMode } = useTheme();
+  const { theme } = useTheme();
   const styles = createStyles(theme);
 
   // Animation refs

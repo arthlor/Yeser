@@ -4,7 +4,16 @@ import { getPrimaryShadow } from '@/themes/utils';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, FlatList, StyleSheet, Text, View } from 'react-native';
+import { 
+  Animated, 
+  Dimensions, 
+  FlatList, 
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  StyleSheet, 
+  Text, 
+  View 
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface DailyInspirationProps {
@@ -390,7 +399,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, daily
     </View>
   );
 
-  const onScroll = (event: any) => {
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffset = event.nativeEvent.contentOffset;
     const viewSize = event.nativeEvent.layoutMeasurement;
     const pageNum = Math.floor(contentOffset.x / viewSize.width);

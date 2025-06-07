@@ -8,6 +8,7 @@ import { CalendarThemeConfig, CalendarViewProps } from './types';
 import { getNextMonth, getPreviousMonth, TURKISH_LOCALIZATION } from './utils';
 import { useTheme } from '../../providers/ThemeProvider';
 import { getPrimaryShadow } from '../../themes/utils';
+import type { AppTheme } from '../../themes/types';
 
 // Configure Turkish locale for react-native-calendars
 LocaleConfig.locales.tr = {
@@ -127,7 +128,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   );
 };
 
-const createStyles = (theme: any) => StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   // Edge-to-Edge Calendar Container
   container: {
     borderRadius: 0,

@@ -31,7 +31,7 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
 
     // Track welcome step view
     analyticsService.logEvent('onboarding_welcome_viewed');
-  }, []);
+  }, [fadeAnim]);
 
   const handleGetStarted = useCallback(() => {
     hapticFeedback.success();

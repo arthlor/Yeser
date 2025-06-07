@@ -249,7 +249,7 @@ const createStyles = (
 const getVariantStyles = (
   theme: AppTheme, 
   variant: CardVariant, 
-  shadows: any, 
+  shadows: ReturnType<typeof unifiedShadows>, 
   elevation: ElevationLevel
 ) => {
   const baseCard = {

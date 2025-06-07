@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
+import { Animated, Dimensions, StyleSheet, Text, Vibration, View } from 'react-native';
 import { Easing } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
-import { getPrimaryShadow } from '@/themes/utils';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 
 interface AdvancedStreakMilestonesProps {
@@ -289,7 +288,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
   }, [currentStreak, longestStreak]);
 
   // Calculate progress to next milestone
-  const getProgressPercentage = (): number => {
+  const getProgressPercentage = useCallback((): number => {
     if (!currentMilestone || !nextMilestone) {
       return 100;
     }
@@ -297,7 +296,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
     const currentRange = currentMilestone.maxDays - currentMilestone.minDays + 1;
     const progress = currentStreak - currentMilestone.minDays + 1;
     return Math.min(100, (progress / currentRange) * 100);
-  };
+  }, [currentMilestone, nextMilestone, currentStreak]);
 
   // Haptic feedback function
   const triggerHapticFeedback = useCallback((milestone: AdvancedMilestone) => {
@@ -316,59 +315,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
     }
   }, []);
 
-  // Celebration animation
-  useEffect(() => {
-    if (showCelebration) {
-      startCelebrationAnimation();
-      // Trigger haptic feedback for milestone achievement
-      if (currentMilestone) {
-        triggerHapticFeedback(currentMilestone);
-      }
-    }
-  }, [showCelebration, currentMilestone, triggerHapticFeedback]);
-
-  const startCelebrationAnimation = () => {
-    // Scale animation
-    Animated.sequence([
-      Animated.spring(celebrationScale, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.delay(3000),
-      Animated.spring(celebrationScale, {
-        toValue: 0,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Particle effects
-    startParticleAnimation();
-
-    // Glow effect
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnimation, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-        Animated.timing(glowAnimation, {
-          toValue: 0,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-      ]),
-      { iterations: 3 }
-    ).start();
-  };
-
-  const startParticleAnimation = () => {
+  const startParticleAnimation = useCallback(() => {
     particleAnimations.forEach((particle, index) => {
       // Random positions for particles
       const randomX = (Math.random() - 0.5) * screenWidth * 0.8;
@@ -413,7 +360,59 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
         particle.translateY.setValue(0);
       });
     });
-  };
+  }, [particleAnimations]);
+
+  const startCelebrationAnimation = useCallback(() => {
+    // Scale animation
+    Animated.sequence([
+      Animated.spring(celebrationScale, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.delay(3000),
+      Animated.spring(celebrationScale, {
+        toValue: 0,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Particle effects
+    startParticleAnimation();
+
+    // Glow effect
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnimation, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnimation, {
+          toValue: 0,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ]),
+      { iterations: 3 }
+    ).start();
+  }, [celebrationScale, glowAnimation, startParticleAnimation]);
+
+  // Celebration animation
+  useEffect(() => {
+    if (showCelebration) {
+      startCelebrationAnimation();
+      // Trigger haptic feedback for milestone achievement
+      if (currentMilestone) {
+        triggerHapticFeedback(currentMilestone);
+      }
+    }
+  }, [showCelebration, currentMilestone, triggerHapticFeedback, startCelebrationAnimation]);
 
   // Progress bar animation
   useEffect(() => {
@@ -423,7 +422,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [currentStreak]);
+  }, [currentStreak, getProgressPercentage, progressAnimation]);
 
   if (!currentMilestone) {
     return null;
@@ -515,7 +514,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
         {/* Current milestone display */}
         <View style={styles.milestoneHeader}>
           <View style={styles.milestoneIconContainer}>
-            <Text style={[styles.milestoneEmoji, { fontSize: 32 }]}>
+            <Text style={styles.milestoneEmoji}>
               {currentMilestone.emoji}
             </Text>
           </View>
@@ -673,7 +672,7 @@ const createStyles = (theme: AppTheme) =>
       marginRight: theme.spacing.sm,
     },
     milestoneEmoji: {
-      // Icon styling handled in component
+      fontSize: 32,
     },
     milestoneInfo: {
       flex: 1,

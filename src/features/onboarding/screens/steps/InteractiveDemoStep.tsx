@@ -51,7 +51,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
       duration: 400,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   useEffect(() => {
     if (showSuccess) {
@@ -62,7 +62,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
         useNativeDriver: true,
       }).start();
     }
-  }, [showSuccess]);
+  }, [showSuccess, successAnim]);
 
   const handleStatementSubmit = useCallback(
     (statement: string) => {

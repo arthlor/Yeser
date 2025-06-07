@@ -7,19 +7,43 @@ import { Platform } from 'react-native';
 import { supabase } from '../utils/supabaseClient'; // Ensure this path is correct for your Supabase client
 import { logger } from '@/utils/debugConfig';
 import { handleAPIError } from '@/utils/apiHelpers';
+import type { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 
 const EXPORT_FUNCTION_NAME = 'export-user-data';
 
 /**
  * Creates an HTML template for the PDF export
  */
-const createPDFTemplate = (data: any): string => {
+interface UserProfile {
+  username?: string;
+  email?: string;
+  daily_gratitude_goal?: number;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+interface ExportMetadata {
+  total_entries?: number;
+  total_statements?: number;
+  active_months?: number;
+  export_date?: string;
+  [key: string]: unknown;
+}
+
+interface ExportData {
+  profile?: UserProfile;
+  gratitude_entries?: GratitudeEntry[];
+  metadata?: ExportMetadata;
+  export_date?: string;
+}
+
+const createPDFTemplate = (data: ExportData): string => {
   const profile = data.profile || {};
   const entries = data.gratitude_entries || [];
   const metadata = data.metadata || {};
 
   // Group entries by month for better organization
-  const entriesByMonth = entries.reduce((acc: any, entry: any) => {
+  const entriesByMonth = entries.reduce((acc: Record<string, GratitudeEntry[]>, entry: GratitudeEntry) => {
     const date = new Date(entry.entry_date);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     if (!acc[monthKey]) {
@@ -280,7 +304,7 @@ const createPDFTemplate = (data: any): string => {
             <div class="stat-label">Toplam Giriş</div>
           </div>
           <div class="stat-item">
-            <span class="stat-number">${metadata.total_statements || entries.reduce((total: number, entry: any) => total + (entry.statements?.length || 0), 0)}</span>
+            <span class="stat-number">${metadata.total_statements || entries.reduce((total: number, entry: GratitudeEntry) => total + (entry.statements?.length || 0), 0)}</span>
             <div class="stat-label">Toplam Minnet</div>
           </div>
           <div class="stat-item">
@@ -303,11 +327,11 @@ const createPDFTemplate = (data: any): string => {
               </div>
               ${entriesByMonth[monthKey]
                 .sort(
-                  (a: any, b: any) =>
+                  (a: GratitudeEntry, b: GratitudeEntry) =>
                     new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
                 )
                 .map(
-                  (entry: any) => `
+                  (entry: GratitudeEntry) => `
                   <div class="entry">
                     <div class="entry-date">${formatDate(entry.entry_date)}</div>
                     <ul class="statements-list">
@@ -332,7 +356,7 @@ const createPDFTemplate = (data: any): string => {
       <div class="footer">
         <p><strong>Yeşer</strong> - Minnet Günlüğü Uygulaması</p>
         <p>Bu veriler ${formatDate(data.export_date || new Date().toISOString())} tarihinde dışa aktarılmıştır.</p>
-        <p>Toplam ${metadata.total_entries || 0} giriş ve ${metadata.total_statements || entries.reduce((total: number, entry: any) => total + (entry.statements?.length || 0), 0)} minnet içermektedir.</p>
+        <p>Toplam ${metadata.total_entries || 0} giriş ve ${metadata.total_statements || entries.reduce((total: number, entry: GratitudeEntry) => total + (entry.statements?.length || 0), 0)} minnet içermektedir.</p>
       </div>
     </body>
     </html>

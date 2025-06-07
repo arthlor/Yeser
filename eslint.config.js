@@ -1,25 +1,10 @@
 // eslint.config.js
 import js from '@eslint/js';
-import eslintConfigPrettier from 'eslint-config-prettier';
-import importPlugin from 'eslint-plugin-import';
-import jsxA11yPlugin from 'eslint-plugin-jsx-a11y';
-import prettierPlugin from 'eslint-plugin-prettier';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactNativePlugin from 'eslint-plugin-react-native';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
 import tsParser from '@typescript-eslint/parser';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
-
-// Helper to trim keys from global objects (remains useful)
-const cleanGlobals = (globalSet) => {
-  const cleaned = {};
-  for (const key in globalSet) {
-    cleaned[key.trim()] = globalSet[key];
-  }
-  return cleaned;
-};
 
 export default [
   js.configs.recommended,
@@ -80,7 +65,7 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
-      'react': reactPlugin,
+      react: reactPlugin,
       'react-hooks': reactHooksPlugin,
       'react-native': reactNativePlugin,
     },
@@ -100,7 +85,7 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
 
       // React Native rules
-      'react-native/no-unused-styles': 'warn',
+      'react-native/no-unused-styles': 'off', // Disabled due to false positives with memoized styles (GitHub issues #276, #320, #321)
       'react-native/split-platform-components': 'off',
       'react-native/no-inline-styles': 'warn',
       'react-native/no-color-literals': 'warn',
@@ -112,14 +97,17 @@ export default [
       'no-unused-vars': 'off', // Use TypeScript version instead
       'prefer-const': 'error',
       'no-var': 'error',
-      'eqeqeq': ['error', 'always'],
-      'curly': ['error', 'all'],
+      eqeqeq: ['error', 'always'],
+      curly: ['error', 'all'],
 
       // Import organization
-      'sort-imports': ['error', {
-        ignoreCase: true,
-        ignoreDeclarationSort: true,
-      }],
+      'sort-imports': [
+        'error',
+        {
+          ignoreCase: true,
+          ignoreDeclarationSort: true,
+        },
+      ],
     },
     settings: {
       react: {

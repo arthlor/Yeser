@@ -12,7 +12,7 @@ import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
 import StatementEditCard from '@/shared/components/ui/StatementEditCard';
 import { AppTheme } from '@/themes/types';
-import { MainAppTabParamList } from '@/types/navigation';
+import { MainTabParamList } from '@/types/navigation';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { analyticsService } from '@/services/analyticsService';
 
@@ -38,7 +38,7 @@ import {
 import { ZodError } from 'zod';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-type DailyEntryScreenRouteProp = RouteProp<MainAppTabParamList, 'DailyEntryTab'>;
+type DailyEntryScreenRouteProp = RouteProp<MainTabParamList, 'DailyEntryTab'>;
 
 interface Props {
   route?: DailyEntryScreenRouteProp;

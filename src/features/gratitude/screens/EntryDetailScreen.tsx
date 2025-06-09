@@ -28,6 +28,7 @@ import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
 import { ZodError } from 'zod';
 import { getPrimaryShadow } from '@/themes/utils';
 import { logger } from '@/utils/debugConfig';
+import { analyticsService } from '@/services/analyticsService';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -76,6 +77,20 @@ const EnhancedEntryDetailScreen: React.FC<{
 
   // Use live data or fallback to route params
   const gratitudeItems = currentEntry?.statements || [];
+
+  // Analytics tracking
+  useEffect(() => {
+    analyticsService.logScreenView('entry_detail_screen');
+
+    // Track detailed entry context
+    analyticsService.logEvent('entry_detail_viewed', {
+      entry_date: entryDate,
+      statements_count: gratitudeItems.length,
+      is_today: entryDate === new Date().toISOString().split('T')[0],
+      is_loading: isLoadingEntry,
+      has_error: !!entryError,
+    });
+  }, [entryDate, gratitudeItems.length, isLoadingEntry, entryError]);
 
   // Enhanced date formatting with relative time
   const formatEntryDate = () => {

@@ -46,6 +46,7 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
     ]).start();
 
     // Track welcome step view
+    analyticsService.logScreenView('onboarding_welcome_step');
     analyticsService.logEvent('onboarding_welcome_viewed');
   }, [fadeAnim, slideAnim, cardsAnim]);
 
@@ -126,7 +127,8 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
           ]}
         >
           <Text style={styles.encouragementText}>
-            Bu süreç sadece birkaç dakika alacak ve sonunda seni{'\n'}tamamen yansıtan bir deneyime sahip olacaksın.
+            Bu süreç sadece birkaç dakika alacak ve sonunda seni{'\n'}tamamen yansıtan bir deneyime
+            sahip olacaksın.
           </Text>
         </Animated.View>
 

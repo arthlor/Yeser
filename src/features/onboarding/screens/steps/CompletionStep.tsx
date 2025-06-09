@@ -74,6 +74,9 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
     );
     rotateAnimation.start();
 
+    // Analytics tracking
+    analyticsService.logScreenView('onboarding_completion_step');
+
     // Track completion
     analyticsService.logEvent('onboarding_completed', {
       username_length: userSummary.username.length,
@@ -85,7 +88,17 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
     return () => {
       rotateAnimation.stop();
     };
-  }, [userSummary.username, userSummary.dailyGoal, userSummary.selectedTheme, userSummary.featuresEnabled, fadeAnim, slideAnim, scaleAnim, celebrationAnim, sparkleRotation]);
+  }, [
+    userSummary.username,
+    userSummary.dailyGoal,
+    userSummary.selectedTheme,
+    userSummary.featuresEnabled,
+    fadeAnim,
+    slideAnim,
+    scaleAnim,
+    celebrationAnim,
+    sparkleRotation,
+  ]);
 
   const handleStartJourney = useCallback(() => {
     hapticFeedback.success();

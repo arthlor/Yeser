@@ -26,7 +26,7 @@ export interface RootStackParamList extends Record<string, object | undefined> {
   Onboarding: undefined;
   OnboardingReminderSetup: undefined;
   ReminderSettings: undefined;
-  EntryDetail: { entryId: string };
+  EntryDetail: { entryId: string; entryDate?: string };
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
   Help: undefined;

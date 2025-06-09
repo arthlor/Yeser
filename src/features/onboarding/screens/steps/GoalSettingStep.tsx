@@ -38,6 +38,9 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Analytics tracking
+    analyticsService.logScreenView('onboarding_goal_setting_step');
+
     // Simple entrance animation
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -121,7 +124,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
   );
 
   return (
-          <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <ScreenLayout edges={['top']} edgeToEdge={true}>
       <Animated.View
         style={[
           styles.container,
@@ -342,7 +345,6 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.bodyMedium,
       fontWeight: '600',
     },
-
   });
 
 export default GoalSettingStep;

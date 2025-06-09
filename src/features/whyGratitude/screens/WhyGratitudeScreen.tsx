@@ -43,12 +43,16 @@ export const WhyGratitudeScreen: React.FC = () => {
 
   // Track screen view
   React.useEffect(() => {
+    analyticsService.logScreenView('why_gratitude_screen');
+
+    // Track additional context as custom event
     analyticsService.logEvent('why_gratitude_viewed', {
-      screen_name: 'WhyGratitudeScreen',
       user_id: profile?.id || 'anonymous',
+      user_streak: streak?.current_streak || 0,
+      has_benefits_data: !!benefits?.length,
       timestamp: Date.now(),
     });
-  }, [profile?.id]);
+  }, [profile?.id, streak?.current_streak, benefits?.length]);
 
   // Memoized event handlers
   const handleStartJournaling = useCallback(

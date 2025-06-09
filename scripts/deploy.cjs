@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/* eslint-disable no-undef, no-console, no-case-declarations */
+
 /**
  * Deployment Management Script
  * 

@@ -90,9 +90,9 @@ describe('authStore', () => {
       const state = useAuthStore.getState();
 
       expect(typeof state.initializeAuth).toBe('function');
-      expect(typeof state.loginWithEmail).toBe('function');
+      expect(typeof state.loginWithMagicLink).toBe('function');
       expect(typeof state.loginWithGoogle).toBe('function');
-      expect(typeof state.signUpWithEmail).toBe('function');
+      expect(typeof state.confirmMagicLink).toBe('function');
       expect(typeof state.logout).toBe('function');
       expect(typeof state.setLoading).toBe('function');
       expect(typeof state.setError).toBe('function');
@@ -138,8 +138,8 @@ describe('authStore', () => {
 
       // Verify async methods exist and can be called (but we don't test implementation)
       expect(typeof state.initializeAuth).toBe('function');
-      expect(typeof state.loginWithEmail).toBe('function');
-      expect(typeof state.signUpWithEmail).toBe('function');
+      expect(typeof state.loginWithMagicLink).toBe('function');
+      expect(typeof state.confirmMagicLink).toBe('function');
       expect(typeof state.loginWithGoogle).toBe('function');
       expect(typeof state.logout).toBe('function');
     });

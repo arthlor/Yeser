@@ -35,7 +35,7 @@ type CalendarViewScreenNavigationProp = CompositeNavigationProp<
 const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
   const navigation = useNavigation<CalendarViewScreenNavigationProp>();
   const { theme } = useTheme();
-  
+
   // 🚨 FIX: Memoize styles to prevent infinite re-renders on iOS
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -81,6 +81,21 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
       }),
     ]).start();
   }, [fadeAnim, slideAnim]);
+
+  // Analytics tracking
+  useEffect(() => {
+    analyticsService.logScreenView('calendar_screen');
+
+    // Track calendar context
+    analyticsService.logEvent('calendar_screen_viewed', {
+      current_year: currentMonth.getFullYear(),
+      current_month: currentMonth.getMonth() + 1,
+      total_entry_dates: entryDates.length,
+      has_selected_date: !!selectedDate,
+      selected_date: selectedDate || null,
+      has_entry_for_selected: !!selectedEntry,
+    });
+  }, [currentMonth, entryDates.length, selectedDate, selectedEntry]);
 
   // 🚨 FIX: Update marked dates when entry dates change - OPTIMIZED FOR iOS
   useEffect(() => {
@@ -130,27 +145,30 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
   }, []);
 
   // 🚨 FIX: Handle day selection - Optimized dependencies for iOS
-  const handleDayPress = useCallback((day: DateData): void => {
-    const newSelectedDate = day.dateString;
-    setSelectedDate(newSelectedDate);
+  const handleDayPress = useCallback(
+    (day: DateData): void => {
+      const newSelectedDate = day.dateString;
+      setSelectedDate(newSelectedDate);
 
-    // Update marked dates with selection - Use functional update for stability
-    setMarkedDates(prevMarkedDates => {
-      const updatedMarkedDates = updateMarkedDatesWithSelection(
-        prevMarkedDates,
-        newSelectedDate,
-        primaryColor,
-        onPrimaryColor,
-        primaryColor
-      );
-      return updatedMarkedDates;
-    });
+      // Update marked dates with selection - Use functional update for stability
+      setMarkedDates((prevMarkedDates) => {
+        const updatedMarkedDates = updateMarkedDatesWithSelection(
+          prevMarkedDates,
+          newSelectedDate,
+          primaryColor,
+          onPrimaryColor,
+          primaryColor
+        );
+        return updatedMarkedDates;
+      });
 
-    analyticsService.logEvent('calendar_day_selected', {
-      date: newSelectedDate,
-      has_entry: Boolean(selectedEntry),
-    });
-  }, [primaryColor, onPrimaryColor, selectedEntry]); // 🚨 FIX: Remove markedDates dependency to prevent loops
+      analyticsService.logEvent('calendar_day_selected', {
+        date: newSelectedDate,
+        has_entry: Boolean(selectedEntry),
+      });
+    },
+    [primaryColor, onPrimaryColor, selectedEntry]
+  ); // 🚨 FIX: Remove markedDates dependency to prevent loops
 
   // Navigation handlers - Memoized for stability
   const handleAddNewEntry = useCallback((): void => {

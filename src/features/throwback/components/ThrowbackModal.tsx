@@ -14,6 +14,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { alpha, getPrimaryShadow } from '@/themes/utils';
 import { formatDate as formatUtilityDate } from '@/utils/dateUtils';
+import { analyticsService } from '@/services/analyticsService';
 
 interface EnhancedThrowbackModalProps {
   isVisible: boolean;
@@ -43,17 +44,42 @@ const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisib
   useEffect(() => {
     if (isVisible && hasRandomEntry) {
       setModalActuallyVisible(true);
+
+      // Track modal view
+      analyticsService.logScreenView('throwback_modal');
+
+      // Track throwback content analytics
+      if (randomEntry) {
+        analyticsService.logEvent('throwback_modal_viewed', {
+          entry_date: randomEntry.entry_date,
+          statements_count: randomEntry.statements?.length || 0,
+          entry_age_days: Math.floor(
+            (Date.now() - new Date(randomEntry.entry_date).getTime()) / (1000 * 60 * 60 * 24)
+          ),
+          has_content: !!(randomEntry.statements && randomEntry.statements.length > 0),
+        });
+      }
     } else {
       setModalActuallyVisible(false);
     }
-  }, [isVisible, hasRandomEntry]);
+  }, [isVisible, hasRandomEntry, randomEntry]);
 
   const handleClose = async () => {
+    analyticsService.logEvent('throwback_modal_closed', {
+      interaction_type: 'close_button',
+      entry_date: randomEntry?.entry_date || null,
+    });
+
     await hideThrowback(); // Clears cache and updates timestamp
     onClose();
   };
 
   const handleRefresh = () => {
+    analyticsService.logEvent('throwback_modal_refreshed', {
+      previous_entry_date: randomEntry?.entry_date || null,
+      interaction_type: 'refresh_button',
+    });
+
     refreshThrowback(); // Fetches new random entry
   };
 

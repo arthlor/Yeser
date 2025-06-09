@@ -14,11 +14,11 @@ import PastEntriesErrorState from '@/components/past-entries/PastEntriesErrorSta
 import PastEntriesSkeletonLoader from '@/components/past-entries/PastEntriesSkeletonLoader';
 import type { AppTheme } from '@/themes/types';
 import type { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
-import { MainAppTabParamList, RootStackParamList } from '@/types/navigation';
+import { MainTabParamList, RootStackParamList } from '@/types/navigation';
 
 // Define navigation prop types
 type PastEntriesScreenNavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainAppTabParamList, 'PastEntriesTab'>,
+  BottomTabNavigationProp<MainTabParamList, 'PastEntriesTab'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
 
@@ -86,7 +86,7 @@ const PastEntriesScreen: React.FC = () => {
         entry_date: entry.entry_date !== undefined ? entry.entry_date : null,
       });
 
-      navigation.navigate('EntryDetail', { entryDate: entry.entry_date });
+      navigation.navigate('EntryDetail', { entryId: entry.id || '', entryDate: entry.entry_date });
     },
     [navigation]
   );

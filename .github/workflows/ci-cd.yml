@@ -38,6 +38,10 @@ jobs:
         run: |
           echo "Validating environment configuration..."
           npm run validate-env:dev
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_LOG_LEVEL: warn
 
       - name: 🎯 TypeScript Check
         run: |

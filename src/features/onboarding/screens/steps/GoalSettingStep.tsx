@@ -68,7 +68,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
   }, [selectedGoal, onNext]);
 
   const renderGoalOption = useCallback(
-    (option: (typeof GOAL_OPTIONS)[0], index: number) => {
+    (option: (typeof GOAL_OPTIONS)[0], _index: number) => {
       const isSelected = selectedGoal === option.value;
 
       return (

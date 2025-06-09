@@ -13,7 +13,7 @@ export interface AuthStackParamList extends Record<string, object | undefined> {
 // Main app navigator
 export interface MainTabParamList extends Record<string, object | undefined> {
   HomeTab: undefined;
-  DailyEntryTab: undefined;
+  DailyEntryTab: { initialDate?: string } | undefined;
   PastEntriesTab: undefined;
   CalendarTab: undefined;
   SettingsTab: undefined;

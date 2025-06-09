@@ -53,7 +53,10 @@ const EnhancedEntryDetailScreen: React.FC<{
   navigation: EntryDetailScreenNavigationProp;
 }> = ({ route }) => {
   const { theme } = useTheme();
-  const { entryDate } = route.params;
+  const { entryDate: routeEntryDate } = route.params;
+
+  // Provide fallback for entryDate if not provided
+  const entryDate = routeEntryDate || new Date().toISOString().split('T')[0];
 
   // Live data fetching for real-time updates
   const {

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { ThemedCard } from '@/shared/components/ui';
@@ -13,8 +13,6 @@ import { analyticsService } from '@/services/analyticsService';
 
 import type { AppTheme } from '@/themes/types';
 import type { AdvancedMilestone } from '@/features/streak/components/AdvancedStreakMilestones';
-
-const { width: screenWidth } = Dimensions.get('window');
 
 interface StreakDetailsScreenProps {
   navigation: {
@@ -33,6 +31,32 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+
+  const getCurrentMilestone = useCallback((): AdvancedMilestone => {
+    return (
+      ADVANCED_MILESTONES.find(
+        (milestone) => currentStreak >= milestone.minDays && currentStreak <= milestone.maxDays
+      ) || ADVANCED_MILESTONES[0]
+    );
+  }, [currentStreak]);
+
+  const getNextMilestone = useCallback((): AdvancedMilestone | null => {
+    return ADVANCED_MILESTONES.find((milestone) => milestone.minDays > currentStreak) || null;
+  }, [currentStreak]);
+
+  const getProgressPercentage = useCallback((): number => {
+    const nextMilestone = getNextMilestone();
+    if (!nextMilestone) {
+      return 100;
+    }
+
+    const currentMilestone = getCurrentMilestone();
+    const progress =
+      ((currentStreak - currentMilestone.minDays) /
+        (nextMilestone.minDays - currentMilestone.minDays)) *
+      100;
+    return Math.max(0, Math.min(100, progress));
+  }, [currentStreak, getCurrentMilestone, getNextMilestone]);
 
   useEffect(() => {
     Animated.parallel([
@@ -70,35 +94,12 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
       progress_percentage: Math.round(getProgressPercentage()),
       unlocked_milestones_count: ADVANCED_MILESTONES.filter((m) => currentStreak >= m.minDays)
         .length,
-      days_to_next_milestone: getNextMilestone() ? getNextMilestone()!.minDays - currentStreak : 0,
+      days_to_next_milestone: (() => {
+        const milestone = getNextMilestone();
+        return milestone ? milestone.minDays - currentStreak : 0;
+      })(),
     });
-  }, [currentStreak, longestStreak]);
-
-  const getCurrentMilestone = (): AdvancedMilestone => {
-    return (
-      ADVANCED_MILESTONES.find(
-        (milestone) => currentStreak >= milestone.minDays && currentStreak <= milestone.maxDays
-      ) || ADVANCED_MILESTONES[0]
-    );
-  };
-
-  const getNextMilestone = (): AdvancedMilestone | null => {
-    return ADVANCED_MILESTONES.find((milestone) => milestone.minDays > currentStreak) || null;
-  };
-
-  const getProgressPercentage = (): number => {
-    const nextMilestone = getNextMilestone();
-    if (!nextMilestone) {
-      return 100;
-    }
-
-    const currentMilestone = getCurrentMilestone();
-    const progress =
-      ((currentStreak - currentMilestone.minDays) /
-        (nextMilestone.minDays - currentMilestone.minDays)) *
-      100;
-    return Math.max(0, Math.min(100, progress));
-  };
+  }, [currentStreak, longestStreak, getCurrentMilestone, getNextMilestone, getProgressPercentage]);
 
   const handleGoBack = useCallback((): void => {
     hapticFeedback.light();
@@ -295,13 +296,14 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
             </View>
 
             <View style={styles.milestonesGrid}>
-              {ADVANCED_MILESTONES.slice(0, 12).map((milestone, index) => {
+              {ADVANCED_MILESTONES.slice(0, 12).map((milestone, _index) => {
                 const isUnlocked = currentStreak >= milestone.minDays;
                 return (
                   <View
                     key={milestone.id}
                     style={[
                       styles.milestoneItem,
+                      isUnlocked ? styles.milestoneItemUnlocked : styles.milestoneItemLocked,
                       {
                         backgroundColor: isUnlocked
                           ? milestone.colorPrimary + '12'
@@ -309,12 +311,16 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                         borderColor: isUnlocked
                           ? milestone.colorPrimary + '30'
                           : theme.colors.outline + '20',
-                        opacity: isUnlocked ? 1 : 0.6,
                       },
                     ]}
                   >
                     <View style={styles.milestoneContent}>
-                      <Text style={[styles.milestoneEmoji, { opacity: isUnlocked ? 1 : 0.5 }]}>
+                      <Text
+                        style={[
+                          styles.milestoneEmoji,
+                          isUnlocked ? styles.milestoneEmojiUnlocked : styles.milestoneEmojiLocked,
+                        ]}
+                      >
                         {milestone.emoji}
                       </Text>
                       <Text
@@ -664,6 +670,18 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.surface,
       borderRadius: 8,
       padding: 2,
+    },
+    milestoneItemUnlocked: {
+      opacity: 1,
+    },
+    milestoneItemLocked: {
+      opacity: 0.6,
+    },
+    milestoneEmojiUnlocked: {
+      opacity: 1,
+    },
+    milestoneEmojiLocked: {
+      opacity: 0.5,
     },
 
     // Bottom Spacing

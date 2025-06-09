@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Animated, Easing, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, IconButton } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -123,11 +123,6 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
       themeMap[userSummary.selectedTheme as keyof typeof themeMap] || userSummary.selectedTheme
     );
   };
-
-  const sparkleRotate = sparkleRotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
 
   const styles = createStyles(theme);
 

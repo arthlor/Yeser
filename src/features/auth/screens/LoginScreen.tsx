@@ -1,4 +1,3 @@
-// src/features/auth/screens/LoginScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,7 +28,6 @@ import useAuthStore from '@/store/authStore';
 import { AppTheme } from '@/themes/types';
 import { AuthStackParamList } from '@/types/navigation';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
-import { NetworkDiagnostics } from '@/components/debug/NetworkDiagnostics';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -431,7 +429,6 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
           <View style={styles.contentArea}>
             {renderMainContent()}
             {!magicLinkSent && renderGoogleSection()}
-            {__DEV__ && <NetworkDiagnostics />}
           </View>
         </View>
       </LinearGradient>

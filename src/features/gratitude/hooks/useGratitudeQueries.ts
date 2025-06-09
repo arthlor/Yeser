@@ -116,16 +116,5 @@ export const useRandomGratitudeEntry = () => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
   });
 
-  // Additional debugging for query state
-  logger.debug('useRandomGratitudeEntry: Query state', {
-    isEnabled: query.isLoading !== undefined, // Query is active
-    isLoading: query.isLoading,
-    isFetching: query.isFetching,
-    hasData: !!query.data,
-    hasError: !!query.error,
-    status: query.status,
-    fetchStatus: query.fetchStatus,
-  });
-
   return query;
 };

@@ -30,6 +30,9 @@ export const rawProfileDataSchema = z.object({
   throwback_reminder_enabled: z.boolean(),
   throwback_reminder_frequency: z.enum(['daily', 'weekly', 'monthly', 'disabled']),
   throwback_reminder_time: timePreprocessor,
+  created_at: z
+    .string()
+    .datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
   updated_at: z
     .string()
     .datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
@@ -41,29 +44,22 @@ export type RawProfileData = z.infer<typeof rawProfileDataSchema>;
 
 // 🚨 FIX: Application schema using .transform() to handle snake_case to camelCase conversion
 // This creates a single source of truth and eliminates duplication
-export const profileSchema = rawProfileDataSchema
-  .extend({
-    // Add created_at field for application layer
-    created_at: z
-      .string()
-      .datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
-  })
-  .transform((data) => ({
-    ...data,
-    // 🚨 FIX: Handle snake_case to camelCase conversion safely
-    useVariedPrompts: data.use_varied_prompts,
-    // Keep both for backward compatibility if needed
-    use_varied_prompts: data.use_varied_prompts,
-    // Make fields optional for application layer flexibility
-    username: data.username ?? undefined,
-    onboarded: data.onboarded ?? false,
-    reminder_enabled: data.reminder_enabled ?? false,
-    reminder_time: data.reminder_time ?? undefined,
-    throwback_reminder_enabled: data.throwback_reminder_enabled ?? false,
-    throwback_reminder_frequency: data.throwback_reminder_frequency ?? 'disabled',
-    throwback_reminder_time: data.throwback_reminder_time ?? undefined,
-    daily_gratitude_goal: data.daily_gratitude_goal ?? undefined,
-  }));
+export const profileSchema = rawProfileDataSchema.transform((data) => ({
+  ...data,
+  // 🚨 FIX: Handle snake_case to camelCase conversion safely
+  useVariedPrompts: data.use_varied_prompts,
+  // Keep both for backward compatibility if needed
+  use_varied_prompts: data.use_varied_prompts,
+  // Make fields optional for application layer flexibility
+  username: data.username ?? undefined,
+  onboarded: data.onboarded ?? false,
+  reminder_enabled: data.reminder_enabled ?? false,
+  reminder_time: data.reminder_time ?? undefined,
+  throwback_reminder_enabled: data.throwback_reminder_enabled ?? false,
+  throwback_reminder_frequency: data.throwback_reminder_frequency ?? 'disabled',
+  throwback_reminder_time: data.throwback_reminder_time ?? undefined,
+  daily_gratitude_goal: data.daily_gratitude_goal ?? undefined,
+}));
 
 export type Profile = z.infer<typeof profileSchema>;
 

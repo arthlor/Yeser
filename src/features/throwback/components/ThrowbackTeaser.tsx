@@ -31,209 +31,213 @@ interface ThrowbackTeaserProps {
   onRefresh?: () => void; // Refresh to get a new random entry
 }
 
-const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = ({
-  throwbackEntry,
-  isLoading,
-  error,
-  onRefresh,
-}) => {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
+  ({ throwbackEntry, isLoading, error, onRefresh }) => {
+    const { theme } = useTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
-  // Optimized animation values to prevent flickering
-  const refreshRotation = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+    // Optimized animation values to prevent flickering
+    const refreshRotation = useRef(new Animated.Value(0)).current;
+    const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Enhanced refresh handler with controlled animation
-  const handleRefresh = useCallback(() => {
-    if (!onRefresh) {
-      return;
-    }
+    // Enhanced refresh handler with controlled animation
+    const handleRefresh = useCallback(() => {
+      if (!onRefresh) {
+        return;
+      }
 
-    // Simple refresh button rotation
-    Animated.timing(refreshRotation, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start(() => {
-      refreshRotation.setValue(0);
-    });
+      // Simple refresh button rotation
+      Animated.timing(refreshRotation, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }).start(() => {
+        refreshRotation.setValue(0);
+      });
 
-    onRefresh();
-  }, [onRefresh, refreshRotation]);
+      onRefresh();
+    }, [onRefresh, refreshRotation]);
 
-  // Controlled pulse animation for loading state only
-  React.useEffect(() => {
-    if (isLoading) {
-      pulseAnim.setValue(1);
-      const pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 0.98,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulseAnimation.start();
-      return () => {
-        pulseAnimation.stop();
+    // Controlled pulse animation for loading state only
+    React.useEffect(() => {
+      if (isLoading) {
         pulseAnim.setValue(1);
-      };
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [isLoading, pulseAnim]);
+        const pulseAnimation = Animated.loop(
+          Animated.sequence([
+            Animated.timing(pulseAnim, {
+              toValue: 0.98,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseAnim, {
+              toValue: 1,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+        pulseAnimation.start();
+        return () => {
+          pulseAnimation.stop();
+          pulseAnim.setValue(1);
+        };
+      } else {
+        pulseAnim.setValue(1);
+      }
+    }, [isLoading, pulseAnim]);
 
-  // Debug logging
-  React.useEffect(() => {
-    logger.debug('ThrowbackTeaser Debug:', {
-      hasEntry: !!throwbackEntry,
-      isLoading,
-      error: error?.substring(0, 100), // Log first 100 chars of error
-      entryData: throwbackEntry
-        ? {
-            date: throwbackEntry.entry_date,
-            statementsCount: throwbackEntry.statements?.length,
-            firstStatement: throwbackEntry.statements?.[0]?.substring(0, 50),
-          }
-        : null,
-      timestamp: new Date().toISOString(),
-    });
-  }, [throwbackEntry, isLoading, error]);
-
-  // Enhanced loading state with better visual feedback
-  if (isLoading) {
-    return (
-      <Animated.View
-        style={[
-          styles.container,
-          {
-            transform: [{ scale: pulseAnim }],
-          },
-        ]}
-      >
-        <View style={styles.loadingCard}>
-          <View style={styles.loadingIconContainer}>
-            <ActivityIndicator size="small" color={theme.colors.primary} />
-          </View>
-          <View style={styles.loadingContent}>
-            <Text style={styles.loadingTitle}>Geçmişten Anılar</Text>
-            <Text style={styles.loadingSubtitle}>Güzel bir anı yükleniyor...</Text>
-          </View>
-        </View>
-      </Animated.View>
+    // Debug logging - FIXED: Remove unstable timestamp to prevent infinite re-renders
+    const debugData = useMemo(
+      () => ({
+        hasEntry: !!throwbackEntry,
+        isLoading,
+        error: error?.substring(0, 100), // Log first 100 chars of error
+        entryData: throwbackEntry
+          ? {
+              date: throwbackEntry.entry_date,
+              statementsCount: throwbackEntry.statements?.length,
+              firstStatement: throwbackEntry.statements?.[0]?.substring(0, 50),
+            }
+          : null,
+      }),
+      [throwbackEntry, isLoading, error]
     );
-  }
 
-  // Enhanced error state with better visual hierarchy
-  if (error && !throwbackEntry) {
-    return (
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.errorCard} onPress={onRefresh} activeOpacity={0.8}>
-          <View style={styles.errorIconContainer}>
-            <Icon name="alert-circle-outline" size={24} color={theme.colors.onErrorContainer} />
-          </View>
-          <View style={styles.errorContent}>
-            <Text style={styles.errorTitle}>Anı Yüklenemedi</Text>
-            <Text style={styles.errorSubtitle}>{error}</Text>
-            {onRefresh && <Text style={styles.errorRetryText}>Tekrar denemek için dokunun</Text>}
-          </View>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+    React.useEffect(() => {
+      logger.debug('ThrowbackTeaser Debug:', {
+        ...debugData,
+        timestamp: new Date().toISOString(), // Move timestamp here to prevent re-render loop
+      });
+    }, [debugData]); // Use memoized debugData instead of individual props
 
-  // Enhanced placeholder state with inspiring design
-  if (!throwbackEntry) {
-    return (
-      <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.placeholderCard}
-          onPress={() => {
-            logger.debug('ThrowbackTeaser: Manual refresh triggered by user tap');
-            onRefresh?.();
-          }}
-          activeOpacity={0.8}
+    // Enhanced loading state with better visual feedback
+    if (isLoading) {
+      return (
+        <Animated.View
+          style={[
+            styles.container,
+            {
+              transform: [{ scale: pulseAnim }],
+            },
+          ]}
         >
-          <View style={styles.placeholderIconContainer}>
-            <Icon name="history" size={32} color={theme.colors.primary} />
-          </View>
-          <View style={styles.placeholderContent}>
-            <Text style={styles.placeholderTitle}>Geçmişten Anılar</Text>
-            <Text style={styles.placeholderSubtitle}>
-              Minnet kayıtlarınız arttıkça, burada geçmişten güzel anılarınızı göreceksiniz
-            </Text>
-            <View style={styles.placeholderHint}>
-              <Icon name="sparkles" size={16} color={theme.colors.tertiary} />
-              <Text style={styles.placeholderHintText}>Başlamak için dokunun</Text>
+          <View style={styles.loadingCard}>
+            <View style={styles.loadingIconContainer}>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+            </View>
+            <View style={styles.loadingContent}>
+              <Text style={styles.loadingTitle}>Geçmişten Anılar</Text>
+              <Text style={styles.loadingSubtitle}>Güzel bir anı yükleniyor...</Text>
             </View>
           </View>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+        </Animated.View>
+      );
+    }
 
-  // Enhanced main content with stable rendering
-  return (
-    <View style={styles.container}>
-      {/* Enhanced Header Section */}
-      <View style={styles.headerCard}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <View style={styles.headerIconContainer}>
-              <Icon name="history" size={22} color={theme.colors.primary} />
+    // Enhanced error state with better visual hierarchy
+    if (error && !throwbackEntry) {
+      return (
+        <View style={styles.container}>
+          <TouchableOpacity style={styles.errorCard} onPress={onRefresh} activeOpacity={0.8}>
+            <View style={styles.errorIconContainer}>
+              <Icon name="alert-circle-outline" size={24} color={theme.colors.onErrorContainer} />
             </View>
-            <Text style={styles.headerTitle}>Geçmişten Bir Anı</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.refreshButton}
-            onPress={handleRefresh}
-            activeOpacity={0.8}
-            disabled={isLoading}
-          >
-            <Animated.View
-              style={{
-                transform: [
-                  {
-                    rotate: refreshRotation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '360deg'],
-                    }),
-                  },
-                ],
-              }}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-              ) : (
-                <Icon name="refresh" size={20} color={theme.colors.primary} />
-              )}
-            </Animated.View>
+            <View style={styles.errorContent}>
+              <Text style={styles.errorTitle}>Anı Yüklenemedi</Text>
+              <Text style={styles.errorSubtitle}>{error}</Text>
+              {onRefresh && <Text style={styles.errorRetryText}>Tekrar denemek için dokunun</Text>}
+            </View>
           </TouchableOpacity>
         </View>
-      </View>
+      );
+    }
 
-      {/* Enhanced Statement Display Card */}
-      <StatementDisplayCard
-        statement={throwbackEntry.statements?.[0] || 'Geçmişten bir minnet ifadeniz var.'}
-        date={throwbackEntry.entry_date}
-        variant="inspiration"
-        showQuotes={true}
-        showTimestamp={true}
-        animateEntrance={true}
-        numberOfLines={4}
-        edgeToEdge={true}
-        style={styles.statementCardStyle}
-      />
-    </View>
-  );
-};
+    // Enhanced placeholder state with inspiring design
+    if (!throwbackEntry) {
+      return (
+        <View style={styles.container}>
+          <TouchableOpacity
+            style={styles.placeholderCard}
+            onPress={() => {
+              logger.debug('ThrowbackTeaser: Manual refresh triggered by user tap');
+              onRefresh?.();
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={styles.placeholderIconContainer}>
+              <Icon name="history" size={32} color={theme.colors.primary} />
+            </View>
+            <View style={styles.placeholderContent}>
+              <Text style={styles.placeholderTitle}>Geçmişten Anılar</Text>
+              <Text style={styles.placeholderSubtitle}>
+                Minnet kayıtlarınız arttıkça, burada geçmişten güzel anılarınızı göreceksiniz
+              </Text>
+              <View style={styles.placeholderHint}>
+                <Icon name="sparkles" size={16} color={theme.colors.tertiary} />
+                <Text style={styles.placeholderHintText}>Başlamak için dokunun</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    // Enhanced main content with stable rendering
+    return (
+      <View style={styles.container}>
+        {/* Enhanced Header Section */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft}>
+              <View style={styles.headerIconContainer}>
+                <Icon name="history" size={22} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.headerTitle}>Geçmişten Bir Anı</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={handleRefresh}
+              activeOpacity={0.8}
+              disabled={isLoading}
+            >
+              <Animated.View
+                style={{
+                  transform: [
+                    {
+                      rotate: refreshRotation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '360deg'],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                ) : (
+                  <Icon name="refresh" size={20} color={theme.colors.primary} />
+                )}
+              </Animated.View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Enhanced Statement Display Card */}
+        <StatementDisplayCard
+          statement={throwbackEntry.statements?.[0] || 'Geçmişten bir minnet ifadeniz var.'}
+          date={throwbackEntry.entry_date}
+          variant="inspiration"
+          showQuotes={true}
+          showTimestamp={true}
+          animateEntrance={true}
+          numberOfLines={4}
+          edgeToEdge={true}
+          style={styles.statementCardStyle}
+        />
+      </View>
+    );
+  }
+);
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
@@ -472,5 +476,7 @@ const createStyles = (theme: AppTheme) =>
       marginVertical: 0,
     } as ViewStyle,
   });
+
+ThrowbackTeaser.displayName = 'ThrowbackTeaser';
 
 export default ThrowbackTeaser;

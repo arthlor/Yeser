@@ -296,8 +296,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.settingCard}>
             <TouchableOpacity
               style={styles.settingRow}
-              onPress={() => handleVariedPromptsUpdate(!profile?.useVariedPrompts)}
-              activeOpacity={0.7}
+              onPress={() => handleVariedPromptsUpdate(!(profile?.useVariedPrompts ?? false))}
             >
               <View style={styles.settingInfo}>
                 <View style={styles.iconContainer}>

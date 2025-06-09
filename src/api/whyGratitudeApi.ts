@@ -1,6 +1,8 @@
 import { supabase } from '@/utils/supabaseClient';
-import type { GratitudeBenefit } from '@/features/whyGratitude/types';
+import { gratitudeBenefitSchema } from '@/schemas/gratitudeBenefitSchema';
 import { logger } from '@/utils/debugConfig';
+
+import type { GratitudeBenefit } from '@/schemas/gratitudeBenefitSchema';
 
 /**
  * Fetches the list of active gratitude benefits from the database.
@@ -29,8 +31,12 @@ export const getGratitudeBenefits = async (): Promise<GratitudeBenefit[]> => {
       return [];
     }
 
-    logger.debug(`Successfully fetched ${data.length} gratitude benefits`);
-    return data as GratitudeBenefit[];
+    // Validate each benefit object against the schema
+    const validatedBenefits = data.map((benefit) => gratitudeBenefitSchema.parse(benefit));
+    logger.debug(
+      `Successfully fetched and validated ${validatedBenefits.length} gratitude benefits`
+    );
+    return validatedBenefits;
   } catch (error) {
     logger.error('Unexpected error in getGratitudeBenefits:', { error });
     throw error;
@@ -65,8 +71,10 @@ export const getGratitudeBenefitById = async (id: number): Promise<GratitudeBene
       throw new Error(`Failed to fetch benefit: ${error.message}`);
     }
 
-    logger.debug(`Successfully fetched gratitude benefit: ${id}`);
-    return data as GratitudeBenefit;
+    // Validate the single benefit object
+    const validatedBenefit = gratitudeBenefitSchema.parse(data);
+    logger.debug(`Successfully fetched and validated gratitude benefit: ${id}`);
+    return validatedBenefit;
   } catch (error) {
     logger.error(`Unexpected error in getGratitudeBenefitById for ID ${id}:`, { error });
     throw error;

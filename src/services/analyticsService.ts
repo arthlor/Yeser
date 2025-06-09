@@ -1,6 +1,8 @@
 // 🚨 FIX: Re-enabled Firebase Analytics for production deployment
-import analytics from '@react-native-firebase/analytics';
+import { getAnalytics } from '@react-native-firebase/analytics';
 import { logger } from '@/utils/debugConfig';
+
+const analyticsInstance = getAnalytics();
 
 // 🎯 ANALYTICS CONFIGURATION: Standardized screen names mapping
 const SCREEN_NAME_MAPPING: Record<string, string> = {
@@ -61,7 +63,7 @@ const logScreenView = async (
   try {
     const normalizedScreenName = normalizeScreenName(screenName);
 
-    await analytics().logScreenView({
+    await analyticsInstance.logScreenView({
       screen_name: normalizedScreenName,
       screen_class: normalizedScreenName,
       ...additionalParams,
@@ -101,7 +103,7 @@ const logEvent = async (
       });
     }
 
-    await analytics().logEvent(eventName, sanitizedParams);
+    await analyticsInstance.logEvent(eventName, sanitizedParams);
 
     // Log to console in development for debugging
     if (__DEV__) {
@@ -118,7 +120,7 @@ const logEvent = async (
  */
 const logAppOpen = async (): Promise<void> => {
   try {
-    await analytics().logAppOpen();
+    await analyticsInstance.logAppOpen();
 
     // Log to console in development for debugging
     if (__DEV__) {
@@ -136,7 +138,7 @@ const logAppOpen = async (): Promise<void> => {
  */
 const setUserProperties = async (properties: Record<string, string | null>): Promise<void> => {
   try {
-    await analytics().setUserProperties(properties);
+    await analyticsInstance.setUserProperties(properties);
 
     // Log to console in development for debugging
     if (__DEV__) {
@@ -154,7 +156,7 @@ const setUserProperties = async (properties: Record<string, string | null>): Pro
  */
 const setUserId = async (userId: string | null): Promise<void> => {
   try {
-    await analytics().setUserId(userId);
+    await analyticsInstance.setUserId(userId);
 
     // Log to console in development for debugging
     if (__DEV__) {
@@ -172,7 +174,7 @@ const setUserId = async (userId: string | null): Promise<void> => {
  */
 const setAnalyticsCollectionEnabled = async (enabled: boolean): Promise<void> => {
   try {
-    await analytics().setAnalyticsCollectionEnabled(enabled);
+    await analyticsInstance.setAnalyticsCollectionEnabled(enabled);
 
     // Log to console in development for debugging
     if (__DEV__) {

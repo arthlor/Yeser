@@ -118,6 +118,16 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     navigation.navigate('WhyGratitude');
   }, [navigation]);
 
+  // Memoize throwback entry prop to prevent unnecessary re-renders
+  const memoizedThrowbackEntry = useMemo(() => {
+    return throwbackEntry
+      ? {
+          statements: throwbackEntry.statements || [],
+          entry_date: throwbackEntry.entry_date || new Date().toISOString().split('T')[0],
+        }
+      : null;
+  }, [throwbackEntry]);
+
   return (
     <>
       <ScreenLayout
@@ -166,14 +176,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
         {/* 4. Geçmişten Anılar (Throwback Memories) */}
         <ThrowbackTeaser
-          throwbackEntry={
-            throwbackEntry
-              ? {
-                  statements: throwbackEntry.statements || [],
-                  entry_date: throwbackEntry.entry_date || new Date().toISOString().split('T')[0],
-                }
-              : null
-          }
+          throwbackEntry={memoizedThrowbackEntry}
           isLoading={throwbackLoading}
           error={throwbackError ? throwbackError.message : null}
           onRefresh={handleThrowbackRefresh}

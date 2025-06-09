@@ -18,13 +18,10 @@ const mapAndValidateRawProfile = (validatedRawData: RawProfileData): Profile => 
   // updated_at itself will also be from validatedRawData.updated_at.
   const dataForZod = {
     ...validatedRawData, // validatedRawData now only has updated_at from the DB for timestamps
-    created_at: validatedRawData.updated_at, // Use updated_at as the source for created_at
     // Map snake_case database field to camelCase app field
     useVariedPrompts: validatedRawData.use_varied_prompts,
     // updated_at is already present in validatedRawData and will be passed through
   };
-  // Remove the snake_case field to avoid conflicts
-  delete (dataForZod as Partial<typeof dataForZod>).use_varied_prompts;
 
   const validationResult = profileSchema.safeParse(dataForZod);
   if (!validationResult.success) {
@@ -74,7 +71,7 @@ export const getProfile = async (): Promise<Profile | null> => {
     const { data, error, status } = await supabase
       .from('profiles')
       .select(
-        'id, username, onboarded, reminder_enabled, reminder_time, throwback_reminder_enabled, throwback_reminder_frequency, throwback_reminder_time, updated_at, daily_gratitude_goal, use_varied_prompts'
+        'id, username, onboarded, reminder_enabled, reminder_time, throwback_reminder_enabled, throwback_reminder_frequency, throwback_reminder_time, created_at, updated_at, daily_gratitude_goal, use_varied_prompts'
       )
       .eq('id', user.id)
       .single();
@@ -143,7 +140,7 @@ export const updateProfile = async (
       .update(payloadForSupabase)
       .eq('id', user.id)
       .select(
-        'id, username, onboarded, reminder_enabled, reminder_time, throwback_reminder_enabled, throwback_reminder_frequency, throwback_reminder_time, updated_at, daily_gratitude_goal, use_varied_prompts'
+        'id, username, onboarded, reminder_enabled, reminder_time, throwback_reminder_enabled, throwback_reminder_frequency, throwback_reminder_time, created_at, updated_at, daily_gratitude_goal, use_varied_prompts'
       )
       .single();
 

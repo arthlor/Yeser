@@ -17,10 +17,14 @@ expo-env.d.ts
 .kotlin/
 *.orig.*
 *.jks
+!credentials/android/keystore.jks # Allow our EAS keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+
+# EAS Credentials (contains sensitive passwords)
+credentials.json
 
 # iOS
 ios/

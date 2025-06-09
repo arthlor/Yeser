@@ -1,11 +1,14 @@
+/* eslint-env node */
+/* eslint-disable no-undef */
 import 'dotenv/config';
 
 // Safe environment variable access for config
 const getEnv = (name, defaultValue = '') => {
-  if (typeof process !== 'undefined' && process.env) {
+  try {
     return process.env[name] || defaultValue;
+  } catch {
+    return defaultValue;
   }
-  return defaultValue;
 };
 
 const environment = getEnv('EXPO_PUBLIC_ENV', 'development');
@@ -120,7 +123,10 @@ export default {
       [
         '@react-native-google-signin/google-signin',
         {
-          iosUrlScheme: getBundleIdentifier(),
+          iosUrlScheme: getEnv(
+            'EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME',
+            'com.googleusercontent.apps.384355046895-d6l39k419j64r0ur9l5jp7qr0dk28o3n'
+          ),
         },
       ],
       [
@@ -132,7 +138,7 @@ export default {
             buildToolsVersion: '34.0.0',
           },
           ios: {
-            deploymentTarget: '13.0',
+            deploymentTarget: '15.1',
           },
         },
       ],
@@ -140,14 +146,14 @@ export default {
     scheme: getUrlScheme(),
     extra: {
       eas: {
-        projectId: getEnv('EXPO_PUBLIC_EAS_PROJECT_ID', 'your-project-id-here'),
+        projectId: '7465061f-a28e-47f5-a4ac-dbbdd4abe243',
       },
       environment: environment,
       supabaseUrl: getEnv('EXPO_PUBLIC_SUPABASE_URL'),
       supabaseAnonKey: getEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
     },
     updates: {
-      url: `https://u.expo.dev/${getEnv('EXPO_PUBLIC_EAS_PROJECT_ID', 'your-project-id-here')}`,
+      url: 'https://u.expo.dev/7465061f-a28e-47f5-a4ac-dbbdd4abe243',
       enabled: IS_PRODUCTION,
       checkAutomatically: 'ON_LOAD',
       fallbackToCacheTimeout: 0,
@@ -156,4 +162,4 @@ export default {
       policy: 'sdkVersion',
     },
   },
-}; 
+};

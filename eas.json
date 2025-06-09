@@ -15,7 +15,7 @@
       },
       "android": {
         "gradleCommand": ":app:assembleDebug",
-        "buildType": "developmentClient"
+        "buildType": "apk"
       },
       "ios": {
         "buildConfiguration": "Debug",
@@ -46,7 +46,7 @@
         "EXPO_PUBLIC_ENV": "production"
       },
       "android": {
-        "buildType": "aab",
+        "buildType": "app-bundle",
         "gradleCommand": ":app:bundleRelease"
       },
       "ios": {
@@ -72,7 +72,7 @@
     },
     "preview": {
       "android": {
-        "serviceAccountKeyPath": "../secrets/google-play-service-account.json", 
+        "serviceAccountKeyPath": "../secrets/google-play-service-account.json",
         "track": "internal",
         "releaseStatus": "draft"
       },
@@ -82,8 +82,5 @@
         "appleTeamId": "ABCD123456"
       }
     }
-  },
-  "updates": {
-    "url": "https://u.expo.dev/your-eas-project-id"
   }
 }

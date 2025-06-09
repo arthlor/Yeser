@@ -5,7 +5,7 @@ This guide provides step-by-step instructions for setting up the complete CI/CD 
 ## 🚀 Quick Start
 
 1. **Prerequisites Setup**
-2. **Environment Configuration** 
+2. **Environment Configuration**
 3. **GitHub Secrets Configuration**
 4. **EAS Project Setup**
 5. **First Pipeline Run**
@@ -54,6 +54,7 @@ eas project:set --id your-actual-eas-project-id
 Create these environment configurations:
 
 #### Development Environment
+
 ```bash
 EXPO_PUBLIC_ENV=development
 EXPO_PUBLIC_SUPABASE_URL=https://your-dev-project.supabase.co
@@ -62,7 +63,8 @@ EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-google-dev-client-id
 EXPO_PUBLIC_EAS_PROJECT_ID=your-eas-project-id
 ```
 
-#### Staging Environment  
+#### Staging Environment
+
 ```bash
 EXPO_PUBLIC_ENV=preview
 EXPO_PUBLIC_SUPABASE_URL=https://your-staging-project.supabase.co
@@ -72,6 +74,7 @@ EXPO_PUBLIC_EAS_PROJECT_ID=your-eas-project-id
 ```
 
 #### Production Environment
+
 ```bash
 EXPO_PUBLIC_ENV=production
 EXPO_PUBLIC_SUPABASE_URL=https://your-prod-project.supabase.co
@@ -89,11 +92,13 @@ Navigate to your GitHub repository → Settings → Secrets and variables → Ac
 ### Required Secrets
 
 #### Expo & EAS
+
 ```bash
 EXPO_TOKEN=your-expo-access-token
 ```
 
 **How to get Expo Token:**
+
 ```bash
 eas login
 eas user:token:create --name "github-actions"
@@ -102,12 +107,14 @@ eas user:token:create --name "github-actions"
 #### Supabase Environments
 
 **Staging:**
+
 ```bash
 STAGING_SUPABASE_URL=https://your-staging-project.supabase.co
 STAGING_SUPABASE_ANON_KEY=your-staging-anon-key
 ```
 
 **Production:**
+
 ```bash
 PRODUCTION_SUPABASE_URL=https://your-prod-project.supabase.co
 PRODUCTION_SUPABASE_ANON_KEY=your-prod-anon-key
@@ -116,6 +123,7 @@ PRODUCTION_SUPABASE_ANON_KEY=your-prod-anon-key
 #### App Store Credentials
 
 **Apple:**
+
 ```bash
 APPLE_ID=your-apple-id@example.com
 APPLE_TEAM_ID=ABCD123456
@@ -123,6 +131,7 @@ ASC_APP_ID=1234567890
 ```
 
 **Google Play:**
+
 ```bash
 GOOGLE_PLAY_SERVICE_ACCOUNT_KEY=base64-encoded-service-account-json
 ```
@@ -134,18 +143,21 @@ GOOGLE_PLAY_SERVICE_ACCOUNT_KEY=base64-encoded-service-account-json
 ### Build Profiles Explained
 
 #### Development Profile
+
 - **Purpose**: Local development and testing
 - **Distribution**: Internal only
 - **Build Type**: Debug builds with development client
 - **Usage**: `eas build --profile development`
 
-#### Preview Profile  
+#### Preview Profile
+
 - **Purpose**: Internal testing and QA
 - **Distribution**: Internal (TestFlight, Google Play Internal)
 - **Build Type**: Release builds for testing
 - **Usage**: `eas build --profile preview`
 
 #### Production Profile
+
 - **Purpose**: App store releases
 - **Distribution**: Public app stores
 - **Build Type**: Optimized release builds
@@ -156,7 +168,7 @@ GOOGLE_PLAY_SERVICE_ACCOUNT_KEY=base64-encoded-service-account-json
 The pipeline automatically configures these URL schemes:
 
 - **Development**: `yeser-dev://auth/callback`
-- **Preview**: `yeser-preview://auth/callback`  
+- **Preview**: `yeser-preview://auth/callback`
 - **Production**: `yeser://auth/callback`
 
 ### Supabase Auth Configuration
@@ -178,17 +190,20 @@ For each environment, configure these redirect URLs in Supabase:
 ### Automatic Triggers
 
 #### On Push to `develop` branch:
+
 - ✅ Quality checks (lint, test, TypeScript)
 - ✅ Security scan
 - ✅ Preview build (iOS + Android)
 
 #### On Push to `main` branch:
+
 - ✅ Quality checks
-- ✅ Security scan  
+- ✅ Security scan
 - ✅ Production build (iOS + Android)
 - ✅ Auto-deployment (if commit message contains `[deploy]`)
 
 #### On Pull Requests:
+
 - ✅ Quality checks
 - ✅ Security scan
 - ✅ Performance analysis
@@ -212,11 +227,13 @@ git push origin main
 ### iOS App Store Connect
 
 1. **Create App Record**
+
    - Bundle ID: `com.yeser`
-   - App Name: `Yeser - Gratitude Journal`
-   - SKU: `yeser-gratitude-001`
+   - App Name: `Yeşer`
+   - SKU: `yeser`
 
 2. **Configure App Information**
+
    - Privacy Policy URL
    - App Category: Health & Fitness
    - Content Rating: 4+
@@ -228,11 +245,13 @@ git push origin main
 ### Android Google Play Console
 
 1. **Create App**
-   - App Name: `Yeser - Gratitude Journal`
-   - Default Language: English
+
+   - App Name: `Yeşer`
+   - Default Language: Turkish
    - App Category: Health & Fitness
 
 2. **Configure Store Listing**
+
    - Upload app icon (512x512 PNG)
    - Upload feature graphic (1024x500 PNG)
    - Add screenshots for all device types
@@ -252,6 +271,7 @@ git push origin main
 ### Build Status Monitoring
 
 Check build status:
+
 ```bash
 # List recent builds
 eas build:list --platform all --status finished --limit 10
@@ -266,24 +286,28 @@ eas build:log [build-id]
 ### Common Issues & Solutions
 
 #### 1. Environment Variables Not Found
+
 ```bash
 # Verify environment setup
 npm run validate-env:dev
-npm run validate-env:preview  
+npm run validate-env:preview
 npm run validate-env:prod
 ```
 
 #### 2. Authentication Deep Links Not Working
+
 - Check URL scheme configuration in app.config.js
 - Verify Supabase redirect URLs match exactly
 - Test deep links manually: `npx uri-scheme open yeser://auth/callback --ios`
 
 #### 3. Build Failures
+
 - Check EAS build logs
 - Verify all required secrets are set in GitHub
 - Ensure environment variables are properly configured
 
 #### 4. Submission Failures
+
 - Verify app store credentials
 - Check bundle identifiers match store configuration
 - Ensure provisioning profiles are valid
@@ -291,6 +315,7 @@ npm run validate-env:prod
 ### Performance Monitoring
 
 The pipeline includes automatic performance checks:
+
 - Bundle size analysis
 - TypeScript compilation time
 - Test execution time
@@ -303,23 +328,26 @@ The pipeline includes automatic performance checks:
 ### Rollback Process
 
 1. **Identify Issue**
+
    ```bash
    # Check recent builds
    eas build:list --status finished --limit 5
    ```
 
 2. **Rollback App Store Release**
+
    - iOS: Use App Store Connect to reject/remove current version
    - Android: Use Google Play Console to halt rollout
 
 3. **Deploy Emergency Fix**
+
    ```bash
    # Create hotfix branch
    git checkout -b hotfix/emergency-fix
-   
+
    # Make critical fixes
    # ...
-   
+
    # Deploy with emergency flag
    git commit -m "hotfix: critical fix [deploy]"
    git push origin main
@@ -338,6 +366,7 @@ The pipeline includes automatic performance checks:
 Before deploying to production:
 
 ### Pre-Deployment
+
 - [ ] All tests passing locally
 - [ ] Environment variables configured
 - [ ] App store metadata updated
@@ -345,6 +374,7 @@ Before deploying to production:
 - [ ] Privacy policy and terms updated
 
 ### During Deployment
+
 - [ ] Monitor build process
 - [ ] Verify deployment to staging first
 - [ ] Test critical user flows
@@ -352,6 +382,7 @@ Before deploying to production:
 - [ ] Verify push notifications
 
 ### Post-Deployment
+
 - [ ] Monitor crash reports
 - [ ] Check user feedback
 - [ ] Verify analytics tracking
@@ -377,4 +408,4 @@ Before deploying to production:
 - **App Store**: [Apple Developer Documentation](https://developer.apple.com/documentation/)
 - **Google Play**: [Play Console Help](https://support.google.com/googleplay/android-developer/)
 
-**Emergency Contact**: Create team communication channel for deployment issues. 
+**Emergency Contact**: Create team communication channel for deployment issues.

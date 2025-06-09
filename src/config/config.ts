@@ -1,6 +1,6 @@
 /**
  * Centralized Configuration Management
- * 
+ *
  * This module provides type-safe access to environment variables and configuration
  * values across development, staging, and production environments.
  */
@@ -41,7 +41,10 @@ const getEnvVar = (name: string, defaultValue: string = ''): string => {
 };
 
 // Environment detection
-const environment = getEnvVar('EXPO_PUBLIC_ENV', 'development') as 'development' | 'preview' | 'production';
+const environment = getEnvVar('EXPO_PUBLIC_ENV', 'development') as
+  | 'development'
+  | 'preview'
+  | 'production';
 
 // Environment-specific configurations
 const getAppName = (): string => {
@@ -112,17 +115,14 @@ const config: Config = {
 
 // Validation function
 export const validateConfig = (): void => {
-  const requiredVars = [
-    'EXPO_PUBLIC_SUPABASE_URL',
-    'EXPO_PUBLIC_SUPABASE_ANON_KEY',
-  ];
+  const requiredVars = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'];
 
-  const missing = requiredVars.filter(varName => !getEnvVar(varName));
+  const missing = requiredVars.filter((varName) => !getEnvVar(varName));
 
   if (missing.length > 0) {
     throw new Error(
       `Missing required environment variables: ${missing.join(', ')}\n` +
-      `Please check your environment configuration for ${environment} environment.`
+        `Please check your environment configuration for ${environment} environment.`
     );
   }
 
@@ -133,11 +133,13 @@ export const validateConfig = (): void => {
     throw new Error('Invalid EXPO_PUBLIC_SUPABASE_URL format');
   }
 
+  // eslint-disable-next-line no-console
   console.log(`✅ Configuration validated for ${environment} environment`);
 };
 
 // Debug information (only in development)
 if (environment === 'development') {
+  // eslint-disable-next-line no-console
   console.log('🔧 Configuration loaded:', {
     environment: config.app.environment,
     name: config.app.name,
@@ -148,4 +150,4 @@ if (environment === 'development') {
   });
 }
 
-export default config; 
+export default config;

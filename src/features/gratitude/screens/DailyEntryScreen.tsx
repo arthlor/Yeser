@@ -14,6 +14,7 @@ import StatementEditCard from '@/shared/components/ui/StatementEditCard';
 import { AppTheme } from '@/themes/types';
 import { MainAppTabParamList } from '@/types/navigation';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { analyticsService } from '@/services/analyticsService';
 
 import { RouteProp } from '@react-navigation/native';
 import { ScreenLayout } from '@/shared/components/layout';
@@ -194,6 +195,32 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
     Animated.stagger(100, animations).start();
   }, [masterFadeAnim, heroSlideAnim, progressRingAnim, progressPercentage]);
+
+  // Analytics tracking with comprehensive context
+  useEffect(() => {
+    analyticsService.logScreenView('daily_entry_screen');
+
+    // Track detailed screen context
+    analyticsService.logEvent('daily_entry_screen_viewed', {
+      entry_date: finalDateString,
+      is_today: isToday,
+      current_statements_count: statements.length,
+      daily_goal: dailyGoal,
+      progress_percentage: Math.round(progressPercentage),
+      is_goal_complete: isGoalComplete,
+      has_prompt: !!currentPrompt,
+      user_id: profile?.id || null,
+    });
+  }, [
+    finalDateString,
+    isToday,
+    statements.length,
+    dailyGoal,
+    progressPercentage,
+    isGoalComplete,
+    currentPrompt,
+    profile?.id,
+  ]);
 
   // Handle statement operations with enhanced UX
   const handleAddStatement = useCallback(

@@ -1,9 +1,6 @@
 import React from 'react';
 import { ViewStyle } from 'react-native';
-import ThemedCard, {
-  BorderRadiusSize,
-  SpacingSize,
-} from '../ui/ThemedCard';
+import ThemedCard, { BorderRadiusSize, SpacingSize } from '../ui/ThemedCard';
 
 interface ScreenCardProps {
   children: React.ReactNode;

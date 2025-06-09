@@ -17,10 +17,13 @@ interface CalendarStatsProps {
 const StatCard: React.FC<StatCardProps> = ({ icon, value, label, color, isLoading = false }) => {
   const { theme } = useTheme();
 
-  const cardStyle = React.useMemo(() => ({
-    backgroundColor: theme.colors.surfaceVariant + '20',
-    borderColor: theme.colors.outline + '08',
-  }), [theme]);
+  const cardStyle = React.useMemo(
+    () => ({
+      backgroundColor: theme.colors.surfaceVariant + '20',
+      borderColor: theme.colors.outline + '08',
+    }),
+    [theme]
+  );
 
   return (
     <View style={[styles.statCard, cardStyle]}>
@@ -66,12 +69,15 @@ const CalendarStats: React.FC<CalendarStatsProps> = ({
   const currentStreak = streakData?.current_streak ?? 0;
   const isStreakDataLoading = isLoading || streakLoading;
 
-  const containerStyle = React.useMemo(() => ({
-    backgroundColor: theme.colors.surface,
-    borderTopColor: theme.colors.outline + '10',
-    borderBottomColor: theme.colors.outline + '10',
-    ...getPrimaryShadow.card(theme),
-  }), [theme]);
+  const containerStyle = React.useMemo(
+    () => ({
+      backgroundColor: theme.colors.surface,
+      borderTopColor: theme.colors.outline + '10',
+      borderBottomColor: theme.colors.outline + '10',
+      ...getPrimaryShadow.card(theme),
+    }),
+    [theme]
+  );
 
   return (
     <View style={[styles.container, containerStyle]}>

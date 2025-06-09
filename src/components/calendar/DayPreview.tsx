@@ -18,11 +18,14 @@ const DayPreview: React.FC<DayPreviewProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const actionFooterStyle = React.useMemo(() => ({
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderTopColor: theme.colors.outline + '10',
-  }), [theme]);
+  const actionFooterStyle = React.useMemo(
+    () => ({
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderTopColor: theme.colors.outline + '10',
+    }),
+    [theme]
+  );
 
   if (!selectedDate) {
     return null;

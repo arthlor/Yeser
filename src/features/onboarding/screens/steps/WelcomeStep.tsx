@@ -24,38 +24,50 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
   const cardsAnim = useRef(new Animated.Value(0)).current;
 
   // Memoized animation styles
-  const headerStyle = React.useMemo(() => ({
-    opacity: fadeAnim,
-    transform: [{ translateY: slideAnim }],
-  }), [fadeAnim, slideAnim]);
+  const headerStyle = React.useMemo(
+    () => ({
+      opacity: fadeAnim,
+      transform: [{ translateY: slideAnim }],
+    }),
+    [fadeAnim, slideAnim]
+  );
 
-  const featuresSectionStyle = React.useMemo(() => ({
-    opacity: cardsAnim,
-    transform: [
-      {
-        translateY: cardsAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [20, 0],
-        }),
-      },
-    ],
-  }), [cardsAnim]);
+  const featuresSectionStyle = React.useMemo(
+    () => ({
+      opacity: cardsAnim,
+      transform: [
+        {
+          translateY: cardsAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [20, 0],
+          }),
+        },
+      ],
+    }),
+    [cardsAnim]
+  );
 
-  const encouragementStyle = React.useMemo(() => ({
-    opacity: cardsAnim,
-  }), [cardsAnim]);
+  const encouragementStyle = React.useMemo(
+    () => ({
+      opacity: cardsAnim,
+    }),
+    [cardsAnim]
+  );
 
-  const actionSectionStyle = React.useMemo(() => ({
-    opacity: cardsAnim,
-    transform: [
-      {
-        translateY: cardsAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [30, 0],
-        }),
-      },
-    ],
-  }), [cardsAnim]);
+  const actionSectionStyle = React.useMemo(
+    () => ({
+      opacity: cardsAnim,
+      transform: [
+        {
+          translateY: cardsAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [30, 0],
+          }),
+        },
+      ],
+    }),
+    [cardsAnim]
+  );
 
   useEffect(() => {
     // Staggered entrance animations

@@ -16,24 +16,41 @@ const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress
   const isDisabled = state === 'disabled';
 
   // Memoized styles to avoid inline styles
-  const textStyle = React.useMemo(() => ({
-    color: isDisabled 
-      ? theme.colors.surfaceDisabled ?? `${theme.colors.onSurface}40`
-      : isSelectedDay
-      ? theme.colors.onPrimary
-      : isTodayDate
-      ? theme.colors.primary
-      : theme.colors.onSurface,
-    fontWeight: (isTodayDate || isSelectedDay ? '600' : '400') as 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900',
-  }), [isDisabled, isSelectedDay, isTodayDate, theme.colors]);
+  const textStyle = React.useMemo(
+    () => ({
+      color: isDisabled
+        ? (theme.colors.surfaceDisabled ?? `${theme.colors.onSurface}40`)
+        : isSelectedDay
+          ? theme.colors.onPrimary
+          : isTodayDate
+            ? theme.colors.primary
+            : theme.colors.onSurface,
+      fontWeight: (isTodayDate || isSelectedDay ? '600' : '400') as
+        | 'normal'
+        | 'bold'
+        | '100'
+        | '200'
+        | '300'
+        | '400'
+        | '500'
+        | '600'
+        | '700'
+        | '800'
+        | '900',
+    }),
+    [isDisabled, isSelectedDay, isTodayDate, theme.colors]
+  );
 
-  const containerStyle = React.useMemo(() => ({
-    backgroundColor: isSelectedDay 
-      ? theme.colors.primary
-      : isTodayDate && !isSelectedDay
-      ? `${theme.colors.primary}10`
-      : 'transparent',
-  }), [isSelectedDay, isTodayDate, theme.colors.primary]);
+  const containerStyle = React.useMemo(
+    () => ({
+      backgroundColor: isSelectedDay
+        ? theme.colors.primary
+        : isTodayDate && !isSelectedDay
+          ? `${theme.colors.primary}10`
+          : 'transparent',
+    }),
+    [isSelectedDay, isTodayDate, theme.colors.primary]
+  );
 
   // Early return after all hooks
   if (!date) {
@@ -58,15 +75,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress
         disabled: isDisabled,
       }}
     >
-      <Text
-        style={[
-          styles.dayText,
-          theme.typography.bodyLarge,
-          textStyle,
-        ]}
-      >
-        {dayNumber}
-      </Text>
+      <Text style={[styles.dayText, theme.typography.bodyLarge, textStyle]}>{dayNumber}</Text>
       {hasEntry && (
         <View
           style={[

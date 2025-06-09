@@ -119,7 +119,6 @@ const createStyles = (
   height?: number,
   borderRadius?: number
 ) => {
-
   // Variant-specific defaults
   const variantDefaults = {
     text: {

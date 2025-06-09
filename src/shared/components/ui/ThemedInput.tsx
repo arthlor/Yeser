@@ -252,19 +252,20 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
         />
 
         {/* 🆕 Validation Icon */}
-        {shouldShowValidationIcon && (() => {
-          const validationIcon = getValidationIcon();
-          return validationIcon ? (
-            <Icon
-              name={validationIcon}
-              size={getIconSize(size)}
-              color={getValidationIconColor()}
-              style={styles.validationIcon}
-              accessibilityRole="image"
-              accessibilityLabel={`${effectiveValidationState} state`}
-            />
-          ) : null;
-        })()}
+        {shouldShowValidationIcon &&
+          (() => {
+            const validationIcon = getValidationIcon();
+            return validationIcon ? (
+              <Icon
+                name={validationIcon}
+                size={getIconSize(size)}
+                color={getValidationIconColor()}
+                style={styles.validationIcon}
+                accessibilityRole="image"
+                accessibilityLabel={`${effectiveValidationState} state`}
+              />
+            ) : null;
+          })()}
 
         {/* Clear Button (Auto-show when text present) */}
         {shouldShowClear && (

@@ -69,9 +69,12 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   // Simplified animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const containerStyle = React.useMemo(() => ({
-    opacity: fadeAnim,
-  }), [fadeAnim]);
+  const containerStyle = React.useMemo(
+    () => ({
+      opacity: fadeAnim,
+    }),
+    [fadeAnim]
+  );
 
   useEffect(() => {
     // Simple entrance animation

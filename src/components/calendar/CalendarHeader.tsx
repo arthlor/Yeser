@@ -14,9 +14,12 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const navButtonStyle = React.useMemo(() => ({
-    opacity: isLoading ? 0.3 : 1,
-  }), [isLoading]);
+  const navButtonStyle = React.useMemo(
+    () => ({
+      opacity: isLoading ? 0.3 : 1,
+    }),
+    [isLoading]
+  );
 
   return (
     <View

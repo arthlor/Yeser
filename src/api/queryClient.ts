@@ -10,8 +10,6 @@ onlineManager.setEventListener((setOnline) => {
   });
 });
 
-
-
 /**
  * Create and configure TanStack Query client with optimal settings
  */

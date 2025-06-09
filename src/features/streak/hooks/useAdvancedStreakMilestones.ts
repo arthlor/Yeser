@@ -67,8 +67,6 @@ export const useAdvancedStreakMilestones = ({
   // Get all unlocked achievements
   const achievementsUnlocked = ADVANCED_MILESTONES.filter((m) => currentStreak >= m.minDays);
 
-
-
   const dismissCelebration = () => {
     setShowCelebration(false);
     setJustUnlockedMilestone(null);

@@ -583,10 +583,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
           {ADVANCED_MILESTONES.slice(0, 6).map((milestone) => (
             <View
               key={milestone.id}
-              style={[
-                styles.achievementBadge,
-                getAchievementBadgeStyle[milestone.id],
-              ]}
+              style={[styles.achievementBadge, getAchievementBadgeStyle[milestone.id]]}
             >
               <Text style={styles.achievementEmoji}>{milestone.emoji}</Text>
             </View>

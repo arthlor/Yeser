@@ -2,7 +2,6 @@ import React from 'react';
 import {
   FlatList,
   FlatListProps,
-  Platform,
   StyleSheet,
   Text,
   TextStyle,
@@ -15,7 +14,6 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '../../../providers/ThemeProvider';
-import { logger } from '@/utils/debugConfig';
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme } from '../../../themes/types';
 

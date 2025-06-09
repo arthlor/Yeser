@@ -37,6 +37,14 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
   // Simplified animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  const containerStyle = React.useMemo(() => ({
+    opacity: fadeAnim,
+  }), [fadeAnim]);
+
+  const infoCardStyle = React.useMemo(() => ({
+    opacity: fadeAnim,
+  }), [fadeAnim]);
+
   useEffect(() => {
     // Analytics tracking
     analyticsService.logScreenView('onboarding_goal_setting_step');
@@ -125,14 +133,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
 
   return (
     <ScreenLayout edges={['top']} edgeToEdge={true}>
-      <Animated.View
-        style={[
-          styles.container,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-      >
+      <Animated.View style={[styles.container, containerStyle]}>
         {/* Navigation Header */}
         <ScreenSection>
           <View style={styles.navigationHeader}>
@@ -168,13 +169,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
           </View>
 
           {/* Info Card */}
-          <Animated.View
-            style={[
-              {
-                opacity: fadeAnim,
-              },
-            ]}
-          >
+          <Animated.View style={[infoCardStyle]}>
             <View style={styles.infoCard}>
               <View style={styles.infoContent}>
                 <Ionicons

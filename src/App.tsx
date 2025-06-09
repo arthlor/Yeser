@@ -15,7 +15,7 @@ import * as Notifications from 'expo-notifications';
 import { StatusBar, type StatusBarStyle } from 'expo-status-bar';
 import React from 'react';
 import RootNavigator from './navigation/RootNavigator';
-import { ThemeProvider, useTheme } from './providers/ThemeProvider';
+import { useTheme } from './providers/ThemeProvider';
 import SplashScreen from './features/auth/screens/SplashScreen';
 import { analyticsService } from './services/analyticsService';
 import { notificationService } from './services/notificationService';
@@ -107,7 +107,6 @@ const linking: LinkingOptions<RootStackParamList> = {
         path: 'auth',
         screens: {
           Login: 'login',
-          EmailConfirm: 'confirm',
         },
       },
       MainApp: {

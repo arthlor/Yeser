@@ -119,7 +119,6 @@ const createStyles = (
   height?: number,
   borderRadius?: number
 ) => {
-  const spacing = semanticSpacing(theme);
 
   // Variant-specific defaults
   const variantDefaults = {

@@ -106,7 +106,7 @@ const ScreenContent: React.FC<ScreenContentProps> = ({
   );
 };
 
-const createStyles = (theme: AppTheme, centerContent: boolean) =>
+const createStyles = (theme: AppTheme, _centerContent: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,

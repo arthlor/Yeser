@@ -69,6 +69,10 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   // Simplified animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  const containerStyle = React.useMemo(() => ({
+    opacity: fadeAnim,
+  }), [fadeAnim]);
+
   useEffect(() => {
     // Simple entrance animation
     Animated.timing(fadeAnim, {
@@ -141,14 +145,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
 
   return (
     <ScreenLayout edges={['top']} edgeToEdge={true}>
-      <Animated.View
-        style={[
-          styles.container,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-      >
+      <Animated.View style={[styles.container, containerStyle]}>
         {/* Navigation Header */}
         <ScreenSection>
           <View style={styles.navigationHeader}>

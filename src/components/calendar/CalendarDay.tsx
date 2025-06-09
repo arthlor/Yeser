@@ -8,15 +8,37 @@ import { useTheme } from '../../providers/ThemeProvider';
 const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress }) => {
   const { theme } = useTheme();
 
+  // Calculate values for styling
+  const dayNumber = date ? new Date(date.timestamp).getDate() : 0;
+  const isSelectedDay = marking?.selected ?? false;
+  const hasEntry = marking?.marked ?? false;
+  const isTodayDate = date ? isToday(date.dateString) : false;
+  const isDisabled = state === 'disabled';
+
+  // Memoized styles to avoid inline styles
+  const textStyle = React.useMemo(() => ({
+    color: isDisabled 
+      ? theme.colors.surfaceDisabled ?? `${theme.colors.onSurface}40`
+      : isSelectedDay
+      ? theme.colors.onPrimary
+      : isTodayDate
+      ? theme.colors.primary
+      : theme.colors.onSurface,
+    fontWeight: (isTodayDate || isSelectedDay ? '600' : '400') as 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900',
+  }), [isDisabled, isSelectedDay, isTodayDate, theme.colors]);
+
+  const containerStyle = React.useMemo(() => ({
+    backgroundColor: isSelectedDay 
+      ? theme.colors.primary
+      : isTodayDate && !isSelectedDay
+      ? `${theme.colors.primary}10`
+      : 'transparent',
+  }), [isSelectedDay, isTodayDate, theme.colors.primary]);
+
+  // Early return after all hooks
   if (!date) {
     return null;
   }
-
-  const dayNumber = new Date(date.timestamp).getDate();
-  const isSelectedDay = marking.selected;
-  const hasEntry = marking.marked;
-  const isTodayDate = isToday(date.dateString);
-  const isDisabled = state === 'disabled';
 
   const handlePress = () => {
     if (!isDisabled) {
@@ -24,37 +46,9 @@ const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress
     }
   };
 
-  const getTextColor = () => {
-    if (isDisabled) {
-      return theme.colors.surfaceDisabled ?? `${theme.colors.onSurface}40`;
-    }
-    if (isSelectedDay) {
-      return theme.colors.onPrimary;
-    }
-    if (isTodayDate) {
-      return theme.colors.primary;
-    }
-    return theme.colors.onSurface;
-  };
-
-  const getBackgroundColor = () => {
-    if (isSelectedDay) {
-      return theme.colors.primary;
-    }
-    if (isTodayDate && !isSelectedDay) {
-      return `${theme.colors.primary}10`;
-    }
-    return 'transparent';
-  };
-
   return (
     <TouchableOpacity
-      style={[
-        styles.dayContainer,
-        {
-          backgroundColor: getBackgroundColor(),
-        },
-      ]}
+      style={[styles.dayContainer, containerStyle]}
       onPress={handlePress}
       disabled={isDisabled}
       accessibilityLabel={`${dayNumber} ${hasEntry ? 'şükür notu var' : 'şükür notu yok'}`}
@@ -68,10 +62,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress
         style={[
           styles.dayText,
           theme.typography.bodyLarge,
-          {
-            color: getTextColor(),
-            fontWeight: isTodayDate || isSelectedDay ? '600' : '400',
-          },
+          textStyle,
         ]}
       >
         {dayNumber}

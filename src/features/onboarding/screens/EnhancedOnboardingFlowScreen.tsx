@@ -2,10 +2,7 @@ import { useUserProfile } from '@/hooks';
 import { analyticsService } from '@/services/analyticsService';
 import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
-import type { RootStackParamList } from '@/types/navigation';
 import { hapticFeedback } from '@/utils/hapticFeedback';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, BackHandler, StyleSheet, View } from 'react-native';
@@ -19,11 +16,6 @@ import WelcomeStep from './steps/WelcomeStep';
 import { logger } from '@/utils/debugConfig';
 
 import { ScreenLayout } from '@/shared/components/layout';
-
-type EnhancedOnboardingFlowNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'Onboarding'
->;
 
 // Define onboarding steps
 const ONBOARDING_STEPS = [
@@ -48,12 +40,11 @@ interface OnboardingData {
 }
 
 export const EnhancedOnboardingFlowScreen: React.FC = () => {
-  const navigation = useNavigation<EnhancedOnboardingFlowNavigationProp>();
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
   // TanStack Query for profile updates
-  const { profile, updateProfile, updateProfileError, isUpdatingProfile } = useUserProfile();
+  const { profile, updateProfile } = useUserProfile();
 
   // Onboarding state
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');

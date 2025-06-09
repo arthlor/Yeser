@@ -284,7 +284,7 @@ const createStyles = (
   return StyleSheet.create({
     backdrop: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: theme.colors.surface + '80', // 50% opacity overlay
       justifyContent: 'center',
       alignItems: 'center',
     },

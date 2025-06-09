@@ -2,9 +2,6 @@ import React from 'react';
 import { ViewStyle } from 'react-native';
 import ThemedCard, {
   BorderRadiusSize,
-  CardVariant,
-  DensitySize,
-  ElevationLevel,
   SpacingSize,
 } from '../ui/ThemedCard';
 

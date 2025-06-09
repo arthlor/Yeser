@@ -23,6 +23,40 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
 
+  // Memoized animation styles
+  const headerStyle = React.useMemo(() => ({
+    opacity: fadeAnim,
+    transform: [{ translateY: slideAnim }],
+  }), [fadeAnim, slideAnim]);
+
+  const featuresSectionStyle = React.useMemo(() => ({
+    opacity: cardsAnim,
+    transform: [
+      {
+        translateY: cardsAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [20, 0],
+        }),
+      },
+    ],
+  }), [cardsAnim]);
+
+  const encouragementStyle = React.useMemo(() => ({
+    opacity: cardsAnim,
+  }), [cardsAnim]);
+
+  const actionSectionStyle = React.useMemo(() => ({
+    opacity: cardsAnim,
+    transform: [
+      {
+        translateY: cardsAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [30, 0],
+        }),
+      },
+    ],
+  }), [cardsAnim]);
+
   useEffect(() => {
     // Staggered entrance animations
     Animated.sequence([
@@ -60,15 +94,7 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
     <ScreenLayout edges={['top', 'bottom']} edgeToEdge={false}>
       <View style={styles.container}>
         {/* Header Section with improved spacing */}
-        <Animated.View
-          style={[
-            styles.headerSection,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <Animated.View style={[styles.headerSection, headerStyle]}>
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Yeşer'e Hoş Geldin!</Text>
             <View style={styles.titleAccent} />
@@ -79,22 +105,7 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
         </Animated.View>
 
         {/* Feature Preview Cards with enhanced design */}
-        <Animated.View
-          style={[
-            styles.featuresSection,
-            {
-              opacity: cardsAnim,
-              transform: [
-                {
-                  translateY: cardsAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [20, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
+        <Animated.View style={[styles.featuresSection, featuresSectionStyle]}>
           <View style={styles.featureCard}>
             <View style={styles.featureIconContainer}>
               <Ionicons name="create-outline" size={24} color={theme.colors.primary} />
@@ -118,14 +129,7 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
         </Animated.View>
 
         {/* Encouragement Section */}
-        <Animated.View
-          style={[
-            styles.encouragementSection,
-            {
-              opacity: cardsAnim,
-            },
-          ]}
-        >
+        <Animated.View style={[styles.encouragementSection, encouragementStyle]}>
           <Text style={styles.encouragementText}>
             Bu süreç sadece birkaç dakika alacak ve sonunda seni{'\n'}tamamen yansıtan bir deneyime
             sahip olacaksın.
@@ -133,22 +137,7 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
         </Animated.View>
 
         {/* Action Button with improved design */}
-        <Animated.View
-          style={[
-            styles.actionSection,
-            {
-              opacity: cardsAnim,
-              transform: [
-                {
-                  translateY: cardsAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [30, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
+        <Animated.View style={[styles.actionSection, actionSectionStyle]}>
           <Button
             mode="contained"
             onPress={handleGetStarted}

@@ -6,8 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { getPrimaryShadow } from '@/themes/utils';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import { Button, Card, IconButton } from 'react-native-paper';
+import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
+import { IconButton } from 'react-native-paper';
 import { logger } from '@/utils/debugConfig';
 
 import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
@@ -26,11 +26,10 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
 
   // Use real app hooks for authentic experience
   const { data: currentPrompt, isLoading: promptLoading } = useCurrentPrompt();
-  const { addStatement, isAddingStatement, addStatementError } = useGratitudeMutations();
+  const { addStatement, isAddingStatement } = useGratitudeMutations();
 
   const [hasWrittenStatement, setHasWrittenStatement] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [savedStatement, setSavedStatement] = useState<string>('');
 
   // Simplified animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -67,7 +66,6 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
           onSuccess: () => {
             setHasWrittenStatement(true);
             setShowSuccess(true);
-            setSavedStatement(statement);
             hapticFeedback.success();
 
             // Track demo completion with success
@@ -88,7 +86,6 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             // Still show success for UX, but track the error
             setHasWrittenStatement(true);
             setShowSuccess(true);
-            setSavedStatement(statement);
             hapticFeedback.success();
 
             analyticsService.logEvent('onboarding_demo_statement_error', {

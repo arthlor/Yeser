@@ -17,8 +17,13 @@ interface CalendarStatsProps {
 const StatCard: React.FC<StatCardProps> = ({ icon, value, label, color, isLoading = false }) => {
   const { theme } = useTheme();
 
+  const cardStyle = React.useMemo(() => ({
+    backgroundColor: theme.colors.surfaceVariant + '20',
+    borderColor: theme.colors.outline + '08',
+  }), [theme]);
+
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.colors.surfaceVariant + '20' }]}>
+    <View style={[styles.statCard, cardStyle]}>
       <View style={[styles.statContent, { gap: theme.spacing.xs }]}>
         {isLoading ? (
           <ActivityIndicator size="small" color={color} />
@@ -61,18 +66,15 @@ const CalendarStats: React.FC<CalendarStatsProps> = ({
   const currentStreak = streakData?.current_streak ?? 0;
   const isStreakDataLoading = isLoading || streakLoading;
 
+  const containerStyle = React.useMemo(() => ({
+    backgroundColor: theme.colors.surface,
+    borderTopColor: theme.colors.outline + '10',
+    borderBottomColor: theme.colors.outline + '10',
+    ...getPrimaryShadow.card(theme),
+  }), [theme]);
+
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.outline + '10',
-          borderBottomColor: theme.colors.outline + '10',
-          ...getPrimaryShadow.card(theme),
-        },
-      ]}
-    >
+    <View style={[styles.container, containerStyle]}>
       <View
         style={[
           styles.statsGrid,
@@ -116,8 +118,6 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
-    borderBottomColor: 'rgba(0,0,0,0.1)',
     marginBottom: 16,
     overflow: 'hidden',
   },
@@ -133,7 +133,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginHorizontal: 4,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(0,0,0,0.08)',
     alignItems: 'center',
   },
   statContent: {

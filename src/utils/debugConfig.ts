@@ -3,6 +3,8 @@
  * Provides structured logging with different levels and conditional output
  */
 
+/* eslint-disable no-console */
+
 interface LogContext {
   component?: string;
   action?: string;

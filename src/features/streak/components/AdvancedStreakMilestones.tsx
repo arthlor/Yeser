@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, Vibration, View } from 'react-native';
 import { Easing } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -250,9 +250,8 @@ const ADVANCED_MILESTONES: AdvancedMilestone[] = [
 const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
   currentStreak,
   longestStreak,
-  onMilestoneAchieved,
-  showCelebration = false,
   onPress,
+  showCelebration = false,
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -273,6 +272,20 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
   const [currentMilestone, setCurrentMilestone] = useState<AdvancedMilestone | null>(null);
   const [nextMilestone, setNextMilestone] = useState<AdvancedMilestone | null>(null);
   const [isPersonalRecord, setIsPersonalRecord] = useState(false);
+
+  // Memoized achievement badge styles
+  const getAchievementBadgeStyle = useMemo(() => {
+    return ADVANCED_MILESTONES.slice(0, 6).reduce((styles: Record<string, object>, milestone) => {
+      const isUnlocked = currentStreak >= milestone.minDays;
+      styles[milestone.id] = {
+        opacity: isUnlocked ? 1 : 0.3,
+        backgroundColor: isUnlocked
+          ? milestone.colorPrimary + '15'
+          : theme.colors.surfaceVariant + '50',
+      };
+      return styles;
+    }, {});
+  }, [currentStreak, theme.colors.surfaceVariant]);
 
   // Find current and next milestones
   useEffect(() => {
@@ -572,13 +585,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
               key={milestone.id}
               style={[
                 styles.achievementBadge,
-                {
-                  opacity: currentStreak >= milestone.minDays ? 1 : 0.3,
-                  backgroundColor:
-                    currentStreak >= milestone.minDays
-                      ? milestone.colorPrimary + '15'
-                      : theme.colors.surfaceVariant + '50',
-                },
+                getAchievementBadgeStyle[milestone.id],
               ]}
             >
               <Text style={styles.achievementEmoji}>{milestone.emoji}</Text>
@@ -616,7 +623,7 @@ const createStyles = (theme: AppTheme) =>
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: theme.colors.surface + 'CC',
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 10,

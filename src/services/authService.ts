@@ -323,26 +323,7 @@ export const signInWithGoogle = async (): Promise<{
   }
 };
 
-// --- Reset Password ---
-export const resetPassword = async (email: string) => {
-  const redirectUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/auth/v1/callback?redirect_to=yeserapp://auth/set-new-password`;
-  logger.debug('Password reset redirectTo URL configured');
-
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: redirectUrl,
-  });
-
-  return { data, error };
-};
-
-// --- Update Password ---
-export const updatePassword = async (newPassword: string) => {
-  const { data, error } = await supabase.auth.updateUser({
-    password: newPassword,
-  });
-
-  return { data, error };
-};
+// Password-based authentication functions removed - using magic link authentication only
 
 // Potentially add other functions like:
 // - updateUserAttributes

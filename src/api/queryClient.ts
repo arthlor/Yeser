@@ -10,14 +10,7 @@ onlineManager.setEventListener((setOnline) => {
   });
 });
 
-// Type guard for errors with a code property
-interface ErrorWithCode {
-  code: string;
-}
 
-const hasErrorCode = (error: unknown): error is ErrorWithCode => {
-  return typeof error === 'object' && error !== null && 'code' in error;
-};
 
 /**
  * Create and configure TanStack Query client with optimal settings

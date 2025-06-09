@@ -1,9 +1,4 @@
-import { useEffect, useState } from 'react';
-import { Vibration } from 'react-native';
-import * as Haptics from 'expo-haptics';
-
-import { analyticsService } from '@/services/analyticsService';
-import { logger } from '@/utils/debugConfig';
+import { useState } from 'react';
 import {
   ADVANCED_MILESTONES,
   type AdvancedMilestone,
@@ -36,7 +31,7 @@ interface MilestoneState {
 
 export const useAdvancedStreakMilestones = ({
   currentStreak,
-  previousStreak,
+  previousStreak: _previousStreak,
   longestStreak,
 }: UseAdvancedStreakMilestonesProps): MilestoneState => {
   const [showCelebration, setShowCelebration] = useState(false);
@@ -72,84 +67,7 @@ export const useAdvancedStreakMilestones = ({
   // Get all unlocked achievements
   const achievementsUnlocked = ADVANCED_MILESTONES.filter((m) => currentStreak >= m.minDays);
 
-  // Handle milestone changes and celebrations
-  useEffect(() => {
-    if (previousStreak !== undefined && currentStreak > previousStreak) {
-      // Check if we've crossed into a new milestone
-      const previousMilestone = ADVANCED_MILESTONES.find(
-        (m) => previousStreak >= m.minDays && previousStreak <= m.maxDays
-      );
 
-      // If we've moved to a new milestone level, celebrate!
-      if (previousMilestone && currentMilestone && previousMilestone.id !== currentMilestone.id) {
-        triggerMilestoneCelebration(currentMilestone);
-      }
-
-      // Special celebrations for specific streak numbers
-      const specialNumbers = [1, 7, 30, 100, 365];
-      if (specialNumbers.includes(currentStreak)) {
-        triggerSpecialCelebration(currentStreak);
-      }
-    }
-  }, [currentStreak, previousStreak, currentMilestone]);
-
-  const triggerMilestoneCelebration = (milestone: AdvancedMilestone) => {
-    setJustUnlockedMilestone(milestone);
-    setShowCelebration(true);
-
-    // Haptic feedback
-    if (Haptics.impactAsync) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    } else {
-      Vibration.vibrate([100, 50, 100, 50, 200]);
-    }
-
-    // Analytics tracking
-    analyticsService.logEvent('milestone_achieved', {
-      milestone_id: milestone.id,
-      milestone_title: milestone.title,
-      streak_count: currentStreak,
-      category: milestone.category,
-      reward: milestone.reward,
-      is_personal_record: isPersonalRecord,
-    });
-
-    logger.debug('Milestone unlocked!', {
-      milestone: milestone.title,
-      streak: currentStreak,
-      category: milestone.category,
-    });
-
-    // Auto-hide celebration after 4 seconds
-    setTimeout(() => {
-      setShowCelebration(false);
-      setJustUnlockedMilestone(null);
-    }, 4000);
-  };
-
-  const triggerSpecialCelebration = (streakNumber: number) => {
-    const celebrations: Record<number, string> = {
-      1: 'İlk gün! Yolculuk başladı! 🌱',
-      7: 'Bir hafta tamamlandı! 🎉',
-      30: 'Bir ay doldu! İnanılmaz! 🌟',
-      100: 'Yüz gün! Efsane başarı! 💯',
-      365: 'TAM BİR YIL! ŞAMPIYONSUN! 🏆',
-    };
-
-    const message = celebrations[streakNumber];
-    if (message) {
-      analyticsService.logEvent('special_streak_achieved', {
-        streak_count: streakNumber,
-        message,
-        is_personal_record: isPersonalRecord,
-      });
-
-      logger.debug('Special streak achieved!', {
-        streak: streakNumber,
-        message,
-      });
-    }
-  };
 
   const dismissCelebration = () => {
     setShowCelebration(false);

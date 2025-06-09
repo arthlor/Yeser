@@ -18,6 +18,12 @@ const DayPreview: React.FC<DayPreviewProps> = ({
 }) => {
   const { theme } = useTheme();
 
+  const actionFooterStyle = React.useMemo(() => ({
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderTopColor: theme.colors.outline + '10',
+  }), [theme]);
+
   if (!selectedDate) {
     return null;
   }
@@ -111,13 +117,7 @@ const DayPreview: React.FC<DayPreviewProps> = ({
             />
             <TouchableOpacity
               onPress={onViewEntry}
-              style={[
-                styles.actionFooter,
-                {
-                  paddingHorizontal: theme.spacing.md,
-                  paddingVertical: theme.spacing.sm,
-                },
-              ]}
+              style={[styles.actionFooter, actionFooterStyle]}
             >
               <View style={[styles.actionContainer, { gap: theme.spacing.xs }]}>
                 <Text
@@ -169,8 +169,6 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
-    borderBottomColor: 'rgba(0,0,0,0.1)',
     marginBottom: 16,
     overflow: 'hidden',
   },
@@ -189,7 +187,6 @@ const styles = StyleSheet.create({
   },
   actionFooter: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.1)',
   },
   previewContent: {},
   actionContainer: {

@@ -6,8 +6,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 
 // For the authentication flow - magic link and OAuth only
 export interface AuthStackParamList extends Record<string, object | undefined> {
-  Login: undefined; // Magic link login screen
-  EmailConfirm: { token?: string; type?: string } | undefined; // For magic link confirmation deep link
+  Login: undefined; // Magic link login screen (email-only + Google OAuth)
 }
 
 // Main app navigator

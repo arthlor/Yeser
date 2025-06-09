@@ -67,14 +67,28 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
         }),
       ]).start();
     }
-  }, [statementCount, dailyGoal, fadeAnim, scaleAnim, progressAnim, celebrationScale, progressPercentage]);
+  }, [
+    statementCount,
+    dailyGoal,
+    fadeAnim,
+    scaleAnim,
+    progressAnim,
+    celebrationScale,
+    progressPercentage,
+  ]);
 
   const getGreeting = () => {
-    if (!isToday) {return '';}
+    if (!isToday) {
+      return '';
+    }
 
     const hour = new Date().getHours();
-    if (hour < 12) {return 'Günaydın! ☀️';}
-    if (hour < 18) {return 'İyi günler! 🌤️';}
+    if (hour < 12) {
+      return 'Günaydın! ☀️';
+    }
+    if (hour < 18) {
+      return 'İyi günler! 🌤️';
+    }
     return 'İyi akşamlar! 🌙';
   };
 
@@ -112,11 +126,7 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
         },
       ]}
     >
-              <ThemedCard
-          variant="elevated"
-          density="comfortable"
-          style={styles.heroCard}
-      >
+      <ThemedCard variant="elevated" density="comfortable" style={styles.heroCard}>
         {/* Greeting for today */}
         {isToday && <Text style={styles.greeting}>{getGreeting()}</Text>}
 
@@ -134,9 +144,7 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
               <Text style={styles.countLabel}>/ {dailyGoal}</Text>
             </View>
 
-            <Text style={styles.progressLabel}>
-              {Math.round(progressPercentage)}% tamamlandı
-            </Text>
+            <Text style={styles.progressLabel}>{Math.round(progressPercentage)}% tamamlandı</Text>
           </View>
 
           {/* Progress bar */}

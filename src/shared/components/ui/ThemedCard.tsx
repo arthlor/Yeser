@@ -1,5 +1,12 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, TouchableOpacityProps, View, ViewProps, ViewStyle } from 'react-native';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  TouchableOpacityProps,
+  View,
+  ViewProps,
+  ViewStyle,
+} from 'react-native';
 
 import { useTheme } from '../../../providers/ThemeProvider';
 import { AppTheme } from '../../../themes/types';
@@ -24,23 +31,23 @@ interface ThemedCardProps extends ViewProps {
   contentStyle?: ViewStyle;
   containerStyle?: ViewStyle;
   variant?: CardVariant;
-  
+
   // Enhanced spacing controls (absorbed from ScreenCard)
   padding?: SpacingSize;
   margin?: SpacingSize;
   borderRadius?: BorderRadiusSize;
-  
+
   // ✨ NEW: Density system for modern spacing control
   density?: DensitySize;
-  
+
   // ✨ NEW: Direct elevation control (overrides variant-based shadows)
   elevation?: ElevationLevel;
-  
+
   // Interaction support
   onPress?: () => void;
   touchableProps?: Omit<TouchableOpacityProps, 'style' | 'onPress'>;
   disabled?: boolean;
-  
+
   // Accessibility
   testID?: string;
 }
@@ -48,7 +55,7 @@ interface ThemedCardProps extends ViewProps {
 /**
  * 🎯 UNIFIED THEMED CARD
  * Enhanced card component that merges ThemedCard and ScreenCard functionality
- * 
+ *
  * Features:
  * - 5 comprehensive variants (default, elevated, interactive, outlined, filled)
  * - Granular spacing controls (padding, margin, borderRadius)
@@ -59,31 +66,31 @@ interface ThemedCardProps extends ViewProps {
  * - Full interaction support
  * - Enhanced accessibility
  * - Backward compatibility with both ThemedCard and ScreenCard APIs
- * 
+ *
  * @example
  * // Basic usage with variant
  * <ThemedCard variant="elevated">
  *   <Text>Content</Text>
  * </ThemedCard>
- * 
+ *
  * @example
  * // Modern density-based spacing
- * <ThemedCard 
- *   variant="default" 
+ * <ThemedCard
+ *   variant="default"
  *   density="compact"     // 8px padding - tight for lists
  * >
  *   <Text>List item</Text>
  * </ThemedCard>
- * 
+ *
  * @example
  * // Direct elevation control (overrides variant shadows)
- * <ThemedCard 
+ * <ThemedCard
  *   variant="outlined"
  *   elevation="floating"  // Uses floating shadow instead of outlined's default
  * >
  *   <Text>Custom elevation</Text>
  * </ThemedCard>
- * 
+ *
  * @example
  * // Complete modern API usage
  * <ThemedCard
@@ -119,11 +126,7 @@ const ThemedCard: React.FC<ThemedCardProps> = ({
 
   const isInteractive = Boolean(onPress) && !disabled;
 
-  const cardContent = (
-    <View style={[styles.content, contentStyle]}>
-      {children}
-    </View>
-  );
+  const cardContent = <View style={[styles.content, contentStyle]}>{children}</View>;
 
   // Interactive card with TouchableOpacity
   if (isInteractive) {
@@ -147,12 +150,7 @@ const ThemedCard: React.FC<ThemedCardProps> = ({
   // Static card with View
   return (
     <View style={[containerStyle]}>
-      <View
-        style={[styles.card, style]}
-        testID={testID}
-        {...rest}
-        accessibilityRole="none"
-      >
+      <View style={[styles.card, style]} testID={testID} {...rest} accessibilityRole="none">
         {cardContent}
       </View>
     </View>
@@ -247,9 +245,9 @@ const createStyles = (
  * Enhanced variant system supporting all use cases with elevation override support
  */
 const getVariantStyles = (
-  theme: AppTheme, 
-  variant: CardVariant, 
-  shadows: ReturnType<typeof unifiedShadows>, 
+  theme: AppTheme,
+  variant: CardVariant,
+  shadows: ReturnType<typeof unifiedShadows>,
   elevation: ElevationLevel
 ) => {
   const baseCard = {
@@ -289,7 +287,7 @@ const getVariantStyles = (
         ...baseCard,
         ...(finalShadow || shadows.card), // Use elevation override or default card shadow
       };
-      
+
     case 'interactive':
       return {
         ...baseCard,
@@ -297,7 +295,7 @@ const getVariantStyles = (
         borderColor: theme.colors.outline + '20', // Subtle border
         ...(finalShadow || shadows.subtle), // Use elevation override or default subtle shadow
       };
-      
+
     case 'outlined':
       return {
         ...baseCard,
@@ -305,14 +303,14 @@ const getVariantStyles = (
         borderColor: theme.colors.outline + '40', // More prominent border
         ...(finalShadow || shadows.none), // Use elevation override or no shadow for clean outlined look
       };
-      
+
     case 'filled':
       return {
         backgroundColor: theme.colors.surfaceVariant, // Different background
         borderWidth: 0,
         ...(finalShadow || shadows.none), // Use elevation override or no shadow for filled variant
       };
-      
+
     case 'default':
     default:
       return {
@@ -325,4 +323,11 @@ const getVariantStyles = (
 };
 
 export default ThemedCard;
-export type { ThemedCardProps, CardVariant, SpacingSize, BorderRadiusSize, DensitySize, ElevationLevel };
+export type {
+  ThemedCardProps,
+  CardVariant,
+  SpacingSize,
+  BorderRadiusSize,
+  DensitySize,
+  ElevationLevel,
+};

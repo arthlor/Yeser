@@ -48,6 +48,9 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Analytics tracking
+    analyticsService.logScreenView('onboarding_feature_intro_step');
+
     // Simple entrance animation
     Animated.timing(fadeAnim, {
       toValue: 1,

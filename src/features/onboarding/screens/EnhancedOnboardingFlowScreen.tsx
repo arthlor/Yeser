@@ -151,8 +151,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
     return () => backHandler.remove();
   }, [stepAnim, handleStepBack]);
 
-
-
   // Complete onboarding and save data
   const handleOnboardingComplete = useCallback(async () => {
     try {

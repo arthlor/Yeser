@@ -3,4 +3,4 @@ export * from '../shared/components';
 export * from '../features/gratitude/components';
 export * from '../features/streak/components';
 export * from '../features/home/components';
-export * from '../features/throwback/components'; 
+export * from '../features/throwback/components';

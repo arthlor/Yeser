@@ -1,4 +1,5 @@
-import React, { createContext, ReactNode, useContext, useMemo } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo } from 'react';
+import { Appearance, ColorSchemeName } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, Provider as PaperProvider } from 'react-native-paper';
 
 import { useThemeStore } from '../store/themeStore';
@@ -18,54 +19,79 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
+// 🚨 FIX: Utility function to simplify color mapping
+const mapThemeColors = (baseTheme: typeof MD3LightTheme, appTheme: AppTheme) => ({
+  ...baseTheme.colors,
+  primary: appTheme.colors.primary,
+  onPrimary: appTheme.colors.onPrimary,
+  primaryContainer: appTheme.colors.primaryContainer,
+  onPrimaryContainer: appTheme.colors.onPrimaryContainer,
+  secondary: appTheme.colors.secondary,
+  onSecondary: appTheme.colors.onSecondary,
+  secondaryContainer: appTheme.colors.secondaryContainer,
+  onSecondaryContainer: appTheme.colors.onSecondaryContainer,
+  tertiary: appTheme.colors.tertiary,
+  onTertiary: appTheme.colors.onTertiary,
+  tertiaryContainer: appTheme.colors.tertiaryContainer,
+  onTertiaryContainer: appTheme.colors.onTertiaryContainer,
+  surface: appTheme.colors.surface,
+  onSurface: appTheme.colors.onSurface,
+  surfaceVariant: appTheme.colors.surfaceVariant,
+  onSurfaceVariant: appTheme.colors.onSurfaceVariant,
+  background: appTheme.colors.background,
+  onBackground: appTheme.colors.onBackground,
+  error: appTheme.colors.error,
+  onError: appTheme.colors.onError,
+  errorContainer: appTheme.colors.errorContainer,
+  onErrorContainer: appTheme.colors.onErrorContainer,
+  outline: appTheme.colors.outline,
+  outlineVariant: appTheme.colors.outlineVariant,
+});
+
 // SIMPLIFIED: Single source of truth ThemeProvider
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const { activeTheme, activeThemeName, setTheme, toggleTheme } = useThemeStore();
+  const { activeTheme, activeThemeName, renderedTheme, setTheme, setRenderedTheme, toggleTheme } =
+    useThemeStore();
 
+  // 🚨 FIX: Implement proper auto theme detection
   const setColorMode = (mode: 'light' | 'dark' | 'auto') => {
     if (mode === 'auto') {
-      // For now, default to light when auto is selected
-      // In a real implementation, you would detect system preference
-      setTheme('light');
+      const systemColorScheme: ColorSchemeName = Appearance.getColorScheme();
+      const detectedTheme = systemColorScheme === 'dark' ? 'dark' : 'light';
+      setTheme('auto');
+      setRenderedTheme(detectedTheme);
     } else {
       setTheme(mode);
     }
   };
 
-  // Create Paper theme based on current theme
+  // 🚨 FIX: Listen for system theme changes when in auto mode
+  useEffect(() => {
+    if (activeThemeName === 'auto') {
+      const listener = ({ colorScheme }: { colorScheme: ColorSchemeName }) => {
+        const detectedTheme = colorScheme === 'dark' ? 'dark' : 'light';
+        setRenderedTheme(detectedTheme);
+      };
+
+      const subscription = Appearance.addChangeListener(listener);
+
+      // Set initial theme based on system preference
+      const systemColorScheme = Appearance.getColorScheme();
+      const detectedTheme = systemColorScheme === 'dark' ? 'dark' : 'light';
+      setRenderedTheme(detectedTheme);
+
+      return () => subscription?.remove();
+    }
+  }, [activeThemeName, setRenderedTheme]);
+
+  // 🚨 FIX: Simplified Paper theme creation using utility function
   const paperTheme = useMemo(() => {
-    const baseTheme = activeThemeName === 'dark' ? MD3DarkTheme : MD3LightTheme;
+    const baseTheme = renderedTheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
     return {
       ...baseTheme,
-      colors: {
-        ...baseTheme.colors,
-        primary: activeTheme.colors.primary,
-        onPrimary: activeTheme.colors.onPrimary,
-        primaryContainer: activeTheme.colors.primaryContainer,
-        onPrimaryContainer: activeTheme.colors.onPrimaryContainer,
-        secondary: activeTheme.colors.secondary,
-        onSecondary: activeTheme.colors.onSecondary,
-        secondaryContainer: activeTheme.colors.secondaryContainer,
-        onSecondaryContainer: activeTheme.colors.onSecondaryContainer,
-        tertiary: activeTheme.colors.tertiary,
-        onTertiary: activeTheme.colors.onTertiary,
-        tertiaryContainer: activeTheme.colors.tertiaryContainer,
-        onTertiaryContainer: activeTheme.colors.onTertiaryContainer,
-        surface: activeTheme.colors.surface,
-        onSurface: activeTheme.colors.onSurface,
-        surfaceVariant: activeTheme.colors.surfaceVariant,
-        onSurfaceVariant: activeTheme.colors.onSurfaceVariant,
-        background: activeTheme.colors.background,
-        onBackground: activeTheme.colors.onBackground,
-        error: activeTheme.colors.error,
-        onError: activeTheme.colors.onError,
-        errorContainer: activeTheme.colors.errorContainer,
-        onErrorContainer: activeTheme.colors.onErrorContainer,
-        outline: activeTheme.colors.outline,
-        outlineVariant: activeTheme.colors.outlineVariant,
-      },
+      colors: mapThemeColors(baseTheme, activeTheme),
     };
-  }, [activeTheme, activeThemeName]);
+  }, [activeTheme, renderedTheme]);
 
   const contextValue: ThemeContextType = {
     theme: activeTheme,

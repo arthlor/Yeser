@@ -4,13 +4,7 @@ import { getPrimaryShadow } from '@/themes/utils';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface DailyEntryPromptProps {

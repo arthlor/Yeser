@@ -44,13 +44,13 @@ export const useUsernameValidation = (): UseUsernameValidationResult => {
     const timer = setTimeout(async () => {
       setIsChecking(true);
       logger.debug(`Checking username availability for: "${username}"`);
-      
+
       try {
         const available = await checkUsernameAvailability(username);
         logger.debug(`Username "${username}" availability result:`, { available });
-        
+
         setIsAvailable(available);
-        
+
         if (!available) {
           setError('Bu kullanıcı adı zaten kullanılıyor');
           logger.debug(`Setting error: username "${username}" is not available`);
@@ -84,4 +84,4 @@ export const useUsernameValidation = (): UseUsernameValidationResult => {
     error,
     checkUsername,
   };
-}; 
+};

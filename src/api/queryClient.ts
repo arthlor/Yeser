@@ -4,8 +4,8 @@ import { onlineManager } from '@tanstack/react-query';
 import { logger } from '@/utils/debugConfig';
 
 // Configure online manager for React Native
-onlineManager.setEventListener(setOnline => {
-  return NetInfo.addEventListener(state => {
+onlineManager.setEventListener((setOnline) => {
+  return NetInfo.addEventListener((state) => {
     setOnline(!!state.isConnected);
   });
 });
@@ -46,7 +46,7 @@ export const queryClient = new QueryClient({
       },
 
       // Retry delay with exponential backoff
-      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
 
       // Network mode: Don't fetch when offline
       networkMode: 'online',

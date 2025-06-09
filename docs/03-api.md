@@ -1,15 +1,17 @@
 # API Documentation
 
-This document provides comprehensive documentation for the API layer in the Yeser gratitude app, built with TanStack Query v5.80.2 for intelligent server state management.
+This document provides comprehensive documentation for the API layer in the Yeşer gratitude app, built with TanStack Query v5.80.2 for intelligent server state management and **magic link authentication** flows.
 
 ## 🌐 API Architecture Overview
 
-The Yeser app uses a modern API architecture with:
+The Yeşer app uses a modern API architecture with:
 
 - **Supabase Backend**: PostgreSQL database with Row Level Security (RLS)
+- **Magic Link Authentication**: Passwordless security with deep link integration
 - **TanStack Query v5.80.2**: Intelligent caching, background sync, optimistic updates
 - **Type-Safe APIs**: Full TypeScript integration with Zod validation
 - **Feature-Based Organization**: APIs organized by domain (auth, gratitude, settings, etc.)
+- **Enhanced Security**: Rate limiting, token validation, and secure authentication flows
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -50,11 +52,12 @@ src/api/
 ├── queryClient.ts          # TanStack Query client configuration
 ├── queryKeys.ts           # Centralized query key factory
 ├── gratitudeApi.ts        # Gratitude CRUD operations
-├── profileApi.ts          # User profile management with notifications
+├── profileApi.ts          # User profile management with notifications & auth metadata
 ├── promptApi.ts           # Daily prompts with varied prompts support
 ├── streakApi.ts           # Streak calculations and analytics
 ├── userDataApi.ts         # Data export functionality
-└── authApi.ts            # Authentication helpers (if needed)
+├── authApi.ts            # Magic link and OAuth authentication flows
+└── deepLinkApi.ts        # Deep link handling and token extraction
 ```
 
 ## 🔧 Query Client Configuration
@@ -1210,6 +1213,275 @@ export const useInfiniteGratitudeEntries = () => {
 };
 ```
 
+## 🔐 Authentication API
+
+**File**: `src/api/authApi.ts`
+
+### Magic Link Authentication
+
+```typescript
+import { supabase } from '@/utils/supabaseClient';
+import { logger } from '@/utils/debugConfig';
+
+/**
+ * Sends a magic link to the user's email for passwordless authentication
+ */
+export const sendMagicLink = async (
+  email: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error('Geçersiz e-posta adresi');
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.toLowerCase().trim(),
+      options: {
+        emailRedirectTo: 'yeser://auth/callback',
+        shouldCreateUser: true,
+      },
+    });
+
+    if (error) {
+      logger.error('Magic link error:', error.message);
+
+      // Handle rate limiting
+      if (error.message.includes('rate limit')) {
+        return {
+          success: false,
+          message: 'Çok fazla deneme yaptınız. Lütfen bir süre bekleyip tekrar deneyin.',
+        };
+      }
+
+      return {
+        success: false,
+        message: 'E-posta gönderilirken bir hata oluştu. Lütfen tekrar deneyin.',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Magic link e-posta adresinize gönderildi. E-postanızı kontrol edin.',
+    };
+  } catch (error) {
+    logger.error('Unexpected error in sendMagicLink:', error);
+    return {
+      success: false,
+      message: 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.',
+    };
+  }
+};
+
+/**
+ * Handles magic link confirmation from deep link
+ */
+export const confirmMagicLink = async (
+  accessToken: string,
+  refreshToken: string
+): Promise<{ success: boolean; user?: any; error?: string }> => {
+  try {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (error) {
+      logger.error('Magic link confirmation error:', error.message);
+      return {
+        success: false,
+        error: 'Giriş bağlantısı geçersiz veya süresi dolmuş. Yeni bir bağlantı isteyin.',
+      };
+    }
+
+    if (!data.user) {
+      return {
+        success: false,
+        error: 'Kullanıcı bilgileri alınamadı.',
+      };
+    }
+
+    logger.info('Magic link authentication successful');
+    return {
+      success: true,
+      user: data.user,
+    };
+  } catch (error) {
+    logger.error('Unexpected error in confirmMagicLink:', error);
+    return {
+      success: false,
+      error: 'Beklenmeyen bir hata oluştu.',
+    };
+  }
+};
+
+/**
+ * Handles Google OAuth authentication
+ */
+export const signInWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'yeser://auth/callback',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+
+    if (error) {
+      logger.error('Google OAuth error:', error.message);
+      return {
+        success: false,
+        error: 'Google ile giriş yapılırken bir hata oluştu.',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    logger.error('Unexpected error in signInWithGoogle:', error);
+    return {
+      success: false,
+      error: 'Beklenmeyen bir hata oluştu.',
+    };
+  }
+};
+
+/**
+ * Signs out the current user
+ */
+export const signOut = async (): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      logger.error('Sign out error:', error.message);
+      return {
+        success: false,
+        error: 'Çıkış yapılırken bir hata oluştu.',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    logger.error('Unexpected error in signOut:', error);
+    return {
+      success: false,
+      error: 'Beklenmeyen bir hata oluştu.',
+    };
+  }
+};
+```
+
+### Deep Link Handler
+
+**File**: `src/api/deepLinkApi.ts`
+
+```typescript
+import * as Linking from 'expo-linking';
+import { logger } from '@/utils/debugConfig';
+
+/**
+ * Extracts authentication tokens from deep link URL
+ */
+export const extractTokensFromUrl = (
+  url: string
+): {
+  accessToken?: string;
+  refreshToken?: string;
+  error?: string;
+} => {
+  try {
+    logger.debug('Processing deep link URL:', url);
+
+    const parsed = Linking.parse(url);
+    const { queryParams } = parsed;
+
+    if (!queryParams) {
+      logger.warn('No query parameters found in URL');
+      return { error: 'URL parametreleri bulunamadı' };
+    }
+
+    // Extract tokens from various possible parameter names
+    const accessToken =
+      queryParams.access_token || queryParams.accessToken || queryParams['access-token'];
+
+    const refreshToken =
+      queryParams.refresh_token || queryParams.refreshToken || queryParams['refresh-token'];
+
+    if (!accessToken || !refreshToken) {
+      logger.warn('Missing tokens in URL:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+      });
+      return { error: 'Kimlik doğrulama bilgileri eksik' };
+    }
+
+    logger.info('Successfully extracted tokens from URL');
+    return {
+      accessToken: accessToken as string,
+      refreshToken: refreshToken as string,
+    };
+  } catch (error) {
+    logger.error('Error extracting tokens from URL:', error);
+    return { error: 'URL işlenirken hata oluştu' };
+  }
+};
+
+/**
+ * Validates deep link URL format
+ */
+export const isValidAuthUrl = (url: string): boolean => {
+  try {
+    const parsed = Linking.parse(url);
+    return parsed.hostname === 'auth' && parsed.path === '/callback';
+  } catch {
+    return false;
+  }
+};
+```
+
+### Authentication Hook Integration
+
+```typescript
+// Example usage in hooks
+export const useAuthMutations = () => {
+  const queryClient = useQueryClient();
+
+  const magicLinkMutation = useMutation({
+    mutationFn: sendMagicLink,
+    onSuccess: (result) => {
+      if (result.success) {
+        // Track analytics
+        logger.info('Magic link sent successfully');
+      }
+    },
+    onError: (error) => {
+      logger.error('Magic link mutation error:', error);
+    },
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: ({ accessToken, refreshToken }) => confirmMagicLink(accessToken, refreshToken),
+    onSuccess: (result) => {
+      if (result.success) {
+        // Invalidate all queries to refetch with new auth
+        queryClient.invalidateQueries();
+      }
+    },
+  });
+
+  return {
+    sendMagicLink: magicLinkMutation.mutate,
+    confirmMagicLink: confirmMutation.mutate,
+    isLoading: magicLinkMutation.isPending || confirmMutation.isPending,
+  };
+};
+```
+
 ---
 
-This API architecture provides a **robust, type-safe, and performant** foundation for the Yeser gratitude app, with intelligent caching, optimistic updates, and comprehensive error handling through TanStack Query v5.80.2 integration.
+This enhanced API architecture provides a **robust, type-safe, and secure** foundation for the Yeşer gratitude app, with **passwordless authentication**, intelligent caching, optimistic updates, and comprehensive error handling through TanStack Query v5.80.2 integration.

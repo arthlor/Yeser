@@ -2,12 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 
 import React, { useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
@@ -46,7 +41,7 @@ const TermsOfServiceScreen: React.FC = () => {
   }, []);
 
   return (
-          <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <ScreenLayout edges={['top']} edgeToEdge={true}>
       {/* Header Section */}
       <ScreenSection spacing="large">
         <View style={styles.headerContainer}>
@@ -71,16 +66,12 @@ const TermsOfServiceScreen: React.FC = () => {
 
       {/* Content Section */}
       <ScreenSection spacing="large">
-        <ThemedCard 
-          density="comfortable"
-          elevation="card"
-          style={styles.card}
-        >
+        <ThemedCard density="comfortable" elevation="card" style={styles.card}>
           <TermsSection number="1" title="Giriş">
             <Text style={styles.paragraph}>
-              Yeşer mobil uygulamasına ("Uygulama") hoş geldiniz. Bu Kullanım Koşulları ("Koşullar"),
-              Uygulamaya erişiminizi ve Uygulamayı kullanımınızı yönetir. Uygulamaya erişerek veya
-              Uygulamayı kullanarak, bu Koşullara bağlı kalmayı kabul edersiniz.
+              Yeşer mobil uygulamasına ("Uygulama") hoş geldiniz. Bu Kullanım Koşulları
+              ("Koşullar"), Uygulamaya erişiminizi ve Uygulamayı kullanımınızı yönetir. Uygulamaya
+              erişerek veya Uygulamayı kullanarak, bu Koşullara bağlı kalmayı kabul edersiniz.
             </Text>
           </TermsSection>
 
@@ -106,9 +97,9 @@ const TermsOfServiceScreen: React.FC = () => {
           <TermsSection number="4" title="Sorumluluğun Reddi">
             <Text style={styles.paragraph}>
               Uygulama "olduğu gibi" ve "mevcut olduğu gibi" esasına göre sağlanır. Yasaların izin
-              verdiği azami ölçüde, Yeşer, satılabilirlik, belirli bir amaca uygunluk ve ihlal etmeme
-              garantileri dahil ancak bunlarla sınırlı olmamak üzere, açık veya zımni her türlü
-              garantiyi reddeder.
+              verdiği azami ölçüde, Yeşer, satılabilirlik, belirli bir amaca uygunluk ve ihlal
+              etmeme garantileri dahil ancak bunlarla sınırlı olmamak üzere, açık veya zımni her
+              türlü garantiyi reddeder.
             </Text>
           </TermsSection>
 

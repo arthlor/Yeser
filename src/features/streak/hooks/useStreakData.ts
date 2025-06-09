@@ -51,7 +51,9 @@ export const useStreakStatus = (): StreakStatus => {
       };
     }
 
-    const lastEntryDate = streak.last_entry_date ? streak.last_entry_date.toISOString().split('T')[0] : null;
+    const lastEntryDate = streak.last_entry_date
+      ? streak.last_entry_date.toISOString().split('T')[0]
+      : null;
     const currentStreak = streak.current_streak;
 
     // Calculate status based on last entry date and current streak
@@ -105,5 +107,3 @@ const getYesterday = (): string => {
   yesterday.setDate(yesterday.getDate() - 1);
   return yesterday.toISOString().split('T')[0];
 };
-
-

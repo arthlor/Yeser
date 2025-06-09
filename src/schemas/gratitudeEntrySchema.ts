@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-// Schema for the raw data structure directly from the 'gratitude_entries' table
-// This should align with the columns defined in the database.
-export const rawGratitudeEntrySchema = z.object({
+// 🚨 FIX: Single source of truth schema (DRY principle)
+// Base schema that defines the core structure once
+const baseGratitudeEntrySchema = z.object({
   id: z.string().uuid({ message: 'Invalid UUID for id' }),
   user_id: z.string().uuid({ message: 'Invalid UUID for user_id' }),
   entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format, expected YYYY-MM-DD'),
@@ -17,24 +17,18 @@ export const rawGratitudeEntrySchema = z.object({
     .datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
 });
 
+// 🚨 FIX: Raw schema extends base schema - no duplication
+export const rawGratitudeEntrySchema = baseGratitudeEntrySchema;
+
 export type RawGratitudeEntry = z.infer<typeof rawGratitudeEntrySchema>;
 
-// Application-level schema for a Gratitude Entry.
-// This schema should reflect the actual fields of the 'gratitude_entries' table.
-// Fields like mood, tags, is_public, image_url are not part of the current gratitude_entries table.
-export const gratitudeEntrySchema = z.object({
-  id: z.string().uuid('Invalid UUID format for id'),
-  user_id: z.string().uuid('Invalid UUID format for user_id'),
+// 🚨 FIX: Application schema extends base with additional validation
+// If they're identical, just reuse the base. If different, use .extend()
+export const gratitudeEntrySchema = baseGratitudeEntrySchema.extend({
+  // Enhanced validation for application layer
   statements: z
     .array(z.string().min(1, 'Statement cannot be empty'))
     .min(1, 'At least one statement is required'),
-  entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format, expected YYYY-MM-DD'),
-  created_at: z
-    .string()
-    .datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
-  updated_at: z
-    .string()
-    .datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
 });
 
 export type GratitudeEntry = z.infer<typeof gratitudeEntrySchema>;
@@ -64,3 +58,13 @@ export const deleteStatementPayloadSchema = z.object({
 });
 
 export type DeleteStatementPayload = z.infer<typeof deleteStatementPayloadSchema>;
+
+// Schema for DailyPrompt from the daily_prompts table
+export const dailyPromptSchema = z.object({
+  id: z.string().uuid({ message: 'Invalid UUID for prompt id' }),
+  prompt_text_tr: z.string().min(1, 'Turkish prompt text is required'),
+  prompt_text_en: z.string().nullable().optional(),
+  category: z.string().nullable().optional(),
+});
+
+export type DailyPrompt = z.infer<typeof dailyPromptSchema>;

@@ -12,7 +12,7 @@ import { useStreakData } from '@/features/streak/hooks';
 import { useUserProfile } from '@/shared/hooks';
 import { useTheme } from '@/providers/ThemeProvider';
 import { analyticsService } from '@/services/analyticsService';
-import type { MainAppTabParamList, RootStackParamList } from '@/types/navigation';
+import type { MainTabParamList, RootStackParamList } from '@/types/navigation';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -23,7 +23,7 @@ import { Modal, RefreshControl } from 'react-native';
 import { logger } from '@/utils/debugConfig';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
-  BottomTabScreenProps<MainAppTabParamList, 'HomeTab'>['navigation'],
+  BottomTabScreenProps<MainTabParamList, 'HomeTab'>['navigation'],
   StackNavigationProp<RootStackParamList>
 >;
 

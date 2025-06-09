@@ -1,76 +1,50 @@
 // src/types/navigation.ts
 import { NavigatorScreenParams } from '@react-navigation/native';
-
-import { GratitudeEntry } from '../schemas/gratitudeEntrySchema';
+import type { StackNavigationProp } from '@react-navigation/stack';
 
 // Define ParamList types for each navigator
 
-// For the authentication flow (e.g., Login, SignUp)
+// For the authentication flow - magic link and OAuth only
 export interface AuthStackParamList extends Record<string, object | undefined> {
-  Login: undefined; // No params expected for Login screen
-  SignUp: undefined; // No params expected for SignUp screen
-  ResetPassword: undefined; // Password reset screen
-  SetNewPassword: { access_token?: string; refresh_token?: string; type?: string } | undefined; // Set new password after reset
-  EmailConfirm: { token?: string; type?: string } | undefined; // For email verification deep link
-  // Add other auth screens here, e.g., ForgotPassword: undefined;
+  Login: undefined; // Magic link login screen
+  EmailConfirm: { token?: string; type?: string } | undefined; // For magic link confirmation deep link
 }
 
-// For the main application flow (once authenticated)
-export interface MainAppStackParamList extends Record<string, object | undefined> {
-  Home: undefined; // Example: Home screen after login
-  GratitudeEntry: { date: string }; // Example: Screen to add/edit an entry for a specific date
-  PastEntries: undefined; // Example: Screen to view list of past entries
-  Settings: undefined; // Example: App settings screen
-  // Add other main app screens here
+// Main app navigator
+export interface MainTabParamList extends Record<string, object | undefined> {
+  HomeTab: undefined;
+  DailyEntryTab: { initialDate?: string } | undefined;
+  PastEntriesTab: undefined;
+  CalendarTab: undefined;
+  SettingsTab: undefined;
 }
 
-// For the Tab navigator within the main app flow
-export interface MainAppTabParamList extends Record<string, object | undefined> {
-  HomeTab: undefined; // Home screen with today's summary and quick actions
-  DailyEntryTab:
-    | {
-        entryToEdit?: GratitudeEntry;
-        initialDate?: string; // Format: YYYY-MM-DD
-      }
-    | undefined; // Daily entry creation/editing screen
-  PastEntriesTab: undefined; // Historical entries list
-  CalendarTab: undefined; // Calendar view of entries
-  SettingsTab: undefined; // App settings and preferences
-  // Add other tab screen params here
-}
-
-// For the Root Navigator that decides between Auth and MainApp
+// Root stack that includes auth, main app, and modal screens
 export interface RootStackParamList extends Record<string, object | undefined> {
-  // Authentication flow
   Auth: NavigatorScreenParams<AuthStackParamList>;
-
-  // Main application flow
-  MainApp: NavigatorScreenParams<MainAppTabParamList>;
-
-  // Onboarding flow
-  Onboarding: undefined; // Enhanced interactive onboarding flow
-
-  // Modal and overlay screens
-  ReminderSettings: undefined; // Notification preferences
-  EntryDetail: {
-    entryDate: string; // Pass date instead of full object for better performance
-    allowEdit?: boolean; // Whether editing is allowed
-  }; // Full entry display with optional editing
-  StreakDetails: undefined; // Dedicated streak system explanation and progress screen
-
-  // Legal and informational screens
-  PrivacyPolicy: undefined; // Privacy policy document
-  TermsOfService: undefined; // Terms of service document
-  Help: undefined; // Help documentation and FAQ
-
-  // Educational screens
-  WhyGratitude: undefined; // "Why Gratitude Matters" educational screen
-
-  // Add other modal/overlay screens here
+  MainApp: NavigatorScreenParams<MainTabParamList>;
+  Onboarding: undefined;
+  OnboardingReminderSetup: undefined;
+  ReminderSettings: undefined;
+  EntryDetail: { entryId: string; entryDate?: string };
+  PrivacyPolicy: undefined;
+  TermsOfService: undefined;
+  Help: undefined;
 }
+
+// Additional utility types
+export type AuthStackScreenProps<T extends keyof AuthStackParamList> = {
+  navigation: StackNavigationProp<AuthStackParamList, T>;
+  route: { params?: AuthStackParamList[T] };
+};
+
+export type RootStackScreenProps<T extends keyof RootStackParamList> = {
+  navigation: StackNavigationProp<RootStackParamList, T>;
+  route: { params?: RootStackParamList[T] };
+};
 
 // Enhanced type definitions for better development experience
-export type TabScreenName = keyof MainAppTabParamList;
+export type TabScreenName = keyof MainTabParamList;
 export type RootScreenName = keyof RootStackParamList;
 
 // Navigation prop types for common use cases

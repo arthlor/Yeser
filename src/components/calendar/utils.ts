@@ -52,7 +52,9 @@ export const calculateMonthlyStreak = (markedDates: CustomMarkedDates): number =
     .filter((date) => markedDates[date].marked)
     .sort();
 
-  if (dates.length === 0) {return 0;}
+  if (dates.length === 0) {
+    return 0;
+  }
 
   let maxStreak = 1;
   let currentStreak = 1;

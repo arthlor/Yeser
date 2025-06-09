@@ -5,6 +5,7 @@ This document provides comprehensive documentation for the Supabase database sch
 ## 🗄️ Database Overview
 
 ### Technology Stack
+
 - **Database**: PostgreSQL 15 (via Supabase)
 - **State Management**: TanStack Query v5.80.2 (server state) + Zustand (client state)
 - **ORM**: Direct SQL with Supabase client + TanStack Query intelligent caching
@@ -47,7 +48,7 @@ This document provides comprehensive documentation for the Supabase database sch
 Supabase Database
 ├── Auth Schema (auth.*)          # Built-in authentication
 │   ├── users                     # User accounts
-│   ├── sessions                  # User sessions  
+│   ├── sessions                  # User sessions
 │   └── refresh_tokens           # Refresh tokens
 ├── Public Schema (public.*)      # Application data
 │   ├── profiles                  # User profiles & comprehensive preferences
@@ -78,25 +79,25 @@ CREATE TABLE profiles (
   avatar_url TEXT,
   username TEXT,
   onboarded BOOLEAN DEFAULT FALSE,
-  
+
   -- Daily reminder settings
   reminder_enabled BOOLEAN DEFAULT TRUE,
   reminder_time TEXT DEFAULT '20:00:00'
     CHECK (reminder_time ~ '^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$'),
-  
+
   -- Throwback reminder settings (ENHANCED)
   throwback_reminder_enabled BOOLEAN DEFAULT TRUE,
-  throwback_reminder_frequency TEXT DEFAULT 'weekly' 
+  throwback_reminder_frequency TEXT DEFAULT 'weekly'
     CHECK (throwback_reminder_frequency IN ('disabled', 'daily', 'weekly', 'monthly')),
   throwback_reminder_time TEXT DEFAULT '10:00:00'
     CHECK (throwback_reminder_time ~ '^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$'),
-  
+
   -- Gratitude settings
   daily_gratitude_goal INTEGER DEFAULT 3 CHECK (daily_gratitude_goal > 0 AND daily_gratitude_goal <= 10),
-  
+
   -- Varied prompts system (✅ FULLY FUNCTIONAL)
   use_varied_prompts BOOLEAN DEFAULT FALSE,
-  
+
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -118,12 +119,13 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_profiles_updated_at 
-  BEFORE UPDATE ON profiles 
+CREATE TRIGGER update_profiles_updated_at
+  BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
 **Enhanced Field Descriptions:**
+
 - `id`: UUID matching auth.users.id (Primary Key)
 - `email`: User email from auth
 - `full_name`: Display name for the user
@@ -150,21 +152,21 @@ CREATE TABLE gratitude_entries (
   statements JSONB NOT NULL DEFAULT '[]'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   -- Ensure one entry per user per day
   CONSTRAINT unique_user_date UNIQUE (user_id, entry_date),
-  
+
   -- Validate statements is an array
   CONSTRAINT valid_statements CHECK (jsonb_typeof(statements) = 'array'),
-  
+
   -- Limit statements count (max 10 per day)
   CONSTRAINT max_statements CHECK (jsonb_array_length(statements) <= 10),
-  
+
   -- Ensure statements are not empty strings
   CONSTRAINT non_empty_statements CHECK (
-    statements::jsonb = '[]'::jsonb OR 
+    statements::jsonb = '[]'::jsonb OR
     NOT EXISTS (
-      SELECT 1 FROM jsonb_array_elements_text(statements) AS elem 
+      SELECT 1 FROM jsonb_array_elements_text(statements) AS elem
       WHERE trim(elem) = ''
     )
   )
@@ -181,12 +183,13 @@ CREATE INDEX idx_gratitude_entries_created_at ON gratitude_entries(created_at);
 CREATE INDEX idx_gratitude_entries_statements ON gratitude_entries USING GIN (statements);
 
 -- Updated_at trigger
-CREATE TRIGGER update_gratitude_entries_updated_at 
-  BEFORE UPDATE ON gratitude_entries 
+CREATE TRIGGER update_gratitude_entries_updated_at
+  BEFORE UPDATE ON gratitude_entries
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
 **JSONB Structure Example:**
+
 ```json
 {
   "statements": [
@@ -212,7 +215,7 @@ CREATE TABLE streaks (
   streak_start_date DATE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   -- Business logic constraints
   CONSTRAINT valid_streak_relationship CHECK (current_streak <= longest_streak),
   CONSTRAINT valid_entry_relationship CHECK (total_entries >= current_streak)
@@ -225,12 +228,13 @@ CREATE INDEX idx_streaks_longest_streak ON streaks(longest_streak);
 CREATE INDEX idx_streaks_last_entry_date ON streaks(last_entry_date);
 
 -- Updated_at trigger
-CREATE TRIGGER update_streaks_updated_at 
-  BEFORE UPDATE ON streaks 
+CREATE TRIGGER update_streaks_updated_at
+  BEFORE UPDATE ON streaks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
 **Enhanced Field Descriptions:**
+
 - `user_id`: Foreign key to auth.users (unique per user)
 - `current_streak`: Current consecutive days with entries
 - `longest_streak`: All-time longest streak achieved
@@ -248,13 +252,13 @@ CREATE TABLE daily_prompts (
   prompt_text_tr TEXT NOT NULL,
   prompt_text_en TEXT,
   category TEXT,
-  difficulty_level TEXT DEFAULT 'beginner' 
+  difficulty_level TEXT DEFAULT 'beginner'
     CHECK (difficulty_level IN ('beginner', 'intermediate', 'advanced')),
   is_active BOOLEAN DEFAULT TRUE,
   usage_count INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   -- Ensure prompt text is meaningful
   CONSTRAINT non_empty_prompt_tr CHECK (LENGTH(TRIM(prompt_text_tr)) > 10),
   CONSTRAINT valid_category CHECK (category IS NULL OR LENGTH(TRIM(category)) > 0)
@@ -267,8 +271,8 @@ CREATE INDEX idx_daily_prompts_difficulty ON daily_prompts(difficulty_level);
 CREATE INDEX idx_daily_prompts_usage_count ON daily_prompts(usage_count);
 
 -- Updated_at trigger
-CREATE TRIGGER update_daily_prompts_updated_at 
-  BEFORE UPDATE ON daily_prompts 
+CREATE TRIGGER update_daily_prompts_updated_at
+  BEFORE UPDATE ON daily_prompts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Enhanced sample prompts for production
@@ -280,7 +284,7 @@ INSERT INTO daily_prompts (prompt_text_tr, prompt_text_en, category, difficulty_
 ('Sağlığın için ne kadar minnettarsın?', 'How grateful are you for your health?', 'health', 'beginner', true),
 ('Doğada seni etkileyen bir şey var mıydı?', 'Was there something in nature that impressed you?', 'nature', 'beginner', true),
 
--- Intermediate prompts  
+-- Intermediate prompts
 ('Bugün hangi zorluğu fırsata çevirdin?', 'What challenge did you turn into an opportunity today?', 'growth', 'intermediate', true),
 ('Geçmişte aldığın hangi karar için minnettarsın?', 'What past decision are you grateful for?', 'reflection', 'intermediate', true),
 ('Bugün hangi becerin gelişti?', 'What skill of yours improved today?', 'development', 'intermediate', true),
@@ -415,47 +419,47 @@ DECLARE
 BEGIN
   -- Get current user ID
   v_user_id := auth.uid();
-  
+
   -- Check authentication
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User not authenticated';
   END IF;
-  
+
   -- Validate and clean statement
   v_trimmed_statement := TRIM(p_statement);
   IF v_trimmed_statement IS NULL OR LENGTH(v_trimmed_statement) = 0 THEN
     RAISE EXCEPTION 'Statement cannot be empty';
   END IF;
-  
+
   IF LENGTH(v_trimmed_statement) > 500 THEN
     RAISE EXCEPTION 'Statement too long (max 500 characters)';
   END IF;
-  
+
   -- Validate date (not too far in future)
   IF p_entry_date > CURRENT_DATE + INTERVAL '1 day' THEN
     RAISE EXCEPTION 'Entry date cannot be more than 1 day in the future';
   END IF;
-  
+
   -- Try to find existing entry
-  SELECT * INTO v_entry 
-  FROM gratitude_entries 
+  SELECT * INTO v_entry
+  FROM gratitude_entries
   WHERE user_id = v_user_id AND entry_date = p_entry_date;
-  
+
   IF FOUND THEN
     -- Check statement limit
     IF jsonb_array_length(v_entry.statements) >= 10 THEN
       RAISE EXCEPTION 'Maximum 10 statements per day allowed';
     END IF;
-    
+
     -- Check for duplicate statements
     IF v_entry.statements @> to_jsonb(ARRAY[v_trimmed_statement]) THEN
       RAISE EXCEPTION 'Duplicate statement not allowed';
     END IF;
-    
+
     -- Add statement to existing entry
     v_new_statements := v_entry.statements || to_jsonb(v_trimmed_statement);
-    
-    UPDATE gratitude_entries 
+
+    UPDATE gratitude_entries
     SET statements = v_new_statements,
         updated_at = NOW()
     WHERE id = v_entry.id
@@ -466,13 +470,13 @@ BEGIN
     VALUES (v_user_id, p_entry_date, jsonb_build_array(v_trimmed_statement))
     RETURNING * INTO v_entry;
   END IF;
-  
+
   -- Update streak after adding statement
   PERFORM update_user_streak(v_user_id);
-  
+
   -- Return the entry
   RETURN QUERY
-  SELECT v_entry.id, v_entry.user_id, v_entry.entry_date, 
+  SELECT v_entry.id, v_entry.user_id, v_entry.entry_date,
          v_entry.statements, v_entry.created_at, v_entry.updated_at;
 END;
 $$;
@@ -507,55 +511,55 @@ DECLARE
 BEGIN
   -- Get current user ID
   v_user_id := auth.uid();
-  
+
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User not authenticated';
   END IF;
-  
+
   -- Validate statement
   v_trimmed_statement := TRIM(p_updated_statement);
   IF v_trimmed_statement IS NULL OR LENGTH(v_trimmed_statement) = 0 THEN
     RAISE EXCEPTION 'Statement cannot be empty';
   END IF;
-  
+
   IF LENGTH(v_trimmed_statement) > 500 THEN
     RAISE EXCEPTION 'Statement too long (max 500 characters)';
   END IF;
-  
+
   -- Find the entry
-  SELECT * INTO v_entry 
-  FROM gratitude_entries 
+  SELECT * INTO v_entry
+  FROM gratitude_entries
   WHERE user_id = v_user_id AND entry_date = p_entry_date;
-  
+
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Entry not found for date %', p_entry_date;
   END IF;
-  
+
   -- Check statement count and index bounds
   v_statement_count := jsonb_array_length(v_entry.statements);
-  
+
   IF p_statement_index < 0 OR p_statement_index >= v_statement_count THEN
-    RAISE EXCEPTION 'Statement index % is out of bounds (0 to %)', 
+    RAISE EXCEPTION 'Statement index % is out of bounds (0 to %)',
       p_statement_index, v_statement_count - 1;
   END IF;
-  
+
   -- Update the statement at the specified index
   v_updated_statements := jsonb_set(
-    v_entry.statements, 
-    ARRAY[p_statement_index::text], 
+    v_entry.statements,
+    ARRAY[p_statement_index::text],
     to_jsonb(v_trimmed_statement)
   );
-  
+
   -- Update the entry
-  UPDATE gratitude_entries 
+  UPDATE gratitude_entries
   SET statements = v_updated_statements,
       updated_at = NOW()
   WHERE id = v_entry.id
   RETURNING * INTO v_entry;
-  
+
   -- Return updated entry
   RETURN QUERY
-  SELECT v_entry.id, v_entry.user_id, v_entry.entry_date, 
+  SELECT v_entry.id, v_entry.user_id, v_entry.entry_date,
          v_entry.statements, v_entry.created_at, v_entry.updated_at;
 END;
 $$;
@@ -589,28 +593,28 @@ DECLARE
 BEGIN
   -- Get current user ID
   v_user_id := auth.uid();
-  
+
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User not authenticated';
   END IF;
-  
+
   -- Find the entry
-  SELECT * INTO v_entry 
-  FROM gratitude_entries 
+  SELECT * INTO v_entry
+  FROM gratitude_entries
   WHERE user_id = v_user_id AND entry_date = p_entry_date;
-  
+
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Entry not found for date %', p_entry_date;
   END IF;
-  
+
   -- Check statement count and index bounds
   v_statement_count := jsonb_array_length(v_entry.statements);
-  
+
   IF p_statement_index < 0 OR p_statement_index >= v_statement_count THEN
-    RAISE EXCEPTION 'Statement index % is out of bounds (0 to %)', 
+    RAISE EXCEPTION 'Statement index % is out of bounds (0 to %)',
       p_statement_index, v_statement_count - 1;
   END IF;
-  
+
   -- If this is the only statement, delete the entire entry
   IF v_statement_count = 1 THEN
     DELETE FROM gratitude_entries WHERE id = v_entry.id;
@@ -625,22 +629,22 @@ BEGIN
         WHERE ordinality - 1 != p_statement_index
       ) t
     );
-    
+
     -- Update the entry
-    UPDATE gratitude_entries 
+    UPDATE gratitude_entries
     SET statements = v_updated_statements,
         updated_at = NOW()
     WHERE id = v_entry.id
     RETURNING * INTO v_entry;
   END IF;
-  
+
   -- Update streak after deletion
   PERFORM update_user_streak(v_user_id);
-  
+
   -- Return result (null if entry was deleted)
   IF NOT v_deleted_entry THEN
     RETURN QUERY
-    SELECT v_entry.id, v_entry.user_id, v_entry.entry_date, 
+    SELECT v_entry.id, v_entry.user_id, v_entry.entry_date,
            v_entry.statements, v_entry.created_at, v_entry.updated_at;
   END IF;
 END;
@@ -667,19 +671,19 @@ BEGIN
   IF p_user_id IS NULL THEN
     RAISE EXCEPTION 'User ID cannot be null';
   END IF;
-  
+
   -- Calculate current streak (from today backwards)
   v_check_date := CURRENT_DATE;
-  
+
   LOOP
     -- Check if user has an entry for this date
     SELECT EXISTS(
-      SELECT 1 FROM gratitude_entries 
-      WHERE user_id = p_user_id 
+      SELECT 1 FROM gratitude_entries
+      WHERE user_id = p_user_id
       AND entry_date = v_check_date
       AND jsonb_array_length(statements) > 0
     ) INTO v_has_entry;
-    
+
     -- If no entry found
     IF NOT v_has_entry THEN
       -- Grace period: If this is today and current streak is 0, check yesterday
@@ -687,21 +691,21 @@ BEGIN
         v_check_date := v_check_date - INTERVAL '1 day';
         CONTINUE;
       END IF;
-      
+
       -- No more grace - break the streak
       EXIT;
     END IF;
-    
+
     -- Increment current streak and check previous day
     v_current_streak := v_current_streak + 1;
     v_check_date := v_check_date - INTERVAL '1 day';
-    
+
     -- Safety limit to prevent infinite loops
     IF v_current_streak >= 1000 THEN
       EXIT;
     END IF;
   END LOOP;
-  
+
   RETURN v_current_streak;
 END;
 $$;
@@ -735,29 +739,29 @@ DECLARE
 BEGIN
   -- Use provided user_id or get from auth context
   v_user_id := COALESCE(p_user_id, auth.uid());
-  
+
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User not authenticated';
   END IF;
-  
+
   -- Get total entries and last entry date
-  SELECT COUNT(*), MAX(entry_date) 
+  SELECT COUNT(*), MAX(entry_date)
   INTO v_total_entries, v_last_entry_date
-  FROM gratitude_entries 
+  FROM gratitude_entries
   WHERE user_id = v_user_id;
-  
+
   -- Calculate current streak (from today backwards)
   v_check_date := CURRENT_DATE;
-  
+
   LOOP
     -- Check if user has an entry for this date
     SELECT EXISTS(
-      SELECT 1 FROM gratitude_entries 
-      WHERE user_id = v_user_id 
+      SELECT 1 FROM gratitude_entries
+      WHERE user_id = v_user_id
       AND entry_date = v_check_date
       AND jsonb_array_length(statements) > 0
     ) INTO v_has_entry;
-    
+
     -- If no entry found
     IF NOT v_has_entry THEN
       -- If this is today and current streak is 0, check yesterday
@@ -765,41 +769,41 @@ BEGIN
         v_check_date := v_check_date - INTERVAL '1 day';
         CONTINUE;
       END IF;
-      
+
       EXIT; -- Break the streak
     END IF;
-    
+
     -- Increment current streak and check previous day
     v_current_streak := v_current_streak + 1;
     v_check_date := v_check_date - INTERVAL '1 day';
-    
+
     -- Safety limit
     IF v_current_streak >= 365 THEN
       EXIT;
     END IF;
   END LOOP;
-  
+
   -- Calculate longest streak by checking all possible streaks
-  -- This is a simplified version; for better performance, 
+  -- This is a simplified version; for better performance,
   -- this could be cached in the streaks table
   v_longest_streak := v_current_streak;
-  
+
   -- For now, assume longest streak is at least current streak
   -- In production, this would be maintained incrementally
   SELECT COALESCE(MAX(longest_streak), v_current_streak)
   INTO v_longest_streak
   FROM streaks
   WHERE user_id = v_user_id;
-  
+
   v_longest_streak := GREATEST(v_longest_streak, v_current_streak);
-  
+
   -- Calculate streak percentage (last 30 days)
   IF v_total_entries > 0 THEN
     v_streak_percentage := LEAST((v_current_streak::DECIMAL / 30.0) * 100, 100);
   END IF;
-  
+
   RETURN QUERY
-  SELECT v_current_streak, v_longest_streak, v_total_entries, 
+  SELECT v_current_streak, v_longest_streak, v_total_entries,
          v_streak_percentage, v_last_entry_date;
 END;
 $$;
@@ -820,12 +824,12 @@ BEGIN
   -- Calculate current streak data
   SELECT * INTO v_streak_data
   FROM calculate_user_streak(p_user_id);
-  
+
   -- Upsert streak record
   INSERT INTO streaks (
-    user_id, 
-    current_streak, 
-    longest_streak, 
+    user_id,
+    current_streak,
+    longest_streak,
     total_entries,
     last_entry_date
   )
@@ -868,7 +872,7 @@ BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'User not authenticated';
   END IF;
-  
+
   -- Return random active prompt with usage tracking
   RETURN QUERY
   SELECT dp.id, dp.prompt_text_tr, dp.prompt_text_en, dp.category, dp.difficulty_level
@@ -876,12 +880,12 @@ BEGIN
   WHERE dp.is_active = true
   ORDER BY RANDOM()
   LIMIT 1;
-  
+
   -- Update usage count (fire and forget)
-  UPDATE daily_prompts 
+  UPDATE daily_prompts
   SET usage_count = usage_count + 1
   WHERE id = (
-    SELECT dp2.id 
+    SELECT dp2.id
     FROM daily_prompts dp2
     WHERE dp2.is_active = true
     ORDER BY RANDOM()
@@ -911,12 +915,12 @@ BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'User not authenticated';
   END IF;
-  
+
   -- Validate limit
   IF p_limit <= 0 OR p_limit > 50 THEN
     RAISE EXCEPTION 'Limit must be between 1 and 50';
   END IF;
-  
+
   -- Return multiple random active prompts
   RETURN QUERY
   SELECT dp.id, dp.prompt_text_tr, dp.prompt_text_en, dp.category, dp.difficulty_level
@@ -949,24 +953,24 @@ DECLARE
 BEGIN
   -- Get current user ID
   v_user_id := auth.uid();
-  
+
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User not authenticated';
   END IF;
-  
+
   -- Validate input
   IF p_month < 1 OR p_month > 12 THEN
     RAISE EXCEPTION 'Month must be between 1 and 12';
   END IF;
-  
+
   IF p_year < 2020 OR p_year > 2100 THEN
     RAISE EXCEPTION 'Year must be between 2020 and 2100';
   END IF;
-  
+
   -- Calculate date range
   v_start_date := make_date(p_year, p_month, 1);
   v_end_date := (v_start_date + INTERVAL '1 month - 1 day')::DATE;
-  
+
   -- Return dates with entries
   RETURN QUERY
   SELECT ge.entry_date
@@ -1002,22 +1006,22 @@ DECLARE
 BEGIN
   -- Get current user ID
   v_user_id := auth.uid();
-  
+
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User not authenticated';
   END IF;
-  
+
   -- Check if user has any entries
   SELECT COUNT(*) INTO v_total_entries
   FROM gratitude_entries ge
   WHERE ge.user_id = v_user_id
     AND jsonb_array_length(ge.statements) > 0
     AND ge.entry_date < CURRENT_DATE; -- Exclude today
-  
+
   IF v_total_entries = 0 THEN
     RETURN; -- No entries to show
   END IF;
-  
+
   -- Return random past entry for throwback
   RETURN QUERY
   SELECT ge.id, ge.user_id, ge.entry_date, ge.statements, ge.created_at, ge.updated_at
@@ -1037,26 +1041,26 @@ $$;
 
 ```sql
 -- Composite indexes for TanStack Query access patterns
-CREATE INDEX CONCURRENTLY idx_gratitude_entries_user_date_desc 
+CREATE INDEX CONCURRENTLY idx_gratitude_entries_user_date_desc
   ON gratitude_entries(user_id, entry_date DESC);
 
-CREATE INDEX CONCURRENTLY idx_gratitude_entries_user_created 
+CREATE INDEX CONCURRENTLY idx_gratitude_entries_user_created
   ON gratitude_entries(user_id, created_at DESC);
 
 -- Partial indexes for active data only
-CREATE INDEX CONCURRENTLY idx_active_prompts_category 
+CREATE INDEX CONCURRENTLY idx_active_prompts_category
   ON daily_prompts(category) WHERE is_active = true;
 
-CREATE INDEX CONCURRENTLY idx_active_prompts_difficulty 
+CREATE INDEX CONCURRENTLY idx_active_prompts_difficulty
   ON daily_prompts(difficulty_level) WHERE is_active = true;
 
 -- Functional indexes for analytics
-CREATE INDEX CONCURRENTLY idx_gratitude_statements_count 
+CREATE INDEX CONCURRENTLY idx_gratitude_statements_count
   ON gratitude_entries(user_id, jsonb_array_length(statements));
 
 -- Covering indexes for common queries
-CREATE INDEX CONCURRENTLY idx_gratitude_entries_covering 
-  ON gratitude_entries(user_id, entry_date) 
+CREATE INDEX CONCURRENTLY idx_gratitude_entries_covering
+  ON gratitude_entries(user_id, entry_date)
   INCLUDE (statements, updated_at);
 ```
 
@@ -1083,11 +1087,11 @@ DECLARE
   v_user_id UUID;
 BEGIN
   v_user_id := auth.uid();
-  
+
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User not authenticated';
   END IF;
-  
+
   RETURN QUERY
   SELECT ge.id, ge.entry_date, ge.statements, ge.created_at, ge.updated_at
   FROM gratitude_entries ge
@@ -1120,17 +1124,17 @@ DECLARE
   v_user_id UUID;
 BEGIN
   v_user_id := auth.uid();
-  
+
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'User not authenticated';
   END IF;
-  
+
   RETURN QUERY
-  SELECT 
+  SELECT
     (SELECT to_jsonb(p) FROM profiles p WHERE p.id = v_user_id) as profile_data,
-    (SELECT jsonb_agg(to_jsonb(ge) ORDER BY ge.entry_date DESC) 
-     FROM gratitude_entries ge 
-     WHERE ge.user_id = v_user_id 
+    (SELECT jsonb_agg(to_jsonb(ge) ORDER BY ge.entry_date DESC)
+     FROM gratitude_entries ge
+     WHERE ge.user_id = v_user_id
      LIMIT 5) as recent_entries,
     (SELECT to_jsonb(s) FROM streaks s WHERE s.user_id = v_user_id) as streak_data,
     (SELECT to_jsonb(dp) FROM get_random_active_prompt() dp) as random_prompt;
@@ -1161,23 +1165,23 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     (SELECT COUNT(*) FROM profiles) as total_users,
-    (SELECT COUNT(DISTINCT user_id) FROM gratitude_entries 
+    (SELECT COUNT(DISTINCT user_id) FROM gratitude_entries
      WHERE created_at >= NOW() - INTERVAL '30 days') as active_users_30d,
-    (SELECT COUNT(DISTINCT user_id) FROM gratitude_entries 
+    (SELECT COUNT(DISTINCT user_id) FROM gratitude_entries
      WHERE created_at >= NOW() - INTERVAL '7 days') as active_users_7d,
     (SELECT COUNT(*) FROM gratitude_entries) as total_entries,
-    (SELECT COUNT(*) FROM gratitude_entries 
+    (SELECT COUNT(*) FROM gratitude_entries
      WHERE created_at >= NOW() - INTERVAL '30 days') as entries_last_30d,
-    (SELECT AVG(jsonb_array_length(statements))::NUMERIC(10,2) 
+    (SELECT AVG(jsonb_array_length(statements))::NUMERIC(10,2)
      FROM gratitude_entries) as avg_statements_per_entry,
-    (SELECT AVG(current_streak)::NUMERIC(10,2) 
+    (SELECT AVG(current_streak)::NUMERIC(10,2)
      FROM streaks WHERE current_streak > 0) as avg_streak_length,
-    (SELECT jsonb_object_agg(category, usage_count) 
-     FROM (SELECT category, SUM(usage_count) as usage_count 
-           FROM daily_prompts 
-           WHERE is_active = true 
+    (SELECT jsonb_object_agg(category, usage_count)
+     FROM (SELECT category, SUM(usage_count) as usage_count
+           FROM daily_prompts
+           WHERE is_active = true
            GROUP BY category) t) as prompt_usage_stats;
 END;
 $$;
@@ -1188,6 +1192,7 @@ $$;
 This enhanced database documentation provides a **comprehensive, production-ready foundation** for the Yeser gratitude app with full TanStack Query v5.80.2 integration, working varied prompts system, advanced notification architecture, and optimized performance patterns.
 
 **Key Production Features:**
+
 - ✅ **Fully Functional Varied Prompts System** with database integration
 - 🔄 **TanStack Query Optimized** RPC functions and indexes
 - 🔔 **Comprehensive Notification Settings** with throwback reminders

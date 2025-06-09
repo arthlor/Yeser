@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import {
-  Animated,
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { ThemedCard } from '@/shared/components/ui';
@@ -16,11 +9,10 @@ import { getPrimaryShadow } from '@/themes/utils';
 import { useStreakData } from '@/features/streak/hooks/useStreakData';
 import { ADVANCED_MILESTONES } from '@/features/streak/components/AdvancedStreakMilestones';
 import { hapticFeedback } from '@/utils/hapticFeedback';
+import { analyticsService } from '@/services/analyticsService';
 
 import type { AppTheme } from '@/themes/types';
 import type { AdvancedMilestone } from '@/features/streak/components/AdvancedStreakMilestones';
-
-const { width: screenWidth } = Dimensions.get('window');
 
 interface StreakDetailsScreenProps {
   navigation: {
@@ -31,14 +23,40 @@ interface StreakDetailsScreenProps {
 const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
-  
+
   const { data: streakData } = useStreakData();
   const currentStreak = streakData?.current_streak || 0;
   const longestStreak = streakData?.longest_streak || 0;
-  
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+
+  const getCurrentMilestone = useCallback((): AdvancedMilestone => {
+    return (
+      ADVANCED_MILESTONES.find(
+        (milestone) => currentStreak >= milestone.minDays && currentStreak <= milestone.maxDays
+      ) || ADVANCED_MILESTONES[0]
+    );
+  }, [currentStreak]);
+
+  const getNextMilestone = useCallback((): AdvancedMilestone | null => {
+    return ADVANCED_MILESTONES.find((milestone) => milestone.minDays > currentStreak) || null;
+  }, [currentStreak]);
+
+  const getProgressPercentage = useCallback((): number => {
+    const nextMilestone = getNextMilestone();
+    if (!nextMilestone) {
+      return 100;
+    }
+
+    const currentMilestone = getCurrentMilestone();
+    const progress =
+      ((currentStreak - currentMilestone.minDays) /
+        (nextMilestone.minDays - currentMilestone.minDays)) *
+      100;
+    return Math.max(0, Math.min(100, progress));
+  }, [currentStreak, getCurrentMilestone, getNextMilestone]);
 
   useEffect(() => {
     Animated.parallel([
@@ -63,27 +81,25 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
     }).start();
   }, [fadeAnim, slideAnim, progressAnim]);
 
-  const getCurrentMilestone = (): AdvancedMilestone => {
-    return ADVANCED_MILESTONES.find(
-      (milestone) => currentStreak >= milestone.minDays && currentStreak <= milestone.maxDays
-    ) || ADVANCED_MILESTONES[0];
-  };
+  // Analytics tracking
+  useEffect(() => {
+    analyticsService.logScreenView('streak_details_screen');
 
-  const getNextMilestone = (): AdvancedMilestone | null => {
-    return ADVANCED_MILESTONES.find((milestone) => milestone.minDays > currentStreak) || null;
-  };
-
-  const getProgressPercentage = (): number => {
-    const nextMilestone = getNextMilestone();
-    if (!nextMilestone) {
-      return 100;
-    }
-    
-    const currentMilestone = getCurrentMilestone();
-    const progress = ((currentStreak - currentMilestone.minDays) / 
-                     (nextMilestone.minDays - currentMilestone.minDays)) * 100;
-    return Math.max(0, Math.min(100, progress));
-  };
+    // Track streak insights
+    analyticsService.logEvent('streak_details_viewed', {
+      current_streak: currentStreak,
+      longest_streak: longestStreak,
+      current_milestone: getCurrentMilestone().title,
+      next_milestone: getNextMilestone()?.title || 'max_reached',
+      progress_percentage: Math.round(getProgressPercentage()),
+      unlocked_milestones_count: ADVANCED_MILESTONES.filter((m) => currentStreak >= m.minDays)
+        .length,
+      days_to_next_milestone: (() => {
+        const milestone = getNextMilestone();
+        return milestone ? milestone.minDays - currentStreak : 0;
+      })(),
+    });
+  }, [currentStreak, longestStreak, getCurrentMilestone, getNextMilestone, getProgressPercentage]);
 
   const handleGoBack = useCallback((): void => {
     hapticFeedback.light();
@@ -93,14 +109,14 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
   const currentMilestone = getCurrentMilestone();
   const nextMilestone = getNextMilestone();
   const progressPercentage = getProgressPercentage();
-  const unlockedMilestones = ADVANCED_MILESTONES.filter(m => currentStreak >= m.minDays);
+  const unlockedMilestones = ADVANCED_MILESTONES.filter((m) => currentStreak >= m.minDays);
 
   return (
-    <ScreenLayout 
-      scrollable={true} 
-      showsVerticalScrollIndicator={false} 
-      density="compact" 
-      edges={['top']} 
+    <ScreenLayout
+      scrollable={true}
+      showsVerticalScrollIndicator={false}
+      density="compact"
+      edges={['top']}
       edgeToEdge={true}
     >
       {/* 🎯 ENHANCED Edge-to-Edge Header */}
@@ -129,13 +145,13 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
       >
         {/* 🚀 ENHANCED Hero Section - Edge-to-Edge */}
         <View style={styles.heroSection}>
-          <ThemedCard 
-            variant="elevated" 
+          <ThemedCard
+            variant="elevated"
             density="comfortable"
             elevation="floating"
             style={{
               ...styles.heroCard,
-              backgroundColor: currentMilestone.colorPrimary + '08'
+              backgroundColor: currentMilestone.colorPrimary + '08',
             }}
           >
             <View style={styles.heroContent}>
@@ -149,7 +165,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                   </Text>
                 </View>
               </View>
-              
+
               {longestStreak > currentStreak && (
                 <View style={styles.recordContainer}>
                   <Icon name="trophy-outline" size={16} color={theme.colors.primary} />
@@ -163,8 +179,8 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
         {/* 🎯 ENHANCED Progress Section - Edge-to-Edge */}
         {nextMilestone && (
           <View style={styles.progressSection}>
-            <ThemedCard 
-              variant="elevated" 
+            <ThemedCard
+              variant="elevated"
               density="comfortable"
               elevation="card"
               style={styles.progressCard}
@@ -178,11 +194,13 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                   </View>
                 </View>
                 <View style={styles.daysToNextContainer}>
-                  <Text style={styles.daysToNextNumber}>{nextMilestone.minDays - currentStreak}</Text>
+                  <Text style={styles.daysToNextNumber}>
+                    {nextMilestone.minDays - currentStreak}
+                  </Text>
                   <Text style={styles.daysToNextLabel}>gün kaldı</Text>
                 </View>
               </View>
-              
+
               <View style={styles.progressVisualization}>
                 <View style={styles.progressBarContainer}>
                   <Animated.View
@@ -198,7 +216,9 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                     ]}
                   />
                 </View>
-                <Text style={styles.progressPercent}>{Math.round(progressPercentage)}% tamamlandı</Text>
+                <Text style={styles.progressPercent}>
+                  {Math.round(progressPercentage)}% tamamlandı
+                </Text>
               </View>
             </ThemedCard>
           </View>
@@ -206,35 +226,50 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
 
         {/* 🎯 ENHANCED Stats Grid - Edge-to-Edge */}
         <View style={styles.statsSection}>
-          <ThemedCard 
-            variant="elevated" 
+          <ThemedCard
+            variant="elevated"
             density="comfortable"
             elevation="card"
             style={styles.statsCard}
           >
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
-                <View style={[styles.statIconContainer, { backgroundColor: theme.colors.primary + '15' }]}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: theme.colors.primary + '15' },
+                  ]}
+                >
                   <Icon name="fire" size={24} color={theme.colors.primary} />
                 </View>
                 <Text style={styles.statNumber}>{currentStreak}</Text>
                 <Text style={styles.statLabel}>Mevcut Seri</Text>
               </View>
-              
+
               <View style={styles.statDivider} />
-              
+
               <View style={styles.statItem}>
-                <View style={[styles.statIconContainer, { backgroundColor: theme.colors.success + '15' }]}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: theme.colors.success + '15' },
+                  ]}
+                >
                   <Icon name="trophy" size={24} color={theme.colors.success} />
                 </View>
                 <Text style={styles.statNumber}>{longestStreak}</Text>
                 <Text style={styles.statLabel}>En Uzun Seri</Text>
               </View>
-              
+
               <View style={styles.statDivider} />
-              
+
               <View style={styles.statItem}>
-                <View style={[styles.statIconContainer, { backgroundColor: theme.colors.secondary + '15' }]}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: theme.colors.secondary + '15' },
+                  ]}
+                >
                   <Icon name="medal" size={24} color={theme.colors.secondary} />
                 </View>
                 <Text style={styles.statNumber}>{unlockedMilestones.length}</Text>
@@ -246,8 +281,8 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
 
         {/* 🎯 ENHANCED Milestones Grid - Edge-to-Edge */}
         <View style={styles.milestonesSection}>
-          <ThemedCard 
-            variant="elevated" 
+          <ThemedCard
+            variant="elevated"
             density="comfortable"
             elevation="card"
             style={styles.milestonesCard}
@@ -255,49 +290,65 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
             <View style={styles.milestonesHeader}>
               <Icon name="star-circle" size={20} color={theme.colors.primary} />
               <Text style={styles.sectionTitle}>Tüm Başarılar</Text>
-              <Text style={styles.unlockedCount}>{unlockedMilestones.length}/{ADVANCED_MILESTONES.length}</Text>
+              <Text style={styles.unlockedCount}>
+                {unlockedMilestones.length}/{ADVANCED_MILESTONES.length}
+              </Text>
             </View>
-            
+
             <View style={styles.milestonesGrid}>
-              {ADVANCED_MILESTONES.slice(0, 12).map((milestone, index) => {
+              {ADVANCED_MILESTONES.slice(0, 12).map((milestone, _index) => {
                 const isUnlocked = currentStreak >= milestone.minDays;
                 return (
                   <View
                     key={milestone.id}
                     style={[
                       styles.milestoneItem,
+                      isUnlocked ? styles.milestoneItemUnlocked : styles.milestoneItemLocked,
                       {
-                        backgroundColor: isUnlocked 
-                          ? milestone.colorPrimary + '12' 
+                        backgroundColor: isUnlocked
+                          ? milestone.colorPrimary + '12'
                           : theme.colors.surfaceVariant + '40',
-                        borderColor: isUnlocked 
+                        borderColor: isUnlocked
                           ? milestone.colorPrimary + '30'
                           : theme.colors.outline + '20',
-                        opacity: isUnlocked ? 1 : 0.6,
                       },
                     ]}
                   >
                     <View style={styles.milestoneContent}>
-                      <Text style={[
-                        styles.milestoneEmoji,
-                        { opacity: isUnlocked ? 1 : 0.5 }
-                      ]}>
+                      <Text
+                        style={[
+                          styles.milestoneEmoji,
+                          isUnlocked ? styles.milestoneEmojiUnlocked : styles.milestoneEmojiLocked,
+                        ]}
+                      >
                         {milestone.emoji}
                       </Text>
-                      <Text style={[
-                        styles.milestoneTitle,
-                        { color: isUnlocked ? theme.colors.onSurface : theme.colors.onSurfaceVariant }
-                      ]}>
+                      <Text
+                        style={[
+                          styles.milestoneTitle,
+                          {
+                            color: isUnlocked
+                              ? theme.colors.onSurface
+                              : theme.colors.onSurfaceVariant,
+                          },
+                        ]}
+                      >
                         {milestone.title}
                       </Text>
-                      <Text style={[
-                        styles.milestoneDays,
-                        { color: isUnlocked ? milestone.colorPrimary : theme.colors.onSurfaceVariant }
-                      ]}>
+                      <Text
+                        style={[
+                          styles.milestoneDays,
+                          {
+                            color: isUnlocked
+                              ? milestone.colorPrimary
+                              : theme.colors.onSurfaceVariant,
+                          },
+                        ]}
+                      >
                         {milestone.minDays}+ gün
                       </Text>
                     </View>
-                    
+
                     {isUnlocked && (
                       <View style={styles.unlockedIndicator}>
                         <Icon name="check-circle" size={12} color={milestone.colorPrimary} />
@@ -620,6 +671,18 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: 8,
       padding: 2,
     },
+    milestoneItemUnlocked: {
+      opacity: 1,
+    },
+    milestoneItemLocked: {
+      opacity: 0.6,
+    },
+    milestoneEmojiUnlocked: {
+      opacity: 1,
+    },
+    milestoneEmojiLocked: {
+      opacity: 0.5,
+    },
 
     // Bottom Spacing
     bottomSpacing: {
@@ -627,4 +690,4 @@ const createStyles = (theme: AppTheme) =>
     },
   });
 
-export default StreakDetailsScreen; 
+export default StreakDetailsScreen;

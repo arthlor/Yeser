@@ -1,5 +1,5 @@
 import { analyticsService } from '@/services/analyticsService';
-import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
@@ -18,20 +18,37 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  // Simplified animations
+  // Enhanced animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const cardsAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Simple entrance animation
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
+    // Staggered entrance animations
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardsAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
 
     // Track welcome step view
+    analyticsService.logScreenView('onboarding_welcome_step');
     analyticsService.logEvent('onboarding_welcome_viewed');
-  }, [fadeAnim]);
+  }, [fadeAnim, slideAnim, cardsAnim]);
 
   const handleGetStarted = useCallback(() => {
     hapticFeedback.success();
@@ -40,80 +57,109 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
   }, [onNext]);
 
   return (
-    <ScreenLayout edges={['top']} edgeToEdge={true}>
-      <Animated.View
-        style={[
-          styles.container,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-      >
-        {/* Welcome Content */}
-        <ScreenSection spacing="large">
-          <View style={styles.contentSection}>
-            <Text style={styles.title}>Yeşer'e Hoş Geldin! ✨</Text>
-            <Text style={styles.subtitle}>
-              Minnettarlık yolculuğuna başlamaya hazır mısın? Sana özel bir deneyim hazırladık.
-            </Text>
+    <ScreenLayout edges={['top', 'bottom']} edgeToEdge={false}>
+      <View style={styles.container}>
+        {/* Header Section with improved spacing */}
+        <Animated.View
+          style={[
+            styles.headerSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Yeşer'e Hoş Geldin!</Text>
+            <View style={styles.titleAccent} />
           </View>
-        </ScreenSection>
-
-        {/* Feature Preview Cards */}
-        <ScreenSection spacing="medium">
-          <View style={styles.previewSection}>
-            <View style={styles.previewCard}>
-              <View style={styles.previewContent}>
-                <View style={styles.previewIconWrapper}>
-                  <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.previewText}>İlk minnettarlığını yazacaksın</Text>
-              </View>
-            </View>
-
-            <View style={styles.previewCard}>
-              <View style={styles.previewContent}>
-                <View style={styles.previewIconWrapper}>
-                  <Ionicons name="settings-outline" size={20} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.previewText}>Senin için uygulamayı kişiselleştireceğiz</Text>
-              </View>
-            </View>
-
-            <View style={styles.previewCard}>
-              <View style={styles.previewContent}>
-                <View style={styles.previewIconWrapper}>
-                  <Ionicons name="star-outline" size={20} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.previewText}>Bildirim tercihlerini seçeceksin</Text>
-              </View>
-            </View>
-          </View>
-        </ScreenSection>
-
-        {/* Encouragement Text */}
-        <ScreenSection spacing="medium">
-          <Text style={styles.encouragement}>
-            Bu süreç sadece birkaç dakika alacak ve sonunda seni tamamen yansıtan bir deneyime sahip
-            olacaksın.
+          <Text style={styles.subtitle}>
+            Minnettarlık yolculuğuna başlamaya hazır mısın?{'\n'}Sana özel bir deneyim hazırladık.
           </Text>
-        </ScreenSection>
+        </Animated.View>
 
-        {/* Action Buttons */}
-        <ScreenSection spacing="large">
-          <View style={styles.actionSection}>
-            <Button
-              mode="contained"
-              onPress={handleGetStarted}
-              style={styles.primaryButton}
-              contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonText}
-            >
-              Hadi Başlayalım! 🚀
-            </Button>
+        {/* Feature Preview Cards with enhanced design */}
+        <Animated.View
+          style={[
+            styles.featuresSection,
+            {
+              opacity: cardsAnim,
+              transform: [
+                {
+                  translateY: cardsAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={styles.featureCard}>
+            <View style={styles.featureIconContainer}>
+              <Ionicons name="create-outline" size={24} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.featureText}>İlk minnettarlığını yazacaksın</Text>
           </View>
-        </ScreenSection>
-      </Animated.View>
+
+          <View style={styles.featureCard}>
+            <View style={styles.featureIconContainer}>
+              <Ionicons name="settings-outline" size={24} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.featureText}>Senin için uygulamayı kişiselleştireceğiz</Text>
+          </View>
+
+          <View style={styles.featureCard}>
+            <View style={styles.featureIconContainer}>
+              <Ionicons name="star-outline" size={24} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.featureText}>Bildirim tercihlerini seçeceksin</Text>
+          </View>
+        </Animated.View>
+
+        {/* Encouragement Section */}
+        <Animated.View
+          style={[
+            styles.encouragementSection,
+            {
+              opacity: cardsAnim,
+            },
+          ]}
+        >
+          <Text style={styles.encouragementText}>
+            Bu süreç sadece birkaç dakika alacak ve sonunda seni{'\n'}tamamen yansıtan bir deneyime
+            sahip olacaksın.
+          </Text>
+        </Animated.View>
+
+        {/* Action Button with improved design */}
+        <Animated.View
+          style={[
+            styles.actionSection,
+            {
+              opacity: cardsAnim,
+              transform: [
+                {
+                  translateY: cardsAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [30, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Button
+            mode="contained"
+            onPress={handleGetStarted}
+            style={styles.primaryButton}
+            contentStyle={styles.buttonContent}
+            labelStyle={styles.buttonText}
+          >
+            Hadi Başlayalım! 🚀
+          </Button>
+        </Animated.View>
+      </View>
     </ScreenLayout>
   );
 };
@@ -122,73 +168,100 @@ const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
       flex: 1,
+      justifyContent: 'space-between',
+      paddingHorizontal: theme.spacing.lg,
     },
-    contentSection: {
+    headerSection: {
       alignItems: 'center',
+      paddingTop: theme.spacing.xl,
+      paddingBottom: theme.spacing.lg,
+    },
+    titleContainer: {
+      alignItems: 'center',
+      marginBottom: theme.spacing.lg,
     },
     title: {
       ...theme.typography.headlineLarge,
+      fontSize: 32,
+      fontWeight: '700',
       color: theme.colors.text,
       textAlign: 'center',
-      marginBottom: theme.spacing.lg,
-      lineHeight: 36,
+      marginBottom: theme.spacing.xs,
+    },
+    titleAccent: {
+      width: 60,
+      height: 4,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 2,
     },
     subtitle: {
       ...theme.typography.bodyLarge,
+      fontSize: 16,
       color: theme.colors.textSecondary,
       textAlign: 'center',
-      lineHeight: 26,
+      lineHeight: 24,
+      paddingHorizontal: theme.spacing.md,
     },
-    previewSection: {
-      width: '100%',
-      gap: theme.spacing.sm,
+    featuresSection: {
+      flex: 1,
+      justifyContent: 'center',
+      gap: theme.spacing.md,
+      paddingVertical: theme.spacing.lg,
     },
-    previewCard: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '25',
-      // 🌟 Beautiful primary shadow for preview cards (no react-native-paper conflicts)
-      ...getPrimaryShadow.small(theme),
-    },
-    previewContent: {
+    featureCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: theme.spacing.md,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      padding: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '20',
+      ...getPrimaryShadow.small(theme),
     },
-    previewIconWrapper: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+    featureIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       backgroundColor: theme.colors.primary + '15',
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: theme.spacing.md,
+      marginRight: theme.spacing.lg,
     },
-    previewText: {
+    featureText: {
       ...theme.typography.bodyMedium,
+      fontSize: 16,
       color: theme.colors.text,
       flex: 1,
+      lineHeight: 22,
     },
-    encouragement: {
+    encouragementSection: {
+      paddingVertical: theme.spacing.lg,
+      alignItems: 'center',
+    },
+    encouragementText: {
       ...theme.typography.bodyMedium,
       color: theme.colors.textSecondary,
       textAlign: 'center',
       lineHeight: 20,
+      fontSize: 14,
       fontStyle: 'italic',
+      paddingHorizontal: theme.spacing.md,
     },
     actionSection: {
-      alignItems: 'center',
+      paddingBottom: theme.spacing.xl,
+      paddingTop: theme.spacing.lg,
     },
     primaryButton: {
-      width: '100%',
       borderRadius: theme.borderRadius.lg,
+      ...getPrimaryShadow.medium(theme),
     },
     buttonContent: {
-      paddingVertical: theme.spacing.xs,
+      paddingVertical: theme.spacing.md,
     },
     buttonText: {
       ...theme.typography.bodyMedium,
+      fontSize: 16,
+      fontWeight: '600',
     },
   });
 

@@ -1,10 +1,10 @@
 # Architecture Guide
 
-This document provides a comprehensive overview of the Yeser app's architecture, design patterns, and architectural decisions.
+This document provides a comprehensive overview of the Yeşer app's architecture, design patterns, and architectural decisions with a focus on the modern **magic link authentication system** and enhanced security architecture.
 
 ## 🏗️ System Overview
 
-Yeser follows a **modern hybrid architecture** with clear separation between server state and client state, promoting maintainability, testability, and scalability.
+Yeşer follows a **modern hybrid architecture** with clear separation between server state and client state, promoting maintainability, testability, and scalability. The architecture emphasizes **passwordless security** through magic link authentication and robust state management.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -63,10 +63,11 @@ src/
 │   ├── queryClient.ts     # TanStack Query client configuration
 │   └── queryKeys.ts       # Centralized query key factory
 ├── features/               # Feature-based organization
-│   ├── auth/              # Authentication feature
+│   ├── auth/              # Magic link & OAuth authentication
 │   │   ├── components/    # Auth-specific components
-│   │   ├── hooks/         # Auth-specific hooks (if any)
-│   │   ├── screens/       # Login, SignUp, Splash screens
+│   │   ├── hooks/         # Magic link and OAuth hooks
+│   │   ├── screens/       # Login screen (magic link + Google OAuth)
+│   │   ├── services/      # Deep link handling, magic link service
 │   │   └── types/         # Auth-specific types
 │   ├── calendar/          # Calendar and past entries
 │   │   ├── components/    # Calendar components
@@ -147,7 +148,7 @@ The app uses a **hybrid state management approach** that separates concerns:
 
 ```typescript
 // Server State (TanStack Query v5.80.2) - Data from backend
-✅ User profiles with notification settings
+✅ User profiles with notification settings and auth metadata
 ✅ Gratitude entries and statements
 ✅ Past entries lists and calendar data
 ✅ Streak calculations and analytics
@@ -156,12 +157,14 @@ The app uses a **hybrid state management approach** that separates concerns:
 ✅ Multiple prompt fetching with category and difficulty filtering
 ✅ Enhanced notification settings with throwback reminders
 ✅ Comprehensive user profile management
+✅ Magic link authentication state management
 
-// Client State (Zustand) - UI and app state  
-✅ Authentication status and user session
+// Client State (Zustand) - UI and app state
+✅ Authentication status and user session (magic link + OAuth)
 ✅ Theme preferences (light/dark)
 ✅ Local UI state (modal visibility, form inputs)
 ✅ Temporary notification settings cache
+✅ Deep link handling state
 ```
 
 ### State Management Architecture Flow
@@ -171,17 +174,17 @@ graph TD
     A[User Interaction] --> B{State Type?}
     B -->|Server Data| C[TanStack Query Hook]
     B -->|Client State| D[Zustand Store]
-    
+
     C --> E[Query/Mutation]
     E --> F[Automatic Caching]
     F --> G[Background Sync]
     G --> H[Optimistic Updates]
     H --> I[UI Update]
-    
+
     D --> J[Immediate State Update]
     J --> K[AsyncStorage Persistence]
     K --> I
-    
+
     I --> L[Re-render Components]
 ```
 
@@ -193,29 +196,29 @@ The app implements a comprehensive notification system supporting both daily rem
 graph TD
     A[User Profile Settings] --> B[Notification Service]
     B --> C{Notification Type}
-    
+
     C -->|Daily Reminder| D[Daily Reminder Flow]
     C -->|Throwback| E[Throwback Reminder Flow]
-    
+
     D --> F[Check reminderEnabled]
     F -->|true| G[Schedule at reminderTime]
     F -->|false| H[Skip Daily Reminder]
     G --> I[Push Daily Notification]
-    
+
     E --> J[Check throwbackReminderEnabled]
     J -->|true| K{Check Frequency}
     J -->|false| L[Skip Throwback]
-    
+
     K -->|daily| M[Schedule Daily Throwback]
     K -->|weekly| N[Schedule Weekly Throwback]
     K -->|monthly| O[Schedule Monthly Throwback]
     K -->|disabled| L
-    
+
     M --> P[Get Random Past Entry]
     N --> P
     O --> P
     P --> Q[Push Throwback Notification]
-    
+
     I --> R[User Opens App]
     Q --> R
     R --> S[Navigate to Appropriate Screen]
@@ -224,12 +227,13 @@ graph TD
 #### Notification System Components
 
 **1. Profile-Based Configuration**
+
 ```typescript
 interface NotificationSettings {
   // Daily reminder settings
   reminderEnabled: boolean;
   reminderTime: string; // HH:MM:SS format
-  
+
   // Throwback reminder settings
   throwbackReminderEnabled: boolean;
   throwbackReminderFrequency: 'disabled' | 'daily' | 'weekly' | 'monthly';
@@ -238,12 +242,14 @@ interface NotificationSettings {
 ```
 
 **2. Notification Service Integration**
+
 - Expo Notifications for cross-platform push notifications
 - Background task scheduling for reminder delivery
 - Deep linking for notification-to-screen navigation
 - Timezone-aware scheduling for global users
 
 **3. Enhanced Throwback System**
+
 - Random past entry selection via database RPC functions
 - Frequency-based scheduling (daily/weekly/monthly)
 - Content-rich notifications with entry previews
@@ -257,25 +263,26 @@ The app includes a comprehensive prompts system that adapts based on user prefer
 graph TD
     A[User Opens Daily Entry] --> B[Check Profile Settings]
     B --> C{useVariedPrompts?}
-    
+
     C -->|true| D[Database Prompts Flow]
     C -->|false| E[Standard Prompt]
-    
+
     D --> F[Call getRandomActivePrompt API]
     F --> G[Database RPC Function]
     G --> H[Select Random Active Prompt]
     H --> I[Return Prompt with Category/Difficulty]
     I --> J[Display Dynamic Prompt]
-    
+
     E --> K[Display Standard Message]
     K --> L[Bugün neye şükrediyorsun?]
-    
+
     J --> M[User Input]
     L --> M
     M --> N[Statement Saved]
 ```
 
 **Key Features:**
+
 - **Dynamic Prompt Selection**: Database-driven with categories and difficulty levels
 - **User Preference Integration**: Profile-based enable/disable functionality
 - **Intelligent Caching**: TanStack Query optimization for prompt delivery
@@ -294,12 +301,10 @@ export const queryKeys = {
   all: ['yeser'] as const,
 
   // Profile queries
-  profile: (userId?: string) => 
-    [...queryKeys.all, 'profile', userId] as const,
+  profile: (userId?: string) => [...queryKeys.all, 'profile', userId] as const,
 
-  // Gratitude entry queries  
-  gratitudeEntries: (userId?: string) => 
-    [...queryKeys.all, 'gratitudeEntries', userId] as const,
+  // Gratitude entry queries
+  gratitudeEntries: (userId?: string) => [...queryKeys.all, 'gratitudeEntries', userId] as const,
   gratitudeEntry: (userId: string | undefined, entryDate: string) =>
     [...queryKeys.gratitudeEntries(userId), { entryDate }] as const,
   gratitudeEntriesByMonth: (userId: string | undefined, year: number, month: number) =>
@@ -308,16 +313,14 @@ export const queryKeys = {
     [...queryKeys.gratitudeEntries(userId), 'totalCount'] as const,
 
   // Streak queries
-  streaks: (userId?: string) => 
-    [...queryKeys.all, 'streaks', userId] as const,
+  streaks: (userId?: string) => [...queryKeys.all, 'streaks', userId] as const,
 
   // Random/throwback queries
   randomGratitudeEntry: (userId?: string) =>
     [...queryKeys.all, 'randomGratitudeEntry', userId] as const,
 
   // Daily prompt queries
-  currentPrompt: (userId?: string) => 
-    [...queryKeys.all, 'currentPrompt', userId] as const,
+  currentPrompt: (userId?: string) => [...queryKeys.all, 'currentPrompt', userId] as const,
 } as const;
 ```
 
@@ -326,8 +329,8 @@ export const queryKeys = {
 ```typescript
 // Query Hook Pattern
 export const useDataQuery = (params) => {
-  const user = useAuthStore(state => state.user);
-  
+  const user = useAuthStore((state) => state.user);
+
   return useQuery({
     queryKey: queryKeys.data(user?.id, params),
     queryFn: () => apiFunction(params),
@@ -338,9 +341,9 @@ export const useDataQuery = (params) => {
   });
 };
 
-// Mutation Hook Pattern  
+// Mutation Hook Pattern
 export const useDataMutations = () => {
-  const user = useAuthStore(state => state.user);
+  const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -348,13 +351,13 @@ export const useDataMutations = () => {
     onMutate: async (newData) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.data(user?.id) });
-      
+
       // Snapshot previous value
       const previousData = queryClient.getQueryData(queryKeys.data(user?.id));
-      
+
       // Optimistically update
-      queryClient.setQueryData(queryKeys.data(user?.id), old => [...(old || []), newData]);
-      
+      queryClient.setQueryData(queryKeys.data(user?.id), (old) => [...(old || []), newData]);
+
       return { previousData };
     },
     onError: (err, variables, context) => {
@@ -383,12 +386,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
   error: null,
-  
+
   // Client-only actions
   initializeAuth: async () => {
     // Handle auth state listener
   },
-  
+
   logout: async () => {
     // Clear client state and trigger server logout
   },
@@ -401,7 +404,7 @@ export const useThemeStore = create<ThemeState>()(
       // Pure client state - no server involvement
       activeThemeName: 'light',
       activeTheme: lightTheme,
-      
+
       setTheme: (themeName) => {
         set({
           activeThemeName: themeName,
@@ -464,7 +467,7 @@ sequenceDiagram
     Component->>Hook: Use query hook
     Hook->>QueryClient: Check cache
     QueryClient->>Cache: Look up data
-    
+
     alt Cache Hit (fresh data)
         Cache-->>Component: Return cached data
     else Cache Miss or Stale
@@ -475,7 +478,7 @@ sequenceDiagram
         QueryClient->>Cache: Update cache
         Cache-->>Component: Return fresh data
     end
-    
+
     Note over QueryClient: Background refetch if stale
     QueryClient->>API: Background update
     API-->>QueryClient: Fresh data
@@ -505,14 +508,14 @@ sequenceDiagram
 
 ### Migration Benefits Achieved
 
-| **Feature** | **Before (Zustand)** | **After (TanStack Query)** | **Improvement** |
-|-------------|---------------------|----------------------------|-----------------|
-| **Data Fetching** | Manual API calls | Automatic background sync | **90% less code** |
-| **Caching** | Manual cache management | Intelligent auto-cache | **Infinite improvement** |
-| **Loading States** | Manual state tracking | Granular auto-states | **100% automated** |
-| **Error Handling** | Try/catch everywhere | Built-in boundaries | **Consistent & robust** |
-| **Optimistic Updates** | Manual rollback logic | Automatic rollback | **Bulletproof UX** |
-| **Offline Support** | None | Automatic persistence | **New capability** |
+| **Feature**            | **Before (Zustand)**    | **After (TanStack Query)** | **Improvement**          |
+| ---------------------- | ----------------------- | -------------------------- | ------------------------ |
+| **Data Fetching**      | Manual API calls        | Automatic background sync  | **90% less code**        |
+| **Caching**            | Manual cache management | Intelligent auto-cache     | **Infinite improvement** |
+| **Loading States**     | Manual state tracking   | Granular auto-states       | **100% automated**       |
+| **Error Handling**     | Try/catch everywhere    | Built-in boundaries        | **Consistent & robust**  |
+| **Optimistic Updates** | Manual rollback logic   | Automatic rollback         | **Bulletproof UX**       |
+| **Offline Support**    | None                    | Automatic persistence      | **New capability**       |
 
 ### Code Quality Improvements
 
@@ -522,7 +525,7 @@ const useOldPattern = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -535,9 +538,11 @@ const useOldPattern = () => {
       setLoading(false);
     }
   }, []);
-  
-  useEffect(() => { fetchData(); }, [fetchData]);
-  
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   return { data, loading, error, refetch: fetchData };
 };
 
@@ -561,10 +566,10 @@ const getCachedData = async (key: string) => {
   if (cached && !isStale(cached)) {
     return cached;
   }
-  
+
   // 2. Background refetch if stale
   queryClient.invalidateQueries({ queryKey: key });
-  
+
   // 3. Return stale data while fetching fresh
   return cached; // Stale-while-revalidate pattern
 };
@@ -575,7 +580,7 @@ const getCachedData = async (key: string) => {
 ### Modern Testing Strategy
 
 1. **TanStack Query Tests**: Mock query/mutation responses
-2. **Zustand Store Tests**: Test client state changes  
+2. **Zustand Store Tests**: Test client state changes
 3. **Integration Tests**: Test hook + component integration
 4. **E2E Tests**: Critical user journeys with caching
 5. **Cache Tests**: Query invalidation and persistence
@@ -623,11 +628,11 @@ const wrapper = ({ children }) => (
 
 test('should fetch user profile on mount', async () => {
   const { result } = renderHook(() => useUserProfile(), { wrapper });
-  
+
   await waitFor(() => {
     expect(result.current.isLoading).toBe(false);
   });
-  
+
   expect(result.current.profile).toBeDefined();
 });
 ```
@@ -647,7 +652,7 @@ test('should fetch user profile on mount', async () => {
 // Secure query pattern
 export const useSecureData = () => {
   const { user } = useAuthStore();
-  
+
   return useQuery({
     queryKey: queryKeys.secureData(user?.id),
     queryFn: async () => {
@@ -682,21 +687,20 @@ export const useInfiniteGratitudeEntries = () => {
   return useInfiniteQuery({
     queryKey: queryKeys.gratitudeEntries(),
     queryFn: ({ pageParam = 0 }) => getGratitudeEntries({ offset: pageParam }),
-    getNextPageParam: (lastPage, pages) => 
-      lastPage.length === 20 ? pages.length * 20 : undefined,
+    getNextPageParam: (lastPage, pages) => (lastPage.length === 20 ? pages.length * 20 : undefined),
   });
 };
 
 // Future: Real-time subscription pattern
 export const useGratitudeSubscription = (entryDate: string) => {
   const queryClient = useQueryClient();
-  
+
   useEffect(() => {
     const subscription = supabase
       .from('gratitude_entries')
       .on('*', (payload) => {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.gratitudeEntry(payload.new.user_id, entryDate) 
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.gratitudeEntry(payload.new.user_id, entryDate),
         });
       })
       .subscribe();
@@ -734,23 +738,24 @@ App
 ### Modern Component Patterns
 
 #### Query-Powered Components
+
 ```typescript
 // Screen component pattern with TanStack Query
 const EnhancedScreenName: React.FC = () => {
   // TanStack Query hooks
   const { data, isLoading, error } = useDataQuery();
   const { mutate, isPending } = useDataMutations();
-  
+
   // Client state
   const { theme } = useThemeStore();
   const [localState, setLocalState] = useState();
-  
+
   // Loading state
   if (isLoading) return <LoadingSpinner />;
-  
+
   // Error state
   if (error) return <ErrorState error={error} />;
-  
+
   // Main render
   return (
     <SafeAreaView>
@@ -769,13 +774,13 @@ const EnhancedScreenName: React.FC = () => {
 const usePromptsArchitecture = () => {
   // 1. Settings toggle in profile
   const { profile, updateProfile } = useUserProfile();
-  
+
   // 2. Dynamic prompt fetching based on settings
   const { promptText, isUsingDefault } = usePromptText();
-  
+
   // 3. Multiple prompt management
   const { fetchMultiplePrompts } = usePromptMutations();
-  
+
   // 4. UI rendering with swipe navigation
   return {
     enabled: profile?.use_varied_prompts,
@@ -791,20 +796,20 @@ const usePromptsArchitecture = () => {
 // Comprehensive notification system
 class NotificationArchitecture {
   // Daily reminders
-  async scheduleDailyReminder(hour: number, minute: number): Promise<NotificationResult>
-  
+  async scheduleDailyReminder(hour: number, minute: number): Promise<NotificationResult>;
+
   // Throwback reminders with frequencies
   async scheduleThrowbackReminder(
-    hour: number, 
-    minute: number, 
+    hour: number,
+    minute: number,
     enabled: boolean,
     frequency: 'daily' | 'weekly' | 'monthly'
-  ): Promise<NotificationResult>
-  
+  ): Promise<NotificationResult>;
+
   // Cross-platform support
-  private setupAndroidChannel(): Promise<void>
-  private calculateWeeklyTrigger(): WeeklyTriggerInput
-  private calculateMonthlyTrigger(): DateTriggerInput
+  private setupAndroidChannel(): Promise<void>;
+  private calculateWeeklyTrigger(): WeeklyTriggerInput;
+  private calculateMonthlyTrigger(): DateTriggerInput;
 }
 ```
 
@@ -813,8 +818,9 @@ class NotificationArchitecture {
 This modern architecture provides a **bulletproof foundation** for building a scalable, maintainable, and performant gratitude journaling app. The hybrid TanStack Query + Zustand approach delivers the best of both worlds: **intelligent server state management** with **responsive client state handling**.
 
 **Key Benefits:**
+
 - ⚡ **90% reduction** in boilerplate code
-- 🔄 **Automatic caching** and background sync  
+- 🔄 **Automatic caching** and background sync
 - 🎯 **Optimistic updates** for instant UX
 - 🛡️ **Built-in error boundaries** and retry logic
 - 📱 **Offline-first** architecture
@@ -830,50 +836,54 @@ The successful migration from a Zustand-centric server state model to a hybrid a
 
 ### Migration Impact Overview
 
-| **Aspect**             | **Before (Zustand-based Server State)** | **After (Hybrid TanStack Query + Zustand)** |
-|------------------------|-----------------------------------|-------------------------------------------|
-| **Server State**       | Manual API calls in stores, complex state logic | Automatic query management via declarative hooks |
-| **Caching**            | Manual cache invalidation, inconsistent | Intelligent background sync, stale-while-revalidate |
-| **Loading States**     | Manual boolean flags (`isLoading`, `isUpdating`) | Granular, automatic query/mutation states |
-| **Error Handling**     | Dispersed `try/catch` blocks in store actions   | Centralized, built-in error boundaries & retry logic |
-| **Optimistic Updates** | Complex manual implementation & rollback logic | Declarative, with automatic rollback on error |
-| **Data Freshness**     | Required manual refresh triggers (e.g., pull-to-refresh) | Automatic refetching on reconnect & window focus |
+| **Aspect**             | **Before (Zustand-based Server State)**                  | **After (Hybrid TanStack Query + Zustand)**          |
+| ---------------------- | -------------------------------------------------------- | ---------------------------------------------------- |
+| **Server State**       | Manual API calls in stores, complex state logic          | Automatic query management via declarative hooks     |
+| **Caching**            | Manual cache invalidation, inconsistent                  | Intelligent background sync, stale-while-revalidate  |
+| **Loading States**     | Manual boolean flags (`isLoading`, `isUpdating`)         | Granular, automatic query/mutation states            |
+| **Error Handling**     | Dispersed `try/catch` blocks in store actions            | Centralized, built-in error boundaries & retry logic |
+| **Optimistic Updates** | Complex manual implementation & rollback logic           | Declarative, with automatic rollback on error        |
+| **Data Freshness**     | Required manual refresh triggers (e.g., pull-to-refresh) | Automatic refetching on reconnect & window focus     |
 
 ### Key Architectural Benefits
 
 #### Performance Improvements
+
 - **Faster Perceived Load Times:** Cached data is displayed instantly on subsequent screen visits, dramatically improving the user's perception of speed.
 - **Efficient Background Updates:** The `stale-while-revalidate` strategy ensures data stays fresh without blocking the UI, providing a seamless experience.
 - **Enhanced Offline Capability:** Cached data is available for all read operations, allowing users to view their entries even without an internet connection.
 - **Reduced Memory Footprint:** Server state is managed within a single, shared TanStack Query cache, eliminating redundant data slices that previously existed in multiple Zustand stores.
 
 #### Developer Experience (DX)
+
 - **Drastic Boilerplate Reduction:** An estimated **60-80% reduction** in code related to server state management. Complex `useEffect` hooks and manual state tracking are replaced by concise query hooks.
 - **Simplified Error Handling:** Built-in retry logic and declarative error states eliminate the need for repetitive `try/catch` blocks.
 - **Declarative Data Fetching:** Developers now declare what data is needed, and TanStack Query handles the "how" (fetching, caching, updating).
 - **Simplified Testing:** Logic can be tested at the hook level by mocking API services, which is simpler and more reliable than mocking complex store internals.
 
 #### User Experience (UX)
+
 - **Responsive UI:** Optimistic updates provide instant feedback for actions like adding or deleting gratitude statements, making the app feel faster and more interactive.
 - **Robust Error Recovery:** Automatic retries for failed network requests and seamless rollback of optimistic updates create a more resilient and trustworthy experience.
 - **Consistent Data:** Strategic query invalidation ensures that all relevant parts of the UI are updated automatically after a mutation, preventing stale data from being displayed.
 
 ### Code Quality & Performance Metrics
 
-| **Metric**             | **Before**                                      | **After**                                     | **Improvement**                               |
-|------------------------|-------------------------------------------------|-----------------------------------------------|-----------------------------------------------|
-| **Boilerplate**        | High repetition for async logic (50+ LOC per op) | Minimal, declarative patterns (5-10 LOC)      | Drastic reduction, improved readability       |
-| **Error Handling**     | Inconsistent, manual `try/catch`                | Centralized, built-in boundaries from hooks   | Improved consistency & robustness             |
-| **State Logic**        | Dispersed across multiple stores and components | Centralized within feature-specific hooks     | Clear separation of concerns, easier to debug |
-| **Testing Complexity** | Required mocking complex store internals        | Isolate and mock API services, test hook logic | Simplified, more focused tests                |
+| **Metric**             | **Before**                                       | **After**                                      | **Improvement**                               |
+| ---------------------- | ------------------------------------------------ | ---------------------------------------------- | --------------------------------------------- |
+| **Boilerplate**        | High repetition for async logic (50+ LOC per op) | Minimal, declarative patterns (5-10 LOC)       | Drastic reduction, improved readability       |
+| **Error Handling**     | Inconsistent, manual `try/catch`                 | Centralized, built-in boundaries from hooks    | Improved consistency & robustness             |
+| **State Logic**        | Dispersed across multiple stores and components  | Centralized within feature-specific hooks      | Clear separation of concerns, easier to debug |
+| **Testing Complexity** | Required mocking complex store internals         | Isolate and mock API services, test hook logic | Simplified, more focused tests                |
 
 ---
 
 This modern architecture provides a **bulletproof foundation** for building a scalable, maintainable, and performant gratitude journaling app. The hybrid TanStack Query + Zustand approach delivers the best of both worlds: **intelligent server state management** with **responsive client state handling**.
 
 **Key Benefits:**
+
 - ⚡ **90% reduction** in boilerplate code
-- 🔄 **Automatic caching** and background sync  
+- 🔄 **Automatic caching** and background sync
 - 🎯 **Optimistic updates** for instant UX
 - 🛡️ **Built-in error boundaries** and retry logic
 - 📱 **Offline-first** architecture
@@ -881,4 +891,4 @@ This modern architecture provides a **bulletproof foundation** for building a sc
 - 🔔 **Advanced notification system** with cross-platform support
 - 🎨 **Enhanced prompt experience** with database integration
 
-This architecture provides a solid foundation for building a scalable, maintainable, and performant gratitude journaling app while following React Native and mobile development best practices. 
+This architecture provides a solid foundation for building a scalable, maintainable, and performant gratitude journaling app while following React Native and mobile development best practices.

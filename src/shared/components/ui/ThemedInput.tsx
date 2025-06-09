@@ -28,12 +28,12 @@ interface ThemedInputProps extends TextInputProps {
   onRightIconPress?: () => void;
   variant?: 'outlined' | 'filled';
   size?: 'compact' | 'standard' | 'large';
-  
+
   // Enhanced interaction props
   rightIconAccessibilityLabel?: string;
   showClearButton?: boolean; // Auto-show clear button when text is present
   onClear?: () => void;
-  
+
   // 🆕 Enhanced validation props
   validationState?: 'default' | 'success' | 'warning' | 'error';
   showValidationIcon?: boolean; // Show validation state icon
@@ -44,7 +44,7 @@ interface ThemedInputProps extends TextInputProps {
 /**
  * 🎯 ENHANCED THEMED INPUT
  * Polished input component with smooth interactions and better accessibility
- * 
+ *
  * Features:
  * - Smooth focus transitions with scale animation
  * - Enhanced error state with shake animation
@@ -81,24 +81,24 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
 
   // 🆕 Determine effective validation state
   const effectiveValidationState = errorText ? 'error' : validationState;
-  
+
   // 🆕 Calculate character count
   const characterCount = value?.length || 0;
   const isOverLimit = characterLimit ? characterCount > characterLimit : false;
-  
+
   const styles = createStyles(
-    theme, 
-    variant, 
-    size, 
-    isFocused, 
-    effectiveValidationState === 'error' || isOverLimit, 
+    theme,
+    variant,
+    size,
+    isFocused,
+    effectiveValidationState === 'error' || isOverLimit,
     !editable
   );
 
   // Enhanced focus animation with scale effect
   const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(true);
-    
+
     // 🔧 FIX: Use only native driver animations to avoid conflicts
     Animated.parallel([
       Animated.spring(scaleAnimValue, {
@@ -108,14 +108,14 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
         friction: 10,
       }),
     ]).start();
-    
+
     rest.onFocus?.(e);
   };
 
   // Enhanced blur animation
   const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(false);
-    
+
     // 🔧 FIX: Use only native driver animations to avoid conflicts
     Animated.parallel([
       Animated.spring(scaleAnimValue, {
@@ -125,7 +125,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
         friction: 10,
       }),
     ]).start();
-    
+
     rest.onBlur?.(e);
   };
 
@@ -161,10 +161,8 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
   const shouldShowClear = showClearButton && value && value.length > 0 && !rightIcon;
 
   // 🆕 Show validation icon logic
-  const shouldShowValidationIcon = showValidationIcon && 
-    effectiveValidationState !== 'default' && 
-    !shouldShowClear && 
-    !rightIcon;
+  const shouldShowValidationIcon =
+    showValidationIcon && effectiveValidationState !== 'default' && !shouldShowClear && !rightIcon;
 
   // Handle clear button press
   const handleClear = () => {
@@ -205,12 +203,13 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
     <View style={styles.container}>
       {/* Label */}
       {label && (
-        <Text 
-          style={styles.label} 
+        <Text
+          style={styles.label}
           accessibilityRole="text"
           accessibilityLabel={`${label}${isRequired ? ', required' : ''}${errorText ? `, Error: ${errorText}` : ''}`}
         >
-          {label}{isRequired && <Text style={styles.requiredIndicator}> *</Text>}
+          {label}
+          {isRequired && <Text style={styles.requiredIndicator}> *</Text>}
         </Text>
       )}
 
@@ -218,11 +217,8 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
       <Animated.View
         style={[
           styles.inputContainer,
-          { 
-            transform: [
-              { scale: scaleAnimValue },
-              { translateX: errorAnimValue }
-            ]
+          {
+            transform: [{ scale: scaleAnimValue }, { translateX: errorAnimValue }],
           },
         ]}
       >
@@ -276,11 +272,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
             accessibilityLabel="Clear text"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Icon
-              name="close-circle"
-              size={getIconSize(size)}
-              color={theme.colors.textSecondary}
-            />
+            <Icon name="close-circle" size={getIconSize(size)} color={theme.colors.textSecondary} />
           </TouchableOpacity>
         )}
 
@@ -290,15 +282,11 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
             onPress={onRightIconPress}
             style={styles.iconButton}
             disabled={!onRightIconPress}
-            accessibilityRole={onRightIconPress ? "button" : "image"}
+            accessibilityRole={onRightIconPress ? 'button' : 'image'}
             accessibilityLabel={rightIconAccessibilityLabel || `${rightIcon} icon`}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Icon
-              name={rightIcon}
-              size={getIconSize(size)}
-              color={styles.icon.color}
-            />
+            <Icon name={rightIcon} size={getIconSize(size)} color={styles.icon.color} />
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -315,27 +303,24 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
                 style={styles.messageIcon}
               />
             )}
-            <Text 
+            <Text
               style={[
-                styles.helperText, 
+                styles.helperText,
                 (errorText || isOverLimit) && styles.errorText,
                 effectiveValidationState === 'success' && styles.successText,
                 effectiveValidationState === 'warning' && styles.warningText,
               ]}
               accessibilityRole="text"
-              accessibilityLiveRegion={(errorText || isOverLimit) ? "polite" : "none"}
+              accessibilityLiveRegion={errorText || isOverLimit ? 'polite' : 'none'}
             >
               {errorText || (isOverLimit ? `Character limit exceeded` : helperText)}
             </Text>
           </View>
-          
+
           {/* Character Count */}
           {characterLimit && (
-            <Text 
-              style={[
-                styles.characterCount,
-                isOverLimit && styles.characterCountError
-              ]}
+            <Text
+              style={[styles.characterCount, isOverLimit && styles.characterCountError]}
               accessibilityRole="text"
               accessibilityLabel={`${characterCount} of ${characterLimit} characters`}
             >
@@ -431,21 +416,22 @@ const createStyles = (
       backgroundColor: variantStyles.backgroundColor,
       paddingHorizontal: config.paddingHorizontal,
       opacity: isDisabled ? 0.6 : 1,
-      borderColor: hasError 
-        ? theme.colors.error 
-        : isDisabled 
-        ? theme.colors.disabled 
-        : isFocused 
-        ? theme.colors.primary 
-        : variantStyles.borderColor,
-      ...(isFocused && !hasError && {
-        backgroundColor: theme.colors.surface,
-        shadowColor: theme.colors.primary,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 0.5,
-        elevation: 1,
-      }),
+      borderColor: hasError
+        ? theme.colors.error
+        : isDisabled
+          ? theme.colors.disabled
+          : isFocused
+            ? theme.colors.primary
+            : variantStyles.borderColor,
+      ...(isFocused &&
+        !hasError && {
+          backgroundColor: theme.colors.surface,
+          shadowColor: theme.colors.primary,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 0.5,
+          elevation: 1,
+        }),
       ...(hasError && {
         backgroundColor: theme.colors.errorContainer + '10',
         shadowColor: theme.colors.error,
@@ -484,13 +470,13 @@ const createStyles = (
     },
 
     icon: {
-      color: isDisabled 
-        ? theme.colors.disabled 
-        : hasError 
-        ? theme.colors.error 
-        : isFocused
-        ? theme.colors.primary
-        : theme.colors.textSecondary,
+      color: isDisabled
+        ? theme.colors.disabled
+        : hasError
+          ? theme.colors.error
+          : isFocused
+            ? theme.colors.primary
+            : theme.colors.textSecondary,
     },
 
     messageContainer: {
@@ -569,7 +555,7 @@ const getVariantStyles = (theme: AppTheme, variant: 'outlined' | 'filled') => {
         backgroundColor: theme.colors.inputBackground,
         borderColor: 'transparent',
       };
-    
+
     case 'outlined':
     default:
       return {

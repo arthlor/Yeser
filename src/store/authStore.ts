@@ -1,14 +1,17 @@
 // src/store/authStore.ts
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { AuthError, User as SupabaseUser } from '@supabase/supabase-js';
 
 import { create } from 'zustand';
 
 import * as authService from '../services/authService'; // Import all from authService
-import { cacheService } from '@/services/cacheService';
 import { queryClient } from '@/api/queryClient';
 import { logger } from '@/utils/debugConfig';
+import { safeErrorDisplay } from '@/utils/errorTranslation';
 
-import type { EmailPasswordCredentials } from '../services/authService';
+import type { MagicLinkCredentials } from '../services/authService';
+
+// Rate limiting constants
+const MAGIC_LINK_COOLDOWN_MS = 60 * 1000; // 1 minute between requests
 
 // Define the state interface for authentication
 export interface AuthState {
@@ -16,26 +19,36 @@ export interface AuthState {
   user: SupabaseUser | null;
   isLoading: boolean; // For initial auth check and login/signup processes
   error: string | null;
+  magicLinkSent: boolean; // Track if magic link was sent
+  lastMagicLinkRequest: number | null; // Timestamp of last request
   initializeAuth: () => Promise<void>; // New action to setup listener and check session
-  loginWithEmail: (credentials: EmailPasswordCredentials) => Promise<void>; // Updated login action
+  loginWithMagicLink: (credentials: MagicLinkCredentials) => Promise<void>;
   loginWithGoogle: () => Promise<void>; // New action for Google login
-  signUpWithEmail: (credentials: EmailPasswordCredentials) => Promise<void>; // New signup action
-  resetPassword: (email: string) => Promise<void>; // Reset password action
-  updatePassword: (newPassword: string) => Promise<void>; // Update password action
+  confirmMagicLink: (tokenHash: string, type?: string) => Promise<void>;
   logout: () => Promise<void>; // Updated logout action
   setLoading: (loading: boolean) => void;
   setError: (errorMessage: string | null) => void;
   clearError: () => void;
+  resetMagicLinkSent: () => void;
+  canSendMagicLink: () => boolean; // Check if rate limit allows sending
+  setSessionFromTokens: (accessToken: string, refreshToken: string) => Promise<void>;
 }
 
 let authListenerSubscription: { unsubscribe: () => void } | null = null;
 
+// Helper function to handle errors consistently
+const handleStoreError = (error: unknown): string => {
+  return safeErrorDisplay(error);
+};
+
 // Create the Zustand store
-const useAuthStore = create<AuthState>((set, _get) => ({
+const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   user: null,
   isLoading: true, // Start with loading true for initial auth check
   error: null,
+  magicLinkSent: false,
+  lastMagicLinkRequest: null,
 
   initializeAuth: async () => {
     set({ isLoading: true, error: null });
@@ -58,6 +71,7 @@ const useAuthStore = create<AuthState>((set, _get) => ({
             user: session.user,
             isLoading: false,
             error: null,
+            magicLinkSent: false,
           });
         } else if (event === 'SIGNED_OUT') {
           set({
@@ -65,149 +79,155 @@ const useAuthStore = create<AuthState>((set, _get) => ({
             user: null,
             isLoading: false,
             error: null,
+            magicLinkSent: false,
           });
         } else if (event === 'USER_UPDATED' && session?.user) {
           set({ user: session.user });
-        } else if (event === 'PASSWORD_RECOVERY') {
-          // Handle password recovery if needed
-        } else if (event === 'TOKEN_REFRESHED') {
-          // Handle token refresh if needed
         } else if (event === 'INITIAL_SESSION' && !session) {
           // No active session on startup
           set({ isAuthenticated: false, user: null, isLoading: false });
         }
       });
-    } catch (e: unknown) {
-      logger.error('Error in initializeAuth:', e as Error);
-      let errorMessage = 'Failed to initialize auth';
-      if (
-        typeof e === 'object' &&
-        e !== null &&
-        'message' in e &&
-        typeof (e as { message: unknown }).message === 'string'
-      ) {
-        errorMessage = (e as { message: string }).message;
-      } else if (typeof e === 'string') {
-        errorMessage = e;
+    } catch (error) {
+      logger.error('Error in initializeAuth:', error as Error);
+      set({
+        isAuthenticated: false,
+        user: null,
+        isLoading: false,
+        error: handleStoreError(error),
+      });
+    }
+  },
+
+  canSendMagicLink: () => {
+    const state = get();
+    if (!state.lastMagicLinkRequest) {
+      return true;
+    }
+
+    const timeSinceLastRequest = Date.now() - state.lastMagicLinkRequest;
+    return timeSinceLastRequest >= MAGIC_LINK_COOLDOWN_MS;
+  },
+
+  loginWithMagicLink: async (credentials) => {
+    const state = get();
+
+    // Check client-side rate limiting
+    if (!state.canSendMagicLink()) {
+      const remainingTime = Math.ceil(
+        (MAGIC_LINK_COOLDOWN_MS - (Date.now() - (state.lastMagicLinkRequest || 0))) / 1000
+      );
+      set({
+        error: `Lütfen ${remainingTime} saniye bekleyin ve tekrar deneyin.`,
+        isLoading: false,
+      });
+      return;
+    }
+
+    set({ isLoading: true, error: null, magicLinkSent: false });
+
+    try {
+      const { error } = await authService.signInWithMagicLink(credentials);
+
+      if (error) {
+        set({
+          isLoading: false,
+          error: handleStoreError(error),
+          magicLinkSent: false,
+        });
+      } else {
+        set({
+          isLoading: false,
+          error: null,
+          magicLinkSent: true,
+          lastMagicLinkRequest: Date.now(),
+        });
       }
+    } catch (error) {
       set({
-        isAuthenticated: false,
-        user: null,
         isLoading: false,
-        error: errorMessage,
+        error: handleStoreError(error),
+        magicLinkSent: false,
       });
     }
   },
 
-  loginWithEmail: async (credentials) => {
+  confirmMagicLink: async (tokenHash, type = 'magiclink') => {
     set({ isLoading: true, error: null });
-    const { user, error } = await authService.signInWithEmail(credentials);
-    if (user && !error) {
-      // State will be updated by onAuthStateChange listener for SIGNED_IN
-      // set({ isAuthenticated: true, user, isLoading: false, error: null });
-    } else {
+    try {
+      const { user, session, error } = await authService.confirmMagicLink(tokenHash, type);
+      if (error) {
+        set({
+          isLoading: false,
+          error: handleStoreError(error),
+          magicLinkSent: false, // Reset so user can request new link
+        });
+      } else if (user && session) {
+        // Auth state change listener will handle the state update
+        logger.debug('Magic link confirmed successfully');
+      } else {
+        set({
+          isLoading: false,
+          error: 'Geçersiz giriş bağlantısı. Lütfen yeni bir bağlantı talep edin.',
+          magicLinkSent: false,
+        });
+      }
+    } catch (error) {
       set({
-        isAuthenticated: false,
-        user: null,
         isLoading: false,
-        error: error?.message || 'Login failed',
+        error: handleStoreError(error),
+        magicLinkSent: false,
       });
-    }
-  },
-
-  signUpWithEmail: async (credentials) => {
-    set({ isLoading: true, error: null });
-    const { user, error } = await authService.signUpWithEmail(credentials);
-    if (user && !error) {
-      // State will be updated by onAuthStateChange listener for SIGNED_IN (if auto-confirm is on)
-      // Or user needs to confirm email
-      // set({ isLoading: false, error: null }); // User might not be authenticated yet
-      logger.debug('Sign up successful, user needs to confirm email or is auto-confirmed.');
-      set({ isLoading: false }); // Let onAuthStateChange handle user state
-    } else {
-      set({ isLoading: false, error: error?.message || 'Sign up failed' });
-    }
-  },
-
-  resetPassword: async (email) => {
-    set({ isLoading: true, error: null });
-    const { error } = await authService.resetPassword(email);
-    if (error) {
-      set({ isLoading: false, error: error.message || 'Password reset failed' });
-    } else {
-      set({ isLoading: false, error: null });
-      logger.debug('Password reset email sent successfully');
-    }
-  },
-
-  updatePassword: async (newPassword) => {
-    set({ isLoading: true, error: null });
-    const { error } = await authService.updatePassword(newPassword);
-    if (error) {
-      set({ isLoading: false, error: error.message || 'Password update failed' });
-    } else {
-      set({ isLoading: false, error: null });
-      logger.debug('Password updated successfully');
     }
   },
 
   loginWithGoogle: async () => {
     set({ isLoading: true, error: null });
-    const { error } = await authService.signInWithGoogle();
-    if (error) {
-      // Check if user cancelled OAuth flow
-      if (error.name === 'AuthCancelledError') {
-        // Don't treat cancellation as an error - it's a normal user action
-        set({
-          isLoading: false,
-          error: null, // Clear error since cancellation is not an error
-        });
-        // Log cancellation for analytics
-        logger.debug('Google OAuth cancelled by user');
+
+    try {
+      const { error } = await authService.signInWithGoogle();
+
+      if (error) {
+        if ((error as AuthError).name === 'AuthCancelledError') {
+          // Don't treat cancellation as an error - it's a normal user action
+          set({
+            isLoading: false,
+            error: null, // Clear error since cancellation is not an error
+          });
+          logger.debug('Google OAuth cancelled by user');
+        } else {
+          // Handle actual errors (not cancellations)
+          const translatedError = handleStoreError(error);
+          set({
+            isLoading: false,
+            error: translatedError,
+          });
+        }
       } else {
-        // Handle other OAuth errors normally
-        set({
-          isLoading: false,
-          error: error.message || 'Google login failed',
-        });
+        // Success case - auth state change listener will handle the state update
+        logger.debug('Google login initiated. Waiting for OAuth callback.');
+        set({ isLoading: false });
       }
-    } else {
-      // On successful initiation of OAuth, Supabase handles the redirect.
-      // The onAuthStateChange listener will handle the SIGNED_IN event when the user returns to the app.
-      // isLoading will be set to false by the onAuthStateChange handler or if an error occurs.
-      logger.debug('Google login initiated. Waiting for OAuth callback.');
+    } catch (error) {
+      // Handle any unexpected errors during the OAuth process
+      const translatedError = handleStoreError(error);
+      set({
+        isLoading: false,
+        error: translatedError || 'Giriş işleminde beklenmeyen bir hata oluştu.',
+      });
     }
   },
 
   logout: async () => {
-    set({ isLoading: true, error: null });
-
-    // Get current user ID before logout for cache clearing
-    const currentUser = _get().user;
-    const userId = currentUser?.id;
-
+    set({ isLoading: true });
     const { error } = await authService.signOut();
     if (error) {
-      set({ isLoading: false, error: error.message || 'Logout failed' });
+      logger.error('Logout error:', error);
+      set({ isLoading: false, error: handleStoreError(error) });
     } else {
-      // Proactively clear all cached data for this user
-      if (userId) {
-        try {
-          logger.debug('Clearing cache for user on logout', { userId });
-          cacheService.invalidateAfterMutation('logout', userId);
-
-          // Additional cleanup - clear all queries
-          queryClient.clear();
-
-          logger.debug('Cache cleared successfully on logout');
-        } catch (cacheError) {
-          logger.error('Error clearing cache on logout:', cacheError as Error);
-          // Don't fail logout because of cache clearing errors
-        }
-      }
-
-      // State will be updated by onAuthStateChange listener for SIGNED_OUT
-      // set({ isAuthenticated: false, user: null, isLoading: false, error: null });
+      // Clear all cached data
+      queryClient.clear();
+      logger.debug('Logout successful');
     }
   },
 
@@ -221,6 +241,41 @@ const useAuthStore = create<AuthState>((set, _get) => ({
 
   clearError: () => {
     set({ error: null });
+  },
+
+  resetMagicLinkSent: () => set({ magicLinkSent: false }),
+
+  // --- Handle OAuth-style Magic Link Tokens ---
+  setSessionFromTokens: async (accessToken: string, refreshToken: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { user, session, error } = await authService.setSessionFromTokens(
+        accessToken,
+        refreshToken
+      );
+      if (error) {
+        set({
+          isLoading: false,
+          error: handleStoreError(error),
+          magicLinkSent: false, // Reset magic link state so user can request new one
+        });
+      } else if (user && session) {
+        // Auth state change listener will handle the state update
+        logger.debug('OAuth token authentication successful');
+      } else {
+        set({
+          isLoading: false,
+          error: 'Geçersiz giriş bilgileri. Lütfen yeni bir bağlantı talep edin.',
+          magicLinkSent: false,
+        });
+      }
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: handleStoreError(error),
+        magicLinkSent: false,
+      });
+    }
   },
 }));
 

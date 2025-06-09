@@ -1,8 +1,15 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { analyticsService } from './analyticsService';
 import { logger } from '../utils/debugConfig';
+
+// Storage keys for notification tracking
+const STORAGE_KEYS = {
+  LAST_MONTHLY_SCHEDULED: 'last_monthly_notification_scheduled',
+  MONTHLY_NOTIFICATION_CONFIG: 'monthly_notification_config',
+} as const;
 
 // Configure notification channel for Android
 const NOTIFICATION_CHANNEL = {
@@ -34,12 +41,20 @@ interface NotificationResult {
   error?: NotificationError;
 }
 
+// Interface for monthly notification configuration
+interface MonthlyNotificationConfig {
+  hour: number;
+  minute: number;
+  enabled: boolean;
+  lastScheduledDate: string; // ISO string
+}
+
 class NotificationService {
   private isInitialized = false;
   private hasPermissions = false;
 
   /**
-   * Initialize notification service with proper channel setup
+   * Initialize notification service with proper channel setup and monthly notification check
    */
   async initialize(): Promise<boolean> {
     try {
@@ -54,6 +69,11 @@ class NotificationService {
       const hasPermissions = await this.requestPermissions();
       this.hasPermissions = hasPermissions;
       this.isInitialized = true;
+
+      // 🚨 FIX: Check and re-schedule monthly notifications on app startup
+      if (hasPermissions) {
+        await this.checkAndRescheduleMonthlyNotifications();
+      }
 
       analyticsService.logEvent('notification_service_initialized', {
         platform: Platform.OS,
@@ -80,7 +100,9 @@ class NotificationService {
    * Set up Android notification channel
    */
   private async setupAndroidChannel(): Promise<void> {
-    if (Platform.OS !== 'android') {return;}
+    if (Platform.OS !== 'android') {
+      return;
+    }
 
     try {
       await Notifications.setNotificationChannelAsync(NOTIFICATION_CHANNEL.name, {
@@ -202,13 +224,13 @@ class NotificationService {
             repeats: true,
           },
         });
-        
+
         logger.debug('iOS calendar trigger scheduled successfully', { identifier, hour, minute });
       } else {
         // Android: Use weekly triggers for each day of the week
         const weekdays = [1, 2, 3, 4, 5, 6, 7]; // Sunday=1, Monday=2, ..., Saturday=7
         const identifiers: string[] = [];
-        
+
         for (const weekday of weekdays) {
           const weeklyIdentifier = await Notifications.scheduleNotificationAsync({
             content: {
@@ -232,13 +254,13 @@ class NotificationService {
           });
           identifiers.push(weeklyIdentifier);
         }
-        
+
         identifier = identifiers[0]; // Return the first identifier
-        logger.debug('Android weekly triggers scheduled successfully', { 
-          identifiers, 
-          hour, 
+        logger.debug('Android weekly triggers scheduled successfully', {
+          identifiers,
+          hour,
           minute,
-          weekdays_count: weekdays.length
+          weekdays_count: weekdays.length,
         });
       }
 
@@ -246,7 +268,7 @@ class NotificationService {
       const scheduledNotifications = await this.getScheduledNotifications();
       logger.debug('All scheduled notifications after scheduling:', {
         count: scheduledNotifications.length,
-        notifications: scheduledNotifications.map(n => ({
+        notifications: scheduledNotifications.map((n) => ({
           identifier: n.identifier,
           title: n.content.title,
           trigger: n.trigger,
@@ -330,7 +352,7 @@ class NotificationService {
           // iOS: Multiple calendar triggers for each day
           const weekdays = [1, 2, 3, 4, 5, 6, 7]; // All days
           const identifiers: string[] = [];
-          
+
           for (const weekday of weekdays) {
             const dailyIdentifier = await Notifications.scheduleNotificationAsync({
               content: {
@@ -360,7 +382,7 @@ class NotificationService {
           // Android: Multiple weekly triggers for each day
           const weekdays = [1, 2, 3, 4, 5, 6, 7];
           const identifiers: string[] = [];
-          
+
           for (const weekday of weekdays) {
             const dailyIdentifier = await Notifications.scheduleNotificationAsync({
               content: {
@@ -387,11 +409,12 @@ class NotificationService {
           }
           identifier = identifiers[0];
         }
-        
-        logger.debug('Daily throwback reminders scheduled successfully', { 
-          hour, minute, platform: Platform.OS 
+
+        logger.debug('Daily throwback reminders scheduled successfully', {
+          hour,
+          minute,
+          platform: Platform.OS,
         });
-        
       } else if (frequency === 'weekly') {
         // Schedule weekly throwback reminders (Sunday)
         if (Platform.OS === 'ios') {
@@ -437,40 +460,64 @@ class NotificationService {
             },
           });
         }
-        
-        logger.debug('Weekly throwback reminder scheduled successfully', { 
-          hour, minute, platform: Platform.OS 
+
+        logger.debug('Weekly throwback reminder scheduled successfully', {
+          hour,
+          minute,
+          platform: Platform.OS,
         });
-        
       } else if (frequency === 'monthly') {
-        // Schedule monthly throwback reminders (1st of each month)
-        // Note: There's no direct monthly trigger, so we'll use date-based scheduling
-        const now = new Date();
-        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        nextMonth.setHours(hour, minute, 0, 0);
-        
-        identifier = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '📚 Geçmiş Anıların Zamanı!',
-            body: 'Geçen haftalarda neler yazmıştın? Haydi bir göz at! 💭',
-            sound: 'default',
-            priority: Notifications.AndroidNotificationPriority.DEFAULT,
-            categoryIdentifier: 'THROWBACK_REMINDER',
-            data: {
-              type: 'throwback_reminder',
-              action: 'open_past_entries',
-              frequency: 'monthly',
+        // 🚨 FIX: Robust monthly throwback reminders with auto-rescheduling
+        const nextMonthDate = this.calculateNextMonthlyDate(hour, minute);
+
+        // Check if we already scheduled this month to prevent duplicates
+        const config = await this.getMonthlyNotificationConfig();
+        const lastScheduled = config.lastScheduledDate ? new Date(config.lastScheduledDate) : null;
+        const isAlreadyScheduled =
+          lastScheduled &&
+          lastScheduled.getMonth() === nextMonthDate.getMonth() &&
+          lastScheduled.getFullYear() === nextMonthDate.getFullYear();
+
+        if (!isAlreadyScheduled) {
+          identifier = await Notifications.scheduleNotificationAsync({
+            content: {
+              title: '📚 Geçmiş Anıların Zamanı!',
+              body: 'Geçen haftalarda neler yazmıştın? Haydi bir göz at! 💭',
+              sound: 'default',
+              priority: Notifications.AndroidNotificationPriority.DEFAULT,
+              categoryIdentifier: 'THROWBACK_REMINDER',
+              data: {
+                type: 'throwback_reminder',
+                action: 'open_past_entries',
+                frequency: 'monthly',
+                reschedule: 'true', // Flag for auto-rescheduling
+              },
             },
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: nextMonth,
-          },
-        });
-        
-        logger.debug('Monthly throwback reminder scheduled successfully', { 
-          hour, minute, date: nextMonth, platform: Platform.OS 
-        });
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              date: nextMonthDate,
+            },
+          });
+
+          // Store configuration for re-scheduling
+          await this.updateMonthlyNotificationConfig(hour, minute, true, identifier);
+
+          logger.debug('Monthly throwback reminder scheduled successfully', {
+            identifier,
+            hour,
+            minute,
+            date: nextMonthDate,
+            platform: Platform.OS,
+            isReschedule: !!lastScheduled,
+          });
+        } else {
+          logger.debug('Monthly notification already scheduled for this month', {
+            lastScheduled: lastScheduled?.toISOString(),
+            nextScheduled: nextMonthDate.toISOString(),
+          });
+          // Return existing identifier or create a placeholder
+          identifier = config.lastScheduledDate || 'monthly-already-scheduled';
+        }
       }
 
       analyticsService.logEvent('throwback_reminder_scheduled', {
@@ -505,7 +552,7 @@ class NotificationService {
         frequency,
         platform: Platform.OS,
       });
-      
+
       return { success: false, error: notificationError };
     }
   }
@@ -550,6 +597,16 @@ class NotificationService {
       hour,
       minute,
     };
+  }
+
+  /**
+   * 🚨 FIX: Calculate next monthly notification date (1st of next month)
+   */
+  private calculateNextMonthlyDate(hour: number, minute: number): Date {
+    const now = new Date();
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    nextMonth.setHours(hour, minute, 0, 0);
+    return nextMonth;
   }
 
   /**
@@ -639,7 +696,7 @@ class NotificationService {
       const notifications = await this.getScheduledNotifications();
       return {
         count: notifications.length,
-        notifications: notifications.map(n => ({
+        notifications: notifications.map((n) => ({
           identifier: n.identifier,
           title: n.content.title || 'No title',
           body: n.content.body || 'No body',
@@ -674,6 +731,61 @@ class NotificationService {
     });
 
     analyticsService.logEvent('test_notification_sent');
+  }
+
+  // 🚨 FIX: Check and re-schedule monthly notifications on app startup
+  private async checkAndRescheduleMonthlyNotifications(): Promise<void> {
+    try {
+      const config = await this.getMonthlyNotificationConfig();
+      if (config.enabled) {
+        const result = await this.scheduleThrowbackReminder(
+          config.hour,
+          config.minute,
+          true,
+          'monthly'
+        );
+        if (result.success) {
+          await this.updateMonthlyNotificationConfig(
+            config.hour,
+            config.minute,
+            true,
+            result.identifier
+          );
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to check and reschedule monthly notifications', error as Error);
+    }
+  }
+
+  // 🚨 FIX: Implement monthly notification configuration
+  private async getMonthlyNotificationConfig(): Promise<MonthlyNotificationConfig> {
+    const config = await AsyncStorage.getItem(STORAGE_KEYS.MONTHLY_NOTIFICATION_CONFIG);
+    if (config) {
+      return JSON.parse(config);
+    } else {
+      return {
+        hour: 12,
+        minute: 0,
+        enabled: false,
+        lastScheduledDate: '',
+      };
+    }
+  }
+
+  private async updateMonthlyNotificationConfig(
+    hour: number,
+    minute: number,
+    enabled: boolean,
+    _identifier?: string
+  ): Promise<void> {
+    const config: MonthlyNotificationConfig = {
+      hour,
+      minute,
+      enabled,
+      lastScheduledDate: new Date().toISOString(),
+    };
+    await AsyncStorage.setItem(STORAGE_KEYS.MONTHLY_NOTIFICATION_CONFIG, JSON.stringify(config));
   }
 }
 

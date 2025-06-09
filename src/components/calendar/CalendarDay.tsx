@@ -8,7 +8,9 @@ import { useTheme } from '../../providers/ThemeProvider';
 const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress }) => {
   const { theme } = useTheme();
 
-  if (!date) {return null;}
+  if (!date) {
+    return null;
+  }
 
   const dayNumber = new Date(date.timestamp).getDate();
   const isSelectedDay = marking.selected;

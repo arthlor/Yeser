@@ -22,7 +22,7 @@ export class CacheService {
       case 'add_statement':
       case 'edit_statement':
       case 'delete_statement':
-        queryKeyHelpers.invalidateEntryData(userId, data?.entryDate).forEach(key => {
+        queryKeyHelpers.invalidateEntryData(userId, data?.entryDate).forEach((key) => {
           if (key) {
             this.queryClient.invalidateQueries({ queryKey: key });
           }
@@ -53,13 +53,14 @@ export class CacheService {
     // Prefetch today's entry
     await this.queryClient.prefetchQuery({
       queryKey: queryKeys.gratitudeEntry(userId, today),
-      queryFn: () => import('@/api/gratitudeApi').then(api => api.getGratitudeDailyEntryByDate(today)),
+      queryFn: () =>
+        import('@/api/gratitudeApi').then((api) => api.getGratitudeDailyEntryByDate(today)),
     });
 
     // Prefetch user profile
     await this.queryClient.prefetchQuery({
       queryKey: queryKeys.profile(userId),
-      queryFn: () => import('@/api/profileApi').then(api => api.getProfile()),
+      queryFn: () => import('@/api/profileApi').then((api) => api.getProfile()),
     });
   }
 
@@ -73,4 +74,4 @@ export class CacheService {
 }
 
 // Singleton instance
-export const cacheService = new CacheService(queryClient); 
+export const cacheService = new CacheService(queryClient);

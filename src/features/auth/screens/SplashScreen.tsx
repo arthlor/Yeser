@@ -11,7 +11,7 @@ import { analyticsService } from '@/services/analyticsService';
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme } from '@/themes/types';
 
-  const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 /**
  * Premium splash screen with Lottie animations
@@ -152,7 +152,7 @@ const EnhancedSplashScreen: React.FC = () => {
               },
             ]}
           >
-            {/* Beautiful flower bloom animation */}
+            {/* Beautiful flower bloom animation from splash.json */}
             <LottieView
               ref={lottieRef}
               source={splashAnimation}

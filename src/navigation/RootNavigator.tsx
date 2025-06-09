@@ -26,14 +26,15 @@ import TermsOfServiceScreen from '../features/settings/screens/TermsOfServiceScr
 import OnboardingFlowScreen from '../features/onboarding/screens/EnhancedOnboardingFlowScreen';
 import { WhyGratitudeScreen } from '../features/whyGratitude';
 import useAuthStore from '../store/authStore';
-import { MainAppTabParamList, RootStackParamList } from '../types/navigation';
+import { MainTabParamList, RootStackParamList } from '../types/navigation';
 import { hapticFeedback } from '../utils/hapticFeedback';
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme } from '@/themes/types';
 import { analyticsService } from '@/services/analyticsService';
+import { logger } from '@/utils/debugConfig';
 
 // Define the Main App Tab Navigator
-const Tab = createBottomTabNavigator<MainAppTabParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const createTabBarStyles = (theme: AppTheme, insets: { bottom: number }) =>
   StyleSheet.create({
@@ -243,12 +244,11 @@ const RootNavigator: React.FC = () => {
   const authIsLoading = useAuthStore((state) => state.isLoading);
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
 
-  // TanStack Query hook replacing useProfileStore
-  const { profile, isLoadingProfile } = useUserProfile();
-  const profileId = profile?.id;
+  // 🚨 FIX: Enhanced profile hook with error handling
+  const { profile, isLoadingProfile, isProfileError, profileError } = useUserProfile();
   const onboarded = profile?.onboarded;
 
-  // Add minimum splash screen duration to prevent race conditions and improve UX
+  // 🚨 FIX: Reduced minimum splash duration for better UX
   const [minimumTimeElapsed, setMinimumTimeElapsed] = React.useState(false);
 
   const rootStyles = React.useMemo(() => createRootStyles(theme), [theme]);
@@ -258,28 +258,47 @@ const RootNavigator: React.FC = () => {
     // Call initializeAuth only once on mount as its definition is stable.
   }, [initializeAuth]);
 
-  // Start minimum splash duration timer
+  // 🚨 FIX: Shorter minimum splash duration (1.5s instead of 3s)
   useEffect(() => {
     const timer = setTimeout(() => {
       setMinimumTimeElapsed(true);
-    }, 3000); // 3 seconds minimum duration for better animation showcase
+    }, 1500); // Reduced from 3000ms to 1500ms for better UX
 
     return () => clearTimeout(timer);
   }, []);
 
-  // Show splash screen if auth is loading, profile is loading, or minimum time hasn't elapsed
-  // This prevents race conditions and ensures consistent loading experience
-  if (authIsLoading) {
+  // 🚨 FIX: Handle profile fetch errors to prevent app getting stuck
+  useEffect(() => {
+    if (isProfileError && isAuthenticated && profileError) {
+      logger.error('Profile fetch failed, logging out user:', profileError);
+      // Optionally log the user out or show an error screen
+      // For now, we'll log the error and let the app continue
+      analyticsService.logEvent('profile_fetch_error', {
+        error_message: profileError.message || 'Unknown profile error',
+        is_authenticated: isAuthenticated,
+      });
+    }
+  }, [isProfileError, isAuthenticated, profileError]);
+
+  // 🚨 FIX: Consolidated loading state logic
+  const isAppLoading =
+    authIsLoading ||
+    !minimumTimeElapsed ||
+    (isAuthenticated && isLoadingProfile && !isProfileError);
+
+  // 🚨 FIX: Show splash screen with consolidated logic
+  if (isAppLoading) {
     return <SplashScreen />;
   }
-  if (isAuthenticated && (isLoadingProfile || !profileId)) {
-    // If authenticated: show splash if profile is actively loading OR if there's no profileId yet
-    // TanStack Query will automatically fetch the profile when user is authenticated
-    return <SplashScreen />;
-  }
-  if (!minimumTimeElapsed) {
-    // Ensure minimum loading time for smooth UX and to prevent race conditions
-    return <SplashScreen />;
+
+  // 🚨 FIX: Handle profile error state explicitly
+  if (isAuthenticated && isProfileError && !isLoadingProfile) {
+    // Profile fetch failed and we're not loading - allow app to continue
+    // but log the issue for monitoring
+    logger.warn('Continuing with app despite profile error', {
+      error: profileError?.message,
+      hasProfile: !!profile,
+    });
   }
 
   return (

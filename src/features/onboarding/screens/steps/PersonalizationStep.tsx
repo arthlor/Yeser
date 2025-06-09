@@ -1,6 +1,6 @@
 import { analyticsService } from '@/services/analyticsService';
 import { useTheme } from '@/providers/ThemeProvider';
-import { getNeutralShadow} from '@/themes/utils';
+import { getNeutralShadow } from '@/themes/utils';
 
 import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
@@ -19,7 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Button, IconButton} from 'react-native-paper';
+import { Button, IconButton } from 'react-native-paper';
 
 import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
 
@@ -57,9 +57,14 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   const [selectedTheme, setSelectedTheme] = useState<ThemeKey>(
     (initialData?.selectedTheme as ThemeKey) || 'auto'
   );
-  
+
   // Username validation hook
-  const { isChecking, isAvailable, error: validationError, checkUsername } = useUsernameValidation();
+  const {
+    isChecking,
+    isAvailable,
+    error: validationError,
+    checkUsername,
+  } = useUsernameValidation();
 
   // Simplified animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -119,7 +124,8 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
     onNext({ username, selectedTheme });
   }, [username, selectedTheme, validationError, isChecking, isAvailable, onNext]);
 
-  const canContinue = username.trim().length >= 3 && !validationError && !isChecking && isAvailable === true;
+  const canContinue =
+    username.trim().length >= 3 && !validationError && !isChecking && isAvailable === true;
 
   // Debug logging
   useEffect(() => {
@@ -129,12 +135,12 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
       validationError,
       isChecking,
       isAvailable,
-      canContinue
+      canContinue,
     });
   }, [username, validationError, isChecking, isAvailable, canContinue]); // canContinue needed as it's used inside
 
   return (
-          <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <ScreenLayout edges={['top']} edgeToEdge={true}>
       <Animated.View
         style={[
           styles.container,
@@ -164,7 +170,9 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
         <ScreenSection>
           <View style={styles.header}>
             <Text style={styles.title}>Seni Tanıyalım! 👋</Text>
-            <Text style={styles.subtitle}>Senin için kişiselleştirilmiş bir deneyim oluşturalım.</Text>
+            <Text style={styles.subtitle}>
+              Senin için kişiselleştirilmiş bir deneyim oluşturalım.
+            </Text>
           </View>
         </ScreenSection>
 
@@ -255,11 +263,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
                     </Text>
                   </View>
                   {selectedTheme === themeOption.key && (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={20}
-                      color={theme.colors.primary}
-                    />
+                    <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
                   )}
                 </View>
               </TouchableOpacity>
@@ -420,7 +424,6 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.bodyMedium,
       fontWeight: '600',
     },
-
   });
 
 export default PersonalizationStep;

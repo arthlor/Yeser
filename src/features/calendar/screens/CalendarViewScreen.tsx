@@ -1,7 +1,7 @@
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { DateData } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -19,24 +19,27 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
 import { analyticsService } from '@/services/analyticsService';
 import { AppTheme } from '@/themes/types';
-import { MainAppTabParamList, RootStackParamList } from '@/types/navigation';
+import { MainTabParamList, RootStackParamList } from '@/types/navigation';
 
 // Define navigation prop types
 type CalendarViewScreenNavigationProp = CompositeNavigationProp<
-  NativeStackNavigationProp<MainAppTabParamList, 'PastEntriesTab'>,
+  NativeStackNavigationProp<MainTabParamList, 'PastEntriesTab'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
 
 /**
  * Enhanced Calendar View Screen - Edge-to-Edge Design
  * Implements comprehensive edge-to-edge patterns with proper spacing hierarchy
+ * 🚨 PERFORMANCE OPTIMIZED: Fixed infinite re-render loop on iOS
  */
-const EnhancedCalendarViewScreen: React.FC = () => {
+const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
   const navigation = useNavigation<CalendarViewScreenNavigationProp>();
   const { theme } = useTheme();
-  const styles = createStyles(theme);
 
-  // Animation values
+  // 🚨 FIX: Memoize styles to prevent infinite re-renders on iOS
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
+  // Animation values - Use refs to maintain stability
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
@@ -44,6 +47,10 @@ const EnhancedCalendarViewScreen: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [markedDates, setMarkedDates] = useState<CustomMarkedDates>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // 🚨 FIX: Extract stable color references to prevent re-render loops
+  const primaryColor = theme.colors.primary;
+  const onPrimaryColor = theme.colors.onPrimary;
 
   // TanStack Query - Replace manual API calls
   const {
@@ -75,13 +82,28 @@ const EnhancedCalendarViewScreen: React.FC = () => {
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  // Update marked dates when entry dates change
+  // Analytics tracking
+  useEffect(() => {
+    analyticsService.logScreenView('calendar_screen');
+
+    // Track calendar context
+    analyticsService.logEvent('calendar_screen_viewed', {
+      current_year: currentMonth.getFullYear(),
+      current_month: currentMonth.getMonth() + 1,
+      total_entry_dates: entryDates.length,
+      has_selected_date: !!selectedDate,
+      selected_date: selectedDate || null,
+      has_entry_for_selected: !!selectedEntry,
+    });
+  }, [currentMonth, entryDates.length, selectedDate, selectedEntry]);
+
+  // 🚨 FIX: Update marked dates when entry dates change - OPTIMIZED FOR iOS
   useEffect(() => {
     const newMarkedDates: CustomMarkedDates = {};
     entryDates.forEach((entryDate: string) => {
       newMarkedDates[entryDate] = {
         marked: true,
-        dotColor: theme.colors.primary,
+        dotColor: primaryColor,
         activeOpacity: 0.8,
       };
     });
@@ -93,9 +115,9 @@ const EnhancedCalendarViewScreen: React.FC = () => {
         updateMarkedDatesWithSelection(
           newMarkedDates,
           selectedDate,
-          theme.colors.primary,
-          theme.colors.onPrimary,
-          theme.colors.primary
+          primaryColor,
+          onPrimaryColor,
+          primaryColor
         )
       );
     }
@@ -110,9 +132,9 @@ const EnhancedCalendarViewScreen: React.FC = () => {
         entry_count: entryDates.length,
       });
     }
-  }, [entryDates, selectedDate, theme.colors.primary, theme.colors.onPrimary, currentMonth]);
+  }, [entryDates, selectedDate, currentMonth, primaryColor, onPrimaryColor]); // 🚨 FIX: Use individual color values instead of object
 
-  // Handle month navigation
+  // Handle month navigation - Memoized for stability
   const handleMonthChange = useCallback((dateData: DateData) => {
     const newMonthDate = new Date(dateData.timestamp);
     setCurrentMonth(newMonthDate);
@@ -122,48 +144,51 @@ const EnhancedCalendarViewScreen: React.FC = () => {
     });
   }, []);
 
-  // Handle day selection - Now much simpler with TanStack Query
-  const handleDayPress = (day: DateData): void => {
-    const newSelectedDate = day.dateString;
-    setSelectedDate(newSelectedDate);
+  // 🚨 FIX: Handle day selection - Optimized dependencies for iOS
+  const handleDayPress = useCallback(
+    (day: DateData): void => {
+      const newSelectedDate = day.dateString;
+      setSelectedDate(newSelectedDate);
 
-    // Update marked dates with selection
-    const updatedMarkedDates = updateMarkedDatesWithSelection(
-      markedDates,
-      newSelectedDate,
-      theme.colors.primary,
-      theme.colors.onPrimary,
-      theme.colors.primary
-    );
-    setMarkedDates(updatedMarkedDates);
+      // Update marked dates with selection - Use functional update for stability
+      setMarkedDates((prevMarkedDates) => {
+        const updatedMarkedDates = updateMarkedDatesWithSelection(
+          prevMarkedDates,
+          newSelectedDate,
+          primaryColor,
+          onPrimaryColor,
+          primaryColor
+        );
+        return updatedMarkedDates;
+      });
 
-    analyticsService.logEvent('calendar_day_selected', {
-      date: newSelectedDate,
-      has_entry: Boolean(selectedEntry),
-    });
-  };
+      analyticsService.logEvent('calendar_day_selected', {
+        date: newSelectedDate,
+        has_entry: Boolean(selectedEntry),
+      });
+    },
+    [primaryColor, onPrimaryColor, selectedEntry]
+  ); // 🚨 FIX: Remove markedDates dependency to prevent loops
 
-  // Navigation handlers
-  const handleAddNewEntry = (): void => {
+  // Navigation handlers - Memoized for stability
+  const handleAddNewEntry = useCallback((): void => {
     analyticsService.logEvent('add_entry_from_calendar', {
       date: selectedDate ?? new Date().toISOString().split('T')[0],
     });
 
-    navigation.navigate('DailyEntryTab', {
-      initialDate: selectedDate ?? new Date().toISOString().split('T')[0],
-    });
-  };
+    navigation.navigate('DailyEntryTab');
+  }, [navigation, selectedDate]);
 
-  const handleViewEntry = (): void => {
+  const handleViewEntry = useCallback((): void => {
     if (selectedEntry) {
       analyticsService.logEvent('view_entry_from_calendar', {
         date: selectedDate,
         entry_id: selectedEntry.id,
       });
 
-      navigation.navigate('EntryDetail', { entryDate: selectedEntry.entry_date });
+      navigation.navigate('EntryDetail', { entryId: selectedEntry.id });
     }
-  };
+  }, [navigation, selectedDate, selectedEntry]);
 
   // Combine loading states
   const isLoading = isLoadingDates || isLoadingEntry;
@@ -229,7 +254,10 @@ const EnhancedCalendarViewScreen: React.FC = () => {
       </Animated.View>
     </ScreenLayout>
   );
-};
+});
+
+// 🚨 FIX: Add display name for React.memo component
+EnhancedCalendarViewScreen.displayName = 'EnhancedCalendarViewScreen';
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({

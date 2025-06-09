@@ -68,4 +68,4 @@ export const getRetryConfig = () => ({
     // Exponential backoff: 1s, 2s, 4s, 8s (max)
     return Math.min(1000 * 2 ** attemptIndex, 8000);
   },
-}); 
+});

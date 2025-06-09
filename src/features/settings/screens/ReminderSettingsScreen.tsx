@@ -214,7 +214,7 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
   const handleTestNotification = async () => {
     try {
       hapticFeedback.light();
-      
+
       // Ensure permissions are granted
       const permissionGranted = await notificationService.requestPermissions();
       if (!permissionGranted) {
@@ -223,7 +223,7 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
       }
 
       await notificationService.sendTestNotification();
-      
+
       Alert.alert(
         'Test Bildirimi Gönderildi',
         'Test bildirimi başarıyla gönderildi! Birkaç saniye içinde görünecek.'
@@ -242,14 +242,14 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
   const styles = createStyles(theme);
 
   return (
-    <ScreenLayout scrollable={true} showsVerticalScrollIndicator={false} edges={['top']} edgeToEdge={true}>
-              <ScreenSection title="Hatırlatıcı Ayarları" variant="edge-to-edge">
-          <ThemedCard 
-            variant="elevated" 
-            density="standard"
-            elevation="card"
-            style={styles.card}
-          >
+    <ScreenLayout
+      scrollable={true}
+      showsVerticalScrollIndicator={false}
+      edges={['top']}
+      edgeToEdge={true}
+    >
+      <ScreenSection title="Hatırlatıcı Ayarları" variant="edge-to-edge">
+        <ThemedCard variant="elevated" density="standard" elevation="card" style={styles.card}>
           <View style={styles.row}>
             <Text style={styles.label}>Hatırlatıcıları Aç/Kapat</Text>
             <Switch
@@ -283,11 +283,7 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
       </ScreenSection>
 
       <ScreenSection title="Günlük Minnettarlık Hedefi" variant="edge-to-edge">
-        <ThemedCard 
-          density="standard"
-          elevation="card"
-          style={styles.card}
-        >
+        <ThemedCard density="standard" elevation="card" style={styles.card}>
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>Hedef Sayısı:</Text>
             <TextInput
@@ -309,7 +305,6 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
           title="Ayarları Kaydet"
           onPress={handleSaveSettings}
           variant="primary"
-
           style={styles.saveButton}
           disabled={isUpdatingProfile}
         />
@@ -318,7 +313,6 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
           title="Test Bildirimi Gönder"
           onPress={handleTestNotification}
           variant="secondary"
-
           style={styles.testButton}
         />
       </ScreenSection>

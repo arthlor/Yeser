@@ -128,24 +128,25 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   );
 };
 
-const createStyles = (theme: AppTheme) => StyleSheet.create({
-  // Edge-to-Edge Calendar Container
-  container: {
-    borderRadius: 0,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 0,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderTopColor: theme.colors.outline + '10',
-    borderBottomColor: theme.colors.outline + '10',
-    marginBottom: theme.spacing.md,
-    overflow: 'hidden',
-    ...getPrimaryShadow.card(theme),
-  },
-  calendar: {
-    paddingHorizontal: theme.spacing.md,
-    paddingBottom: theme.spacing.md,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    // Edge-to-Edge Calendar Container
+    container: {
+      borderRadius: 0,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 0,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderTopColor: theme.colors.outline + '10',
+      borderBottomColor: theme.colors.outline + '10',
+      marginBottom: theme.spacing.md,
+      overflow: 'hidden',
+      ...getPrimaryShadow.card(theme),
+    },
+    calendar: {
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.md,
+    },
+  });
 
 export default CalendarView;

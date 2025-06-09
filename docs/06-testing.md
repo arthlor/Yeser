@@ -259,7 +259,7 @@ describe('DeepLinkHandler', () => {
 
   it('should handle URL changes during app lifecycle', () => {
     let urlListener: (url: string) => void;
-    
+
     (Linking.addEventListener as jest.Mock).mockImplementationOnce((event, callback) => {
       if (event === 'url') {
         urlListener = callback;
@@ -418,7 +418,7 @@ describe('LoginScreen', () => {
     fireEvent.press(helpButton);
 
     expect(getByText('Yardımı Gizle')).toBeTruthy();
-    
+
     fireEvent.press(getByText('Yardımı Gizle'));
     expect(getByText('Nasıl Çalışır?')).toBeTruthy();
   });
@@ -457,7 +457,9 @@ describe('Authentication Flow', () => {
     });
 
     // 6. Should navigate to authenticated area
-    await waitFor(element(by.id('home-screen'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('home-screen')))
+      .toBeVisible()
+      .withTimeout(5000);
   });
 
   it('should handle invalid email validation', async () => {

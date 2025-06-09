@@ -11,7 +11,6 @@ import {
   View,
 } from 'react-native';
 
-
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';

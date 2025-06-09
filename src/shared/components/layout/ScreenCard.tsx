@@ -1,6 +1,12 @@
 import React from 'react';
 import { ViewStyle } from 'react-native';
-import ThemedCard, { BorderRadiusSize, CardVariant, DensitySize, ElevationLevel, SpacingSize } from '../ui/ThemedCard';
+import ThemedCard, {
+  BorderRadiusSize,
+  CardVariant,
+  DensitySize,
+  ElevationLevel,
+  SpacingSize,
+} from '../ui/ThemedCard';
 
 interface ScreenCardProps {
   children: React.ReactNode;
@@ -8,21 +14,21 @@ interface ScreenCardProps {
   style?: ViewStyle;
   contentStyle?: ViewStyle;
   variant?: 'default' | 'elevated' | 'outlined' | 'filled' | 'interactive';
-  
+
   // ✨ UPDATED: Modern prop naming aligned with ThemedCard
   padding?: 'none' | 'compact' | 'standard' | 'comfortable' | 'spacious';
   margin?: 'none' | 'compact' | 'standard' | 'comfortable' | 'spacious';
   borderRadius?: 'small' | 'medium' | 'large' | 'xlarge';
-  
+
   // ✨ NEW: Enhanced props from ThemedCard
   density?: 'compact' | 'standard' | 'comfortable';
   elevation?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'card' | 'floating' | 'overlay';
-  
+
   // Legacy props for backward compatibility
   legacyPadding?: 'none' | 'small' | 'medium' | 'large';
   legacyMargin?: 'none' | 'small' | 'medium' | 'large';
   legacyBorderRadius?: 'small' | 'medium' | 'large';
-  
+
   disabled?: boolean;
   testID?: string;
 }
@@ -30,10 +36,10 @@ interface ScreenCardProps {
 /**
  * 🔄 LEGACY COMPATIBILITY WRAPPER
  * ScreenCard now redirects to the enhanced ThemedCard for unified functionality
- * 
+ *
  * This maintains backward compatibility while using the new unified card system.
  * All ScreenCard props are mapped to equivalent ThemedCard props.
- * 
+ *
  * @deprecated Consider migrating to ThemedCard directly for new code
  */
 const ScreenCard: React.FC<ScreenCardProps> = ({
@@ -60,14 +66,14 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
     }
     return padding as SpacingSize;
   };
-  
+
   const resolveMargin = (): SpacingSize => {
     if (legacyMargin) {
       return mapLegacyMargin(legacyMargin);
     }
     return margin as SpacingSize;
   };
-  
+
   const resolveBorderRadius = (): BorderRadiusSize => {
     if (legacyBorderRadius) {
       return mapLegacyBorderRadius(legacyBorderRadius);
@@ -133,7 +139,9 @@ const mapLegacyMargin = (legacyMargin: 'none' | 'small' | 'medium' | 'large'): S
 /**
  * Map ScreenCard legacy borderRadius values to ThemedCard BorderRadiusSize
  */
-const mapLegacyBorderRadius = (legacyBorderRadius: 'small' | 'medium' | 'large'): BorderRadiusSize => {
+const mapLegacyBorderRadius = (
+  legacyBorderRadius: 'small' | 'medium' | 'large'
+): BorderRadiusSize => {
   switch (legacyBorderRadius) {
     case 'small':
       return 'small';
@@ -146,4 +154,4 @@ const mapLegacyBorderRadius = (legacyBorderRadius: 'small' | 'medium' | 'large')
   }
 };
 
-export default ScreenCard; 
+export default ScreenCard;

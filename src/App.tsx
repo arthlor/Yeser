@@ -43,26 +43,29 @@ const getActiveRouteName = (state: NavigationState | undefined): string | undefi
 };
 
 // Helper function to handle deep links
-const handleDeepLink = (url: string, confirmMagicLink: (tokenHash: string, type?: string) => Promise<void>) => {
+const handleDeepLink = (
+  url: string,
+  confirmMagicLink: (tokenHash: string, type?: string) => Promise<void>
+) => {
   try {
     logger.debug('Deep link received:', { url });
-    
+
     // Parse the URL
     const parsedUrl = new URL(url);
-    
+
     // Check if it's a magic link confirmation
     if (parsedUrl.pathname === '/auth/confirm' || parsedUrl.pathname === '/confirm') {
       logger.debug('Magic link path detected');
-      
+
       // Extract tokens from URL fragment or query parameters
       const fragment = parsedUrl.hash.substring(1); // Remove the # character
       const fragmentParams = new URLSearchParams(fragment);
       const queryParams = parsedUrl.searchParams;
-      
+
       // Check for OAuth-style tokens (access_token + refresh_token)
       const accessToken = fragmentParams.get('access_token') || queryParams.get('access_token');
       const refreshToken = fragmentParams.get('refresh_token') || queryParams.get('refresh_token');
-      
+
       if (accessToken && refreshToken) {
         // Handle OAuth-style magic links
         logger.debug('OAuth tokens found, setting session...');
@@ -71,12 +74,13 @@ const handleDeepLink = (url: string, confirmMagicLink: (tokenHash: string, type?
         analyticsService.logEvent('magic_link_oauth_tokens');
       } else {
         // Handle OTP-style tokens (fallback for traditional magic links)
-        const tokenHash = fragmentParams.get('token_hash') || 
-                         fragmentParams.get('token') || 
-                         queryParams.get('token_hash') || 
-                         queryParams.get('token');
+        const tokenHash =
+          fragmentParams.get('token_hash') ||
+          fragmentParams.get('token') ||
+          queryParams.get('token_hash') ||
+          queryParams.get('token');
         const type = fragmentParams.get('type') || queryParams.get('type') || 'magiclink';
-        
+
         if (tokenHash) {
           logger.debug('OTP token found, confirming magic link...');
           confirmMagicLink(tokenHash, type);

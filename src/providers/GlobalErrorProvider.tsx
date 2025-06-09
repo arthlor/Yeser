@@ -30,7 +30,7 @@ export const GlobalErrorProvider: React.FC<Props> = ({ children, toastHandlers }
   const handleMutationError = (error: unknown, operation: string) => {
     // Convert error to Error object safely
     const errorObj = error instanceof Error ? error : new Error(String(error));
-    
+
     // Log technical details for debugging (never shown to users)
     logger.error(`Global mutation error in ${operation}:`, {
       message: errorObj.message,
@@ -42,7 +42,7 @@ export const GlobalErrorProvider: React.FC<Props> = ({ children, toastHandlers }
 
     // Always use safeErrorDisplay to ensure user-friendly Turkish messages
     const userMessage = safeErrorDisplay(errorObj);
-    
+
     // Only show error if it's not empty (cancellations return empty string)
     if (userMessage && userMessage.trim() !== '') {
       showError(userMessage);

@@ -60,7 +60,7 @@ const PrivacyPolicyScreen: React.FC = () => {
   }, []);
 
   return (
-          <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <ScreenLayout edges={['top']} edgeToEdge={true}>
       {/* Header Section */}
       <ScreenSection spacing="large">
         <View style={styles.headerContainer}>
@@ -88,11 +88,11 @@ const PrivacyPolicyScreen: React.FC = () => {
         <ThemedCard style={styles.card}>
           <Section title="Giriş">
             <Text style={styles.paragraph}>
-              Yeşer ("biz", "bizim" veya "uygulama") olarak gizliliğinize değer veriyoruz. Bu Gizlilik
-              Politikası, Yeşer mobil uygulamasını kullandığınızda bilgilerinizi nasıl topladığımızı,
-              kullandığımızı, açıkladığımızı ve koruduğumuzu açıklamaktadır. Lütfen bu gizlilik
-              politikasını dikkatlice okuyun. Bu gizlilik politikasının şartlarını kabul etmiyorsanız,
-              lütfen uygulamaya erişmeyin.
+              Yeşer ("biz", "bizim" veya "uygulama") olarak gizliliğinize değer veriyoruz. Bu
+              Gizlilik Politikası, Yeşer mobil uygulamasını kullandığınızda bilgilerinizi nasıl
+              topladığımızı, kullandığımızı, açıkladığımızı ve koruduğumuzu açıklamaktadır. Lütfen
+              bu gizlilik politikasını dikkatlice okuyun. Bu gizlilik politikasının şartlarını kabul
+              etmiyorsanız, lütfen uygulamaya erişmeyin.
             </Text>
           </Section>
 
@@ -109,8 +109,8 @@ const PrivacyPolicyScreen: React.FC = () => {
           <Section title="Bilgilerinizin Kullanımı">
             <Text style={styles.paragraph}>
               Hakkınızda doğru bilgilere sahip olmak, size sorunsuz, verimli ve özelleştirilmiş bir
-              deneyim sunmamızı sağlar. Özellikle, uygulama aracılığıyla hakkınızda toplanan bilgileri
-              şu amaçlarla kullanabiliriz:
+              deneyim sunmamızı sağlar. Özellikle, uygulama aracılığıyla hakkınızda toplanan
+              bilgileri şu amaçlarla kullanabiliriz:
             </Text>
             <ListItem text="Hesabınızı oluşturmak ve yönetmek." />
             <ListItem text="Size minnettarlık günlüğü özelliklerini sunmak." />
@@ -120,8 +120,8 @@ const PrivacyPolicyScreen: React.FC = () => {
 
           <Section title="Bilgilerinizin Açıklanması">
             <Text style={styles.paragraph}>
-              Aşağıdaki durumlar dışında bilgilerinizi herhangi bir üçüncü tarafa satmayız, dağıtmayız
-              veya kiralamayız:
+              Aşağıdaki durumlar dışında bilgilerinizi herhangi bir üçüncü tarafa satmayız,
+              dağıtmayız veya kiralamayız:
             </Text>
             <ListItem text="Yasalar Gerektirdiğinde: Yasal süreçlere yanıt vermek, potansiyel politika ihlallerini araştırmak veya haklarımızı, mülkiyetimizi ve güvenliğimizi korumak için bilgi açıklamasının gerekli olduğuna inandığımızda." />
             <ListItem text="Hizmet Sağlayıcılar: Veri depolama veya müşteri hizmetleri gibi bizim adımıza hizmet veren üçüncü taraf hizmet sağlayıcılarla. Bu hizmet sağlayıcıların bilgilerinizi korumaları ve yalnızca bizim adımıza hizmet vermek için kullanmaları gerekmektedir." />

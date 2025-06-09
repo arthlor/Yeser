@@ -24,4 +24,4 @@ declare module '*.lottie' {
 declare module '*.json' {
   const value: Record<string, unknown> | LottieAnimation;
   export default value;
-} 
+}

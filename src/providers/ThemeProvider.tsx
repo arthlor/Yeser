@@ -50,7 +50,8 @@ const mapThemeColors = (baseTheme: typeof MD3LightTheme, appTheme: AppTheme) => 
 
 // SIMPLIFIED: Single source of truth ThemeProvider
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const { activeTheme, activeThemeName, renderedTheme, setTheme, setRenderedTheme, toggleTheme } = useThemeStore();
+  const { activeTheme, activeThemeName, renderedTheme, setTheme, setRenderedTheme, toggleTheme } =
+    useThemeStore();
 
   // 🚨 FIX: Implement proper auto theme detection
   const setColorMode = (mode: 'light' | 'dark' | 'auto') => {
@@ -73,7 +74,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       };
 
       const subscription = Appearance.addChangeListener(listener);
-      
+
       // Set initial theme based on system preference
       const systemColorScheme = Appearance.getColorScheme();
       const detectedTheme = systemColorScheme === 'dark' ? 'dark' : 'light';

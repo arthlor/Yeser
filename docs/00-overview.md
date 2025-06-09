@@ -25,19 +25,19 @@ Welcome to the comprehensive documentation for **Yeşer**, a React Native gratit
 
 ### Technology Stack
 
-| Category           | Technology                   | Purpose                                             |
-| ------------------ | ---------------------------- | --------------------------------------------------- |
-| **Frontend**       | React Native + Expo          | Cross-platform mobile development                   |
-| **Backend**        | Supabase (PostgreSQL)        | Database, authentication, real-time                 |
-| **Server State**   | TanStack Query v5.80.2       | Intelligent data fetching, caching, synchronization |
-| **Client State**   | Zustand                      | Lightweight client-side state (auth, theme)         |
-| **UI Framework**   | React Native Paper           | Material Design components                          |
-| **Navigation**     | React Navigation v6          | Screen navigation and routing                       |
-| **Validation**     | Zod                          | Type-safe schema validation                         |
-| **Analytics**      | Firebase Analytics           | User behavior tracking                              |
-| **Notifications**  | Expo Notifications           | Push and local notifications                        |
-| **Authentication** | Supabase Magic Links + Google OAuth | Passwordless secure authentication            |
-| **Storage**        | AsyncStorage                 | Local data persistence                              |
+| Category           | Technology                          | Purpose                                             |
+| ------------------ | ----------------------------------- | --------------------------------------------------- |
+| **Frontend**       | React Native + Expo                 | Cross-platform mobile development                   |
+| **Backend**        | Supabase (PostgreSQL)               | Database, authentication, real-time                 |
+| **Server State**   | TanStack Query v5.80.2              | Intelligent data fetching, caching, synchronization |
+| **Client State**   | Zustand                             | Lightweight client-side state (auth, theme)         |
+| **UI Framework**   | React Native Paper                  | Material Design components                          |
+| **Navigation**     | React Navigation v6                 | Screen navigation and routing                       |
+| **Validation**     | Zod                                 | Type-safe schema validation                         |
+| **Analytics**      | Firebase Analytics                  | User behavior tracking                              |
+| **Notifications**  | Expo Notifications                  | Push and local notifications                        |
+| **Authentication** | Supabase Magic Links + Google OAuth | Passwordless secure authentication                  |
+| **Storage**        | AsyncStorage                        | Local data persistence                              |
 
 ## 🔐 Enhanced Authentication System
 
@@ -64,20 +64,20 @@ graph TD
     A[User Opens App] --> B{Authenticated?}
     B -->|No| C[Login Screen]
     B -->|Yes| D[Main App]
-    
+
     C --> E[Magic Link Login]
     C --> F[Google OAuth]
-    
+
     E --> G[Enter Email]
     G --> H[Send Magic Link]
     H --> I[Check Email]
     I --> J[Click Link]
     J --> K[Auto Login]
-    
+
     F --> L[Google Sign In]
     L --> M[OAuth Flow]
     M --> K
-    
+
     K --> N[Profile Setup]
     N --> D
 ```

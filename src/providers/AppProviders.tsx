@@ -19,9 +19,7 @@ const ErrorProviderWithToast: React.FC<{ children: ReactNode }> = ({ children })
   const { showError, showSuccess } = useToast();
 
   return (
-    <GlobalErrorProvider toastHandlers={{ showError, showSuccess }}>
-      {children}
-    </GlobalErrorProvider>
+    <GlobalErrorProvider toastHandlers={{ showError, showSuccess }}>{children}</GlobalErrorProvider>
   );
 };
 
@@ -34,9 +32,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
           <ThemeProvider>
             <QueryClientProvider client={queryClient}>
               <ToastProvider>
-                <ErrorProviderWithToast>
-                  {children}
-                </ErrorProviderWithToast>
+                <ErrorProviderWithToast>{children}</ErrorProviderWithToast>
               </ToastProvider>
             </QueryClientProvider>
           </ThemeProvider>

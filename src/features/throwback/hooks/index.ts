@@ -4,4 +4,4 @@ export {
   useThrowbackLogic,
   useThrowbackMutations,
   type ThrowbackFrequency,
-} from './useThrowback'; 
+} from './useThrowback';

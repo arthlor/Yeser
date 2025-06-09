@@ -62,16 +62,27 @@ const CalendarStats: React.FC<CalendarStatsProps> = ({
   const isStreakDataLoading = isLoading || streakLoading;
 
   return (
-    <View style={[
-      styles.container, 
-      { 
-        backgroundColor: theme.colors.surface,
-        borderTopColor: theme.colors.outline + '10',
-        borderBottomColor: theme.colors.outline + '10',
-        ...getPrimaryShadow.card(theme),
-      }
-    ]}>
-      <View style={[styles.statsGrid, { paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.md, gap: theme.spacing.sm }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.outline + '10',
+          borderBottomColor: theme.colors.outline + '10',
+          ...getPrimaryShadow.card(theme),
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.statsGrid,
+          {
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.md,
+            gap: theme.spacing.sm,
+          },
+        ]}
+      >
         <StatCard
           icon="calendar-check"
           value={stats.entryCount}

@@ -8,4 +8,4 @@ export const errorMessages = {
     en: 'Your session has expired. Please log in again.',
   },
   // ... more messages
-}; 
+};

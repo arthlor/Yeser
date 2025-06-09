@@ -62,38 +62,30 @@ This document provides comprehensive guidelines for developing the Yeser gratitu
 ```javascript
 // eslint.config.js
 module.exports = {
-  extends: [
-    'expo',
-    '@typescript-eslint/recommended',
-    'prettier'
-  ],
-  plugins: [
-    '@typescript-eslint',
-    'react-hooks',
-    'react-native'
-  ],
+  extends: ['expo', '@typescript-eslint/recommended', 'prettier'],
+  plugins: ['@typescript-eslint', 'react-hooks', 'react-native'],
   rules: {
     // React Native specific rules
     'react-native/no-unused-styles': 'warn',
     'react-native/split-platform-components': 'warn',
     'react-native/no-inline-styles': 'warn',
     'react-native/no-color-literals': 'warn',
-    
+
     // React hooks rules
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
-    
+
     // TypeScript rules
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'warn',
-    
+
     // General rules
     'no-console': 'warn',
     'prefer-const': 'error',
-    'no-var': 'error'
-  }
+    'no-var': 'error',
+  },
 };
 ```
 
@@ -111,7 +103,7 @@ module.exports = {
   bracketSpacing: true,
   bracketSameLine: false,
   arrowParens: 'avoid',
-  endOfLine: 'lf'
+  endOfLine: 'lf',
 };
 ```
 
@@ -168,13 +160,13 @@ describe('Authentication Flow', () => {
     // 1. Enter email in login screen
     await element(by.id('email-input')).typeText('test@example.com');
     await element(by.id('magic-link-button')).tap();
-    
+
     // 2. Verify success message
     await expect(element(by.text('Giriş bağlantısı email adresinize gönderildi!'))).toBeVisible();
-    
+
     // 3. Simulate deep link callback (in test environment)
     await device.openURL('yeser://auth/callback?access_token=test');
-    
+
     // 4. Verify successful authentication
     await expect(element(by.id('home-screen'))).toBeVisible();
   });
@@ -190,7 +182,7 @@ import { logger } from '@/utils/debugConfig';
 // Debug magic link flow
 const debugMagicLink = async (email: string) => {
   logger.debug('Starting magic link flow for:', email);
-  
+
   try {
     const result = await supabase.auth.signInWithOtp({
       email,
@@ -198,7 +190,7 @@ const debugMagicLink = async (email: string) => {
         emailRedirectTo: 'yeser://auth/callback',
       },
     });
-    
+
     logger.debug('Magic link result:', result);
   } catch (error) {
     logger.error('Magic link error:', error);
@@ -208,14 +200,14 @@ const debugMagicLink = async (email: string) => {
 // Debug deep link handling
 const debugDeepLink = (url: string) => {
   logger.debug('Processing deep link:', url);
-  
+
   const urlObj = new URL(url);
   const accessToken = urlObj.searchParams.get('access_token');
   const refreshToken = urlObj.searchParams.get('refresh_token');
-  
-  logger.debug('Extracted tokens:', { 
+
+  logger.debug('Extracted tokens:', {
     hasAccessToken: !!accessToken,
-    hasRefreshToken: !!refreshToken 
+    hasRefreshToken: !!refreshToken,
   });
 };
 ```
@@ -227,20 +219,20 @@ const debugDeepLink = (url: string) => {
 const handleAuthError = (error: any): string => {
   // Technical errors should be logged but not shown to users
   logger.error('Authentication error:', error);
-  
+
   // User-friendly Turkish error messages
   if (error?.message?.includes('rate_limit')) {
     return 'Çok fazla deneme yapıldı. Lütfen bir dakika bekleyin.';
   }
-  
+
   if (error?.message?.includes('invalid_email')) {
     return 'Geçersiz email adresi. Lütfen doğru email girin.';
   }
-  
+
   if (error?.message?.includes('email_not_confirmed')) {
     return 'Email adresinizi onaylayın. Gelen kutunuzu kontrol edin.';
   }
-  
+
   // Generic fallback
   return 'Giriş yapılırken bir hata oluştu. Lütfen tekrar deneyin.';
 };
@@ -248,14 +240,14 @@ const handleAuthError = (error: any): string => {
 // Never show technical error messages to users
 const LoginScreen = () => {
   const [error, setError] = useState<string>('');
-  
+
   const handleLogin = async () => {
     try {
       await authService.signInWithMagicLink(email);
     } catch (error) {
       // Log technical details for debugging
       logger.error('Login failed:', error);
-      
+
       // Show user-friendly Turkish message
       setError(handleAuthError(error));
     }
@@ -344,7 +336,7 @@ const GratitudeCard: React.FC<GratitudeCardProps> = ({
   editable = true,
 }) => {
   const { theme } = useTheme();
-  
+
   const handleEdit = useCallback(() => {
     onEdit?.(entry);
   }, [entry, onEdit]);
@@ -535,15 +527,18 @@ git push origin feature/add-new-feature
 
 ```markdown
 ## Description
+
 Brief description of changes made.
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Testing
+
 - [ ] Unit tests pass
 - [ ] Integration tests pass
 - [ ] Manual testing completed
@@ -551,9 +546,11 @@ Brief description of changes made.
 - [ ] Tested on Android
 
 ## Screenshots/Videos
+
 (If applicable, add screenshots or videos)
 
 ## Checklist
+
 - [ ] Code follows style guidelines
 - [ ] Self-review completed
 - [ ] Code is commented where necessary
@@ -619,11 +616,11 @@ export const withPerformanceMonitoring = <P extends object>(
 ) => {
   return React.memo((props: P) => {
     const renderStart = performance.now();
-    
+
     useEffect(() => {
       const renderEnd = performance.now();
       const renderTime = renderEnd - renderStart;
-      
+
       if (renderTime > 16) { // More than one frame
         logger.warn(`Slow render detected in ${componentName}: ${renderTime.toFixed(2)}ms`);
       }
@@ -644,7 +641,7 @@ export default withPerformanceMonitoring(GratitudeCard, 'GratitudeCard');
 export const useMemoryLeakDetection = (componentName: string) => {
   useEffect(() => {
     let isMounted = true;
-    
+
     return () => {
       isMounted = false;
       // Check for memory leaks in development
@@ -669,23 +666,23 @@ export const useMemoryLeakDetection = (componentName: string) => {
     "dev:ios": "expo start --ios",
     "dev:android": "expo start --android",
     "dev:web": "expo start --web",
-    
+
     "build:ios": "eas build --platform ios",
     "build:android": "eas build --platform android",
     "build:preview": "eas build --platform all --profile preview",
-    
+
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "detox test",
-    
+
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
-    
+
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
-    
+
     "clean": "rm -rf node_modules && npm install",
     "clean:cache": "expo start --clear",
     "reset": "rm -rf node_modules package-lock.json && npm install"
@@ -752,18 +749,19 @@ export { customRender as render };
 
 ### Testing Matrix
 
-| Device Type | iOS Version | Android Version | Priority |
-|-------------|-------------|-----------------|----------|
-| iPhone 14 | iOS 16+ | - | High |
-| iPhone 12 | iOS 15+ | - | Medium |
-| Pixel 7 | - | Android 13+ | High |
-| Samsung Galaxy | - | Android 12+ | Medium |
-| iPad | iOS 16+ | - | Low |
-| Android Tablet | - | Android 12+ | Low |
+| Device Type    | iOS Version | Android Version | Priority |
+| -------------- | ----------- | --------------- | -------- |
+| iPhone 14      | iOS 16+     | -               | High     |
+| iPhone 12      | iOS 15+     | -               | Medium   |
+| Pixel 7        | -           | Android 13+     | High     |
+| Samsung Galaxy | -           | Android 12+     | Medium   |
+| iPad           | iOS 16+     | -               | Low      |
+| Android Tablet | -           | Android 12+     | Low      |
 
 ### Testing Checklist
 
 #### Functionality Testing
+
 - [ ] Authentication (Google OAuth, Email/Password)
 - [ ] Gratitude entry creation and editing
 - [ ] Streak calculation accuracy
@@ -773,6 +771,7 @@ export { customRender as render };
 - [ ] Offline functionality
 
 #### UI/UX Testing
+
 - [ ] Dark/Light theme switching
 - [ ] Responsive design across devices
 - [ ] Accessibility features
@@ -781,6 +780,7 @@ export { customRender as render };
 - [ ] Navigation flow
 
 #### Performance Testing
+
 - [ ] App startup time
 - [ ] Navigation smoothness
 - [ ] Memory usage
@@ -810,19 +810,19 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run linting
         run: npm run lint
-      
+
       - name: Run type checking
         run: npm run type-check
-      
+
       - name: Run tests
         run: npm run test:coverage
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
 
@@ -875,7 +875,7 @@ if (__DEV__) {
   const originalFetch = global.fetch;
   global.fetch = (...args) => {
     console.log('🌐 Network request:', args[0]);
-    return originalFetch(...args).then(response => {
+    return originalFetch(...args).then((response) => {
       console.log('📡 Network response:', response.status, response.url);
       return response;
     });
@@ -885,4 +885,4 @@ if (__DEV__) {
 
 ---
 
-This development workflow guide provides a comprehensive foundation for maintaining code quality, consistency, and collaboration efficiency in the Yeser gratitude app development process. 
+This development workflow guide provides a comprehensive foundation for maintaining code quality, consistency, and collaboration efficiency in the Yeser gratitude app development process.

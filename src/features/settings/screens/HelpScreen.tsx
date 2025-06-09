@@ -90,7 +90,7 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) =>
 
 const EnhancedHelpScreen: React.FC = () => {
   const { theme } = useTheme();
-  
+
   // Log screen view for analytics
   useEffect(() => {
     analyticsService.logScreenView('help_screen');
@@ -136,8 +136,8 @@ const EnhancedHelpScreen: React.FC = () => {
   const styles = createStyles(theme);
 
   return (
-    <ScreenLayout 
-      scrollable={true} 
+    <ScreenLayout
+      scrollable={true}
       showsVerticalScrollIndicator={false}
       edges={['top']}
       edgeToEdge={true}

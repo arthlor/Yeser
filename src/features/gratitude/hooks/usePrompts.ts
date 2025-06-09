@@ -1,4 +1,8 @@
-import { type DailyPrompt, getMultipleRandomActivePrompts, getRandomActivePrompt } from '@/api/promptApi';
+import {
+  type DailyPrompt,
+  getMultipleRandomActivePrompts,
+  getRandomActivePrompt,
+} from '@/api/promptApi';
 import { queryKeys } from '@/api/queryKeys';
 import useAuthStore from '@/store/authStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -69,7 +73,7 @@ export const usePromptMutations = () => {
       queryClient.setQueryData(queryKeys.currentPrompt(user?.id), newPrompt);
     },
 
-    onError: error => {
+    onError: (error) => {
       logger.error('[usePromptMutations] Error fetching new prompt:', error);
       handleMutationError(error, 'fetch new prompt');
     },
@@ -83,10 +87,13 @@ export const usePromptMutations = () => {
 
     onSuccess: (newPrompts, limit) => {
       // Update the multiple prompts cache with new data
-      queryClient.setQueryData([...queryKeys.currentPrompt(user?.id), 'multiple', limit], newPrompts);
+      queryClient.setQueryData(
+        [...queryKeys.currentPrompt(user?.id), 'multiple', limit],
+        newPrompts
+      );
     },
 
-    onError: error => {
+    onError: (error) => {
       logger.error('[usePromptMutations] Error fetching multiple prompts:', error);
       handleMutationError(error, 'fetch multiple prompts');
     },

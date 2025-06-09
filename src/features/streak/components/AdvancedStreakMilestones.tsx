@@ -276,9 +276,9 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
 
   // Find current and next milestones
   useEffect(() => {
-    const current = ADVANCED_MILESTONES.find(
-      (m) => currentStreak >= m.minDays && currentStreak <= m.maxDays
-    ) || ADVANCED_MILESTONES[0];
+    const current =
+      ADVANCED_MILESTONES.find((m) => currentStreak >= m.minDays && currentStreak <= m.maxDays) ||
+      ADVANCED_MILESTONES[0];
 
     const next = ADVANCED_MILESTONES.find((m) => m.minDays > currentStreak);
 
@@ -292,7 +292,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
     if (!currentMilestone || !nextMilestone) {
       return 100;
     }
-    
+
     const currentRange = currentMilestone.maxDays - currentMilestone.minDays + 1;
     const progress = currentStreak - currentMilestone.minDays + 1;
     return Math.min(100, (progress / currentRange) * 100);
@@ -440,11 +440,11 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
   };
 
   return (
-          <ThemedCard 
-        variant="elevated" 
-        density="standard"
-        elevation="card"
-        onPress={handlePress}
+    <ThemedCard
+      variant="elevated"
+      density="standard"
+      elevation="card"
+      onPress={handlePress}
       style={styles.container}
       touchableProps={{
         activeOpacity: 0.8,
@@ -473,9 +473,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
             },
           ]}
         >
-          <Text style={styles.celebrationText}>
-            {currentMilestone.unlockedMessage}
-          </Text>
+          <Text style={styles.celebrationText}>{currentMilestone.unlockedMessage}</Text>
         </Animated.View>
       )}
 
@@ -514,22 +512,13 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
         {/* Current milestone display */}
         <View style={styles.milestoneHeader}>
           <View style={styles.milestoneIconContainer}>
-            <Text style={styles.milestoneEmoji}>
-              {currentMilestone.emoji}
-            </Text>
+            <Text style={styles.milestoneEmoji}>{currentMilestone.emoji}</Text>
           </View>
           <View style={styles.milestoneInfo}>
-            <Text
-              style={[
-                styles.milestoneTitle,
-                { color: currentMilestone.colorPrimary },
-              ]}
-            >
+            <Text style={[styles.milestoneTitle, { color: currentMilestone.colorPrimary }]}>
               {currentMilestone.title}
             </Text>
-            <Text style={styles.milestoneDescription}>
-              {currentMilestone.description}
-            </Text>
+            <Text style={styles.milestoneDescription}>{currentMilestone.description}</Text>
           </View>
           {/* Subtle clickable indicator */}
           {onPress && (
@@ -543,7 +532,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
         <View style={styles.streakCounter}>
           <Text style={styles.streakNumber}>{currentStreak}</Text>
           <Text style={styles.streakLabel}>günlük seri</Text>
-          
+
           {isPersonalRecord && (
             <View style={styles.recordBadge}>
               <Icon name="trophy" size={10} color={theme.colors.warning} />
@@ -558,7 +547,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
             <Text style={styles.progressLabel}>
               Sonraki: {nextMilestone.title} ({daysToNext} gün)
             </Text>
-            
+
             <View style={styles.progressBarContainer}>
               <Animated.View
                 style={[
@@ -773,4 +762,4 @@ const createStyles = (theme: AppTheme) =>
   });
 
 export default AdvancedStreakMilestones;
-export { ADVANCED_MILESTONES }; 
+export { ADVANCED_MILESTONES };

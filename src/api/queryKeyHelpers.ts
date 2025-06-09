@@ -45,8 +45,8 @@ export const queryKeyHelpers = {
       queryKeys.currentPrompt(userId),
     ];
 
-    keysToRemove.forEach(key => {
+    keysToRemove.forEach((key) => {
       queryClient.removeQueries({ queryKey: key });
     });
   },
-}; 
+};

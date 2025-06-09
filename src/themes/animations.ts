@@ -20,18 +20,18 @@ export const ANIMATION_EASING = {
   easeIn: 'ease-in',
   easeOut: 'ease-out',
   easeInOut: 'ease-in-out',
-  
+
   // Material Design curves
   standard: 'cubic-bezier(0.4, 0, 0.2, 1)', // Standard easing
   decelerate: 'cubic-bezier(0, 0, 0.2, 1)', // Elements entering screen
   accelerate: 'cubic-bezier(0.4, 0, 1, 1)', // Elements leaving screen
   sharp: 'cubic-bezier(0.4, 0, 0.6, 1)', // Temporary elements
-  
+
   // Enhanced back easing
   easeInBack: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
   easeOutBack: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   easeInOutBack: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-  
+
   // Bounce effects
   bounceOut: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   bounceIn: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
@@ -43,7 +43,7 @@ export const SPRING_CONFIGS = {
   wobbly: { tension: 180, friction: 12, useNativeDriver: true },
   stiff: { tension: 210, friction: 20, useNativeDriver: true },
   slow: { tension: 280, friction: 60, useNativeDriver: true },
-  
+
   // Enhanced configs for different use cases
   button: { tension: 300, friction: 10, useNativeDriver: true }, // Quick button feedback
   modal: { tension: 100, friction: 8, useNativeDriver: true }, // Modal appearance
@@ -68,7 +68,7 @@ export const TIMING_CONFIGS = {
     easing: ANIMATION_EASING.decelerate,
     useNativeDriver: true,
   },
-  
+
   // Specific interaction configs
   buttonPress: {
     duration: ANIMATION_DURATIONS.micro,
@@ -93,7 +93,7 @@ export const STAGGER = {
   small: 50,
   medium: 100,
   large: 150,
-  
+
   // Function to calculate stagger delay
   calculate: (index: number, baseDelay = 50) => index * baseDelay,
 } as const;
@@ -118,7 +118,7 @@ export const ANIMATION_PRESETS = {
     duration: ANIMATION_DURATIONS.fast,
     easing: ANIMATION_EASING.sharp,
   },
-  
+
   // Modal/overlay animations
   modalEnter: {
     duration: ANIMATION_DURATIONS.normal,
@@ -128,7 +128,7 @@ export const ANIMATION_PRESETS = {
     duration: ANIMATION_DURATIONS.fast,
     easing: ANIMATION_EASING.accelerate,
   },
-  
+
   // Page transitions
   pageEnter: {
     duration: ANIMATION_DURATIONS.slow,
@@ -138,7 +138,7 @@ export const ANIMATION_PRESETS = {
     duration: ANIMATION_DURATIONS.normal,
     easing: ANIMATION_EASING.accelerate,
   },
-  
+
   // Notification/toast animations
   toastSlideIn: {
     duration: ANIMATION_DURATIONS.normal,
@@ -148,4 +148,4 @@ export const ANIMATION_PRESETS = {
     duration: ANIMATION_DURATIONS.fast,
     easing: ANIMATION_EASING.accelerate,
   },
-} as const; 
+} as const;

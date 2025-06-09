@@ -102,24 +102,24 @@ describe('useStreakData', () => {
       expect(result.current.error).toEqual(mockError);
     });
 
-         it('should use correct query key and cache queries', async () => {
-       mockGetStreakData.mockResolvedValue(mockStreakData);
+    it('should use correct query key and cache queries', async () => {
+      mockGetStreakData.mockResolvedValue(mockStreakData);
 
-       const { result } = renderHook(() => useStreakData(), {
-         wrapper: createHookWrapper(queryClient),
-       });
+      const { result } = renderHook(() => useStreakData(), {
+        wrapper: createHookWrapper(queryClient),
+      });
 
-       await waitFor(() => {
-         expect(result.current.isSuccess).toBe(true);
-       });
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
 
-       // Check that the query was registered and data is available
-       const queries = queryClient.getQueryCache().findAll();
-       expect(queries).toHaveLength(1);
-       expect(queries[0].queryKey).toEqual(['yeser', 'streaks', mockUser.id]);
-       expect(mockGetStreakData).toHaveBeenCalledTimes(1);
-       expect(result.current.data).toEqual(mockStreakData);
-     });
+      // Check that the query was registered and data is available
+      const queries = queryClient.getQueryCache().findAll();
+      expect(queries).toHaveLength(1);
+      expect(queries[0].queryKey).toEqual(['yeser', 'streaks', mockUser.id]);
+      expect(mockGetStreakData).toHaveBeenCalledTimes(1);
+      expect(result.current.data).toEqual(mockStreakData);
+    });
 
     it('should handle network errors gracefully', async () => {
       const networkError = new Error('Network error');
@@ -253,37 +253,37 @@ describe('useStreakData', () => {
       mockUseAuthStore.mockReturnValue(mockUser);
     });
 
-         it('should handle different streak values', async () => {
-       const testCases = [
-         { current_streak: 0, longest_streak: 0 },
-         { current_streak: 1, longest_streak: 1 },
-         { current_streak: 365, longest_streak: 500 },
-       ];
+    it('should handle different streak values', async () => {
+      const testCases = [
+        { current_streak: 0, longest_streak: 0 },
+        { current_streak: 1, longest_streak: 1 },
+        { current_streak: 365, longest_streak: 500 },
+      ];
 
-       for (let i = 0; i < testCases.length; i++) {
-         const testCase = testCases[i];
-         const testData = { ...mockStreakData, ...testCase };
-         
-         // Create a fresh query client for each test case to avoid cache interference
-         const freshQueryClient = new QueryClient({
-           defaultOptions: {
-             queries: { retry: false, gcTime: 0, staleTime: 0 },
-           },
-         });
-         
-         mockGetStreakData.mockResolvedValue(testData);
+      for (let i = 0; i < testCases.length; i++) {
+        const testCase = testCases[i];
+        const testData = { ...mockStreakData, ...testCase };
 
-         const { result } = renderHook(() => useStreakData(), {
-           wrapper: createHookWrapper(freshQueryClient),
-         });
+        // Create a fresh query client for each test case to avoid cache interference
+        const freshQueryClient = new QueryClient({
+          defaultOptions: {
+            queries: { retry: false, gcTime: 0, staleTime: 0 },
+          },
+        });
 
-         await waitFor(() => {
-           expect(result.current.isSuccess).toBe(true);
-         });
+        mockGetStreakData.mockResolvedValue(testData);
 
-         expect(result.current.data).toEqual(testData);
-       }
-     });
+        const { result } = renderHook(() => useStreakData(), {
+          wrapper: createHookWrapper(freshQueryClient),
+        });
+
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(result.current.data).toEqual(testData);
+      }
+    });
 
     it('should handle null last_entry_date', async () => {
       const dataWithNullDate = {
@@ -303,4 +303,4 @@ describe('useStreakData', () => {
       expect(result.current.data?.last_entry_date).toBeNull();
     });
   });
-}); 
+});

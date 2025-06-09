@@ -44,7 +44,9 @@ jest.mock('react-native', () => {
     Animated: {
       timing: jest.fn(() => ({
         start: jest.fn((callback?: (result: { finished: boolean }) => void) => {
-          if (callback) {callback({ finished: true });}
+          if (callback) {
+            callback({ finished: true });
+          }
         }),
       })),
       Value: jest.fn(() => ({

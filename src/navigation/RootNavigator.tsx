@@ -245,12 +245,7 @@ const RootNavigator: React.FC = () => {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
 
   // 🚨 FIX: Enhanced profile hook with error handling
-  const { 
-    profile, 
-    isLoadingProfile, 
-    isProfileError, 
-    profileError 
-  } = useUserProfile();
+  const { profile, isLoadingProfile, isProfileError, profileError } = useUserProfile();
   const onboarded = profile?.onboarded;
 
   // 🚨 FIX: Reduced minimum splash duration for better UX
@@ -286,9 +281,9 @@ const RootNavigator: React.FC = () => {
   }, [isProfileError, isAuthenticated, profileError]);
 
   // 🚨 FIX: Consolidated loading state logic
-  const isAppLoading = 
-    authIsLoading || 
-    !minimumTimeElapsed || 
+  const isAppLoading =
+    authIsLoading ||
+    !minimumTimeElapsed ||
     (isAuthenticated && isLoadingProfile && !isProfileError);
 
   // 🚨 FIX: Show splash screen with consolidated logic
@@ -300,9 +295,9 @@ const RootNavigator: React.FC = () => {
   if (isAuthenticated && isProfileError && !isLoadingProfile) {
     // Profile fetch failed and we're not loading - allow app to continue
     // but log the issue for monitoring
-    logger.warn('Continuing with app despite profile error', { 
+    logger.warn('Continuing with app despite profile error', {
       error: profileError?.message,
-      hasProfile: !!profile 
+      hasProfile: !!profile,
     });
   }
 

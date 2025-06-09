@@ -7,36 +7,42 @@
 ## ✨ Öne Çıkan Özellikler
 
 ### 🔐 Gelişmiş Güvenlik
+
 - **Magic Link Kimlik Doğrulama**: Şifresiz, güvenli giriş sistemi
 - **Google OAuth Desteği**: Hızlı sosyal medya girişi
 - **Derin Bağlantı Entegrasyonu**: Otomatik uygulama açılımı
 - **Veri Şifreleme**: Aktarım ve depolama sırasında tam şifreleme
 
 ### 📝 Günlük Şükran Deneyimi
+
 - **Günlük Girişler**: Her gün için çoklu şükran ifadeleri
 - **Çeşitli Öneriler**: Veritabanından rastgele motivasyon soruları
 - **Akıllı Önbellek**: Çevrimdışı erişim ve otomatik senkronizasyon
 - **Geçmiş Tarama**: Takvim görünümü ile geçmiş girişlere erişim
 
 ### 🔥 Motivasyon ve Takip
+
 - **Seri Takibi**: Görsel seri sayaçları ile tutarlılık takibi
 - **Throwback Anıları**: Geçmiş girişlerin akıllı hatırlatması
 - **İstatistikler**: Kapsamlı kullanım analitikleri
 - **Hedef Belirleme**: Günlük şükran hedefleri
 
 ### 🔔 Akıllı Bildirimler
+
 - **Günlük Hatırlatmalar**: Özelleştirilebilir zamanlama
 - **Throwback Bildirimleri**: Günlük/haftalık/aylık frekans seçenekleri
 - **Çapraz Platform**: iOS ve Android desteği
 - **Derin Bağlantı**: Bildirimden doğrudan ilgili ekrana yönlendirme
 
 ### 🌙 Tema ve Kişiselleştirme
+
 - **Koyu/Açık Tema**: Kullanıcı tercihi ile otomatik geçiş
 - **Verdant Serenity Tasarım**: Minimalist ve huzur verici arayüz
 - **Türkçe Lokalizasyon**: Tam Türkçe dil desteği
 - **Kültürel Duyarlılık**: Türk kullanıcılar için optimize edilmiş deneyim
 
 ### 📊 Veri Yönetimi
+
 - **PDF Dışa Aktarım**: Kapsamlı veri dışa aktarma
 - **KVKK Uyumluluğu**: Türk veri koruma yasalarına uygunluk
 - **Veri Minimizasyonu**: Gizlilik odaklı veri toplama
@@ -127,18 +133,18 @@ EXPO_PUBLIC_REACT_QUERY_DEVTOOLS=true
 
 ### Teknoloji Yığını
 
-| Kategori | Teknoloji | Amaç |
-|----------|-----------|------|
-| **Frontend** | React Native + Expo | Çapraz platform mobil geliştirme |
-| **Backend** | Supabase (PostgreSQL) | Veritabanı, kimlik doğrulama, gerçek zamanlı |
-| **Sunucu Durumu** | TanStack Query v5.80.2 | Akıllı veri getirme, önbellek, senkronizasyon |
-| **İstemci Durumu** | Zustand | Hafif istemci tarafı durum (auth, tema) |
-| **UI Framework** | React Native Paper | Material Design bileşenleri |
-| **Navigasyon** | React Navigation v6 | Ekran navigasyonu ve yönlendirme |
-| **Doğrulama** | Zod | Tip güvenli şema doğrulama |
-| **Analytics** | Firebase Analytics | Kullanıcı davranış takibi |
-| **Bildirimler** | Expo Notifications | Push ve yerel bildirimler |
-| **Kimlik Doğrulama** | Supabase Magic Links + Google OAuth | Şifresiz güvenli kimlik doğrulama |
+| Kategori             | Teknoloji                           | Amaç                                          |
+| -------------------- | ----------------------------------- | --------------------------------------------- |
+| **Frontend**         | React Native + Expo                 | Çapraz platform mobil geliştirme              |
+| **Backend**          | Supabase (PostgreSQL)               | Veritabanı, kimlik doğrulama, gerçek zamanlı  |
+| **Sunucu Durumu**    | TanStack Query v5.80.2              | Akıllı veri getirme, önbellek, senkronizasyon |
+| **İstemci Durumu**   | Zustand                             | Hafif istemci tarafı durum (auth, tema)       |
+| **UI Framework**     | React Native Paper                  | Material Design bileşenleri                   |
+| **Navigasyon**       | React Navigation v6                 | Ekran navigasyonu ve yönlendirme              |
+| **Doğrulama**        | Zod                                 | Tip güvenli şema doğrulama                    |
+| **Analytics**        | Firebase Analytics                  | Kullanıcı davranış takibi                     |
+| **Bildirimler**      | Expo Notifications                  | Push ve yerel bildirimler                     |
+| **Kimlik Doğrulama** | Supabase Magic Links + Google OAuth | Şifresiz güvenli kimlik doğrulama             |
 
 ### Kimlik Doğrulama Akışı
 
@@ -147,20 +153,20 @@ graph TD
     A[Kullanıcı Uygulamayı Açar] --> B{Kimlik Doğrulandı?}
     B -->|Hayır| C[Giriş Ekranı]
     B -->|Evet| D[Ana Uygulama]
-    
+
     C --> E[Magic Link Girişi]
     C --> F[Google OAuth]
-    
+
     E --> G[Email Girin]
     G --> H[Magic Link Gönder]
     H --> I[Email Kontrol Et]
     I --> J[Bağlantıya Tıkla]
     J --> K[Otomatik Giriş]
-    
+
     F --> L[Google Giriş]
     L --> M[OAuth Akışı]
     M --> K
-    
+
     K --> N[Profil Kurulumu]
     N --> D
 ```
@@ -169,15 +175,15 @@ graph TD
 
 ### Hibrit Durum Yönetimi Faydaları
 
-| **Özellik** | **Önce** | **Sonra** | **İyileştirme** |
-|-------------|-----------|-----------|-----------------|
-| **Veri Getirme** | Manuel API çağrıları | Akıllı önbellekleme | **%90 daha az kod** |
-| **Yükleme Durumları** | Manuel takip | Otomatik durumlar | **%100 otomatik** |
-| **Hata Yönetimi** | Her yerde try/catch | Yerleşik sınırlar | **Tutarlı ve sağlam** |
-| **Arka Plan Senkronizasyonu** | Yok | Otomatik stale-while-revalidate | **Yeni yetenek** |
-| **İyimser Güncellemeler** | Manuel rollback | Otomatik hata kurtarma | **Sağlam UX** |
-| **Çevrimdışı Destek** | Sınırlı | Otomatik önbellek kalıcılığı | **Gelişmiş yetenek** |
-| **Kimlik Doğrulama** | Şifre tabanlı | Şifresiz magic linkler | **Gelişmiş güvenlik** |
+| **Özellik**                   | **Önce**             | **Sonra**                       | **İyileştirme**       |
+| ----------------------------- | -------------------- | ------------------------------- | --------------------- |
+| **Veri Getirme**              | Manuel API çağrıları | Akıllı önbellekleme             | **%90 daha az kod**   |
+| **Yükleme Durumları**         | Manuel takip         | Otomatik durumlar               | **%100 otomatik**     |
+| **Hata Yönetimi**             | Her yerde try/catch  | Yerleşik sınırlar               | **Tutarlı ve sağlam** |
+| **Arka Plan Senkronizasyonu** | Yok                  | Otomatik stale-while-revalidate | **Yeni yetenek**      |
+| **İyimser Güncellemeler**     | Manuel rollback      | Otomatik hata kurtarma          | **Sağlam UX**         |
+| **Çevrimdışı Destek**         | Sınırlı              | Otomatik önbellek kalıcılığı    | **Gelişmiş yetenek**  |
+| **Kimlik Doğrulama**          | Şifre tabanlı        | Şifresiz magic linkler          | **Gelişmiş güvenlik** |
 
 ## 🔒 Güvenlik ve Gizlilik
 
@@ -226,12 +232,14 @@ npm run test:coverage
 ## 📱 Platform Özellikleri
 
 ### iOS
+
 - **Deep Link Entegrasyonu**: URL şema yapılandırması
 - **Haptic Feedback**: Dokunsal geri bildirim
 - **Face ID/Touch ID**: Gelecek özellik
 - **Widget Desteği**: Ana ekran widget'ları (gelecek)
 
 ### Android
+
 - **Intent Filter**: Deep link yapılandırması
 - **Adaptive Icons**: Uyarlanabilir simgeler
 - **Background Tasks**: Arka plan bildirim işleme
@@ -278,7 +286,7 @@ Yeşer uygulamasına katkıları memnuniyetle karşılıyoruz!
 ### Gerçekleştirilen İyileştirmeler
 
 - **+%15 Render Performansı** iyileştirmesi (inline stil eliminasyonu)
-- **%72 Bundle Boyutu** azalması (kullanılmayan import temizliği)  
+- **%72 Bundle Boyutu** azalması (kullanılmayan import temizliği)
 - **%86 Toplam Sorun** azalması (3,637 → 519 uyarı)
 - **%100 Tip Güvenliği** (sıfır any tipi)
 - **%100 Hook Uyumluluğu** (sıfır bağımlılık ihlali)
@@ -322,4 +330,4 @@ Bu proje [MIT Lisansı](./LICENSE) altında lisanslanmıştır.
 
 **Yeşer** ile günlük şükran pratiğinizi güvenli, keyifli ve anlamlı hale getirin. 🌱✨
 
-**Mutlu kodlama! 🚀** 
+**Mutlu kodlama! 🚀**

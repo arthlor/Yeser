@@ -63,7 +63,10 @@ const LoadingState: React.FC<LoadingStateProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const styles = React.useMemo(() => createStyles(theme, overlay, fullScreen), [theme, overlay, fullScreen]);
+  const styles = React.useMemo(
+    () => createStyles(theme, overlay, fullScreen),
+    [theme, overlay, fullScreen]
+  );
 
   const content = (
     <View style={[styles.container, style]} accessibilityRole="progressbar">
@@ -79,7 +82,12 @@ const LoadingState: React.FC<LoadingStateProps> = ({
   // Full-screen mode with ScreenLayout integration
   if (fullScreen) {
     return (
-      <ScreenLayout scrollable={false} showsVerticalScrollIndicator={false} edges={['top']} edgeToEdge={true}>
+      <ScreenLayout
+        scrollable={false}
+        showsVerticalScrollIndicator={false}
+        edges={['top']}
+        edgeToEdge={true}
+      >
         {content}
       </ScreenLayout>
     );
@@ -92,24 +100,26 @@ const LoadingState: React.FC<LoadingStateProps> = ({
 const createStyles = (theme: AppTheme, overlay: boolean, fullScreen: boolean) =>
   StyleSheet.create({
     container: {
-      ...(fullScreen ? {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: theme.spacing.page,
-      } : {
-        backgroundColor: theme.colors.surface,
-        borderRadius: theme.borderRadius.lg,
-        padding: theme.spacing.md,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: theme.colors.outline + '25',
-        alignItems: 'center',
-        justifyContent: 'center',
-        margin: theme.spacing.medium,
-        minHeight: 120,
-        // 🌟 Beautiful primary shadow for loading state card
-        ...getPrimaryShadow.card(theme),
-      }),
+      ...(fullScreen
+        ? {
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: theme.spacing.page,
+          }
+        : {
+            backgroundColor: theme.colors.surface,
+            borderRadius: theme.borderRadius.lg,
+            padding: theme.spacing.md,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: theme.colors.outline + '25',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: theme.spacing.medium,
+            minHeight: 120,
+            // 🌟 Beautiful primary shadow for loading state card
+            ...getPrimaryShadow.card(theme),
+          }),
       ...(overlay && {
         position: 'absolute',
         top: 0,

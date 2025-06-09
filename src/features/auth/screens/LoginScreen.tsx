@@ -4,15 +4,15 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { 
+import {
   Animated,
   Dimensions,
-  Easing, 
-  Keyboard, 
+  Easing,
+  Keyboard,
   Platform,
-  StyleSheet, 
-  Text, 
-  View
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -47,16 +47,16 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets);
-  
-  const { 
-    loginWithMagicLink, 
-    loginWithGoogle, 
-    isLoading, 
-    error, 
+
+  const {
+    loginWithMagicLink,
+    loginWithGoogle,
+    isLoading,
+    error,
     magicLinkSent,
     canSendMagicLink,
     clearError,
-    resetMagicLinkSent
+    resetMagicLinkSent,
   } = useAuthStore();
 
   // Form state
@@ -113,7 +113,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      
+
       Animated.sequence([
         Animated.spring(successPulseAnim, {
           toValue: 1.02,
@@ -135,7 +135,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   const toggleHelpSection = useCallback(() => {
     const toValue = showHelpSection ? 0 : 1;
     setShowHelpSection(!showHelpSection);
-    
+
     Animated.timing(helpSlideAnim, {
       toValue,
       duration: 300,
@@ -148,7 +148,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   const handleEmailChange = useCallback((text: string) => {
     setEmail(text);
     setEmailError(undefined);
-    
+
     if (text.length > 0) {
       const isValid = magicLinkSchema.safeParse({ email: text }).success;
       setIsEmailValid(isValid);
@@ -158,10 +158,13 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   }, []);
 
   // Clear errors when component unmounts
-  useEffect(() => () => {
-    clearError();
-    resetMagicLinkSent();
-  }, [clearError, resetMagicLinkSent]);
+  useEffect(
+    () => () => {
+      clearError();
+      resetMagicLinkSent();
+    },
+    [clearError, resetMagicLinkSent]
+  );
 
   // Log screen view
   useEffect(() => {
@@ -201,7 +204,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
 
     clearError();
     analyticsService.logEvent('magic_link_request');
-    
+
     await loginWithMagicLink({
       email: validationResult.data.email,
       options: {
@@ -219,7 +222,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
 
     clearError();
     analyticsService.logEvent('google_auth_attempt');
-    
+
     await loginWithGoogle();
   }, [clearError, loginWithGoogle]);
 
@@ -240,7 +243,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   }, [theme]);
 
   const renderHeader = () => (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.headerSection,
         {
@@ -259,24 +262,20 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
         {magicLinkSent ? 'Giriş Bağlantısı Gönderildi!' : 'Hoş Geldiniz!'}
       </Text>
       <Text style={styles.welcomeSubtitle}>
-        {magicLinkSent 
+        {magicLinkSent
           ? 'E-postanızı kontrol edin ve giriş bağlantısına tıklayın.'
-          : 'Minnet yolculuğunuza devam edin'
-        }
+          : 'Minnet yolculuğunuza devam edin'}
       </Text>
     </Animated.View>
   );
 
   const renderMainContent = () => (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.mainContent,
         {
           opacity: fadeAnim,
-          transform: [
-            { translateY: cardSlideAnim },
-            { scale: successPulseAnim },
-          ],
+          transform: [{ translateY: cardSlideAnim }, { scale: successPulseAnim }],
         },
       ]}
     >
@@ -328,25 +327,20 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
 
               {/* Help Section Toggle */}
               <ThemedButton
-                title={showHelpSection ? "Yardımı Gizle" : "Güvenli Link Nedir?"}
+                title={showHelpSection ? 'Yardımı Gizle' : 'Güvenli Link Nedir?'}
                 variant="ghost"
                 onPress={toggleHelpSection}
                 style={styles.helpToggle}
-                iconLeft={showHelpSection ? "chevron-up" : "help-circle-outline"}
+                iconLeft={showHelpSection ? 'chevron-up' : 'help-circle-outline'}
                 size="compact"
               />
 
               {/* Collapsible Help Section */}
-              <Animated.View 
-                style={[
-                  styles.helpSection,
-                  { height: helpHeight }
-                ]}
-              >
+              <Animated.View style={[styles.helpSection, { height: helpHeight }]}>
                 <View style={styles.helpContent}>
                   <Text style={styles.helpTitle}>🔒 Güvenli ve Kolay</Text>
                   <Text style={styles.helpText}>
-                    Güvenli link ile şifre hatırlamaya gerek yok. E-postanıza özel bir bağlantı 
+                    Güvenli link ile şifre hatırlamaya gerek yok. E-postanıza özel bir bağlantı
                     gönderiyoruz, tıklayıp güvenle giriş yapabilirsiniz.
                   </Text>
                 </View>
@@ -366,7 +360,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
               <Text style={styles.successInstructions}>
                 E-postanızı açın ve "Giriş Yap" butonuna tıklayın.
               </Text>
-              
+
               <ThemedButton
                 title="Yeni E-posta Gönder"
                 variant="outline"
@@ -395,7 +389,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   );
 
   const renderGoogleSection = () => (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.googleSection,
         {
@@ -433,7 +427,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       >
         <View style={styles.container}>
           {renderHeader()}
-          
+
           <View style={styles.contentArea}>
             {renderMainContent()}
             {!magicLinkSent && renderGoogleSection()}
@@ -446,7 +440,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
 });
 
 const createStyles = (
-  theme: AppTheme, 
+  theme: AppTheme,
   insets: { top: number; bottom: number; left: number; right: number }
 ) =>
   StyleSheet.create({
@@ -458,7 +452,7 @@ const createStyles = (
       paddingTop: insets.top + theme.spacing.lg,
       paddingBottom: insets.bottom + theme.spacing.lg,
     },
-    
+
     // Header section
     headerSection: {
       alignItems: 'center',
@@ -513,13 +507,11 @@ const createStyles = (
       marginBottom: theme.spacing.xl,
     },
     contentCard: {
-      backgroundColor: theme.name === 'dark' 
-        ? `${theme.colors.surface}95` 
-        : `${theme.colors.surface}98`,
+      backgroundColor:
+        theme.name === 'dark' ? `${theme.colors.surface}95` : `${theme.colors.surface}98`,
       borderWidth: 1,
-      borderColor: theme.name === 'dark'
-        ? `${theme.colors.outline}25`
-        : `${theme.colors.outline}30`,
+      borderColor:
+        theme.name === 'dark' ? `${theme.colors.outline}25` : `${theme.colors.outline}30`,
       ...getPrimaryShadow.medium(theme),
     },
     cardInner: {
@@ -665,9 +657,8 @@ const createStyles = (
       paddingHorizontal: theme.spacing.xs,
     },
     googleButton: {
-      backgroundColor: theme.name === 'dark' 
-        ? `${theme.colors.surface}90` 
-        : `${theme.colors.surface}95`,
+      backgroundColor:
+        theme.name === 'dark' ? `${theme.colors.surface}90` : `${theme.colors.surface}95`,
       borderColor: `${theme.colors.outline}30`,
       minHeight: 52, // Increased for better text accommodation
       ...getPrimaryShadow.small(theme),

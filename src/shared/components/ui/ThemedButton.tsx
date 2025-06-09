@@ -30,7 +30,7 @@ interface ThemedButtonProps {
   iconLeft?: string; // Material Community Icons name
   iconRight?: string; // Material Community Icons name
   fullWidth?: boolean;
-  
+
   // Enhanced interaction props
   enableHaptics?: boolean;
   loadingText?: string;
@@ -43,7 +43,7 @@ interface ThemedButtonProps {
 /**
  * 🎯 STREAMLINED THEMED BUTTON
  * Simplified, consistent button component using semantic spacing and unified shadows
- * 
+ *
  * Features:
  * - 4 essential variants (primary, secondary, outline, ghost)
  * - Consistent 44pt+ touch targets
@@ -78,7 +78,7 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
   const loadingAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Enhanced loading animation
   useEffect(() => {
     if (isLoading) {
@@ -103,13 +103,15 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
 
   // Enhanced press animations
   const handlePressIn = () => {
-    if (isInteractionDisabled) {return;}
-    
+    if (isInteractionDisabled) {
+      return;
+    }
+
     // Haptic feedback
     if (enableHaptics && Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    
+
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: pressAnimationScale || 0.95,
@@ -126,8 +128,10 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
   };
 
   const handlePressOut = () => {
-    if (isInteractionDisabled) {return;}
-    
+    if (isInteractionDisabled) {
+      return;
+    }
+
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 1,
@@ -144,13 +148,15 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
   };
 
   const handlePress = () => {
-    if (isInteractionDisabled) {return;}
-    
+    if (isInteractionDisabled) {
+      return;
+    }
+
     // Additional haptic feedback on successful press
     if (enableHaptics && Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-    
+
     onPress?.();
   };
 
@@ -162,11 +168,7 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
   const displayText = isLoading && loadingText ? loadingText : title;
 
   return (
-    <Animated.View
-      style={[
-        { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
-      ]}
-    >
+    <Animated.View style={[{ transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
       <Pressable
         style={[styles.button, style]}
         onPress={handlePress}
@@ -184,36 +186,20 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
         {/* Left Icon or Loading Indicator */}
         {isLoading ? (
           <Animated.View style={[styles.iconLeft, { opacity: loadingOpacity }]}>
-            <ActivityIndicator
-              size="small"
-              color={iconColor}
-            />
+            <ActivityIndicator size="small" color={iconColor} />
           </Animated.View>
         ) : iconLeft ? (
-          <Icon
-            name={iconLeft}
-            size={iconSize}
-            color={iconColor}
-            style={styles.iconLeft}
-          />
+          <Icon name={iconLeft} size={iconSize} color={iconColor} style={styles.iconLeft} />
         ) : null}
 
         {/* Button Text with Enhanced Typography */}
-        <Text 
-          style={[styles.text, textStyle]} 
-          accessibilityLabel={displayText}
-        >
+        <Text style={[styles.text, textStyle]} accessibilityLabel={displayText}>
           {displayText}
         </Text>
 
         {/* Right Icon */}
         {iconRight && !isLoading && (
-          <Icon
-            name={iconRight}
-            size={iconSize}
-            color={iconColor}
-            style={styles.iconRight}
-          />
+          <Icon name={iconRight} size={iconSize} color={iconColor} style={styles.iconRight} />
         )}
       </Pressable>
     </Animated.View>
@@ -248,7 +234,7 @@ const createStyles = (
 ) => {
   const spacing = semanticSpacing(theme);
   const shadows = unifiedShadows(theme);
-  
+
   // Get button dimensions and padding based on size
   const buttonConfig = {
     compact: {
@@ -275,11 +261,10 @@ const createStyles = (
 
   // Get variant-specific styling
   const variantStyles = getVariantStyles(theme, variant, shadows);
-  
+
   // Apply disabled state styling
-  const finalStyles = disabled || isLoading 
-    ? getDisabledStyles(theme, variant, variantStyles)
-    : variantStyles;
+  const finalStyles =
+    disabled || isLoading ? getDisabledStyles(theme, variant, variantStyles) : variantStyles;
 
   return StyleSheet.create({
     button: {
@@ -294,7 +279,7 @@ const createStyles = (
       minWidth: size === 'compact' ? 120 : size === 'large' ? 150 : 130,
       ...finalStyles.container,
     } as ViewStyle,
-    
+
     text: {
       fontSize: config.fontSize,
       fontWeight: config.fontWeight,
@@ -304,11 +289,11 @@ const createStyles = (
       flexShrink: 1,
       ...finalStyles.text,
     } as TextStyle,
-    
+
     iconLeft: {
       marginRight: spacing.iconGap,
     },
-    
+
     iconRight: {
       marginLeft: spacing.iconGap,
     },
@@ -319,7 +304,11 @@ const createStyles = (
  * 🎨 VARIANT STYLING
  * Clean, predictable styling for each button variant
  */
-const getVariantStyles = (theme: AppTheme, variant: ButtonVariant, shadows: ReturnType<typeof unifiedShadows>) => {
+const getVariantStyles = (
+  theme: AppTheme,
+  variant: ButtonVariant,
+  shadows: ReturnType<typeof unifiedShadows>
+) => {
   switch (variant) {
     case 'primary':
       return {
@@ -332,7 +321,7 @@ const getVariantStyles = (theme: AppTheme, variant: ButtonVariant, shadows: Retu
           color: theme.colors.onPrimary,
         },
       };
-      
+
     case 'secondary':
       return {
         container: {
@@ -345,7 +334,7 @@ const getVariantStyles = (theme: AppTheme, variant: ButtonVariant, shadows: Retu
           color: theme.colors.primary,
         },
       };
-      
+
     case 'outline':
       return {
         container: {
@@ -357,7 +346,7 @@ const getVariantStyles = (theme: AppTheme, variant: ButtonVariant, shadows: Retu
           color: theme.colors.primary,
         },
       };
-      
+
     case 'ghost':
       return {
         container: {
@@ -368,7 +357,7 @@ const getVariantStyles = (theme: AppTheme, variant: ButtonVariant, shadows: Retu
           color: theme.colors.primary,
         },
       };
-      
+
     default:
       return getVariantStyles(theme, 'primary', shadows);
   }
@@ -378,9 +367,13 @@ const getVariantStyles = (theme: AppTheme, variant: ButtonVariant, shadows: Retu
  * 🔒 DISABLED STATE STYLING
  * Consistent disabled appearance across all variants
  */
-const getDisabledStyles = (theme: AppTheme, variant: ButtonVariant, baseStyles: { container: ViewStyle; text: TextStyle }) => {
+const getDisabledStyles = (
+  theme: AppTheme,
+  variant: ButtonVariant,
+  baseStyles: { container: ViewStyle; text: TextStyle }
+) => {
   const isTransparent = variant === 'outline' || variant === 'ghost';
-  
+
   return {
     container: {
       ...baseStyles.container,

@@ -1,17 +1,9 @@
 import { supabase } from '../utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { handleAPIError } from '@/utils/apiHelpers';
+import { dailyPromptSchema } from '@/schemas/gratitudeEntrySchema';
 
-// Assuming your generated types are in a root types folder or similar
-// Adjust the path if your Database type is located elsewhere, e.g., '../types/database.types'
-// Based on MEMORY[9e4600ce-d55e-4f48-b57c-729e6f5349a1], it's likely '../types/database.types.ts'
-
-export interface DailyPrompt {
-  id: string;
-  prompt_text_tr: string;
-  prompt_text_en?: string | null;
-  category?: string | null;
-}
+import type { DailyPrompt } from '@/schemas/gratitudeEntrySchema';
 
 /**
  * Fetches a single random active daily prompt from the backend.
@@ -26,7 +18,7 @@ export const getRandomActivePrompt = async (): Promise<DailyPrompt | null> => {
     }
 
     if (data && Array.isArray(data) && data.length > 0) {
-      const prompt = data[0] as DailyPrompt;
+      const prompt = dailyPromptSchema.parse(data[0]);
       return prompt;
     }
 
@@ -62,7 +54,9 @@ export const getMultipleRandomActivePrompts = async (
         returned: data.length,
       });
 
-      return data as DailyPrompt[];
+      // Validate each prompt using Zod schema
+      const validatedPrompts = data.map((prompt) => dailyPromptSchema.parse(prompt));
+      return validatedPrompts;
     }
 
     logger.warn('No random active prompts found or unexpected response format.');

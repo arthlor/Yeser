@@ -104,17 +104,19 @@ const useAuthStore = create<AuthState>((set, get) => ({
     if (!state.lastMagicLinkRequest) {
       return true;
     }
-    
+
     const timeSinceLastRequest = Date.now() - state.lastMagicLinkRequest;
     return timeSinceLastRequest >= MAGIC_LINK_COOLDOWN_MS;
   },
 
   loginWithMagicLink: async (credentials) => {
     const state = get();
-    
+
     // Check client-side rate limiting
     if (!state.canSendMagicLink()) {
-      const remainingTime = Math.ceil((MAGIC_LINK_COOLDOWN_MS - (Date.now() - (state.lastMagicLinkRequest || 0))) / 1000);
+      const remainingTime = Math.ceil(
+        (MAGIC_LINK_COOLDOWN_MS - (Date.now() - (state.lastMagicLinkRequest || 0))) / 1000
+      );
       set({
         error: `Lütfen ${remainingTime} saniye bekleyin ve tekrar deneyin.`,
         isLoading: false,
@@ -123,10 +125,10 @@ const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     set({ isLoading: true, error: null, magicLinkSent: false });
-    
+
     try {
       const { error } = await authService.signInWithMagicLink(credentials);
-      
+
       if (error) {
         set({
           isLoading: false,
@@ -181,10 +183,10 @@ const useAuthStore = create<AuthState>((set, get) => ({
 
   loginWithGoogle: async () => {
     set({ isLoading: true, error: null });
-    
+
     try {
       const { error } = await authService.signInWithGoogle();
-      
+
       if (error) {
         if ((error as AuthError).name === 'AuthCancelledError') {
           // Don't treat cancellation as an error - it's a normal user action
@@ -247,7 +249,10 @@ const useAuthStore = create<AuthState>((set, get) => ({
   setSessionFromTokens: async (accessToken: string, refreshToken: string) => {
     set({ isLoading: true, error: null });
     try {
-      const { user, session, error } = await authService.setSessionFromTokens(accessToken, refreshToken);
+      const { user, session, error } = await authService.setSessionFromTokens(
+        accessToken,
+        refreshToken
+      );
       if (error) {
         set({
           isLoading: false,

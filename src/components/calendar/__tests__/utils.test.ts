@@ -99,7 +99,7 @@ describe('Calendar Utils', () => {
     it('should calculate stats for empty month', () => {
       const markedDates: CustomMarkedDates = {};
       const stats = calculateCalendarStats(markedDates, currentMonth);
-      
+
       expect(stats.entryCount).toBe(0);
       expect(stats.monthlyStreak).toBe(0);
       expect(stats.totalDays).toBe(31); // January has 31 days
@@ -115,7 +115,7 @@ describe('Calendar Utils', () => {
         '2024-01-06': { marked: true },
       };
       const stats = calculateCalendarStats(markedDates, currentMonth);
-      
+
       expect(stats.entryCount).toBe(5);
       expect(stats.monthlyStreak).toBe(3); // Longest consecutive sequence
       expect(stats.totalDays).toBe(31);
@@ -129,9 +129,9 @@ describe('Calendar Utils', () => {
         const dateStr = `2024-01-${day.toString().padStart(2, '0')}`;
         markedDates[dateStr] = { marked: true };
       }
-      
+
       const stats = calculateCalendarStats(markedDates, currentMonth);
-      
+
       expect(stats.entryCount).toBe(31);
       expect(stats.monthlyStreak).toBe(31);
       expect(stats.totalDays).toBe(31);
@@ -145,9 +145,9 @@ describe('Calendar Utils', () => {
         '2024-02-15': { marked: true },
         '2024-02-29': { marked: true }, // Leap day
       };
-      
+
       const stats = calculateCalendarStats(markedDates, februaryMonth);
-      
+
       expect(stats.entryCount).toBe(3);
       expect(stats.totalDays).toBe(29); // Leap year February
       expect(stats.completionRate).toBeCloseTo(10.34, 2); // 3/29 * 100
@@ -159,9 +159,9 @@ describe('Calendar Utils', () => {
         '2023-02-01': { marked: true },
         '2023-02-15': { marked: true },
       };
-      
+
       const stats = calculateCalendarStats(markedDates, februaryMonth);
-      
+
       expect(stats.entryCount).toBe(2);
       expect(stats.totalDays).toBe(28); // Non-leap year February
       expect(stats.completionRate).toBeCloseTo(7.14, 2); // 2/28 * 100
@@ -239,7 +239,7 @@ describe('Calendar Utils', () => {
     it('should ignore time component', () => {
       const date1 = new Date('2024-01-15T00:00:00Z');
       const date2 = new Date('2024-01-15T23:59:59Z');
-      
+
       expect(getDateString(date1)).toBe('2024-01-15');
       expect(getDateString(date2)).toBe('2024-01-15');
     });
@@ -251,7 +251,7 @@ describe('Calendar Utils', () => {
         'invalid-date': { marked: true },
         '2024-01-15': { marked: true },
       };
-      
+
       // The function should not crash and should process valid dates
       expect(() => calculateMonthlyStreak(markedDates)).not.toThrow();
     });
@@ -264,7 +264,7 @@ describe('Calendar Utils', () => {
         const dateStr = getDateString(date);
         markedDates[dateStr] = { marked: true };
       }
-      
+
       const result = calculateMonthlyStreak(markedDates);
       expect(result).toBe(100);
     });
@@ -276,9 +276,9 @@ describe('Calendar Utils', () => {
         '2024-01-01': { marked: true },
         '2024-01-02': { marked: true },
       };
-      
+
       const result = calculateMonthlyStreak(markedDates);
       expect(result).toBe(4); // Should work across year boundaries
     });
   });
-}); 
+});

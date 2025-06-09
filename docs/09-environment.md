@@ -25,6 +25,7 @@ EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # Server-side only
 ```
 
 **Description:**
+
 - `EXPO_PUBLIC_SUPABASE_URL`: Your Supabase project URL
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`: Supabase anonymous/public key for client access
 - `EXPO_PUBLIC_AUTH_REDIRECT_URL`: Deep link URL for magic link authentication
@@ -33,6 +34,7 @@ EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # Server-side only
 - `EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`: Service role key for server-side operations
 
 **Magic Link Setup Checklist:**
+
 1. Go to [supabase.com](https://supabase.com) → Your Project
 2. Navigate to Settings → API
 3. Copy Project URL and anon public key
@@ -43,6 +45,7 @@ EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # Server-side only
    - **Rate Limiting**: Set appropriate limits (5 emails/hour for production)
 
 **Required Supabase Auth Configuration:**
+
 ```sql
 -- In Supabase SQL Editor, ensure these settings:
 -- 1. Site URL: yeser://auth/callback
@@ -69,10 +72,12 @@ EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
 ```
 
 **Description:**
+
 - Complete Firebase configuration for analytics integration
 - Required for user behavior tracking and crash reporting
 
 **Where to find:**
+
 1. Go to [console.firebase.google.com](https://console.firebase.google.com)
 2. Select your project → Project Settings
 3. Under "Your apps" section, find the web app config
@@ -90,10 +95,12 @@ EXPO_PUBLIC_REDIRECT_URI=https://your-project.supabase.co/auth/v1/callback
 ```
 
 **Description:**
+
 - Platform-specific Google OAuth client IDs
 - Required for Google Sign-In functionality
 
 **Where to find:**
+
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
 2. Navigate to APIs & Services → Credentials
 3. Create OAuth 2.0 Client IDs for each platform
@@ -356,12 +363,12 @@ export const validateConfig = (): void => {
     'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
   ];
 
-  const missing = required.filter(key => !process.env[key]);
+  const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
     throw new Error(
       `Missing required environment variables: ${missing.join(', ')}\n` +
-      'Please check your .env file and ensure all required variables are set.'
+        'Please check your .env file and ensure all required variables are set.'
     );
   }
 };
@@ -416,7 +423,7 @@ const setupStagingEnvironment = async (): Promise<void> => {
 const setupProductionEnvironment = async (): Promise<void> => {
   // Production optimizations
   console.log('🚀 Production environment configured');
-  
+
   // Disable debugging
   if (config.debug.enabled) {
     console.warn('⚠️ Debug mode should be disabled in production');
@@ -429,6 +436,7 @@ const setupProductionEnvironment = async (): Promise<void> => {
 ### Environment Variable Security
 
 #### Safe Variables (Client-Side)
+
 These are safe to expose in the client:
 
 ```bash
@@ -440,6 +448,7 @@ EXPO_PUBLIC_APP_VERSION=1.0.0
 ```
 
 #### Sensitive Variables (Server-Side Only)
+
 These should NEVER be exposed to the client:
 
 ```bash
@@ -462,7 +471,7 @@ const envSchema = z.object({
   EXPO_PUBLIC_FIREBASE_API_KEY: z.string().min(1),
   EXPO_PUBLIC_FIREBASE_PROJECT_ID: z.string().min(1),
   EXPO_PUBLIC_APP_ENVIRONMENT: z.enum(['development', 'staging', 'production']),
-  EXPO_PUBLIC_ENABLE_ANALYTICS: z.string().transform(val => val === 'true'),
+  EXPO_PUBLIC_ENABLE_ANALYTICS: z.string().transform((val) => val === 'true'),
 });
 
 export const validateEnvironment = () => {
@@ -531,12 +540,12 @@ npx expo start
 # =============================================================================
 # YESER GRATITUDE APP - ENVIRONMENT CONFIGURATION TEMPLATE
 # =============================================================================
-# 
+#
 # Instructions:
 # 1. Copy this file to .env
 # 2. Replace all placeholder values with your actual configuration
 # 3. Never commit your .env file to version control
-# 
+#
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -620,6 +629,7 @@ useEffect(() => {
 #### 3. OAuth Issues
 
 Check that your redirect URIs match exactly:
+
 - Supabase: `https://your-project.supabase.co/auth/v1/callback`
 - Google Console: Must include the exact same URL
 
@@ -645,7 +655,10 @@ export const debugConfiguration = () => {
     console.group('🔧 Environment Configuration');
     console.log('Environment:', process.env.EXPO_PUBLIC_APP_ENVIRONMENT);
     console.log('Supabase URL:', process.env.EXPO_PUBLIC_SUPABASE_URL ? '✅ Set' : '❌ Missing');
-    console.log('Firebase Project:', process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ? '✅ Set' : '❌ Missing');
+    console.log(
+      'Firebase Project:',
+      process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ? '✅ Set' : '❌ Missing'
+    );
     console.log('Analytics Enabled:', process.env.EXPO_PUBLIC_ENABLE_ANALYTICS);
     console.groupEnd();
   }
@@ -654,4 +667,4 @@ export const debugConfiguration = () => {
 
 ---
 
-This environment configuration documentation provides a complete guide to setting up and managing all configuration aspects of the Yeser gratitude app, ensuring proper setup across different environments and deployment scenarios. 
+This environment configuration documentation provides a complete guide to setting up and managing all configuration aspects of the Yeser gratitude app, ensuring proper setup across different environments and deployment scenarios.

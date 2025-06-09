@@ -15,13 +15,13 @@ interface PastEntriesHeaderProps {
 
 /**
  * Enhanced Past Entries Header with Edge-to-Edge Design
- * 
+ *
  * DESIGN PHILOSOPHY:
  * 1. HERO ZONE: Floating edge-to-edge header with comprehensive stats
  * 2. VISUAL DEPTH: Enhanced shadows and elevation for modern feel
  * 3. PROGRESS VISUALIZATION: Similar to DailyEntryScreen progress patterns
  * 4. TYPOGRAPHY HIERARCHY: Consistent with established design system
- * 
+ *
  * UX ENHANCEMENTS:
  * - Edge-to-edge floating card design
  * - Enhanced stats visualization with progress indicators
@@ -50,21 +50,21 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
     if (entryCount === undefined) {
       return null;
     }
-    
+
     // Calculate engaging stats similar to DailyEntryScreen patterns
     const today = new Date();
     const currentMonth = today.getMonth();
     const daysInMonth = new Date(today.getFullYear(), currentMonth + 1, 0).getDate();
     const dayOfMonth = today.getDate();
-    
+
     // Monthly goal calculation
     const monthlyGoal = Math.floor(daysInMonth * 0.8); // 80% of days in month
     const monthlyProgress = Math.min((entryCount / monthlyGoal) * 100, 100);
-    
+
     // Weekly streak calculation (simplified)
     const weeklyGoal = 5; // 5 days per week
-    const weeklyProgress = Math.min((entryCount % 7 / weeklyGoal) * 100, 100);
-    
+    const weeklyProgress = Math.min(((entryCount % 7) / weeklyGoal) * 100, 100);
+
     return {
       total: entryCount,
       monthlyProgress: Math.round(monthlyProgress),
@@ -78,12 +78,7 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
 
   return (
     <View style={styles.heroZone}>
-      <ThemedCard 
-        variant="elevated" 
-        density="comfortable"
-        elevation="card"
-        style={styles.heroCard}
-      >
+      <ThemedCard variant="elevated" density="comfortable" elevation="card" style={styles.heroCard}>
         {/* Enhanced Main Header Section */}
         <View style={styles.headerSection}>
           <View style={styles.titleContainer}>
@@ -113,32 +108,43 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
                 </View>
                 <Text style={styles.statLabel}>Toplam Kayıt</Text>
               </View>
-              
+
               <View style={styles.statDivider} />
-              
+
               <View style={styles.statItem}>
                 <View style={styles.statBadge}>
                   <Text style={styles.statNumber}>{stats.monthlyProgress}%</Text>
                 </View>
                 <Text style={styles.statLabel}>Aylık Hedef</Text>
               </View>
-              
+
               <View style={styles.statDivider} />
-              
+
               <View style={styles.statItem}>
-                <View style={[styles.statBadge, { backgroundColor: stats.isOnTrack ? theme.colors.successContainer : theme.colors.warningContainer }]}>
-                  <Icon 
-                    name={stats.isOnTrack ? "trending-up" : "trending-neutral"} 
-                    size={16} 
-                    color={stats.isOnTrack ? theme.colors.onSuccessContainer : theme.colors.onWarningContainer} 
+                <View
+                  style={[
+                    styles.statBadge,
+                    {
+                      backgroundColor: stats.isOnTrack
+                        ? theme.colors.successContainer
+                        : theme.colors.warningContainer,
+                    },
+                  ]}
+                >
+                  <Icon
+                    name={stats.isOnTrack ? 'trending-up' : 'trending-neutral'}
+                    size={16}
+                    color={
+                      stats.isOnTrack
+                        ? theme.colors.onSuccessContainer
+                        : theme.colors.onWarningContainer
+                    }
                   />
                 </View>
-                <Text style={styles.statLabel}>
-                  {stats.isOnTrack ? 'Hedefte' : 'Motivasyon'}
-                </Text>
+                <Text style={styles.statLabel}>{stats.isOnTrack ? 'Hedefte' : 'Motivasyon'}</Text>
               </View>
             </View>
-            
+
             {/* Enhanced Progress Visualization */}
             <View style={styles.progressSection}>
               <View style={styles.progressHeader}>
@@ -146,27 +152,28 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
                   {stats.isOnTrack ? '🎯 Aylık hedefe doğru ilerliyorsun!' : '💪 Hedefe odaklan!'}
                 </Text>
                 <Text style={styles.progressSubtitle}>
-                  {stats.monthlyGoal - stats.total > 0 
-                    ? `${stats.monthlyGoal - stats.total} kayıt daha` 
-                    : 'Aylık hedef tamamlandı!'
-                  }
+                  {stats.monthlyGoal - stats.total > 0
+                    ? `${stats.monthlyGoal - stats.total} kayıt daha`
+                    : 'Aylık hedef tamamlandı!'}
                 </Text>
               </View>
-              
+
               {/* Progress Line */}
               <View style={styles.progressLineContainer}>
                 <View style={styles.progressLine}>
-                  <View 
+                  <View
                     style={[
                       styles.progressLineFill,
-                      { 
+                      {
                         width: `${Math.min(stats.monthlyProgress, 100)}%`,
-                        backgroundColor: stats.isOnTrack ? theme.colors.primary : theme.colors.warning,
-                      }
-                    ]} 
+                        backgroundColor: stats.isOnTrack
+                          ? theme.colors.primary
+                          : theme.colors.warning,
+                      },
+                    ]}
                   />
                 </View>
-                
+
                 {/* Goal Achievement Indicator */}
                 {stats.monthlyProgress >= 100 && (
                   <View style={styles.goalCompleteIndicator}>
@@ -196,7 +203,7 @@ const createStyles = (theme: AppTheme) =>
       borderBottomColor: theme.colors.outline + '10',
       ...getPrimaryShadow.floating(theme),
     },
-    
+
     // Enhanced Header Section
     headerSection: {
       borderBottomWidth: 1,
@@ -238,7 +245,7 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '500',
       letterSpacing: 0.1,
     },
-    
+
     // Enhanced Stats Section
     statsSection: {
       paddingTop: theme.spacing.md,
@@ -284,7 +291,7 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.outline + '25',
       marginHorizontal: theme.spacing.sm,
     },
-    
+
     // Enhanced Progress Section
     progressSection: {
       // Container for progress visualization

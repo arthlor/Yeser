@@ -25,7 +25,7 @@ const mapAndValidateRawProfile = (validatedRawData: RawProfileData): Profile => 
   };
   // Remove the snake_case field to avoid conflicts
   delete (dataForZod as Partial<typeof dataForZod>).use_varied_prompts;
-  
+
   const validationResult = profileSchema.safeParse(dataForZod);
   if (!validationResult.success) {
     logger.error('Profile data validation failed:', {
@@ -149,7 +149,9 @@ export const updateProfile = async (
 
     if (error) {
       if (error.code === '23505' && error.message.includes('profiles_username_key')) {
-        throw new Error('Bu kullanıcı adı zaten kullanılıyor. Lütfen farklı bir kullanıcı adı seçin.');
+        throw new Error(
+          'Bu kullanıcı adı zaten kullanılıyor. Lütfen farklı bir kullanıcı adı seçin.'
+        );
       }
       throw handleAPIError(new Error(error.message), 'update profile');
     }

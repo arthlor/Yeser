@@ -8,7 +8,7 @@ The Yeser app follows a **modern component architecture** built on:
 
 - **Functional Components**: React hooks-based components
 - **TanStack Query Integration**: Server state via custom hooks
-- **Zustand Integration**: Client state via selective subscriptions  
+- **Zustand Integration**: Client state via selective subscriptions
 - **Themed Components**: React Native Paper + custom theming
 - **TypeScript**: Full type safety and excellent developer experience
 
@@ -70,12 +70,12 @@ export interface AppTheme {
     modalOverlay: string;
   };
   spacing: {
-    xs: number;    // 4
-    sm: number;    // 8
-    md: number;    // 16
-    lg: number;    // 24
-    xl: number;    // 32
-    xxl: number;   // 48
+    xs: number; // 4
+    sm: number; // 8
+    md: number; // 16
+    lg: number; // 24
+    xl: number; // 32
+    xxl: number; // 48
   };
   typography: {
     headingLarge: TextStyle;
@@ -87,10 +87,10 @@ export interface AppTheme {
     caption: TextStyle;
   };
   borderRadius: {
-    small: number;   // 4
-    medium: number;  // 8
-    large: number;   // 16
-    full: number;    // 999
+    small: number; // 4
+    medium: number; // 8
+    large: number; // 16
+    full: number; // 999
   };
 }
 ```
@@ -103,7 +103,7 @@ import { useThemeStore } from '@/store/themeStore';
 
 const ThemedComponent: React.FC = () => {
   const { activeTheme } = useThemeStore();
-  
+
   return (
     <View style={[styles.container, { backgroundColor: activeTheme.colors.background }]}>
       <Text style={[styles.title, { color: activeTheme.colors.text }]}>
@@ -138,7 +138,7 @@ The main authentication entry point with email input and magic link functionalit
 ```typescript
 // Key features of LoginScreen:
 // - Magic link email authentication
-// - Google OAuth integration  
+// - Google OAuth integration
 // - Enhanced error handling with Turkish messages
 // - Animated help section
 // - Form validation
@@ -154,7 +154,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
-  
+
   const handleMagicLinkLogin = useCallback(async (): Promise<void> => {
     // Email validation
     if (!email.trim()) {
@@ -172,7 +172,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       setIsSubmitting(true);
       setError('');
       const result = await authService.signInWithMagicLink(email.trim());
-      
+
       if (result.success) {
         setSuccess('Giriş bağlantısı email adresinize gönderildi!');
       } else {
@@ -203,7 +203,7 @@ export const DeepLinkHandler: React.FC = () => {
       try {
         setIsLoading(true);
         const result = await deepLinkAuthService.handleAuthCallback(url);
-        
+
         if (result.success && result.session) {
           setSession(result.session);
         } else {
@@ -391,7 +391,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
             </Button>
           )}
         </View>
-        
+
         <View style={styles.details}>
           <DetailRow
             label="Daily Goal"
@@ -405,7 +405,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
           />
           <DetailRow
             label="Throwback Reminders"
-            value={profile.throwbackReminderEnabled ? 
+            value={profile.throwbackReminderEnabled ?
               `${profile.throwbackReminderFrequency} (${profile.throwbackReminderTime})` : 'Disabled'}
             theme={activeTheme}
           />
@@ -521,14 +521,14 @@ export const GratitudeStatementForm: React.FC<GratitudeStatementFormProps> = ({
 }) => {
   const { activeTheme } = useThemeStore();
   const { addStatement, isAddingStatement } = useGratitudeMutations();
-  
+
   const [statement, setStatement] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     // Validation
     const trimmedStatement = statement.trim();
-    
+
     if (!trimmedStatement) {
       setError('Please enter a gratitude statement');
       return;
@@ -547,7 +547,7 @@ export const GratitudeStatementForm: React.FC<GratitudeStatementFormProps> = ({
     try {
       // Clear any previous errors
       setError(null);
-      
+
       // Submit via TanStack Query mutation
       addStatement(
         { entryDate, statement: trimmedStatement },
@@ -598,13 +598,13 @@ export const GratitudeStatementForm: React.FC<GratitudeStatementFormProps> = ({
           outlineColor={activeTheme.colors.primary}
           testID="statement-input"
         />
-        
+
         {error && (
           <HelperText type="error" visible={!!error} testID="error-message">
             {error}
           </HelperText>
         )}
-        
+
         <View style={styles.footer}>
           <HelperText
             type="info"
@@ -616,7 +616,7 @@ export const GratitudeStatementForm: React.FC<GratitudeStatementFormProps> = ({
           >
             {statement.length}/500 characters
           </HelperText>
-          
+
           <Button
             mode="contained"
             onPress={handleSubmit}
@@ -628,7 +628,7 @@ export const GratitudeStatementForm: React.FC<GratitudeStatementFormProps> = ({
             {isAddingStatement ? 'Adding...' : 'Add Gratitude'}
           </Button>
         </View>
-        
+
         {isAddingStatement && (
           <HelperText type="info" visible testID="loading-indicator">
             Adding your gratitude statement...
@@ -780,7 +780,7 @@ export const GratitudeStatementsList: React.FC<GratitudeStatementsListProps> = (
             {entry.statements.length}
           </Chip>
         </View>
-        
+
         <FlatList
           data={entry.statements}
           renderItem={renderStatement}
@@ -813,7 +813,7 @@ const StatementItem: React.FC<{
         {statement}
       </Text>
     </View>
-    
+
     {editable && (
       <View style={styles.actions}>
         <IconButton
@@ -994,7 +994,7 @@ export const EnhancedThrowbackModal: React.FC = () => {
                 <Text style={[styles.dateText, { color: activeTheme.colors.primary }]}>
                   {format(new Date(randomEntry.entry_date), 'EEEE, MMMM d, yyyy')}
                 </Text>
-                
+
                 <Text style={[styles.subtitle, { color: activeTheme.colors.textSecondary }]}>
                   You were grateful for:
                 </Text>
@@ -1037,7 +1037,7 @@ export const EnhancedThrowbackModal: React.FC = () => {
           >
             Another Memory
           </Button>
-          
+
           <Button
             mode="contained"
             onPress={hideThrowback}
@@ -1163,7 +1163,12 @@ export const useUserProfile = () => {
   const queryClient = useQueryClient();
 
   // Profile query
-  const { data: profile, isLoading, error, refetch } = useQuery<Profile | null, Error>({
+  const {
+    data: profile,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<Profile | null, Error>({
     queryKey: queryKeys.profile(user?.id),
     queryFn: async () => {
       if (!user?.id) return null;
@@ -1175,7 +1180,9 @@ export const useUserProfile = () => {
 
   // Profile update mutation
   const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation<
-    Profile, Error, Partial<Profile>
+    Profile,
+    Error,
+    Partial<Profile>
   >({
     mutationFn: async (updates) => {
       if (!user?.id) throw new Error('User not authenticated');
@@ -1184,7 +1191,7 @@ export const useUserProfile = () => {
     onMutate: async (updates) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.profile(user?.id) });
       const previousProfile = queryClient.getQueryData<Profile>(queryKeys.profile(user?.id));
-      queryClient.setQueryData(queryKeys.profile(user?.id), (old?: Profile | null) => 
+      queryClient.setQueryData(queryKeys.profile(user?.id), (old?: Profile | null) =>
         old ? { ...old, ...updates } : null
       );
       return { previousProfile };
@@ -1255,9 +1262,9 @@ export const useGratitudeMutations = (entryDate: string) => {
     onMutate: async (newStatement) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.gratitudeEntry(user?.id, entryDate) });
       const previousEntry = queryClient.getQueryData<GratitudeEntry>(queryKeys.gratitudeEntry(user?.id, entryDate));
-      
+
       // Optimistically update the entry
-      const optimisticEntry = { ... }; 
+      const optimisticEntry = { ... };
       queryClient.setQueryData(queryKeys.gratitudeEntry(user?.id, entryDate), optimisticEntry);
 
       return { previousEntry };
@@ -1347,15 +1354,15 @@ import { format } from 'date-fns';
 export const EnhancedHomeScreen: React.FC = () => {
   const { activeTheme } = useThemeStore();
   const currentDate = format(new Date(), 'yyyy-MM-dd');
-  
+
   // TanStack Query hooks for server state
   const { profile, isLoading: profileLoading, refetchProfile } = useUserProfile();
   const { data: todaysEntry, isLoading: entryLoading } = useGratitudeEntry(currentDate);
   const { data: streak, isLoading: streakLoading } = useStreakData();
-  
+
   // Combine loading states
   const isLoading = profileLoading || entryLoading || streakLoading;
-  
+
   const handleRefresh = async () => {
     // Refresh all data
     await refetchProfile();
@@ -1363,7 +1370,7 @@ export const EnhancedHomeScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView 
+    <SafeAreaView
       style={[styles.container, { backgroundColor: activeTheme.colors.background }]}
       edges={['top', 'left', 'right']}
     >
@@ -1380,7 +1387,7 @@ export const EnhancedHomeScreen: React.FC = () => {
       >
         {/* User Profile Section */}
         <UserProfileCard />
-        
+
         {/* Streak Display */}
         {streak && (
           <StreakDisplay
@@ -1389,7 +1396,7 @@ export const EnhancedHomeScreen: React.FC = () => {
             lastEntryDate={streak.last_entry_date}
           />
         )}
-        
+
         {/* Today's Gratitude Form */}
         <GratitudeStatementForm
           entryDate={currentDate}
@@ -1397,7 +1404,7 @@ export const EnhancedHomeScreen: React.FC = () => {
             // Handle success if needed
           }}
         />
-        
+
         {/* Quick Actions */}
         <QuickActionsCard
           hasEntryToday={!!todaysEntry && todaysEntry.statements.length > 0}
@@ -1408,10 +1415,10 @@ export const EnhancedHomeScreen: React.FC = () => {
             // Navigation handled by parent
           }}
         />
-        
+
         {/* Discovery Section */}
         <DiscoverySection />
-        
+
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -1468,13 +1475,9 @@ interface ComponentProps {
   onSuccess?: () => void;
 }
 
-const Component: React.FC<ComponentProps> = ({
-  onAction,
-  onError,
-  onSuccess,
-}) => {
+const Component: React.FC<ComponentProps> = ({ onAction, onError, onSuccess }) => {
   const { mutate, isLoading, error } = useSomeMutation();
-  
+
   const handleSubmit = (data: SomeData) => {
     mutate(data, {
       onSuccess: () => {
@@ -1485,7 +1488,7 @@ const Component: React.FC<ComponentProps> = ({
       },
     });
   };
-  
+
   // Component implementation
 };
 ```
@@ -1498,7 +1501,7 @@ const Component: React.FC<ComponentProps> = ({
 // Responsive styles using theme
 const useResponsiveStyles = () => {
   const { activeTheme } = useThemeStore();
-  
+
   return StyleSheet.create({
     container: {
       padding: activeTheme.spacing.md,
@@ -1519,7 +1522,7 @@ const useResponsiveStyles = () => {
 // Usage in component
 const Component = () => {
   const styles = useResponsiveStyles();
-  
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Title</Text>
@@ -1564,7 +1567,7 @@ const createTestWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  
+
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
@@ -1574,13 +1577,13 @@ const createTestWrapper = () => {
 
 test('UserProfileCard displays loading state', async () => {
   const Wrapper = createTestWrapper();
-  
+
   const { getByText } = render(
     <Wrapper>
       <UserProfileCard />
     </Wrapper>
   );
-  
+
   expect(getByText('Loading profile...')).toBeTruthy();
 });
 ```
@@ -1595,11 +1598,11 @@ export const ExpensiveComponent = React.memo<Props>(({ data, onAction }) => {
   const processedData = useMemo(() => {
     return expensiveProcessing(data);
   }, [data]);
-  
+
   const handleAction = useCallback(() => {
     onAction?.(processedData);
   }, [onAction, processedData]);
-  
+
   return (
     <View>
       {/* Component content */}
@@ -1621,11 +1624,11 @@ const HeavyModal = React.lazy(() => import('./HeavyModal'));
 
 const App = () => {
   const [showModal, setShowModal] = useState(false);
-  
+
   return (
     <View>
       {/* Other content */}
-      
+
       <React.Suspense fallback={<ActivityIndicator />}>
         {showModal && <HeavyModal onClose={() => setShowModal(false)} />}
       </React.Suspense>
@@ -1645,11 +1648,11 @@ const withLoadingState = <P extends object>(
 ) => {
   return (props: P & { isLoading?: boolean }) => {
     const { isLoading, ...componentProps } = props;
-    
+
     if (isLoading) {
       return <LoadingSpinner />;
     }
-    
+
     return <Component {...(componentProps as P)} />;
   };
 };
@@ -1677,7 +1680,7 @@ const DataFetcher = <T,>({ queryKey, queryFn, children }: DataFetcherProps<T>) =
     queryKey,
     queryFn,
   });
-  
+
   return <>{children({ data, isLoading, error })}</>;
 };
 

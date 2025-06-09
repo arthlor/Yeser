@@ -58,3 +58,13 @@ export const deleteStatementPayloadSchema = z.object({
 });
 
 export type DeleteStatementPayload = z.infer<typeof deleteStatementPayloadSchema>;
+
+// Schema for DailyPrompt from the daily_prompts table
+export const dailyPromptSchema = z.object({
+  id: z.string().uuid({ message: 'Invalid UUID for prompt id' }),
+  prompt_text_tr: z.string().min(1, 'Turkish prompt text is required'),
+  prompt_text_en: z.string().nullable().optional(),
+  category: z.string().nullable().optional(),
+});
+
+export type DailyPrompt = z.infer<typeof dailyPromptSchema>;

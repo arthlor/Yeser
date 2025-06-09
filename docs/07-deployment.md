@@ -59,7 +59,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key # Server-side only
 
 # Deep link configuration (must match app configuration)
 # Production: yeser://auth/callback
-# Staging: yeser-preview://auth/callback  
+# Staging: yeser-preview://auth/callback
 # Development: yeser-dev://auth/callback
 ```
 
@@ -91,6 +91,7 @@ export default {
 #### Supabase Auth Settings (Production Checklist)
 
 1. **Email Templates**: Configure Turkish magic link email template
+
    ```html
    <!-- Magic Link Email Template -->
    <h2>Yeşer'e Hoş Geldin!</h2>
@@ -100,15 +101,18 @@ export default {
    ```
 
 2. **Site URL Configuration**:
+
    - Development: `yeser-dev://auth/callback`
    - Staging: `yeser-preview://auth/callback`
    - Production: `yeser://auth/callback`
 
 3. **Additional Redirect URLs**:
+
    - Add all environment-specific callback URLs
    - Include web URLs if supporting web platform
 
 4. **Rate Limiting**: Configure appropriate limits for magic link sending
+
    - Production: 5 emails per hour per IP
    - Development: Higher limits for testing
 

@@ -44,8 +44,12 @@ const DailyEntryDatePicker: React.FC<DailyEntryDatePickerProps> = ({
   };
 
   const getDateLabel = () => {
-    if (isToday()) {return 'Bugün';}
-    if (isYesterday()) {return 'Dün';}
+    if (isToday()) {
+      return 'Bugün';
+    }
+    if (isYesterday()) {
+      return 'Dün';
+    }
     return entryDate.toLocaleDateString('tr-TR', { weekday: 'long' });
   };
 

@@ -219,12 +219,12 @@ export const safeErrorDisplay = (error: Error | string | unknown): string => {
 
   // Otherwise, translate it
   const translated = getUserFriendlyError(error);
-  
+
   // Don't show cancellation messages to users
   if (translated === '') {
     return '';
   }
-  
+
   return translated;
 };
 
@@ -251,22 +251,22 @@ export const initializeGlobalErrorMonitoring = () => {
     // eslint-disable-next-line no-console
     console.error = (...args: unknown[]) => {
       // Log to debug system but don't show to users
-      logger.error('Console error intercepted in production:', { 
-        args: JSON.stringify(args).substring(0, 1000) 
+      logger.error('Console error intercepted in production:', {
+        args: JSON.stringify(args).substring(0, 1000),
       });
-      
+
       // Don't call original console.error in production
       // Users should never see console outputs
     };
 
-    // Override console.warn in production  
+    // Override console.warn in production
     // eslint-disable-next-line no-console
     console.warn = (...args: unknown[]) => {
       // Log to debug system but don't show to users
-      logger.warn('Console warning intercepted in production:', { 
-        args: JSON.stringify(args).substring(0, 1000) 
+      logger.warn('Console warning intercepted in production:', {
+        args: JSON.stringify(args).substring(0, 1000),
       });
-      
+
       // Don't call original console.warn in production
     };
   }
@@ -289,7 +289,10 @@ export const initializeGlobalErrorMonitoring = () => {
   if (typeof global !== 'undefined') {
     // Handle unhandled promise rejections
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (global as any).onunhandledrejection = (event: { reason: unknown; preventDefault?: () => void }) => {
+    (global as any).onunhandledrejection = (event: {
+      reason: unknown;
+      preventDefault?: () => void;
+    }) => {
       handleGlobalError(new Error(`Unhandled promise rejection: ${String(event.reason)}`));
       // Prevent default behavior that shows error to users
       if (event.preventDefault) {
@@ -299,8 +302,15 @@ export const initializeGlobalErrorMonitoring = () => {
 
     // Handle uncaught exceptions
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (global as any).onerror = (message: string | unknown, source?: string, lineno?: number, colno?: number, error?: Error) => {
-      const errorMessage = error?.message || (typeof message === 'string' ? message : 'Unknown error');
+    (global as any).onerror = (
+      message: string | unknown,
+      source?: string,
+      lineno?: number,
+      colno?: number,
+      error?: Error
+    ) => {
+      const errorMessage =
+        error?.message || (typeof message === 'string' ? message : 'Unknown error');
       handleGlobalError(new Error(errorMessage));
       // Return true to prevent default error handling
       return true;
@@ -319,19 +329,20 @@ export const emergencyErrorSafetyNet = (error: unknown): string => {
   try {
     // Attempt normal translation
     const result = safeErrorDisplay(error);
-    
+
     // If translation worked, return it
     if (result && typeof result === 'string' && result.trim() !== '') {
       return result;
     }
-    
+
     // Fallback to generic Turkish message
     return 'Bir hata oluştu. Lütfen tekrar deneyin.';
   } catch (translationError) {
     // Even the translation failed - use hardcoded Turkish message
-    logger.error('Error translation failed:', { 
-      error: translationError instanceof Error ? translationError.message : String(translationError) 
+    logger.error('Error translation failed:', {
+      error:
+        translationError instanceof Error ? translationError.message : String(translationError),
     });
     return 'Bir hata oluştu. Lütfen tekrar deneyin.';
   }
-}; 
+};

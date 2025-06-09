@@ -62,7 +62,8 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets, edges, density, edgeToEdge);
 
-  const defaultStatusBarStyle = statusBarStyle || (colorMode === 'dark' ? 'light-content' : 'dark-content');
+  const defaultStatusBarStyle =
+    statusBarStyle || (colorMode === 'dark' ? 'light-content' : 'dark-content');
   const screenBackgroundColor = backgroundColor || theme.colors.background;
 
   const content = (
@@ -74,7 +75,7 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
           translucent={false}
         />
       )}
-      
+
       {scrollable ? (
         <ScrollView
           style={styles.scrollView}
@@ -87,9 +88,7 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
           {children}
         </ScrollView>
       ) : (
-        <View style={[styles.content, contentContainerStyle]}>
-          {children}
-        </View>
+        <View style={[styles.content, contentContainerStyle]}>{children}</View>
       )}
     </View>
   );
@@ -120,7 +119,7 @@ const createStyles = (
     if (edgeToEdge) {
       return 0; // No horizontal padding for edge-to-edge
     }
-    
+
     switch (density) {
       case 'compact':
         return theme.spacing.content; // 8px - very tight for lists
@@ -136,7 +135,7 @@ const createStyles = (
     if (edgeToEdge) {
       return 0; // Minimal bottom padding for edge-to-edge
     }
-    
+
     switch (density) {
       case 'compact':
         return theme.spacing.md; // 16px
@@ -174,4 +173,4 @@ const createStyles = (
   });
 };
 
-export default ScreenLayout; 
+export default ScreenLayout;

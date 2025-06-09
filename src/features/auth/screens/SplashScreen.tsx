@@ -11,7 +11,7 @@ import { analyticsService } from '@/services/analyticsService';
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme } from '@/themes/types';
 
-  const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 /**
  * Premium splash screen with Lottie animations
@@ -87,12 +87,12 @@ const EnhancedSplashScreen: React.FC = () => {
     );
     pulseAnimation.start();
 
-      // Start Lottie animation with delay for entrance effect
-  const animationTimer = setTimeout(() => {
-    if (lottieRef.current) {
-      lottieRef.current.play();
-    }
-  }, 600); // Start flower animation after entrance animations
+    // Start Lottie animation with delay for entrance effect
+    const animationTimer = setTimeout(() => {
+      if (lottieRef.current) {
+        lottieRef.current.play();
+      }
+    }, 600); // Start flower animation after entrance animations
 
     return () => {
       pulseAnimation.stop();

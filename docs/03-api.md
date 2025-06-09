@@ -1226,7 +1226,9 @@ import { logger } from '@/utils/debugConfig';
 /**
  * Sends a magic link to the user's email for passwordless authentication
  */
-export const sendMagicLink = async (email: string): Promise<{ success: boolean; message: string }> => {
+export const sendMagicLink = async (
+  email: string
+): Promise<{ success: boolean; message: string }> => {
   try {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1244,7 +1246,7 @@ export const sendMagicLink = async (email: string): Promise<{ success: boolean; 
 
     if (error) {
       logger.error('Magic link error:', error.message);
-      
+
       // Handle rate limiting
       if (error.message.includes('rate limit')) {
         return {
@@ -1252,7 +1254,7 @@ export const sendMagicLink = async (email: string): Promise<{ success: boolean; 
           message: 'Çok fazla deneme yaptınız. Lütfen bir süre bekleyip tekrar deneyin.',
         };
       }
-      
+
       return {
         success: false,
         message: 'E-posta gönderilirken bir hata oluştu. Lütfen tekrar deneyin.',
@@ -1385,37 +1387,35 @@ import { logger } from '@/utils/debugConfig';
 /**
  * Extracts authentication tokens from deep link URL
  */
-export const extractTokensFromUrl = (url: string): {
+export const extractTokensFromUrl = (
+  url: string
+): {
   accessToken?: string;
   refreshToken?: string;
   error?: string;
 } => {
   try {
     logger.debug('Processing deep link URL:', url);
-    
+
     const parsed = Linking.parse(url);
     const { queryParams } = parsed;
-    
+
     if (!queryParams) {
       logger.warn('No query parameters found in URL');
       return { error: 'URL parametreleri bulunamadı' };
     }
 
     // Extract tokens from various possible parameter names
-    const accessToken = 
-      queryParams.access_token || 
-      queryParams.accessToken || 
-      queryParams['access-token'];
-      
-    const refreshToken = 
-      queryParams.refresh_token || 
-      queryParams.refreshToken || 
-      queryParams['refresh-token'];
+    const accessToken =
+      queryParams.access_token || queryParams.accessToken || queryParams['access-token'];
+
+    const refreshToken =
+      queryParams.refresh_token || queryParams.refreshToken || queryParams['refresh-token'];
 
     if (!accessToken || !refreshToken) {
-      logger.warn('Missing tokens in URL:', { 
-        hasAccessToken: !!accessToken, 
-        hasRefreshToken: !!refreshToken 
+      logger.warn('Missing tokens in URL:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
       });
       return { error: 'Kimlik doğrulama bilgileri eksik' };
     }
@@ -1465,8 +1465,7 @@ export const useAuthMutations = () => {
   });
 
   const confirmMutation = useMutation({
-    mutationFn: ({ accessToken, refreshToken }) => 
-      confirmMagicLink(accessToken, refreshToken),
+    mutationFn: ({ accessToken, refreshToken }) => confirmMagicLink(accessToken, refreshToken),
     onSuccess: (result) => {
       if (result.success) {
         // Invalidate all queries to refetch with new auth

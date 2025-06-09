@@ -264,14 +264,18 @@ class ErrorBoundary extends Component<Props, State> {
             <Icon name="alert-circle-outline" size={64} color={theme.colors.error} />
             <Text style={styles.title}>Bir şeyler ters gitti</Text>
             <Text style={styles.message}>
-              {this.state.error ? safeErrorDisplay(this.state.error) : 'Beklenmeyen bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı deneyin.'}
+              {this.state.error
+                ? safeErrorDisplay(this.state.error)
+                : 'Beklenmeyen bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı deneyin.'}
             </Text>
 
             {__DEV__ && this.state.error && (
               <View style={styles.debugInfo}>
                 <Text style={styles.debugTitle}>Debug Info:</Text>
                 <Text style={styles.debugText}>Technical: {this.state.error.message}</Text>
-                <Text style={styles.debugText}>Translated: {safeErrorDisplay(this.state.error)}</Text>
+                <Text style={styles.debugText}>
+                  Translated: {safeErrorDisplay(this.state.error)}
+                </Text>
               </View>
             )}
 

@@ -19,7 +19,7 @@ interface LoadingSkeletonProps {
 /**
  * 🎯 LOADING SKELETON COMPONENT
  * Beautiful, animated loading states for better user experience
- * 
+ *
  * Features:
  * - Smooth shimmer animation
  * - Multiple variants (text, circular, rectangular, rounded)
@@ -91,7 +91,7 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
           const isLastLine = index === lines - 1;
           const lineWidth = isLastLine ? '75%' : '100%'; // Last line typically shorter
           const lineSpacing = spacing || semanticSpacing(theme).elementGap;
-          
+
           return renderSkeletonItem(
             {
               width: lineWidth,
@@ -183,9 +183,9 @@ export const TextSkeleton: React.FC<Omit<LoadingSkeletonProps, 'variant'>> = (pr
   <LoadingSkeleton variant="text" {...props} />
 );
 
-export const ParagraphSkeleton: React.FC<Omit<LoadingSkeletonProps, 'variant' | 'lines'>> = (props) => (
-  <LoadingSkeleton variant="text" lines={3} {...props} />
-);
+export const ParagraphSkeleton: React.FC<Omit<LoadingSkeletonProps, 'variant' | 'lines'>> = (
+  props
+) => <LoadingSkeleton variant="text" lines={3} {...props} />;
 
 // Shape skeletons
 export const CircularSkeleton: React.FC<Omit<LoadingSkeletonProps, 'variant'>> = (props) => (
@@ -197,12 +197,10 @@ export const CardSkeleton: React.FC<Omit<LoadingSkeletonProps, 'variant'>> = (pr
 );
 
 // Button skeleton
-export const ButtonSkeleton: React.FC<Omit<LoadingSkeletonProps, 'variant'>> = ({ 
-  height = 44, 
-  ...props 
-}) => (
-  <LoadingSkeleton variant="rounded" height={height} {...props} />
-);
+export const ButtonSkeleton: React.FC<Omit<LoadingSkeletonProps, 'variant'>> = ({
+  height = 44,
+  ...props
+}) => <LoadingSkeleton variant="rounded" height={height} {...props} />;
 
 // Avatar skeleton
 export const AvatarSkeleton: React.FC<{ size?: number }> = ({ size = 40 }) => (
@@ -210,9 +208,7 @@ export const AvatarSkeleton: React.FC<{ size?: number }> = ({ size = 40 }) => (
 );
 
 // List item skeleton
-export const ListItemSkeleton: React.FC<{ showAvatar?: boolean }> = ({ 
-  showAvatar = false 
-}) => {
+export const ListItemSkeleton: React.FC<{ showAvatar?: boolean }> = ({ showAvatar = false }) => {
   const { theme } = useTheme();
   const spacing = semanticSpacing(theme);
 
@@ -245,4 +241,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoadingSkeleton; 
+export default LoadingSkeleton;

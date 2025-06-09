@@ -18,7 +18,9 @@ const DayPreview: React.FC<DayPreviewProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  if (!selectedDate) {return null;}
+  if (!selectedDate) {
+    return null;
+  }
 
   return (
     <View
@@ -60,10 +62,10 @@ const DayPreview: React.FC<DayPreviewProps> = ({
           <View
             style={[
               styles.errorContainer,
-              { 
+              {
                 paddingHorizontal: theme.spacing.md,
-                paddingVertical: theme.spacing.md, 
-                gap: theme.spacing.sm 
+                paddingVertical: theme.spacing.md,
+                gap: theme.spacing.sm,
               },
             ]}
           >
@@ -78,10 +80,10 @@ const DayPreview: React.FC<DayPreviewProps> = ({
           <View
             style={[
               styles.loadingContainer,
-              { 
+              {
                 paddingHorizontal: theme.spacing.md,
-                paddingVertical: theme.spacing.md, 
-                gap: theme.spacing.sm 
+                paddingVertical: theme.spacing.md,
+                gap: theme.spacing.sm,
               },
             ]}
           >
@@ -111,10 +113,10 @@ const DayPreview: React.FC<DayPreviewProps> = ({
               onPress={onViewEntry}
               style={[
                 styles.actionFooter,
-                { 
+                {
                   paddingHorizontal: theme.spacing.md,
                   paddingVertical: theme.spacing.sm,
-                }
+                },
               ]}
             >
               <View style={[styles.actionContainer, { gap: theme.spacing.xs }]}>
@@ -136,9 +138,9 @@ const DayPreview: React.FC<DayPreviewProps> = ({
             onPress={onAddEntry}
             style={[
               styles.previewContent,
-              { 
-                paddingHorizontal: theme.spacing.md, 
-                paddingVertical: theme.spacing.md 
+              {
+                paddingHorizontal: theme.spacing.md,
+                paddingVertical: theme.spacing.md,
               },
             ]}
           >
@@ -172,13 +174,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: 'hidden',
   },
-  previewHeader: {
-  },
+  previewHeader: {},
   previewDate: {
     fontWeight: '600',
   },
-  contentSection: {
-  },
+  contentSection: {},
   statementContainer: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -191,8 +191,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(0,0,0,0.1)',
   },
-  previewContent: {
-  },
+  previewContent: {},
   actionContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

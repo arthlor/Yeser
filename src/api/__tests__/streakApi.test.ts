@@ -65,15 +65,15 @@ describe('streakApi', () => {
   // REMOVED: fetchUserStreak tests - function deprecated in favor of getStreakData
 
   describe('getStreakData', () => {
-      const mockStreakData = {
-    id: '550e8400-e29b-41d4-a716-446655440000',
-    user_id: '550e8400-e29b-41d4-a716-446655440001',
-    current_streak: 7,
-    longest_streak: 15,
-    last_entry_date: '2024-01-15',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-15T00:00:00Z',
-  };
+    const mockStreakData = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      user_id: '550e8400-e29b-41d4-a716-446655440001',
+      current_streak: 7,
+      longest_streak: 15,
+      last_entry_date: '2024-01-15',
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-15T00:00:00Z',
+    };
 
     beforeEach(() => {
       mockFrom.mockReturnValue({
@@ -131,10 +131,7 @@ describe('streakApi', () => {
       });
 
       await expect(getStreakData()).rejects.toThrow('Database connection failed');
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Error fetching streak data:',
-        dbError
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Error fetching streak data:', dbError);
     });
 
     it('should handle invalid session', async () => {
@@ -186,4 +183,4 @@ describe('streakApi', () => {
   });
 
   // REMOVED: Error handling edge cases for fetchUserStreak - function deprecated
-}); 
+});

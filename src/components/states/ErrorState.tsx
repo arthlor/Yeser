@@ -122,7 +122,12 @@ const ErrorState: React.FC<ErrorStateProps> = ({
   // Full-screen mode with ScreenLayout integration
   if (fullScreen) {
     return (
-      <ScreenLayout scrollable={false} showsVerticalScrollIndicator={false} edges={['top']} edgeToEdge={true}>
+      <ScreenLayout
+        scrollable={false}
+        showsVerticalScrollIndicator={false}
+        edges={['top']}
+        edgeToEdge={true}
+      >
         {content}
       </ScreenLayout>
     );
@@ -137,20 +142,22 @@ const createStyles = (theme: AppTheme, fullScreen: boolean) =>
     container: {
       alignItems: 'center',
       justifyContent: 'center',
-      ...(fullScreen ? {
-        flex: 1,
-        paddingHorizontal: theme.spacing.page,
-        backgroundColor: 'transparent',
-      } : {
-        backgroundColor: theme.colors.surface,
-        borderRadius: theme.borderRadius.lg,
-        padding: theme.spacing.md,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: theme.colors.outline + '25',
-        margin: theme.spacing.medium,
-        // 🌟 Beautiful primary shadow for error state card
-        ...getPrimaryShadow.card(theme),
-      }),
+      ...(fullScreen
+        ? {
+            flex: 1,
+            paddingHorizontal: theme.spacing.page,
+            backgroundColor: 'transparent',
+          }
+        : {
+            backgroundColor: theme.colors.surface,
+            borderRadius: theme.borderRadius.lg,
+            padding: theme.spacing.md,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: theme.colors.outline + '25',
+            margin: theme.spacing.medium,
+            // 🌟 Beautiful primary shadow for error state card
+            ...getPrimaryShadow.card(theme),
+          }),
     },
     icon: {
       marginBottom: theme.spacing.medium,

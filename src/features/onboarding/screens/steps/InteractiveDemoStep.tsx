@@ -6,15 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getPrimaryShadow } from '@/themes/utils';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Easing,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, IconButton } from 'react-native-paper';
 import { logger } from '@/utils/debugConfig';
 
@@ -116,13 +108,17 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
   );
 
   const getPromptText = () => {
-    if (promptLoading) {return 'Loading inspiration...';}
-    if (currentPrompt) {return currentPrompt.prompt_text_tr;}
+    if (promptLoading) {
+      return 'Loading inspiration...';
+    }
+    if (currentPrompt) {
+      return currentPrompt.prompt_text_tr;
+    }
     return 'Bugün neye minnettarsın?'; // Default fallback
   };
 
   return (
-          <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <ScreenLayout edges={['top']} edgeToEdge={true}>
       <Animated.View
         style={[
           styles.container,
@@ -221,9 +217,9 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
 
             {!hasWrittenStatement && !isAddingStatement && (
               <>
-                <Text style={styles.encouragement}>💡 İpucu: Küçük şeyler de büyük fark yaratır</Text>
-
-
+                <Text style={styles.encouragement}>
+                  💡 İpucu: Küçük şeyler de büyük fark yaratır
+                </Text>
               </>
             )}
           </View>

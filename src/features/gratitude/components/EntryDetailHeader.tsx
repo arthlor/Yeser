@@ -17,11 +17,7 @@ const EntryDetailHeader: React.FC<EntryDetailHeaderProps> = ({ date, count }) =>
 
   return (
     <View style={styles.container}>
-      <ThemedCard 
-        variant="elevated"
-        density="standard"
-        elevation="card"
-      >
+      <ThemedCard variant="elevated" density="standard" elevation="card">
         <View style={styles.content}>
           <View style={styles.iconContainer}>
             <Icon name="calendar-month-outline" size={24} color={theme.colors.primary} />
@@ -69,4 +65,4 @@ const createStyles = (theme: AppTheme) =>
     },
   });
 
-export default EntryDetailHeader; 
+export default EntryDetailHeader;

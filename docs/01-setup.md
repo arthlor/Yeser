@@ -7,10 +7,11 @@ This guide will walk you through setting up the Yeşer gratitude app development
 ### Required Software
 
 1. **Node.js (18.x or higher)**
+
    ```bash
    # Check your Node.js version
    node --version
-   
+
    # Install via nvm (recommended)
    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
    nvm install 18
@@ -18,25 +19,28 @@ This guide will walk you through setting up the Yeşer gratitude app development
    ```
 
 2. **npm or Yarn Package Manager**
+
    ```bash
    # Check npm version
    npm --version
-   
+
    # Or install Yarn
    npm install -g yarn
    ```
 
 3. **Git**
+
    ```bash
    # Check Git installation
    git --version
    ```
 
 4. **Expo CLI**
+
    ```bash
    # Install Expo CLI globally
    npm install -g @expo/cli
-   
+
    # Verify installation
    expo --version
    ```
@@ -44,6 +48,7 @@ This guide will walk you through setting up the Yeşer gratitude app development
 ### Development Environment
 
 #### For iOS Development (macOS only)
+
 1. **Xcode** (latest version from App Store)
 2. **iOS Simulator** (included with Xcode)
 3. **Xcode Command Line Tools**
@@ -52,11 +57,13 @@ This guide will walk you through setting up the Yeşer gratitude app development
    ```
 
 #### For Android Development
+
 1. **Android Studio** with Android SDK
 2. **Android Emulator** or physical device
 3. **Java Development Kit (JDK)**
 
 ### Mobile Testing Options
+
 - **Expo Go App** (iOS/Android) - for quick testing
 - **Physical Device** - for real-world testing and magic link testing
 - **Simulators/Emulators** - for development
@@ -64,6 +71,7 @@ This guide will walk you through setting up the Yeşer gratitude app development
 ## 🚀 Installation Steps
 
 ### 1. Clone the Repository
+
 ```bash
 # Clone the project
 git clone <repository-url>
@@ -87,6 +95,7 @@ This setup guide covers a **hybrid architecture** that provides:
 - **Offline-First**: Robust data persistence and synchronization
 
 **Key Benefits:**
+
 - 90% reduction in state management boilerplate
 - Automatic background synchronization
 - Built-in error handling and retry logic
@@ -96,12 +105,14 @@ This setup guide covers a **hybrid architecture** that provides:
 ### 3. Environment Configuration
 
 #### Create Environment File
+
 ```bash
 # Copy example environment file
 cp .env.example .env
 ```
 
 #### Configure Environment Variables
+
 Edit `.env` file with your credentials:
 
 ```env
@@ -133,6 +144,7 @@ EXPO_PUBLIC_REACT_QUERY_DEVTOOLS=true  # Enable TanStack Query DevTools
 ### 4. Backend Setup (Supabase)
 
 #### Create Supabase Project
+
 1. Go to [supabase.com](https://supabase.com)
 2. Create a new project
 3. Note your project URL and anon key
@@ -140,36 +152,42 @@ EXPO_PUBLIC_REACT_QUERY_DEVTOOLS=true  # Enable TanStack Query DevTools
 #### Enhanced Authentication Configuration
 
 ##### Enable Magic Links
+
 1. Go to Supabase Dashboard → Authentication → Settings
 2. Enable "Email" provider
 3. Configure email templates:
+
    ```html
    <!-- Magic Link Email Template -->
    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-     <div style="background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%); padding: 40px 20px; text-align: center;">
+     <div
+       style="background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%); padding: 40px 20px; text-align: center;"
+     >
        <h1 style="color: white; margin: 0; font-size: 28px;">🌱 Yeşer</h1>
        <p style="color: #E6FFFA; margin: 10px 0 0 0; font-size: 16px;">Şükran Günlüğün</p>
      </div>
-     
+
      <div style="padding: 40px 20px; background: white;">
        <h2 style="color: #1F2937; margin: 0 0 20px 0;">Giriş Bağlantın Hazır!</h2>
        <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">
          Yeşer uygulamasına güvenli bir şekilde giriş yapmak için aşağıdaki butona tıkla:
        </p>
-       
+
        <div style="text-align: center; margin: 30px 0;">
-         <a href="{{ .ConfirmationURL }}" 
-            style="background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%); 
+         <a
+           href="{{ .ConfirmationURL }}"
+           style="background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%); 
                    color: white; 
                    padding: 16px 32px; 
                    text-decoration: none; 
                    border-radius: 12px; 
                    font-weight: 600; 
-                   display: inline-block;">
+                   display: inline-block;"
+         >
            🔐 Güvenli Giriş Yap
          </a>
        </div>
-       
+
        <p style="color: #9CA3AF; font-size: 14px; text-align: center;">
          Bu bağlantı 24 saat süreyle geçerlidir ve sadece bir kez kullanılabilir.
        </p>
@@ -184,6 +202,7 @@ EXPO_PUBLIC_REACT_QUERY_DEVTOOLS=true  # Enable TanStack Query DevTools
    ```
 
 ##### Configure Google OAuth
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Create OAuth 2.0 credentials
 3. Configure authorized redirect URIs:
@@ -195,6 +214,7 @@ EXPO_PUBLIC_REACT_QUERY_DEVTOOLS=true  # Enable TanStack Query DevTools
    - Enter Client ID and Client Secret
 
 #### Database Schema Setup
+
 ```sql
 -- Run these SQL commands in Supabase SQL Editor
 
@@ -209,22 +229,22 @@ CREATE TABLE profiles (
   avatar_url TEXT,
   username TEXT,
   onboarded BOOLEAN DEFAULT FALSE,
-  
+
   -- Notification settings
   reminder_enabled BOOLEAN DEFAULT TRUE,
   reminder_time TEXT DEFAULT '20:00:00',
   throwback_reminder_enabled BOOLEAN DEFAULT TRUE,
   throwback_reminder_frequency TEXT DEFAULT 'weekly',
   throwback_reminder_time TEXT DEFAULT '10:00:00',
-  
+
   -- Gratitude settings
   daily_gratitude_goal INTEGER DEFAULT 3,
   use_varied_prompts BOOLEAN DEFAULT FALSE,
-  
+
   -- Authentication metadata
   auth_provider TEXT DEFAULT 'magic_link',
   last_sign_in_at TIMESTAMP WITH TIME ZONE,
-  
+
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -273,6 +293,7 @@ INSERT INTO daily_prompts (prompt_text_tr, prompt_text_en, category, difficulty_
 ```
 
 #### Enhanced RPC Functions Setup
+
 ```sql
 -- Create enhanced RPC functions (see 09-database.md for complete functions)
 
@@ -291,29 +312,29 @@ BEGIN
   WHERE created_at > NOW() - INTERVAL '1 hour'
   AND payload->>'email' = user_email
   AND payload->>'action' = 'magic_link_sent';
-  
+
   -- Allow max 5 attempts per hour
   RETURN recent_attempts < 5;
 END;
 $$;
 
 -- Enhanced profile creation on auth
-CREATE OR REPLACE FUNCTION handle_new_user() 
-RETURNS TRIGGER 
-LANGUAGE plpgsql 
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public
 AS $$
 BEGIN
   INSERT INTO public.profiles (
-    id, 
-    email, 
+    id,
+    email,
     full_name,
     auth_provider,
     last_sign_in_at
   )
   VALUES (
-    NEW.id, 
-    NEW.email, 
+    NEW.id,
+    NEW.email,
     NEW.raw_user_meta_data->>'full_name',
     COALESCE(NEW.raw_user_meta_data->>'provider', 'magic_link'),
     NOW()
@@ -329,6 +350,7 @@ CREATE TRIGGER on_auth_user_created
 ```
 
 #### Enhanced Row Level Security Policies
+
 ```sql
 -- Profiles policies
 CREATE POLICY "Users can view own profile" ON profiles
@@ -371,7 +393,9 @@ CREATE POLICY "Everyone can view active prompts" ON daily_prompts
 ### 5. Deep Link Configuration
 
 #### iOS Configuration
+
 Add to `ios/yeser/Info.plist`:
+
 ```xml
 <key>CFBundleURLTypes</key>
 <array>
@@ -387,7 +411,9 @@ Add to `ios/yeser/Info.plist`:
 ```
 
 #### Android Configuration
+
 Add to `android/app/src/main/AndroidManifest.xml`:
+
 ```xml
 <intent-filter android:autoVerify="true">
   <action android:name="android.intent.action.VIEW" />
@@ -398,7 +424,9 @@ Add to `android/app/src/main/AndroidManifest.xml`:
 ```
 
 #### Expo Configuration
+
 Update `app.json`:
+
 ```json
 {
   "expo": {
@@ -420,12 +448,14 @@ Update `app.json`:
 ### 6. Firebase Setup (Optional - for Analytics)
 
 #### Create Firebase Project
+
 1. Go to [console.firebase.google.com](https://console.firebase.google.com)
 2. Create a new project
 3. Add iOS and Android apps
 4. Download configuration files
 
 #### Install Firebase Config
+
 ```bash
 # Download google-services.json (Android)
 # Place in android/app/google-services.json
@@ -451,6 +481,7 @@ The app includes React Query DevTools for debugging server state:
 ```
 
 ### VS Code Extensions (Recommended)
+
 ```json
 {
   "recommendations": [
@@ -467,6 +498,7 @@ The app includes React Query DevTools for debugging server state:
 ```
 
 ### Git Hooks Setup
+
 ```bash
 # Husky is already configured, but you can verify:
 npx husky install
@@ -479,6 +511,7 @@ git commit -m "test commit"
 ## ✅ Verification Steps
 
 ### 1. Test Basic Setup
+
 ```bash
 # Start development server
 npx expo start
@@ -489,23 +522,27 @@ npx expo start
 ### 2. Test Modern Architecture Components
 
 #### TanStack Query Integration
+
 1. Open app in Expo Go
 2. Navigate to any screen with data (Home, Past Entries)
 3. Open React Query DevTools (shake device → "Toggle Query DevTools")
 4. Verify queries are loading, caching, and updating
 
 #### Zustand Client State
+
 1. Toggle between light/dark theme
 2. Check that preferences persist between app restarts
 3. Verify auth state management
 
 ### 3. Test Database Connection
+
 ```bash
 # Run a simple test to verify Supabase connection
 npm run test:connection
 ```
 
 ### 4. Test Magic Link Authentication
+
 1. Open app in Expo Go on physical device (required for email testing)
 2. Enter your email address
 3. Check email for magic link
@@ -515,11 +552,13 @@ npm run test:connection
 **Important**: Magic link testing requires a physical device as simulators cannot properly handle email links.
 
 ### 5. Test Google OAuth
+
 1. Open app in Expo Go
 2. Try Google Sign-In
 3. Verify profile creation and automatic onboarding
 
 ### 6. Test Core Features with Modern State Management
+
 1. **Create a gratitude entry** - Should show optimistic update
 2. **Go offline** - App should continue working with cached data
 3. **Go back online** - Should automatically sync changes
@@ -532,6 +571,7 @@ npm run test:connection
 ### Magic Link Issues
 
 #### Links Not Opening App
+
 ```bash
 # Check deep link configuration
 npx expo install expo-linking
@@ -541,18 +581,20 @@ npx expo install expo-auth-session
 ```
 
 #### Email Delivery Issues
+
 ```bash
 # Check Supabase email settings
 # Verify SMTP configuration
 # Test with different email providers
 
 # Check rate limiting
-SELECT * FROM auth.audit_log_entries 
-WHERE payload->>'action' = 'magic_link_sent' 
+SELECT * FROM auth.audit_log_entries
+WHERE payload->>'action' = 'magic_link_sent'
 ORDER BY created_at DESC LIMIT 10;
 ```
 
 #### Token Extraction Problems
+
 ```typescript
 // Debug deep link handling
 import * as Linking from 'expo-linking';
@@ -561,7 +603,7 @@ const handleDeepLink = (url: string) => {
   console.log('Deep link received:', url);
   const parsed = Linking.parse(url);
   console.log('Parsed URL:', parsed);
-  
+
   // Extract tokens and debug
   const { queryParams } = parsed;
   console.log('Query params:', queryParams);
@@ -569,6 +611,7 @@ const handleDeepLink = (url: string) => {
 ```
 
 ### Node.js Version Issues
+
 ```bash
 # If you get Node.js version errors
 nvm use 18
@@ -576,12 +619,14 @@ npm install
 ```
 
 ### iOS Simulator Issues
+
 ```bash
 # Reset iOS Simulator
 npx expo run:ios --clear
 ```
 
 ### Android Build Issues
+
 ```bash
 # Clean and rebuild
 cd android
@@ -591,12 +636,14 @@ npx expo run:android
 ```
 
 ### Environment Variable Issues
+
 ```bash
 # Restart Metro bundler after changing .env
 npx expo start --clear
 ```
 
 ### TanStack Query Issues
+
 ```bash
 # If queries aren't working
 # 1. Check network connectivity in DevTools
@@ -611,12 +658,15 @@ npx expo start --clear
 ## 📱 Platform-Specific Setup
 
 ### iOS Setup
+
 1. **Xcode Configuration**
+
    - Open `ios/yeser.xcworkspace` in Xcode
    - Select development team
    - Configure signing certificates
 
 2. **Info.plist Configuration**
+
    ```xml
    <!-- Enhanced URL schemes for magic links -->
    <key>CFBundleURLTypes</key>
@@ -630,7 +680,7 @@ npx expo start --clear
        </array>
      </dict>
    </array>
-   
+
    <!-- Email handling permissions -->
    <key>LSApplicationQueriesSchemes</key>
    <array>
@@ -639,11 +689,14 @@ npx expo start --clear
    ```
 
 ### Android Setup
+
 1. **Gradle Configuration**
+
    - Verify `android/app/build.gradle` settings
    - Check signing configuration
 
 2. **Manifest Configuration**
+
    ```xml
    <!-- Enhanced intent filters for magic links -->
    <intent-filter android:autoVerify="true">
@@ -652,7 +705,7 @@ npx expo start --clear
      <category android:name="android.intent.category.BROWSABLE" />
      <data android:scheme="yeser" />
    </intent-filter>
-   
+
    <!-- Email handling -->
    <intent-filter>
      <action android:name="android.intent.action.VIEW" />
@@ -684,4 +737,4 @@ If you encounter issues during setup:
 
 ---
 
-**Happy coding! 🎉** 
+**Happy coding! 🎉**

@@ -30,7 +30,7 @@ const handleAuthError = (error: AuthError, operation: string) => {
   // Always return error with user-friendly message
   return {
     ...error,
-    message: safeErrorDisplay(error)
+    message: safeErrorDisplay(error),
   };
 };
 
@@ -56,16 +56,20 @@ export const confirmMagicLink = async (tokenHash: string, type: string = 'magicl
       token_hash: tokenHash,
       type: type as 'magiclink' | 'recovery' | 'invite' | 'email_change',
     });
-    
+
     if (error) {
-      return { user: null, session: null, error: handleAuthError(error, 'Magic link confirmation') };
+      return {
+        user: null,
+        session: null,
+        error: handleAuthError(error, 'Magic link confirmation'),
+      };
     }
-    
+
     logger.debug('Magic link confirmation successful', {
       hasUser: !!data?.user,
       hasSession: !!data?.session,
     });
-    
+
     return { user: data?.user, session: data?.session, error: null };
   } catch (err) {
     const error = err as AuthError;
@@ -85,18 +89,18 @@ export const setSessionFromTokens = async (accessToken: string, refreshToken: st
 
     // 🚨 DEBUG: Test basic network connectivity first
     try {
-      const testResponse = await fetch('https://httpbin.org/get', { 
+      const testResponse = await fetch('https://httpbin.org/get', {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
-      logger.debug('Network connectivity test:', { 
+      logger.debug('Network connectivity test:', {
         status: testResponse.status,
-        canReachInternet: testResponse.ok 
+        canReachInternet: testResponse.ok,
       });
     } catch (networkError) {
-      logger.error('Basic network connectivity failed:', { 
+      logger.error('Basic network connectivity failed:', {
         error: networkError instanceof Error ? networkError.message : String(networkError),
-        type: 'NETWORK_CONNECTIVITY_ISSUE'
+        type: 'NETWORK_CONNECTIVITY_ISSUE',
       });
     }
 
@@ -105,18 +109,18 @@ export const setSessionFromTokens = async (accessToken: string, refreshToken: st
       const supabaseHealthCheck = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/`, {
         method: 'GET',
         headers: {
-          'apikey': process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
-          'Content-Type': 'application/json'
-        }
+          apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+          'Content-Type': 'application/json',
+        },
       });
-      logger.debug('Supabase API connectivity test:', { 
+      logger.debug('Supabase API connectivity test:', {
         status: supabaseHealthCheck.status,
-        canReachSupabase: supabaseHealthCheck.status < 500
+        canReachSupabase: supabaseHealthCheck.status < 500,
       });
     } catch (supabaseError) {
-      logger.error('Supabase API connectivity failed:', { 
+      logger.error('Supabase API connectivity failed:', {
         error: supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
-        type: 'SUPABASE_CONNECTIVITY_ISSUE'
+        type: 'SUPABASE_CONNECTIVITY_ISSUE',
       });
     }
 
@@ -124,7 +128,7 @@ export const setSessionFromTokens = async (accessToken: string, refreshToken: st
       access_token: accessToken,
       refresh_token: refreshToken,
     });
-    
+
     if (error) {
       // 🚨 FIX: Enhanced error logging with proper typing instead of any
       const errorDetails = error as Error & {
@@ -133,7 +137,7 @@ export const setSessionFromTokens = async (accessToken: string, refreshToken: st
         cause?: unknown;
         stack?: string;
       };
-      
+
       logger.error('OAuth setSession error details:', {
         message: error.message,
         name: errorDetails.name,
@@ -141,33 +145,41 @@ export const setSessionFromTokens = async (accessToken: string, refreshToken: st
         cause: errorDetails.cause,
         stack: errorDetails.stack,
         isNetworkError: error.message.includes('Network') || error.message.includes('fetch'),
-        errorType: 'SUPABASE_SET_SESSION_ERROR'
+        errorType: 'SUPABASE_SET_SESSION_ERROR',
       });
-      
-      return { user: null, session: null, error: handleAuthError(error, 'OAuth token session setup') };
+
+      return {
+        user: null,
+        session: null,
+        error: handleAuthError(error, 'OAuth token session setup'),
+      };
     }
-    
+
     logger.debug('OAuth token session setup successful', {
       hasUser: !!data?.user,
       hasSession: !!data?.session,
       userId: data?.user?.id,
-      sessionExpiry: data?.session?.expires_at
+      sessionExpiry: data?.session?.expires_at,
     });
-    
+
     return { user: data?.user, session: data?.session, error: null };
   } catch (err) {
     const error = err as AuthError;
-    
+
     // 🚨 DEBUG: Catch-all error logging
     logger.error('OAuth token session setup catch-all error:', {
       message: error.message,
       name: error.name,
       type: typeof error,
       isErrorObject: error instanceof Error,
-      errorType: 'OAUTH_TOKEN_SETUP_EXCEPTION'
+      errorType: 'OAUTH_TOKEN_SETUP_EXCEPTION',
     });
-    
-    return { user: null, session: null, error: handleAuthError(error, 'OAuth token session setup') };
+
+    return {
+      user: null,
+      session: null,
+      error: handleAuthError(error, 'OAuth token session setup'),
+    };
   }
 };
 

@@ -4,7 +4,10 @@ import * as Haptics from 'expo-haptics';
 
 import { analyticsService } from '@/services/analyticsService';
 import { logger } from '@/utils/debugConfig';
-import { ADVANCED_MILESTONES, type AdvancedMilestone } from '../components/AdvancedStreakMilestones';
+import {
+  ADVANCED_MILESTONES,
+  type AdvancedMilestone,
+} from '../components/AdvancedStreakMilestones';
 
 interface UseAdvancedStreakMilestonesProps {
   currentStreak: number;
@@ -37,12 +40,14 @@ export const useAdvancedStreakMilestones = ({
   longestStreak,
 }: UseAdvancedStreakMilestonesProps): MilestoneState => {
   const [showCelebration, setShowCelebration] = useState(false);
-  const [justUnlockedMilestone, setJustUnlockedMilestone] = useState<AdvancedMilestone | null>(null);
+  const [justUnlockedMilestone, setJustUnlockedMilestone] = useState<AdvancedMilestone | null>(
+    null
+  );
 
   // Find current milestone
-  const currentMilestone = ADVANCED_MILESTONES.find(
-    (m) => currentStreak >= m.minDays && currentStreak <= m.maxDays
-  ) || ADVANCED_MILESTONES[0];
+  const currentMilestone =
+    ADVANCED_MILESTONES.find((m) => currentStreak >= m.minDays && currentStreak <= m.maxDays) ||
+    ADVANCED_MILESTONES[0];
 
   // Find next milestone
   const nextMilestone = ADVANCED_MILESTONES.find((m) => m.minDays > currentStreak) || null;
@@ -55,7 +60,7 @@ export const useAdvancedStreakMilestones = ({
     if (!currentMilestone || !nextMilestone) {
       return 100;
     }
-    
+
     const currentRange = currentMilestone.maxDays - currentMilestone.minDays + 1;
     const progress = currentStreak - currentMilestone.minDays + 1;
     return Math.min(100, (progress / currentRange) * 100);
@@ -65,9 +70,7 @@ export const useAdvancedStreakMilestones = ({
   const daysToNext = nextMilestone ? nextMilestone.minDays - currentStreak : 0;
 
   // Get all unlocked achievements
-  const achievementsUnlocked = ADVANCED_MILESTONES.filter(
-    (m) => currentStreak >= m.minDays
-  );
+  const achievementsUnlocked = ADVANCED_MILESTONES.filter((m) => currentStreak >= m.minDays);
 
   // Handle milestone changes and celebrations
   useEffect(() => {
@@ -179,11 +182,11 @@ export const useAdvancedStreakMilestones = ({
 
   const getCategoryProgress = () => {
     const categories = ['beginner', 'intermediate', 'advanced', 'expert', 'legendary'] as const;
-    
+
     return categories.map((category) => {
       const categoryMilestones = ADVANCED_MILESTONES.filter((m) => m.category === category);
       const unlockedInCategory = categoryMilestones.filter((m) => currentStreak >= m.minDays);
-      
+
       return {
         category,
         total: categoryMilestones.length,
@@ -206,4 +209,4 @@ export const useAdvancedStreakMilestones = ({
     getMotivationalMessage,
     getCategoryProgress,
   };
-}; 
+};

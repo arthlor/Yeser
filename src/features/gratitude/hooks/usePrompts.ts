@@ -1,8 +1,5 @@
-import {
-  type DailyPrompt,
-  getMultipleRandomActivePrompts,
-  getRandomActivePrompt,
-} from '@/api/promptApi';
+import { getMultipleRandomActivePrompts, getRandomActivePrompt } from '@/api/promptApi';
+import type { DailyPrompt } from '@/schemas/gratitudeEntrySchema';
 import { queryKeys } from '@/api/queryKeys';
 import useAuthStore from '@/store/authStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

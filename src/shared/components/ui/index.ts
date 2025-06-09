@@ -30,14 +30,13 @@ export {
 } from './ErrorState';
 
 // ✨ NEW: Enhanced type exports for better developer experience
-export type { 
-  ThemedCardProps, 
-  CardVariant, 
-  SpacingSize, 
-  BorderRadiusSize, 
-  DensitySize, 
-  ElevationLevel 
+export type {
+  ThemedCardProps,
+  CardVariant,
+  SpacingSize,
+  BorderRadiusSize,
+  DensitySize,
+  ElevationLevel,
 } from './ThemedCard';
 
 export type { StatementCardProps } from './StatementCard';
-export { default as PasswordStrengthIndicator } from './PasswordStrengthIndicator'; 

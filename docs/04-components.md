@@ -125,6 +125,184 @@ const styles = StyleSheet.create({
 });
 ```
 
+## 🔐 Authentication Components
+
+### Magic Link Authentication System
+
+The Yeşer app implements a modern **passwordless authentication system** using Supabase magic links with enhanced user experience and comprehensive error handling.
+
+#### LoginScreen Component
+
+The main authentication entry point with email input and magic link functionality:
+
+```typescript
+// Key features of LoginScreen:
+// - Magic link email authentication
+// - Google OAuth integration  
+// - Enhanced error handling with Turkish messages
+// - Animated help section
+// - Form validation
+// - Loading states and user feedback
+
+interface LoginScreenProps {
+  navigation: any;
+}
+
+export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+  const { activeTheme } = useThemeStore();
+  const [email, setEmail] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
+  
+  const handleMagicLinkLogin = useCallback(async (): Promise<void> => {
+    // Email validation
+    if (!email.trim()) {
+      setError('Lütfen email adresinizi girin');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Geçerli bir email adresi girin');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError('');
+      const result = await authService.signInWithMagicLink(email.trim());
+      
+      if (result.success) {
+        setSuccess('Giriş bağlantısı email adresinize gönderildi!');
+      } else {
+        setError(result.error || 'Giriş bağlantısı gönderilemedi');
+      }
+    } catch (error) {
+      setError('Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [email]);
+
+  // Component render with Turkish localization and themed styling
+};
+```
+
+#### Deep Link Handler Component
+
+Manages incoming magic link authentication callbacks:
+
+```typescript
+// src/features/auth/components/DeepLinkHandler.tsx
+export const DeepLinkHandler: React.FC = () => {
+  const { setSession, setIsLoading } = useAuthStore();
+
+  useEffect(() => {
+    const handleDeepLink = async (url: string): Promise<void> => {
+      try {
+        setIsLoading(true);
+        const result = await deepLinkAuthService.handleAuthCallback(url);
+        
+        if (result.success && result.session) {
+          setSession(result.session);
+        } else {
+          logger.error('Deep link authentication failed:', result.error);
+        }
+      } catch (error) {
+        logger.error('Deep link handler error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Handle initial URL and URL changes
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    return () => subscription?.remove();
+  }, [setSession, setIsLoading]);
+
+  return null; // Background component
+};
+```
+
+#### Enhanced ThemedButton Component
+
+Improved button component with better text handling:
+
+```typescript
+// Key improvements:
+// - Removed numberOfLines={1} restriction
+// - Changed from flex: 1 to flexShrink: 1 for better text layout
+// - Increased minWidth values for Turkish text
+// - Dynamic sizing based on content
+
+interface ThemedButtonProps {
+  mode?: 'text' | 'outlined' | 'contained';
+  size?: 'compact' | 'standard' | 'large';
+  children: React.ReactNode;
+  loading?: boolean;
+  disabled?: boolean;
+  // ... other props
+}
+
+export const ThemedButton: React.FC<ThemedButtonProps> = ({
+  size = 'standard',
+  children,
+  // ... other props
+}) => {
+  const buttonConfig = {
+    compact: { minWidth: 120, minHeight: 36, fontSize: 14 },
+    standard: { minWidth: 130, minHeight: 44, fontSize: 16 },
+    large: { minWidth: 150, minHeight: 52, fontSize: 16 },
+  };
+
+  return (
+    <Button
+      // Enhanced content and text styling for better text display
+      labelStyle={[styles.buttonText, { fontSize: config.fontSize }]}
+    >
+      <View style={styles.textContainer}>
+        <Text style={styles.buttonText}>
+          {children}
+        </Text>
+      </View>
+    </Button>
+  );
+};
+```
+
+### Authentication Flow Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                 AUTHENTICATION FLOW                     │
+│                                                         │
+│  1. User enters email in LoginScreen                   │
+│  2. Magic link sent via Supabase Auth                  │
+│  3. User clicks link in email                          │
+│  4. Deep link opens app with auth tokens               │
+│  5. DeepLinkHandler processes tokens                   │
+│  6. Session established in AuthStore                   │
+│  7. User redirected to authenticated screens           │
+│                                                         │
+│  Alternative: Google OAuth flow                        │
+│  - Google sign-in modal                                │
+│  - OAuth tokens processed                              │
+│  - Session established                                 │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Key Authentication Features
+
+- **Passwordless Security**: No password storage or management
+- **Magic Link Flow**: Secure email-based authentication
+- **Google OAuth**: Alternative social login option
+- **Deep Link Handling**: Seamless app re-entry from email
+- **Turkish Localization**: User-friendly error messages
+- **Enhanced UX**: Loading states, success feedback, help sections
+- **Error Recovery**: Comprehensive error handling and user guidance
+- **Session Management**: Automatic session restoration and persistence
+
 ## 🔌 Modern Component Patterns
 
 ### 1. TanStack Query-Powered Components

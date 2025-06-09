@@ -1,6 +1,6 @@
-# Yeser Gratitude App - Documentation Overview
+# Yeşer Gratitude App - Documentation Overview
 
-Welcome to the comprehensive documentation for **Yeser**, a React Native gratitude journaling app built with Expo. This documentation provides complete guides for understanding, developing, and maintaining the application.
+Welcome to the comprehensive documentation for **Yeşer**, a React Native gratitude journaling app built with Expo. This documentation provides complete guides for understanding, developing, and maintaining the application.
 
 ## 📱 Project Summary
 
@@ -15,12 +15,13 @@ Welcome to the comprehensive documentation for **Yeser**, a React Native gratitu
 - 🌙 **Dark/Light Themes**: Complete theming system with user preferences
 - 🔔 **Smart Notifications**: Customizable daily reminders and throwback alerts with frequency settings
 - 📊 **Data Export**: Complete user data export functionality in PDF format
-- 🔒 **Secure Authentication**: Google OAuth and email/password authentication
+- 🔒 **Secure Authentication**: Magic link authentication and Google OAuth for passwordless security
 - 📱 **Cross-Platform**: Native iOS and Android experience with Expo
 - ⚡ **Intelligent Caching**: Automatic background sync with offline support via TanStack Query
 - 🎯 **Optimistic Updates**: Instant UI feedback with automatic error recovery
 - 📝 **Enhanced Prompt Experience**: Swipe navigation through multiple database prompts
 - ⏰ **Advanced Reminder System**: Daily and throwback notifications with customizable frequencies
+- 🌍 **Turkish Localization**: Full Turkish language support with cultural sensitivity
 
 ### Technology Stack
 
@@ -35,8 +36,51 @@ Welcome to the comprehensive documentation for **Yeser**, a React Native gratitu
 | **Validation**     | Zod                          | Type-safe schema validation                         |
 | **Analytics**      | Firebase Analytics           | User behavior tracking                              |
 | **Notifications**  | Expo Notifications           | Push and local notifications                        |
-| **Authentication** | Supabase Auth + Google OAuth | User authentication                                 |
+| **Authentication** | Supabase Magic Links + Google OAuth | Passwordless secure authentication            |
 | **Storage**        | AsyncStorage                 | Local data persistence                              |
+
+## 🔐 Enhanced Authentication System
+
+### Magic Link Authentication
+
+The app uses a **passwordless authentication system** built on Supabase magic links:
+
+- **Secure Magic Links**: Email-based authentication with time-limited, single-use links
+- **No Password Storage**: Enhanced security by eliminating password-related vulnerabilities
+- **Seamless UX**: One-click authentication through email links
+- **Rate Limiting**: Built-in protection against authentication abuse
+- **Deep Link Integration**: Automatic app opening and authentication on link click
+
+### Google OAuth Integration
+
+- **Social Authentication**: Quick login with Google accounts
+- **Profile Integration**: Automatic profile setup from Google account data
+- **Secure Token Management**: OAuth tokens managed by Supabase Auth
+
+### Authentication Features
+
+```mermaid
+graph TD
+    A[User Opens App] --> B{Authenticated?}
+    B -->|No| C[Login Screen]
+    B -->|Yes| D[Main App]
+    
+    C --> E[Magic Link Login]
+    C --> F[Google OAuth]
+    
+    E --> G[Enter Email]
+    G --> H[Send Magic Link]
+    H --> I[Check Email]
+    I --> J[Click Link]
+    J --> K[Auto Login]
+    
+    F --> L[Google Sign In]
+    L --> M[OAuth Flow]
+    M --> K
+    
+    K --> N[Profile Setup]
+    N --> D
+```
 
 ## 📚 Documentation Structure
 
@@ -44,13 +88,13 @@ This documentation is organized into focused modules for different aspects of th
 
 ### 🚀 Getting Started
 
-- **[Setup Guide](./01-setup.md)** - Complete installation and configuration guide
+- **[Setup Guide](./01-setup.md)** - Complete installation and configuration guide with magic link setup
 - **[Environment Configuration](./10-environment.md)** - Environment variables and configuration management
 
 ### 🏗️ Architecture & Design
 
 - **[Architecture Guide](./02-architecture.md)** - Modern hybrid state management with TanStack Query + Zustand
-- **[API Documentation](./03-api.md)** - Backend integration and API reference
+- **[API Documentation](./03-api.md)** - Backend integration and API reference with magic link flows
 - **[Database Documentation](./09-database.md)** - Supabase schema, RPC functions, and security
 
 ### 🧩 Development Guides
@@ -60,7 +104,7 @@ This documentation is organized into focused modules for different aspects of th
 
 ### 📖 Additional Resources
 
-- **[Testing Guide](./06-testing.md)** - Testing strategies and patterns
+- **[Testing Guide](./06-testing.md)** - Testing strategies and patterns including auth flows
 - **[Deployment Guide](./07-deployment.md)** - Deployment and release processes
 - **[Database Documentation](./08-database.md)** - Supabase schema, RPC functions, and security
 - **[Environment Configuration](./09-environment.md)** - Environment variables and configuration management
@@ -79,7 +123,7 @@ This documentation is organized into focused modules for different aspects of th
 ### For Backend Developers
 
 1. **[Database Documentation](./08-database.md)** - Complete schema and RPC functions
-2. **[API Documentation](./03-api.md)** - Backend integration patterns
+2. **[API Documentation](./03-api.md)** - Backend integration patterns with magic link flows
 3. **[Environment Configuration](./09-environment.md)** - Backend service setup
 
 ### For Frontend Developers
@@ -133,7 +177,7 @@ This documentation is organized into focused modules for different aspects of th
 │                      EXTERNAL SERVICES                  │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
 │  │  Supabase   │  │   Google    │  │   Device    │     │
-│  │  Database   │  │   OAuth     │  │ Notifications│     │
+│  │ Magic Links │  │   OAuth     │  │ Notifications│     │
 │  └─────────────┘  └─────────────┘  └─────────────┘     │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -161,12 +205,20 @@ User Action → Zustand Store → Immediate Update →
 AsyncStorage Persistence → UI Re-render
 ```
 
-### Authentication & Profile Flow
+### Enhanced Authentication Flow
 
 ```
-User Login → Google OAuth/Email → Supabase Auth →
+User Login → Magic Link/Google OAuth → Supabase Auth →
 Client State Update → Query Enablement → Profile Fetch →
 Navigation to Main App
+```
+
+### Magic Link Authentication Flow
+
+```
+Email Input → Magic Link Request → Email Sent → User Clicks Link →
+Deep Link Handler → Token Extraction → Supabase Auth Confirm →
+Session Creation → App Navigation
 ```
 
 ### Gratitude Entry Flow (with Optimistic Updates)
@@ -203,6 +255,7 @@ Database Fetch → Random Selection → Cache → UI Display → Swipe Navigatio
 | **Background Sync**    | None                 | Automatic stale-while-revalidate | **New capability**      |
 | **Optimistic Updates** | Manual rollback      | Automatic error recovery         | **Bulletproof UX**      |
 | **Offline Support**    | Limited              | Automatic cache persistence      | **Enhanced capability** |
+| **Authentication**     | Password-based       | Passwordless magic links         | **Enhanced security**   |
 
 ### Developer Experience
 
@@ -212,6 +265,7 @@ Database Fetch → Random Selection → Cache → UI Display → Swipe Navigatio
 | **State Management** | Manual cache invalidation | Intelligent auto-cache | **Infinite improvement** |
 | **Testing**          | Complex store mocking     | Hook-level testing     | **Simplified patterns**  |
 | **Type Safety**      | Manual type guards        | Automatic inference    | **Enhanced safety**      |
+| **Authentication**   | Complex password flows    | Simple magic link API  | **Streamlined UX**       |
 
 ## 📊 Key Metrics & Analytics
 
@@ -224,6 +278,7 @@ The application tracks various metrics for user engagement and app performance:
 - Feature usage (throwbacks, varied prompts, themes)
 - User journey completion rates
 - Notification interaction rates
+- Authentication method preferences (magic link vs Google OAuth)
 
 ### Technical Metrics
 
@@ -233,6 +288,7 @@ The application tracks various metrics for user engagement and app performance:
 - Database query performance
 - Cache hit rates and query efficiency
 - Notification delivery success rates
+- Magic link delivery and click-through rates
 
 ### Business Metrics
 
@@ -240,14 +296,17 @@ The application tracks various metrics for user engagement and app performance:
 - Feature adoption rates (varied prompts, throwback reminders)
 - User satisfaction and app store ratings
 - Long-term user retention
+- Authentication conversion rates
 
 ## 🛡️ Security & Privacy
 
-### Data Protection
+### Enhanced Data Protection
 
+- **Passwordless Security**: Magic link authentication eliminates password-related vulnerabilities
 - **End-to-End Security**: All data encrypted in transit and at rest
 - **Row Level Security**: Database-level access control via Supabase RLS
-- **Authentication**: Secure OAuth flows with token refresh
+- **Time-Limited Authentication**: Magic links expire for security
+- **Rate Limiting**: Protection against authentication abuse
 - **Privacy**: Minimal data collection with user consent
 - **Query Security**: Authenticated queries with automatic session validation
 
@@ -256,6 +315,7 @@ The application tracks various metrics for user engagement and app performance:
 - **GDPR Compliance**: Data export and deletion capabilities
 - **Privacy by Design**: User data minimization and purpose limitation
 - **Transparent Privacy Policy**: Clear data usage disclosure
+- **Turkish Data Protection Law**: Compliance with local regulations
 
 ## 🎯 Performance Optimizations
 
@@ -267,6 +327,7 @@ The application tracks various metrics for user engagement and app performance:
 - **Lazy Loading**: Dynamic imports for non-critical components
 - **Image Optimization**: Optimized asset delivery and caching
 - **Bundle Splitting**: Code splitting for faster initial load
+- **Magic Link Deep Linking**: Fast authentication without app switching
 
 ### Backend Optimizations
 
@@ -275,6 +336,7 @@ The application tracks various metrics for user engagement and app performance:
 - **Stale-While-Revalidate**: Fresh data without blocking UI
 - **Connection Pooling**: Efficient database connection management
 - **CDN Integration**: Asset delivery optimization
+- **Magic Link Rate Limiting**: Optimized email delivery
 
 ### State Management Optimizations
 
@@ -293,6 +355,7 @@ The application tracks various metrics for user engagement and app performance:
 - **Voice Input**: Speech-to-text for gratitude entries
 - **Widget Support**: Home screen widgets for quick entry
 - **Advanced Reminder Customization**: Location-based and context-aware reminders
+- **Enhanced Magic Link Features**: Custom email templates and branding
 
 ### Technical Improvements
 
@@ -301,7 +364,7 @@ The application tracks various metrics for user engagement and app performance:
 - **Advanced Offline**: Mutation queue for offline write operations
 - **Performance**: Continued optimization and monitoring with React Query DevTools
 - **Accessibility**: WCAG 2.1 AAA compliance
-- **Internationalization**: Multi-language support
+- **Internationalization**: Multi-language support beyond Turkish
 
 ### State Management Enhancements
 
@@ -309,27 +372,6 @@ The application tracks various metrics for user engagement and app performance:
 - **Background Sync**: Advanced offline-to-online synchronization
 - **Real-time Updates**: Live data synchronization across devices
 - **Advanced Caching**: Sophisticated cache management strategies
-
-## 🤝 Contributing
-
-We welcome contributions to the Yeser gratitude app! Please read our contributing guidelines and follow the development workflow outlined in this documentation.
-
-### Getting Started
-
-1. Fork the repository
-2. Follow the **[Setup Guide](./01-setup.md)**
-3. Review **[Architecture Guide](./02-architecture.md)** to understand the state management architecture
-4. Follow the **[Development Workflow](./06-development.md)**
-5. Create a feature branch and submit a pull request
-
-### Areas for Contribution
-
-- **Bug Fixes**: Help improve app stability
-- **Feature Development**: Implement new functionality using TanStack Query patterns
-- **Documentation**: Improve and expand documentation
-- **Testing**: Add comprehensive test coverage for hooks and components
-- **Performance**: Optimize app performance and caching strategies
-- **Accessibility**: Enhance accessibility features
 
 ## 📞 Support & Contact
 
@@ -342,6 +384,6 @@ For questions, issues, or contributions:
 
 ---
 
-This documentation is maintained by the Yeser development team and is updated with each release. For the latest version, always refer to the repository's documentation folder.
+This documentation is maintained by the Yeşer development team and is updated with each release. For the latest version, always refer to the repository's documentation folder.
 
 **Happy coding! 🚀**

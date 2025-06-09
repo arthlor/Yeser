@@ -111,6 +111,393 @@ export const createTestQueryClient = () =>
   });
 ```
 
+## 🔐 Authentication Testing
+
+### Magic Link Authentication Testing
+
+The authentication system requires special testing considerations due to the asynchronous nature of magic links and deep link handling.
+
+#### Auth Service Testing
+
+```typescript
+// __tests__/services/authService.test.ts
+import { authService } from '@/features/auth/services/authService';
+import { supabase } from '@/services/supabase';
+
+// Mock Supabase
+jest.mock('@/services/supabase', () => ({
+  supabase: {
+    auth: {
+      signInWithOtp: jest.fn(),
+      signInWithOAuth: jest.fn(),
+      signOut: jest.fn(),
+    },
+  },
+}));
+
+const mockSupabase = supabase as jest.Mocked<typeof supabase>;
+
+describe('authService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('signInWithMagicLink', () => {
+    it('should send magic link successfully', async () => {
+      mockSupabase.auth.signInWithOtp.mockResolvedValueOnce({
+        data: { user: null, session: null },
+        error: null,
+      });
+
+      const result = await authService.signInWithMagicLink('test@example.com');
+
+      expect(result.success).toBe(true);
+      expect(mockSupabase.auth.signInWithOtp).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        options: {
+          emailRedirectTo: 'yeser://auth/callback',
+          data: {
+            source: 'yeser_app',
+          },
+        },
+      });
+    });
+
+    it('should handle magic link errors', async () => {
+      mockSupabase.auth.signInWithOtp.mockResolvedValueOnce({
+        data: { user: null, session: null },
+        error: { message: 'Rate limit exceeded' },
+      });
+
+      const result = await authService.signInWithMagicLink('test@example.com');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Rate limit exceeded');
+    });
+
+    it('should validate email format', async () => {
+      const result = await authService.signInWithMagicLink('invalid-email');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Geçerli bir email adresi girin');
+    });
+  });
+
+  describe('signInWithGoogle', () => {
+    it('should handle Google OAuth', async () => {
+      mockSupabase.auth.signInWithOAuth.mockResolvedValueOnce({
+        data: { provider: 'google', url: 'https://oauth.url' },
+        error: null,
+      });
+
+      const result = await authService.signInWithGoogle();
+
+      expect(result.success).toBe(true);
+      expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalledWith({
+        provider: 'google',
+        options: {
+          redirectTo: 'yeser://auth/callback',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+    });
+  });
+});
+```
+
+#### Deep Link Handler Testing
+
+```typescript
+// __tests__/components/DeepLinkHandler.test.tsx
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import { Linking } from 'react-native';
+import { DeepLinkHandler } from '@/features/auth/components/DeepLinkHandler';
+import { useAuthStore } from '@/store/authStore';
+
+// Mock React Native Linking
+jest.mock('react-native', () => ({
+  ...jest.requireActual('react-native'),
+  Linking: {
+    getInitialURL: jest.fn(),
+    addEventListener: jest.fn(),
+  },
+}));
+
+// Mock auth store
+jest.mock('@/store/authStore');
+const mockUseAuthStore = useAuthStore as jest.MockedFunction<typeof useAuthStore>;
+
+describe('DeepLinkHandler', () => {
+  const mockSetSession = jest.fn();
+  const mockSetIsLoading = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuthStore.mockReturnValue({
+      setSession: mockSetSession,
+      setIsLoading: mockSetIsLoading,
+      // ... other auth store properties
+    });
+  });
+
+  it('should handle initial URL with auth tokens', async () => {
+    const mockUrl = 'yeser://auth/callback?access_token=test&refresh_token=test';
+    (Linking.getInitialURL as jest.Mock).mockResolvedValueOnce(mockUrl);
+
+    render(<DeepLinkHandler />);
+
+    // Wait for async operations
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
+    expect(mockSetIsLoading).toHaveBeenCalledWith(false);
+  });
+
+  it('should handle URL changes during app lifecycle', () => {
+    let urlListener: (url: string) => void;
+    
+    (Linking.addEventListener as jest.Mock).mockImplementationOnce((event, callback) => {
+      if (event === 'url') {
+        urlListener = callback;
+      }
+      return { remove: jest.fn() };
+    });
+
+    render(<DeepLinkHandler />);
+
+    // Simulate URL change
+    const testUrl = 'yeser://auth/callback?access_token=new_token';
+    urlListener(testUrl);
+
+    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
+  });
+
+  it('should handle malformed URLs gracefully', async () => {
+    const mockUrl = 'invalid-url';
+    (Linking.getInitialURL as jest.Mock).mockResolvedValueOnce(mockUrl);
+
+    render(<DeepLinkHandler />);
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(mockSetIsLoading).toHaveBeenCalledWith(false);
+    // Should not set session for invalid URLs
+    expect(mockSetSession).not.toHaveBeenCalled();
+  });
+});
+```
+
+#### Login Screen Testing
+
+```typescript
+// __tests__/screens/LoginScreen.test.tsx
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { LoginScreen } from '@/features/auth/screens/LoginScreen';
+import { authService } from '@/features/auth/services/authService';
+
+// Mock auth service
+jest.mock('@/features/auth/services/authService');
+const mockAuthService = authService as jest.Mocked<typeof authService>;
+
+// Mock navigation
+const mockNavigation = {
+  navigate: jest.fn(),
+  goBack: jest.fn(),
+};
+
+describe('LoginScreen', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should render login form', () => {
+    const { getByLabelText, getByText } = render(
+      <LoginScreen navigation={mockNavigation} />
+    );
+
+    expect(getByLabelText('Email Adresi')).toBeTruthy();
+    expect(getByText('Giriş Bağlantısı Gönder')).toBeTruthy();
+    expect(getByText('Google ile Giriş Yap')).toBeTruthy();
+  });
+
+  it('should validate email input', async () => {
+    const { getByLabelText, getByText } = render(
+      <LoginScreen navigation={mockNavigation} />
+    );
+
+    const emailInput = getByLabelText('Email Adresi');
+    const submitButton = getByText('Giriş Bağlantısı Gönder');
+
+    // Test empty email
+    fireEvent.press(submitButton);
+    await waitFor(() => {
+      expect(getByText('Lütfen email adresinizi girin')).toBeTruthy();
+    });
+
+    // Test invalid email
+    fireEvent.changeText(emailInput, 'invalid-email');
+    fireEvent.press(submitButton);
+    await waitFor(() => {
+      expect(getByText('Geçerli bir email adresi girin')).toBeTruthy();
+    });
+  });
+
+  it('should handle successful magic link sending', async () => {
+    mockAuthService.signInWithMagicLink.mockResolvedValueOnce({
+      success: true,
+      error: null,
+    });
+
+    const { getByLabelText, getByText } = render(
+      <LoginScreen navigation={mockNavigation} />
+    );
+
+    const emailInput = getByLabelText('Email Adresi');
+    const submitButton = getByText('Giriş Bağlantısı Gönder');
+
+    fireEvent.changeText(emailInput, 'test@example.com');
+    fireEvent.press(submitButton);
+
+    await waitFor(() => {
+      expect(getByText('Giriş bağlantısı email adresinize gönderildi!')).toBeTruthy();
+    });
+
+    expect(mockAuthService.signInWithMagicLink).toHaveBeenCalledWith('test@example.com');
+  });
+
+  it('should handle magic link errors', async () => {
+    mockAuthService.signInWithMagicLink.mockResolvedValueOnce({
+      success: false,
+      error: 'Rate limit exceeded',
+    });
+
+    const { getByLabelText, getByText } = render(
+      <LoginScreen navigation={mockNavigation} />
+    );
+
+    const emailInput = getByLabelText('Email Adresi');
+    const submitButton = getByText('Giriş Bağlantısı Gönder');
+
+    fireEvent.changeText(emailInput, 'test@example.com');
+    fireEvent.press(submitButton);
+
+    await waitFor(() => {
+      expect(getByText('Rate limit exceeded')).toBeTruthy();
+    });
+  });
+
+  it('should handle Google OAuth', async () => {
+    mockAuthService.signInWithGoogle.mockResolvedValueOnce({
+      success: true,
+      error: null,
+    });
+
+    const { getByText } = render(
+      <LoginScreen navigation={mockNavigation} />
+    );
+
+    const googleButton = getByText('Google ile Giriş Yap');
+    fireEvent.press(googleButton);
+
+    await waitFor(() => {
+      expect(mockAuthService.signInWithGoogle).toHaveBeenCalled();
+    });
+  });
+
+  it('should toggle help section', () => {
+    const { getByText } = render(
+      <LoginScreen navigation={mockNavigation} />
+    );
+
+    const helpButton = getByText('Nasıl Çalışır?');
+    fireEvent.press(helpButton);
+
+    expect(getByText('Yardımı Gizle')).toBeTruthy();
+    
+    fireEvent.press(getByText('Yardımı Gizle'));
+    expect(getByText('Nasıl Çalışır?')).toBeTruthy();
+  });
+});
+```
+
+### Authentication E2E Testing
+
+```typescript
+// e2e/auth.e2e.ts
+describe('Authentication Flow', () => {
+  beforeAll(async () => {
+    await device.launchApp();
+  });
+
+  beforeEach(async () => {
+    await device.reloadReactNative();
+  });
+
+  it('should complete magic link authentication flow', async () => {
+    // 1. Should show login screen for unauthenticated user
+    await expect(element(by.id('login-screen'))).toBeVisible();
+
+    // 2. Enter email address
+    await element(by.id('email-input')).typeText('test@example.com');
+
+    // 3. Tap magic link button
+    await element(by.id('magic-link-button')).tap();
+
+    // 4. Should show success message
+    await expect(element(by.text('Giriş bağlantısı email adresinize gönderildi!'))).toBeVisible();
+
+    // 5. Simulate magic link callback (in test environment)
+    await device.openURL({
+      url: 'yeser://auth/callback?access_token=test_token&refresh_token=test_refresh&type=signup',
+    });
+
+    // 6. Should navigate to authenticated area
+    await waitFor(element(by.id('home-screen'))).toBeVisible().withTimeout(5000);
+  });
+
+  it('should handle invalid email validation', async () => {
+    await expect(element(by.id('login-screen'))).toBeVisible();
+
+    // Enter invalid email
+    await element(by.id('email-input')).typeText('invalid-email');
+    await element(by.id('magic-link-button')).tap();
+
+    // Should show validation error
+    await expect(element(by.text('Geçerli bir email adresi girin'))).toBeVisible();
+  });
+
+  it('should handle empty email validation', async () => {
+    await expect(element(by.id('login-screen'))).toBeVisible();
+
+    // Tap button without entering email
+    await element(by.id('magic-link-button')).tap();
+
+    // Should show validation error
+    await expect(element(by.text('Lütfen email adresinizi girin'))).toBeVisible();
+  });
+
+  it('should show and hide help section', async () => {
+    await expect(element(by.id('login-screen'))).toBeVisible();
+
+    // Tap help button
+    await element(by.text('Nasıl Çalışır?')).tap();
+
+    // Should show help text
+    await expect(element(by.text(/Email adresinizi girin ve size özel/))).toBeVisible();
+    await expect(element(by.text('Yardımı Gizle'))).toBeVisible();
+
+    // Hide help
+    await element(by.text('Yardımı Gizle')).tap();
+    await expect(element(by.text('Nasıl Çalışır?'))).toBeVisible();
+  });
+});
+```
+
 ## 📊 TanStack Query Testing Patterns
 
 ### Query Hook Testing

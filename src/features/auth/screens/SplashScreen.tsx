@@ -87,12 +87,12 @@ const EnhancedSplashScreen: React.FC = () => {
     );
     pulseAnimation.start();
 
-    // Start Lottie animation with delay for entrance effect
-    const animationTimer = setTimeout(() => {
-      if (lottieRef.current) {
-        lottieRef.current.play();
-      }
-    }, 600); // Start flower animation after entrance animations
+      // Start Lottie animation with delay for entrance effect
+  const animationTimer = setTimeout(() => {
+    if (lottieRef.current) {
+      lottieRef.current.play();
+    }
+  }, 600); // Start flower animation after entrance animations
 
     return () => {
       pulseAnimation.stop();
@@ -152,7 +152,7 @@ const EnhancedSplashScreen: React.FC = () => {
               },
             ]}
           >
-            {/* Beautiful flower bloom animation */}
+            {/* Beautiful flower bloom animation from splash.json */}
             <LottieView
               ref={lottieRef}
               source={splashAnimation}

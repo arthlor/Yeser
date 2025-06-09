@@ -1,8 +1,9 @@
 import React, { createContext, ReactNode, useContext } from 'react';
 import { logger } from '@/utils/debugConfig';
+import { safeErrorDisplay } from '@/utils/errorTranslation';
 
 interface GlobalErrorContextType {
-  handleMutationError: (error: Error, operation: string) => void;
+  handleMutationError: (error: unknown, operation: string) => void;
   showError: (message: string) => void;
   showSuccess: (message: string) => void;
 }
@@ -26,29 +27,37 @@ interface Props {
 }
 
 export const GlobalErrorProvider: React.FC<Props> = ({ children, toastHandlers }) => {
-  const handleMutationError = (error: Error, operation: string) => {
-    logger.error(`Global mutation error in ${operation}:`, error);
+  const handleMutationError = (error: unknown, operation: string) => {
+    // Convert error to Error object safely
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    
+    // Log technical details for debugging (never shown to users)
+    logger.error(`Global mutation error in ${operation}:`, {
+      message: errorObj.message,
+      name: errorObj.name,
+      stack: errorObj.stack,
+      operation,
+      originalError: error,
+    });
 
-    // Extract user-friendly message
-    let userMessage = 'Bir hata oluştu. Lütfen tekrar deneyin.';
-
-    if (error.message.includes('network')) {
-      userMessage = 'İnternet bağlantınızı kontrol edin.';
-    } else if (error.message.includes('Authentication required')) {
-      userMessage = 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
-    } else if (error.message.includes('Access denied')) {
-      userMessage = 'Bu işlem için yetkiniz bulunmuyor.';
+    // Always use safeErrorDisplay to ensure user-friendly Turkish messages
+    const userMessage = safeErrorDisplay(errorObj);
+    
+    // Only show error if it's not empty (cancellations return empty string)
+    if (userMessage && userMessage.trim() !== '') {
+      showError(userMessage);
     }
-
-    showError(userMessage);
   };
 
   const showError = (message: string) => {
-    if (toastHandlers?.showError) {
-      toastHandlers.showError(message);
-    } else {
-      // Fallback to console if toast not available
-      logger.warn('Error to display (no toast available):', { message });
+    // Message is already sanitized by handleMutationError, no need for double translation
+    if (message && message.trim() !== '') {
+      if (toastHandlers?.showError) {
+        toastHandlers.showError(message);
+      } else {
+        // Fallback to console if toast not available (dev only)
+        logger.warn('Error to display (no toast available):', { message });
+      }
     }
   };
 

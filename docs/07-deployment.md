@@ -43,6 +43,134 @@ The Yeser app uses a modern deployment pipeline with:
 └─────────────────────────────────────────────────────────┘
 ```
 
+## 🔐 Authentication Deployment Setup
+
+### Magic Link Authentication Configuration
+
+Before deploying, ensure proper authentication setup for magic link and OAuth functionality.
+
+#### Supabase Configuration
+
+```bash
+# Required environment variables for all environments
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key # Server-side only
+
+# Deep link configuration (must match app configuration)
+# Production: yeser://auth/callback
+# Staging: yeser-preview://auth/callback  
+# Development: yeser-dev://auth/callback
+```
+
+#### Deep Link URL Schemes
+
+```javascript
+// app.config.js - Environment-specific URL schemes
+const getUrlScheme = (env) => {
+  switch (env) {
+    case 'development':
+      return 'yeser-dev';
+    case 'staging':
+      return 'yeser-preview';
+    case 'production':
+      return 'yeser';
+    default:
+      return 'yeser';
+  }
+};
+
+export default {
+  expo: {
+    scheme: getUrlScheme(process.env.EXPO_PUBLIC_ENV),
+    // ... other config
+  },
+};
+```
+
+#### Supabase Auth Settings (Production Checklist)
+
+1. **Email Templates**: Configure Turkish magic link email template
+   ```html
+   <!-- Magic Link Email Template -->
+   <h2>Yeşer'e Hoş Geldin!</h2>
+   <p>Aşağıdaki bağlantıya tıklayarak uygulamaya güvenli şekilde giriş yapabilirsin:</p>
+   <a href="{{ .ConfirmationURL }}">Yeşer'e Giriş Yap</a>
+   <p>Bu bağlantı 1 saat geçerlidir.</p>
+   ```
+
+2. **Site URL Configuration**:
+   - Development: `yeser-dev://auth/callback`
+   - Staging: `yeser-preview://auth/callback`
+   - Production: `yeser://auth/callback`
+
+3. **Additional Redirect URLs**:
+   - Add all environment-specific callback URLs
+   - Include web URLs if supporting web platform
+
+4. **Rate Limiting**: Configure appropriate limits for magic link sending
+   - Production: 5 emails per hour per IP
+   - Development: Higher limits for testing
+
+5. **Google OAuth Setup**:
+   ```json
+   {
+     "web": {
+       "client_id": "your-google-client-id",
+       "redirect_uris": [
+         "yeser://auth/callback",
+         "https://your-project.supabase.co/auth/v1/callback"
+       ]
+     }
+   }
+   ```
+
+### Environment Variable Management
+
+```typescript
+// src/config/config.ts - Environment-aware configuration
+interface Config {
+  supabase: {
+    url: string;
+    anonKey: string;
+  };
+  auth: {
+    redirectUrl: string;
+    googleClientId: string;
+  };
+  app: {
+    environment: 'development' | 'staging' | 'production';
+    version: string;
+  };
+}
+
+const config: Config = {
+  supabase: {
+    url: process.env.EXPO_PUBLIC_SUPABASE_URL!,
+    anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+  },
+  auth: {
+    redirectUrl: (() => {
+      switch (process.env.EXPO_PUBLIC_ENV) {
+        case 'development':
+          return 'yeser-dev://auth/callback';
+        case 'staging':
+          return 'yeser-preview://auth/callback';
+        default:
+          return 'yeser://auth/callback';
+      }
+    })(),
+    googleClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID!,
+  },
+  app: {
+    environment: (process.env.EXPO_PUBLIC_ENV as any) || 'development',
+    version: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0',
+  },
+};
+
+export default config;
+```
+
 ## 🔧 EAS Build Configuration
 
 ### EAS Configuration File

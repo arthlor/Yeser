@@ -1,10 +1,10 @@
 # Architecture Guide
 
-This document provides a comprehensive overview of the Yeser app's architecture, design patterns, and architectural decisions.
+This document provides a comprehensive overview of the Yeşer app's architecture, design patterns, and architectural decisions with a focus on the modern **magic link authentication system** and enhanced security architecture.
 
 ## 🏗️ System Overview
 
-Yeser follows a **modern hybrid architecture** with clear separation between server state and client state, promoting maintainability, testability, and scalability.
+Yeşer follows a **modern hybrid architecture** with clear separation between server state and client state, promoting maintainability, testability, and scalability. The architecture emphasizes **passwordless security** through magic link authentication and robust state management.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -63,10 +63,11 @@ src/
 │   ├── queryClient.ts     # TanStack Query client configuration
 │   └── queryKeys.ts       # Centralized query key factory
 ├── features/               # Feature-based organization
-│   ├── auth/              # Authentication feature
+│   ├── auth/              # Magic link & OAuth authentication
 │   │   ├── components/    # Auth-specific components
-│   │   ├── hooks/         # Auth-specific hooks (if any)
-│   │   ├── screens/       # Login, SignUp, Splash screens
+│   │   ├── hooks/         # Magic link and OAuth hooks
+│   │   ├── screens/       # Login screen (magic link + Google OAuth)
+│   │   ├── services/      # Deep link handling, magic link service
 │   │   └── types/         # Auth-specific types
 │   ├── calendar/          # Calendar and past entries
 │   │   ├── components/    # Calendar components
@@ -147,7 +148,7 @@ The app uses a **hybrid state management approach** that separates concerns:
 
 ```typescript
 // Server State (TanStack Query v5.80.2) - Data from backend
-✅ User profiles with notification settings
+✅ User profiles with notification settings and auth metadata
 ✅ Gratitude entries and statements
 ✅ Past entries lists and calendar data
 ✅ Streak calculations and analytics
@@ -156,12 +157,14 @@ The app uses a **hybrid state management approach** that separates concerns:
 ✅ Multiple prompt fetching with category and difficulty filtering
 ✅ Enhanced notification settings with throwback reminders
 ✅ Comprehensive user profile management
+✅ Magic link authentication state management
 
 // Client State (Zustand) - UI and app state  
-✅ Authentication status and user session
+✅ Authentication status and user session (magic link + OAuth)
 ✅ Theme preferences (light/dark)
 ✅ Local UI state (modal visibility, form inputs)
 ✅ Temporary notification settings cache
+✅ Deep link handling state
 ```
 
 ### State Management Architecture Flow

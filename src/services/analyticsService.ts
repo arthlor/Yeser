@@ -1,7 +1,6 @@
-import { getAnalytics } from '@react-native-firebase/analytics';
+// 🚨 FIX: Re-enabled Firebase Analytics for production deployment
+import analytics from '@react-native-firebase/analytics';
 import { logger } from '@/utils/debugConfig';
-
-const analytics = getAnalytics();
 
 /**
  * Logs a screen view event to Firebase Analytics.
@@ -10,11 +9,15 @@ const analytics = getAnalytics();
  */
 const logScreenView = async (screenName: string): Promise<void> => {
   try {
-    await analytics.logScreenView({
+    await analytics().logScreenView({
       screen_name: screenName,
-      screen_class: screenName, // Often same as screen_name for RN apps
+      screen_class: screenName,
     });
-    // logger.debug(`Analytics: Screen view logged - ${screenName}`);
+    
+    // Log to console in development for debugging
+    if (__DEV__) {
+      logger.debug(`Analytics: Screen view logged - ${screenName}`);
+    }
   } catch (error) {
     logger.error('Failed to log screen view to Firebase Analytics', error as Error);
   }
@@ -30,8 +33,24 @@ const logEvent = async (
   params?: Record<string, string | number | boolean | null>
 ): Promise<void> => {
   try {
-    await analytics.logEvent(eventName, params);
-    // logger.debug(`Analytics: Event logged - ${eventName}`, params || '');
+    // Firebase Analytics parameter validation and conversion
+    const sanitizedParams: Record<string, string | number | boolean> = {};
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        // Firebase Analytics doesn't accept null values, so filter them out
+        if (value !== null) {
+          sanitizedParams[key] = value;
+        }
+      });
+    }
+
+    await analytics().logEvent(eventName, sanitizedParams);
+    
+    // Log to console in development for debugging
+    if (__DEV__) {
+      logger.debug(`Analytics: Event logged - ${eventName}`, sanitizedParams);
+    }
   } catch (error) {
     logger.error(`Failed to log event '${eventName}' to Firebase Analytics`, error as Error);
   }
@@ -43,10 +62,68 @@ const logEvent = async (
  */
 const logAppOpen = async (): Promise<void> => {
   try {
-    await analytics.logAppOpen();
-    // logger.debug('Analytics: App open event logged');
+    await analytics().logAppOpen();
+    
+    // Log to console in development for debugging
+    if (__DEV__) {
+      logger.debug('Analytics: App open event logged');
+    }
   } catch (error) {
     logger.error('Failed to log app_open event to Firebase Analytics', error as Error);
+  }
+};
+
+/**
+ * Sets user properties for Firebase Analytics.
+ * This helps with user segmentation and understanding user behavior.
+ * @param properties User properties to set
+ */
+const setUserProperties = async (properties: Record<string, string | null>): Promise<void> => {
+  try {
+    await analytics().setUserProperties(properties);
+    
+    // Log to console in development for debugging
+    if (__DEV__) {
+      logger.debug('Analytics: User properties set', properties);
+    }
+  } catch (error) {
+    logger.error('Failed to set user properties in Firebase Analytics', error as Error);
+  }
+};
+
+/**
+ * Sets the user ID for Firebase Analytics.
+ * This should be called when user authentication state changes.
+ * @param userId The user's unique identifier (or null to clear)
+ */
+const setUserId = async (userId: string | null): Promise<void> => {
+  try {
+    await analytics().setUserId(userId);
+    
+    // Log to console in development for debugging
+    if (__DEV__) {
+      logger.debug('Analytics: User ID set', { userId: userId ? 'set' : 'cleared' });
+    }
+  } catch (error) {
+    logger.error('Failed to set user ID in Firebase Analytics', error as Error);
+  }
+};
+
+/**
+ * Enables or disables analytics collection.
+ * Useful for handling user privacy preferences.
+ * @param enabled Whether to enable analytics collection
+ */
+const setAnalyticsCollectionEnabled = async (enabled: boolean): Promise<void> => {
+  try {
+    await analytics().setAnalyticsCollectionEnabled(enabled);
+    
+    // Log to console in development for debugging
+    if (__DEV__) {
+      logger.debug('Analytics: Collection enabled status changed', { enabled });
+    }
+  } catch (error) {
+    logger.error('Failed to set analytics collection status', error as Error);
   }
 };
 
@@ -54,4 +131,7 @@ export const analyticsService = {
   logScreenView,
   logEvent,
   logAppOpen,
+  setUserProperties,
+  setUserId,
+  setAnalyticsCollectionEnabled,
 };

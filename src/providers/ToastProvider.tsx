@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { Snackbar } from 'react-native-paper';
 import { useTheme } from './ThemeProvider';
 import type { AppTheme } from '@/themes/types';
@@ -129,16 +129,21 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     setToastState((prev) => ({ ...prev, visible: false }));
   }, []);
 
-  const colors = getToastColors(theme, toastState.type);
+  // Memoize colors to prevent infinite re-renders on iOS
+  const colors = useMemo(() => getToastColors(theme, toastState.type), [theme, toastState.type]);
 
-  const contextValue: ToastContextType = {
-    showToast,
-    showSuccess,
-    showError,
-    showWarning,
-    showInfo,
-    hideToast,
-  };
+  // 🚨 FIX: Memoize contextValue to prevent unnecessary re-renders
+  const contextValue: ToastContextType = useMemo(
+    () => ({
+      showToast,
+      showSuccess,
+      showError,
+      showWarning,
+      showInfo,
+      hideToast,
+    }),
+    [showToast, showSuccess, showError, showWarning, showInfo, hideToast]
+  );
 
   return (
     <ToastContext.Provider value={contextValue}>

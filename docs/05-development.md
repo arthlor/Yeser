@@ -115,6 +115,154 @@ module.exports = {
 };
 ```
 
+## 🔐 Authentication Workflow
+
+### Magic Link Development & Testing
+
+The Yeşer app uses a **passwordless authentication system** with Supabase magic links. This section covers development and testing patterns specific to the authentication flow.
+
+#### Development Environment Setup
+
+```bash
+# Required environment variables for magic link auth
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Deep link configuration
+# iOS: yeser://auth/callback
+# Android: yeser://auth/callback
+
+# Email template configuration in Supabase Dashboard:
+# Settings > Auth > Email Templates > Magic Link
+# Use Turkish email template with proper redirect URL
+```
+
+#### Authentication Testing Strategy
+
+```typescript
+// 1. Unit Tests - Authentication Services
+describe('authService', () => {
+  it('should validate email format', () => {
+    expect(authService.validateEmail('invalid-email')).toBe(false);
+    expect(authService.validateEmail('valid@email.com')).toBe(true);
+  });
+
+  it('should handle magic link sending', async () => {
+    const result = await authService.signInWithMagicLink('test@example.com');
+    expect(result.success).toBe(true);
+  });
+});
+
+// 2. Integration Tests - Deep Link Handling
+describe('DeepLinkHandler', () => {
+  it('should process auth callback URLs', async () => {
+    const testUrl = 'yeser://auth/callback?access_token=test&refresh_token=test';
+    const result = await deepLinkAuthService.handleAuthCallback(testUrl);
+    expect(result.success).toBe(true);
+  });
+});
+
+// 3. E2E Tests - Complete Authentication Flow
+describe('Authentication Flow', () => {
+  it('should complete magic link authentication', async () => {
+    // 1. Enter email in login screen
+    await element(by.id('email-input')).typeText('test@example.com');
+    await element(by.id('magic-link-button')).tap();
+    
+    // 2. Verify success message
+    await expect(element(by.text('Giriş bağlantısı email adresinize gönderildi!'))).toBeVisible();
+    
+    // 3. Simulate deep link callback (in test environment)
+    await device.openURL('yeser://auth/callback?access_token=test');
+    
+    // 4. Verify successful authentication
+    await expect(element(by.id('home-screen'))).toBeVisible();
+  });
+});
+```
+
+#### Authentication Debugging
+
+```typescript
+// Enable debug logging for authentication
+import { logger } from '@/utils/debugConfig';
+
+// Debug magic link flow
+const debugMagicLink = async (email: string) => {
+  logger.debug('Starting magic link flow for:', email);
+  
+  try {
+    const result = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: 'yeser://auth/callback',
+      },
+    });
+    
+    logger.debug('Magic link result:', result);
+  } catch (error) {
+    logger.error('Magic link error:', error);
+  }
+};
+
+// Debug deep link handling
+const debugDeepLink = (url: string) => {
+  logger.debug('Processing deep link:', url);
+  
+  const urlObj = new URL(url);
+  const accessToken = urlObj.searchParams.get('access_token');
+  const refreshToken = urlObj.searchParams.get('refresh_token');
+  
+  logger.debug('Extracted tokens:', { 
+    hasAccessToken: !!accessToken,
+    hasRefreshToken: !!refreshToken 
+  });
+};
+```
+
+### Authentication Error Handling
+
+```typescript
+// Comprehensive error handling for Turkish users
+const handleAuthError = (error: any): string => {
+  // Technical errors should be logged but not shown to users
+  logger.error('Authentication error:', error);
+  
+  // User-friendly Turkish error messages
+  if (error?.message?.includes('rate_limit')) {
+    return 'Çok fazla deneme yapıldı. Lütfen bir dakika bekleyin.';
+  }
+  
+  if (error?.message?.includes('invalid_email')) {
+    return 'Geçersiz email adresi. Lütfen doğru email girin.';
+  }
+  
+  if (error?.message?.includes('email_not_confirmed')) {
+    return 'Email adresinizi onaylayın. Gelen kutunuzu kontrol edin.';
+  }
+  
+  // Generic fallback
+  return 'Giriş yapılırken bir hata oluştu. Lütfen tekrar deneyin.';
+};
+
+// Never show technical error messages to users
+const LoginScreen = () => {
+  const [error, setError] = useState<string>('');
+  
+  const handleLogin = async () => {
+    try {
+      await authService.signInWithMagicLink(email);
+    } catch (error) {
+      // Log technical details for debugging
+      logger.error('Login failed:', error);
+      
+      // Show user-friendly Turkish message
+      setError(handleAuthError(error));
+    }
+  };
+};
+```
+
 ## 📝 Coding Standards
 
 ### TypeScript Guidelines

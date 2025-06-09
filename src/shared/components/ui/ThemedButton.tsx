@@ -201,7 +201,6 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
         {/* Button Text with Enhanced Typography */}
         <Text 
           style={[styles.text, textStyle]} 
-          numberOfLines={1}
           accessibilityLabel={displayText}
         >
           {displayText}
@@ -284,7 +283,7 @@ const createStyles = (
 
   return StyleSheet.create({
     button: {
-      height: config.height,
+      minHeight: config.height,
       paddingHorizontal: config.padding.horizontal,
       paddingVertical: config.padding.vertical,
       borderRadius: theme.borderRadius.lg,
@@ -292,7 +291,7 @@ const createStyles = (
       justifyContent: 'center',
       flexDirection: 'row',
       width: fullWidth ? '100%' : undefined,
-      minWidth: size === 'compact' ? 80 : size === 'large' ? 120 : 100,
+      minWidth: size === 'compact' ? 120 : size === 'large' ? 150 : 130,
       ...finalStyles.container,
     } as ViewStyle,
     
@@ -302,7 +301,7 @@ const createStyles = (
       fontFamily: theme.typography.fontFamilyMedium,
       letterSpacing: 0.5,
       textAlign: 'center',
-      flex: 1,
+      flexShrink: 1,
       ...finalStyles.text,
     } as TextStyle,
     

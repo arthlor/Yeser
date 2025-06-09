@@ -1,22 +1,37 @@
 // src/features/auth/screens/LoginScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Keyboard, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { 
+  Animated,
+  Dimensions,
+  Easing, 
+  Keyboard, 
+  Platform,
+  StyleSheet, 
+  Text, 
+  View
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 
-import { ScreenContent, ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { ScreenLayout } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import ThemedInput from '@/shared/components/ui/ThemedInput';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
-import { loginSchema } from '@/schemas/authSchemas';
+import { magicLinkSchema } from '@/schemas/authSchemas';
 import { analyticsService } from '@/services/analyticsService';
-import * as authService from '@/services/authService';
 import useAuthStore from '@/store/authStore';
 import { AppTheme } from '@/themes/types';
-import { AuthStackParamList, RootStackParamList } from '@/types/navigation';
+import { AuthStackParamList } from '@/types/navigation';
+import { safeErrorDisplay } from '@/utils/errorTranslation';
+import { NetworkDiagnostics } from '@/components/debug/NetworkDiagnostics';
+
+const { height: screenHeight } = Dimensions.get('window');
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -25,407 +40,640 @@ interface Props {
 }
 
 /**
- * LoginScreen provides a clean and accessible login experience
- * with proper error handling and themed components.
+ * 🌟 POLISHED EDGE-TO-EDGE LOGIN SCREEN
+ * Clean, spacious authentication experience with proper text sizing and layout
  */
-const LoginScreen: React.FC<Props> = ({ navigation }) => {
+const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) => {
   const { theme } = useTheme();
-  const styles = createStyles(theme);
-  const { loginWithEmail, loginWithGoogle, isLoading, error, clearError } = useAuthStore();
+  const insets = useSafeAreaInsets();
+  const styles = createStyles(theme, insets);
+  
+  const { 
+    loginWithMagicLink, 
+    loginWithGoogle, 
+    isLoading, 
+    error, 
+    magicLinkSent,
+    canSendMagicLink,
+    clearError,
+    resetMagicLinkSent
+  } = useAuthStore();
 
   // Form state
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState<string | undefined>(undefined);
-  const [passwordError, setPasswordError] = useState<string | undefined>(undefined);
-  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isEmailValid, setIsEmailValid] = useState(false);
+  const [showHelpSection, setShowHelpSection] = useState(false);
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const cardSlideAnim = useRef(new Animated.Value(30)).current;
+  const successPulseAnim = useRef(new Animated.Value(1)).current;
+  const helpSlideAnim = useRef(new Animated.Value(0)).current;
+
+  // Help section height calculation
+  const helpHeight = useMemo(() => {
+    return helpSlideAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 100], // Adjust this value based on your help content height
+    });
+  }, [helpSlideAnim]);
+
+  // Start entrance animation on mount
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 500,
+          easing: Easing.out(Easing.back(1.1)),
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardSlideAnim, {
+          toValue: 0,
+          duration: 500,
+          delay: 100,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [fadeAnim, slideAnim, cardSlideAnim]);
+
+  // Success pulse animation
+  useEffect(() => {
+    if (magicLinkSent) {
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      
+      Animated.sequence([
+        Animated.spring(successPulseAnim, {
+          toValue: 1.02,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 10,
+        }),
+        Animated.spring(successPulseAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 300,
+          friction: 10,
+        }),
+      ]).start();
+    }
+  }, [magicLinkSent, successPulseAnim]);
+
+  // Help section animation
+  const toggleHelpSection = useCallback(() => {
+    const toValue = showHelpSection ? 0 : 1;
+    setShowHelpSection(!showHelpSection);
+    
+    Animated.timing(helpSlideAnim, {
+      toValue,
+      duration: 300,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [showHelpSection, helpSlideAnim]);
+
+  // Real-time email validation
+  const handleEmailChange = useCallback((text: string) => {
+    setEmail(text);
+    setEmailError(undefined);
+    
+    if (text.length > 0) {
+      const isValid = magicLinkSchema.safeParse({ email: text }).success;
+      setIsEmailValid(isValid);
+    } else {
+      setIsEmailValid(false);
+    }
+  }, []);
 
   // Clear errors when component unmounts
-  useEffect(
-    () => () => {
-      clearError();
-    },
-    [clearError]
-  );
+  useEffect(() => () => {
+    clearError();
+    resetMagicLinkSent();
+  }, [clearError, resetMagicLinkSent]);
 
   // Log screen view
   useEffect(() => {
     analyticsService.logScreenView('login');
   }, []);
 
-  // Handle login with email
-  const handleEmailLogin = useCallback(async () => {
+  // Handle magic link login
+  const handleMagicLinkLogin = useCallback(async () => {
     Keyboard.dismiss();
 
-    // Reset previous errors
-    setEmailError(undefined);
-    setPasswordError(undefined);
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
 
-    const validationResult = loginSchema.safeParse({ email, password });
+    setEmailError(undefined);
+
+    if (!canSendMagicLink()) {
+      setEmailError('Çok sık deneme yapıyorsunuz. Lütfen bir süre bekleyin.');
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+      return;
+    }
+
+    const validationResult = magicLinkSchema.safeParse({ email });
 
     if (!validationResult.success) {
       const { fieldErrors } = validationResult.error.formErrors;
       if (fieldErrors.email) {
         setEmailError(fieldErrors.email[0]);
-      }
-      if (fieldErrors.password) {
-        setPasswordError(fieldErrors.password[0]);
+        if (Platform.OS === 'ios') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
       }
       return;
     }
 
     clearError();
-    setLoginAttempts((prev) => prev + 1);
+    analyticsService.logEvent('magic_link_request');
+    
+    await loginWithMagicLink({
+      email: validationResult.data.email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: 'yeserapp://auth/confirm',
+      },
+    });
+  }, [email, canSendMagicLink, clearError, loginWithMagicLink]);
 
-    try {
-      analyticsService.logEvent('login_attempt', { method: 'email' });
-      await loginWithEmail(validationResult.data);
-      analyticsService.logEvent('login_success', { method: 'email' });
-    } catch {
-      analyticsService.logEvent('login_failure', {
-        method: 'email',
-        attempts: loginAttempts + 1,
-      });
-    }
-  }, [email, password, clearError, loginWithEmail, loginAttempts]);
-
-  // Handle login with Google
+  // Handle Google login
   const handleGoogleLogin = useCallback(async () => {
-    clearError();
-    setLoginAttempts((prev) => prev + 1);
-
-    try {
-      analyticsService.logEvent('login_attempt', { method: 'google' });
-
-      const result = await authService.signInWithGoogle();
-
-      if (result.error) {
-        if (result.error.name === 'AuthCancelledError') {
-          // User cancelled OAuth - show friendly feedback
-          Alert.alert(
-            'Giriş İptal Edildi',
-            'Google ile giriş işlemi iptal edildi. İstediğiniz zaman tekrar deneyebilirsiniz.',
-            [{ text: 'Tamam', style: 'default' }],
-            { cancelable: true }
-          );
-          analyticsService.logEvent('login_cancelled', { method: 'google' });
-        } else {
-          // Other OAuth errors will be handled by the auth store
-          analyticsService.logEvent('login_failure', {
-            method: 'google',
-            attempts: loginAttempts + 1,
-            error: result.error.message,
-          });
-        }
-      } else if (result.user) {
-        analyticsService.logEvent('login_success', { method: 'google' });
-      }
-    } catch (loginError) {
-      analyticsService.logEvent('login_failure', {
-        method: 'google',
-        attempts: loginAttempts + 1,
-      });
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-  }, [clearError, loginAttempts]);
 
-  // Navigate to sign up screen
-  const navigateToSignUp = useCallback(() => {
-    analyticsService.logEvent('navigate_to_signup_from_login');
-    navigation.navigate('SignUp');
-  }, [navigation]);
+    clearError();
+    analyticsService.logEvent('google_auth_attempt');
+    
+    await loginWithGoogle();
+  }, [clearError, loginWithGoogle]);
 
-  // Navigate to privacy policy
-  const navigateToPrivacyPolicy = useCallback(() => {
-    analyticsService.logEvent('navigate_to_privacy_from_login');
-    navigation.getParent<StackNavigationProp<RootStackParamList>>()?.navigate('PrivacyPolicy');
-  }, [navigation]);
+  // Gradient colors based on theme
+  const gradientColors = useMemo(() => {
+    if (theme.name === 'dark') {
+      return [
+        `${theme.colors.primary}15`,
+        `${theme.colors.secondary}08`,
+        `${theme.colors.background}95`,
+      ] as const;
+    }
+    return [
+      `${theme.colors.primary}08`,
+      `${theme.colors.secondary}05`,
+      `${theme.colors.background}98`,
+    ] as const;
+  }, [theme]);
 
-  // Navigate to password reset (placeholder for future implementation)
-  const navigateToPasswordReset = useCallback(() => {
-    Alert.alert('Şifre Sıfırlama', 'Şifre sıfırlama özelliği yakında eklenecektir.', [
-      { text: 'Tamam', style: 'default' },
-    ]);
-    analyticsService.logEvent('password_reset_attempted');
-  }, []);
+  const renderHeader = () => (
+    <Animated.View 
+      style={[
+        styles.headerSection,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <View style={styles.brandContainer}>
+        <View style={styles.brandIcon}>
+          <Ionicons name="leaf" size={24} color={theme.colors.primary} />
+        </View>
+        <Text style={styles.brandText}>Yeşer</Text>
+      </View>
+      <Text style={styles.welcomeTitle}>
+        {magicLinkSent ? 'Giriş Bağlantısı Gönderildi!' : 'Hoş Geldiniz!'}
+      </Text>
+      <Text style={styles.welcomeSubtitle}>
+        {magicLinkSent 
+          ? 'E-postanızı kontrol edin ve giriş bağlantısına tıklayın.'
+          : 'Minnet yolculuğunuza devam edin'
+        }
+      </Text>
+    </Animated.View>
+  );
 
-  return (
-    <ScreenLayout keyboardAware={true} edges={['top']} density="comfortable" edgeToEdge={true}>
-      <ScreenContent isLoading={isLoading} error={error} onRetry={clearError}>
-        {/* Header Section */}
-        <ScreenSection spacing="large">
-          <View style={styles.headerContainer}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoBackground}>
-                <Ionicons
-                  name="leaf-outline"
-                  size={64}
-                  color={theme.colors.primary}
-                  accessibilityLabel="Yeşer logo"
+  const renderMainContent = () => (
+    <Animated.View 
+      style={[
+        styles.mainContent,
+        {
+          opacity: fadeAnim,
+          transform: [
+            { translateY: cardSlideAnim },
+            { scale: successPulseAnim },
+          ],
+        },
+      ]}
+    >
+      <ThemedCard style={styles.contentCard}>
+        <View style={styles.cardInner}>
+          {!magicLinkSent && (
+            <>
+              {/* Trust Indicators */}
+              <View style={styles.trustSection}>
+                <View style={styles.trustBadge}>
+                  <Ionicons name="shield-checkmark" size={14} color={theme.colors.success} />
+                  <Text style={styles.trustText}>Güvenli Giriş</Text>
+                </View>
+                <View style={styles.trustBadge}>
+                  <Ionicons name="lock-closed" size={14} color={theme.colors.success} />
+                  <Text style={styles.trustText}>Şifresiz</Text>
+                </View>
+              </View>
+
+              {/* Email Input */}
+              <View style={styles.inputSection}>
+                <ThemedInput
+                  label="E-posta Adresi"
+                  value={email}
+                  onChangeText={handleEmailChange}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect={false}
+                  errorText={emailError}
+                  leftIcon="mail"
+                  editable={!isLoading}
+                  validationState={isEmailValid ? 'success' : 'default'}
+                  showValidationIcon={email.length > 0}
+                  placeholder="ornek@email.com"
                 />
               </View>
-            </View>
 
-            <Text style={styles.title} accessibilityRole="header">
-              Yeşer'e Hoş Geldin!
-            </Text>
-
-            <Text style={styles.subtitle} accessibilityRole="text">
-              Minnettarlık yolculuğuna başla.
-            </Text>
-          </View>
-        </ScreenSection>
-
-        {/* Form Section */}
-        <ScreenSection spacing="large">
-          <ThemedCard
-            variant="elevated"
-            density="comfortable"
-            elevation="card"
-            style={styles.formCard}
-          >
-            <View style={styles.formContent}>
-              <ThemedInput
-                label="E-posta Adresiniz"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                errorText={emailError}
-                leftIcon="email"
-                style={styles.inputContainer}
-                isRequired={true}
-                showValidationIcon={true}
-                validationState={
-                  emailError
-                    ? 'error'
-                    : email && email.includes('@') && email.includes('.')
-                      ? 'success'
-                      : 'default'
-                }
-                helperText={!emailError ? 'Kayıtlı e-posta adresinizi girin' : undefined}
-                showClearButton={true}
-              />
-
-              <ThemedInput
-                label="Şifreniz"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                errorText={passwordError}
-                leftIcon="lock-outline"
-                style={styles.inputContainer}
-                isRequired={true}
-                showValidationIcon={true}
-                validationState={
-                  passwordError ? 'error' : password && password.length >= 8 ? 'success' : 'default'
-                }
-                helperText={!passwordError ? 'En az 8 karakter olmalıdır' : undefined}
-                showClearButton={false} // Don't show clear for password
-              />
-
+              {/* Login Button */}
               <ThemedButton
-                title="Giriş Yap"
-                onPress={handleEmailLogin}
+                title={isLoading ? 'Gönderiliyor...' : 'Giriş Bağlantısı Gönder'}
+                onPress={handleMagicLinkLogin}
                 variant="primary"
-                size="standard"
-                fullWidth={true}
-                style={styles.primaryButton}
                 isLoading={isLoading}
-                disabled={isLoading}
+                disabled={isLoading || !email.trim() || !canSendMagicLink() || !isEmailValid}
+                style={styles.loginButton}
+                fullWidth
               />
 
-              <TouchableOpacity
-                onPress={navigateToPasswordReset}
-                activeOpacity={0.7}
-                style={styles.forgotPasswordContainer}
-                accessibilityLabel="Şifremi unuttum"
-                accessibilityRole="button"
+              {/* Help Section Toggle */}
+              <ThemedButton
+                title={showHelpSection ? "Yardımı Gizle" : "Güvenli Link Nedir?"}
+                variant="ghost"
+                onPress={toggleHelpSection}
+                style={styles.helpToggle}
+                iconLeft={showHelpSection ? "chevron-up" : "help-circle-outline"}
+                size="compact"
+              />
+
+              {/* Collapsible Help Section */}
+              <Animated.View 
+                style={[
+                  styles.helpSection,
+                  { height: helpHeight }
+                ]}
               >
-                <Text style={styles.forgotPasswordText}>Şifremi Unuttum</Text>
-              </TouchableOpacity>
-            </View>
-          </ThemedCard>
-        </ScreenSection>
+                <View style={styles.helpContent}>
+                  <Text style={styles.helpTitle}>🔒 Güvenli ve Kolay</Text>
+                  <Text style={styles.helpText}>
+                    Güvenli link ile şifre hatırlamaya gerek yok. E-postanıza özel bir bağlantı 
+                    gönderiyoruz, tıklayıp güvenle giriş yapabilirsiniz.
+                  </Text>
+                </View>
+              </Animated.View>
+            </>
+          )}
 
-        {/* Social Login Section */}
-        <ScreenSection spacing="large">
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>VEYA</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <ThemedCard
-            variant="elevated"
-            density="standard"
-            elevation="card"
-            style={styles.socialCard}
-          >
-            <TouchableOpacity
-              onPress={handleGoogleLogin}
-              style={styles.socialButton}
-              activeOpacity={0.7}
-              accessibilityLabel="Google ile giriş yap butonu"
-              accessibilityRole="button"
-            >
-              <View style={styles.socialButtonContent}>
-                <Ionicons name="logo-google" size={24} color={theme.colors.primary} />
-                <Text style={styles.socialButtonText}>Google ile Giriş Yap</Text>
+          {magicLinkSent && (
+            <View style={styles.successContent}>
+              <View style={styles.successIcon}>
+                <Ionicons name="checkmark-circle" size={64} color={theme.colors.success} />
               </View>
-            </TouchableOpacity>
-          </ThemedCard>
-        </ScreenSection>
+              <Text style={styles.successTitle}>Başarılı!</Text>
+              <Text style={styles.successMessage}>
+                {email} adresine giriş bağlantısı gönderildi.
+              </Text>
+              <Text style={styles.successInstructions}>
+                E-postanızı açın ve "Giriş Yap" butonuna tıklayın.
+              </Text>
+              
+              <ThemedButton
+                title="Yeni E-posta Gönder"
+                variant="outline"
+                onPress={() => {
+                  resetMagicLinkSent();
+                  setEmail('');
+                  setIsEmailValid(false);
+                }}
+                style={styles.resendButton}
+                iconLeft="refresh"
+              />
+            </View>
+          )}
 
-        {/* Footer Section */}
-        <ScreenSection spacing="medium">
-          <View style={styles.footerContainer}>
-            <TouchableOpacity
-              onPress={navigateToSignUp}
-              activeOpacity={0.7}
-              style={styles.footerLink}
-              accessibilityLabel="Hesap oluşturma sayfasına git"
-              accessibilityRole="button"
-            >
-              <Text style={styles.linkText}>Hesabın yok mu? </Text>
-              <Text style={styles.linkTextBold}>Kaydol</Text>
-            </TouchableOpacity>
+          {error && (
+            <View style={styles.errorContainer}>
+              <View style={styles.errorIconContainer}>
+                <Ionicons name="alert-circle" size={18} color={theme.colors.onErrorContainer} />
+              </View>
+              <Text style={styles.errorText}>{safeErrorDisplay(error)}</Text>
+            </View>
+          )}
+        </View>
+      </ThemedCard>
+    </Animated.View>
+  );
 
-            <TouchableOpacity
-              onPress={navigateToPrivacyPolicy}
-              activeOpacity={0.7}
-              style={styles.footerLink}
-              accessibilityLabel="Gizlilik politikası sayfasına git"
-              accessibilityRole="button"
-            >
-              <Text style={styles.privacyText}>Gizlilik Politikası</Text>
-            </TouchableOpacity>
+  const renderGoogleSection = () => (
+    <Animated.View 
+      style={[
+        styles.googleSection,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: cardSlideAnim }],
+        },
+      ]}
+    >
+      <View style={styles.dividerContainer}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>veya</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <ThemedButton
+        title="Google ile Giriş Yap"
+        variant="outline"
+        onPress={handleGoogleLogin}
+        isLoading={isLoading}
+        disabled={isLoading}
+        style={styles.googleButton}
+        iconLeft="google"
+        fullWidth
+      />
+    </Animated.View>
+  );
+
+  return (
+    <ScreenLayout edgeToEdge scrollable showStatusBar={false}>
+      <LinearGradient
+        colors={gradientColors}
+        style={styles.gradientBackground}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.container}>
+          {renderHeader()}
+          
+          <View style={styles.contentArea}>
+            {renderMainContent()}
+            {!magicLinkSent && renderGoogleSection()}
+            {__DEV__ && <NetworkDiagnostics />}
           </View>
-        </ScreenSection>
-      </ScreenContent>
+        </View>
+      </LinearGradient>
     </ScreenLayout>
   );
-};
+});
 
-const createStyles = (theme: AppTheme) =>
+const createStyles = (
+  theme: AppTheme, 
+  insets: { top: number; bottom: number; left: number; right: number }
+) =>
   StyleSheet.create({
-    headerContainer: {
+    gradientBackground: {
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+      paddingTop: insets.top + theme.spacing.lg,
+      paddingBottom: insets.bottom + theme.spacing.lg,
+    },
+    
+    // Header section
+    headerSection: {
       alignItems: 'center',
-      paddingTop: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.xl,
+      paddingTop: theme.spacing.xl,
       paddingBottom: theme.spacing.lg,
     },
-    logoContainer: {
+    brandContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
       marginBottom: theme.spacing.lg,
     },
-    logoBackground: {
-      width: 100,
-      height: 100,
+    brandIcon: {
+      width: 36,
+      height: 36,
       borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primaryContainer,
+      backgroundColor: `${theme.colors.primary}12`,
       justifyContent: 'center',
       alignItems: 'center',
-      // 🌟 Beautiful primary shadow for logo
-      ...getPrimaryShadow.floating(theme),
+      marginRight: theme.spacing.md,
     },
-    title: {
-      ...theme.typography.headlineLarge,
-      color: theme.colors.onBackground,
-      marginBottom: theme.spacing.sm,
-      textAlign: 'center',
+    brandText: {
+      ...theme.typography.headlineMedium,
+      color: theme.colors.primary,
       fontWeight: '700',
     },
-    subtitle: {
+    welcomeTitle: {
+      ...theme.typography.headlineLarge,
+      color: theme.colors.onBackground,
+      fontWeight: '600',
+      textAlign: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    welcomeSubtitle: {
       ...theme.typography.bodyLarge,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 24,
+      lineHeight: 22,
+      paddingHorizontal: theme.spacing.md,
     },
-    formCard: {
-      width: '100%',
-      maxWidth: 400,
+
+    // Content area
+    contentArea: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.lg,
+      minHeight: screenHeight * 0.5,
+    },
+
+    // Main content card
+    mainContent: {
+      marginBottom: theme.spacing.xl,
+    },
+    contentCard: {
+      backgroundColor: theme.name === 'dark' 
+        ? `${theme.colors.surface}95` 
+        : `${theme.colors.surface}98`,
+      borderWidth: 1,
+      borderColor: theme.name === 'dark'
+        ? `${theme.colors.outline}25`
+        : `${theme.colors.outline}30`,
+      ...getPrimaryShadow.medium(theme),
+    },
+    cardInner: {
+      padding: theme.spacing.xl,
+    },
+
+    // Trust indicators
+    trustSection: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: theme.spacing.lg,
+      marginBottom: theme.spacing.xl,
+    },
+    trustBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      backgroundColor: `${theme.colors.success}10`,
+      borderRadius: theme.borderRadius.full,
+      borderWidth: 1,
+      borderColor: `${theme.colors.success}25`,
+    },
+    trustText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.success,
+      fontWeight: '600',
+    },
+
+    // Form elements
+    inputSection: {
+      marginBottom: theme.spacing.xl,
+    },
+    loginButton: {
+      marginTop: theme.spacing.md,
+      minHeight: 52, // Increased for better text accommodation
+      ...getPrimaryShadow.small(theme),
+    },
+    helpToggle: {
+      marginTop: theme.spacing.lg,
       alignSelf: 'center',
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
+      minWidth: 200, // Ensure enough width for Turkish text
+      paddingHorizontal: theme.spacing.md,
     },
-    formContent: {
-      // Padding handled by density="comfortable"
+    helpSection: {
+      overflow: 'hidden',
+      marginTop: theme.spacing.md,
     },
-    inputContainer: {
+    helpContent: {
+      padding: theme.spacing.md,
+      backgroundColor: `${theme.colors.primary}06`,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: `${theme.colors.primary}15`,
+    },
+    helpTitle: {
+      ...theme.typography.labelLarge,
+      color: theme.colors.primary,
+      marginBottom: theme.spacing.xs,
+      fontWeight: '600',
+    },
+    helpText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      lineHeight: 18,
+    },
+
+    // Success state
+    successContent: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.lg,
+    },
+    successIcon: {
+      marginBottom: theme.spacing.lg,
+    },
+    successTitle: {
+      ...theme.typography.headlineMedium,
+      color: theme.colors.success,
+      fontWeight: '700',
       marginBottom: theme.spacing.md,
     },
-    primaryButton: {
-      marginTop: theme.spacing.md,
+    successMessage: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurface,
+      textAlign: 'center',
       marginBottom: theme.spacing.sm,
+      fontWeight: '500',
     },
-    forgotPasswordContainer: {
-      alignItems: 'center',
-      paddingVertical: theme.spacing.sm,
+    successInstructions: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      marginBottom: theme.spacing.xl,
+      lineHeight: 20,
+      paddingHorizontal: theme.spacing.md,
     },
-    forgotPasswordText: {
-      ...theme.typography.labelMedium,
-      color: theme.colors.primary,
-      textDecorationLine: 'underline',
+    resendButton: {
+      ...getPrimaryShadow.small(theme),
+    },
+
+    // Error state
+    errorContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.md,
+      padding: theme.spacing.md,
+      backgroundColor: theme.colors.errorContainer,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.error,
+    },
+    errorIconContainer: {
+      marginTop: 1,
+    },
+    errorText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onErrorContainer,
+      flex: 1,
+      lineHeight: 18,
+    },
+
+    // Google section
+    googleSection: {
+      paddingHorizontal: 0,
     },
     dividerContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginVertical: theme.spacing.lg,
-      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
     },
     dividerLine: {
       flex: 1,
       height: 1,
-      backgroundColor: theme.colors.outlineVariant,
+      backgroundColor: `${theme.colors.outline}40`,
     },
     dividerText: {
-      ...theme.typography.labelSmall,
+      ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
       marginHorizontal: theme.spacing.md,
       backgroundColor: theme.colors.background,
-      paddingHorizontal: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.xs,
     },
-    socialCard: {
-      borderRadius: theme.borderRadius.md,
-    },
-    socialButton: {
-      // Padding handled by density="standard"
-    },
-    socialButtonContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: theme.spacing.sm,
-    },
-    socialButtonText: {
-      ...theme.typography.labelLarge,
-      color: theme.colors.onSurface,
-      marginLeft: theme.spacing.md,
-      fontWeight: '600',
-    },
-    footerContainer: {
-      alignItems: 'center',
-      paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.lg,
-    },
-    footerLink: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginVertical: theme.spacing.sm,
-      paddingVertical: theme.spacing.sm,
-    },
-    linkText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurfaceVariant,
-    },
-    linkTextBold: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.primary,
-      fontWeight: '600',
-    },
-    privacyText: {
-      ...theme.typography.labelSmall,
-      color: theme.colors.onSurfaceVariant,
-      textDecorationLine: 'underline',
+    googleButton: {
+      backgroundColor: theme.name === 'dark' 
+        ? `${theme.colors.surface}90` 
+        : `${theme.colors.surface}95`,
+      borderColor: `${theme.colors.outline}30`,
+      minHeight: 52, // Increased for better text accommodation
+      ...getPrimaryShadow.small(theme),
     },
   });
+
+LoginScreen.displayName = 'LoginScreen';
 
 export default LoginScreen;

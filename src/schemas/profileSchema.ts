@@ -1,6 +1,22 @@
 import { z } from 'zod';
 
-// Schema for raw data directly from the 'profiles' Supabase table
+// 🚨 FIX: Single source of truth with shared validation logic
+// Create reusable time validation preprocessing
+const timePreprocessor = z.preprocess(
+  (val) => {
+    if (typeof val === 'string') {
+      const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+      return timeRegex.test(val) ? val : null;
+    }
+    return val; // Pass through non-string values (e.g., null, undefined)
+  },
+  z
+    .string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, 'Invalid time format, expected HH:MM:SS')
+    .nullable()
+);
+
+// 🚨 FIX: Base schema for raw database data (single source of truth)
 export const rawProfileDataSchema = z.object({
   id: z.string().uuid('Invalid UUID format for id'),
   username: z
@@ -10,34 +26,10 @@ export const rawProfileDataSchema = z.object({
     .nullable(),
   onboarded: z.boolean(),
   reminder_enabled: z.boolean(),
-  reminder_time: z.preprocess(
-    (val) => {
-      if (typeof val === 'string') {
-        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
-        return timeRegex.test(val) ? val : null;
-      }
-      return val; // Pass through non-string values (e.g., null, undefined)
-    },
-    z
-      .string()
-      .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, 'Invalid time format, expected HH:MM:SS')
-      .nullable()
-  ),
+  reminder_time: timePreprocessor,
   throwback_reminder_enabled: z.boolean(),
   throwback_reminder_frequency: z.enum(['daily', 'weekly', 'monthly', 'disabled']),
-  throwback_reminder_time: z.preprocess(
-    (val) => {
-      if (typeof val === 'string') {
-        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
-        return timeRegex.test(val) ? val : null;
-      }
-      return val;
-    },
-    z
-      .string()
-      .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, 'Invalid time format, expected HH:MM:SS')
-      .nullable()
-  ),
+  throwback_reminder_time: timePreprocessor,
   updated_at: z
     .string()
     .datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
@@ -47,61 +39,35 @@ export const rawProfileDataSchema = z.object({
 
 export type RawProfileData = z.infer<typeof rawProfileDataSchema>;
 
-// Schema for the application-level Profile object (after potential transformations)
-export const profileSchema = z.object({
-  id: z.string().uuid('Invalid UUID format for id'),
-  username: z
-    .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username cannot exceed 50 characters')
-    .optional()
-    .nullable(),
-  onboarded: z.boolean().optional(),
-  reminder_enabled: z.boolean().optional(),
-  reminder_time: z.preprocess(
-    (val) => {
-      if (typeof val === 'string') {
-        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
-        return timeRegex.test(val) ? val : null;
-      }
-      return val; // Pass through non-string values (e.g., null, undefined)
-    },
-    z
+// 🚨 FIX: Application schema using .transform() to handle snake_case to camelCase conversion
+// This creates a single source of truth and eliminates duplication
+export const profileSchema = rawProfileDataSchema
+  .extend({
+    // Add created_at field for application layer
+    created_at: z
       .string()
-      .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, 'Invalid time format, expected HH:MM:SS')
-      .optional()
-      .nullable()
-  ),
-  throwback_reminder_enabled: z.boolean().optional(),
-  throwback_reminder_frequency: z.enum(['daily', 'weekly', 'monthly', 'disabled']).optional(),
-  throwback_reminder_time: z.preprocess(
-    (val) => {
-      if (typeof val === 'string') {
-        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
-        return timeRegex.test(val) ? val : null;
-      }
-      return val;
-    },
-    z
-      .string()
-      .regex(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/, 'Invalid time format, expected HH:MM:SS')
-      .optional()
-      .nullable()
-  ),
-  created_at: z
-    .string()
-    .datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
-  updated_at: z
-    .string()
-    .datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
-  daily_gratitude_goal: z.number().int().positive().optional().nullable(),
-  useVariedPrompts: z.boolean().optional(),
-});
+      .datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
+  })
+  .transform((data) => ({
+    ...data,
+    // 🚨 FIX: Handle snake_case to camelCase conversion safely
+    useVariedPrompts: data.use_varied_prompts,
+    // Keep both for backward compatibility if needed
+    use_varied_prompts: data.use_varied_prompts,
+    // Make fields optional for application layer flexibility
+    username: data.username ?? undefined,
+    onboarded: data.onboarded ?? false,
+    reminder_enabled: data.reminder_enabled ?? false,
+    reminder_time: data.reminder_time ?? undefined,
+    throwback_reminder_enabled: data.throwback_reminder_enabled ?? false,
+    throwback_reminder_frequency: data.throwback_reminder_frequency ?? 'disabled',
+    throwback_reminder_time: data.throwback_reminder_time ?? undefined,
+    daily_gratitude_goal: data.daily_gratitude_goal ?? undefined,
+  }));
 
 export type Profile = z.infer<typeof profileSchema>;
 
-// Schema for updating a profile, all fields are optional
-// Ensure this aligns with the fields that can actually be updated in the 'profiles' table
+// 🚨 FIX: Update schema using base validation - no duplication
 export const updateProfileSchema = z.object({
   username: z
     .string()

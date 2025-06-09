@@ -5,54 +5,176 @@ import * as WebBrowser from 'expo-web-browser';
 
 import { supabase } from '../utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
+import { safeErrorDisplay } from '@/utils/errorTranslation';
 
-// Custom interface for email/password credentials, as UserCredentials might not be exported or match needed structure
-export interface EmailPasswordCredentials {
+// Magic link credentials interface
+export interface MagicLinkCredentials {
   email: string;
-  password: string;
-  options?: { data?: Record<string, unknown>; emailRedirectTo?: string }; // For additional signup options like 'data'
+  options?: {
+    emailRedirectTo?: string;
+    shouldCreateUser?: boolean;
+    data?: Record<string, unknown>;
+  };
 }
 
-// --- Sign Up ---
-export const signUpWithEmail = async (credentials: EmailPasswordCredentials) => {
-  // For Supabase, signUp typically takes an object with email, password, and optionally options (like data for user_metadata)
-  const { data, error } = await supabase.auth.signUp({
-    email: credentials.email,
-    password: credentials.password,
-    options: credentials.options,
+// Helper function to handle auth errors consistently
+const handleAuthError = (error: AuthError, operation: string) => {
+  // Log technical details for debugging (never shown to users)
+  logger.error(`${operation} error:`, {
+    message: error.message,
+    status: (error as { status?: number }).status,
+    name: (error as { name?: string }).name,
+    operation,
   });
-  const { user, session } = data || {};
-  return { user, session, error };
+
+  // Always return error with user-friendly message
+  return {
+    ...error,
+    message: safeErrorDisplay(error)
+  };
 };
 
-// --- Sign In ---
-export const signInWithEmail = async (credentials: EmailPasswordCredentials) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
+// --- Magic Link Authentication ---
+export const signInWithMagicLink = async (credentials: MagicLinkCredentials) => {
+  const { data, error } = await supabase.auth.signInWithOtp({
     email: credentials.email,
-    password: credentials.password,
+    options: {
+      emailRedirectTo: credentials.options?.emailRedirectTo || 'yeserapp://auth/confirm',
+      shouldCreateUser: credentials.options?.shouldCreateUser ?? true,
+      data: credentials.options?.data,
+    },
   });
-  const { user, session } = data || {};
-  return { user, session, error };
+  return { data, error };
+};
+
+// --- Handle Magic Link Confirmation ---
+export const confirmMagicLink = async (tokenHash: string, type: string = 'magiclink') => {
+  try {
+    logger.debug('Magic link confirmation attempt', { type });
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: type as 'magiclink' | 'recovery' | 'invite' | 'email_change',
+    });
+    
+    if (error) {
+      return { user: null, session: null, error: handleAuthError(error, 'Magic link confirmation') };
+    }
+    
+    logger.debug('Magic link confirmation successful', {
+      hasUser: !!data?.user,
+      hasSession: !!data?.session,
+    });
+    
+    return { user: data?.user, session: data?.session, error: null };
+  } catch (err) {
+    const error = err as AuthError;
+    return { user: null, session: null, error: handleAuthError(error, 'Magic link confirmation') };
+  }
+};
+
+// --- Handle OAuth-style Magic Link Tokens ---
+export const setSessionFromTokens = async (accessToken: string, refreshToken: string) => {
+  try {
+    logger.debug('OAuth token session setup attempt', {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      accessTokenLength: accessToken?.length || 0,
+      refreshTokenLength: refreshToken?.length || 0,
+    });
+
+    // 🚨 DEBUG: Test basic network connectivity first
+    try {
+      const testResponse = await fetch('https://httpbin.org/get', { 
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      logger.debug('Network connectivity test:', { 
+        status: testResponse.status,
+        canReachInternet: testResponse.ok 
+      });
+    } catch (networkError) {
+      logger.error('Basic network connectivity failed:', { 
+        error: networkError instanceof Error ? networkError.message : String(networkError),
+        type: 'NETWORK_CONNECTIVITY_ISSUE'
+      });
+    }
+
+    // 🚨 DEBUG: Test Supabase API connectivity
+    try {
+      const supabaseHealthCheck = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/`, {
+        method: 'GET',
+        headers: {
+          'apikey': process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+          'Content-Type': 'application/json'
+        }
+      });
+      logger.debug('Supabase API connectivity test:', { 
+        status: supabaseHealthCheck.status,
+        canReachSupabase: supabaseHealthCheck.status < 500
+      });
+    } catch (supabaseError) {
+      logger.error('Supabase API connectivity failed:', { 
+        error: supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
+        type: 'SUPABASE_CONNECTIVITY_ISSUE'
+      });
+    }
+
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    
+    if (error) {
+      // 🚨 FIX: Enhanced error logging with proper typing instead of any
+      const errorDetails = error as Error & {
+        name?: string;
+        status?: number | string;
+        cause?: unknown;
+        stack?: string;
+      };
+      
+      logger.error('OAuth setSession error details:', {
+        message: error.message,
+        name: errorDetails.name,
+        status: errorDetails.status,
+        cause: errorDetails.cause,
+        stack: errorDetails.stack,
+        isNetworkError: error.message.includes('Network') || error.message.includes('fetch'),
+        errorType: 'SUPABASE_SET_SESSION_ERROR'
+      });
+      
+      return { user: null, session: null, error: handleAuthError(error, 'OAuth token session setup') };
+    }
+    
+    logger.debug('OAuth token session setup successful', {
+      hasUser: !!data?.user,
+      hasSession: !!data?.session,
+      userId: data?.user?.id,
+      sessionExpiry: data?.session?.expires_at
+    });
+    
+    return { user: data?.user, session: data?.session, error: null };
+  } catch (err) {
+    const error = err as AuthError;
+    
+    // 🚨 DEBUG: Catch-all error logging
+    logger.error('OAuth token session setup catch-all error:', {
+      message: error.message,
+      name: error.name,
+      type: typeof error,
+      isErrorObject: error instanceof Error,
+      errorType: 'OAUTH_TOKEN_SETUP_EXCEPTION'
+    });
+    
+    return { user: null, session: null, error: handleAuthError(error, 'OAuth token session setup') };
+  }
 };
 
 // --- Sign Out ---
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
   return { error };
-};
-
-// --- Get Current User ---
-export const getCurrentUser = async (): Promise<{
-  user: User | null;
-  error: AuthError | null;
-}> => {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  // console.error for errors is good for debugging, but the service should just return the error.
-  // The caller (e.g., UI or store) can decide how to handle/log it.
-  return { user, error };
 };
 
 // --- Get Current Session ---
@@ -84,8 +206,8 @@ export const signInWithGoogle = async (): Promise<{
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: process.env.EXPO_PUBLIC_REDIRECT_URI, // Ensure this is configured in your .env
-        skipBrowserRedirect: true, // Important for Expo to handle the redirect manually
+        redirectTo: 'yeserapp://auth/oauth-callback',
+        skipBrowserRedirect: true,
       },
     });
 
@@ -97,7 +219,7 @@ export const signInWithGoogle = async (): Promise<{
     if (data?.url) {
       const response = await WebBrowser.openAuthSessionAsync(
         data.url,
-        process.env.EXPO_PUBLIC_REDIRECT_URI
+        'yeserapp://auth/oauth-callback'
       );
 
       if (response.type === 'success' && response.url) {
@@ -128,7 +250,7 @@ export const signInWithGoogle = async (): Promise<{
           });
 
           if (setSessionError) {
-            logger.error('Error setting session after Google Sign-In:', setSessionError);
+            logger.error('Google Sign-In setSession Error:', setSessionError);
             return { user: null, session: null, error: setSessionError };
           }
           // After setSession, onAuthStateChange should fire with SIGNED_IN.
@@ -140,98 +262,52 @@ export const signInWithGoogle = async (): Promise<{
             error: null,
           };
         } else {
-          logger.error(
-            'Google Sign-In: access_token or refresh_token missing in redirect URL fragment'
-          );
+          logger.error('Google Sign-In: Missing tokens in redirect URL');
           return {
             user: null,
             session: null,
             error: {
-              name: 'AuthMissingTokenError',
-              message: 'Access token or refresh token missing in redirect.',
+              name: 'AuthTokenMissingError',
+              message: 'OAuth tokens missing in redirect URL.',
             } as AuthError,
           };
         }
-      } else if (response.type === 'cancel' || response.type === 'dismiss') {
-        logger.debug('Google Sign-In cancelled by user.');
+      } else if (response.type === 'cancel') {
+        logger.debug('Google Sign-In: User cancelled OAuth flow');
         return {
           user: null,
           session: null,
           error: {
             name: 'AuthCancelledError',
-            message: 'Google Sign-In cancelled by user.',
+            message: 'User cancelled OAuth flow.',
           } as AuthError,
         };
       } else {
-        // Handles response.type === 'error' or other unexpected types
-        logger.error('Google Sign-In WebBrowser Error:', { response: JSON.stringify(response) });
-        let errorMessage = 'An unexpected error occurred during Google Sign-In with WebBrowser.';
-        if (response.type === 'error') {
-          // response is WebBrowserAuthSessionErrorResult (Android launch error) OR WebBrowserAuthSessionCompleteResult (error in URL)
-          if ('message' in response && typeof response.message === 'string') {
-            // This is for WebBrowserAuthSessionErrorResult (Android launch error)
-            errorMessage = response.message;
-          } else if ('url' in response && typeof response.url === 'string') {
-            // This is for WebBrowserAuthSessionCompleteResult with type 'error' (error in URL params)
-            const details = [];
-            // Check if errorCode and errorMessage exist and are part of the response object
-            const respWithPossibleErrorDetails = response as {
-              errorCode?: string | null;
-              errorMessage?: string | null;
-            };
-            if (respWithPossibleErrorDetails.errorCode) {
-              details.push(`Code: ${respWithPossibleErrorDetails.errorCode}`);
-            }
-            if (respWithPossibleErrorDetails.errorMessage) {
-              details.push(`Message: ${respWithPossibleErrorDetails.errorMessage}`);
-            }
-            if (details.length > 0) {
-              errorMessage = `OAuth error: ${details.join(', ')}. URL: ${response.url}`;
-            } else {
-              errorMessage = `OAuth error in redirect URL: ${response.url}`;
-            }
-          }
-        }
+        logger.error('Google Sign-In: OAuth session failed', { responseType: response.type });
         return {
           user: null,
           session: null,
           error: {
-            name: 'AuthBrowserError',
-            message: errorMessage,
+            name: 'AuthSessionFailedError',
+            message: 'OAuth session failed to complete.',
           } as AuthError,
         };
       }
+    } else {
+      logger.error('Google Sign-In: No OAuth URL returned');
+      return {
+        user: null,
+        session: null,
+        error: {
+          name: 'AuthURLMissingError',
+          message: 'OAuth URL not returned by provider.',
+        } as AuthError,
+      };
     }
-    // Fallback if no URL and no initial error from signInWithOAuth
-    return {
-      user: null,
-      session: null,
-      error: {
-        name: 'AuthUnknownError',
-        message: 'Unknown error: No URL provided for Google Sign-In.',
-      } as AuthError,
-    };
-  } catch (err: unknown) {
-    let errorMessage = 'An unexpected error occurred.';
-    if (
-      typeof err === 'object' &&
-      err !== null &&
-      'message' in err &&
-      typeof (err as { message: unknown }).message === 'string'
-    ) {
-      errorMessage = (err as { message: string }).message;
-    } else if (typeof err === 'string') {
-      errorMessage = err;
-    }
-    logger.error('Unexpected error in signInWithGoogle:', new Error(errorMessage));
-    return {
-      user: null,
-      session: null,
-      error: {
-        name: 'AuthCatchError',
-        message: errorMessage,
-      } as AuthError,
-    };
+  } catch (err) {
+    const error = err as AuthError;
+    logger.error('Google Sign-In Exception:', error);
+    return { user: null, session: null, error };
   }
 };
 

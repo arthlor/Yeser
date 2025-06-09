@@ -1,64 +1,25 @@
 import { z } from 'zod';
 
-// Password complexity validation function
-const passwordComplexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
-
-export const loginSchema = z.object({
+// Magic link authentication schema - only requires email
+export const magicLinkSchema = z.object({
   email: z.string().email('Geçersiz e-posta adresi.'),
-  password: z.string().min(8, 'Şifre en az 8 karakter olmalıdır.'),
 });
 
-export type LoginFormInputs = z.infer<typeof loginSchema>;
+export type MagicLinkFormInputs = z.infer<typeof magicLinkSchema>;
 
-export const signupSchema = z
-  .object({
-    username: z
-      .string()
-      .min(3, 'Kullanıcı adı en az 3 karakter olmalıdır.')
-      .regex(/^[a-zA-Z0-9_]+$/, 'Kullanıcı adı yalnızca harf, sayı ve alt çizgi içerebilir.'),
-    email: z.string().email('Geçersiz e-posta adresi.'),
-    password: z
-      .string()
-      .min(8, 'Şifre en az 8 karakter olmalıdır.')
-      .regex(
-        passwordComplexityRegex,
-        'Şifre en az bir küçük harf, büyük harf, rakam ve özel karakter (@$!%*?&) içermelidir.'
-      ),
-    confirmPassword: z.string().min(8, 'Şifre onayı en az 8 karakter olmalıdır.'),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Şifreler eşleşmiyor.',
-    path: ['confirmPassword'], // Path to field to display the error
-  });
+// Keep this for backward compatibility during transition
+export const loginSchema = magicLinkSchema;
+export type LoginFormInputs = MagicLinkFormInputs;
 
-export type SignupFormInputs = z.infer<typeof signupSchema>;
+// Email validation helper for consistent validation across the app
+export const emailSchema = z.string().email('Geçersiz e-posta adresi.');
 
-// Password strength helper for UI feedback
-export const getPasswordStrength = (password: string) => {
-  const hasMinLength = password.length >= 8;
-  const hasLowercase = /[a-z]/.test(password);
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasDigit = /\d/.test(password);
-  const hasSymbol = /[@$!%*?&]/.test(password);
-
-  const requirements = [
-    { met: hasMinLength, text: 'En az 8 karakter' },
-    { met: hasLowercase, text: 'Küçük harf (a-z)' },
-    { met: hasUppercase, text: 'Büyük harf (A-Z)' },
-    { met: hasDigit, text: 'Rakam (0-9)' },
-    { met: hasSymbol, text: 'Özel karakter (@$!%*?&)' },
-  ];
-
-  const metCount = requirements.filter(req => req.met).length;
-  
-  let strength: 'weak' | 'fair' | 'good' | 'strong' = 'weak';
-  if (metCount >= 5) {
-    strength = 'strong';
-  } else if (metCount >= 4) {
-    strength = 'good';
-  } else if (metCount >= 3) {
-    strength = 'fair';
+// Helper for validating email format
+export const isValidEmail = (email: string): boolean => {
+  try {
+    emailSchema.parse(email);
+    return true;
+  } catch {
+    return false;
   }
-
-  return { strength, requirements, score: metCount };
 };

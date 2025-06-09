@@ -1,0 +1,48 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "yeser-team"
+    assignees:
+      - "yeser-team"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    # Group dependency updates
+    groups:
+      react-native:
+        patterns:
+          - "react-native*"
+          - "@react-native*"
+          - "expo*"
+      testing:
+        patterns:
+          - "*jest*"
+          - "@testing-library*"
+          - "babel-jest"
+      linting:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint*"
+          - "prettier"
+    # Security updates only for production dependencies
+    security-updates:
+      enabled: true
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci"
+      include: "scope" 

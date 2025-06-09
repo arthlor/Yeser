@@ -8,6 +8,9 @@ const config = getDefaultConfig(__dirname);
 // as mentioned in Expo SDK 53 changelog: https://expo.dev/changelog/sdk-53
 config.resolver.unstable_enablePackageExports = false;
 
+// Add support for .lottie files
+config.resolver.assetExts.push('lottie');
+
 // Add 'stream' and other Node.js core module polyfills
 config.resolver.extraNodeModules = {
   ...config.resolver.extraNodeModules,

@@ -13,6 +13,15 @@ import type { MagicLinkCredentials } from '../services/authService';
 // Rate limiting constants
 const MAGIC_LINK_COOLDOWN_MS = 60 * 1000; // 1 minute between requests
 
+// **RACE CONDITION FIX**: Add atomic operation tracking
+interface AtomicOperation {
+  type: 'magic_link' | 'auth_init' | 'logout';
+  timestamp: number;
+  promise: Promise<void>;
+}
+
+const currentOperations: Map<string, AtomicOperation> = new Map();
+
 // Define the state interface for authentication
 export interface AuthState {
   isAuthenticated: boolean;
@@ -35,10 +44,54 @@ export interface AuthState {
 }
 
 let authListenerSubscription: { unsubscribe: () => void } | null = null;
+// **RACE CONDITION FIX**: Add listener management state
+let isListenerActive = false;
 
 // Helper function to handle errors consistently
 const handleStoreError = (error: unknown): string => {
   return safeErrorDisplay(error);
+};
+
+// **RACE CONDITION FIX**: Atomic rate limiting check and update
+const atomicMagicLinkRateCheck = (
+  get: () => AuthState,
+  set: (partial: Partial<AuthState>) => void
+): boolean => {
+  const operationKey = 'magic_link_rate_check';
+
+  // Check if a magic link operation is already in progress
+  if (currentOperations.has(operationKey)) {
+    return false; // Operation in progress, deny request
+  }
+
+  const state = get();
+  const now = Date.now();
+
+  // Check rate limit
+  if (state.lastMagicLinkRequest) {
+    const timeSinceLastRequest = now - state.lastMagicLinkRequest;
+    if (timeSinceLastRequest < MAGIC_LINK_COOLDOWN_MS) {
+      return false; // Rate limited
+    }
+  }
+
+  // Atomically reserve the operation slot and update timestamp
+  const operation: AtomicOperation = {
+    type: 'magic_link',
+    timestamp: now,
+    promise: Promise.resolve(), // Will be replaced with actual operation
+  };
+  currentOperations.set(operationKey, operation);
+
+  // Update last request timestamp immediately to prevent race conditions
+  set({ lastMagicLinkRequest: now });
+
+  return true; // Rate limit check passed, operation reserved
+};
+
+// **RACE CONDITION FIX**: Clean up atomic operation
+const cleanupAtomicOperation = (operationKey: string): void => {
+  currentOperations.delete(operationKey);
 };
 
 // Create the Zustand store
@@ -51,56 +104,95 @@ const useAuthStore = create<AuthState>((set, get) => ({
   lastMagicLinkRequest: null,
 
   initializeAuth: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const session = await authService.getCurrentSession();
-      if (session && session.user) {
-        set({ isAuthenticated: true, user: session.user, isLoading: false });
-      } else {
-        set({ isAuthenticated: false, user: null, isLoading: false });
-      }
+    // **RACE CONDITION FIX**: Prevent multiple concurrent initializations
+    const operationKey = 'auth_init';
+    if (currentOperations.has(operationKey)) {
+      logger.debug('Auth initialization already in progress, skipping');
+      return;
+    }
 
-      // Unsubscribe from any existing listener before creating a new one
-      authListenerSubscription?.unsubscribe();
-
-      // Subscribe to auth state changes
-      authListenerSubscription = authService.onAuthStateChange((event, session) => {
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
-          set({
-            isAuthenticated: true,
-            user: session.user,
-            isLoading: false,
-            error: null,
-            magicLinkSent: false,
-          });
-        } else if (event === 'SIGNED_OUT') {
-          set({
-            isAuthenticated: false,
-            user: null,
-            isLoading: false,
-            error: null,
-            magicLinkSent: false,
-          });
-        } else if (event === 'USER_UPDATED' && session?.user) {
-          set({ user: session.user });
-        } else if (event === 'INITIAL_SESSION' && !session) {
-          // No active session on startup
+    const initPromise = (async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const session = await authService.getCurrentSession();
+        if (session && session.user) {
+          set({ isAuthenticated: true, user: session.user, isLoading: false });
+        } else {
           set({ isAuthenticated: false, user: null, isLoading: false });
         }
-      });
-    } catch (error) {
-      logger.error('Error in initializeAuth:', error as Error);
-      set({
-        isAuthenticated: false,
-        user: null,
-        isLoading: false,
-        error: handleStoreError(error),
-      });
+
+        // **RACE CONDITION FIX**: Properly manage auth listener subscription
+        if (isListenerActive && authListenerSubscription) {
+          logger.debug('Auth listener already active, skipping subscription setup');
+          return;
+        }
+
+        // Unsubscribe from any existing listener before creating a new one
+        if (authListenerSubscription) {
+          authListenerSubscription.unsubscribe();
+          isListenerActive = false;
+        }
+
+        // Subscribe to auth state changes
+        authListenerSubscription = authService.onAuthStateChange((event, session) => {
+          if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+            set({
+              isAuthenticated: true,
+              user: session.user,
+              isLoading: false,
+              error: null,
+              magicLinkSent: false,
+            });
+          } else if (event === 'SIGNED_OUT') {
+            set({
+              isAuthenticated: false,
+              user: null,
+              isLoading: false,
+              error: null,
+              magicLinkSent: false,
+            });
+          } else if (event === 'USER_UPDATED' && session?.user) {
+            set({ user: session.user });
+          } else if (event === 'INITIAL_SESSION' && !session) {
+            // No active session on startup
+            set({ isAuthenticated: false, user: null, isLoading: false });
+          }
+        });
+
+        isListenerActive = true;
+        logger.debug('Auth listener subscribed successfully');
+      } catch (error) {
+        logger.error('Error in initializeAuth:', error as Error);
+        set({
+          isAuthenticated: false,
+          user: null,
+          isLoading: false,
+          error: handleStoreError(error),
+        });
+      }
+    })();
+
+    currentOperations.set(operationKey, {
+      type: 'auth_init',
+      timestamp: Date.now(),
+      promise: initPromise,
+    });
+
+    try {
+      await initPromise;
+    } finally {
+      cleanupAtomicOperation(operationKey);
     }
   },
 
   canSendMagicLink: () => {
     const state = get();
+
+    // **RACE CONDITION FIX**: Check for ongoing operations
+    if (currentOperations.has('magic_link_rate_check')) {
+      return false; // Operation in progress
+    }
+
     if (!state.lastMagicLinkRequest) {
       return true;
     }
@@ -110,10 +202,9 @@ const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   loginWithMagicLink: async (credentials) => {
-    const state = get();
-
-    // Check client-side rate limiting
-    if (!state.canSendMagicLink()) {
+    // **RACE CONDITION FIX**: Use atomic rate limiting check
+    if (!atomicMagicLinkRateCheck(get, set)) {
+      const state = get();
       const remainingTime = Math.ceil(
         (MAGIC_LINK_COOLDOWN_MS - (Date.now() - (state.lastMagicLinkRequest || 0))) / 1000
       );
@@ -123,6 +214,8 @@ const useAuthStore = create<AuthState>((set, get) => ({
       });
       return;
     }
+
+    const operationKey = 'magic_link_rate_check';
 
     set({ isLoading: true, error: null, magicLinkSent: false });
 
@@ -140,7 +233,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
           isLoading: false,
           error: null,
           magicLinkSent: true,
-          lastMagicLinkRequest: Date.now(),
+          // lastMagicLinkRequest already set in atomicMagicLinkRateCheck
         });
       }
     } catch (error) {
@@ -149,6 +242,9 @@ const useAuthStore = create<AuthState>((set, get) => ({
         error: handleStoreError(error),
         magicLinkSent: false,
       });
+    } finally {
+      // **RACE CONDITION FIX**: Always clean up atomic operation
+      cleanupAtomicOperation(operationKey);
     }
   },
 
@@ -219,15 +315,48 @@ const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    set({ isLoading: true });
-    const { error } = await authService.signOut();
-    if (error) {
-      logger.error('Logout error:', error);
-      set({ isLoading: false, error: handleStoreError(error) });
-    } else {
-      // Clear all cached data
-      queryClient.clear();
-      logger.debug('Logout successful');
+    // **RACE CONDITION FIX**: Prevent multiple concurrent logouts
+    const operationKey = 'logout';
+    if (currentOperations.has(operationKey)) {
+      logger.debug('Logout already in progress, skipping');
+      return;
+    }
+
+    const logoutPromise = (async () => {
+      set({ isLoading: true });
+      try {
+        const { error } = await authService.signOut();
+        if (error) {
+          logger.error('Logout error:', error);
+          set({ isLoading: false, error: handleStoreError(error) });
+        } else {
+          // **RACE CONDITION FIX**: Properly cleanup auth listener on logout
+          if (authListenerSubscription) {
+            authListenerSubscription.unsubscribe();
+            authListenerSubscription = null;
+            isListenerActive = false;
+          }
+
+          // Clear all cached data
+          queryClient.clear();
+          logger.debug('Logout successful');
+        }
+      } catch (error) {
+        logger.error('Unexpected logout error:', error as Error);
+        set({ isLoading: false, error: handleStoreError(error) });
+      }
+    })();
+
+    currentOperations.set(operationKey, {
+      type: 'logout',
+      timestamp: Date.now(),
+      promise: logoutPromise,
+    });
+
+    try {
+      await logoutPromise;
+    } finally {
+      cleanupAtomicOperation(operationKey);
     }
   },
 

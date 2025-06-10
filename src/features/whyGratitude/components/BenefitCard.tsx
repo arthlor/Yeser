@@ -30,52 +30,50 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
     const paperTheme = useTheme();
     const [expanded, setExpanded] = React.useState(initialExpanded);
 
-    // Animation values
+    // ✅ PERFORMANCE FIX: Reduce animation complexity - use simpler scale animation
     const scale = useSharedValue(1);
-    const elevation = useSharedValue(2);
 
-    // Memoize expensive calculations
+    // ✅ PERFORMANCE FIX: Memoize all theme-dependent calculations
     const styles = useMemo(() => createStyles(activeTheme), [activeTheme]);
     const animationDelay = useMemo(() => index * 150, [index]);
+
+    // ✅ PERFORMANCE FIX: Memoize theme objects to prevent recreation
+    const memoizedTheme = useMemo(
+      () => ({ ...paperTheme, colors: { background: 'transparent' } }),
+      [paperTheme]
+    );
+
     const rippleColor = useMemo(
       () => `${activeTheme.colors.primary}15`,
       [activeTheme.colors.primary]
     );
 
-    const iconGradient = useMemo(
-      () => [activeTheme.colors.primary, activeTheme.colors.primaryVariant] as const,
-      [activeTheme]
+    // ✅ PERFORMANCE FIX: Memoize gradient arrays
+    const gradients = useMemo(
+      () => ({
+        icon: [activeTheme.colors.primary, activeTheme.colors.primaryVariant] as const,
+        cta: [activeTheme.colors.primary, activeTheme.colors.primaryVariant] as const,
+      }),
+      [activeTheme.colors.primary, activeTheme.colors.primaryVariant]
     );
 
-    const ctaGradient = useMemo(
-      () => [activeTheme.colors.primary, activeTheme.colors.primaryVariant] as const,
-      [activeTheme]
+    // ✅ PERFORMANCE FIX: Simplified animation style
+    const animatedCardStyle = useAnimatedStyle(
+      () => ({
+        transform: [{ scale: scale.value }],
+      }),
+      []
     );
 
-    // Animated styles
-    const animatedCardStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-      elevation: elevation.value,
-      shadowOpacity: elevation.value * 0.05,
-    }));
-
-    // Memoize event handlers
+    // ✅ PERFORMANCE FIX: Optimized event handlers
     const handlePress = useCallback(() => {
       setExpanded((prev) => !prev);
 
-      // Subtle spring animation on press
-      scale.value = withSpring(0.98, { duration: 150 }, () => {
-        scale.value = withSpring(1, { duration: 200 });
+      // Simplified spring animation
+      scale.value = withSpring(0.98, { duration: 100 }, () => {
+        scale.value = withSpring(1, { duration: 150 });
       });
     }, [scale]);
-
-    const handlePressIn = useCallback(() => {
-      elevation.value = withSpring(6);
-    }, [elevation]);
-
-    const handlePressOut = useCallback(() => {
-      elevation.value = withSpring(2);
-    }, [elevation]);
 
     const handleCtaPress = useCallback(() => {
       if (ctaPrompt && onCtaPress) {
@@ -83,10 +81,11 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
       }
     }, [ctaPrompt, onCtaPress]);
 
+    // ✅ PERFORMANCE FIX: Memoize icon component to prevent recreation
     const leftIconRenderer = useCallback(
       (_props: Record<string, unknown>) => (
         <View style={styles.iconContainer}>
-          <LinearGradient colors={iconGradient} style={styles.iconBackground}>
+          <LinearGradient colors={gradients.icon} style={styles.iconBackground}>
             <MaterialCommunityIcons
               name={icon as keyof typeof MaterialCommunityIcons.glyphMap}
               size={24}
@@ -95,101 +94,118 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
           </LinearGradient>
         </View>
       ),
-      [icon, activeTheme.colors.onPrimary, iconGradient, styles]
+      [
+        icon,
+        activeTheme.colors.onPrimary,
+        gradients.icon,
+        styles.iconContainer,
+        styles.iconBackground,
+      ]
     );
 
     return (
-      <Animated.View
-        entering={FadeInUp.delay(animationDelay).duration(700)}
-        testID={testID}
-        style={animatedCardStyle}
-      >
-        <Card
-          style={styles.card}
-          accessible={true}
-          accessibilityLabel={`${title} kartı`}
-          accessibilityHint={expanded ? 'Daraltmak için dokunun' : 'Genişletmek için dokunun'}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
+      <View testID={testID}>
+        <Animated.View
+          entering={FadeInUp.delay(animationDelay).duration(700)}
+          style={animatedCardStyle}
         >
-          <List.Accordion
-            title={title}
-            titleStyle={styles.title}
-            titleNumberOfLines={2}
-            left={leftIconRenderer}
-            expanded={expanded}
-            onPress={handlePress}
-            style={styles.accordion}
-            theme={{ ...paperTheme, colors: { background: 'transparent' } }}
-            rippleColor={rippleColor}
-          >
-            <Card.Content style={styles.content}>
-              <Text style={styles.description} accessibilityLabel={`Açıklama: ${description}`}>
-                {description}
-              </Text>
-              {stat && (
-                <View
-                  style={styles.statContainer}
-                  accessible={true}
-                  accessibilityLabel={`İstatistik: ${stat}`}
+          <View style={styles.cardShadowWrapper}>
+            <Card
+              style={styles.card}
+              accessible={true}
+              accessibilityLabel={`${title} kartı`}
+              accessibilityHint={expanded ? 'Daraltmak için dokunun' : 'Genişletmek için dokunun'}
+            >
+              <View style={styles.cardContentWrapper}>
+                <List.Accordion
+                  title={title}
+                  titleStyle={styles.title}
+                  titleNumberOfLines={2}
+                  left={leftIconRenderer}
+                  expanded={expanded}
+                  onPress={handlePress}
+                  style={styles.accordion}
+                  theme={memoizedTheme}
+                  rippleColor={rippleColor}
                 >
-                  <View style={styles.statBackground}>
-                    <MaterialCommunityIcons
-                      name="chart-line-variant"
-                      size={20}
-                      color={activeTheme.colors.accent}
-                      style={styles.statIcon}
-                    />
-                    <Text style={styles.statText}>{stat}</Text>
-                  </View>
-                </View>
-              )}
-
-              {ctaPrompt && (
-                <View style={styles.ctaContainer}>
-                  <Text style={styles.ctaPromptText}>💭 "{ctaPrompt}"</Text>
-                  <LinearGradient colors={ctaGradient} style={styles.ctaButtonGradient}>
-                    <Button
-                      mode="contained"
-                      onPress={handleCtaPress}
-                      style={styles.ctaButton}
-                      labelStyle={styles.ctaButtonLabel}
-                      contentStyle={styles.ctaButtonContent}
-                      buttonColor="transparent"
-                      textColor={activeTheme.colors.onPrimary}
-                      icon="pencil-outline"
-                      accessibilityLabel={`Bu konu hakkında yaz: ${ctaPrompt}`}
-                      accessibilityHint="Günlük yazma ekranına gider"
+                  <Card.Content style={styles.content}>
+                    <Text
+                      style={styles.description}
+                      accessibilityLabel={`Açıklama: ${description}`}
                     >
-                      Bu Konu Hakkında Yaz
-                    </Button>
-                  </LinearGradient>
-                </View>
-              )}
-            </Card.Content>
-          </List.Accordion>
-        </Card>
-      </Animated.View>
+                      {description}
+                    </Text>
+                    {stat && (
+                      <View
+                        style={styles.statContainer}
+                        accessible={true}
+                        accessibilityLabel={`İstatistik: ${stat}`}
+                      >
+                        <View style={styles.statBackground}>
+                          <MaterialCommunityIcons
+                            name="chart-line-variant"
+                            size={20}
+                            color={activeTheme.colors.accent}
+                            style={styles.statIcon}
+                          />
+                          <Text style={styles.statText}>{stat}</Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {ctaPrompt && (
+                      <View style={styles.ctaContainer}>
+                        <Text style={styles.ctaPromptText}>💭 "{ctaPrompt}"</Text>
+                        <LinearGradient colors={gradients.cta} style={styles.ctaButtonGradient}>
+                          <Button
+                            mode="contained"
+                            onPress={handleCtaPress}
+                            style={styles.ctaButton}
+                            labelStyle={styles.ctaButtonLabel}
+                            contentStyle={styles.ctaButtonContent}
+                            buttonColor="transparent"
+                            textColor={activeTheme.colors.onPrimary}
+                            icon="pencil-outline"
+                            accessibilityLabel={`Bu konu hakkında yaz: ${ctaPrompt}`}
+                            accessibilityHint="Günlük yazma ekranına gider"
+                          >
+                            Bu Konu Hakkında Yaz
+                          </Button>
+                        </LinearGradient>
+                      </View>
+                    )}
+                  </Card.Content>
+                </List.Accordion>
+              </View>
+            </Card>
+          </View>
+        </Animated.View>
+      </View>
     );
   }
 );
 
 BenefitCard.displayName = 'BenefitCard';
 
+// ✅ PERFORMANCE FIX: Pure StyleSheet.create with no dynamic values
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    cardGradient: {
+    cardShadowWrapper: {
+      // Shadow wrapper - handles shadows without overflow issues
       borderRadius: theme.borderRadius.xl,
-      marginVertical: theme.spacing.xl,
-      marginHorizontal: theme.spacing.xs,
+      ...theme.elevation.sm,
     },
     card: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.xl,
       borderWidth: 1,
       borderColor: theme.colors.outline,
+      // No overflow or shadow here to avoid conflicts
+    },
+    cardContentWrapper: {
+      // Content wrapper - handles overflow clipping
       overflow: 'hidden',
-      ...theme.elevation.sm,
+      borderRadius: theme.borderRadius.xl,
     },
     accordion: {
       paddingVertical: theme.spacing.xs,

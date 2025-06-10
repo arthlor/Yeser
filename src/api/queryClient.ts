@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import NetInfo from '@react-native-community/netinfo';
 import { onlineManager } from '@tanstack/react-query';
+import { Platform } from 'react-native';
 import { logger } from '@/utils/debugConfig';
 
 // Configure online manager for React Native
@@ -22,7 +23,7 @@ export const queryClient = new QueryClient({
       // Cache time: How long inactive data stays in memory
       gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
 
-      // Retry configuration
+      // Simulator-aware retry configuration
       retry: (failureCount, error: unknown) => {
         // Don't retry for authentication/authorization errors
         if (
@@ -33,11 +34,18 @@ export const queryClient = new QueryClient({
         ) {
           return false;
         }
-        return failureCount < 3;
+
+        // More retries for iOS Simulator due to network instability
+        const maxRetries = Platform.OS === 'ios' && __DEV__ ? 5 : 3;
+        return failureCount < maxRetries;
       },
 
-      // Retry delay with exponential backoff
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // Simulator-aware retry delay with exponential backoff
+      retryDelay: (attemptIndex) => {
+        const baseDelay = Platform.OS === 'ios' && __DEV__ ? 2000 : 1000;
+        const maxDelay = Platform.OS === 'ios' && __DEV__ ? 15000 : 10000;
+        return Math.min(baseDelay * 2 ** attemptIndex, maxDelay);
+      },
 
       // Network mode: Don't fetch when offline
       networkMode: 'online',

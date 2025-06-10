@@ -7,6 +7,7 @@ import splashAnimation from '@/assets/animations/splash.json';
 
 import { ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { analyticsService } from '@/services/analyticsService';
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme } from '@/themes/types';
@@ -19,6 +20,7 @@ const { width: screenWidth } = Dimensions.get('window');
  */
 const EnhancedSplashScreen: React.FC = () => {
   const { theme } = useTheme();
+  const { showError } = useGlobalError();
   const styles = createStyles(theme);
 
   // Animation refs
@@ -33,8 +35,13 @@ const EnhancedSplashScreen: React.FC = () => {
 
   // Log screen view for analytics
   useEffect(() => {
-    analyticsService.logScreenView('splash_screen');
-  }, []);
+    try {
+      analyticsService.logScreenView('splash_screen');
+    } catch (error) {
+      // 🛡️ ERROR PROTECTION: Handle analytics errors silently
+      showError('Uygulama başlatılırken bir hata oluştu.');
+    }
+  }, [showError]);
 
   // Start entrance animations
   useEffect(() => {

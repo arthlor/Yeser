@@ -1,8 +1,21 @@
 // 🚨 FIX: Re-enabled Firebase Analytics for production deployment
 import { getAnalytics } from '@react-native-firebase/analytics';
 import { logger } from '@/utils/debugConfig';
+import { firebaseService } from '@/services/firebaseService';
 
-const analyticsInstance = getAnalytics();
+// Safe analytics instance getter
+const getAnalyticsInstance = () => {
+  try {
+    if (!firebaseService.isFirebaseReady()) {
+      logger.warn('Firebase not ready, skipping analytics');
+      return null;
+    }
+    return getAnalytics();
+  } catch (error) {
+    logger.warn('Analytics not available:', { error: (error as Error).message });
+    return null;
+  }
+};
 
 // 🎯 ANALYTICS CONFIGURATION: Standardized screen names mapping
 const SCREEN_NAME_MAPPING: Record<string, string> = {
@@ -61,6 +74,12 @@ const logScreenView = async (
   additionalParams?: Record<string, string | number | boolean>
 ): Promise<void> => {
   try {
+    const analyticsInstance = getAnalyticsInstance();
+    if (!analyticsInstance) {
+      // Gracefully skip if analytics not available
+      return;
+    }
+
     const normalizedScreenName = normalizeScreenName(screenName);
 
     await analyticsInstance.logScreenView({
@@ -91,6 +110,11 @@ const logEvent = async (
   params?: Record<string, string | number | boolean | null>
 ): Promise<void> => {
   try {
+    const analyticsInstance = getAnalyticsInstance();
+    if (!analyticsInstance) {
+      return;
+    }
+
     // Firebase Analytics parameter validation and conversion
     const sanitizedParams: Record<string, string | number | boolean> = {};
 
@@ -120,6 +144,11 @@ const logEvent = async (
  */
 const logAppOpen = async (): Promise<void> => {
   try {
+    const analyticsInstance = getAnalyticsInstance();
+    if (!analyticsInstance) {
+      return;
+    }
+
     await analyticsInstance.logAppOpen();
 
     // Log to console in development for debugging
@@ -138,6 +167,11 @@ const logAppOpen = async (): Promise<void> => {
  */
 const setUserProperties = async (properties: Record<string, string | null>): Promise<void> => {
   try {
+    const analyticsInstance = getAnalyticsInstance();
+    if (!analyticsInstance) {
+      return;
+    }
+
     await analyticsInstance.setUserProperties(properties);
 
     // Log to console in development for debugging
@@ -156,6 +190,11 @@ const setUserProperties = async (properties: Record<string, string | null>): Pro
  */
 const setUserId = async (userId: string | null): Promise<void> => {
   try {
+    const analyticsInstance = getAnalyticsInstance();
+    if (!analyticsInstance) {
+      return;
+    }
+
     await analyticsInstance.setUserId(userId);
 
     // Log to console in development for debugging
@@ -174,6 +213,11 @@ const setUserId = async (userId: string | null): Promise<void> => {
  */
 const setAnalyticsCollectionEnabled = async (enabled: boolean): Promise<void> => {
   try {
+    const analyticsInstance = getAnalyticsInstance();
+    if (!analyticsInstance) {
+      return;
+    }
+
     await analyticsInstance.setAnalyticsCollectionEnabled(enabled);
 
     // Log to console in development for debugging
@@ -312,6 +356,118 @@ const trackContentAnalytics = async (
   }
 };
 
+/**
+ * 🚀 ENHANCED ERROR ANALYTICS: Crashlytics-like error tracking
+ * Provides comprehensive error insights without additional dependencies
+ */
+const trackDetailedError = async (
+  error: Error,
+  context: {
+    errorBoundary?: boolean;
+    userId?: string;
+    screenName?: string;
+    actionTaken?: string;
+    deviceInfo?: Record<string, string | number>;
+    customKeys?: Record<string, string | number | boolean>;
+  } = {}
+): Promise<void> => {
+  try {
+    // Enhanced error event with crashlytics-like data
+    await logEvent('detailed_error_tracking', {
+      // Error details
+      error_message: error.message.substring(0, 1000),
+      error_name: error.name,
+      error_stack: error.stack?.substring(0, 2000) || 'No stack trace',
+
+      // Context information
+      error_boundary_triggered: context.errorBoundary || false,
+      current_screen: context.screenName || 'unknown',
+      user_action: context.actionTaken || 'unknown',
+      user_id_hash: context.userId
+        ? context.userId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10)
+        : null,
+
+      // Device context
+      device_info: JSON.stringify(context.deviceInfo || {}).substring(0, 500),
+
+      // Custom context
+      ...context.customKeys,
+
+      // Automatic context
+      timestamp: new Date().toISOString(),
+      error_severity: determineErrorSeverity(error),
+      error_category: categorizeError(error),
+      app_version: '1.0.0', // From config
+      error_frequency: 1, // Could be enhanced with local tracking
+    });
+
+    // Also log as a separate crash-like event for grouping
+    await logEvent('error_crash_simulation', {
+      crash_group: generateErrorGroup(error),
+      crash_fingerprint: generateErrorFingerprint(error),
+      is_fatal: false,
+      recovery_action: 'user_notified',
+    });
+  } catch (trackingError) {
+    logger.error('Failed to track detailed error', trackingError as Error);
+  }
+};
+
+/**
+ * Generate error grouping similar to Crashlytics
+ */
+const generateErrorGroup = (error: Error): string => {
+  // Simple grouping based on error name and first stack frame
+  const stackLine = error.stack?.split('\n')[1] || '';
+  const groupId = `${error.name}_${stackLine.substring(0, 50)}`;
+  // Simple hash function for React Native compatibility
+  return groupId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+};
+
+/**
+ * Generate error fingerprint for deduplication
+ */
+const generateErrorFingerprint = (error: Error): string => {
+  const fingerprint = `${error.name}_${error.message}_${error.stack?.split('\n')[0] || ''}`;
+  // Simple hash function for React Native compatibility
+  return fingerprint.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+};
+
+/**
+ * Determine error severity level
+ */
+const determineErrorSeverity = (error: Error): 'low' | 'medium' | 'high' | 'critical' => {
+  if (error.name === 'TypeError' || error.name === 'ReferenceError') {
+    return 'high';
+  }
+  if (error.message.includes('Network') || error.message.includes('timeout')) {
+    return 'medium';
+  }
+  if (error.message.includes('Auth') || error.message.includes('permission')) {
+    return 'critical';
+  }
+  return 'low';
+};
+
+/**
+ * Categorize errors for better analysis
+ */
+const categorizeError = (error: Error): string => {
+  if (error.message.includes('Network') || error.message.includes('fetch')) {
+    return 'network';
+  }
+  if (error.message.includes('Auth') || error.message.includes('login')) {
+    return 'authentication';
+  }
+  if (error.name === 'TypeError' || error.name === 'ReferenceError') {
+    return 'javascript';
+  }
+  if (error.message.includes('UI') || error.message.includes('render')) {
+    return 'ui';
+  }
+  return 'general';
+};
+
 export const analyticsService = {
   // Core Analytics
   logScreenView,
@@ -331,4 +487,7 @@ export const analyticsService = {
 
   // Utility
   normalizeScreenName,
+
+  // Enhanced Error Analytics
+  trackDetailedError,
 };

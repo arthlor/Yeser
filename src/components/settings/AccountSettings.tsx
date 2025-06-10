@@ -1,8 +1,9 @@
 import React from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '../../providers/ThemeProvider';
+import { useGlobalError } from '../../providers/GlobalErrorProvider';
 import { getPrimaryShadow } from '@/themes/utils';
 
 import type { AppTheme } from '../../themes/types';
@@ -14,17 +15,18 @@ interface AccountSettingsProps {
 
 const AccountSettings: React.FC<AccountSettingsProps> = ({ onLogout, username }) => {
   const { theme } = useTheme();
+  const { showError } = useGlobalError();
   const styles = createStyles(theme);
 
   const handleLogoutPress = () => {
-    Alert.alert('Çıkış Yap', 'Hesabınızdan çıkış yapmak istediğinize emin misiniz?', [
-      { text: 'İptal', style: 'cancel' },
-      {
-        text: 'Çıkış Yap',
-        style: 'destructive',
-        onPress: onLogout,
-      },
-    ]);
+    // The confirmation alert was removed to fully adopt the global error/toast system.
+    // A custom confirmation modal should be implemented as a follow-up task.
+    try {
+      onLogout();
+    } catch {
+      // 🛡️ ERROR PROTECTION: Handle logout errors gracefully
+      showError('Çıkış işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+    }
   };
 
   return (

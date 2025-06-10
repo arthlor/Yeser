@@ -63,6 +63,7 @@ export interface CalendarHeaderProps {
   onPreviousMonth: () => void;
   onNextMonth: () => void;
   isLoading?: boolean;
+  isNextMonthDisabled?: boolean;
 }
 
 // Calendar day component props
@@ -75,6 +76,7 @@ export interface CalendarDayProps {
     dotColor?: string;
   };
   onPress: (date: DateData) => void;
+  maxDate?: string;
 }
 
 // Calendar stats card props
@@ -103,6 +105,7 @@ export interface CalendarViewProps {
   onMonthChange: (dateData: DateData) => void;
   onDayPress: (day: DateData) => void;
   isLoading?: boolean;
+  isFutureMonth?: boolean;
 }
 
 // Turkish localization

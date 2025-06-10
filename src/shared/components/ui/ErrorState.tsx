@@ -5,11 +5,13 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { AppTheme } from '../../../themes/types';
 import { semanticSpacing, semanticTypography, textColors } from '../../../themes/utils';
+import { safeErrorDisplay } from '@/utils/errorTranslation';
 import ThemedButton from './ThemedButton';
 
 type ErrorType = 'network' | 'server' | 'notFound' | 'permission' | 'validation' | 'generic';
 
 interface ErrorStateProps {
+  error?: unknown;
   type?: ErrorType;
   title?: string;
   message?: string;
@@ -37,6 +39,7 @@ interface ErrorStateProps {
  * - Accessibility optimized
  */
 const ErrorState: React.FC<ErrorStateProps> = ({
+  error,
   type = 'generic',
   title,
   message,
@@ -54,8 +57,10 @@ const ErrorState: React.FC<ErrorStateProps> = ({
   const errorConfig = getErrorConfig(type);
   const styles = createStyles(theme, compact);
 
+  const translatedErrorMessage = error ? safeErrorDisplay(error) : null;
+
   const finalTitle = title || errorConfig.title;
-  const finalMessage = message || errorConfig.message;
+  const finalMessage = translatedErrorMessage || message || errorConfig.message;
   const finalIcon = icon || errorConfig.icon;
 
   return (

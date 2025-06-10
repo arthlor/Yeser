@@ -11,14 +11,15 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onPreviousMonth,
   onNextMonth,
   isLoading = false,
+  isNextMonthDisabled = false,
 }) => {
   const { theme } = useTheme();
 
   const navButtonStyle = React.useMemo(
     () => ({
-      opacity: isLoading ? 0.3 : 1,
+      opacity: isLoading || isNextMonthDisabled ? 0.3 : 1,
     }),
-    [isLoading]
+    [isLoading, isNextMonthDisabled]
   );
 
   return (
@@ -56,7 +57,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 
       <TouchableOpacity
         onPress={onNextMonth}
-        disabled={isLoading}
+        disabled={isLoading || isNextMonthDisabled}
         style={[styles.navButton, navButtonStyle]}
         accessibilityLabel="Sonraki ay"
         accessibilityRole="button"

@@ -1,16 +1,18 @@
 # Component Guide
 
-This document provides comprehensive guidance for building and maintaining UI components in the Yeser gratitude app using the modern hybrid architecture with TanStack Query and Zustand.
+This document provides comprehensive guidance for building and maintaining UI components in the Yeser gratitude app using the modern hybrid architecture with TanStack Query, Zustand, and **7-layer error protection system**.
 
 ## 🧩 Component Architecture Overview
 
-The Yeser app follows a **modern component architecture** built on:
+The Yeşer app follows a **modern component architecture** built on:
 
-- **Functional Components**: React hooks-based components
-- **TanStack Query Integration**: Server state via custom hooks
-- **Zustand Integration**: Client state via selective subscriptions
-- **Themed Components**: React Native Paper + custom theming
-- **TypeScript**: Full type safety and excellent developer experience
+- **Functional Components**: React hooks-based components with performance optimizations
+- **TanStack Query Integration**: Server state via custom hooks with intelligent caching
+- **Zustand Integration**: Client state via selective subscriptions with optimized re-renders
+- **Themed Components**: React Native Paper + custom theming with enhanced visual hierarchy
+- **TypeScript**: Full type safety and excellent developer experience (100% coverage)
+- **7-Layer Error Protection**: Comprehensive error handling preventing technical errors from reaching users
+- **Performance Optimization**: Production-ready components with React.memo, useMemo, and useCallback
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -36,6 +38,13 @@ The Yeser app follows a **modern component architecture** built on:
 │  └─────────────┘  └─────────────┘  └─────────────┘     │
 └─────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────┐
+│                 7-LAYER ERROR PROTECTION                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│  │   Error     │  │ Translation │  │ UI Safety   │     │
+│  │ Boundaries  │  │   Layer     │  │ Components  │     │
+│  └─────────────┘  └─────────────┘  └─────────────┘     │
+└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
 │                   STATE INTEGRATION                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
 │  │TanStack Qry │  │   Zustand   │  │   Local     │     │
@@ -44,14 +53,14 @@ The Yeser app follows a **modern component architecture** built on:
 └─────────────────────────────────────────────────────────┘
 ```
 
-## 🎨 Design System & Theming
+## 🎨 Design System & Theming (Enhanced)
 
-### Theme Architecture
+### Theme Architecture with Enhanced Visual Hierarchy
 
-The app uses a comprehensive theming system with React Native Paper as the base:
+The app uses a comprehensive theming system with React Native Paper as the base, now enhanced with improved visual hierarchy:
 
 ```typescript
-// src/themes/types.ts
+// src/themes/types.ts - Enhanced theme interface
 export interface AppTheme {
   colors: {
     primary: string;
@@ -64,10 +73,16 @@ export interface AppTheme {
     error: string;
     success: string;
     warning: string;
-    // Custom colors
+    // Enhanced custom colors for better visual hierarchy
     gratitudeCard: string;
     streakGreen: string;
     modalOverlay: string;
+    // Enhanced border colors for better element definition
+    outline: string; // Strengthened for light theme: #94A3B8, dark theme: #7C8B9E
+    outlineVariant: string; // Enhanced: #CBD2DC (light), #5A6875 (dark)
+    borderLight: string; // Added for dark theme: #475569
+    borderMedium: string; // Added for dark theme: #5A6875
+    borderStrong: string; // Added for dark theme: #7C8B9E
   };
   spacing: {
     xs: number; // 4
@@ -92,22 +107,43 @@ export interface AppTheme {
     large: number; // 16
     full: number; // 999
   };
+  // Enhanced shadow system for better depth perception
+  shadows: {
+    light: {
+      small: ViewStyle;
+      medium: ViewStyle;
+      large: ViewStyle;
+    };
+    dark: {
+      small: ViewStyle;
+      medium: ViewStyle;
+      large: ViewStyle;
+    };
+  };
 }
 ```
 
-### Theme Usage in Components
+### Enhanced Theme Usage in Components
 
 ```typescript
-// Using theme in components
+// Using enhanced theme in components with automatic shadow adaptation
 import { useThemeStore } from '@/store/themeStore';
+import { getThemeAwareShadow } from '@/utils/shadowUtils';
 
 const ThemedComponent: React.FC = () => {
   const { activeTheme } = useThemeStore();
 
   return (
-    <View style={[styles.container, { backgroundColor: activeTheme.colors.background }]}>
+    <View style={[
+      styles.container,
+      {
+        backgroundColor: activeTheme.colors.surface,
+        borderColor: activeTheme.colors.outline, // Enhanced border definition
+        ...getThemeAwareShadow(activeTheme, 'medium'), // Automatic shadow adaptation
+      }
+    ]}>
       <Text style={[styles.title, { color: activeTheme.colors.text }]}>
-        Themed Content
+        Enhanced Themed Content
       </Text>
     </View>
   );
@@ -117,6 +153,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
     borderRadius: 8,
+    borderWidth: 1, // Enhanced border for better element definition
   },
   title: {
     fontSize: 18,
@@ -125,24 +162,26 @@ const styles = StyleSheet.create({
 });
 ```
 
-## 🔐 Authentication Components
+## 🔐 Authentication Components (Production-Ready)
 
-### Magic Link Authentication System
+### Magic Link Authentication System with 7-Layer Error Protection
 
-The Yeşer app implements a modern **passwordless authentication system** using Supabase magic links with enhanced user experience and comprehensive error handling.
+The Yeşer app implements a modern **passwordless authentication system** using Supabase magic links with comprehensive error protection and enhanced user experience.
 
-#### LoginScreen Component
+#### LoginScreen Component (Enhanced)
 
-The main authentication entry point with email input and magic link functionality:
+The main authentication entry point with magic link functionality and comprehensive error handling:
 
 ```typescript
-// Key features of LoginScreen:
-// - Magic link email authentication
-// - Google OAuth integration
-// - Enhanced error handling with Turkish messages
-// - Animated help section
-// - Form validation
-// - Loading states and user feedback
+// Key features of enhanced LoginScreen:
+// - Magic link email authentication with rate limiting protection
+// - Google OAuth integration with error cancellation handling
+// - 7-layer error protection with Turkish localization
+// - Enhanced button sizing for Turkish text
+// - Animated help section with user guidance
+// - Real-time form validation with user feedback
+// - Loading states with haptic feedback
+// - Comprehensive analytics integration
 
 interface LoginScreenProps {
   navigation: any;
@@ -156,7 +195,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [success, setSuccess] = useState<string>('');
 
   const handleMagicLinkLogin = useCallback(async (): Promise<void> => {
-    // Email validation
+    // Enhanced email validation with error protection
     if (!email.trim()) {
       setError('Lütfen email adresinizi girin');
       return;
@@ -171,27 +210,274 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       setIsSubmitting(true);
       setError('');
+
+      // Use enhanced auth service with 7-layer protection
       const result = await authService.signInWithMagicLink(email.trim());
 
       if (result.success) {
         setSuccess('Giriş bağlantısı email adresinize gönderildi!');
+        // Enhanced analytics tracking
+        analyticsService.trackEvent('magic_link_sent', {
+          email_domain: email.split('@')[1],
+          user_action: 'manual_entry'
+        });
       } else {
+        // Error message already translated by 7-layer protection
         setError(result.error || 'Giriş bağlantısı gönderilemedi');
       }
     } catch (error) {
+      // Final safety net - should rarely be reached due to 7-layer protection
       setError('Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.');
+      logger.error('LoginScreen magic link error:', error);
     } finally {
       setIsSubmitting(false);
     }
   }, [email]);
 
-  // Component render with Turkish localization and themed styling
+  const handleGoogleLogin = useCallback(async (): Promise<void> => {
+    try {
+      setIsSubmitting(true);
+      setError('');
+
+      // Enhanced Google OAuth with cancellation handling
+      const result = await authService.signInWithGoogle();
+
+      if (result.success) {
+        analyticsService.trackEvent('google_oauth_success');
+      } else if (result.userCancelled) {
+        // Handle user cancellation gracefully (no error message)
+        logger.debug('Google OAuth cancelled by user');
+      } else {
+        // Error message already translated by 7-layer protection
+        setError(result.error || 'Google ile giriş yapılırken bir hata oluştu');
+      }
+    } catch (error) {
+      // Final safety net with enhanced error handling
+      const safeMessage = safeErrorDisplay(error);
+      setError(safeMessage);
+      logger.error('LoginScreen Google OAuth error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
+
+  // Enhanced component render with optimized button sizing and Turkish localization
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.colors.background }]}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Enhanced UI with improved visual hierarchy and accessibility */}
+
+        {/* Email input with real-time validation */}
+        <TextInput
+          mode="outlined"
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            if (error) setError(''); // Clear error on change
+          }}
+          placeholder="Email adresinizi girin"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          disabled={isSubmitting}
+          style={styles.emailInput}
+          error={!!error}
+          testID="email-input"
+        />
+
+        {/* Enhanced ThemedButton with improved text handling */}
+        <ThemedButton
+          mode="contained"
+          onPress={handleMagicLinkLogin}
+          loading={isSubmitting}
+          disabled={!email.trim() || isSubmitting}
+          size="large" // Enhanced sizing for Turkish text
+          style={styles.magicLinkButton}
+          testID="magic-link-button"
+        >
+          Güvenli Giriş Bağlantısı Gönder
+        </ThemedButton>
+
+        {/* Google OAuth button with enhanced error handling */}
+        <ThemedButton
+          mode="outlined"
+          onPress={handleGoogleLogin}
+          disabled={isSubmitting}
+          size="large"
+          style={styles.googleButton}
+          icon="google"
+          testID="google-oauth-button"
+        >
+          Google ile Giriş Yap
+        </ThemedButton>
+
+        {/* Error/Success display with enhanced styling */}
+        {error && (
+          <Card style={[styles.messageCard, styles.errorCard]}>
+            <Card.Content>
+              <Text style={[styles.messageText, { color: activeTheme.colors.error }]}>
+                {error}
+              </Text>
+            </Card.Content>
+          </Card>
+        )}
+
+        {success && (
+          <Card style={[styles.messageCard, styles.successCard]}>
+            <Card.Content>
+              <Text style={[styles.messageText, { color: activeTheme.colors.success }]}>
+                {success}
+              </Text>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Enhanced help section with animations */}
+        <EnhancedHelpSection />
+      </ScrollView>
+    </SafeAreaView>
+  );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+    padding: 24,
+  },
+  emailInput: {
+    marginBottom: 16,
+  },
+  magicLinkButton: {
+    marginBottom: 12,
+    minHeight: 52, // Enhanced height for Turkish text
+  },
+  googleButton: {
+    marginBottom: 24,
+    minHeight: 52, // Enhanced height for Turkish text
+  },
+  messageCard: {
+    marginBottom: 16,
+    elevation: 2,
+  },
+  errorCard: {
+    backgroundColor: '#FEF2F2', // Light red background
+  },
+  successCard: {
+    backgroundColor: '#F0FDF4', // Light green background
+  },
+  messageText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+});
 ```
 
-#### Deep Link Handler Component
+#### Enhanced ThemedButton Component (Fixed)
 
-Manages incoming magic link authentication callbacks:
+Improved button component with better text handling and Turkish localization support:
+
+```typescript
+// Key improvements in ThemedButton:
+// - Removed numberOfLines={1} restriction for better text display
+// - Changed from flex: 1 to flexShrink: 1 for dynamic sizing
+// - Increased minWidth values for Turkish text requirements
+// - Enhanced accessibility and testing support
+// - Performance optimizations with React.memo
+
+interface ThemedButtonProps {
+  mode?: 'text' | 'outlined' | 'contained';
+  size?: 'compact' | 'standard' | 'large';
+  children: React.ReactNode;
+  loading?: boolean;
+  disabled?: boolean;
+  onPress?: () => void;
+  style?: ViewStyle;
+  icon?: string;
+  testID?: string;
+}
+
+export const ThemedButton: React.FC<ThemedButtonProps> = React.memo(({
+  mode = 'contained',
+  size = 'standard',
+  children,
+  loading = false,
+  disabled = false,
+  onPress,
+  style,
+  icon,
+  testID,
+}) => {
+  const { activeTheme } = useThemeStore();
+
+  // Enhanced size configurations for Turkish text
+  const buttonConfig = {
+    compact: { minWidth: 120, minHeight: 36, fontSize: 14 },
+    standard: { minWidth: 130, minHeight: 44, fontSize: 16 },
+    large: { minWidth: 150, minHeight: 52, fontSize: 16 }, // Increased for Turkish
+  };
+
+  const config = buttonConfig[size];
+
+  const buttonStyle = [
+    {
+      minWidth: config.minWidth,
+      minHeight: config.minHeight,
+    },
+    style,
+  ];
+
+  const labelStyle = [
+    {
+      fontSize: config.fontSize,
+      fontWeight: '600' as const,
+    },
+  ];
+
+  return (
+    <Button
+      mode={mode}
+      onPress={onPress}
+      loading={loading}
+      disabled={disabled || loading}
+      style={buttonStyle}
+      labelStyle={labelStyle}
+      icon={icon}
+      testID={testID}
+      // Enhanced content handling - no numberOfLines restriction
+      contentStyle={{
+        minHeight: config.minHeight,
+        paddingHorizontal: 16,
+      }}
+    >
+      <View style={styles.textContainer}>
+        <Text style={[styles.buttonText, labelStyle]}>
+          {children}
+        </Text>
+      </View>
+    </Button>
+  );
+});
+
+const styles = StyleSheet.create({
+  textContainer: {
+    flexShrink: 1, // Changed from flex: 1 for better text handling
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    textAlign: 'center',
+    // Removed numberOfLines restriction for Turkish text
+  },
+});
+```
+
+#### Deep Link Handler Component (Enhanced)
+
+Enhanced deep link handler with comprehensive error protection:
 
 ```typescript
 // src/features/auth/components/DeepLinkHandler.tsx
@@ -202,106 +488,96 @@ export const DeepLinkHandler: React.FC = () => {
     const handleDeepLink = async (url: string): Promise<void> => {
       try {
         setIsLoading(true);
+
+        // Enhanced deep link handling with 7-layer protection
         const result = await deepLinkAuthService.handleAuthCallback(url);
 
         if (result.success && result.session) {
           setSession(result.session);
+
+          // Enhanced analytics tracking
+          analyticsService.trackEvent('magic_link_authentication_success', {
+            provider: result.session.user?.app_metadata?.provider || 'magic_link',
+            user_id: result.session.user?.id,
+          });
         } else {
+          // Error already handled by 7-layer protection
           logger.error('Deep link authentication failed:', result.error);
+
+          // Track authentication failure for analytics
+          analyticsService.trackEvent('magic_link_authentication_failed', {
+            error_type: result.errorType || 'unknown',
+            url_scheme: url.split('://')[0],
+          });
         }
       } catch (error) {
-        logger.error('Deep link handler error:', error);
+        // Final safety net with error protection
+        const safeMessage = safeErrorDisplay(error);
+        logger.error('Deep link handler error:', { error, safeMessage });
+
+        analyticsService.trackEvent('deep_link_handler_error', {
+          error_message: safeMessage,
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Handle initial URL and URL changes
-    const subscription = Linking.addEventListener('url', handleDeepLink);
+    // Enhanced URL listener setup
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleDeepLink(url);
+    });
+
+    // Handle app launch from magic link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
     return () => subscription?.remove();
   }, [setSession, setIsLoading]);
 
-  return null; // Background component
+  return null; // Background component with no UI
 };
 ```
 
-#### Enhanced ThemedButton Component
-
-Improved button component with better text handling:
-
-```typescript
-// Key improvements:
-// - Removed numberOfLines={1} restriction
-// - Changed from flex: 1 to flexShrink: 1 for better text layout
-// - Increased minWidth values for Turkish text
-// - Dynamic sizing based on content
-
-interface ThemedButtonProps {
-  mode?: 'text' | 'outlined' | 'contained';
-  size?: 'compact' | 'standard' | 'large';
-  children: React.ReactNode;
-  loading?: boolean;
-  disabled?: boolean;
-  // ... other props
-}
-
-export const ThemedButton: React.FC<ThemedButtonProps> = ({
-  size = 'standard',
-  children,
-  // ... other props
-}) => {
-  const buttonConfig = {
-    compact: { minWidth: 120, minHeight: 36, fontSize: 14 },
-    standard: { minWidth: 130, minHeight: 44, fontSize: 16 },
-    large: { minWidth: 150, minHeight: 52, fontSize: 16 },
-  };
-
-  return (
-    <Button
-      // Enhanced content and text styling for better text display
-      labelStyle={[styles.buttonText, { fontSize: config.fontSize }]}
-    >
-      <View style={styles.textContainer}>
-        <Text style={styles.buttonText}>
-          {children}
-        </Text>
-      </View>
-    </Button>
-  );
-};
-```
-
-### Authentication Flow Architecture
+### Authentication Flow Architecture (Enhanced)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                 AUTHENTICATION FLOW                     │
+│                 ENHANCED AUTHENTICATION FLOW            │
 │                                                         │
 │  1. User enters email in LoginScreen                   │
-│  2. Magic link sent via Supabase Auth                  │
-│  3. User clicks link in email                          │
-│  4. Deep link opens app with auth tokens               │
-│  5. DeepLinkHandler processes tokens                   │
-│  6. Session established in AuthStore                   │
-│  7. User redirected to authenticated screens           │
+│  2. 7-layer error protection validates input           │
+│  3. Magic link sent via Supabase Auth with rate limit  │
+│  4. User clicks link in email                          │
+│  5. Deep link opens app with auth tokens               │
+│  6. DeepLinkHandler processes tokens with protection   │
+│  7. Session established in AuthStore                   │
+│  8. Analytics tracking for authentication flow         │
+│  9. User redirected to authenticated screens           │
 │                                                         │
-│  Alternative: Google OAuth flow                        │
-│  - Google sign-in modal                                │
-│  - OAuth tokens processed                              │
-│  - Session established                                 │
+│  Alternative: Google OAuth flow with cancellation      │
+│  - Google sign-in modal with user cancellation detect  │
+│  - OAuth tokens processed with error protection        │
+│  - Session established with analytics tracking         │
+│  - Graceful error handling for all scenarios           │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Key Authentication Features
+### Key Authentication Features (Enhanced)
 
-- **Passwordless Security**: No password storage or management
-- **Magic Link Flow**: Secure email-based authentication
-- **Google OAuth**: Alternative social login option
-- **Deep Link Handling**: Seamless app re-entry from email
-- **Turkish Localization**: User-friendly error messages
-- **Enhanced UX**: Loading states, success feedback, help sections
-- **Error Recovery**: Comprehensive error handling and user guidance
-- **Session Management**: Automatic session restoration and persistence
+- **Passwordless Security**: No password storage or management with enhanced security measures
+- **Magic Link Flow**: Secure email-based authentication with time-limited tokens
+- **Google OAuth**: Alternative social login option with user cancellation detection
+- **Deep Link Handling**: Seamless app re-entry from email with comprehensive validation
+- **Turkish Localization**: User-friendly error messages with cultural sensitivity
+- **Enhanced UX**: Loading states, success feedback, help sections with animations
+- **7-Layer Error Protection**: Comprehensive error handling preventing technical errors
+- **Session Management**: Automatic session restoration and persistence with analytics
+- **Performance Optimized**: React.memo, useCallback, and useMemo optimizations
+- **Analytics Integration**: Comprehensive tracking for authentication events and user behavior
 
 ## 🔌 Modern Component Patterns
 

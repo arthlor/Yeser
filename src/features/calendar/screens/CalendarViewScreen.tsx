@@ -1,10 +1,11 @@
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
+import { isAfter, isSameMonth, startOfDay } from 'date-fns';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { DateData } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import ErrorState from '@/shared/components/ui/ErrorState';
 
 import {
   CalendarStats,
@@ -20,43 +21,47 @@ import { getPrimaryShadow } from '@/themes/utils';
 import { analyticsService } from '@/services/analyticsService';
 import { AppTheme } from '@/themes/types';
 import { MainTabParamList, RootStackParamList } from '@/types/navigation';
+import { safeErrorDisplay } from '@/utils/errorTranslation';
 
-// Define navigation prop types
 type CalendarViewScreenNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<MainTabParamList, 'PastEntriesTab'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-/**
- * Enhanced Calendar View Screen - Edge-to-Edge Design
- * Implements comprehensive edge-to-edge patterns with proper spacing hierarchy
- * 🚨 PERFORMANCE OPTIMIZED: Fixed infinite re-render loop on iOS
- */
 const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
   const navigation = useNavigation<CalendarViewScreenNavigationProp>();
   const { theme } = useTheme();
 
-  // 🚨 FIX: Memoize styles to prevent infinite re-renders on iOS
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  // Animation values - Use refs to maintain stability
+  const colorsRef = useRef({
+    primary: theme.colors.primary,
+    onPrimary: theme.colors.onPrimary,
+  });
+
+  useEffect(() => {
+    colorsRef.current = {
+      primary: theme.colors.primary,
+      onPrimary: theme.colors.onPrimary,
+    };
+  }, [theme.colors.primary, theme.colors.onPrimary]);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
-  // State management
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [markedDates, setMarkedDates] = useState<CustomMarkedDates>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // 🚨 FIX: Extract stable color references to prevent re-render loops
-  const primaryColor = theme.colors.primary;
-  const onPrimaryColor = theme.colors.onPrimary;
+  const analyticsTrackedRef = useRef(false);
+  const lastMonthAnalyticsRef = useRef<string>('');
+  const lastProcessedEntryDatesRef = useRef<string>('');
 
-  // TanStack Query - Replace manual API calls
   const {
     data: entryDates = [],
     isLoading: isLoadingDates,
     error: datesError,
+    refetch: refetchDates,
   } = useEntryDatesForMonth(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
 
   const {
@@ -65,7 +70,6 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
     error: entryError,
   } = useGratitudeEntry(selectedDate || '');
 
-  // Initialize staggered animations for edge-to-edge cards
   useEffect(() => {
     Animated.stagger(100, [
       Animated.timing(fadeAnim, {
@@ -82,101 +86,110 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  // Analytics tracking
   useEffect(() => {
-    analyticsService.logScreenView('calendar_screen');
+    if (!analyticsTrackedRef.current) {
+      analyticsService.logScreenView('calendar_screen');
+      analyticsTrackedRef.current = true;
+    }
 
-    // Track calendar context
-    analyticsService.logEvent('calendar_screen_viewed', {
-      current_year: currentMonth.getFullYear(),
-      current_month: currentMonth.getMonth() + 1,
-      total_entry_dates: entryDates.length,
-      has_selected_date: !!selectedDate,
-      selected_date: selectedDate || null,
-      has_entry_for_selected: !!selectedEntry,
-    });
+    const monthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth() + 1}`;
+    if (lastMonthAnalyticsRef.current !== monthKey && entryDates.length >= 0) {
+      analyticsService.logEvent('calendar_screen_viewed', {
+        current_year: currentMonth.getFullYear(),
+        current_month: currentMonth.getMonth() + 1,
+        total_entry_dates: entryDates.length,
+        has_selected_date: !!selectedDate,
+        selected_date: selectedDate || null,
+        has_entry_for_selected: !!selectedEntry,
+      });
+      lastMonthAnalyticsRef.current = monthKey;
+    }
   }, [currentMonth, entryDates.length, selectedDate, selectedEntry]);
 
-  // 🚨 FIX: Update marked dates when entry dates change - OPTIMIZED FOR iOS
   useEffect(() => {
+    if (!Array.isArray(entryDates)) {
+      return;
+    }
+
+    const entryDatesString = JSON.stringify(entryDates.sort());
+    const currentKey = `${entryDatesString}-${selectedDate}-${currentMonth.getTime()}`;
+
+    if (lastProcessedEntryDatesRef.current === currentKey) {
+      return;
+    }
+
+    lastProcessedEntryDatesRef.current = currentKey;
+
     const newMarkedDates: CustomMarkedDates = {};
+
     entryDates.forEach((entryDate: string) => {
       newMarkedDates[entryDate] = {
         marked: true,
-        dotColor: primaryColor,
+        dotColor: colorsRef.current.primary,
         activeOpacity: 0.8,
       };
     });
 
-    // Preserve selection if exists
-    if (selectedDate && newMarkedDates[selectedDate]) {
-      Object.assign(
-        newMarkedDates,
-        updateMarkedDatesWithSelection(
+    setMarkedDates(() => {
+      if (selectedDate) {
+        return updateMarkedDatesWithSelection(
           newMarkedDates,
           selectedDate,
-          primaryColor,
-          onPrimaryColor,
-          primaryColor
-        )
-      );
-    }
+          colorsRef.current.primary,
+          colorsRef.current.onPrimary,
+          colorsRef.current.primary
+        );
+      }
+      return newMarkedDates;
+    });
 
-    setMarkedDates(newMarkedDates);
-
-    // Log analytics
     if (entryDates.length > 0) {
-      analyticsService.logEvent('calendar_month_viewed', {
-        year: currentMonth.getFullYear(),
-        month: currentMonth.getMonth() + 1,
-        entry_count: entryDates.length,
-      });
+      const monthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth() + 1}`;
+      if (lastMonthAnalyticsRef.current !== monthKey) {
+        analyticsService.logEvent('calendar_month_viewed', {
+          year: currentMonth.getFullYear(),
+          month: currentMonth.getMonth() + 1,
+          entry_count: entryDates.length,
+        });
+        lastMonthAnalyticsRef.current = monthKey;
+      }
     }
-  }, [entryDates, selectedDate, currentMonth, primaryColor, onPrimaryColor]); // 🚨 FIX: Use individual color values instead of object
+  }, [entryDates, selectedDate, currentMonth]);
 
-  // Handle month navigation - Memoized for stability
   const handleMonthChange = useCallback((dateData: DateData) => {
     const newMonthDate = new Date(dateData.timestamp);
     setCurrentMonth(newMonthDate);
+    setSelectedDate(null);
+
     analyticsService.logEvent('calendar_month_changed', {
       year: newMonthDate.getFullYear(),
       month: newMonthDate.getMonth() + 1,
     });
   }, []);
 
-  // 🚨 FIX: Handle day selection - Optimized dependencies for iOS
   const handleDayPress = useCallback(
     (day: DateData): void => {
       const newSelectedDate = day.dateString;
       setSelectedDate(newSelectedDate);
-
-      // Update marked dates with selection - Use functional update for stability
-      setMarkedDates((prevMarkedDates) => {
-        const updatedMarkedDates = updateMarkedDatesWithSelection(
-          prevMarkedDates,
-          newSelectedDate,
-          primaryColor,
-          onPrimaryColor,
-          primaryColor
-        );
-        return updatedMarkedDates;
-      });
 
       analyticsService.logEvent('calendar_day_selected', {
         date: newSelectedDate,
         has_entry: Boolean(selectedEntry),
       });
     },
-    [primaryColor, onPrimaryColor, selectedEntry]
-  ); // 🚨 FIX: Remove markedDates dependency to prevent loops
+    [selectedEntry]
+  );
 
-  // Navigation handlers - Memoized for stability
   const handleAddNewEntry = useCallback((): void => {
     analyticsService.logEvent('add_entry_from_calendar', {
       date: selectedDate ?? new Date().toISOString().split('T')[0],
     });
 
-    navigation.navigate('DailyEntryTab');
+    if (selectedDate) {
+      navigation.navigate('PastEntryCreation', {
+        date: selectedDate,
+      });
+    }
   }, [navigation, selectedDate]);
 
   const handleViewEntry = useCallback((): void => {
@@ -186,15 +199,32 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
         entry_id: selectedEntry.id,
       });
 
-      navigation.navigate('EntryDetail', { entryId: selectedEntry.id });
+      navigation.navigate('EntryDetail', {
+        entryId: selectedEntry.id,
+        entryDate: selectedDate ?? undefined,
+      });
     }
   }, [navigation, selectedDate, selectedEntry]);
 
-  // Combine loading states
-  const isLoading = isLoadingDates || isLoadingEntry;
+  const isLoading = useMemo(
+    () => isLoadingDates || isLoadingEntry,
+    [isLoadingDates, isLoadingEntry]
+  );
 
-  // Combine errors
-  const error = datesError?.message || entryError?.message || null;
+  const isFutureMonth = useMemo(() => {
+    const today = startOfDay(new Date());
+    const current = startOfDay(currentMonth);
+    return isSameMonth(today, current) || isAfter(current, today);
+  }, [currentMonth]);
+
+  // 🛡️ ERROR PROTECTION: Render a full-screen error state if the main query fails
+  if (datesError) {
+    return (
+      <ScreenLayout>
+        <ErrorState error={datesError} title="Takvim Verileri Yüklenemedi" onRetry={refetchDates} />
+      </ScreenLayout>
+    );
+  }
 
   return (
     <ScreenLayout
@@ -216,33 +246,30 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
           },
         ]}
       >
-        {/* Enhanced Calendar - Edge-to-Edge */}
         <CalendarView
-          markedDates={markedDates}
           currentMonth={currentMonth}
+          markedDates={markedDates}
           onMonthChange={handleMonthChange}
           onDayPress={handleDayPress}
-          isLoading={isLoading}
+          isLoading={isLoadingDates}
+          isFutureMonth={isFutureMonth}
         />
 
-        {/* Statistics Cards - Edge-to-Edge */}
         <CalendarStats
           markedDates={markedDates}
           currentMonth={currentMonth}
           isLoading={isLoading}
         />
 
-        {/* Day Preview - Edge-to-Edge */}
         <DayPreview
           selectedDate={selectedDate}
           selectedEntry={selectedEntry ?? null}
           isLoading={isLoading}
-          error={error}
+          error={entryError ? safeErrorDisplay(entryError) : null}
           onViewEntry={handleViewEntry}
           onAddEntry={handleAddNewEntry}
         />
 
-        {/* Minimalistic Guide - Edge-to-Edge */}
         <View style={styles.guideCard}>
           <View style={styles.guideContent}>
             <Icon name="lightbulb-outline" size={20} color={theme.colors.secondary} />
@@ -256,7 +283,6 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
   );
 });
 
-// 🚨 FIX: Add display name for React.memo component
 EnhancedCalendarViewScreen.displayName = 'EnhancedCalendarViewScreen';
 
 const createStyles = (theme: AppTheme) =>
@@ -264,7 +290,6 @@ const createStyles = (theme: AppTheme) =>
     animatedContainer: {
       flex: 1,
     },
-    // Edge-to-Edge Guide Card
     guideCard: {
       borderRadius: 0,
       backgroundColor: theme.colors.surface,

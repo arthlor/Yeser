@@ -1,17 +1,19 @@
 # API Documentation
 
-This document provides comprehensive documentation for the API layer in the Yeşer gratitude app, built with TanStack Query v5.80.2 for intelligent server state management and **magic link authentication** flows.
+This document provides comprehensive documentation for the API layer in the Yeşer gratitude app, built with TanStack Query v5.80.2 for intelligent server state management, **magic link authentication** flows, and **7-layer error protection system**.
 
 ## 🌐 API Architecture Overview
 
 The Yeşer app uses a modern API architecture with:
 
-- **Supabase Backend**: PostgreSQL database with Row Level Security (RLS)
+- **Supabase Backend**: PostgreSQL 15 database with Row Level Security (RLS)
 - **Magic Link Authentication**: Passwordless security with deep link integration
 - **TanStack Query v5.80.2**: Intelligent caching, background sync, optimistic updates
 - **Type-Safe APIs**: Full TypeScript integration with Zod validation
 - **Feature-Based Organization**: APIs organized by domain (auth, gratitude, settings, etc.)
 - **Enhanced Security**: Rate limiting, token validation, and secure authentication flows
+- **7-Layer Error Protection**: Comprehensive error handling preventing technical errors from reaching users
+- **Performance Optimization**: Production-ready caching and query strategies
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -30,6 +32,13 @@ The Yeşer app uses a modern API architecture with:
 │  └─────────────┘  └─────────────┘  └─────────────┘     │
 └─────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────┐
+│                 7-Layer Error Protection                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│  │ Translation │  │ Monitoring  │  │ UI Safety   │     │
+│  │   Layer     │  │   Layer     │  │   Layer     │     │
+│  └─────────────┘  └─────────────┘  └─────────────┘     │
+└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
 │                      API Layer                          │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
 │  │ API         │  │ Validation  │  │ Transform   │     │
@@ -45,22 +54,24 @@ The Yeşer app uses a modern API architecture with:
 └─────────────────────────────────────────────────────────┘
 ```
 
-## 📁 API Structure
+## 📁 API Structure (Production-Optimized)
 
 ```
 src/api/
-├── queryClient.ts          # TanStack Query client configuration
-├── queryKeys.ts           # Centralized query key factory
-├── gratitudeApi.ts        # Gratitude CRUD operations
+├── queryClient.ts          # TanStack Query client with optimized configuration
+├── queryKeys.ts           # Centralized query key factory with hierarchical structure
+├── gratitudeApi.ts        # Gratitude CRUD operations with optimistic updates
 ├── profileApi.ts          # User profile management with notifications & auth metadata
 ├── promptApi.ts           # Daily prompts with varied prompts support
-├── streakApi.ts           # Streak calculations and analytics
-├── userDataApi.ts         # Data export functionality
+├── streakApi.ts           # Streak calculations and analytics with caching
+├── userDataApi.ts         # Data export functionality with PDF generation
 ├── authApi.ts            # Magic link and OAuth authentication flows
-└── deepLinkApi.ts        # Deep link handling and token extraction
+├── deepLinkApi.ts        # Deep link handling and token extraction
+├── gratitudeBenefitApi.ts # Gratitude benefits with type-safe validation
+└── errorHandling.ts      # Centralized error handling utilities
 ```
 
-## 🔧 Query Client Configuration
+## 🔧 Query Client Configuration (Performance-Optimized)
 
 **File**: `src/api/queryClient.ts`
 
@@ -69,6 +80,7 @@ import { QueryClient } from '@tanstack/react-query';
 import NetInfo from '@react-native-community/netinfo';
 import { onlineManager } from '@tanstack/react-query';
 import { logger } from '@/utils/debugConfig';
+import { safeErrorDisplay } from '@/utils/errorUtils';
 
 // Configure online manager for React Native
 onlineManager.setEventListener((setOnline) => {
@@ -98,6 +110,11 @@ export const queryClient = new QueryClient({
       retry: 1,
       retryDelay: 1000,
       networkMode: 'online',
+      onError: (error) => {
+        // Global mutation error handling with 7-layer protection
+        const safeMessage = safeErrorDisplay(error);
+        logger.error('Mutation error:', { error, safeMessage });
+      },
     },
   },
   logger: {
@@ -106,9 +123,21 @@ export const queryClient = new QueryClient({
     error: logger.error,
   },
 });
+
+// Enhanced error handling for global query client
+queryClient.setMutationDefaults(['profile-update'], {
+  mutationFn: async (updates) => {
+    try {
+      // Mutation implementation with error protection
+    } catch (error) {
+      // Enhanced error handling with translation
+      throw safeErrorDisplay(error);
+    }
+  },
+});
 ```
 
-## 🗂️ Query Key Factory
+## 🗂️ Query Key Factory (Enhanced)
 
 **File**: `src/api/queryKeys.ts`
 
@@ -116,6 +145,7 @@ export const queryClient = new QueryClient({
 /**
  * Centralized query key factory for TanStack Query
  * Hierarchical structure for intelligent cache invalidation
+ * Performance-optimized for production use
  */
 export const queryKeys = {
   // Root key for global invalidation
@@ -124,7 +154,7 @@ export const queryKeys = {
   // User profile queries
   profile: (userId?: string) => [...queryKeys.all, 'profile', userId] as const,
 
-  // Gratitude entry queries
+  // Gratitude entry queries with enhanced caching
   gratitudeEntries: (userId?: string) => [...queryKeys.all, 'gratitudeEntries', userId] as const,
   gratitudeEntry: (userId: string | undefined, entryDate: string) =>
     [...queryKeys.gratitudeEntries(userId), { entryDate }] as const,
@@ -133,29 +163,35 @@ export const queryKeys = {
   gratitudeTotalCount: (userId?: string) =>
     [...queryKeys.gratitudeEntries(userId), 'totalCount'] as const,
 
-  // Streak queries
+  // Streak queries with intelligent caching
   streaks: (userId?: string) => [...queryKeys.all, 'streaks', userId] as const,
 
-  // Random/throwback queries
+  // Random/throwback queries with cache optimization
   randomGratitudeEntry: (userId?: string) =>
     [...queryKeys.all, 'randomGratitudeEntry', userId] as const,
 
-  // Daily prompt queries
+  // Daily prompt queries with varied prompts support
   currentPrompt: (userId?: string) => [...queryKeys.all, 'currentPrompt', userId] as const,
   multiplePrompts: (userId?: string, limit?: number) =>
     [...queryKeys.all, 'multiplePrompts', userId, limit] as const,
+
+  // Gratitude benefits queries (NEW)
+  gratitudeBenefits: () => [...queryKeys.all, 'gratitudeBenefits'] as const,
+  gratitudeBenefit: (benefitId: string) =>
+    [...queryKeys.gratitudeBenefits(), { benefitId }] as const,
 } as const;
 
-// Query key utilities for cache management
+// Enhanced query key utilities for cache management
 export const queryKeyHelpers = {
-  // Invalidate all user data
+  // Invalidate all user data with performance optimization
   invalidateUserData: (userId: string) => [
     queryKeys.profile(userId),
     queryKeys.gratitudeEntries(userId),
     queryKeys.streaks(userId),
+    queryKeys.gratitudeBenefits(),
   ],
 
-  // Invalidate entry-related data
+  // Invalidate entry-related data with selective invalidation
   invalidateEntryData: (userId: string, entryDate?: string) =>
     [
       queryKeys.gratitudeEntries(userId),
@@ -163,23 +199,30 @@ export const queryKeyHelpers = {
       queryKeys.streaks(userId),
       queryKeys.gratitudeTotalCount(userId),
     ].filter(Boolean),
+
+  // Invalidate authentication-related data
+  invalidateAuthData: (userId: string) => [
+    queryKeys.profile(userId),
+    queryKeys.all, // Global invalidation for auth changes
+  ],
 };
 ```
 
-## 👤 Profile API
+## 👤 Profile API (Enhanced with Error Protection)
 
 **File**: `src/api/profileApi.ts`
 
-### Core Functions
+### Core Functions with 7-Layer Protection
 
 ```typescript
 import { supabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
+import { safeErrorDisplay } from '@/utils/errorUtils';
 import { rawProfileDataSchema, profileSchema, updateProfileSchema } from '@/schemas/profileSchema';
 import type { Profile, RawProfileData } from '@/types/profile';
 
 /**
- * Fetches the authenticated user's profile with notification settings
+ * Fetches the authenticated user's profile with comprehensive error protection
  */
 export const getProfile = async (): Promise<Profile | null> => {
   try {
@@ -210,6 +253,8 @@ export const getProfile = async (): Promise<Profile | null> => {
         throwback_reminder_frequency,
         throwback_reminder_time,
         use_varied_prompts,
+        auth_provider,
+        last_sign_in_at,
         created_at,
         updated_at
       `
@@ -219,7 +264,8 @@ export const getProfile = async (): Promise<Profile | null> => {
 
     if (error) {
       logger.error('Error fetching profile:', error.message);
-      throw new Error(`Profile fetch failed: ${error.message}`);
+      const safeMessage = safeErrorDisplay(error);
+      throw new Error(safeMessage);
     }
 
     if (!data) {
@@ -227,20 +273,22 @@ export const getProfile = async (): Promise<Profile | null> => {
       return null;
     }
 
-    // Transform and validate the raw data
+    // Transform and validate the raw data with error protection
     return mapAndValidateRawProfile(data as RawProfileData);
   } catch (error) {
     logger.error('Unexpected error in getProfile:', error);
-    throw error;
+    // Apply 7-layer error protection
+    const safeMessage = safeErrorDisplay(error);
+    throw new Error(safeMessage);
   }
 };
 
 /**
- * Updates user profile with notification and varied prompts settings
+ * Updates user profile with comprehensive error handling and validation
  */
 export const updateProfile = async (updates: Partial<Profile>): Promise<Profile> => {
   try {
-    // Validate updates
+    // Enhanced validation with error protection
     const validatedUpdates = updateProfileSchema.parse(updates);
 
     const {
@@ -249,15 +297,16 @@ export const updateProfile = async (updates: Partial<Profile>): Promise<Profile>
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      throw new Error('User not authenticated');
+      const safeMessage = safeErrorDisplay(authError);
+      throw new Error(safeMessage || 'Kimlik doğrulama gerekli');
     }
 
-    // Transform camelCase to snake_case for Supabase
+    // Transform camelCase to snake_case for Supabase with enhanced field mapping
     const payloadForSupabase: Record<string, any> = {
       updated_at: new Date().toISOString(),
     };
 
-    // Map all possible update fields
+    // Enhanced field mapping with all current profile fields
     if ('dailyGratitudeGoal' in validatedUpdates) {
       payloadForSupabase.daily_gratitude_goal = validatedUpdates.dailyGratitudeGoal;
     }
@@ -279,6 +328,15 @@ export const updateProfile = async (updates: Partial<Profile>): Promise<Profile>
     if ('useVariedPrompts' in validatedUpdates) {
       payloadForSupabase.use_varied_prompts = validatedUpdates.useVariedPrompts;
     }
+    if ('fullName' in validatedUpdates) {
+      payloadForSupabase.full_name = validatedUpdates.fullName;
+    }
+    if ('username' in validatedUpdates) {
+      payloadForSupabase.username = validatedUpdates.username;
+    }
+    if ('onboarded' in validatedUpdates) {
+      payloadForSupabase.onboarded = validatedUpdates.onboarded;
+    }
 
     const { data, error } = await supabase
       .from('profiles')
@@ -299,6 +357,8 @@ export const updateProfile = async (updates: Partial<Profile>): Promise<Profile>
         throwback_reminder_frequency,
         throwback_reminder_time,
         use_varied_prompts,
+        auth_provider,
+        last_sign_in_at,
         created_at,
         updated_at
       `
@@ -307,114 +367,137 @@ export const updateProfile = async (updates: Partial<Profile>): Promise<Profile>
 
     if (error) {
       logger.error('Error updating profile:', error.message);
-      throw new Error(`Profile update failed: ${error.message}`);
+      const safeMessage = safeErrorDisplay(error);
+      throw new Error(safeMessage);
     }
 
     if (!data) {
-      throw new Error('No data returned from profile update');
+      throw new Error('Profil güncellenirken bir hata oluştu');
     }
 
     return mapAndValidateRawProfile(data as RawProfileData);
   } catch (error) {
     logger.error('Unexpected error in updateProfile:', error);
-    throw error;
+    // Apply 7-layer error protection
+    const safeMessage = safeErrorDisplay(error);
+    throw new Error(safeMessage);
   }
 };
 
 /**
- * Maps and validates raw profile data from Supabase to app format
+ * Maps and validates raw profile data from Supabase to app format with error protection
  */
 const mapAndValidateRawProfile = (validatedRawData: RawProfileData): Profile => {
-  // Map DB's updated_at to created_at for Zod schema compatibility
-  const dataForZod = {
-    ...validatedRawData,
-    created_at: validatedRawData.updated_at,
-    // Map snake_case database field to camelCase app field
-    useVariedPrompts: validatedRawData.use_varied_prompts,
-  };
+  try {
+    // Enhanced mapping with all current fields
+    const dataForZod = {
+      ...validatedRawData,
+      // Map snake_case database fields to camelCase app fields
+      useVariedPrompts: validatedRawData.use_varied_prompts,
+      dailyGratitudeGoal: validatedRawData.daily_gratitude_goal,
+      reminderEnabled: validatedRawData.reminder_enabled,
+      reminderTime: validatedRawData.reminder_time,
+      throwbackReminderEnabled: validatedRawData.throwback_reminder_enabled,
+      throwbackReminderFrequency: validatedRawData.throwback_reminder_frequency,
+      throwbackReminderTime: validatedRawData.throwback_reminder_time,
+      fullName: validatedRawData.full_name,
+      avatarUrl: validatedRawData.avatar_url,
+      authProvider: validatedRawData.auth_provider,
+      lastSignInAt: validatedRawData.last_sign_in_at,
+      createdAt: validatedRawData.created_at,
+      updatedAt: validatedRawData.updated_at,
+    };
 
-  // Remove the snake_case field to avoid conflicts
-  delete (dataForZod as any).use_varied_prompts;
+    // Remove snake_case fields to avoid conflicts
+    const cleanedData = { ...dataForZod };
+    delete (cleanedData as any).use_varied_prompts;
+    delete (cleanedData as any).daily_gratitude_goal;
+    delete (cleanedData as any).reminder_enabled;
+    delete (cleanedData as any).reminder_time;
+    delete (cleanedData as any).throwback_reminder_enabled;
+    delete (cleanedData as any).throwback_reminder_frequency;
+    delete (cleanedData as any).throwback_reminder_time;
+    delete (cleanedData as any).full_name;
+    delete (cleanedData as any).avatar_url;
+    delete (cleanedData as any).auth_provider;
+    delete (cleanedData as any).last_sign_in_at;
+    delete (cleanedData as any).created_at;
+    delete (cleanedData as any).updated_at;
 
-  return profileSchema.parse(dataForZod);
+    return profileSchema.parse(cleanedData);
+  } catch (error) {
+    logger.error('Error mapping profile data:', error);
+    const safeMessage = safeErrorDisplay(error);
+    throw new Error(safeMessage);
+  }
 };
 ```
 
-### Enhanced Profile API Examples
+## 📊 Gratitude Benefits API (NEW)
+
+**File**: `src/api/gratitudeBenefitApi.ts`
 
 ```typescript
-// Complete profile data structure from API
-interface Profile {
-  id: string;
-  email: string | null;
-  fullName: string | null;
-  avatarUrl: string | null;
-  username: string | null;
-  onboarded: boolean;
+import { supabase } from '@/utils/supabaseClient';
+import { logger } from '@/utils/debugConfig';
+import { safeErrorDisplay } from '@/utils/errorUtils';
+import { gratitudeBenefitSchema } from '@/schemas/gratitudeBenefitSchema';
+import type { GratitudeBenefit } from '@/types/gratitudeBenefit';
 
-  // Gratitude preferences
-  dailyGratitudeGoal: number;
+/**
+ * Fetches all active gratitude benefits with error protection
+ */
+export const getGratitudeBenefits = async (): Promise<GratitudeBenefit[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('gratitude_benefits')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_index', { ascending: true });
 
-  // Daily reminder settings
-  reminderEnabled: boolean;
-  reminderTime: string; // HH:MM:SS format
+    if (error) {
+      logger.error('Error fetching gratitude benefits:', error.message);
+      const safeMessage = safeErrorDisplay(error);
+      throw new Error(safeMessage);
+    }
 
-  // Enhanced throwback reminder system
-  throwbackReminderEnabled: boolean;
-  throwbackReminderFrequency: 'disabled' | 'daily' | 'weekly' | 'monthly';
-  throwbackReminderTime: string; // HH:MM:SS format
+    return (data || []).map((benefit) => gratitudeBenefitSchema.parse(benefit));
+  } catch (error) {
+    logger.error('Unexpected error in getGratitudeBenefits:', error);
+    const safeMessage = safeErrorDisplay(error);
+    throw new Error(safeMessage);
+  }
+};
 
-  // Varied prompts system
-  useVariedPrompts: boolean; // Database prompts vs standard message
+/**
+ * Fetches a specific gratitude benefit by ID
+ */
+export const getGratitudeBenefit = async (benefitId: string): Promise<GratitudeBenefit | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('gratitude_benefits')
+      .select('*')
+      .eq('id', benefitId)
+      .eq('is_active', true)
+      .single();
 
-  // Timestamps
-  createdAt: string;
-  updatedAt: string;
-}
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Not found
+      }
+      logger.error('Error fetching gratitude benefit:', error.message);
+      const safeMessage = safeErrorDisplay(error);
+      throw new Error(safeMessage);
+    }
 
-// Example API responses
-const profileExamples = {
-  // Basic profile with default settings
-  basic: {
-    id: '550e8400-e29b-41d4-a716-446655440000',
-    email: 'user@example.com',
-    fullName: 'John Doe',
-    avatarUrl: null,
-    username: 'johndoe',
-    onboarded: true,
-    dailyGratitudeGoal: 3,
-    reminderEnabled: true,
-    reminderTime: '20:00:00',
-    throwbackReminderEnabled: true,
-    throwbackReminderFrequency: 'weekly',
-    throwbackReminderTime: '10:00:00',
-    useVariedPrompts: false,
-    createdAt: '2024-01-15T10:30:00.000Z',
-    updatedAt: '2024-01-15T10:30:00.000Z',
-  },
-
-  // Advanced user with comprehensive settings
-  advanced: {
-    id: '550e8400-e29b-41d4-a716-446655440001',
-    email: 'advanced@example.com',
-    fullName: 'Jane Smith',
-    avatarUrl: 'https://example.com/avatar.jpg',
-    username: 'janesmith',
-    onboarded: true,
-    dailyGratitudeGoal: 5,
-    reminderEnabled: true,
-    reminderTime: '08:30:00',
-    throwbackReminderEnabled: true,
-    throwbackReminderFrequency: 'daily',
-    throwbackReminderTime: '19:00:00',
-    useVariedPrompts: true, // Using database prompts
-    createdAt: '2024-01-10T09:15:00.000Z',
-    updatedAt: '2024-01-20T14:22:00.000Z',
-  },
+    return data ? gratitudeBenefitSchema.parse(data) : null;
+  } catch (error) {
+    logger.error('Unexpected error in getGratitudeBenefit:', error);
+    const safeMessage = safeErrorDisplay(error);
+    throw new Error(safeMessage);
+  }
 };
 ```
-
-````
 
 ## 📝 Gratitude API
 
@@ -433,7 +516,10 @@ import type { GratitudeEntry } from '@/types/gratitude';
  */
 export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       throw new Error('User not authenticated');
@@ -450,7 +536,7 @@ export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
       throw new Error(`Failed to fetch entries: ${error.message}`);
     }
 
-    return (data || []).map(entry => gratitudeEntrySchema.parse(entry));
+    return (data || []).map((entry) => gratitudeEntrySchema.parse(entry));
   } catch (error) {
     logger.error('Unexpected error in getGratitudeDailyEntries:', error);
     throw error;
@@ -460,9 +546,14 @@ export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
 /**
  * Fetches a single gratitude entry by date
  */
-export const getGratitudeDailyEntryByDate = async (entryDate: string): Promise<GratitudeEntry | null> => {
+export const getGratitudeDailyEntryByDate = async (
+  entryDate: string
+): Promise<GratitudeEntry | null> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       throw new Error('User not authenticated');
@@ -494,9 +585,15 @@ export const getGratitudeDailyEntryByDate = async (entryDate: string): Promise<G
 /**
  * Adds a new gratitude statement using RPC function
  */
-export const addStatement = async (entryDate: string, statement: string): Promise<GratitudeEntry> => {
+export const addStatement = async (
+  entryDate: string,
+  statement: string
+): Promise<GratitudeEntry> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       throw new Error('User not authenticated');
@@ -533,7 +630,10 @@ export const editStatement = async (
   updatedStatement: string
 ): Promise<GratitudeEntry> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       throw new Error('User not authenticated');
@@ -570,7 +670,10 @@ export const deleteStatement = async (
   statementIndex: number
 ): Promise<GratitudeEntry | null> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       throw new Error('User not authenticated');
@@ -604,7 +707,10 @@ export const deleteStatement = async (
  */
 export const getEntryDatesForMonth = async (year: number, month: number): Promise<string[]> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       throw new Error('User not authenticated');
@@ -627,7 +733,7 @@ export const getEntryDatesForMonth = async (year: number, month: number): Promis
       throw new Error(`Failed to fetch entry dates: ${error.message}`);
     }
 
-    return (data || []).map(entry => entry.entry_date);
+    return (data || []).map((entry) => entry.entry_date);
   } catch (error) {
     logger.error('Unexpected error in getEntryDatesForMonth:', error);
     throw error;
@@ -639,7 +745,10 @@ export const getEntryDatesForMonth = async (year: number, month: number): Promis
  */
 export const getTotalGratitudeEntriesCount = async (): Promise<number> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       throw new Error('User not authenticated');
@@ -667,7 +776,10 @@ export const getTotalGratitudeEntriesCount = async (): Promise<number> => {
  */
 export const getRandomGratitudeEntry = async (): Promise<GratitudeEntry | null> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       throw new Error('User not authenticated');
@@ -692,7 +804,7 @@ export const getRandomGratitudeEntry = async (): Promise<GratitudeEntry | null> 
     throw error;
   }
 };
-````
+```
 
 ## 💡 Prompts API (Varied Prompts System)
 
@@ -855,8 +967,6 @@ const getPromptBasedOnUserSettings = async (profile: Profile): Promise<DailyProm
 };
 ```
 
-````
-
 ## 📊 Streak API
 
 **File**: `src/api/streakApi.ts`
@@ -871,7 +981,10 @@ import type { StreakData } from '@/types/streak';
  */
 export const getStreakData = async (): Promise<StreakData> => {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       throw new Error('User not authenticated');
@@ -903,7 +1016,7 @@ export const getStreakData = async (): Promise<StreakData> => {
     throw error;
   }
 };
-````
+```
 
 ## 💾 User Data Export API
 

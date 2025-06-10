@@ -144,22 +144,91 @@ const AppContent: React.FC = () => {
       logger.debug('Notifications initialized:', { extra: { hasPermissions } });
     });
 
-    // Set up notification response received listener
+    // Enhanced notification response handler with comprehensive navigation
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       logger.debug('Notification response received:', { extra: { response } });
 
       const categoryIdentifier = response.notification.request.content.categoryIdentifier;
       const notificationData = response.notification.request.content.data;
 
-      if (categoryIdentifier === 'throwback_reminder' && notificationData?.entryId) {
-        // Navigate to throwback entry detail
-        navigationRef.current?.navigate('EntryDetail', {
-          entryId: notificationData.entryId as string,
+      // Track notification interaction for analytics
+      analyticsService.logEvent('notification_tapped', {
+        category: categoryIdentifier || 'unknown',
+        type: typeof notificationData?.type === 'string' ? notificationData.type : 'unknown',
+        action: typeof notificationData?.action === 'string' ? notificationData.action : 'unknown',
+        timestamp: Date.now(),
+      });
+
+      if (categoryIdentifier === 'DAILY_REMINDER') {
+        // Enhanced daily reminder navigation to New Entry screen
+        logger.debug('Navigating to daily entry from notification', {
+          action:
+            typeof notificationData?.action === 'string' ? notificationData.action : 'unknown',
+          date:
+            typeof notificationData?.date === 'string'
+              ? notificationData.date
+              : new Date().toISOString().split('T')[0],
         });
-      } else if (categoryIdentifier === 'daily_reminder') {
-        // Navigate to daily entry creation
+
+        // Navigate to New Entry screen (DailyEntryTab) with today's date
         navigationRef.current?.navigate('MainApp', {
           screen: 'DailyEntryTab',
+          params: {
+            initialDate: new Date().toISOString().split('T')[0], // Always today for daily reminders
+          },
+        });
+
+        // Track successful navigation
+        analyticsService.logEvent('daily_reminder_navigation_success', {
+          target_screen: 'DailyEntryTab',
+          date: new Date().toISOString().split('T')[0],
+        });
+      } else if (categoryIdentifier === 'THROWBACK_REMINDER') {
+        // Enhanced throwback reminder navigation
+        logger.debug('Navigating from throwback reminder', {
+          action:
+            typeof notificationData?.action === 'string' ? notificationData.action : 'unknown',
+          entryId: typeof notificationData?.entryId === 'string' ? notificationData.entryId : null,
+          frequency:
+            typeof notificationData?.frequency === 'string'
+              ? notificationData.frequency
+              : 'unknown',
+        });
+
+        if (typeof notificationData?.entryId === 'string' && notificationData.entryId) {
+          // Navigate to specific entry detail if entryId is provided
+          navigationRef.current?.navigate('EntryDetail', {
+            entryId: notificationData.entryId,
+          });
+
+          analyticsService.logEvent('throwback_entry_navigation_success', {
+            target_screen: 'EntryDetail',
+            entry_id: notificationData.entryId,
+          });
+        } else {
+          // Navigate to past entries list
+          navigationRef.current?.navigate('MainApp', {
+            screen: 'PastEntriesTab',
+          });
+
+          analyticsService.logEvent('throwback_list_navigation_success', {
+            target_screen: 'PastEntriesTab',
+            frequency:
+              typeof notificationData?.frequency === 'string'
+                ? notificationData.frequency
+                : 'unknown',
+          });
+        }
+      } else {
+        // Handle unknown notification types
+        logger.warn('Unknown notification category received', {
+          category: categoryIdentifier,
+          data: notificationData,
+        });
+
+        // Default fallback - navigate to home
+        navigationRef.current?.navigate('MainApp', {
+          screen: 'HomeTab',
         });
       }
     });

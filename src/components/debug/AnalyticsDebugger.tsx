@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button, Card, Divider } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { analyticsService } from '@/services/analyticsService';
 import { useUserProfile } from '@/shared/hooks';
 import { useStreakData } from '@/features/streak/hooks';
@@ -22,6 +23,7 @@ interface AnalyticsDebuggerProps {
 
 export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose }) => {
   const { theme } = useTheme();
+  const { showSuccess, showError } = useGlobalError();
   const { profile } = useUserProfile();
   const { data: streakData } = useStreakData();
   const [testResults, setTestResults] = useState<TestResult[]>([]);
@@ -222,13 +224,12 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
       }
     }
 
-    Alert.alert(
-      'Screen View Tests Complete',
-      `✅ ${successCount}/${totalCount} screen views tracked successfully\n\n` +
-        `📊 Coverage: ${Math.round((successCount / totalCount) * 100)}%`,
-      [{ text: 'OK' }]
+    showSuccess(
+      `Screen View Tests Complete\n✅ ${successCount}/${totalCount} tracked\n📊 Coverage: ${Math.round(
+        (successCount / totalCount) * 100
+      )}%`
     );
-  }, [addTestResult]);
+  }, [addTestResult, showSuccess]);
 
   // Run All Tests
   const runAllTests = useCallback(async () => {
@@ -258,17 +259,18 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       testScreenNameNormalization();
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      Alert.alert(
-        'Analytics Tests Complete',
-        'All analytics tests have been executed. Check the results below.'
-      );
+      await testAllScreenViews();
     } catch (error) {
-      Alert.alert('Test Error', `An error occurred during testing: ${(error as Error).message}`);
+      const errorMessage = `An error occurred during testing: ${(error as Error).message}`;
+      addTestResult('Run All Tests', false, errorMessage);
+      showError(`Test Error: ${errorMessage}`);
     } finally {
       setIsRunningTests(false);
     }
   }, [
+    addTestResult,
     testScreenViewTracking,
     testCustomEventLogging,
     testUserJourneyTracking,
@@ -277,6 +279,8 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
     testGamificationAnalytics,
     testContentAnalytics,
     testScreenNameNormalization,
+    testAllScreenViews,
+    showError,
   ]);
 
   return (

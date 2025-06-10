@@ -1,1244 +1,726 @@
 # Testing Guide
 
-This document provides comprehensive testing strategies and patterns for the Yeser gratitude app, with special focus on TanStack Query integration and React Native testing best practices.
+This document provides comprehensive testing strategies and methodologies for the Yeşer gratitude app, covering **7-layer error protection testing**, **magic link authentication testing**, **performance testing**, and **Turkish localization testing** with production-ready quality assurance practices.
 
-## 🧪 Testing Strategy Overview
+## 🧪 Testing Architecture Overview
 
-The Yeser app follows a **modern testing pyramid** approach optimized for TanStack Query and React Native:
+The Yeşer app implements a **comprehensive testing strategy** that ensures:
+
+- **7-Layer Error Protection Validation**: Testing all error handling layers and fallback mechanisms
+- **Magic Link Authentication Testing**: Complete passwordless authentication flow validation
+- **Performance Regression Testing**: Continuous monitoring of optimization achievements
+- **Turkish Localization Testing**: Cultural sensitivity and language accuracy validation
+- **TanStack Query Testing**: Server state management and caching validation
+- **Cross-Platform Testing**: iOS and Android compatibility assurance
+- **Production Parity Testing**: Development environment mirrors production behavior
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    E2E TESTS                            │
-│               Critical User Journeys                    │
-│                     (Detox)                             │
-└─────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────┐
-│                 INTEGRATION TESTS                       │
-│            Hook + Component Integration                 │
-│              TanStack Query Flows                       │
-└─────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────┐
-│                   UNIT TESTS                            │
-│        Components, Hooks, Utilities, API Layer         │
-│               React Testing Library                     │
+│                    TESTING PYRAMID                      │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │              E2E TESTS                          │   │
+│  │  Authentication flows, Critical user journeys  │   │
+│  └─────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │           INTEGRATION TESTS                     │   │
+│  │  API integration, Store integration, Hooks     │   │
+│  └─────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │              UNIT TESTS                         │   │
+│  │  Components, Utilities, Services, Schemas      │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │           ERROR PROTECTION TESTS                │   │
+│  │  7-layer validation, Error scenarios           │   │
+│  └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Testing Principles
-
-- ✅ **Test Behavior, Not Implementation**: Focus on what users see and do
-- ✅ **Mock External Dependencies**: Supabase, Firebase, device APIs
-- ✅ **TanStack Query Testing**: Proper query/mutation testing patterns
-- ✅ **Accessibility Testing**: Ensure app works for all users
-- ✅ **Performance Testing**: Monitor query performance and rendering
-
-## 🛠️ Testing Setup
-
-### Jest Configuration
-
-```javascript
-// jest.config.cjs
-module.exports = {
-  preset: 'jest-expo',
-  transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@tanstack/react-query)',
-  ],
-  setupFilesAfterEnv: ['<rootDir>/jest-setup.ts', '@testing-library/jest-native/extend-expect'],
-  collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/__tests__/**/*',
-    '!src/**/*.test.{ts,tsx}',
-  ],
-  coverageThreshold: {
-    global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
-    },
-  },
-  testEnvironment: 'jsdom',
-};
-```
-
-### Test Setup File
-
-```typescript
-// jest-setup.ts
-import 'react-native-gesture-handler/jestSetup';
-import '@testing-library/jest-native/extend-expect';
-
-// Mock React Native modules
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
-
-// Mock AsyncStorage
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
-
-// Mock Expo modules
-jest.mock('expo-notifications', () => ({
-  getDefaultNotificationChannel: jest.fn(),
-  scheduleNotificationAsync: jest.fn(),
-  cancelAllScheduledNotificationsAsync: jest.fn(),
-}));
-
-// Mock Haptic Feedback
-jest.mock('expo-haptics', () => ({
-  impactAsync: jest.fn(),
-  notificationAsync: jest.fn(),
-}));
-
-// Silence console warnings in tests
-global.console.warn = jest.fn();
-global.console.error = jest.fn();
-
-// Setup TanStack Query testing
-import { QueryClient } from '@tanstack/react-query';
-
-export const createTestQueryClient = () =>
-  new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        gcTime: Infinity,
-      },
-      mutations: {
-        retry: false,
-      },
-    },
-  });
-```
-
-## 🔐 Authentication Testing
+## 🔐 Authentication Testing (Enhanced)
 
 ### Magic Link Authentication Testing
 
-The authentication system requires special testing considerations due to the asynchronous nature of magic links and deep link handling.
-
-#### Auth Service Testing
+#### Test Scenarios for Passwordless Authentication
 
 ```typescript
-// __tests__/services/authService.test.ts
-import { authService } from '@/features/auth/services/authService';
-import { supabase } from '@/services/supabase';
+// __tests__/auth/magicLinkAuth.test.ts
+import { authService } from '@/services/authService';
+import { deepLinkAuthService } from '@/services/deepLinkAuthService';
+import { logger } from '@/utils/debugConfig';
+import { safeErrorDisplay } from '@/utils/errorUtils';
 
-// Mock Supabase
-jest.mock('@/services/supabase', () => ({
-  supabase: {
-    auth: {
-      signInWithOtp: jest.fn(),
-      signInWithOAuth: jest.fn(),
-      signOut: jest.fn(),
-    },
-  },
-}));
-
-const mockSupabase = supabase as jest.Mocked<typeof supabase>;
-
-describe('authService', () => {
+describe('Magic Link Authentication with 7-Layer Protection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('signInWithMagicLink', () => {
-    it('should send magic link successfully', async () => {
-      mockSupabase.auth.signInWithOtp.mockResolvedValueOnce({
-        data: { user: null, session: null },
-        error: null,
+  describe('Email Validation and Magic Link Sending', () => {
+    test('should validate email format with Turkish error messages', () => {
+      const invalidEmails = ['invalid-email', 'test@', '@domain.com', ''];
+      const validEmails = ['test@example.com', 'user@yeser.app', 'türkçe@test.com'];
+
+      invalidEmails.forEach((email) => {
+        expect(authService.validateEmail(email)).toBe(false);
       });
 
-      const result = await authService.signInWithMagicLink('test@example.com');
+      validEmails.forEach((email) => {
+        expect(authService.validateEmail(email)).toBe(true);
+      });
+    });
+
+    test('should send magic link with proper error protection', async () => {
+      const mockEmail = 'test@example.com';
+
+      // Mock successful magic link send
+      const result = await authService.signInWithMagicLink(mockEmail);
 
       expect(result.success).toBe(true);
-      expect(mockSupabase.auth.signInWithOtp).toHaveBeenCalledWith({
-        email: 'test@example.com',
-        options: {
-          emailRedirectTo: 'yeser://auth/callback',
-          data: {
-            source: 'yeser_app',
-          },
-        },
+      expect(result.error).toBeUndefined();
+      expect(logger.debug).toHaveBeenCalledWith('Magic link sent successfully', {
+        email: mockEmail,
       });
     });
 
-    it('should handle magic link errors', async () => {
-      mockSupabase.auth.signInWithOtp.mockResolvedValueOnce({
-        data: { user: null, session: null },
-        error: { message: 'Rate limit exceeded' },
-      });
+    test('should handle rate limiting with Turkish error messages', async () => {
+      const mockEmail = 'test@example.com';
 
-      const result = await authService.signInWithMagicLink('test@example.com');
+      // Mock rate limit error
+      const mockError = { message: 'rate_limit_exceeded' };
+      jest.spyOn(authService, 'signInWithMagicLink').mockRejectedValue(mockError);
+
+      const result = await authService.signInWithMagicLink(mockEmail);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Rate limit exceeded');
+      expect(result.error).toContain('çok fazla');
+      expect(result.error).not.toContain('rate_limit'); // Technical error not exposed
     });
 
-    it('should validate email format', async () => {
-      const result = await authService.signInWithMagicLink('invalid-email');
+    test('should apply 7-layer error protection for network errors', async () => {
+      const mockEmail = 'test@example.com';
+      const networkError = new Error('Network request failed');
+
+      jest.spyOn(authService, 'signInWithMagicLink').mockRejectedValue(networkError);
+
+      const result = await authService.signInWithMagicLink(mockEmail);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Geçerli bir email adresi girin');
+      expect(result.error).toBe(safeErrorDisplay(networkError));
+      expect(result.error).toMatch(/türkçe.*hata/i); // Turkish error message
     });
   });
 
-  describe('signInWithGoogle', () => {
-    it('should handle Google OAuth', async () => {
-      mockSupabase.auth.signInWithOAuth.mockResolvedValueOnce({
-        data: { provider: 'google', url: 'https://oauth.url' },
-        error: null,
-      });
+  describe('Deep Link Handling', () => {
+    test('should process valid magic link callback URLs', async () => {
+      const validUrl =
+        'yeser://auth/callback?access_token=valid_token&refresh_token=refresh_token&expires_in=3600';
 
+      const result = await deepLinkAuthService.handleAuthCallback(validUrl);
+
+      expect(result.success).toBe(true);
+      expect(result.session).toBeDefined();
+      expect(result.session?.access_token).toBe('valid_token');
+    });
+
+    test('should handle expired tokens with Turkish error messages', async () => {
+      const expiredUrl =
+        'yeser://auth/callback?error=token_expired&error_description=Token%20has%20expired';
+
+      const result = await deepLinkAuthService.handleAuthCallback(expiredUrl);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('süresi dolmuş');
+      expect(result.error).not.toContain('token_expired'); // Technical error not exposed
+    });
+
+    test('should validate URL scheme and parameters', async () => {
+      const invalidUrls = [
+        'invalid://auth/callback',
+        'yeser://wrong/path',
+        'yeser://auth/callback', // No parameters
+        'yeser://auth/callback?invalid=params',
+      ];
+
+      for (const url of invalidUrls) {
+        const result = await deepLinkAuthService.handleAuthCallback(url);
+        expect(result.success).toBe(false);
+        expect(result.error).toMatch(/geçersiz.*bağlantı/i);
+      }
+    });
+  });
+
+  describe('Google OAuth Testing', () => {
+    test('should handle Google OAuth success flow', async () => {
       const result = await authService.signInWithGoogle();
 
       expect(result.success).toBe(true);
-      expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalledWith({
-        provider: 'google',
-        options: {
-          redirectTo: 'yeser://auth/callback',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
+      expect(result.session).toBeDefined();
+      expect(result.userCancelled).toBe(false);
+    });
+
+    test('should handle user cancellation gracefully', async () => {
+      const mockCancellationError = { code: 'USER_CANCELLED' };
+      jest.spyOn(authService, 'signInWithGoogle').mockRejectedValue(mockCancellationError);
+
+      const result = await authService.signInWithGoogle();
+
+      expect(result.success).toBe(false);
+      expect(result.userCancelled).toBe(true);
+      expect(result.error).toBeUndefined(); // No error message for cancellation
+    });
+
+    test('should handle Google OAuth errors with protection', async () => {
+      const mockOAuthError = { message: 'OAuth session failed' };
+      jest.spyOn(authService, 'signInWithGoogle').mockRejectedValue(mockOAuthError);
+
+      const result = await authService.signInWithGoogle();
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Google ile giriş');
+      expect(result.error).not.toContain('OAuth session failed'); // Technical error not exposed
     });
   });
 });
 ```
 
-#### Deep Link Handler Testing
+### Authentication Integration Tests
 
 ```typescript
-// __tests__/components/DeepLinkHandler.test.tsx
-import React from 'react';
-import { render } from '@testing-library/react-native';
-import { Linking } from 'react-native';
-import { DeepLinkHandler } from '@/features/auth/components/DeepLinkHandler';
+// __tests__/auth/authFlow.integration.test.ts
 import { useAuthStore } from '@/store/authStore';
-
-// Mock React Native Linking
-jest.mock('react-native', () => ({
-  ...jest.requireActual('react-native'),
-  Linking: {
-    getInitialURL: jest.fn(),
-    addEventListener: jest.fn(),
-  },
-}));
-
-// Mock auth store
-jest.mock('@/store/authStore');
-const mockUseAuthStore = useAuthStore as jest.MockedFunction<typeof useAuthStore>;
-
-describe('DeepLinkHandler', () => {
-  const mockSetSession = jest.fn();
-  const mockSetIsLoading = jest.fn();
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockUseAuthStore.mockReturnValue({
-      setSession: mockSetSession,
-      setIsLoading: mockSetIsLoading,
-      // ... other auth store properties
-    });
-  });
-
-  it('should handle initial URL with auth tokens', async () => {
-    const mockUrl = 'yeser://auth/callback?access_token=test&refresh_token=test';
-    (Linking.getInitialURL as jest.Mock).mockResolvedValueOnce(mockUrl);
-
-    render(<DeepLinkHandler />);
-
-    // Wait for async operations
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
-    expect(mockSetIsLoading).toHaveBeenCalledWith(false);
-  });
-
-  it('should handle URL changes during app lifecycle', () => {
-    let urlListener: (url: string) => void;
-
-    (Linking.addEventListener as jest.Mock).mockImplementationOnce((event, callback) => {
-      if (event === 'url') {
-        urlListener = callback;
-      }
-      return { remove: jest.fn() };
-    });
-
-    render(<DeepLinkHandler />);
-
-    // Simulate URL change
-    const testUrl = 'yeser://auth/callback?access_token=new_token';
-    urlListener(testUrl);
-
-    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
-  });
-
-  it('should handle malformed URLs gracefully', async () => {
-    const mockUrl = 'invalid-url';
-    (Linking.getInitialURL as jest.Mock).mockResolvedValueOnce(mockUrl);
-
-    render(<DeepLinkHandler />);
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    expect(mockSetIsLoading).toHaveBeenCalledWith(false);
-    // Should not set session for invalid URLs
-    expect(mockSetSession).not.toHaveBeenCalled();
-  });
-});
-```
-
-#### Login Screen Testing
-
-```typescript
-// __tests__/screens/LoginScreen.test.tsx
-import React from 'react';
+import { queryClient } from '@/api/queryClient';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { LoginScreen } from '@/features/auth/screens/LoginScreen';
-import { authService } from '@/features/auth/services/authService';
 
-// Mock auth service
-jest.mock('@/features/auth/services/authService');
-const mockAuthService = authService as jest.Mocked<typeof authService>;
-
-// Mock navigation
-const mockNavigation = {
-  navigate: jest.fn(),
-  goBack: jest.fn(),
-};
-
-describe('LoginScreen', () => {
+describe('Authentication Flow Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    useAuthStore.getState().reset(); // Reset auth state
+    queryClient.clear(); // Clear query cache
   });
 
-  it('should render login form', () => {
-    const { getByLabelText, getByText } = render(
-      <LoginScreen navigation={mockNavigation} />
-    );
+  test('complete magic link authentication flow', async () => {
+    const { getByTestId, getByText } = render(<LoginScreen />);
 
-    expect(getByLabelText('Email Adresi')).toBeTruthy();
-    expect(getByText('Giriş Bağlantısı Gönder')).toBeTruthy();
-    expect(getByText('Google ile Giriş Yap')).toBeTruthy();
-  });
-
-  it('should validate email input', async () => {
-    const { getByLabelText, getByText } = render(
-      <LoginScreen navigation={mockNavigation} />
-    );
-
-    const emailInput = getByLabelText('Email Adresi');
-    const submitButton = getByText('Giriş Bağlantısı Gönder');
-
-    // Test empty email
-    fireEvent.press(submitButton);
-    await waitFor(() => {
-      expect(getByText('Lütfen email adresinizi girin')).toBeTruthy();
-    });
-
-    // Test invalid email
-    fireEvent.changeText(emailInput, 'invalid-email');
-    fireEvent.press(submitButton);
-    await waitFor(() => {
-      expect(getByText('Geçerli bir email adresi girin')).toBeTruthy();
-    });
-  });
-
-  it('should handle successful magic link sending', async () => {
-    mockAuthService.signInWithMagicLink.mockResolvedValueOnce({
-      success: true,
-      error: null,
-    });
-
-    const { getByLabelText, getByText } = render(
-      <LoginScreen navigation={mockNavigation} />
-    );
-
-    const emailInput = getByLabelText('Email Adresi');
-    const submitButton = getByText('Giriş Bağlantısı Gönder');
-
+    // 1. Enter email
+    const emailInput = getByTestId('email-input');
     fireEvent.changeText(emailInput, 'test@example.com');
-    fireEvent.press(submitButton);
 
+    // 2. Submit magic link request
+    const magicLinkButton = getByTestId('magic-link-button');
+    fireEvent.press(magicLinkButton);
+
+    // 3. Verify success message appears
     await waitFor(() => {
       expect(getByText('Giriş bağlantısı email adresinize gönderildi!')).toBeTruthy();
     });
 
-    expect(mockAuthService.signInWithMagicLink).toHaveBeenCalledWith('test@example.com');
-  });
-
-  it('should handle magic link errors', async () => {
-    mockAuthService.signInWithMagicLink.mockResolvedValueOnce({
-      success: false,
-      error: 'Rate limit exceeded',
-    });
-
-    const { getByLabelText, getByText } = render(
-      <LoginScreen navigation={mockNavigation} />
-    );
-
-    const emailInput = getByLabelText('Email Adresi');
-    const submitButton = getByText('Giriş Bağlantısı Gönder');
-
-    fireEvent.changeText(emailInput, 'test@example.com');
-    fireEvent.press(submitButton);
-
-    await waitFor(() => {
-      expect(getByText('Rate limit exceeded')).toBeTruthy();
-    });
-  });
-
-  it('should handle Google OAuth', async () => {
-    mockAuthService.signInWithGoogle.mockResolvedValueOnce({
-      success: true,
-      error: null,
-    });
-
-    const { getByText } = render(
-      <LoginScreen navigation={mockNavigation} />
-    );
-
-    const googleButton = getByText('Google ile Giriş Yap');
-    fireEvent.press(googleButton);
-
-    await waitFor(() => {
-      expect(mockAuthService.signInWithGoogle).toHaveBeenCalled();
-    });
-  });
-
-  it('should toggle help section', () => {
-    const { getByText } = render(
-      <LoginScreen navigation={mockNavigation} />
-    );
-
-    const helpButton = getByText('Nasıl Çalışır?');
-    fireEvent.press(helpButton);
-
-    expect(getByText('Yardımı Gizle')).toBeTruthy();
-
-    fireEvent.press(getByText('Yardımı Gizle'));
-    expect(getByText('Nasıl Çalışır?')).toBeTruthy();
-  });
-});
-```
-
-### Authentication E2E Testing
-
-```typescript
-// e2e/auth.e2e.ts
-describe('Authentication Flow', () => {
-  beforeAll(async () => {
-    await device.launchApp();
-  });
-
-  beforeEach(async () => {
-    await device.reloadReactNative();
-  });
-
-  it('should complete magic link authentication flow', async () => {
-    // 1. Should show login screen for unauthenticated user
-    await expect(element(by.id('login-screen'))).toBeVisible();
-
-    // 2. Enter email address
-    await element(by.id('email-input')).typeText('test@example.com');
-
-    // 3. Tap magic link button
-    await element(by.id('magic-link-button')).tap();
-
-    // 4. Should show success message
-    await expect(element(by.text('Giriş bağlantısı email adresinize gönderildi!'))).toBeVisible();
-
-    // 5. Simulate magic link callback (in test environment)
-    await device.openURL({
-      url: 'yeser://auth/callback?access_token=test_token&refresh_token=test_refresh&type=signup',
-    });
-
-    // 6. Should navigate to authenticated area
-    await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
-      .withTimeout(5000);
-  });
-
-  it('should handle invalid email validation', async () => {
-    await expect(element(by.id('login-screen'))).toBeVisible();
-
-    // Enter invalid email
-    await element(by.id('email-input')).typeText('invalid-email');
-    await element(by.id('magic-link-button')).tap();
-
-    // Should show validation error
-    await expect(element(by.text('Geçerli bir email adresi girin'))).toBeVisible();
-  });
-
-  it('should handle empty email validation', async () => {
-    await expect(element(by.id('login-screen'))).toBeVisible();
-
-    // Tap button without entering email
-    await element(by.id('magic-link-button')).tap();
-
-    // Should show validation error
-    await expect(element(by.text('Lütfen email adresinizi girin'))).toBeVisible();
-  });
-
-  it('should show and hide help section', async () => {
-    await expect(element(by.id('login-screen'))).toBeVisible();
-
-    // Tap help button
-    await element(by.text('Nasıl Çalışır?')).tap();
-
-    // Should show help text
-    await expect(element(by.text(/Email adresinizi girin ve size özel/))).toBeVisible();
-    await expect(element(by.text('Yardımı Gizle'))).toBeVisible();
-
-    // Hide help
-    await element(by.text('Yardımı Gizle')).tap();
-    await expect(element(by.text('Nasıl Çalışır?'))).toBeVisible();
-  });
-});
-```
-
-## 📊 TanStack Query Testing Patterns
-
-### Query Hook Testing
-
-```typescript
-// __tests__/hooks/useUserProfile.test.ts
-import { renderHook, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { getProfile } from '@/api/profileApi';
-
-// Mock the API
-jest.mock('@/api/profileApi');
-const mockGetProfile = getProfile as jest.MockedFunction<typeof getProfile>;
-
-const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
-};
-
-describe('useUserProfile', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should fetch user profile successfully', async () => {
-    const mockProfile = {
-      id: '123',
-      username: 'testuser',
-      onboarded: true,
-      dailyGratitudeGoal: 3,
+    // 4. Simulate deep link callback
+    const mockSession = {
+      access_token: 'test_token',
+      user: { id: 'test_user', email: 'test@example.com' },
     };
 
-    mockGetProfile.mockResolvedValueOnce(mockProfile);
+    useAuthStore.getState().setSession(mockSession);
 
-    const { result } = renderHook(() => useUserProfile(), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.isLoading).toBe(true);
-
+    // 5. Verify authentication state
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    expect(result.current.profile).toEqual(mockProfile);
-    expect(result.current.error).toBeNull();
-  });
-
-  it('should handle profile fetch error', async () => {
-    const errorMessage = 'Failed to fetch profile';
-    mockGetProfile.mockRejectedValueOnce(new Error(errorMessage));
-
-    const { result } = renderHook(() => useUserProfile(), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    expect(result.current.profile).toBeNull();
-    expect(result.current.error?.message).toBe(errorMessage);
-  });
-});
-```
-
-### Mutation Hook Testing
-
-```typescript
-// __tests__/hooks/useGratitudeMutations.test.ts
-import { renderHook, waitFor, act } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useGratitudeMutations } from '@/hooks/useGratitudeMutations';
-import { addStatement } from '@/api/gratitudeApi';
-
-jest.mock('@/api/gratitudeApi');
-const mockAddStatement = addStatement as jest.MockedFunction<typeof addStatement>;
-
-describe('useGratitudeMutations', () => {
-  let queryClient: QueryClient;
-
-  beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-    });
-    jest.clearAllMocks();
-  });
-
-  const createWrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
-
-  it('should add statement with optimistic update', async () => {
-    const entryDate = '2024-01-15';
-    const statement = 'I am grateful for testing';
-    const mockEntry = {
-      id: '123',
-      entryDate,
-      statements: [statement],
-      userId: 'user123',
-    };
-
-    mockAddStatement.mockResolvedValueOnce(mockEntry);
-
-    const { result } = renderHook(() => useGratitudeMutations(entryDate), {
-      wrapper: createWrapper,
-    });
-
-    await act(async () => {
-      result.current.addStatement({ entryDate, statement });
-    });
-
-    expect(result.current.isAddingStatement).toBe(true);
-
-    await waitFor(() => {
-      expect(result.current.isAddingStatement).toBe(false);
-    });
-
-    expect(mockAddStatement).toHaveBeenCalledWith(entryDate, statement);
-  });
-
-  it('should handle mutation error with rollback', async () => {
-    const entryDate = '2024-01-15';
-    const statement = 'Test statement';
-    const errorMessage = 'Network error';
-
-    mockAddStatement.mockRejectedValueOnce(new Error(errorMessage));
-
-    const { result } = renderHook(() => useGratitudeMutations(entryDate), {
-      wrapper: createWrapper,
-    });
-
-    await act(async () => {
-      result.current.addStatement({ entryDate, statement });
-    });
-
-    await waitFor(() => {
-      expect(result.current.isAddingStatement).toBe(false);
-    });
-
-    // Verify error handling
-    expect(mockAddStatement).toHaveBeenCalledWith(entryDate, statement);
-  });
-});
-```
-
-## 🧩 Component Testing
-
-### Testing TanStack Query-Powered Components
-
-```typescript
-// __tests__/components/UserProfileCard.test.tsx
-import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { UserProfileCard } from '@/components/features/UserProfileCard';
-import { useUserProfile } from '@/hooks/useUserProfile';
-
-// Mock the hook
-jest.mock('@/hooks/useUserProfile');
-const mockUseUserProfile = useUserProfile as jest.MockedFunction<typeof useUserProfile>;
-
-const createTestWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
-};
-
-describe('UserProfileCard', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should display loading state', () => {
-    mockUseUserProfile.mockReturnValue({
-      profile: null,
-      isLoading: true,
-      error: null,
-      updateProfile: jest.fn(),
-      isUpdatingProfile: false,
-    });
-
-    render(<UserProfileCard />, { wrapper: createTestWrapper() });
-
-    expect(screen.getByText('Loading profile...')).toBeTruthy();
-    expect(screen.getByTestId('loading-indicator')).toBeTruthy();
-  });
-
-  it('should display profile data', async () => {
-    const mockProfile = {
-      id: '123',
-      username: 'testuser',
-      fullName: 'Test User',
-      dailyGratitudeGoal: 3,
-      reminderEnabled: true,
-      reminderTime: '20:00:00',
-    };
-
-    mockUseUserProfile.mockReturnValue({
-      profile: mockProfile,
-      isLoading: false,
-      error: null,
-      updateProfile: jest.fn(),
-      isUpdatingProfile: false,
-    });
-
-    render(<UserProfileCard showEditButton={true} />, { wrapper: createTestWrapper() });
-
-    expect(screen.getByText('Test User')).toBeTruthy();
-    expect(screen.getByText('3 statements')).toBeTruthy();
-    expect(screen.getByText('Enabled (20:00:00)')).toBeTruthy();
-    expect(screen.getByText('Edit')).toBeTruthy();
-  });
-
-  it('should display error state', () => {
-    mockUseUserProfile.mockReturnValue({
-      profile: null,
-      isLoading: false,
-      error: new Error('Failed to load profile'),
-      updateProfile: jest.fn(),
-      isUpdatingProfile: false,
-    });
-
-    render(<UserProfileCard />, { wrapper: createTestWrapper() });
-
-    expect(screen.getByText('Failed to load profile')).toBeTruthy();
-  });
-});
-```
-
-### Testing Form Components
-
-```typescript
-// __tests__/components/GratitudeStatementForm.test.tsx
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { GratitudeStatementForm } from '@/components/features/GratitudeStatementForm';
-import { useGratitudeMutations } from '@/hooks/useGratitudeMutations';
-
-jest.mock('@/hooks/useGratitudeMutations');
-const mockUseGratitudeMutations = useGratitudeMutations as jest.MockedFunction<typeof useGratitudeMutations>;
-
-describe('GratitudeStatementForm', () => {
-  const mockAddStatement = jest.fn();
-
-  beforeEach(() => {
-    mockUseGratitudeMutations.mockReturnValue({
-      addStatement: mockAddStatement,
-      isAddingStatement: false,
-      editStatement: jest.fn(),
-      deleteStatement: jest.fn(),
+      expect(useAuthStore.getState().isAuthenticated).toBe(true);
+      expect(useAuthStore.getState().session?.user?.email).toBe('test@example.com');
     });
   });
 
-  it('should submit valid statement', async () => {
-    const onSubmitSuccess = jest.fn();
-    const entryDate = '2024-01-15';
+  test('authentication error handling with Turkish messages', async () => {
+    const { getByTestId, getByText } = render(<LoginScreen />);
 
-    render(
-      <GratitudeStatementForm
-        entryDate={entryDate}
-        onSubmitSuccess={onSubmitSuccess}
-      />
+    // Mock authentication failure
+    jest.spyOn(authService, 'signInWithMagicLink').mockRejectedValue(
+      new Error('Invalid email address')
     );
 
-    const input = screen.getByTestId('statement-input');
-    const submitButton = screen.getByTestId('submit-button');
+    const emailInput = getByTestId('email-input');
+    fireEvent.changeText(emailInput, 'invalid@email.com');
 
-    fireEvent.changeText(input, 'I am grateful for this test');
-    fireEvent.press(submitButton);
+    const magicLinkButton = getByTestId('magic-link-button');
+    fireEvent.press(magicLinkButton);
 
-    expect(mockAddStatement).toHaveBeenCalledWith(
-      { entryDate, statement: 'I am grateful for this test' },
-      expect.any(Object)
-    );
-  });
-
-  it('should show validation error for empty statement', async () => {
-    render(<GratitudeStatementForm entryDate="2024-01-15" />);
-
-    const submitButton = screen.getByTestId('submit-button');
-    fireEvent.press(submitButton);
-
+    // Verify Turkish error message appears
     await waitFor(() => {
-      expect(screen.getByTestId('error-message')).toBeTruthy();
-      expect(screen.getByText('Please enter a gratitude statement')).toBeTruthy();
+      const errorElement = getByText(/hata.*oluştu/i);
+      expect(errorElement).toBeTruthy();
+      expect(errorElement.props.children).not.toContain('Invalid email'); // No technical error
     });
-  });
-
-  it('should disable form during submission', () => {
-    mockUseGratitudeMutations.mockReturnValue({
-      addStatement: mockAddStatement,
-      isAddingStatement: true,
-      editStatement: jest.fn(),
-      deleteStatement: jest.fn(),
-    });
-
-    render(<GratitudeStatementForm entryDate="2024-01-15" />);
-
-    expect(screen.getByTestId('submit-button')).toBeDisabled();
-    expect(screen.getByTestId('loading-indicator')).toBeTruthy();
   });
 });
 ```
 
-## 🔌 API Layer Testing
+## 🛡️ 7-Layer Error Protection Testing
 
-### Mocking Supabase
+### Error Protection Layer Validation
 
 ```typescript
-// __tests__/api/gratitudeApi.test.ts
-import { getGratitudeDailyEntries, addStatement } from '@/api/gratitudeApi';
-import { supabase } from '@/utils/supabaseClient';
+// __tests__/errorProtection/errorLayers.test.ts
+import { safeErrorDisplay } from '@/utils/errorUtils';
+import { analyzeErrorLayers } from '@/utils/errorDebugging';
+import { globalErrorHandler } from '@/providers/ErrorProvider';
 
-// Mock Supabase client
-jest.mock('@/utils/supabaseClient', () => ({
-  supabase: {
-    auth: {
-      getUser: jest.fn(),
-    },
-    from: jest.fn(() => ({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockReturnThis(),
-      single: jest.fn(),
-    })),
-    rpc: jest.fn(),
-  },
-}));
-
-const mockSupabase = supabase as jest.Mocked<typeof supabase>;
-
-describe('gratitudeApi', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    // Mock authenticated user
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'user123' } },
-      error: null,
-    });
-  });
-
-  describe('getGratitudeDailyEntries', () => {
-    it('should fetch entries successfully', async () => {
-      const mockEntries = [
-        {
-          id: '1',
-          user_id: 'user123',
-          entry_date: '2024-01-15',
-          statements: ['Statement 1', 'Statement 2'],
-        },
+describe('7-Layer Error Protection System', () => {
+  describe('Layer 1: Enhanced Error Translation', () => {
+    test('should translate technical errors to Turkish', () => {
+      const technicalErrors = [
+        { message: 'Network request failed', expected: /ağ.*hatası/i },
+        { message: 'Invalid credentials', expected: /geçersiz.*bilgiler/i },
+        { message: 'OAuth session failed', expected: /giriş.*başarısız/i },
+        { code: 'USER_CANCELLED', expected: undefined }, // Should be filtered out
       ];
 
-      const mockQuery = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({ data: mockEntries, error: null }),
-      };
+      technicalErrors.forEach(({ message, code, expected }) => {
+        const error = message ? { message } : { code };
+        const result = safeErrorDisplay(error);
 
-      mockSupabase.from.mockReturnValue(mockQuery as any);
-
-      const result = await getGratitudeDailyEntries();
-
-      expect(result).toHaveLength(1);
-      expect(result[0].statements).toEqual(['Statement 1', 'Statement 2']);
-      expect(mockSupabase.from).toHaveBeenCalledWith('gratitude_entries');
+        if (expected) {
+          expect(result).toMatch(expected);
+          expect(result).not.toContain(message || code); // Technical details not exposed
+        } else {
+          expect(result).toBe(''); // User cancellation should return empty string
+        }
+      });
     });
 
-    it('should handle fetch error', async () => {
-      const mockQuery = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
-          data: null,
-          error: { message: 'Database error' },
-        }),
-      };
-
-      mockSupabase.from.mockReturnValue(mockQuery as any);
-
-      await expect(getGratitudeDailyEntries()).rejects.toThrow(
-        'Failed to fetch entries: Database error'
-      );
-    });
-  });
-
-  describe('addStatement', () => {
-    it('should add statement via RPC', async () => {
-      const mockResult = [
-        {
-          id: '123',
-          user_id: 'user123',
-          entry_date: '2024-01-15',
-          statements: ['New statement'],
-        },
+    test('should handle Google OAuth specific errors', () => {
+      const oauthErrors = [
+        'OAuth session failed',
+        'Google sign-in cancelled',
+        'OAuth configuration error',
       ];
 
-      mockSupabase.rpc.mockResolvedValue({ data: mockResult, error: null });
-
-      const result = await addStatement('2024-01-15', 'New statement');
-
-      expect(result.statements).toContain('New statement');
-      expect(mockSupabase.rpc).toHaveBeenCalledWith('add_gratitude_statement', {
-        p_user_id: 'user123',
-        p_entry_date: '2024-01-15',
-        p_statement: 'New statement',
+      oauthErrors.forEach(errorMessage => {
+        const result = safeErrorDisplay({ message: errorMessage });
+        expect(result).toContain('Google ile giriş');
+        expect(result).not.toContain('OAuth');
+        expect(result).not.toContain('session');
       });
     });
   });
+
+  describe('Layer 2: Global Error Monitoring', () => {
+    test('should capture and log console errors', () => {
+      const mockLogger = jest.spyOn(console, 'error').mockImplementation();
+
+      // Simulate console error
+      console.error('Unhandled error occurred');
+
+      expect(mockLogger).toHaveBeenCalledWith('Unhandled error occurred');
+      mockLogger.mockRestore();
+    });
+
+    test('should monitor unhandled promise rejections', async () => {
+      const mockLogger = jest.spyOn(logger, 'error').mockImplementation();
+
+      // Simulate unhandled promise rejection
+      Promise.reject(new Error('Unhandled promise rejection')).catch(() => {});
+
+      await new Promise(resolve => setTimeout(resolve, 100)); // Allow event loop to process
+
+      expect(mockLogger).toHaveBeenCalledWith(
+        expect.stringContaining('Unhandled promise rejection'),
+        expect.any(Object)
+      );
+
+      mockLogger.mockRestore();
+    });
+  });
+
+  describe('Layer 3-7: Component and UI Protection', () => {
+    test('should provide safe fallback for component errors', () => {
+      const ComponentWithError = () => {
+        throw new Error('Component crashed');
+      };
+
+      const ProtectedComponent = () => (
+        <ErrorBoundary fallback={<Text>Güvenli yedek içerik</Text>}>
+          <ComponentWithError />
+        </ErrorBoundary>
+      );
+
+      const { getByText } = render(<ProtectedComponent />);
+
+      expect(getByText('Güvenli yedek içerik')).toBeTruthy();
+    });
+
+    test('should maintain UI stability during errors', async () => {
+      const { getByTestId } = render(<TestComponentWithErrorScenarios />);
+
+      // Trigger various error scenarios
+      fireEvent.press(getByTestId('trigger-network-error'));
+      fireEvent.press(getByTestId('trigger-auth-error'));
+      fireEvent.press(getByTestId('trigger-validation-error'));
+
+      // UI should remain stable and functional
+      await waitFor(() => {
+        expect(getByTestId('main-content')).toBeTruthy();
+        expect(getByTestId('error-count')).toHaveTextContent('3'); // Errors logged but UI stable
+      });
+    });
+  });
+
+  describe('Error Layer Analysis (Development)', () => {
+    test('should analyze error flow through all layers', () => {
+      const mockConsoleTable = jest.spyOn(console, 'table').mockImplementation();
+
+      const testError = new Error('Test error for layer analysis');
+      analyzeErrorLayers(testError, 'Test Context');
+
+      expect(mockConsoleTable).toHaveBeenCalledWith(
+        expect.objectContaining({
+          layer7_uiProtection: 'Applied',
+          finalMessage: expect.stringContaining('hata'),
+        })
+      );
+
+      mockConsoleTable.mockRestore();
+    });
+  });
 });
 ```
 
-## 🎯 Integration Testing
+## 📊 Performance Testing (Production Metrics)
 
-### Hook + Component Integration
+### Component Performance Testing
 
 ```typescript
-// __tests__/integration/gratitudeFlow.test.tsx
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DailyEntryScreen } from '@/screens/DailyEntryScreen';
-import * as gratitudeApi from '@/api/gratitudeApi';
+// __tests__/performance/componentPerformance.test.ts
+import { withPerformanceMonitoring } from '@/utils/performanceUtils';
+import { render } from '@testing-library/react-native';
 
-jest.mock('@/api/gratitudeApi');
-const mockGratitudeApi = gratitudeApi as jest.Mocked<typeof gratitudeApi>;
+describe('Component Performance (Optimization Validation)', () => {
+  test('should render components within performance budget', async () => {
+    const performanceData: Array<{ component: string; renderTime: number }> = [];
 
-describe('Gratitude Flow Integration', () => {
-  let queryClient: QueryClient;
-
-  beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    const mockLogger = jest.spyOn(logger, 'debug').mockImplementation((message, data) => {
+      if (message.includes('render performance')) {
+        performanceData.push({
+          component: data.component || 'unknown',
+          renderTime: parseFloat(data.renderTime) || 0,
+        });
+      }
     });
-    jest.clearAllMocks();
+
+    // Test critical components
+    const components = [
+      { Component: MonitoredGratitudeCard, name: 'GratitudeCard' },
+      { Component: MonitoredHomeScreen, name: 'HomeScreen' },
+      { Component: MonitoredLoginScreen, name: 'LoginScreen' },
+    ];
+
+    for (const { Component, name } of components) {
+      render(<Component testProps={{}} />);
+    }
+
+    // Verify all components render within 16ms (60fps budget)
+    performanceData.forEach(({ component, renderTime }) => {
+      expect(renderTime).toBeLessThan(16);
+    });
+
+    mockLogger.mockRestore();
   });
 
-  const renderWithProviders = (component: React.ReactElement) => {
-    return render(
-      <QueryClientProvider client={queryClient}>
-        {component}
-      </QueryClientProvider>
-    );
-  };
+  test('should validate memoization effectiveness', () => {
+    const TestComponent = React.memo(({ data }: { data: any[] }) => (
+      <View>{data.map(item => <Text key={item.id}>{item.text}</Text>)}</View>
+    ));
 
-  it('should complete full gratitude entry flow', async () => {
-    // Mock initial empty state
-    mockGratitudeApi.getGratitudeDailyEntryByDate.mockResolvedValue(null);
+    const testData = [{ id: 1, text: 'Test' }];
 
-    // Mock successful statement addition
-    const mockEntry = {
-      id: '123',
-      userId: 'user123',
-      entryDate: '2024-01-15',
-      statements: ['I am grateful for testing'],
-    };
-    mockGratitudeApi.addStatement.mockResolvedValue(mockEntry);
+    const { rerender } = render(<TestComponent data={testData} />);
 
-    renderWithProviders(<DailyEntryScreen />);
+    // Component should not re-render with same props
+    const renderCountBefore = React.renderCount || 0;
+    rerender(<TestComponent data={testData} />);
+    const renderCountAfter = React.renderCount || 0;
 
-    // Verify initial state
-    await waitFor(() => {
-      expect(screen.queryByText('Loading...')).toBeNull();
-    });
-
-    // Add a gratitude statement
-    const input = screen.getByTestId('statement-input');
-    const submitButton = screen.getByTestId('submit-button');
-
-    fireEvent.changeText(input, 'I am grateful for testing');
-    fireEvent.press(submitButton);
-
-    // Verify optimistic update
-    expect(screen.getByText('Adding your gratitude statement...')).toBeTruthy();
-
-    // Wait for completion
-    await waitFor(() => {
-      expect(screen.queryByText('Adding your gratitude statement...')).toBeNull();
-    });
-
-    // Verify API call
-    expect(mockGratitudeApi.addStatement).toHaveBeenCalledWith(
-      expect.any(String),
-      'I am grateful for testing'
-    );
+    expect(renderCountAfter).toBe(renderCountBefore); // No re-render due to memo
   });
 });
 ```
 
-## 🚀 E2E Testing with Detox
-
-### Detox Configuration
-
-```javascript
-// detox.config.js
-module.exports = {
-  testRunner: 'jest',
-  runnerConfig: 'e2e/jest.config.js',
-  apps: {
-    'ios.debug': {
-      type: 'ios.app',
-      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/yeser.app',
-      build:
-        'xcodebuild -workspace ios/yeser.xcworkspace -scheme yeser -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build',
-    },
-    'android.debug': {
-      type: 'android.apk',
-      binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
-      build: 'cd android && ./gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug',
-    },
-  },
-  devices: {
-    simulator: {
-      type: 'ios.simulator',
-      device: {
-        type: 'iPhone 14',
-      },
-    },
-    emulator: {
-      type: 'android.emulator',
-      device: {
-        avdName: 'Pixel_4_API_30',
-      },
-    },
-  },
-  configurations: {
-    'ios.sim.debug': {
-      device: 'simulator',
-      app: 'ios.debug',
-    },
-    'android.emu.debug': {
-      device: 'emulator',
-      app: 'android.debug',
-    },
-  },
-};
-```
-
-### E2E Test Examples
+### Query Performance Testing
 
 ```typescript
-// e2e/gratitudeFlow.e2e.ts
-import { device, element, by, expect as detoxExpect, waitFor } from 'detox';
+// __tests__/performance/queryPerformance.test.ts
+import { queryClient } from '@/api/queryClient';
+import { queryKeys } from '@/api/queryKeys';
+import { renderHook, waitFor } from '@testing-library/react-native';
 
-describe('Gratitude Entry Flow', () => {
-  beforeAll(async () => {
-    await device.launchApp();
+describe('TanStack Query Performance', () => {
+  test('should cache queries effectively', async () => {
+    const { result } = renderHook(() => useGratitudeQueries('test-user'));
+
+    // First query
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    const initialFetchTime = performance.now();
+
+    // Second query should be instant (cached)
+    const { result: secondResult } = renderHook(() => useGratitudeQueries('test-user'));
+
+    const cachedFetchTime = performance.now();
+    const cacheHitTime = cachedFetchTime - initialFetchTime;
+
+    expect(cacheHitTime).toBeLessThan(5); // Should be nearly instant
+    expect(secondResult.current.data).toEqual(result.current.data);
   });
 
+  test('should handle background refetching efficiently', async () => {
+    const networkRequestCount = { count: 0 };
+
+    // Mock API to count requests
+    jest.spyOn(gratitudeApi, 'getGratitudeEntries').mockImplementation(async () => {
+      networkRequestCount.count++;
+      return mockGratitudeData;
+    });
+
+    const { result } = renderHook(() => useGratitudeQueries('test-user'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Trigger background refetch
+    queryClient.invalidateQueries(queryKeys.gratitudeEntries('test-user'));
+
+    await waitFor(() => {
+      expect(result.current.isFetching).toBe(false);
+    });
+
+    // Should only make one additional request for background refetch
+    expect(networkRequestCount.count).toBe(2); // Initial + background
+  });
+});
+```
+
+## 🌍 Turkish Localization Testing
+
+### Error Message Localization
+
+```typescript
+// __tests__/localization/turkishErrors.test.ts
+import { translateErrorMessage } from '@/utils/errorUtils';
+
+describe('Turkish Error Message Localization', () => {
+  test('should provide culturally appropriate error messages', () => {
+    const errorScenarios = [
+      {
+        technical: 'Network request failed',
+        expected: {
+          turkish: /internet.*bağlantı.*hata/i,
+          polite: /lütfen.*tekrar.*deneyin/i,
+          helpful: /kontrol.*edin/i,
+        },
+      },
+      {
+        technical: 'Authentication failed',
+        expected: {
+          turkish: /giriş.*başarısız/i,
+          polite: /lütfen.*bilgiler/i,
+          clear: /kontrol.*edin/i,
+        },
+      },
+      {
+        technical: 'Rate limit exceeded',
+        expected: {
+          turkish: /çok.*fazla.*deneme/i,
+          polite: /lütfen.*bekleyin/i,
+          timeframe: /dakika.*bekleyin/i,
+        },
+      },
+    ];
+
+    errorScenarios.forEach(({ technical, expected }) => {
+      const translated = translateErrorMessage(technical);
+
+      Object.entries(expected).forEach(([aspect, pattern]) => {
+        expect(translated).toMatch(pattern);
+      });
+
+      // Should not contain technical English terms
+      expect(translated).not.toContain('request');
+      expect(translated).not.toContain('authentication');
+      expect(translated).not.toContain('limit');
+    });
+  });
+
+  test('should handle edge cases gracefully', () => {
+    const edgeCases = [
+      { input: null, expected: 'Beklenmeyen bir hata oluştu' },
+      { input: undefined, expected: 'Beklenmeyen bir hata oluştu' },
+      { input: '', expected: 'Beklenmeyen bir hata oluştu' },
+      { input: { code: 'USER_CANCELLED' }, expected: '' }, // Should be empty for cancellation
+    ];
+
+    edgeCases.forEach(({ input, expected }) => {
+      const result = translateErrorMessage(input);
+      expect(result).toBe(expected);
+    });
+  });
+});
+```
+
+## 🔄 End-to-End Testing
+
+### Critical User Journey Testing
+
+```typescript
+// e2e/criticalJourneys.e2e.ts
+import { device, element, by, expect as detoxExpect } from 'detox';
+
+describe('Critical User Journeys', () => {
   beforeEach(async () => {
     await device.reloadReactNative();
   });
 
-  it('should complete onboarding and add gratitude entry', async () => {
-    // Wait for app to load
-    await waitFor(element(by.id('welcome-screen')))
-      .toBeVisible()
-      .withTimeout(5000);
+  test('complete authentication and gratitude entry flow', async () => {
+    // 1. Authentication Flow
+    await detoxExpected(element(by.id('login-screen'))).toBeVisible();
 
-    // Complete onboarding
-    await element(by.id('start-onboarding-button')).tap();
-    await element(by.id('next-button')).tap();
-    await element(by.id('finish-onboarding-button')).tap();
+    await element(by.id('email-input')).typeText('test@yeser.app');
+    await element(by.id('magic-link-button')).tap();
 
-    // Navigate to daily entry
-    await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
-      .withTimeout(3000);
+    await detoxExpected(
+      element(by.text('Giriş bağlantısı email adresinize gönderildi!'))
+    ).toBeVisible();
 
-    await element(by.id('daily-entry-tab')).tap();
+    // Simulate magic link callback
+    await device.openURL('yeser://auth/callback?access_token=test_token');
 
-    // Add gratitude statement
-    await element(by.id('statement-input')).typeText('I am grateful for end-to-end testing');
-    await element(by.id('submit-button')).tap();
+    // 2. Verify successful authentication
+    await detoxExpected(element(by.id('home-screen'))).toBeVisible();
 
-    // Verify success
-    await waitFor(element(by.text('I am grateful for end-to-end testing')))
-      .toBeVisible()
-      .withTimeout(3000);
+    // 3. Create gratitude entry
+    await element(by.id('add-gratitude-button')).tap();
+    await element(by.id('gratitude-input')).typeText('Ailem için şükrediyorum');
+    await element(by.id('save-gratitude-button')).tap();
 
-    // Verify streak update
-    await element(by.id('home-tab')).tap();
-    await detoxExpect(element(by.id('current-streak'))).toHaveText('1');
+    // 4. Verify entry appears
+    await detoxExpected(element(by.text('Ailem için şükrediyorum'))).toBeVisible();
+
+    // 5. Verify Turkish UI elements
+    await detoxExpected(element(by.text('Şükür Günlüğü'))).toBeVisible();
+    await detoxExpected(element(by.text('Bugünkü Şükürlerim'))).toBeVisible();
   });
 
-  it('should display throwback modal', async () => {
-    // Assuming user has entries
-    await element(by.id('throwback-button')).tap();
+  test('error recovery and user guidance', async () => {
+    // Test network error scenario
+    await device.disableNetworkConnection();
 
-    await waitFor(element(by.id('throwback-modal')))
-      .toBeVisible()
-      .withTimeout(3000);
+    await element(by.id('email-input')).typeText('test@example.com');
+    await element(by.id('magic-link-button')).tap();
 
-    await detoxExpect(element(by.text('Memory Lane'))).toBeVisible();
+    // Should show Turkish error message
+    await detoxExpected(element(by.text(/internet.*bağlantı/i))).toBeVisible();
 
-    // Close modal
-    await element(by.id('close-throwback-modal')).tap();
+    // Re-enable network
+    await device.enableNetworkConnection();
 
-    await waitFor(element(by.id('throwback-modal')))
-      .not.toBeVisible()
-      .withTimeout(1000);
+    // Retry should work
+    await element(by.id('magic-link-button')).tap();
+    await detoxExpected(
+      element(by.text('Giriş bağlantısı email adresinize gönderildi!'))
+    ).toBeVisible();
   });
 });
 ```
 
-## 📈 Performance Testing
+## 📋 Testing Checklist & Quality Gates
 
-### Measuring Component Render Time
+### Pre-Production Testing Checklist
+
+```markdown
+## Authentication Testing ✅
+
+- [ ] Magic link email validation with Turkish error messages
+- [ ] Magic link sending and rate limiting protection
+- [ ] Deep link URL processing and token validation
+- [ ] Google OAuth flow with user cancellation handling
+- [ ] Session management and persistence
+- [ ] Authentication error protection (all 7 layers)
+
+## Error Protection Testing ✅
+
+- [ ] Layer 1: Error translation to Turkish
+- [ ] Layer 2: Global error monitoring and logging
+- [ ] Layer 3-4: Auth store and service protection
+- [ ] Layer 5: Global error provider functionality
+- [ ] Layer 6: Error boundary crash protection
+- [ ] Layer 7: UI component safety checks
+- [ ] User cancellation handling (no error messages)
+
+## Performance Testing ✅
+
+- [ ] Component render times under 16ms (60fps)
+- [ ] React.memo effectiveness validation
+- [ ] TanStack Query caching efficiency
+- [ ] Bundle size impact analysis
+- [ ] Memory usage patterns
+- [ ] Animation smoothness validation
+
+## Turkish Localization Testing ✅
+
+- [ ] All error messages in Turkish
+- [ ] Cultural sensitivity in messaging
+- [ ] Polite and helpful tone
+- [ ] No technical English terms exposed
+- [ ] UI text consistency
+- [ ] Input validation messages
+
+## Cross-Platform Testing ✅
+
+- [ ] iOS authentication flows
+- [ ] Android authentication flows
+- [ ] Deep link handling on both platforms
+- [ ] Performance consistency
+- [ ] UI component rendering
+- [ ] Error handling consistency
+
+## Data Integrity Testing ✅
+
+- [ ] Gratitude entry creation and editing
+- [ ] Streak calculation accuracy
+- [ ] Data export functionality
+- [ ] Offline data persistence
+- [ ] Sync behavior on reconnection
+```
+
+### Quality Gates
 
 ```typescript
-// __tests__/performance/componentPerformance.test.tsx
-import React from 'react';
-import { render } from '@testing-library/react-native';
-import { performance } from 'perf_hooks';
-import { GratitudeStatementsList } from '@/components/features/GratitudeStatementsList';
-
-describe('Component Performance', () => {
-  it('should render large lists efficiently', async () => {
-    const largeStatementList = Array.from({ length: 100 }, (_, i) => `Statement ${i + 1}`);
-
-    const mockEntry = {
-      id: '123',
-      entryDate: '2024-01-15',
-      statements: largeStatementList,
-    };
-
-    const startTime = performance.now();
-
-    render(<GratitudeStatementsList entry={mockEntry} />);
-
-    const endTime = performance.now();
-    const renderTime = endTime - startTime;
-
-    // Should render in under 100ms
-    expect(renderTime).toBeLessThan(100);
-  });
-});
-```
-
-## 🎯 Test Coverage and Quality
-
-### Coverage Requirements
-
-```javascript
-// jest.config.js coverage thresholds
-coverageThreshold: {
-  global: {
-    branches: 80,
-    functions: 80,
-    lines: 80,
-    statements: 80,
-  },
-  // Specific thresholds for critical areas
-  'src/api/': {
-    branches: 90,
+// Quality gate configuration for CI/CD
+export const qualityGates = {
+  testCoverage: {
+    statements: 90,
+    branches: 85,
     functions: 90,
     lines: 90,
-    statements: 90,
   },
-  'src/hooks/': {
-    branches: 85,
-    functions: 85,
-    lines: 85,
-    statements: 85,
+  performance: {
+    maxComponentRenderTime: 16, // ms
+    maxQueryResponseTime: 1000, // ms
+    maxAppStartupTime: 3000, // ms
+    maxMemoryUsage: 150, // MB
   },
-}
+  accessibility: {
+    minA11yScore: 90,
+    requiredAriaLabels: true,
+    contrastRatio: 4.5,
+  },
+  errorProtection: {
+    maxUnhandledErrors: 0,
+    requiredTurkishTranslation: true,
+    maxTechnicalErrorsExposed: 0,
+  },
+};
 ```
 
-### Running Tests
-
-```bash
-# Unit tests
-npm run test
-
-# Watch mode
-npm run test:watch
-
-# Coverage report
-npm run test:coverage
-
-# E2E tests
-npm run test:e2e
-
-# All tests
-npm run test:all
-```
-
-## 🔧 Testing Best Practices
-
-### Do's and Don'ts
-
-✅ **Do:**
-
-- Test user-facing behavior, not implementation details
-- Use proper act() wrapping for async operations
-- Mock external dependencies (APIs, device features)
-- Test loading, success, and error states
-- Use accessible selectors (testID, role, label)
-- Test optimistic updates and rollbacks
-
-❌ **Don't:**
-
-- Test internal component state directly
-- Mock components you want to test
-- Write tests that duplicate component logic
-- Test third-party library internals
-- Ignore accessibility in tests
-
-### Test Organization
-
-```
-__tests__/
-├── components/          # Component unit tests
-├── hooks/              # Hook unit tests
-├── api/                # API layer tests
-├── integration/        # Feature integration tests
-├── e2e/               # End-to-end tests
-├── performance/       # Performance tests
-└── utils/             # Test utilities and helpers
-```
-
----
-
-This testing guide provides comprehensive patterns for testing the modern TanStack Query + React Native architecture, ensuring robust quality assurance for the Yeser gratitude app.
+This comprehensive testing guide ensures that the Yeşer app maintains production-ready quality with robust error protection, excellent performance, proper Turkish localization, and seamless authentication flows across all platforms.

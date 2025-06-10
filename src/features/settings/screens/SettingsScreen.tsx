@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -13,10 +13,13 @@ import AccountSettings from '@/components/settings/AccountSettings';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
 import DailyReminderSettings from '@/components/settings/DailyReminderSettings';
 import ThrowbackReminderSettings from '@/components/settings/ThrowbackReminderSettings';
+import NotificationTestingSettings from '@/components/settings/NotificationTestingSettings';
+import NotificationDebugSettings from '@/components/settings/NotificationDebugSettings';
 import { ScreenContent, ScreenLayout } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import { useUserProfile } from '@/shared/hooks';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { analyticsService } from '@/services/analyticsService';
 import useAuthStore from '@/store/authStore';
 
@@ -54,6 +57,7 @@ interface Props {
  */
 const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
+  const { handleMutationError } = useGlobalError();
   const styles = createStyles(theme);
 
   const [isExporting, setIsExporting] = useState(false);
@@ -78,9 +82,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
       const prepareResult = await prepareUserExportFile();
 
       if (!prepareResult.success || !prepareResult.filePath || !prepareResult.filename) {
-        Alert.alert(
-          'Dışa Aktarma Hatası',
-          prepareResult.message ?? 'Veriler dışa aktarılırken bir hata oluştu.'
+        handleMutationError(
+          new Error(prepareResult.message ?? 'Veriler dışa aktarılırken bir hata oluştu.'),
+          'veri dışa aktarma'
         );
         return;
       }
@@ -94,17 +98,17 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         // logger.debug('Data shared successfully or share dialog opened.');
       } else {
         if (shareResult.message && shareResult.message !== 'Sharing cancelled by user.') {
-          Alert.alert('Paylaşım Hatası', shareResult.message);
+          handleMutationError(
+            new Error(`Paylaşım hatası: ${shareResult.message}`),
+            'veri paylaşma'
+          );
         } else if (shareResult.message === 'Sharing cancelled by user.') {
           // logger.debug('User cancelled sharing process.');
         }
       }
     } catch (error: unknown) {
       // logger.error('Export data error:', error);
-      Alert.alert(
-        'Dışa Aktarma Hatası',
-        error instanceof Error ? error.message : 'Beklenmedik bir hata oluştu.'
-      );
+      handleMutationError(error, 'veri dışa aktarma');
     } finally {
       // Guaranteed cleanup - this will never throw due to improved cleanupTemporaryFile
       if (tempFilePath) {
@@ -144,9 +148,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             'Failed to schedule daily reminder:',
             new Error(result.error?.message || 'Bilinmeyen hata')
           );
-          Alert.alert(
-            'Bildirim Hatası',
-            `Hatırlatıcı zamanlanamadı: ${result.error?.message || 'Bilinmeyen hata'}`
+          handleMutationError(
+            new Error(`Hatırlatıcı zamanlanamadı: ${result.error?.message || 'Bilinmeyen hata'}`),
+            'hatırlatıcı ayarlama'
           );
         } else {
           logger.debug('Daily reminder scheduled successfully from settings');
@@ -161,10 +165,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         'Error updating daily reminder settings:',
         error instanceof Error ? error : new Error(String(error))
       );
-      Alert.alert(
-        'Ayar Hatası',
-        error instanceof Error ? error.message : 'Ayarlar güncellenirken bir hata oluştu.'
-      );
+      handleMutationError(error, 'günlük hatırlatıcı ayarlama');
     }
   };
 
@@ -174,14 +175,12 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     throwback_reminder_time?: string;
   }) => {
     try {
-      // Update the profile in the database (now includes throwback_reminder_time)
-      updateProfile({
-        throwback_reminder_enabled: settings.throwback_reminder_enabled,
-        throwback_reminder_frequency: settings.throwback_reminder_frequency || 'weekly',
-        throwback_reminder_time: settings.throwback_reminder_time,
-      });
+      // 🚨 FIX: Implement atomic transaction pattern
+      let notificationResult: { success: boolean; error?: { message?: string } } = {
+        success: true,
+      };
 
-      // Also update the notification scheduling
+      // First, handle notification scheduling/cancellation
       if (
         settings.throwback_reminder_enabled &&
         settings.throwback_reminder_frequency !== 'disabled'
@@ -191,39 +190,65 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         const [hours, minutes] = timeString.split(':').map(Number);
         const frequency = settings.throwback_reminder_frequency || 'weekly';
 
-        const result = await notificationService.scheduleThrowbackReminder(
+        notificationResult = await notificationService.scheduleThrowbackReminder(
           hours,
           minutes,
           true,
           frequency as 'daily' | 'weekly' | 'monthly'
         );
 
-        if (!result.success) {
+        if (!notificationResult.success) {
           logger.error(
             'Failed to schedule throwback reminder:',
-            new Error(result.error?.message || 'Bilinmeyen hata')
+            new Error(notificationResult.error?.message || 'Bilinmeyen hata')
           );
-          Alert.alert(
-            'Bildirim Hatası',
-            `Geçmiş hatırlatıcısı zamanlanamadı: ${result.error?.message || 'Bilinmeyen hata'}`
+          // 🚨 FIX: Don't update database if notification scheduling failed
+          handleMutationError(
+            new Error(
+              `Geçmiş hatırlatıcısı zamanlanamadı: ${notificationResult.error?.message || 'Bilinmeyen hata'}`
+            ),
+            'geçmiş hatırlatıcısı ayarlama'
           );
+          return; // Early return - don't update database
         } else {
           logger.debug('Throwback reminder scheduled successfully from settings');
         }
       } else {
         // Cancel throwback notifications if disabled
-        await notificationService.cancelThrowbackReminders();
-        logger.debug('Throwback reminders cancelled from settings');
+        try {
+          await notificationService.cancelThrowbackReminders();
+          logger.debug('Throwback reminders cancelled from settings');
+        } catch (error) {
+          logger.error('Failed to cancel throwback reminders', error as Error);
+          handleMutationError(
+            new Error(
+              `Geçmiş hatırlatıcısı iptal edilemedi: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`
+            ),
+            'geçmiş hatırlatıcısı iptal etme'
+          );
+          return; // Early return - don't update database
+        }
       }
+
+      // Only update the profile in the database if notification operation succeeded
+      updateProfile({
+        throwback_reminder_enabled: settings.throwback_reminder_enabled,
+        throwback_reminder_frequency: settings.throwback_reminder_frequency || 'weekly',
+        throwback_reminder_time: settings.throwback_reminder_time,
+      });
+
+      logger.debug('Throwback settings updated successfully - both notifications and database', {
+        enabled: settings.throwback_reminder_enabled,
+        frequency: settings.throwback_reminder_frequency,
+        time: settings.throwback_reminder_time,
+        notificationSuccess: notificationResult.success,
+      });
     } catch (error) {
       logger.error(
         'Error updating throwback reminder settings:',
         error instanceof Error ? error : new Error(String(error))
       );
-      Alert.alert(
-        'Ayar Hatası',
-        error instanceof Error ? error.message : 'Ayarlar güncellenirken bir hata oluştu.'
-      );
+      handleMutationError(error, 'geçmiş hatırlatıcısı ayarlama');
     }
   };
 
@@ -253,7 +278,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     <ScreenLayout edges={['top']} edgeToEdge={true}>
       <ScreenContent
         isLoading={isLoadingProfile && !profile}
-        error={profileError && !profile ? 'Ayarlar yüklenirken bir hata oluştu.' : null}
+        errorObject={profileError && !profile ? profileError : null}
         onRetry={refetchProfile}
         loadingText="Ayarlar yükleniyor..."
       >
@@ -291,6 +316,14 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             activeThemeName={colorMode as ThemeName}
             onToggleTheme={toggleColorMode}
           />
+
+          {/* 🔔 NOTIFICATION TESTING SECTION (Development only) */}
+          {__DEV__ && (
+            <>
+              <NotificationTestingSettings isVisible={true} />
+              <NotificationDebugSettings isVisible={true} />
+            </>
+          )}
 
           {/* Varied Prompts Setting */}
           <View style={styles.settingCard}>

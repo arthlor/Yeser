@@ -37,6 +37,7 @@ import {
 } from 'react-native';
 import { ZodError } from 'zod';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import ErrorState from '@/shared/components/ui/ErrorState';
 
 type DailyEntryScreenRouteProp = RouteProp<MainTabParamList, 'DailyEntryTab'>;
 
@@ -54,7 +55,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
  */
 const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const { theme } = useTheme();
-  const { showError, showSuccess } = useGlobalError();
+  const { handleMutationError, showError, showSuccess } = useGlobalError();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [manualDate, setManualDate] = useState<Date | null>(null);
@@ -121,31 +122,24 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const isGoalComplete = statements.length >= dailyGoal;
   const wasGoalJustCompleted = useRef(false);
 
-  // Show error toasts for mutation failures
+  // 🛡️ ERROR PROTECTION: Handle mutations errors with global error system
   useEffect(() => {
     if (addStatementError) {
-      showError('Minnet ifadesi eklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+      handleMutationError(addStatementError, 'addStatement');
     }
-  }, [addStatementError, showError]);
+  }, [addStatementError, handleMutationError]);
 
   useEffect(() => {
     if (editStatementError) {
-      showError('Minnet ifadesi düzenlenirken bir hata oluştu. Lütfen tekrar deneyin.');
+      handleMutationError(editStatementError, 'editStatement');
     }
-  }, [editStatementError, showError]);
+  }, [editStatementError, handleMutationError]);
 
   useEffect(() => {
     if (deleteStatementError) {
-      showError('Minnet ifadesi silinirken bir hata oluştu. Lütfen tekrar deneyin.');
+      handleMutationError(deleteStatementError, 'deleteStatement');
     }
-  }, [deleteStatementError, showError]);
-
-  // Show entry loading error if exists
-  useEffect(() => {
-    if (entryError) {
-      showError('Günlük minnet kayıtları yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.');
-    }
-  }, [entryError, showError]);
+  }, [deleteStatementError, handleMutationError]);
 
   // Handle goal completion celebration
   useEffect(() => {
@@ -248,58 +242,64 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   const handleEditStatement = useCallback((index: number) => {
     setEditingStatementIndex(index);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
 
   const handleSaveEditedStatement = useCallback(
-    async (index: number, updatedText: string) => {
+    async (index: number, updatedStatement: string) => {
       try {
-        gratitudeStatementSchema.parse(updatedText);
+        gratitudeStatementSchema.parse(updatedStatement);
+        setStatementInputError(null);
 
-        editStatement({
-          entryDate: finalDateString,
-          statementIndex: index,
-          updatedStatement: updatedText,
-        });
-
-        setEditingStatementIndex(null);
-        showSuccess('Minnet ifadesi güncellendi');
+        await editStatement(
+          { entryDate: finalDateString, statementIndex: index, updatedStatement },
+          {
+            onSuccess: () => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setEditingStatementIndex(null);
+              showSuccess('Minnet ifadesi güncellendi');
+            },
+          }
+        );
       } catch (error) {
         if (error instanceof ZodError) {
-          showError(error.issues[0]?.message || 'Geçersiz girdi');
+          showError(error.issues[0]?.message || 'Invalid statement');
         }
       }
     },
     [finalDateString, editStatement, showSuccess, showError]
   );
 
-  const handleCancelEditingStatement = useCallback(() => {
+  const handleCancelEditing = useCallback(() => {
     setEditingStatementIndex(null);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
 
   const handleDeleteStatement = useCallback(
     (index: number) => {
-      // For better UX, we'll show a toast with undo functionality
-      deleteStatement({ entryDate: finalDateString, statementIndex: index });
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-
-      showSuccess('Minnet ifadesi silindi');
+      deleteStatement(
+        { entryDate: finalDateString, statementIndex: index },
+        {
+          onSuccess: () => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            showSuccess('Minnet ifadesi silindi');
+          },
+        }
+      );
     },
     [finalDateString, deleteStatement, showSuccess]
   );
 
-  const handleDateChange = useCallback(
-    (event: DateTimePickerEvent, selectedDate?: Date) => {
-      setShowDatePicker(Platform.OS === 'ios');
-      if (selectedDate) {
-        setEntryDate(selectedDate);
-      }
-    },
-    [setEntryDate]
-  );
+  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (event.type === 'set' && selectedDate) {
+      setEntryDate(selectedDate);
+    }
+  };
 
-  const handleRefresh = useCallback(async () => {
+  const handleRefresh = async () => {
     await refetchEntry();
-  }, [refetchEntry]);
+  };
 
   const handlePromptRefresh = useCallback(() => {
     // Always allow refreshing prompts - for varied prompts, fetch new from API
@@ -319,6 +319,20 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       day: 'numeric',
     });
   };
+
+  // 🛡️ ERROR PROTECTION: Render a full-screen error state if the main query fails
+  if (entryError) {
+    return (
+      <ScreenLayout>
+        <ErrorState
+          error={entryError}
+          title="Veriler Yüklenemedi"
+          onRetry={refetchEntry}
+          retryText="Tekrar Dene"
+        />
+      </ScreenLayout>
+    );
+  }
 
   return (
     <>
@@ -482,7 +496,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                     isLoading={isEditingStatement || isDeletingStatement}
                     onEdit={() => handleEditStatement(index)}
                     onDelete={() => handleDeleteStatement(index)}
-                    onCancel={handleCancelEditingStatement}
+                    onCancel={handleCancelEditing}
                     onSave={(updatedText: string) => handleSaveEditedStatement(index, updatedText)}
                     // Enhanced editing configuration
                     enableInlineEdit={true}
@@ -556,7 +570,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           value={effectiveDate}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDateChange}
+          onChange={onDateChange}
           maximumDate={new Date()}
         />
       )}

@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { useThemeStore } from '@/store/themeStore';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useGratitudeBenefits } from '../hooks/useGratitudeBenefits';
 import { useUserProfile } from '@/shared/hooks/useUserProfile';
 import { useStreakData } from '@/features/streak/hooks/useStreakData';
@@ -26,8 +27,9 @@ type WhyGratitudeScreenNavigationProp = NativeStackNavigationProp<
   'WhyGratitude'
 >;
 
-export const WhyGratitudeScreen: React.FC = () => {
+export const WhyGratitudeScreen: React.FC = React.memo(() => {
   const { activeTheme } = useThemeStore();
+  const { showError, showSuccess } = useGlobalError();
   const navigation = useNavigation<WhyGratitudeScreenNavigationProp>();
   const [snackbarVisible, setSnackbarVisible] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
@@ -37,21 +39,36 @@ export const WhyGratitudeScreen: React.FC = () => {
   const { profile } = useUserProfile();
   const { data: streak } = useStreakData();
 
-  // Memoized calculations
+  // 🛡️ ERROR PROTECTION: Handle benefits loading errors
+  React.useEffect(() => {
+    if (error) {
+      showError('Minnet faydaları yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+    }
+  }, [error, showError]);
+
+  // ✅ PERFORMANCE FIX: Separate static styles from dynamic values
   const styles = useMemo(() => createStyles(activeTheme), [activeTheme]);
+
+  // ✅ PERFORMANCE FIX: Memoize gradient calculations separately
+  const gradients = useMemo(() => createGradients(activeTheme), [activeTheme]);
+
   const userName = useMemo(() => profile?.username, [profile?.username]);
 
-  // Track screen view
+  // ✅ PERFORMANCE FIX: Consolidate analytics tracking
   React.useEffect(() => {
-    analyticsService.logScreenView('why_gratitude_screen');
+    const trackScreenView = () => {
+      analyticsService.logScreenView('why_gratitude_screen');
 
-    // Track additional context as custom event
-    analyticsService.logEvent('why_gratitude_viewed', {
-      user_id: profile?.id || 'anonymous',
-      user_streak: streak?.current_streak || 0,
-      has_benefits_data: !!benefits?.length,
-      timestamp: Date.now(),
-    });
+      // Batch analytics events
+      analyticsService.logEvent('why_gratitude_viewed', {
+        user_id: profile?.id || 'anonymous',
+        user_streak: streak?.current_streak || 0,
+        has_benefits_data: !!benefits?.length,
+        timestamp: Date.now(),
+      });
+    };
+
+    trackScreenView();
   }, [profile?.id, streak?.current_streak, benefits?.length]);
 
   // Memoized event handlers
@@ -103,7 +120,9 @@ export const WhyGratitudeScreen: React.FC = () => {
 
   const handleRetry = useCallback(() => {
     refetch();
-  }, [refetch]);
+    // 🛡️ ERROR PROTECTION: Notify user when retrying
+    showSuccess('Yeniden yükleniyor...');
+  }, [refetch, showSuccess]);
 
   const onDismissSnackbar = useCallback(() => {
     setSnackbarVisible(false);
@@ -113,11 +132,14 @@ export const WhyGratitudeScreen: React.FC = () => {
     navigation.goBack();
   }, [navigation]);
 
+  // ✅ PERFORMANCE FIX: Memoize computed values
+  const primaryPrompt = useMemo(() => benefits?.[0]?.cta_prompt_tr, [benefits]);
+
   // Enhanced Loading State
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <LinearGradient colors={styles.loadingGradient} style={styles.loadingContainer}>
+        <LinearGradient colors={gradients.loading} style={styles.loadingContainer}>
           <Animated.View entering={FadeIn.duration(600)} style={styles.loadingContent}>
             <ActivityIndicator
               animating={true}
@@ -137,7 +159,7 @@ export const WhyGratitudeScreen: React.FC = () => {
   if (error) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <LinearGradient colors={styles.errorGradient} style={styles.errorContainer}>
+        <LinearGradient colors={gradients.error} style={styles.errorContainer}>
           <Animated.View entering={FadeInUp.duration(600)} style={styles.errorContent}>
             <MaterialCommunityIcons
               name="alert-circle-outline"
@@ -165,8 +187,6 @@ export const WhyGratitudeScreen: React.FC = () => {
     );
   }
 
-  const primaryPrompt = benefits?.[0]?.cta_prompt_tr;
-
   return (
     <ErrorBoundary>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -187,7 +207,7 @@ export const WhyGratitudeScreen: React.FC = () => {
         </Animated.View>
 
         {/* Main Content with Gradient Background */}
-        <LinearGradient colors={styles.backgroundGradient} style={styles.gradientContainer}>
+        <LinearGradient colors={gradients.background} style={styles.gradientContainer}>
           <ScrollView
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
@@ -200,10 +220,7 @@ export const WhyGratitudeScreen: React.FC = () => {
               style={styles.heroSection}
             >
               <View style={styles.heroIconContainer}>
-                <LinearGradient
-                  colors={[activeTheme.colors.primary, activeTheme.colors.primaryVariant]}
-                  style={styles.heroIconBackground}
-                >
+                <LinearGradient colors={gradients.heroIcon} style={styles.heroIconBackground}>
                   <MaterialCommunityIcons
                     name="heart-multiple-outline"
                     size={48}
@@ -229,10 +246,7 @@ export const WhyGratitudeScreen: React.FC = () => {
                   entering={FadeInUp.delay(600).duration(600)}
                   style={styles.streakContainer}
                 >
-                  <LinearGradient
-                    colors={[`${activeTheme.colors.success}30`, `${activeTheme.colors.success}10`]}
-                    style={styles.streakBackground}
-                  >
+                  <LinearGradient colors={gradients.streak} style={styles.streakBackground}>
                     <MaterialCommunityIcons
                       name="fire"
                       size={24}
@@ -289,10 +303,7 @@ export const WhyGratitudeScreen: React.FC = () => {
                   Bu faydaları deneyimlemek için günlüğüne ilk adımını at
                 </Text>
 
-                <LinearGradient
-                  colors={[activeTheme.colors.primary, activeTheme.colors.primaryVariant]}
-                  style={styles.ctaButtonContainer}
-                >
+                <LinearGradient colors={gradients.ctaButton} style={styles.ctaButtonContainer}>
                   <Button
                     mode="contained"
                     onPress={() => handleStartJournaling(primaryPrompt)}
@@ -331,259 +342,263 @@ export const WhyGratitudeScreen: React.FC = () => {
       </SafeAreaView>
     </ErrorBoundary>
   );
-};
+});
 
-const createStyles = (theme: AppTheme) => {
+WhyGratitudeScreen.displayName = 'WhyGratitudeScreen';
+
+// ✅ PERFORMANCE FIX: Separate gradient calculations from StyleSheet.create
+const createGradients = (theme: AppTheme) => {
   const isDark = theme.name === 'dark';
 
-  // Define gradients separately from StyleSheet
-  const gradients = {
-    backgroundGradient: [
+  return {
+    background: [
       theme.colors.background,
       isDark ? `${theme.colors.primary}08` : `${theme.colors.primary}04`,
       theme.colors.background,
     ] as const,
-    loadingGradient: [
+    loading: [
       theme.colors.background,
       isDark ? `${theme.colors.primary}10` : `${theme.colors.primary}05`,
     ] as const,
-    errorGradient: [
+    error: [
       theme.colors.background,
       isDark ? `${theme.colors.error}10` : `${theme.colors.error}05`,
     ] as const,
-  };
-
-  return {
-    ...gradients,
-    ...StyleSheet.create({
-      safeArea: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-      },
-
-      // Header styles
-      appBar: {
-        backgroundColor: theme.colors.background,
-        elevation: 0,
-        shadowOpacity: 0,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.outline,
-      },
-      appBarTitle: {
-        fontWeight: 'bold',
-        fontSize: 20,
-        color: theme.colors.onBackground,
-      },
-
-      // Layout containers
-      gradientContainer: {
-        flex: 1,
-      },
-      contentContainer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.xxxl,
-      },
-
-      // Hero section
-      heroSection: {
-        alignItems: 'center',
-        paddingTop: theme.spacing.xl,
-        paddingBottom: theme.spacing.lg,
-      },
-      heroIconContainer: {
-        marginBottom: theme.spacing.lg,
-      },
-      heroIconBackground: {
-        width: 96,
-        height: 96,
-        borderRadius: 48,
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...theme.elevation.lg,
-      },
-      title: {
-        ...theme.typography.headlineMedium,
-        color: theme.colors.onBackground,
-        textAlign: 'center',
-        marginBottom: theme.spacing.md,
-        paddingHorizontal: theme.spacing.sm,
-        lineHeight: 32,
-        fontWeight: '700',
-      },
-      intro: {
-        ...theme.typography.bodyLarge,
-        color: theme.colors.onSurfaceVariant,
-        textAlign: 'center',
-        lineHeight: 26,
-        paddingHorizontal: theme.spacing.md,
-        opacity: 0.9,
-      },
-
-      // Streak section
-      streakContainer: {
-        marginTop: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.md,
-        width: '100%',
-      },
-      streakBackground: {
-        padding: theme.spacing.lg,
-        borderRadius: theme.borderRadius.xl,
-        borderWidth: 1,
-        borderColor: `${theme.colors.success}30`,
-      },
-      streakIcon: {
-        alignSelf: 'center',
-        marginBottom: theme.spacing.sm,
-      },
-      streakText: {
-        ...theme.typography.bodyMedium,
-        color: theme.colors.onBackground,
-        textAlign: 'center',
-        lineHeight: 22,
-      },
-      streakTextBold: {
-        fontWeight: '700',
-        color: theme.colors.success,
-      },
-      streakNumber: {
-        fontWeight: '700',
-        color: theme.colors.success,
-        fontSize: 18,
-      },
-
-      // Benefits section
-      benefitsSection: {
-        marginTop: theme.spacing.xl,
-      },
-      benefitsSectionHeader: {
-        alignItems: 'center',
-        marginBottom: theme.spacing.lg,
-      },
-      benefitsTitle: {
-        ...theme.typography.titleLarge,
-        color: theme.colors.onBackground,
-        textAlign: 'center',
-        fontWeight: '700',
-        marginBottom: theme.spacing.xs,
-      },
-      benefitsSubtitle: {
-        ...theme.typography.bodyMedium,
-        color: theme.colors.onSurfaceVariant,
-        textAlign: 'center',
-        opacity: 0.8,
-      },
-      benefitCardWrapper: {
-        marginBottom: theme.spacing.xl,
-      },
-
-      // CTA section
-      ctaSection: {
-        marginTop: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
-      },
-      ctaContent: {
-        alignItems: 'center',
-      },
-      ctaTitle: {
-        ...theme.typography.titleLarge,
-        color: theme.colors.onBackground,
-        textAlign: 'center',
-        fontWeight: '700',
-        marginBottom: theme.spacing.sm,
-      },
-      ctaSubtitle: {
-        ...theme.typography.bodyMedium,
-        color: theme.colors.onSurfaceVariant,
-        textAlign: 'center',
-        marginBottom: theme.spacing.xl,
-        opacity: 0.8,
-        lineHeight: 20,
-      },
-      ctaButtonContainer: {
-        borderRadius: theme.borderRadius.full,
-        width: '100%',
-        maxWidth: 280,
-        ...theme.elevation.md,
-      },
-      ctaButton: {
-        borderRadius: theme.borderRadius.full,
-        minHeight: 56,
-      },
-      ctaButtonContent: {
-        paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
-      },
-      ctaButtonLabel: {
-        fontSize: 16,
-        fontWeight: '700',
-        letterSpacing: 0.5,
-      },
-
-      // Loading states
-      loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-      },
-      loadingContent: {
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.xl,
-      },
-      loadingText: {
-        ...theme.typography.titleMedium,
-        color: theme.colors.onBackground,
-        marginTop: theme.spacing.lg,
-        textAlign: 'center',
-        fontWeight: '600',
-      },
-      loadingSubtext: {
-        ...theme.typography.bodyMedium,
-        color: theme.colors.onSurfaceVariant,
-        marginTop: theme.spacing.sm,
-        textAlign: 'center',
-        opacity: 0.7,
-      },
-
-      // Error states
-      errorContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-      },
-      errorContent: {
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.xl,
-      },
-      errorIcon: {
-        marginBottom: theme.spacing.lg,
-      },
-      errorTitle: {
-        ...theme.typography.titleLarge,
-        color: theme.colors.error,
-        textAlign: 'center',
-        marginBottom: theme.spacing.md,
-        fontWeight: '600',
-      },
-      errorMessage: {
-        ...theme.typography.bodyMedium,
-        color: theme.colors.onSurfaceVariant,
-        textAlign: 'center',
-        marginBottom: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.md,
-        lineHeight: 22,
-      },
-      retryButton: {
-        minHeight: 48,
-        borderRadius: theme.borderRadius.full,
-      },
-      retryButtonLabel: {
-        fontWeight: '600',
-      },
-
-      // Snackbar
-      snackbar: {
-        backgroundColor: theme.colors.inverseSurface,
-      },
-    }),
+    heroIcon: [theme.colors.primary, theme.colors.primaryVariant] as const,
+    streak: [`${theme.colors.success}30`, `${theme.colors.success}10`] as const,
+    ctaButton: [theme.colors.primary, theme.colors.primaryVariant] as const,
   };
 };
+
+// ✅ PERFORMANCE FIX: Pure StyleSheet.create with no dynamic values
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+
+    // Header styles
+    appBar: {
+      backgroundColor: theme.colors.background,
+      elevation: 0,
+      shadowOpacity: 0,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outline,
+    },
+    appBarTitle: {
+      fontWeight: 'bold',
+      fontSize: 20,
+      color: theme.colors.onBackground,
+    },
+
+    // Layout containers
+    gradientContainer: {
+      flex: 1,
+    },
+    contentContainer: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxxl,
+    },
+
+    // Hero section
+    heroSection: {
+      alignItems: 'center',
+      paddingTop: theme.spacing.xl,
+      paddingBottom: theme.spacing.lg,
+    },
+    heroIconContainer: {
+      marginBottom: theme.spacing.lg,
+    },
+    heroIconBackground: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...theme.elevation.lg,
+    },
+    title: {
+      ...theme.typography.headlineMedium,
+      color: theme.colors.onBackground,
+      textAlign: 'center',
+      marginBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.sm,
+      lineHeight: 32,
+      fontWeight: '700',
+    },
+    intro: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      lineHeight: 26,
+      paddingHorizontal: theme.spacing.md,
+      opacity: 0.9,
+    },
+
+    // Streak section
+    streakContainer: {
+      marginTop: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.md,
+      width: '100%',
+    },
+    streakBackground: {
+      padding: theme.spacing.lg,
+      borderRadius: theme.borderRadius.xl,
+      borderWidth: 1,
+      borderColor: `${theme.colors.success}30`,
+    },
+    streakIcon: {
+      alignSelf: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    streakText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onBackground,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    streakTextBold: {
+      fontWeight: '700',
+      color: theme.colors.success,
+    },
+    streakNumber: {
+      fontWeight: '700',
+      color: theme.colors.success,
+      fontSize: 18,
+    },
+
+    // Benefits section
+    benefitsSection: {
+      marginTop: theme.spacing.xl,
+    },
+    benefitsSectionHeader: {
+      alignItems: 'center',
+      marginBottom: theme.spacing.lg,
+    },
+    benefitsTitle: {
+      ...theme.typography.titleLarge,
+      color: theme.colors.onBackground,
+      textAlign: 'center',
+      fontWeight: '700',
+      marginBottom: theme.spacing.xs,
+    },
+    benefitsSubtitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      opacity: 0.8,
+    },
+    benefitCardWrapper: {
+      marginBottom: theme.spacing.xl,
+    },
+
+    // CTA section
+    ctaSection: {
+      marginTop: theme.spacing.xl,
+      paddingTop: theme.spacing.lg,
+    },
+    ctaContent: {
+      alignItems: 'center',
+    },
+    ctaTitle: {
+      ...theme.typography.titleLarge,
+      color: theme.colors.onBackground,
+      textAlign: 'center',
+      fontWeight: '700',
+      marginBottom: theme.spacing.sm,
+    },
+    ctaSubtitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      marginBottom: theme.spacing.xl,
+      opacity: 0.8,
+      lineHeight: 20,
+    },
+    ctaButtonContainer: {
+      borderRadius: theme.borderRadius.full,
+      width: '100%',
+      maxWidth: 280,
+      ...theme.elevation.md,
+    },
+    ctaButton: {
+      borderRadius: theme.borderRadius.full,
+      minHeight: 56,
+    },
+    ctaButtonContent: {
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    ctaButtonLabel: {
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
+
+    // Loading states
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingContent: {
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.xl,
+    },
+    loadingText: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onBackground,
+      marginTop: theme.spacing.lg,
+      textAlign: 'center',
+      fontWeight: '600',
+    },
+    loadingSubtext: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      marginTop: theme.spacing.sm,
+      textAlign: 'center',
+      opacity: 0.7,
+    },
+
+    // Error states
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    errorContent: {
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.xl,
+    },
+    errorIcon: {
+      marginBottom: theme.spacing.lg,
+    },
+    errorTitle: {
+      ...theme.typography.titleLarge,
+      color: theme.colors.error,
+      textAlign: 'center',
+      marginBottom: theme.spacing.md,
+      fontWeight: '600',
+    },
+    errorMessage: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      marginBottom: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.md,
+      lineHeight: 22,
+    },
+    retryButton: {
+      minHeight: 48,
+      borderRadius: theme.borderRadius.full,
+    },
+    retryButtonLabel: {
+      fontWeight: '600',
+    },
+
+    // Snackbar
+    snackbar: {
+      backgroundColor: theme.colors.inverseSurface,
+    },
+  });

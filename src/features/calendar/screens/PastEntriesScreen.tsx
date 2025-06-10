@@ -5,8 +5,10 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useGratitudeEntriesPaginated } from '@/features/gratitude/hooks';
 import { analyticsService } from '@/services/analyticsService';
+import { safeErrorDisplay } from '@/utils/errorTranslation';
 import PastEntriesHeader from '@/components/past-entries/PastEntriesHeader';
 import PastEntryItem from '@/components/past-entries/PastEntryItem';
 import PastEntriesEmptyState from '@/components/past-entries/PastEntriesEmptyState';
@@ -36,6 +38,7 @@ type PastEntriesScreenNavigationProp = CompositeNavigationProp<
 const PastEntriesScreen: React.FC = () => {
   const navigation = useNavigation<PastEntriesScreenNavigationProp>();
   const { theme } = useTheme();
+  const { showSuccess, handleMutationError } = useGlobalError();
   const insets = useSafeAreaInsets();
 
   const {
@@ -65,13 +68,21 @@ const PastEntriesScreen: React.FC = () => {
     analyticsService.logScreenView('PastEntriesScreen');
   }, []);
 
+  // Enhanced error handling using centralized system
+  useEffect(() => {
+    if (isError && error) {
+      handleMutationError(error, 'geçmiş kayıtları yükleme');
+    }
+  }, [isError, error, handleMutationError]);
+
   const handleRefresh = useCallback(() => {
     refetch();
   }, [refetch]);
 
   const handleRetry = useCallback(() => {
     refetch();
-  }, [refetch]);
+    showSuccess('Yeniden yükleniyor...');
+  }, [refetch, showSuccess]);
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -104,6 +115,11 @@ const PastEntriesScreen: React.FC = () => {
     []
   );
 
+  // Memoize the translated error message for consistency
+  const translatedErrorMessage = useMemo(() => {
+    return error ? safeErrorDisplay(error) : 'Geçmiş kayıtlar alınırken bir hata oluştu.';
+  }, [error]);
+
   const styles = createStyles(theme, insets);
 
   // Loading state with enhanced skeleton
@@ -134,10 +150,7 @@ const PastEntriesScreen: React.FC = () => {
         />
         <View style={styles.scrollableContent}>
           <PastEntriesHeader title="Minnet Kayıtlarınız" />
-          <PastEntriesErrorState
-            error={error?.message || 'Geçmiş kayıtlar alınırken bir hata oluştu.'}
-            onRetry={handleRetry}
-          />
+          <PastEntriesErrorState error={translatedErrorMessage} onRetry={handleRetry} />
         </View>
       </View>
     );

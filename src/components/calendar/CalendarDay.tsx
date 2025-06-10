@@ -5,7 +5,7 @@ import { CalendarDayProps } from './types';
 import { isToday } from './utils';
 import { useTheme } from '../../providers/ThemeProvider';
 
-const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress }) => {
+const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress, maxDate }) => {
   const { theme } = useTheme();
 
   // Calculate values for styling
@@ -13,7 +13,9 @@ const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress
   const isSelectedDay = marking?.selected ?? false;
   const hasEntry = marking?.marked ?? false;
   const isTodayDate = date ? isToday(date.dateString) : false;
-  const isDisabled = state === 'disabled';
+
+  const isFutureDate = date && maxDate ? date.dateString > maxDate : false;
+  const isDisabled = state === 'disabled' || isFutureDate;
 
   // Memoized styles to avoid inline styles
   const textStyle = React.useMemo(

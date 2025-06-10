@@ -38,6 +38,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   onMonthChange,
   onDayPress,
   isLoading = false,
+  isFutureMonth = false,
 }) => {
   const { theme } = useTheme();
 
@@ -93,6 +94,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  const todayString = new Date().toISOString().split('T')[0];
+
   return (
     <View style={styles.container}>
       <CalendarHeader
@@ -100,9 +103,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         onPreviousMonth={handlePreviousMonth}
         onNextMonth={handleNextMonth}
         isLoading={isLoading}
+        isNextMonthDisabled={isFutureMonth}
       />
 
       <Calendar
+        key={currentMonth.toISOString()}
         current={currentMonth.toISOString().split('T')[0]}
         onMonthChange={onMonthChange}
         onDayPress={onDayPress}
@@ -121,6 +126,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             state={state === 'disabled' || state === 'today' ? state : undefined}
             marking={markedDates[date?.dateString ?? ''] ?? {}}
             onPress={onDayPress}
+            maxDate={todayString}
           />
         )}
       />

@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { AppTheme } from '@/themes/types';
 import {
   alpha,
@@ -93,6 +94,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
   hapticFeedback = true,
 }) => {
   const { theme } = useTheme();
+  const { showError } = useGlobalError();
   const styles = React.useMemo(() => createStyles(theme), [theme]);
 
   // Local state management
@@ -205,9 +207,10 @@ const StatementCard: React.FC<StatementCardProps> = ({
     }
   };
 
-  // Enhanced action handlers with confirmation for delete
+  // 🛡️ ERROR PROTECTION: Enhanced action handlers with global error system
   const handleDelete = () => {
     if (confirmDelete) {
+      // TODO: Consider implementing a custom confirmation modal instead of Alert
       Alert.alert('Minneti Sil', 'Bu minnet ifadesini silmek istediğinizden emin misiniz?', [
         {
           text: 'İptal',
@@ -261,7 +264,8 @@ const StatementCard: React.FC<StatementCardProps> = ({
       triggerHaptic('success');
     } catch {
       triggerHaptic('error');
-      Alert.alert('Hata', 'Minnet kaydedilirken bir hata oluştu.');
+      // 🛡️ ERROR PROTECTION: Use global error system instead of Alert
+      showError('Minnet kaydedilirken bir hata oluştu.');
     }
   };
 

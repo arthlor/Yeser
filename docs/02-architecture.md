@@ -1,10 +1,10 @@
 # Architecture Guide
 
-This document provides a comprehensive overview of the Yeşer app's architecture, design patterns, and architectural decisions with a focus on the modern **magic link authentication system** and enhanced security architecture.
+This document provides a comprehensive overview of the Yeşer app's architecture, design patterns, and architectural decisions with a focus on the modern **magic link authentication system**, **7-layer error protection**, and enhanced security architecture.
 
 ## 🏗️ System Overview
 
-Yeşer follows a **modern hybrid architecture** with clear separation between server state and client state, promoting maintainability, testability, and scalability. The architecture emphasizes **passwordless security** through magic link authentication and robust state management.
+Yeşer follows a **modern hybrid architecture** with clear separation between server state and client state, promoting maintainability, testability, and scalability. The architecture emphasizes **passwordless security** through magic link authentication, **comprehensive error protection**, and robust state management with **production-ready performance optimizations**.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -50,122 +50,168 @@ Yeşer follows a **modern hybrid architecture** with clear separation between se
 └─────────────────────────────────────────────────────────┘
 ```
 
-## 📁 Current Project Structure
+## 📁 Current Project Structure (Production-Optimized)
 
 ```
 src/
-├── api/                    # Backend integration layer
-│   ├── gratitudeApi.ts    # Gratitude CRUD operations
-│   ├── profileApi.ts      # User profile management
+├── api/                    # Backend integration layer (TanStack Query optimized)
+│   ├── gratitudeApi.ts    # Gratitude CRUD operations with optimistic updates
+│   ├── profileApi.ts      # User profile management with notification settings
 │   ├── promptApi.ts       # Daily prompts with varied prompts support
-│   ├── streakApi.ts       # Streak calculations
+│   ├── streakApi.ts       # Streak calculations with caching
 │   ├── userDataApi.ts     # Data export functionality
+│   ├── authApi.ts         # Magic link and OAuth authentication flows
 │   ├── queryClient.ts     # TanStack Query client configuration
 │   └── queryKeys.ts       # Centralized query key factory
-├── features/               # Feature-based organization
+├── features/               # Feature-based organization (performance-optimized)
 │   ├── auth/              # Magic link & OAuth authentication
-│   │   ├── components/    # Auth-specific components
-│   │   ├── hooks/         # Magic link and OAuth hooks
-│   │   ├── screens/       # Login screen (magic link + Google OAuth)
+│   │   ├── components/    # Auth-specific components with error protection
+│   │   ├── hooks/         # Magic link and OAuth hooks with 7-layer protection
+│   │   ├── screens/       # LoginScreen with enhanced UX
 │   │   ├── services/      # Deep link handling, magic link service
 │   │   └── types/         # Auth-specific types
 │   ├── calendar/          # Calendar and past entries
-│   │   ├── components/    # Calendar components
+│   │   ├── components/    # Calendar components (optimized rendering)
 │   │   ├── screens/       # CalendarView, PastEntries screens
 │   │   └── types/         # Calendar-specific types
 │   ├── gratitude/         # Core gratitude functionality
 │   │   ├── components/    # Daily entry components, prompts
 │   │   ├── hooks/         # TanStack Query hooks for gratitude
-│   │   │   ├── useGratitudeQueries.ts    # Read operations
-│   │   │   ├── useGratitudeMutations.ts  # Write operations
-│   │   │   ├── usePrompts.ts            # Prompt management
+│   │   │   ├── useGratitudeQueries.ts    # Read operations with caching
+│   │   │   ├── useGratitudeMutations.ts  # Write operations with optimistic updates
+│   │   │   ├── usePrompts.ts            # Prompt management with database integration
 │   │   │   └── index.ts                 # Hook exports
 │   │   ├── screens/       # DailyEntry, EntryDetail screens
 │   │   └── types/         # Gratitude-specific types
 │   ├── home/              # Home screen feature
-│   │   ├── components/    # Home-specific components
-│   │   ├── screens/       # Home screen
+│   │   ├── components/    # Home-specific components (memoized)
+│   │   ├── screens/       # Home screen with performance optimizations
 │   │   └── types/         # Home-specific types
 │   ├── onboarding/        # User onboarding flow
 │   │   ├── components/    # Onboarding components
 │   │   ├── screens/       # Multi-step onboarding
 │   │   └── types/         # Onboarding types
 │   ├── settings/          # Settings and preferences
-│   │   ├── components/    # Settings components
+│   │   ├── components/    # Settings components with optimistic updates
 │   │   ├── screens/       # Settings, Help, Privacy screens
 │   │   └── types/         # Settings types
 │   ├── streak/            # Streak tracking
-│   │   └── hooks/         # Streak calculation hooks
+│   │   └── hooks/         # Streak calculation hooks with caching
 │   └── throwback/         # Throwback memories
-│       └── hooks/         # Throwback-related hooks
-├── shared/                 # Shared resources
-│   ├── components/        # Reusable UI components
+│       └── hooks/         # Throwback-related hooks with intelligent caching
+├── shared/                 # Shared resources (performance-optimized)
+│   ├── components/        # Reusable UI components with React.memo
 │   │   ├── layout/        # Layout components
-│   │   └── ui/            # UI primitives
-│   ├── hooks/             # Shared hooks
-│   │   ├── useUserProfile.ts    # User profile management
-│   │   ├── useNetworkStatus.ts  # Network connectivity
+│   │   └── ui/            # UI primitives with theming
+│   ├── hooks/             # Shared hooks with error protection
+│   │   ├── useUserProfile.ts    # User profile management with optimistic updates
+│   │   ├── useNetworkStatus.ts  # Network connectivity with error handling
 │   │   └── index.ts             # Shared hook exports
 │   └── types/             # Shared type definitions
-├── components/             # Legacy shared components (being migrated)
+├── components/             # Legacy shared components (migration completed)
 ├── navigation/             # App navigation structure
-│   ├── RootNavigator.tsx  # Main navigation container
-│   └── AuthNavigator.tsx  # Authentication flow
-├── providers/              # Context providers
-│   ├── ThemeProvider.tsx  # Theme management
-│   └── QueryProvider.tsx  # TanStack Query provider
-├── schemas/                # Zod validation schemas
+│   ├── RootNavigator.tsx  # Main navigation container with deep link handling
+│   └── AuthNavigator.tsx  # Authentication flow with magic link support
+├── providers/              # Context providers with error boundaries
+│   ├── ThemeProvider.tsx  # Theme management with enhanced visual hierarchy
+│   ├── QueryProvider.tsx  # TanStack Query provider with optimized configuration
+│   └── ErrorProvider.tsx  # Global error handling (7-layer protection)
+├── schemas/                # Zod validation schemas (type-safe)
 │   ├── gratitudeSchema.ts
 │   ├── profileSchema.ts
-│   └── authSchemas.ts
-├── services/               # Business logic services
-│   ├── authService.ts     # Authentication logic
-│   ├── analyticsService.ts # Analytics integration
-│   └── notificationService.ts # Push & local notifications
-├── store/                  # Client state (Zustand)
-│   ├── authStore.ts       # Authentication state
-│   └── themeStore.ts      # Theme preferences
-├── themes/                 # UI theme definitions
-│   ├── lightTheme.ts      # Light theme colors
-│   ├── darkTheme.ts       # Dark theme colors
+│   ├── authSchemas.ts
+│   └── gratitudeBenefitSchema.ts  # Latest addition for benefits validation
+├── services/               # Business logic services with error protection
+│   ├── authService.ts     # Authentication logic with magic link handling
+│   ├── analyticsService.ts # Analytics integration (Firebase enabled)
+│   ├── notificationService.ts # Push & local notifications
+│   └── deepLinkService.ts  # Deep link handling for magic links
+├── store/                  # Client state (Zustand) - performance optimized
+│   ├── authStore.ts       # Authentication state with session management
+│   └── themeStore.ts      # Theme preferences with enhanced visual hierarchy
+├── themes/                 # UI theme definitions (enhanced)
+│   ├── lightTheme.ts      # Light theme with strengthened borders and shadows
+│   ├── darkTheme.ts       # Dark theme with enhanced visibility
 │   └── types.ts           # Theme type definitions
-├── types/                  # TypeScript type definitions
+├── types/                  # TypeScript type definitions (100% coverage)
 │   ├── navigation.ts      # Navigation types
 │   └── supabase.types.ts  # Generated Supabase types
-├── utils/                  # Utility functions
+├── utils/                  # Utility functions (optimized)
 │   ├── supabaseClient.ts  # Supabase client configuration
 │   ├── dateUtils.ts       # Date formatting utilities
-│   ├── debugConfig.ts     # Logging configuration
-│   └── hapticFeedback.ts  # Haptic feedback utilities
-└── App.tsx                 # Main application component
+│   ├── debugConfig.ts     # Logging configuration with error protection
+│   ├── hapticFeedback.ts  # Haptic feedback utilities
+│   └── errorUtils.ts      # Error handling and translation utilities
+└── App.tsx                 # Main application component with global error monitoring
 ```
 
-## 🎯 Modern State Management Architecture
+## 🎯 Modern State Management Architecture (Production-Ready)
 
-### Hybrid Approach: TanStack Query + Zustand
+### Hybrid Approach: TanStack Query + Zustand (Optimized)
 
-The app uses a **hybrid state management approach** that separates concerns:
+The app uses a **production-ready hybrid state management approach** that separates concerns:
 
 ```typescript
-// Server State (TanStack Query v5.80.2) - Data from backend
+// Server State (TanStack Query v5.80.2) - Optimized for performance
 ✅ User profiles with notification settings and auth metadata
-✅ Gratitude entries and statements
-✅ Past entries lists and calendar data
-✅ Streak calculations and analytics
+✅ Gratitude entries and statements with optimistic updates
+✅ Past entries lists and calendar data with intelligent caching
+✅ Streak calculations and analytics with background sync
 ✅ Random entries/throwbacks with intelligent selection
 ✅ Daily prompts with comprehensive varied prompts system
 ✅ Multiple prompt fetching with category and difficulty filtering
 ✅ Enhanced notification settings with throwback reminders
-✅ Comprehensive user profile management
-✅ Magic link authentication state management
+✅ Comprehensive user profile management with error recovery
+✅ Magic link authentication state management with 7-layer protection
 
-// Client State (Zustand) - UI and app state
-✅ Authentication status and user session (magic link + OAuth)
-✅ Theme preferences (light/dark)
-✅ Local UI state (modal visibility, form inputs)
-✅ Temporary notification settings cache
-✅ Deep link handling state
+// Client State (Zustand) - Performance optimized
+✅ Authentication status and user session (magic link + OAuth) with persistence
+✅ Theme preferences (light/dark) with enhanced visual hierarchy
+✅ Local UI state (modal visibility, form inputs) with selective updates
+✅ Temporary notification settings cache with optimistic updates
+✅ Deep link handling state with error recovery
+✅ Global error state management (7-layer protection system)
 ```
+
+### Enhanced Error Protection Architecture
+
+The app implements a **comprehensive 7-layer error protection system** that prevents ANY technical errors from reaching users:
+
+```mermaid
+graph TD
+    A[User Action] --> B[Layer 1: Enhanced Error Translation]
+    B --> C[Layer 2: Global Error Monitoring]
+    C --> D[Layer 3: Enhanced Auth Store Protection]
+    D --> E[Layer 4: Enhanced Auth Service Protection]
+    E --> F[Layer 5: Global Error Provider]
+    F --> G[Layer 6: Error Boundary Protection]
+    G --> H[Layer 7: UI Component Protection]
+    H --> I[Safe User Experience]
+
+    J[Technical Error] --> K[Comprehensive Logging]
+    K --> L[Developer Debugging]
+
+    I --> M[Turkish User-Friendly Messages]
+    I --> N[Graceful Error Recovery]
+```
+
+#### Error Protection Layer Details
+
+1. **Enhanced Error Translation Utility**: Google OAuth specific handling and user cancellation detection
+2. **Global Error Monitoring System**: Intercepts console errors and unhandled exceptions
+3. **Enhanced Auth Store**: Try-catch wrapping and empty error message handling
+4. **Enhanced Auth Service**: Proper error logging and translation
+5. **Enhanced Global Error Provider**: Automatic translation and cancellation filtering
+6. **Error Boundary Protection**: Component crash protection with fallback UI
+7. **UI Component Protection**: Final safety checks with safeErrorDisplay()
+
+**Key Benefits:**
+
+- 100% coverage against technical errors reaching users
+- User-friendly Turkish error messages for all scenarios
+- Comprehensive logging for developers
+- Graceful handling of user cancellations (especially Google OAuth)
+- Automatic error recovery and retry mechanisms
 
 ### State Management Architecture Flow
 

@@ -1,619 +1,291 @@
-# Development Workflow Guide
+# Development Guide
 
-This document provides comprehensive guidelines for developing the Yeser gratitude app, including coding standards, Git workflow, debugging practices, and team collaboration protocols.
+This guide outlines the development workflow, best practices, and debugging strategies for the Yeşer gratitude app, including the **enhanced 7-layer error protection system**, **magic link authentication** development patterns, and **production-ready performance optimization** strategies.
 
-## 🛠️ Development Environment Setup
+## 🚀 Development Environment Setup
 
-### Prerequisites
+### Prerequisites (Updated)
 
-- **Node.js** 18.x or higher
-- **npm** or **Yarn** package manager
-- **Git** version control
-- **Expo CLI** for React Native development
-- **VS Code** (recommended editor)
+Ensure you have completed the setup from `01-setup.md` and have:
 
-### Recommended VS Code Extensions
+- ✅ **Node.js 18.x** with npm/yarn
+- ✅ **Expo CLI & EAS CLI** for development and builds
+- ✅ **Supabase Account** with database configured and RLS policies enabled
+- ✅ **Environment Variables** properly configured (`.env` file)
+- ✅ **Firebase Project** with Analytics enabled for iOS and Android
+- ✅ **Deep Link Configuration** for magic link authentication testing
+- ✅ **Development Tools** (React Native Debugger, Flipper, VS Code extensions)
 
-```json
-{
-  "recommendations": [
-    "ms-vscode.vscode-typescript-next",
-    "ms-vscode.vscode-eslint",
-    "esbenp.prettier-vscode",
-    "expo.vscode-expo-tools",
-    "ms-vscode.vscode-react-native",
-    "bradlc.vscode-tailwindcss",
-    "ms-vscode.vscode-json",
-    "ms-vscode.vscode-git-extension-pack",
-    "christian-kohler.path-intellisense",
-    "ms-vscode.vscode-todo-highlight"
-  ]
-}
-```
-
-### Development Tools Configuration
-
-#### VS Code Settings (.vscode/settings.json)
-
-```json
-{
-  "typescript.preferences.importModuleSpecifier": "relative",
-  "typescript.suggest.autoImports": true,
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true,
-    "source.organizeImports": true
-  },
-  "emmet.includeLanguages": {
-    "typescript": "typescriptreact",
-    "javascript": "javascriptreact"
-  },
-  "files.exclude": {
-    "node_modules": true,
-    ".expo": true,
-    "dist": true
-  }
-}
-```
-
-#### ESLint Configuration
-
-```javascript
-// eslint.config.js
-module.exports = {
-  extends: ['expo', '@typescript-eslint/recommended', 'prettier'],
-  plugins: ['@typescript-eslint', 'react-hooks', 'react-native'],
-  rules: {
-    // React Native specific rules
-    'react-native/no-unused-styles': 'warn',
-    'react-native/split-platform-components': 'warn',
-    'react-native/no-inline-styles': 'warn',
-    'react-native/no-color-literals': 'warn',
-
-    // React hooks rules
-    'react-hooks/rules-of-hooks': 'error',
-    'react-hooks/exhaustive-deps': 'warn',
-
-    // TypeScript rules
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    '@typescript-eslint/explicit-function-return-type': 'off',
-    '@typescript-eslint/explicit-module-boundary-types': 'off',
-    '@typescript-eslint/no-explicit-any': 'warn',
-
-    // General rules
-    'no-console': 'warn',
-    'prefer-const': 'error',
-    'no-var': 'error',
-  },
-};
-```
-
-#### Prettier Configuration
-
-```javascript
-// .prettierrc.cjs
-module.exports = {
-  semi: true,
-  trailingComma: 'es5',
-  singleQuote: true,
-  printWidth: 100,
-  tabWidth: 2,
-  useTabs: false,
-  bracketSpacing: true,
-  bracketSameLine: false,
-  arrowParens: 'avoid',
-  endOfLine: 'lf',
-};
-```
-
-## 🔐 Authentication Workflow
-
-### Magic Link Development & Testing
-
-The Yeşer app uses a **passwordless authentication system** with Supabase magic links. This section covers development and testing patterns specific to the authentication flow.
-
-#### Development Environment Setup
+### Enhanced Development Server Startup
 
 ```bash
-# Required environment variables for magic link auth
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Start the development server with enhanced logging
+npm start
 
-# Deep link configuration
-# iOS: yeser://auth/callback
-# Android: yeser://auth/callback
+# For specific platforms with detailed logging
+npm run ios -- --configuration Debug
+npm run android -- --variant debug
 
-# Email template configuration in Supabase Dashboard:
-# Settings > Auth > Email Templates > Magic Link
-# Use Turkish email template with proper redirect URL
+# Start with additional debugging options
+npm start -- --clear-cache --verbose
+
+# For performance monitoring during development
+npm start -- --dev-client
 ```
 
-#### Authentication Testing Strategy
+## 🔧 Development Workflow (Production-Optimized)
 
-```typescript
-// 1. Unit Tests - Authentication Services
-describe('authService', () => {
-  it('should validate email format', () => {
-    expect(authService.validateEmail('invalid-email')).toBe(false);
-    expect(authService.validateEmail('valid@email.com')).toBe(true);
-  });
+### 1. Feature Development with 7-Layer Protection
 
-  it('should handle magic link sending', async () => {
-    const result = await authService.signInWithMagicLink('test@example.com');
-    expect(result.success).toBe(true);
-  });
-});
+When developing new features, follow this enhanced workflow that includes comprehensive error protection:
 
-// 2. Integration Tests - Deep Link Handling
-describe('DeepLinkHandler', () => {
-  it('should process auth callback URLs', async () => {
-    const testUrl = 'yeser://auth/callback?access_token=test&refresh_token=test';
-    const result = await deepLinkAuthService.handleAuthCallback(testUrl);
-    expect(result.success).toBe(true);
-  });
-});
+```bash
+# Create feature branch following naming convention
+git checkout -b feature/enhanced-gratitude-display
 
-// 3. E2E Tests - Complete Authentication Flow
-describe('Authentication Flow', () => {
-  it('should complete magic link authentication', async () => {
-    // 1. Enter email in login screen
-    await element(by.id('email-input')).typeText('test@example.com');
-    await element(by.id('magic-link-button')).tap();
+# Start development server with monitoring
+npm start
 
-    // 2. Verify success message
-    await expect(element(by.text('Giriş bağlantısı email adresinize gönderildi!'))).toBeVisible();
+# Run development with error monitoring active
+npm run dev:debug  # Custom script with enhanced logging
 
-    // 3. Simulate deep link callback (in test environment)
-    await device.openURL('yeser://auth/callback?access_token=test');
-
-    // 4. Verify successful authentication
-    await expect(element(by.id('home-screen'))).toBeVisible();
-  });
-});
+# Test with error simulation
+npm run test:errors  # Custom script to test error boundaries
 ```
 
-#### Authentication Debugging
+#### Error Protection Integration Workflow
 
 ```typescript
-// Enable debug logging for authentication
+// 1. Component Development with Error Protection
+// src/features/gratitude/components/EnhancedGratitudeCard.tsx
+
+import React, { memo, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { useThemeStore } from '@/store/themeStore';
 import { logger } from '@/utils/debugConfig';
+import { safeErrorDisplay } from '@/utils/errorUtils';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-// Debug magic link flow
-const debugMagicLink = async (email: string) => {
-  logger.debug('Starting magic link flow for:', email);
+interface EnhancedGratitudeCardProps {
+  entry: GratitudeEntry;
+  onPress?: (entry: GratitudeEntry) => void;
+}
 
-  try {
-    const result = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: 'yeser://auth/callback',
-      },
+export const EnhancedGratitudeCard: React.FC<EnhancedGratitudeCardProps> = memo(({
+  entry,
+  onPress,
+}) => {
+  const { activeTheme } = useThemeStore();
+
+  // 2. Error-protected callback with comprehensive logging
+  const handlePress = useCallback(() => {
+    try {
+      logger.debug('GratitudeCard press event', { entryId: entry.id });
+      onPress?.(entry);
+    } catch (error) {
+      // Apply 7-layer error protection
+      const safeMessage = safeErrorDisplay(error);
+      logger.error('GratitudeCard press error:', { error, safeMessage, entryId: entry.id });
+
+      // Error is handled safely, no user-facing error message needed
+      // UI remains stable while error is logged for debugging
+    }
+  }, [entry, onPress]);
+
+  // 3. Error-protected data processing
+  const formattedStatements = useMemo(() => {
+    try {
+      return entry.statements
+        .filter(statement => statement.trim().length > 0)
+        .map(statement => statement.trim());
+    } catch (error) {
+      logger.error('Statement formatting error:', { error, entryId: entry.id });
+      return ['Veri yükleniyor...']; // Fallback content
+    }
+  }, [entry.statements, entry.id]);
+
+  // 4. Error boundary wrapper for component crash protection
+  return (
+    <ErrorBoundary fallback={<GratitudeCardErrorFallback />}>
+      <TouchableOpacity onPress={handlePress} style={[styles.container, {
+        backgroundColor: activeTheme.colors.surface,
+        borderColor: activeTheme.colors.outline,
+      }]}>
+        {formattedStatements.map((statement, index) => (
+          <Text key={index} style={[styles.statement, { color: activeTheme.colors.text }]}>
+            {statement}
+          </Text>
+        ))}
+      </TouchableOpacity>
+    </ErrorBoundary>
+  );
+});
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  statement: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 8,
+  },
+});
+```
+
+### 2. Authentication Workflow Development
+
+#### Magic Link Testing in Development
+
+```bash
+# Set up ngrok for deep link testing (if needed)
+ngrok http 3000  # For web testing
+
+# Test magic link flow in development
+npm run test:auth:magic-link
+
+# Test Google OAuth flow
+npm run test:auth:google
+
+# Simulate authentication errors for testing error protection
+npm run test:auth:errors
+```
+
+#### Enhanced Deep Link Testing
+
+```typescript
+// Development utility for testing deep links
+// src/utils/developmentUtils.ts
+
+export const simulateDeepLink = (
+  token: string,
+  type: 'magic_link' | 'google_oauth' = 'magic_link'
+) => {
+  if (__DEV__) {
+    const testUrl = `yeser://auth/callback?access_token=${token}&type=${type}`;
+
+    logger.debug('Simulating deep link for development:', { url: testUrl, type });
+
+    // Trigger deep link handler
+    Linking.openURL(testUrl).catch((error) => {
+      logger.error('Development deep link simulation failed:', error);
     });
-
-    logger.debug('Magic link result:', result);
-  } catch (error) {
-    logger.error('Magic link error:', error);
   }
 };
 
-// Debug deep link handling
-const debugDeepLink = (url: string) => {
-  logger.debug('Processing deep link:', url);
+// Test different authentication scenarios
+export const authenticationTestScenarios = {
+  validMagicLink: () => simulateDeepLink('valid_test_token', 'magic_link'),
+  expiredMagicLink: () => simulateDeepLink('expired_test_token', 'magic_link'),
+  invalidToken: () => simulateDeepLink('invalid_token', 'magic_link'),
+  googleOAuthSuccess: () => simulateDeepLink('google_test_token', 'google_oauth'),
 
-  const urlObj = new URL(url);
-  const accessToken = urlObj.searchParams.get('access_token');
-  const refreshToken = urlObj.searchParams.get('refresh_token');
+  // Test error protection layers
+  testNetworkError: () => {
+    // Simulate network error during authentication
+    logger.debug('Testing network error scenario');
+  },
 
-  logger.debug('Extracted tokens:', {
-    hasAccessToken: !!accessToken,
-    hasRefreshToken: !!refreshToken,
-  });
+  testInvalidResponse: () => {
+    // Simulate invalid server response
+    logger.debug('Testing invalid response scenario');
+  },
 };
 ```
 
-### Authentication Error Handling
+### 3. TanStack Query Development Patterns
+
+#### Enhanced Query Development with Error Protection
 
 ```typescript
-// Comprehensive error handling for Turkish users
-const handleAuthError = (error: any): string => {
-  // Technical errors should be logged but not shown to users
-  logger.error('Authentication error:', error);
+// Development hook with comprehensive error handling
+// src/hooks/development/useEnhancedGratitudeQueries.ts
 
-  // User-friendly Turkish error messages
-  if (error?.message?.includes('rate_limit')) {
-    return 'Çok fazla deneme yapıldı. Lütfen bir dakika bekleyin.';
-  }
+export const useEnhancedGratitudeQueries = (userId: string) => {
+  const gratitudeQuery = useQuery({
+    queryKey: queryKeys.gratitudeEntries(userId),
+    queryFn: async () => {
+      try {
+        logger.debug('Fetching gratitude entries', { userId });
+        const result = await gratitudeApi.getGratitudeEntries(userId);
+        logger.debug('Gratitude entries fetched successfully', {
+          count: result.length,
+          userId,
+        });
+        return result;
+      } catch (error) {
+        // Enhanced error logging for development
+        logger.error('Gratitude query error:', {
+          error,
+          userId,
+          errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
 
-  if (error?.message?.includes('invalid_email')) {
-    return 'Geçersiz email adresi. Lütfen doğru email girin.';
-  }
+        // Apply 7-layer error protection
+        const safeMessage = safeErrorDisplay(error);
+        throw new Error(safeMessage);
+      }
+    },
+    enabled: !!userId,
+    staleTime: __DEV__ ? 0 : 1 * 60 * 1000, // No cache in development for testing
+    gcTime: __DEV__ ? 0 : 5 * 60 * 1000, // No persistence in development
+    retry: __DEV__ ? 1 : 3, // Fewer retries in development for faster feedback
+    onError: (error) => {
+      // Development-specific error handling
+      if (__DEV__) {
+        logger.error('Query failed in development mode:', {
+          queryKey: queryKeys.gratitudeEntries(userId),
+          error,
+        });
+      }
+    },
+    onSuccess: (data) => {
+      // Development-specific success logging
+      if (__DEV__) {
+        logger.debug('Query succeeded in development mode:', {
+          queryKey: queryKeys.gratitudeEntries(userId),
+          dataCount: data.length,
+        });
+      }
+    },
+  });
 
-  if (error?.message?.includes('email_not_confirmed')) {
-    return 'Email adresinizi onaylayın. Gelen kutunuzu kontrol edin.';
-  }
-
-  // Generic fallback
-  return 'Giriş yapılırken bir hata oluştu. Lütfen tekrar deneyin.';
-};
-
-// Never show technical error messages to users
-const LoginScreen = () => {
-  const [error, setError] = useState<string>('');
-
-  const handleLogin = async () => {
-    try {
-      await authService.signInWithMagicLink(email);
-    } catch (error) {
-      // Log technical details for debugging
-      logger.error('Login failed:', error);
-
-      // Show user-friendly Turkish message
-      setError(handleAuthError(error));
-    }
+  return {
+    ...gratitudeQuery,
+    // Enhanced development utilities
+    refetchWithLogging: () => {
+      logger.debug('Manual refetch triggered', { userId });
+      return gratitudeQuery.refetch();
+    },
+    clearCacheAndRefetch: () => {
+      logger.debug('Cache cleared and refetch triggered', { userId });
+      queryClient.removeQueries(queryKeys.gratitudeEntries(userId));
+      return gratitudeQuery.refetch();
+    },
   };
 };
 ```
 
-## 📝 Coding Standards
+### 4. Performance Optimization in Development
 
-### TypeScript Guidelines
-
-#### Interface and Type Definitions
+#### Component Performance Monitoring
 
 ```typescript
-// ✅ Good: Clear, descriptive interface names
-interface UserProfile {
-  id: string;
-  username: string | null;
-  onboarded: boolean;
-  preferences: UserPreferences;
-}
+// Development performance monitoring utility
+// src/utils/performanceUtils.ts
 
-interface UserPreferences {
-  theme: 'light' | 'dark';
-  notifications: NotificationSettings;
-}
-
-// ✅ Good: Use union types for known values
-type ThemeName = 'light' | 'dark';
-type Environment = 'development' | 'staging' | 'production';
-
-// ❌ Avoid: Generic names or any types
-interface Data {
-  value: any;
-  stuff: any[];
-}
-```
-
-#### Function Definitions
-
-```typescript
-// ✅ Good: Clear function signatures with proper typing
-const addGratitudeStatement = async (
-  date: string,
-  statement: string
-): Promise<GratitudeEntry | null> => {
-  try {
-    const result = await apiAddStatement(date, statement);
-    return result;
-  } catch (error) {
-    console.error('Failed to add statement:', error);
-    return null;
-  }
-};
-
-// ✅ Good: Use proper error handling
-const handleUserAction = async (action: UserAction): Promise<void> => {
-  try {
-    setLoading(true);
-    await performAction(action);
-    hapticFeedback.success();
-  } catch (error) {
-    setError(error instanceof Error ? error.message : 'Unknown error');
-    hapticFeedback.error();
-  } finally {
-    setLoading(false);
-  }
-};
-```
-
-#### Component Patterns
-
-```typescript
-// ✅ Good: Proper component structure
-interface GratitudeCardProps {
-  entry: GratitudeEntry;
-  onEdit?: (entry: GratitudeEntry) => void;
-  onDelete?: (entryId: string) => void;
-  editable?: boolean;
-}
-
-const GratitudeCard: React.FC<GratitudeCardProps> = ({
-  entry,
-  onEdit,
-  onDelete,
-  editable = true,
-}) => {
-  const { theme } = useTheme();
-
-  const handleEdit = useCallback(() => {
-    onEdit?.(entry);
-  }, [entry, onEdit]);
-
-  return (
-    <ThemedCard style={{ backgroundColor: theme.colors.surface }}>
-      {/* Component content */}
-    </ThemedCard>
-  );
-};
-
-// ✅ Good: Export with memo for performance
-export default React.memo(GratitudeCard);
-```
-
-### File Naming Conventions
-
-```
-src/
-├── components/
-│   ├── ThemedButton.tsx          # PascalCase for components
-│   ├── GratitudeInputBar.tsx     # Descriptive component names
-│   └── utils/
-│       └── componentHelpers.ts   # camelCase for utilities
-├── hooks/
-│   ├── useAuth.ts               # camelCase starting with 'use'
-│   └── useGratitudeEntries.ts   # Descriptive hook names
-├── services/
-│   ├── authService.ts           # camelCase ending with 'Service'
-│   └── analyticsService.ts      # Clear service purpose
-├── types/
-│   ├── api.types.ts             # Dot notation for type files
-│   └── navigation.types.ts      # Group related types
-└── utils/
-    ├── dateUtils.ts             # camelCase ending with 'Utils'
-    └── validationHelpers.ts     # Clear utility purpose
-```
-
-### Import Organization
-
-```typescript
-// ✅ Good: Organized import structure
-// 1. React and React Native imports
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
-
-// 2. Third-party library imports
-import { supabase } from '@supabase/supabase-js';
-import { z } from 'zod';
-
-// 3. Internal imports (stores, services, etc.)
-import { useAuthStore } from '@/store/authStore';
-import { useTheme } from '@/providers/ThemeProvider';
-import { analyticsService } from '@/services/analyticsService';
-
-// 4. Local imports (components, utils)
-import ThemedButton from '@/components/ThemedButton';
-import { formatDate } from '@/utils/dateUtils';
-
-// 5. Type imports (always last)
-import type { GratitudeEntry, UserProfile } from '@/types/api.types';
-```
-
-## 🔄 Git Workflow
-
-### Branch Strategy
-
-We follow **Git Flow** with feature branches:
-
-```
-main (production)
-├── develop (integration)
-    ├── feature/add-throwback-modal
-    ├── feature/improve-streak-calculation
-    ├── hotfix/fix-login-issue
-    └── release/v1.1.0
-```
-
-### Branch Naming Conventions
-
-```bash
-# Features
-feature/feature-name
-feature/add-dark-theme
-feature/implement-data-export
-
-# Bug fixes
-bugfix/issue-description
-bugfix/fix-streak-calculation
-bugfix/resolve-login-crash
-
-# Hotfixes (critical production issues)
-hotfix/critical-issue
-hotfix/fix-data-loss
-hotfix/security-patch
-
-# Releases
-release/v1.0.0
-release/v1.1.0-beta
-
-# Chores (maintenance, refactoring)
-chore/update-dependencies
-chore/refactor-api-layer
-chore/improve-documentation
-```
-
-### Commit Message Guidelines
-
-Follow **Conventional Commits** specification:
-
-```bash
-# Format: <type>[optional scope]: <description>
-# [optional body]
-# [optional footer(s)]
-
-# Types:
-feat: add new feature
-fix: bug fix
-docs: documentation changes
-style: formatting, missing semicolons, etc.
-refactor: code change that neither fixes bug nor adds feature
-perf: performance improvement
-test: adding tests
-chore: maintenance tasks
-
-# Examples:
-feat(auth): add Google OAuth integration
-fix(streak): correct calculation for timezone differences
-docs(api): update authentication documentation
-style(components): fix linting issues in ThemedButton
-refactor(store): simplify gratitude store logic
-perf(images): optimize image loading performance
-test(api): add tests for gratitude API functions
-chore(deps): update React Native to v0.73
-```
-
-### Development Workflow
-
-#### 1. Starting New Work
-
-```bash
-# Update develop branch
-git checkout develop
-git pull origin develop
-
-# Create feature branch
-git checkout -b feature/add-new-feature
-
-# Start development
-npm run dev
-```
-
-#### 2. Development Process
-
-```bash
-# Make changes and commit regularly
-git add .
-git commit -m "feat(component): add initial structure for new feature"
-
-# Push to remote regularly
-git push origin feature/add-new-feature
-
-# Keep feature branch updated
-git checkout develop
-git pull origin develop
-git checkout feature/add-new-feature
-git rebase develop
-```
-
-#### 3. Code Review Process
-
-```bash
-# Before creating PR, ensure code quality
-npm run lint
-npm run type-check
-npm run test
-
-# Push final changes
-git push origin feature/add-new-feature
-
-# Create Pull Request to develop branch
-# - Fill out PR template
-# - Request reviews from team members
-# - Ensure CI/CD passes
-```
-
-#### 4. Pull Request Template
-
-```markdown
-## Description
-
-Brief description of changes made.
-
-## Type of Change
-
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Manual testing completed
-- [ ] Tested on iOS
-- [ ] Tested on Android
-
-## Screenshots/Videos
-
-(If applicable, add screenshots or videos)
-
-## Checklist
-
-- [ ] Code follows style guidelines
-- [ ] Self-review completed
-- [ ] Code is commented where necessary
-- [ ] Documentation updated
-- [ ] No new warnings or errors
-```
-
-## 🐛 Debugging and Development Tools
-
-### Debugging Setup
-
-#### React Native Debugger
-
-```bash
-# Install React Native Debugger
-brew install --cask react-native-debugger
-
-# Start debugger
-open "rndebugger://set-debugger-loc?host=localhost&port=8081"
-```
-
-#### Debug Configuration
-
-```typescript
-// src/utils/debugConfig.ts
-export const DEBUG_CONFIG = {
-  enableReduxDevTools: __DEV__,
-  enableNetworkLogging: __DEV__,
-  enablePerformanceMonitoring: __DEV__,
-  logLevel: __DEV__ ? 'debug' : 'warn',
-};
-
-// Console logging utility
-export const logger = {
-  debug: (message: string, ...args: any[]) => {
-    if (__DEV__ && DEBUG_CONFIG.logLevel === 'debug') {
-      console.log(`🐛 DEBUG: ${message}`, ...args);
-    }
-  },
-  info: (message: string, ...args: any[]) => {
-    if (__DEV__) {
-      console.log(`ℹ️ INFO: ${message}`, ...args);
-    }
-  },
-  warn: (message: string, ...args: any[]) => {
-    console.warn(`⚠️ WARN: ${message}`, ...args);
-  },
-  error: (message: string, ...args: any[]) => {
-    console.error(`❌ ERROR: ${message}`, ...args);
-  },
-};
-```
-
-### Performance Debugging
-
-#### Component Performance
-
-```typescript
-// Performance monitoring wrapper
 export const withPerformanceMonitoring = <P extends object>(
-  WrappedComponent: React.ComponentType<P>,
+  Component: React.ComponentType<P>,
   componentName: string
 ) => {
+  if (!__DEV__) {
+    return Component;
+  }
+
   return React.memo((props: P) => {
     const renderStart = performance.now();
 
@@ -621,268 +293,370 @@ export const withPerformanceMonitoring = <P extends object>(
       const renderEnd = performance.now();
       const renderTime = renderEnd - renderStart;
 
-      if (renderTime > 16) { // More than one frame
-        logger.warn(`Slow render detected in ${componentName}: ${renderTime.toFixed(2)}ms`);
+      if (renderTime > 16) { // Longer than 1 frame at 60fps
+        logger.warn(`Slow render detected in ${componentName}:`, {
+          renderTime: `${renderTime.toFixed(2)}ms`,
+          props: Object.keys(props),
+        });
+      } else {
+        logger.debug(`${componentName} render performance:`, {
+          renderTime: `${renderTime.toFixed(2)}ms`,
+        });
       }
-    });
+    }, [renderStart]);
 
-    return <WrappedComponent {...props} />;
+    return <Component {...props} />;
   });
 };
 
-// Usage
-export default withPerformanceMonitoring(GratitudeCard, 'GratitudeCard');
+// Usage in development
+export const MonitoredGratitudeCard = withPerformanceMonitoring(
+  GratitudeCard,
+  'GratitudeCard'
+);
 ```
 
-#### Memory Leak Detection
+## 🐛 Enhanced Debugging Strategies
+
+### 1. 7-Layer Error Protection Debugging
+
+#### Error Layer Analysis Tool
 
 ```typescript
-// Hook for detecting memory leaks
-export const useMemoryLeakDetection = (componentName: string) => {
-  useEffect(() => {
-    let isMounted = true;
+// Development debugging utility for error protection layers
+// src/utils/errorDebugging.ts
 
-    return () => {
-      isMounted = false;
-      // Check for memory leaks in development
-      if (__DEV__) {
-        setTimeout(() => {
-          if (!isMounted) {
-            logger.debug(`${componentName} unmounted cleanly`);
-          }
-        }, 100);
-      }
-    };
-  }, [componentName]);
-};
-```
+export const analyzeErrorLayers = (error: unknown, context: string) => {
+  if (!__DEV__) return;
 
-### Development Scripts
+  const errorAnalysis = {
+    layer1_translation: 'Not applied',
+    layer2_monitoring: 'Not applied',
+    layer3_authStore: 'Not applied',
+    layer4_authService: 'Not applied',
+    layer5_globalProvider: 'Not applied',
+    layer6_errorBoundary: 'Not applied',
+    layer7_uiProtection: 'Not applied',
+    finalMessage: 'Unknown error',
+  };
 
-```json
-{
-  "scripts": {
-    "dev": "expo start --clear",
-    "dev:ios": "expo start --ios",
-    "dev:android": "expo start --android",
-    "dev:web": "expo start --web",
+  try {
+    // Check if error went through translation layer
+    if (typeof error === 'string' && error.includes('Turkish:')) {
+      errorAnalysis.layer1_translation = 'Applied';
+    }
 
-    "build:ios": "eas build --platform ios",
-    "build:android": "eas build --platform android",
-    "build:preview": "eas build --platform all --profile preview",
+    // Check if error was caught by monitoring
+    if (error instanceof Error && error.stack?.includes('errorMonitoring')) {
+      errorAnalysis.layer2_monitoring = 'Applied';
+    }
 
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:e2e": "detox test",
+    // Apply safe error display and analyze result
+    const safeMessage = safeErrorDisplay(error);
+    errorAnalysis.finalMessage = safeMessage;
+    errorAnalysis.layer7_uiProtection = 'Applied';
 
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "type-check": "tsc --noEmit",
+    logger.debug(`Error Layer Analysis for ${context}:`, errorAnalysis);
 
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
-
-    "clean": "rm -rf node_modules && npm install",
-    "clean:cache": "expo start --clear",
-    "reset": "rm -rf node_modules package-lock.json && npm install"
+    // Visual debugging in development
+    if (__DEV__) {
+      console.table(errorAnalysis);
+    }
+  } catch (analysisError) {
+    logger.error('Error during error analysis:', analysisError);
   }
-}
-```
-
-## 🧪 Testing Practices
-
-### Testing Strategy
-
-1. **Unit Tests**: Individual functions and components
-2. **Integration Tests**: Store and API integration
-3. **E2E Tests**: Critical user journeys
-4. **Manual Testing**: UI/UX validation
-
-### Test File Structure
-
-```
-__tests__/
-├── components/
-│   ├── ThemedButton.test.tsx
-│   └── GratitudeCard.test.tsx
-├── hooks/
-│   └── useAuth.test.ts
-├── services/
-│   └── authService.test.ts
-├── store/
-│   └── gratitudeStore.test.ts
-├── utils/
-│   └── dateUtils.test.ts
-└── e2e/
-    ├── auth.e2e.ts
-    └── gratitude.e2e.ts
-```
-
-### Testing Utilities
-
-```typescript
-// __tests__/utils/testUtils.tsx
-import React from 'react';
-import { render, RenderOptions } from '@testing-library/react-native';
-import { ThemeProvider } from '@/providers/ThemeProvider';
-
-// Custom render function with providers
-const AllTheProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <ThemeProvider>
-      {children}
-    </ThemeProvider>
-  );
 };
 
-const customRender = (
-  ui: React.ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
-) => render(ui, { wrapper: AllTheProviders, ...options });
-
-export * from '@testing-library/react-native';
-export { customRender as render };
-```
-
-## 📱 Device Testing
-
-### Testing Matrix
-
-| Device Type    | iOS Version | Android Version | Priority |
-| -------------- | ----------- | --------------- | -------- |
-| iPhone 14      | iOS 16+     | -               | High     |
-| iPhone 12      | iOS 15+     | -               | Medium   |
-| Pixel 7        | -           | Android 13+     | High     |
-| Samsung Galaxy | -           | Android 12+     | Medium   |
-| iPad           | iOS 16+     | -               | Low      |
-| Android Tablet | -           | Android 12+     | Low      |
-
-### Testing Checklist
-
-#### Functionality Testing
-
-- [ ] Authentication (Google OAuth, Email/Password)
-- [ ] Gratitude entry creation and editing
-- [ ] Streak calculation accuracy
-- [ ] Throwback feature functionality
-- [ ] Settings and preferences
-- [ ] Data export functionality
-- [ ] Offline functionality
-
-#### UI/UX Testing
-
-- [ ] Dark/Light theme switching
-- [ ] Responsive design across devices
-- [ ] Accessibility features
-- [ ] Haptic feedback
-- [ ] Loading states and error handling
-- [ ] Navigation flow
-
-#### Performance Testing
-
-- [ ] App startup time
-- [ ] Navigation smoothness
-- [ ] Memory usage
-- [ ] Battery consumption
-- [ ] Network request efficiency
-
-## 🚀 Continuous Integration
-
-### GitHub Actions Workflow
-
-```yaml
-# .github/workflows/ci.yml
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [develop, main]
-  pull_request:
-    branches: [develop]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linting
-        run: npm run lint
-
-      - name: Run type checking
-        run: npm run type-check
-
-      - name: Run tests
-        run: npm run test:coverage
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-      - name: Install dependencies
-        run: npm ci
-      - name: Build app
-        run: eas build --platform all --non-interactive
-```
-
-## 🔧 Development Tips
-
-### Hot Reloading
-
-```typescript
-// Enable Fast Refresh for better development experience
-// metro.config.js
-module.exports = {
-  transformer: {
-    assetPlugins: ['expo-asset/tools/hashAssetFiles'],
+// Example usage in development
+export const testErrorScenarios = {
+  networkError: () => {
+    const error = new Error('Network request failed');
+    analyzeErrorLayers(error, 'Network Request');
   },
-  resolver: {
-    assetExts: ['bin', 'txt', 'jpg', 'png', 'json', 'svg'],
+
+  authError: () => {
+    const error = { code: 'AUTH_ERROR', message: 'Invalid credentials' };
+    analyzeErrorLayers(error, 'Authentication');
+  },
+
+  googleOAuthCancellation: () => {
+    const error = { code: 'USER_CANCELLED', message: 'User cancelled Google OAuth' };
+    analyzeErrorLayers(error, 'Google OAuth');
   },
 };
 ```
 
-### Development Shortcuts
+### 2. Authentication Debugging
+
+#### Magic Link Development Testing
+
+```typescript
+// Enhanced authentication debugging
+// src/utils/authDebugging.ts
+
+export const authDebugUtils = {
+  // Log deep link processing in detail
+  logDeepLinkDetails: (url: string) => {
+    if (__DEV__) {
+      const urlObj = new URL(url);
+      const params = Object.fromEntries(urlObj.searchParams);
+
+      logger.debug('Deep Link Analysis:', {
+        scheme: urlObj.protocol,
+        host: urlObj.host,
+        pathname: urlObj.pathname,
+        params,
+        isValidAuthCallback: url.includes('yeser://auth/callback'),
+        hasAccessToken: params.access_token !== undefined,
+        hasRefreshToken: params.refresh_token !== undefined,
+      });
+    }
+  },
+
+  // Test authentication flows with different scenarios
+  simulateAuthScenarios: {
+    validMagicLink: () => {
+      const testUrl =
+        'yeser://auth/callback?access_token=valid_test_token&refresh_token=valid_refresh_token&expires_in=3600&token_type=bearer';
+      authDebugUtils.logDeepLinkDetails(testUrl);
+      return testUrl;
+    },
+
+    expiredToken: () => {
+      const testUrl =
+        'yeser://auth/callback?error=expired_token&error_description=The%20token%20has%20expired';
+      authDebugUtils.logDeepLinkDetails(testUrl);
+      return testUrl;
+    },
+
+    invalidRequest: () => {
+      const testUrl =
+        'yeser://auth/callback?error=invalid_request&error_description=Invalid%20authentication%20request';
+      authDebugUtils.logDeepLinkDetails(testUrl);
+      return testUrl;
+    },
+  },
+
+  // Monitor authentication state changes
+  monitorAuthState: () => {
+    if (__DEV__) {
+      const unsubscribe = useAuthStore.subscribe(
+        (state) => state.session,
+        (session, prevSession) => {
+          logger.debug('Auth State Change:', {
+            wasAuthenticated: !!prevSession,
+            isAuthenticated: !!session,
+            userId: session?.user?.id,
+            provider: session?.user?.app_metadata?.provider,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      );
+
+      return unsubscribe;
+    }
+  },
+};
+```
+
+### 3. Query State Debugging
+
+#### TanStack Query Development Tools
+
+```typescript
+// Enhanced query debugging for development
+// src/utils/queryDebugging.ts
+
+export const queryDebugUtils = {
+  // Analyze query cache state
+  analyzeCacheState: () => {
+    if (!__DEV__) return;
+
+    const cache = queryClient.getQueryCache();
+    const queries = cache.getAll();
+
+    const cacheAnalysis = queries.map((query) => ({
+      queryKey: query.queryKey,
+      state: query.state.status,
+      dataUpdatedAt: query.state.dataUpdatedAt,
+      errorUpdatedAt: query.state.errorUpdatedAt,
+      isInvalidated: query.isInvalidated(),
+      isStale: query.isStale(),
+      observersCount: query.getObserversCount(),
+    }));
+
+    logger.debug('Query Cache Analysis:', cacheAnalysis);
+
+    if (__DEV__) {
+      console.table(cacheAnalysis);
+    }
+  },
+
+  // Monitor query performance
+  monitorQueryPerformance: (queryKey: string[]) => {
+    if (!__DEV__) return;
+
+    const startTime = performance.now();
+
+    return {
+      end: (success: boolean, dataSize?: number) => {
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+
+        logger.debug('Query Performance:', {
+          queryKey,
+          duration: `${duration.toFixed(2)}ms`,
+          success,
+          dataSize,
+          isSlowQuery: duration > 1000,
+        });
+      },
+    };
+  },
+
+  // Test query error scenarios
+  simulateQueryErrors: {
+    networkError: (queryKey: string[]) => {
+      queryClient.setQueryData(queryKey, () => {
+        throw new Error('Simulated network error');
+      });
+    },
+
+    authError: (queryKey: string[]) => {
+      queryClient.setQueryData(queryKey, () => {
+        throw new Error('Authentication required');
+      });
+    },
+
+    validationError: (queryKey: string[]) => {
+      queryClient.setQueryData(queryKey, () => {
+        throw new Error('Data validation failed');
+      });
+    },
+  },
+};
+```
+
+## 🧪 Development Testing Workflows
+
+### 1. Enhanced Error Protection Testing
 
 ```bash
-# Quick commands for common tasks
-alias expo-dev="npx expo start --clear"
-alias expo-ios="npx expo start --ios"
-alias expo-android="npx expo start --android"
-alias fix-lint="npm run lint:fix && npm run format"
-alias test-watch="npm run test:watch"
+# Run error protection tests
+npm run test:error-protection
+
+# Test specific error scenarios
+npm run test:error-scenarios:auth
+npm run test:error-scenarios:network
+npm run test:error-scenarios:validation
+
+# Test Turkish error messages
+npm run test:turkish-errors
 ```
 
-### Debugging Network Requests
+### 2. Authentication Testing Workflow
 
-```typescript
-// Network request interceptor for debugging
-if (__DEV__) {
-  const originalFetch = global.fetch;
-  global.fetch = (...args) => {
-    console.log('🌐 Network request:', args[0]);
-    return originalFetch(...args).then((response) => {
-      console.log('📡 Network response:', response.status, response.url);
-      return response;
-    });
-  };
-}
+```bash
+# Test magic link authentication
+npm run test:auth:magic-link:development
+
+# Test Google OAuth with error scenarios
+npm run test:auth:google:scenarios
+
+# Test deep link handling
+npm run test:deep-links:all-scenarios
+
+# Test authentication error protection
+npm run test:auth:error-protection
 ```
 
----
+### 3. Performance Testing in Development
 
-This development workflow guide provides a comprehensive foundation for maintaining code quality, consistency, and collaboration efficiency in the Yeser gratitude app development process.
+```bash
+# Monitor component render performance
+npm run dev:performance-monitor
+
+# Test with large datasets
+npm run test:performance:large-data
+
+# Analyze bundle size impact
+npm run analyze:bundle
+
+# Test memory usage patterns
+npm run test:memory-usage
+```
+
+## 🔍 Production-Ready Development Practices
+
+### 1. Code Quality Assurance
+
+```bash
+# Enhanced linting with performance rules
+npm run lint:enhanced
+
+# Type checking with strict mode
+npm run type-check:strict
+
+# Performance optimization verification
+npm run check:performance-rules
+
+# Error protection coverage analysis
+npm run analyze:error-coverage
+```
+
+### 2. Pre-Production Testing
+
+```bash
+# Run full test suite with error protection
+npm run test:full-suite
+
+# Test authentication flows end-to-end
+npm run test:auth:e2e
+
+# Performance regression testing
+npm run test:performance:regression
+
+# Turkish localization verification
+npm run test:localization:turkish
+```
+
+### 3. Development Analytics
+
+```bash
+# Monitor development metrics
+npm run dev:analytics
+
+# Track error protection effectiveness
+npm run monitor:error-protection
+
+# Analyze authentication success rates
+npm run analyze:auth-success-rates
+
+# Monitor performance metrics
+npm run monitor:performance
+```
+
+## 📊 Development Monitoring & Analytics
+
+### Enhanced Development Dashboard
+
+The development environment includes comprehensive monitoring for:
+
+- **7-Layer Error Protection Effectiveness**: Real-time monitoring of error handling
+- **Authentication Flow Success Rates**: Magic link and Google OAuth performance
+- **Query Performance Metrics**: TanStack Query optimization tracking
+- **Component Render Performance**: React performance monitoring
+- **Turkish Localization Coverage**: Error message localization verification
+- **Memory Usage Patterns**: Performance optimization tracking
+- **Bundle Size Impact**: Real-time bundle analysis
+
+### Development Environment Features
+
+- ✅ **Hot Reload with Error Protection**: Enhanced development server with error monitoring
+- ✅ **Real-time Error Analysis**: Immediate feedback on error protection layer effectiveness
+- ✅ **Authentication Flow Testing**: Comprehensive magic link and OAuth testing tools
+- ✅ **Performance Monitoring**: Real-time component and query performance tracking
+- ✅ **Turkish Error Testing**: Automated testing of localized error messages
+- ✅ **Production Parity**: Development environment mirrors production error handling
+
+This comprehensive development workflow ensures that the 7-layer error protection system, magic link authentication, and performance optimizations work seamlessly during development while providing extensive debugging capabilities and production-ready testing tools.

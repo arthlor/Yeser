@@ -123,7 +123,7 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
           <View style={styles.quoteSection}>
             <Icon
               name="format-quote-open"
-              size={variant === 'inspiration' ? 32 : layout.isCompact ? 24 : 28}
+              size={variant === 'inspiration' ? 28 : layout.isCompact ? 20 : 24}
               color={theme.colors.primary + (variant === 'inspiration' ? '50' : '40')}
               style={styles.quoteIcon}
             />
@@ -204,8 +204,8 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
     } as ViewStyle,
 
     memoryContent: {
-      paddingHorizontal: sharedStyles.layout.getAdaptivePadding('lg'),
-      paddingVertical: sharedStyles.layout.getAdaptivePadding('md'),
+      paddingHorizontal: sharedStyles.layout.getAdaptivePadding('md'),
+      paddingVertical: sharedStyles.layout.getAdaptivePadding('sm'),
       position: 'relative',
     } as ViewStyle,
 
@@ -230,8 +230,8 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
     } as ViewStyle,
 
     inspirationContent: {
-      paddingHorizontal: sharedStyles.layout.getAdaptivePadding('xl'),
-      paddingVertical: sharedStyles.layout.getAdaptivePadding('lg'),
+      paddingHorizontal: sharedStyles.layout.getAdaptivePadding('lg'),
+      paddingVertical: sharedStyles.layout.getAdaptivePadding('md'),
       alignItems: 'center',
     } as ViewStyle,
 

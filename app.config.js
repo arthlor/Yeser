@@ -30,9 +30,9 @@ const getUrlScheme = () => {
 };
 
 const getBundleIdentifier = () => {
-  if (IS_DEV) return 'com.yeser.dev';
-  if (IS_PREVIEW) return 'com.yeser.preview';
-  return 'com.yeser';
+  // Temporarily use production bundle ID for all environments to match Firebase config
+  // TODO: Create separate Firebase configs for dev/preview later
+  return 'com.arthlor.yeser';
 };
 
 export default {
@@ -114,7 +114,7 @@ export default {
           icon: 'src/assets/assets/notification-icon.png',
           color: '#5DB0A5',
           defaultChannel: 'yeser-reminders',
-          sounds: ['src/assets/assets/sounds/notification-sound.wav'],
+          sounds: ['src/assets/assets/sounds/notification_sound.wav'],
           androidMode: 'default',
           androidCollapsedTitle: getAppName(),
           iosDisplayInForeground: true,
@@ -139,6 +139,7 @@ export default {
           },
           ios: {
             deploymentTarget: '15.1',
+            useFrameworks: 'static',
           },
         },
       ],

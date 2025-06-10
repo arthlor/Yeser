@@ -11,6 +11,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { AppTheme } from '@/themes/types';
 import {
   createSharedStyles,
@@ -82,6 +83,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
     edgeToEdge = false,
   }) => {
     const { theme } = useTheme();
+    const { showError } = useGlobalError();
     const layout = useResponsiveLayout();
     const sharedStyles = createSharedStyles(theme, layout);
     const styles = useMemo(() => createStyles(theme, sharedStyles), [theme, sharedStyles]);
@@ -119,6 +121,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
       triggerHaptic('warning');
 
       if (confirmDelete) {
+        // TODO: Consider implementing a custom confirmation modal instead of Alert
         Alert.alert('Minneti Sil', 'Bu minnet ifadesini silmek istediğinizden emin misiniz?', [
           {
             text: 'İptal',
@@ -153,7 +156,8 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
         triggerHaptic('success');
       } catch {
         triggerHaptic('error');
-        Alert.alert('Hata', 'Minnet kaydedilirken bir hata oluştu.');
+        // 🛡️ ERROR PROTECTION: Use global error system instead of Alert
+        showError('Minnet kaydedilirken bir hata oluştu.');
       }
     };
 

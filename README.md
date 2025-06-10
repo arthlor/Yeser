@@ -32,6 +32,17 @@ Yeşer is a beautiful, intuitive gratitude journaling app built with React Nativ
 3. Set up environment variables (see `.env.example`)
 4. Start the development server: `npm start`
 
+### 🔧 Network Issues in iOS Simulator?
+
+If you encounter "Network request failed" errors:
+
+```bash
+# Quick fix for simulator network issues
+./scripts/fix-simulator-network.sh
+```
+
+See [Network Troubleshooting Guide](docs/network-troubleshooting.md) for comprehensive solutions.
+
 ## 🏗️ CI/CD Pipeline
 
 This project uses GitHub Actions for continuous integration and deployment:

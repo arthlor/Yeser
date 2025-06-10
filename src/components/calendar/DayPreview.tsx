@@ -110,7 +110,7 @@ const DayPreview: React.FC<DayPreviewProps> = ({
         ) : selectedEntry ? (
           <View style={styles.statementContainer}>
             <StatementCard
-              statement={selectedEntry.statements.join(' • ')}
+              statement={selectedEntry.statements[0]}
               variant="minimal"
               showQuotes={false}
               animateEntrance={false}
@@ -130,7 +130,9 @@ const DayPreview: React.FC<DayPreviewProps> = ({
                     { color: theme.colors.primary },
                   ]}
                 >
-                  Detayları Gör
+                  {selectedEntry.statements.length > 1
+                    ? `ve ${selectedEntry.statements.length - 1} diğerini gör`
+                    : 'Detayları Gör'}
                 </Text>
                 <Icon name="chevron-right" size={16} color={theme.colors.primary} />
               </View>

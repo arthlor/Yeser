@@ -2,6 +2,7 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
+import { safeErrorDisplay } from '@/utils/errorTranslation';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 
 interface ScreenContentProps {
@@ -9,6 +10,7 @@ interface ScreenContentProps {
   isLoading?: boolean;
   isEmpty?: boolean;
   error?: string | null;
+  errorObject?: unknown;
   loadingText?: string;
   emptyTitle?: string;
   emptySubtitle?: string;
@@ -30,12 +32,14 @@ interface ScreenContentProps {
  * - Error states with retry functionality
  * - Consistent spacing and typography
  * - Centered or default content layout
+ * - Raw error object translation (new feature)
  */
 const ScreenContent: React.FC<ScreenContentProps> = ({
   children,
   isLoading = false,
   isEmpty = false,
   error = null,
+  errorObject,
   loadingText = 'Yükleniyor...',
   emptyTitle = 'Henüz içerik yok',
   emptySubtitle = 'İçerik eklendiğinde burada görünecek',
@@ -52,6 +56,9 @@ const ScreenContent: React.FC<ScreenContentProps> = ({
   const { theme } = useTheme();
   const styles = createStyles(theme, centerContent);
 
+  // Calculate the final error message
+  const finalErrorMessage = errorObject ? safeErrorDisplay(errorObject) : error;
+
   // Loading State
   if (isLoading) {
     return (
@@ -63,13 +70,13 @@ const ScreenContent: React.FC<ScreenContentProps> = ({
   }
 
   // Error State
-  if (error) {
+  if (finalErrorMessage) {
     return (
       <View style={[styles.container, styles.centeredContainer, style]}>
         <View style={styles.stateContainer}>
           <Text style={styles.stateIcon}>⚠️</Text>
           <Text style={styles.stateTitle}>{errorTitle}</Text>
-          <Text style={styles.stateSubtitle}>{error || errorSubtitle}</Text>
+          <Text style={styles.stateSubtitle}>{finalErrorMessage || errorSubtitle}</Text>
           {onRetry && (
             <ThemedButton
               title={retryText}

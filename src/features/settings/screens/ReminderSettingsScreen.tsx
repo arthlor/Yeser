@@ -17,6 +17,7 @@ import ThemedButton from '@/shared/components/ui/ThemedButton';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { useUserProfile } from '@/shared/hooks';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { updateProfileSchema } from '@/schemas/profileSchema';
 import { analyticsService } from '@/services/analyticsService';
 import { notificationService } from '@/services/notificationService';
@@ -33,6 +34,7 @@ import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
  */
 const EnhancedReminderSettingsScreen: React.FC = () => {
   const { theme } = useTheme();
+  const { showError, showSuccess } = useGlobalError();
 
   // TanStack Query - Replace useProfileStore with useUserProfile
   const { profile, updateProfile: updateProfileMutation, isUpdatingProfile } = useUserProfile();
@@ -130,10 +132,8 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
             throw new Error(result.error?.message || 'Failed to schedule reminder');
           }
         } else {
-          Alert.alert(
-            'İzin Reddedildi',
-            'Bildirim izni verilmediği için hatırlatıcılar ayarlanamadı.'
-          );
+          // 🛡️ ERROR PROTECTION: Use global error system instead of Alert
+          showError('Bildirim izni verilmediği için hatırlatıcılar ayarlanamadı.');
           finalReminderEnabled = false;
           setReminderEnabled(false);
 
@@ -172,7 +172,8 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
             errorMessage += `\n- ${String(key)}: ${messages.join(', ')}`;
           }
         });
-        Alert.alert('Geçersiz Veri', errorMessage);
+        // 🛡️ ERROR PROTECTION: Use global error system instead of Alert
+        showError(errorMessage);
         return;
       }
 
@@ -191,7 +192,8 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
         time: formattedTime,
       });
 
-      Alert.alert('Başarılı', 'Hatırlatıcı ayarları güncellendi.');
+      // 🛡️ ERROR PROTECTION: Use global success system instead of Alert
+      showSuccess('Hatırlatıcı ayarları güncellendi.');
     } catch (error: unknown) {
       logger.error('Hatırlatıcı ayarları güncellenemedi:', error as Error);
       let errorMessage = 'Ayarlar güncellenemedi.';
@@ -199,7 +201,8 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
         errorMessage += ` Hata: ${error.message}`;
       }
 
-      Alert.alert('Hata', errorMessage);
+      // 🛡️ ERROR PROTECTION: Use global error system instead of Alert
+      showError(errorMessage);
 
       // Provide error haptic feedback
       hapticFeedback.error();
@@ -218,24 +221,21 @@ const EnhancedReminderSettingsScreen: React.FC = () => {
       // Ensure permissions are granted
       const permissionGranted = await notificationService.requestPermissions();
       if (!permissionGranted) {
-        Alert.alert('İzin Gerekli', 'Test bildirimi göndermek için bildirim izni gerekiyor.');
+        // 🛡️ ERROR PROTECTION: Use global error system instead of Alert
+        showError('Test bildirimi göndermek için bildirim izni gerekiyor.');
         return;
       }
 
       await notificationService.sendTestNotification();
 
-      Alert.alert(
-        'Test Bildirimi Gönderildi',
-        'Test bildirimi başarıyla gönderildi! Birkaç saniye içinde görünecek.'
-      );
+      // 🛡️ ERROR PROTECTION: Use global success system instead of Alert
+      showSuccess('Test bildirimi başarıyla gönderildi! Birkaç saniye içinde görünecek.');
 
       analyticsService.logEvent('test_notification_sent');
     } catch (error) {
       logger.error('Test notification failed:', error as Error);
-      Alert.alert(
-        'Test Başarısız',
-        error instanceof Error ? error.message : 'Test bildirimi gönderilemedi.'
-      );
+      // 🛡️ ERROR PROTECTION: Use global error system instead of Alert
+      showError(error instanceof Error ? error.message : 'Test bildirimi gönderilemedi.');
     }
   };
 

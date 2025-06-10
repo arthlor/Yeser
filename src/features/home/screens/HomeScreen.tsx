@@ -11,12 +11,14 @@ import {
 import { useStreakData } from '@/features/streak/hooks';
 import { useUserProfile } from '@/shared/hooks';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { analyticsService } from '@/services/analyticsService';
 import type { MainTabParamList, RootStackParamList } from '@/types/navigation';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ScreenLayout } from '@/shared/components/layout';
+import { safeErrorDisplay } from '@/utils/errorTranslation';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, RefreshControl } from 'react-native';
@@ -33,6 +35,7 @@ interface HomeScreenProps {
 
 const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }) => {
   const { theme } = useTheme();
+  const { handleMutationError } = useGlobalError();
 
   // TanStack Query hooks replacing Zustand stores
   const { profile } = useUserProfile();
@@ -88,10 +91,11 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
       await Promise.all([refetchEntry(), refetchStreak(), refetchThrowback()]);
     } catch (error) {
       logger.error('Refresh error:', error as Error);
+      handleMutationError(error, 'sayfa yenileme');
     } finally {
       setRefreshing(false);
     }
-  }, [refetchEntry, refetchStreak, refetchThrowback]);
+  }, [refetchEntry, refetchStreak, refetchThrowback, handleMutationError]);
 
   useEffect(() => {
     analyticsService.logScreenView('EnhancedHomeScreen');
@@ -127,6 +131,11 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
         }
       : null;
   }, [throwbackEntry]);
+
+  // Translate throwback error using centralized utility
+  const translatedThrowbackError = useMemo(() => {
+    return throwbackError ? safeErrorDisplay(throwbackError) : null;
+  }, [throwbackError]);
 
   return (
     <>
@@ -178,7 +187,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
         <ThrowbackTeaser
           throwbackEntry={memoizedThrowbackEntry}
           isLoading={throwbackLoading}
-          error={throwbackError ? throwbackError.message : null}
+          error={translatedThrowbackError}
           onRefresh={handleThrowbackRefresh}
         />
       </ScreenLayout>

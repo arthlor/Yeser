@@ -140,7 +140,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
         <View style={styles.container}>
           <TouchableOpacity style={styles.errorCard} onPress={onRefresh} activeOpacity={0.8}>
             <View style={styles.errorIconContainer}>
-              <Icon name="alert-circle-outline" size={24} color={theme.colors.onErrorContainer} />
+              <Icon name="alert-circle-outline" size={20} color={theme.colors.onErrorContainer} />
             </View>
             <View style={styles.errorContent}>
               <Text style={styles.errorTitle}>Anı Yüklenemedi</Text>
@@ -165,7 +165,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
             activeOpacity={0.8}
           >
             <View style={styles.placeholderIconContainer}>
-              <Icon name="history" size={32} color={theme.colors.primary} />
+              <Icon name="history" size={24} color={theme.colors.primary} />
             </View>
             <View style={styles.placeholderContent}>
               <Text style={styles.placeholderTitle}>Geçmişten Anılar</Text>
@@ -173,7 +173,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
                 Minnet kayıtlarınız arttıkça, burada geçmişten güzel anılarınızı göreceksiniz
               </Text>
               <View style={styles.placeholderHint}>
-                <Icon name="sparkles" size={16} color={theme.colors.tertiary} />
+                <Icon name="sparkles" size={14} color={theme.colors.tertiary} />
                 <Text style={styles.placeholderHintText}>Başlamak için dokunun</Text>
               </View>
             </View>
@@ -190,7 +190,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
               <View style={styles.headerIconContainer}>
-                <Icon name="history" size={22} color={theme.colors.primary} />
+                <Icon name="history" size={18} color={theme.colors.primary} />
               </View>
               <Text style={styles.headerTitle}>Geçmişten Bir Anı</Text>
             </View>
@@ -215,7 +215,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
                 {isLoading ? (
                   <ActivityIndicator size="small" color={theme.colors.primary} />
                 ) : (
-                  <Icon name="refresh" size={20} color={theme.colors.primary} />
+                  <Icon name="refresh" size={16} color={theme.colors.primary} />
                 )}
               </Animated.View>
             </TouchableOpacity>
@@ -242,7 +242,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
     } as ViewStyle,
 
     // Enhanced loading card with better visual hierarchy
@@ -256,20 +256,20 @@ const createStyles = (theme: AppTheme) =>
       borderBottomColor: theme.colors.outlineVariant,
       flexDirection: 'row',
       alignItems: 'center',
-      minHeight: 80,
+      minHeight: 64,
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
       ...getPrimaryShadow.card(theme),
     } as ViewStyle,
 
     loadingIconContainer: {
-      width: 40,
-      height: 40,
+      width: 32,
+      height: 32,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.primaryContainer,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: theme.spacing.md,
+      marginRight: theme.spacing.sm,
     } as ViewStyle,
 
     loadingContent: {
@@ -277,16 +277,16 @@ const createStyles = (theme: AppTheme) =>
     } as ViewStyle,
 
     loadingTitle: {
-      ...theme.typography.titleMedium,
+      ...theme.typography.titleSmall,
       color: theme.colors.onSurface,
-      fontWeight: '700',
+      fontWeight: '600',
       marginBottom: theme.spacing.xs,
     } as TextStyle,
 
     loadingSubtitle: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      fontWeight: '500',
+      fontWeight: '400',
       opacity: 0.8,
     } as TextStyle,
 
@@ -302,19 +302,19 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      minHeight: 80,
+      paddingVertical: theme.spacing.sm,
+      minHeight: 64,
       ...getPrimaryShadow.card(theme),
     } as ViewStyle,
 
     errorIconContainer: {
-      width: 40,
-      height: 40,
+      width: 32,
+      height: 32,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.onErrorContainer,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: theme.spacing.md,
+      marginRight: theme.spacing.sm,
       opacity: 0.15,
     } as ViewStyle,
 
@@ -323,24 +323,24 @@ const createStyles = (theme: AppTheme) =>
     } as ViewStyle,
 
     errorTitle: {
-      ...theme.typography.titleMedium,
+      ...theme.typography.titleSmall,
       color: theme.colors.onErrorContainer,
-      fontWeight: '700',
+      fontWeight: '600',
       marginBottom: theme.spacing.xs,
     } as TextStyle,
 
     errorSubtitle: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodySmall,
       color: theme.colors.onErrorContainer,
-      fontWeight: '500',
-      lineHeight: 20,
+      fontWeight: '400',
+      lineHeight: 18,
       opacity: 0.9,
     } as TextStyle,
 
     errorRetryText: {
       ...theme.typography.bodySmall,
       color: theme.colors.onErrorContainer,
-      fontSize: 12,
+      fontSize: 11,
       opacity: 0.7,
       marginTop: theme.spacing.xs,
       fontStyle: 'italic',
@@ -356,8 +356,8 @@ const createStyles = (theme: AppTheme) =>
       borderTopColor: theme.colors.outline,
       borderBottomColor: theme.colors.outline,
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xl,
-      minHeight: 140,
+      paddingVertical: theme.spacing.lg,
+      minHeight: 100,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.surfaceVariant,
@@ -365,13 +365,13 @@ const createStyles = (theme: AppTheme) =>
     } as ViewStyle,
 
     placeholderIconContainer: {
-      width: 64,
-      height: 64,
+      width: 48,
+      height: 48,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.primaryContainer,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.sm,
     } as ViewStyle,
 
     placeholderContent: {
@@ -379,38 +379,38 @@ const createStyles = (theme: AppTheme) =>
     } as ViewStyle,
 
     placeholderTitle: {
-      ...theme.typography.titleLarge,
+      ...theme.typography.titleMedium,
       color: theme.colors.onSurface,
-      fontWeight: '700',
+      fontWeight: '600',
       textAlign: 'center',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
     } as TextStyle,
 
     placeholderSubtitle: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      lineHeight: 22,
+      lineHeight: 18,
       textAlign: 'center',
       opacity: 0.8,
       fontWeight: '400',
       letterSpacing: 0.1,
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
     } as TextStyle,
 
     placeholderHint: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.tertiaryContainer,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
       borderRadius: theme.borderRadius.full,
       gap: theme.spacing.xs,
     } as ViewStyle,
 
     placeholderHintText: {
-      ...theme.typography.labelMedium,
+      ...theme.typography.labelSmall,
       color: theme.colors.onTertiaryContainer,
-      fontWeight: '600',
+      fontWeight: '500',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     } as TextStyle,
@@ -423,7 +423,7 @@ const createStyles = (theme: AppTheme) =>
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.colors.outlineVariant,
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.outlineVariant,
       ...getPrimaryShadow.card(theme),
@@ -442,25 +442,25 @@ const createStyles = (theme: AppTheme) =>
     } as ViewStyle,
 
     headerIconContainer: {
-      width: 36,
-      height: 36,
+      width: 28,
+      height: 28,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.primaryContainer,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: theme.spacing.md,
+      marginRight: theme.spacing.sm,
     } as ViewStyle,
 
     headerTitle: {
-      ...theme.typography.titleMedium,
+      ...theme.typography.titleSmall,
       color: theme.colors.primary,
-      fontWeight: '700',
-      letterSpacing: -0.2,
+      fontWeight: '600',
+      letterSpacing: -0.1,
     } as TextStyle,
 
     refreshButton: {
-      width: 40,
-      height: 40,
+      width: 32,
+      height: 32,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.primaryContainer,
       borderWidth: StyleSheet.hairlineWidth,

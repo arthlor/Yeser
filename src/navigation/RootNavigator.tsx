@@ -15,6 +15,7 @@ import { useTheme } from '../providers/ThemeProvider';
 import CalendarViewScreen from '../features/calendar/screens/CalendarViewScreen';
 import DailyEntryScreen from '../features/gratitude/screens/DailyEntryScreen';
 import EntryDetailScreen from '../features/gratitude/screens/EntryDetailScreen';
+import PastEntryCreationScreen from '../features/gratitude/screens/PastEntryCreationScreen';
 import HelpScreen from '../features/settings/screens/HelpScreen';
 import HomeScreen from '../features/home/screens/HomeScreen';
 import PastEntriesScreen from '../features/calendar/screens/PastEntriesScreen';
@@ -401,6 +402,17 @@ const RootNavigator: React.FC = () => {
         options={{
           headerShown: true,
           title: 'Günlük Detayı',
+          headerTitleAlign: 'center',
+          gestureEnabled: true,
+        }}
+      />
+      <Root.Screen
+        name="PastEntryCreation"
+        component={PastEntryCreationScreen}
+        options={{
+          headerShown: true,
+          title: 'Geçmiş Tarihe Ekle',
+          presentation: 'modal',
           headerTitleAlign: 'center',
           gestureEnabled: true,
         }}

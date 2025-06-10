@@ -3,7 +3,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   LayoutAnimation,
   Platform,
@@ -20,6 +19,7 @@ import ThemedCard from '@/shared/components/ui/ThemedCard';
 import StatementDetailCard from '@/shared/components/ui/StatementDetailCard';
 import { useGratitudeEntry, useGratitudeMutations } from '../hooks';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { AppTheme } from '@/themes/types';
 import { RootStackParamList } from '@/types/navigation';
 import { ScreenLayout } from '@/shared/components/layout';
@@ -53,6 +53,7 @@ const EnhancedEntryDetailScreen: React.FC<{
   navigation: EntryDetailScreenNavigationProp;
 }> = ({ route }) => {
   const { theme } = useTheme();
+  const { handleMutationError, showError } = useGlobalError();
   const { entryDate: routeEntryDate } = route.params;
 
   // Provide fallback for entryDate if not provided
@@ -133,12 +134,12 @@ const EnhancedEntryDetailScreen: React.FC<{
 
   const { formattedDate, relativeTime } = formatEntryDate();
 
-  // Error handling for mutations
+  // 🛡️ ERROR PROTECTION: Handle mutations errors with global error system
   useEffect(() => {
     if (editStatementError) {
-      Alert.alert('Hata', 'Minnet ifadesi düzenlenirken bir hata oluştu. Lütfen tekrar deneyin.');
+      handleMutationError(editStatementError, 'editStatement');
     }
-  }, [editStatementError]);
+  }, [editStatementError, handleMutationError]);
 
   useEffect(() => {
     // Start animations immediately when component mounts or data changes
@@ -175,7 +176,7 @@ const EnhancedEntryDetailScreen: React.FC<{
       >
         <ErrorState
           title="Yüklenemedi"
-          message="Minnet kayıtları yüklenirken bir hata oluştu. Lütfen tekrar deneyin."
+          error={entryError}
           icon="calendar-alert"
           onRetry={() => refetchEntry()}
           retryText="Tekrar Dene"
@@ -213,9 +214,11 @@ const EnhancedEntryDetailScreen: React.FC<{
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     } catch (error) {
       if (error instanceof ZodError) {
-        Alert.alert('Hata', error.errors[0]?.message || 'Geçersiz girdi');
+        // 🛡️ ERROR PROTECTION: Use global error system for validation errors
+        showError(error.errors[0]?.message || 'Geçersiz girdi');
       } else {
-        Alert.alert('Hata', 'Bir hata oluştu');
+        // 🛡️ ERROR PROTECTION: Use global error system for general errors
+        handleMutationError(error, 'saveEditedStatement');
         logger.error(
           'Edit statement error:',
           error instanceof Error ? error : new Error(String(error))

@@ -28,6 +28,7 @@ import {
   unifiedShadows,
 } from '@/themes/utils';
 import { ThreeDotsMenu } from './StatementCardBase';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 // Simplified props interface focusing on core functionality
 export interface StatementCardProps {
@@ -97,16 +98,12 @@ const StatementCard: React.FC<StatementCardProps> = ({
   const { showError } = useGlobalError();
   const styles = React.useMemo(() => createStyles(theme), [theme]);
 
+  // **RACE CONDITION FIX**: Use coordinated animations
+  const animations = useCoordinatedAnimations();
+
   // Local state management
   const [localStatement, setLocalStatement] = useState(statement);
-
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(animateEntrance ? 0 : 1)).current;
-  const scaleAnim = useRef(new Animated.Value(animateEntrance ? 0.95 : 1)).current;
-  const pressAnim = useRef(new Animated.Value(1)).current;
   const editingAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const shakeAnim = useRef(new Animated.Value(0)).current;
 
   // Sync local statement with prop changes
   useEffect(() => {
@@ -124,58 +121,28 @@ const StatementCard: React.FC<StatementCardProps> = ({
     }).start();
   }, [isEditing, editingAnim]);
 
-  // Loading pulse animation
+  // **RACE CONDITION FIX**: Coordinated loading pulse animation
   useEffect(() => {
     if (isLoading) {
-      const pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 0.95,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulseAnimation.start();
-      return () => pulseAnimation.stop();
+      animations.animatePulse(true);
+    } else {
+      animations.animatePulse(false);
     }
-  }, [isLoading, pulseAnim]);
+  }, [isLoading, animations]);
 
-  // Error shake animation
+  // **RACE CONDITION FIX**: Coordinated error shake animation
   useEffect(() => {
     if (hasError) {
-      Animated.sequence([
-        Animated.timing(shakeAnim, { toValue: 10, duration: 100, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: -10, duration: 100, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 10, duration: 100, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
-      ]).start();
+      animations.animateShake();
     }
-  }, [hasError, shakeAnim]);
+  }, [hasError, animations]);
 
-  // Entrance animation
+  // **RACE CONDITION FIX**: Coordinated entrance animation
   useEffect(() => {
     if (animateEntrance) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 100,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      animations.animateEntrance();
     }
-  }, [animateEntrance, fadeAnim, scaleAnim]);
+  }, [animateEntrance, animations]);
 
   // Haptic feedback system
   const triggerHaptic = (
@@ -232,23 +199,13 @@ const StatementCard: React.FC<StatementCardProps> = ({
     }
   };
 
-  // Press animation handlers
+  // **RACE CONDITION FIX**: Coordinated press animation handlers
   const handlePressIn = () => {
-    Animated.spring(pressAnim, {
-      toValue: 0.98,
-      tension: 300,
-      friction: 20,
-      useNativeDriver: true,
-    }).start();
+    animations.animatePressIn();
   };
 
   const handlePressOut = () => {
-    Animated.spring(pressAnim, {
-      toValue: 1,
-      tension: 300,
-      friction: 20,
-      useNativeDriver: true,
-    }).start();
+    animations.animatePressOut();
   };
 
   const handleSave = async () => {
@@ -362,11 +319,8 @@ const StatementCard: React.FC<StatementCardProps> = ({
         variantStyles.container,
         style,
         {
-          opacity: fadeAnim,
-          transform: [
-            { scale: Animated.multiply(scaleAnim, Animated.multiply(pressAnim, pulseAnim)) },
-            { translateX: shakeAnim },
-          ],
+          opacity: animations.fadeAnim,
+          transform: animations.combinedTransform,
         },
       ]}
     >
@@ -405,7 +359,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
                 {
                   transform: [
                     {
-                      scale: pulseAnim,
+                      scale: animations.pulseAnim,
                     },
                   ],
                 },

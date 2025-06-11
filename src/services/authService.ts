@@ -54,10 +54,22 @@ export const signInWithMagicLink = async (credentials: MagicLinkCredentials) => 
       .toLowerCase()
       .replace(/[\u200B-\u200D\uFEFF]/g, '');
 
+    // **PRODUCTION-READY URL SCHEME**: Use correct URL scheme matching app.config.js
+    const getRedirectUrl = () => {
+      const env = process.env.EXPO_PUBLIC_ENV || 'development';
+      if (env === 'development') {
+        return 'yeser-dev://auth/callback';
+      } else if (env === 'preview') {
+        return 'yeser-preview://auth/callback';
+      } else {
+        return 'yeser://auth/callback'; // Production URL scheme
+      }
+    };
+
     const { data, error } = await supabase.auth.signInWithOtp({
       email: emailForSupabase,
       options: {
-        emailRedirectTo: credentials.options?.emailRedirectTo || 'yeserapp://auth/confirm',
+        emailRedirectTo: credentials.options?.emailRedirectTo || getRedirectUrl(),
         shouldCreateUser: credentials.options?.shouldCreateUser ?? true,
         data: credentials.options?.data,
       },
@@ -263,10 +275,22 @@ export const signInWithGoogle = async (): Promise<{
   error: (AuthError | SimpleAuthError) | null;
 }> => {
   try {
+    // **PRODUCTION-READY URL SCHEME**: Use correct URL scheme matching app.config.js
+    const getRedirectUrl = () => {
+      const env = process.env.EXPO_PUBLIC_ENV || 'development';
+      if (env === 'development') {
+        return 'yeser-dev://auth/oauth-callback';
+      } else if (env === 'preview') {
+        return 'yeser-preview://auth/oauth-callback';
+      } else {
+        return 'yeser://auth/oauth-callback'; // Production URL scheme
+      }
+    };
+
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'yeserapp://auth/oauth-callback',
+        redirectTo: getRedirectUrl(),
         skipBrowserRedirect: true,
       },
     });
@@ -280,10 +304,7 @@ export const signInWithGoogle = async (): Promise<{
     }
 
     if (data?.url) {
-      const response = await WebBrowser.openAuthSessionAsync(
-        data.url,
-        'yeserapp://auth/oauth-callback'
-      );
+      const response = await WebBrowser.openAuthSessionAsync(data.url, getRedirectUrl());
 
       if (response.type === 'success' && response.url) {
         const hashFragment = response.url.split('#')[1];

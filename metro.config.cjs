@@ -1,3 +1,6 @@
+/* eslint-env node */
+/* eslint-disable no-undef */
+
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 

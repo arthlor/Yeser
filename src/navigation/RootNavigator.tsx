@@ -401,7 +401,7 @@ const RootNavigator: React.FC = () => {
         component={EntryDetailScreen}
         options={{
           headerShown: true,
-          title: 'Günlük Detayı',
+          title: '', // Empty title to prevent "MainApp" from showing
           headerTitleAlign: 'center',
           gestureEnabled: true,
         }}

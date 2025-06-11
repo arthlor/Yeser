@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Animated, StyleSheet, Text, Vibration, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Text, Vibration, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -346,6 +346,9 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
     }
   }, [currentStreak, animations]);
 
+  // **SIMPLIFIED TRANSFORM**: Use animations directly for consistency
+  const optimizedTransform = animations.entranceTransform;
+
   if (!currentMilestone) {
     return null;
   }
@@ -366,7 +369,16 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
       style={[
         {
           opacity: animations.fadeAnim,
-          transform: animations.entranceTransform,
+          transform: optimizedTransform,
+          // **iOS ANTI-BLUR OPTIMIZATIONS**
+          ...(Platform.OS === 'ios' && {
+            shouldRasterizeIOS: true,
+            rasterizationScale: 2, // Use 2x for Retina displays
+          }),
+          // **ANDROID OPTIMIZATION**
+          ...(Platform.OS === 'android' && {
+            renderToHardwareTextureAndroid: true,
+          }),
         },
       ]}
     >
@@ -471,6 +483,15 @@ const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
       overflow: 'hidden',
+      // **iOS ANTI-BLUR OPTIMIZATIONS**
+      ...(Platform.OS === 'ios' && {
+        shouldRasterizeIOS: true,
+        rasterizationScale: 2, // Use 2x for Retina displays
+      }),
+      // **ANDROID OPTIMIZATION**
+      ...(Platform.OS === 'android' && {
+        renderToHardwareTextureAndroid: true,
+      }),
     },
     glowEffect: {
       position: 'absolute',
@@ -541,6 +562,10 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '700',
       marginBottom: theme.spacing.xs,
       letterSpacing: -0.2,
+      // **iOS TEXT OPTIMIZATION**: Prevent text blurring on iOS
+      ...(Platform.OS === 'ios' && {
+        includeFontPadding: false,
+      }),
     },
     milestoneDescription: {
       ...theme.typography.bodySmall,
@@ -556,6 +581,11 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '900',
       color: theme.colors.primary,
       lineHeight: 36,
+      // **iOS TEXT OPTIMIZATION**: Prevent text blurring on iOS
+      ...(Platform.OS === 'ios' && {
+        textAlign: 'center',
+        includeFontPadding: false,
+      }),
     },
     streakLabel: {
       ...theme.typography.bodySmall,

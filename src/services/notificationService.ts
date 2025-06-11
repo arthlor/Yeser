@@ -486,7 +486,7 @@ class NotificationService {
           identifier = await Notifications.scheduleNotificationAsync({
             content: {
               title: '📚 Geçmiş Anıların Zamanı!',
-              body: 'Geçen haftalarda neler yazamıştın? Hadi bir göz at! 💭',
+              body: 'Geçen haftalarda neler yazmıştın? Hadi bir göz at! 💭',
               sound: 'default',
               priority: Notifications.AndroidNotificationPriority.DEFAULT,
               categoryIdentifier: 'THROWBACK_REMINDER',
@@ -515,7 +515,7 @@ class NotificationService {
             const dayIdentifier = await Notifications.scheduleNotificationAsync({
               content: {
                 title: '📚 Geçmiş Anıların Zamanı!',
-                body: 'Geçen haftalarda neler yazamıştın? Hadi bir göz at! 💭',
+                body: 'Geçen haftalarda neler yazmıştın? Hadi bir göz at! 💭',
                 sound: 'default',
                 priority: Notifications.AndroidNotificationPriority.DEFAULT,
                 categoryIdentifier: 'THROWBACK_REMINDER',
@@ -553,7 +553,7 @@ class NotificationService {
           identifier = await Notifications.scheduleNotificationAsync({
             content: {
               title: '📚 Geçmiş Anıların Zamanı!',
-              body: 'Geçen haftalarda neler yazamıştın? Hadi bir göz at! 💭',
+              body: 'Geçen haftalarda neler yazmıştın? Hadi bir göz at! 💭',
               sound: 'default',
               priority: Notifications.AndroidNotificationPriority.DEFAULT,
               categoryIdentifier: 'THROWBACK_REMINDER',

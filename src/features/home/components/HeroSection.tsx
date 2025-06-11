@@ -5,7 +5,7 @@ import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useEffect, useMemo } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import AdvancedStreakMilestones from '@/features/streak/components/AdvancedStreakMilestones';
@@ -171,6 +171,15 @@ const HeroSection: React.FC<HeroSectionProps> = ({
         {
           opacity: animations.fadeAnim,
           transform: animations.entranceTransform,
+          // **iOS ANTI-BLUR OPTIMIZATIONS**
+          ...(Platform.OS === 'ios' && {
+            shouldRasterizeIOS: true,
+            rasterizationScale: 2, // Use 2x for Retina displays
+          }),
+          // **ANDROID OPTIMIZATION**
+          ...(Platform.OS === 'android' && {
+            renderToHardwareTextureAndroid: true,
+          }),
         },
       ]}
     >

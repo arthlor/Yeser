@@ -30,8 +30,9 @@ const getUrlScheme = () => {
 };
 
 const getBundleIdentifier = () => {
-  // Temporarily use production bundle ID for all environments to match Firebase config
-  // TODO: Create separate Firebase configs for dev/preview later
+  // Use environment-specific bundle IDs
+  if (IS_DEV) return 'com.arthlor.yeser.dev';
+  if (IS_PREVIEW) return 'com.arthlor.yeser.preview';
   return 'com.arthlor.yeser';
 };
 
@@ -78,6 +79,9 @@ export default {
       },
       package: getBundleIdentifier(),
       versionCode: 1,
+      // Configure edge-to-edge for Android 16+ compatibility
+      edgeToEdgeEnabled: true,
+      googleServicesFile: 'android/app/google-services.json',
       permissions: [
         'RECEIVE_BOOT_COMPLETED',
         'VIBRATE',
@@ -144,9 +148,9 @@ export default {
         'expo-build-properties',
         {
           android: {
-            compileSdkVersion: 34,
+            compileSdkVersion: 35,
             targetSdkVersion: 34,
-            buildToolsVersion: '34.0.0',
+            buildToolsVersion: '35.0.0',
           },
           ios: {
             deploymentTarget: '15.1',
@@ -155,7 +159,6 @@ export default {
         },
       ],
     ],
-    scheme: getUrlScheme(),
     extra: {
       eas: {
         projectId: '7465061f-a28e-47f5-a4ac-dbbdd4abe243',

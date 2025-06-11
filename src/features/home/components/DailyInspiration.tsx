@@ -23,6 +23,42 @@ interface DailyInspirationProps {
   animateEntrance?: boolean;
 }
 
+// 🎯 STABLE BASE CARDS: Prevent unnecessary re-renders
+const BASE_INSPIRATION_CARDS = [
+  {
+    id: 'gratitude',
+    icon: 'leaf-outline',
+    iconColor: '#6BCF7F',
+    title: 'Minnettarlık',
+    message: 'Her minnettarlık, kalbinde yeşeren bir umut tohumudur.',
+    gradient: ['#6BCF7F20', '#6BCF7F10'],
+  },
+  {
+    id: 'peace',
+    icon: 'heart',
+    iconColor: '#FF6B6B',
+    title: 'İçsel Huzur',
+    message: 'Minnettarlık, ruhun en derin köşelerinde saklı huzuru bulmanın anahtarıdır.',
+    gradient: ['#FF6B6B20', '#FF6B6B10'],
+  },
+  {
+    id: 'energy',
+    icon: 'sunny',
+    iconColor: '#FFD93D',
+    title: 'Pozitif Enerji',
+    message: 'Minnettarlık, hayatına renk katan en güçlü pozitif enerji kaynağıdır.',
+    gradient: ['#FFD93D20', '#FFD93D10'],
+  },
+  {
+    id: 'growth',
+    icon: 'flower',
+    iconColor: '#6BCF7F',
+    title: 'Büyüme',
+    message: 'Her minnettarlık, kişisel gelişimin yolunda atılan sağlam bir adımdır.',
+    gradient: ['#6BCF7F20', '#6BCF7F10'],
+  },
+] as const;
+
 /**
  * ✨ SWIPEABLE DAILY INSPIRATION
  *
@@ -32,6 +68,7 @@ interface DailyInspirationProps {
  * - Subtle but striking visual design with coordinated animations
  * - Multiple inspirational messages with progress-aware content
  * - Smooth page indicator and minimal interaction design
+ * - 🚀 ENHANCED: Fixed state management and caching issues
  */
 const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
   ({ currentCount, dailyGoal, onPress, animateEntrance = true }) => {
@@ -39,9 +76,115 @@ const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
     const styles = createStyles(theme);
     const scrollViewRef = useRef<ScrollView>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const scrollTimeoutRef = useRef<number | null>(null);
 
     // **COORDINATED ANIMATION SYSTEM**: Subtle entrance animation
     const animations = useCoordinatedAnimations();
+
+    // 🎯 STABLE INSPIRATION CARDS: Memoized with dependencies for better performance
+    const inspirationCards = useMemo(() => {
+      // Determine progress state for conditional content
+      const progressState =
+        currentCount === 0 ? 'start' : currentCount >= dailyGoal ? 'complete' : 'progress';
+
+      // Create progress-specific card
+      let progressCard;
+      switch (progressState) {
+        case 'start': {
+          progressCard = {
+            id: 'start',
+            icon: 'play-circle',
+            iconColor: theme.colors.primary,
+            title: 'Başlangıç',
+            message: 'Bugün için ilk minnettarlığını yazarak güzel bir başlangıç yap.',
+            gradient: [theme.colors.primary + '20', theme.colors.primary + '10'],
+          };
+          break;
+        }
+        case 'complete': {
+          progressCard = {
+            id: 'complete',
+            icon: 'trophy',
+            iconColor: '#FFD700',
+            title: 'Başarı',
+            message: 'Bugünün hedefini tamamladın! Minnettarlığın hayatına renk katıyor.',
+            gradient: ['#FFD70020', '#FFD70010'],
+          };
+          break;
+        }
+        default: {
+          const remaining = dailyGoal - currentCount;
+          progressCard = {
+            id: 'progress',
+            icon: 'trending-up',
+            iconColor: theme.colors.primary,
+            title: 'Devam Et',
+            message: `${remaining} minnettarlık daha yazarak bugünün hedefine ulaşabilirsin.`,
+            gradient: [theme.colors.primary + '20', theme.colors.primary + '10'],
+          };
+        }
+      }
+
+      // Return stable array with progress card first
+      return [progressCard, ...BASE_INSPIRATION_CARDS];
+    }, [currentCount, dailyGoal, theme.colors.primary]);
+
+    // 🚀 IMPROVED SCROLL HANDLING: Debounced for better performance
+    const handleScroll = useCallback(
+      (event: { nativeEvent: { contentOffset: { x: number } } }) => {
+        const scrollPosition = event.nativeEvent.contentOffset.x;
+        const newIndex = Math.round(scrollPosition / SCREEN_WIDTH);
+
+        // Clear existing timeout
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+
+        // Debounce index updates to prevent rapid state changes
+        scrollTimeoutRef.current = setTimeout(() => {
+          if (newIndex >= 0 && newIndex < inspirationCards.length && newIndex !== currentIndex) {
+            setCurrentIndex(newIndex);
+          }
+        }, 50) as unknown as number; // Small delay to debounce rapid scroll events
+      },
+      [currentIndex, inspirationCards.length]
+    );
+
+    // 🎯 ENHANCED SCROLL TO INDEX: Better scroll behavior
+    const scrollToIndex = useCallback(
+      (index: number) => {
+        if (index >= 0 && index < inspirationCards.length && scrollViewRef.current) {
+          setCurrentIndex(index);
+          scrollViewRef.current.scrollTo({
+            x: index * SCREEN_WIDTH,
+            animated: true,
+          });
+        }
+      },
+      [inspirationCards.length]
+    );
+
+    // 🛡️ MEMORY LEAK PREVENTION: Enhanced cleanup
+    useEffect(() => {
+      return () => {
+        // Clear timeout on unmount
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+          scrollTimeoutRef.current = null;
+        }
+        // Clear ref for better garbage collection
+        if (scrollViewRef.current) {
+          scrollViewRef.current = null;
+        }
+      };
+    }, []);
+
+    // 📱 RESPONSIVE INDEX VALIDATION: Ensure currentIndex stays within bounds
+    useEffect(() => {
+      if (currentIndex >= inspirationCards.length) {
+        setCurrentIndex(0); // Reset to first card if out of bounds
+      }
+    }, [currentIndex, inspirationCards.length]);
 
     // **COORDINATED ENTRANCE**: Subtle entrance animation
     useEffect(() => {
@@ -50,103 +193,9 @@ const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
       }
     }, [animateEntrance, animations]);
 
-    // **INSPIRATION CONTENT**: Swipeable inspirational messages
-    const inspirationCards = useMemo(() => {
-      const baseCards = [
-        {
-          icon: 'leaf-outline',
-          iconColor: theme.colors.primary,
-          title: 'Minnettarlık',
-          message: 'Her minnettarlık, kalbinde yeşeren bir umut tohumudur.',
-          gradient: [theme.colors.primary + '20', theme.colors.primary + '10'],
-        },
-        {
-          icon: 'heart',
-          iconColor: '#FF6B6B',
-          title: 'İçsel Huzur',
-          message: 'Minnettarlık, ruhun en derin köşelerinde saklı huzuru bulmanın anahtarıdır.',
-          gradient: ['#FF6B6B20', '#FF6B6B10'],
-        },
-        {
-          icon: 'sunny',
-          iconColor: '#FFD93D',
-          title: 'Pozitif Enerji',
-          message: 'Minnettarlık, hayatına renk katan en güçlü pozitif enerji kaynağıdır.',
-          gradient: ['#FFD93D20', '#FFD93D10'],
-        },
-        {
-          icon: 'flower',
-          iconColor: '#6BCF7F',
-          title: 'Büyüme',
-          message: 'Her minnettarlık, kişisel gelişimin yolunda atılan sağlam bir adımdır.',
-          gradient: ['#6BCF7F20', '#6BCF7F10'],
-        },
-      ];
-
-      // Add progress-specific card
-      if (currentCount === 0) {
-        return [
-          {
-            icon: 'play-circle',
-            iconColor: theme.colors.primary,
-            title: 'Başlangıç',
-            message: 'Bugün için ilk minnettarlığını yazarak güzel bir başlangıç yap.',
-            gradient: [theme.colors.primary + '20', theme.colors.primary + '10'],
-          },
-          ...baseCards,
-        ];
-      } else if (currentCount >= dailyGoal) {
-        return [
-          {
-            icon: 'trophy',
-            iconColor: '#FFD700',
-            title: 'Başarı',
-            message: 'Bugünün hedefini tamamladın! Minnettarlığın hayatına renk katıyor.',
-            gradient: ['#FFD70020', '#FFD70010'],
-          },
-          ...baseCards,
-        ];
-      } else {
-        const remaining = dailyGoal - currentCount;
-        return [
-          {
-            icon: 'trending-up',
-            iconColor: theme.colors.primary,
-            title: 'Devam Et',
-            message: `${remaining} minnettarlık daha yazarak bugünün hedefine ulaşabilirsin.`,
-            gradient: [theme.colors.primary + '20', theme.colors.primary + '10'],
-          },
-          ...baseCards,
-        ];
-      }
-    }, [currentCount, dailyGoal, theme]);
-
     const handlePress = useCallback(() => {
       onPress?.();
     }, [onPress]);
-
-    const handleScroll = useCallback((event: { nativeEvent: { contentOffset: { x: number } } }) => {
-      const scrollPosition = event.nativeEvent.contentOffset.x;
-      const index = Math.round(scrollPosition / SCREEN_WIDTH);
-      setCurrentIndex(index);
-    }, []);
-
-    const scrollToIndex = useCallback((index: number) => {
-      scrollViewRef.current?.scrollTo({
-        x: index * SCREEN_WIDTH,
-        animated: true,
-      });
-    }, []);
-
-    // 🛡️ MEMORY LEAK FIX: Cleanup ref on unmount for better GC
-    useEffect(() => {
-      return () => {
-        // Set ref to null on unmount to help with garbage collection
-        if (scrollViewRef.current) {
-          scrollViewRef.current = null;
-        }
-      };
-    }, []);
 
     return (
       <Animated.View
@@ -168,10 +217,13 @@ const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
           scrollEventThrottle={16}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
+          // 🚀 ENHANCED SCROLL PERFORMANCE
+          removeClippedSubviews={true}
+          decelerationRate="fast"
         >
-          {inspirationCards.map((card, index) => (
+          {inspirationCards.map((card, _index) => (
             <TouchableOpacity
-              key={index}
+              key={card.id} // Use stable ID instead of index
               onPress={handlePress}
               onPressIn={animations.animatePressIn}
               onPressOut={animations.animatePressOut}
@@ -215,13 +267,21 @@ const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
           ))}
         </ScrollView>
 
-        {/* **PAGE INDICATOR**: Subtle dots */}
+        {/* 🎯 ENHANCED PAGE INDICATOR: Better state synchronization */}
         <View style={styles.pageIndicator}>
-          {inspirationCards.map((_, index) => (
+          {inspirationCards.map((card, index) => (
             <TouchableOpacity
-              key={index}
+              key={card.id} // Use stable ID
               onPress={() => scrollToIndex(index)}
-              style={[styles.dot, index === currentIndex ? styles.activeDot : styles.inactiveDot]}
+              style={[
+                styles.dot,
+                index === currentIndex ? styles.activeDot : styles.inactiveDot,
+                // Enhanced visual feedback
+                index === currentIndex && styles.activeDotShadow,
+              ]}
+              accessibilityLabel={`${index + 1}. kart`}
+              accessibilityRole="button"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             />
           ))}
         </View>
@@ -308,19 +368,30 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing.xs,
+      gap: 6, // Better spacing between dots
     },
     dot: {
       width: 8,
       height: 8,
       borderRadius: 4,
-      marginHorizontal: 4,
     },
     activeDot: {
       backgroundColor: theme.colors.primary,
+      width: 10, // Slightly larger for active state
+      height: 10,
+      borderRadius: 5,
     },
     inactiveDot: {
       backgroundColor: theme.colors.onSurfaceVariant,
-      opacity: 0.3,
+      opacity: 0.4, // Better contrast
+    },
+    // 🎯 ENHANCED ACTIVE DOT: Better visual feedback
+    activeDotShadow: {
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
     },
   });
 

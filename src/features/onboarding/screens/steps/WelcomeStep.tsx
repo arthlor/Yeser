@@ -5,6 +5,7 @@ import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimation
 import type { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import { hapticFeedback } from '@/utils/hapticFeedback';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Button } from 'react-native-paper';
@@ -69,10 +70,12 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
           </Text>
         </View>
 
-        {/* **SIMPLIFIED FEATURES**: No separate animations, unified entrance */}
+        {/* **ENHANCED FEATURES**: Modern icon design with consistent visuals */}
         <View style={styles.featuresSection}>
           <View style={styles.featureItem}>
-            <Text style={styles.featureIcon}>📝</Text>
+            <View style={styles.featureIconContainer}>
+              <Ionicons name="journal-outline" size={28} color={theme.colors.primary} />
+            </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Günlük Minnetler</Text>
               <Text style={styles.featureDescription}>
@@ -82,7 +85,9 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
           </View>
 
           <View style={styles.featureItem}>
-            <Text style={styles.featureIcon}>🔥</Text>
+            <View style={styles.featureIconContainer}>
+              <Ionicons name="flame-outline" size={28} color="#FF6B35" />
+            </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Seri Takibi</Text>
               <Text style={styles.featureDescription}>
@@ -92,7 +97,9 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
           </View>
 
           <View style={styles.featureItem}>
-            <Text style={styles.featureIcon}>💚</Text>
+            <View style={styles.featureIconContainer}>
+              <Ionicons name="trending-up-outline" size={28} color="#4ECDC4" />
+            </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Kişisel Gelişim</Text>
               <Text style={styles.featureDescription}>
@@ -169,14 +176,16 @@ const createStyles = (theme: AppTheme) =>
       borderColor: theme.colors.outline + '20',
       ...getPrimaryShadow.small(theme),
     },
-    featureIcon: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: theme.colors.primary + '15',
+    featureIconContainer: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: theme.colors.primaryContainer + '40',
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: theme.spacing.lg,
+      borderWidth: 2,
+      borderColor: theme.colors.primaryContainer + '60',
     },
     featureContent: {
       flex: 1,

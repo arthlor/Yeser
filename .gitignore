@@ -179,6 +179,9 @@ eslint-report.json
 firebase-debug.log
 firestore-debug.log
 
+# Firebase config backup
+.firebase-backup/
+
 # Development database files
 *.sqlite
 *.sqlite3

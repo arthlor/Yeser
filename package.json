@@ -26,14 +26,17 @@
     "fix:eslint": "eslint src/ --fix",
     "lint:fix": "eslint src/ --fix",
     "lint:check": "eslint src/ --max-warnings=56",
-    "quality:report": "eslint src/ --format=json > lint-report.json && echo 'Quality report generated: lint-report.json'"
+    "quality:report": "eslint src/ --format=json > lint-report.json && echo 'Quality report generated: lint-report.json'",
+    "firebase:backup": "node scripts/preserve-firebase-config.cjs backup",
+    "firebase:restore": "node scripts/preserve-firebase-config.cjs restore",
+    "android:safe": "npm run firebase:backup && expo run:android && npm run firebase:restore"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/datetimepicker": "8.3.0",
     "@react-native-community/netinfo": "^11.4.1",
-    "@react-native-firebase/analytics": "^22.2.0",
-    "@react-native-firebase/app": "^22.2.0",
+    "@react-native-firebase/analytics": "^22.2.1",
+    "@react-native-firebase/app": "^22.2.1",
     "@react-native-google-signin/google-signin": "^14.0.1",
     "@react-native-picker/picker": "^2.11.0",
     "@react-navigation/bottom-tabs": "^7.3.14",
@@ -55,6 +58,7 @@
     "expo-notifications": "~0.31.3",
     "expo-print": "~14.1.4",
     "expo-sharing": "~13.1.5",
+    "expo-splash-screen": "~0.30.9",
     "expo-status-bar": "~2.2.3",
     "expo-system-ui": "~5.0.8",
     "expo-updates": "~0.28.14",
@@ -82,8 +86,7 @@
     "toggle-switch-react-native": "^3.3.0",
     "url-lite": "^1.0.2",
     "zod": "^3.25.48",
-    "zustand": "^5.0.5",
-    "expo-splash-screen": "~0.30.9"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

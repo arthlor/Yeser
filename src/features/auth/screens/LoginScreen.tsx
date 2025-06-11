@@ -213,7 +213,6 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       email: validationResult.data.email,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: 'yeserapp://auth/confirm',
       },
     });
   }, [email, canSendMagicLink, loginWithMagicLink, showWarning, showError]);

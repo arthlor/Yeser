@@ -22,8 +22,10 @@ import EnhancedSplashScreen from './features/auth/screens/SplashScreen';
 import { analyticsService } from './services/analyticsService';
 import { notificationService } from './services/notificationService';
 import useAuthStore from './store/authStore';
+import { useUserProfile } from './shared/hooks/useUserProfile';
 import { logger } from '@/utils/debugConfig';
 import { initializeGlobalErrorMonitoring } from '@/utils/errorTranslation';
+import { debugMagicLinks } from '@/utils/debugMagicLinks';
 import { RootStackParamList } from './types/navigation';
 import { AppProviders } from './providers/AppProviders';
 import SplashOverlayProvider from './providers/SplashOverlayProvider';
@@ -46,18 +48,24 @@ const getActiveRouteName = (state: NavigationState | undefined): string | undefi
 };
 
 // Helper function to handle deep links
-const handleDeepLink = (
-  url: string,
-  confirmMagicLink: (tokenHash: string, type?: string) => Promise<void>
-) => {
+const handleDeepLink = async (url: string) => {
   try {
     logger.debug('Deep link received:', { url });
+
+    // Debug the deep link for troubleshooting
+    const debugResult = debugMagicLinks.testDeepLink(url);
+    logger.debug('Deep link debug result:', debugResult);
 
     // Parse the URL
     const parsedUrl = new URL(url);
 
-    // Check if it's a magic link confirmation
-    if (parsedUrl.pathname === '/auth/confirm' || parsedUrl.pathname === '/confirm') {
+    // Check if it's a magic link confirmation - FIXED to match actual Supabase redirect URL
+    if (
+      parsedUrl.pathname === '/auth/callback' ||
+      parsedUrl.pathname === '/auth/confirm' ||
+      parsedUrl.pathname === '/confirm' ||
+      parsedUrl.pathname === '/callback'
+    ) {
       logger.debug('Magic link path detected');
 
       // Extract tokens from URL fragment or query parameters
@@ -72,9 +80,15 @@ const handleDeepLink = (
       if (accessToken && refreshToken) {
         // Handle OAuth-style magic links
         logger.debug('OAuth tokens found, setting session...');
-        const setSessionFromTokens = useAuthStore.getState().setSessionFromTokens;
-        setSessionFromTokens(accessToken, refreshToken);
-        analyticsService.logEvent('magic_link_oauth_tokens');
+        try {
+          const setSessionFromTokens = useAuthStore.getState().setSessionFromTokens;
+          await setSessionFromTokens(accessToken, refreshToken);
+          logger.debug('OAuth token authentication completed successfully');
+          analyticsService.logEvent('magic_link_oauth_tokens');
+        } catch (error) {
+          logger.error('OAuth token authentication failed:', { error: (error as Error).message });
+          analyticsService.logEvent('magic_link_oauth_error', { error: (error as Error).message });
+        }
       } else {
         // Handle OTP-style tokens (fallback for traditional magic links)
         const tokenHash =
@@ -86,8 +100,18 @@ const handleDeepLink = (
 
         if (tokenHash) {
           logger.debug('OTP token found, confirming magic link...');
-          confirmMagicLink(tokenHash, type);
-          analyticsService.logEvent('magic_link_clicked', { type });
+          try {
+            // 🚨 FIX: Use direct state access for consistency with setSessionFromTokens
+            const confirmMagicLink = useAuthStore.getState().confirmMagicLink;
+            await confirmMagicLink(tokenHash, type);
+            logger.debug('OTP magic link authentication completed successfully');
+            analyticsService.logEvent('magic_link_clicked', { type });
+          } catch (error) {
+            logger.error('OTP magic link authentication failed:', {
+              error: (error as Error).message,
+            });
+            analyticsService.logEvent('magic_link_otp_error', { error: (error as Error).message });
+          }
         } else {
           logger.error('No valid tokens found in magic link URL');
           analyticsService.logEvent('magic_link_invalid');
@@ -102,8 +126,27 @@ const handleDeepLink = (
   }
 };
 
+// CRITICAL FIX: Include environment-specific URL schemes
+const getUrlPrefixes = (): string[] => {
+  const env = process.env.EXPO_PUBLIC_ENV || 'development';
+  const baseSchemes = [Linking.createURL('/')];
+
+  if (env === 'development') {
+    baseSchemes.push('yeser-dev://');
+  } else if (env === 'preview') {
+    baseSchemes.push('yeser-preview://');
+  } else {
+    baseSchemes.push('yeser://');
+  }
+
+  // Also include other common schemes for fallback
+  baseSchemes.push('yeser://', 'yeser-dev://', 'yeser-preview://');
+
+  return baseSchemes;
+};
+
 const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: [Linking.createURL('/'), 'yeserapp://'],
+  prefixes: getUrlPrefixes(),
   config: {
     screens: {
       Auth: {
@@ -135,9 +178,13 @@ const linking: LinkingOptions<RootStackParamList> = {
 
 const AppContent: React.FC = () => {
   const { theme, colorMode } = useTheme();
-  const confirmMagicLink = useAuthStore((state) => state.confirmMagicLink);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { profile } = useUserProfile();
   const routeNameRef = React.useRef<string | undefined>(undefined);
   const navigationRef = React.useRef<NavigationContainerRef<RootStackParamList> | null>(null);
+
+  // Check if user is fully ready for MainApp navigation
+  const isMainAppReady = isAuthenticated && profile?.onboarded;
 
   React.useEffect(() => {
     void analyticsService.logAppOpen();
@@ -174,12 +221,27 @@ const AppContent: React.FC = () => {
         });
 
         // Navigate to New Entry screen (DailyEntryTab) with today's date
-        navigationRef.current?.navigate('MainApp', {
-          screen: 'DailyEntryTab',
-          params: {
-            initialDate: new Date().toISOString().split('T')[0], // Always today for daily reminders
-          },
-        });
+        // Add delay to ensure navigator is ready AND check authentication
+        setTimeout(() => {
+          if (navigationRef.current?.isReady() && isMainAppReady) {
+            navigationRef.current?.navigate('MainApp', {
+              screen: 'DailyEntryTab',
+              params: {
+                initialDate: new Date().toISOString().split('T')[0], // Always today for daily reminders
+              },
+            });
+          } else {
+            logger.warn(
+              'Cannot navigate to MainApp: navigator not ready or user not authenticated/onboarded',
+              {
+                isReady: navigationRef.current?.isReady(),
+                isMainAppReady,
+                isAuthenticated,
+                onboarded: profile?.onboarded,
+              }
+            );
+          }
+        }, 100);
 
         // Track successful navigation
         analyticsService.logEvent('daily_reminder_navigation_success', {
@@ -200,9 +262,13 @@ const AppContent: React.FC = () => {
 
         if (typeof notificationData?.entryId === 'string' && notificationData.entryId) {
           // Navigate to specific entry detail if entryId is provided
-          navigationRef.current?.navigate('EntryDetail', {
-            entryId: notificationData.entryId,
-          });
+          setTimeout(() => {
+            if (navigationRef.current?.isReady()) {
+              navigationRef.current?.navigate('EntryDetail', {
+                entryId: notificationData.entryId as string,
+              });
+            }
+          }, 100);
 
           analyticsService.logEvent('throwback_entry_navigation_success', {
             target_screen: 'EntryDetail',
@@ -210,9 +276,23 @@ const AppContent: React.FC = () => {
           });
         } else {
           // Navigate to past entries list
-          navigationRef.current?.navigate('MainApp', {
-            screen: 'PastEntriesTab',
-          });
+          setTimeout(() => {
+            if (navigationRef.current?.isReady() && isMainAppReady) {
+              navigationRef.current?.navigate('MainApp', {
+                screen: 'PastEntriesTab',
+              });
+            } else {
+              logger.warn(
+                'Cannot navigate to MainApp: navigator not ready or user not authenticated/onboarded',
+                {
+                  isReady: navigationRef.current?.isReady(),
+                  isMainAppReady,
+                  isAuthenticated,
+                  onboarded: profile?.onboarded,
+                }
+              );
+            }
+          }, 100);
 
           analyticsService.logEvent('throwback_list_navigation_success', {
             target_screen: 'PastEntriesTab',
@@ -229,22 +309,37 @@ const AppContent: React.FC = () => {
           data: notificationData,
         });
 
-        // Default fallback - navigate to home
-        navigationRef.current?.navigate('MainApp', {
-          screen: 'HomeTab',
-        });
+        // Default fallback - navigate to home (only if user is ready)
+        setTimeout(() => {
+          if (navigationRef.current?.isReady() && isMainAppReady) {
+            navigationRef.current?.navigate('MainApp', {
+              screen: 'HomeTab',
+            });
+          } else {
+            logger.warn(
+              'Cannot navigate to MainApp: navigator not ready or user not authenticated/onboarded',
+              {
+                isReady: navigationRef.current?.isReady(),
+                isMainAppReady,
+                isAuthenticated,
+                onboarded: profile?.onboarded,
+              }
+            );
+            // Don't attempt navigation if user isn't ready - they'll be guided through auth/onboarding flow
+          }
+        }, 100);
       }
     });
 
     // Handle deep links when app is already running
     const linkingSubscription = Linking.addEventListener('url', (event) => {
-      handleDeepLink(event.url, confirmMagicLink);
+      void handleDeepLink(event.url);
     });
 
     // Handle deep links when app is opened from a closed state
     Linking.getInitialURL().then((url) => {
       if (url) {
-        handleDeepLink(url, confirmMagicLink);
+        void handleDeepLink(url);
       }
     });
 
@@ -252,7 +347,7 @@ const AppContent: React.FC = () => {
       subscription.remove();
       linkingSubscription.remove();
     };
-  }, [confirmMagicLink]);
+  }, [isMainAppReady, isAuthenticated, profile?.onboarded]);
 
   const navigationTheme = React.useMemo(
     () => ({

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { getBuildNumber, getVersion } from 'react-native-device-info';
+import { getVersion } from 'react-native-device-info';
 
 import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
 
@@ -411,9 +411,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         {/* Footer Section */}
         <View style={styles.footerSection}>
           <View style={styles.footer}>
-            <Text style={styles.versionText}>
-              Yeşer v{getVersion()} ({getBuildNumber()})
-            </Text>
+            <Text style={styles.versionText}>Yeşer v{getVersion()}</Text>
           </View>
         </View>
       </ScreenContent>

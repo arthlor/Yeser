@@ -151,13 +151,13 @@ export const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = React.memo(
         <TouchableOpacity
           style={styles.dotsButton}
           onPress={toggleMenu}
-          activeOpacity={0.6}
+          activeOpacity={0.7}
           accessibilityLabel="Seçenekler menüsü"
           accessibilityRole="button"
           accessibilityHint="Düzenleme ve silme seçeneklerini görmek için dokunun"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Icon name="dots-vertical" size={18} color={theme.colors.onSurfaceVariant} />
+          <Icon name="dots-vertical" size={20} color={theme.colors.onSurfaceVariant + 'CC'} />
         </TouchableOpacity>
 
         {/* 🎯 ROBUST DROPDOWN MENU - Enhanced animations and positioning */}
@@ -246,13 +246,15 @@ const createRobustMenuStyles = (theme: AppTheme) => {
     } as ViewStyle,
 
     dotsButton: {
-      width: 36, // Reduced from 44px for more compact design
+      width: 36, // Compact but adequate size
       height: 36,
       borderRadius: theme.borderRadius.md,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: alpha(theme.colors.onSurfaceVariant, 0.06), // Reduced opacity for subtlety
-      // Enhanced visual design with smaller shadows
+      backgroundColor: alpha(theme.colors.onSurfaceVariant, 0.06),
+      borderWidth: 1,
+      borderColor: alpha(theme.colors.outline, 0.12),
+      // Enhanced visual design with better shadows
       shadowColor: theme.colors.shadow,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.08,
@@ -262,23 +264,25 @@ const createRobustMenuStyles = (theme: AppTheme) => {
 
     menu: {
       position: 'absolute',
-      top: 40, // Adjusted for smaller button (36px + 4px gap)
-      right: 0,
+      top: 40, // Positioned below button with small gap
+      right: -8, // Slight offset to prevent edge cutoff
       backgroundColor: getSurfaceColor(theme, 'elevated'),
       borderRadius: theme.borderRadius.md,
       paddingHorizontal: spacing.elementGap,
       paddingVertical: spacing.elementGap / 2,
-      maxWidth: 100, // Smaller width for icon-only layout
-      zIndex: 99999, // Match container z-index for consistency
+      minWidth: 100,
+      zIndex: 99999,
       // Enhanced shadows for better depth
       shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.16,
-      shadowRadius: 12,
-      elevation: 8,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 6,
       // Better border definition
       borderWidth: 1,
       borderColor: getBorderColor(theme, 'light'),
+      // Ensure menu doesn't get clipped
+      overflow: 'visible',
     } as ViewStyle,
 
     menuItemsContainer: {

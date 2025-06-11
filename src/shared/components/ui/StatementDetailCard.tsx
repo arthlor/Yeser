@@ -220,9 +220,22 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
 
     const interactiveStyles = getInteractiveStyles();
 
-    // Enhanced sequence indicator - REMOVED per user request
+    // Enhanced sequence indicator - BEAUTIFUL modern design
     const renderSequenceIndicator = () => {
-      return null;
+      if (!_showSequence) {
+        return null;
+      }
+
+      const sequenceNumber = (_index ?? 0) + 1;
+
+      return (
+        <View style={styles.sequenceContainer}>
+          <View style={styles.sequenceBadge}>
+            <Text style={styles.sequenceText}>{sequenceNumber}</Text>
+          </View>
+          <View style={styles.sequenceConnector} />
+        </View>
+      );
     };
 
     // Enhanced editing action buttons - MINIMAL DESIGN
@@ -270,10 +283,12 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
         edgeToEdge={edgeToEdge}
       >
         <View style={variantStyles.content}>
-          {/* Enhanced header with sequence and three dots menu */}
-          <View style={styles.headerSection}>
-            {renderSequenceIndicator()}
+          {/* 🎯 ENHANCED CARD HEADER: Better visual hierarchy with proper overflow handling */}
+          <View style={styles.cardHeader}>
+            {/* Left side: Sequence indicator (if enabled) */}
+            <View style={styles.headerLeft}>{renderSequenceIndicator()}</View>
 
+            {/* Right side: Three dots menu - Made more prominent */}
             <View style={styles.headerRight}>
               <ThreeDotsMenu
                 onEdit={onEdit}
@@ -284,10 +299,10 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
             </View>
           </View>
 
-          {/* Enhanced statement content */}
-          <View style={styles.statementContainer}>
+          {/* 🎨 ENHANCED STATEMENT CONTENT: Better spacing and typography with quotes */}
+          <View style={styles.statementSection}>
             {isEditing && enableInlineEdit ? (
-              <>
+              <View style={styles.editingContainer}>
                 <TextInput
                   style={[variantStyles.statement, styles.statementInput]}
                   value={localStatement}
@@ -308,43 +323,74 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
                     <Text style={styles.warningText}>Yakında limit</Text>
                   )}
                 </View>
-              </>
+              </View>
             ) : (
-              <Text style={variantStyles.statement} numberOfLines={numberOfLines}>
-                {localStatement}
-              </Text>
+              <View style={styles.readingContainer}>
+                {_showQuotes && (
+                  <View style={styles.quoteContainer}>
+                    <Icon
+                      name="format-quote-open"
+                      size={18}
+                      color={theme.colors.primary + '60'}
+                      style={styles.openQuote}
+                    />
+                    <Text
+                      style={[variantStyles.statement, styles.quotedText]}
+                      numberOfLines={numberOfLines}
+                    >
+                      {localStatement}
+                    </Text>
+                    <Icon
+                      name="format-quote-close"
+                      size={18}
+                      color={theme.colors.primary + '60'}
+                      style={styles.closeQuote}
+                    />
+                  </View>
+                )}
+                {!_showQuotes && (
+                  <Text
+                    style={[variantStyles.statement, styles.plainText]}
+                    numberOfLines={numberOfLines}
+                  >
+                    {localStatement}
+                  </Text>
+                )}
+              </View>
             )}
           </View>
 
-          {/* Enhanced meta information */}
+          {/* 🕒 COMPACT META INFORMATION: Clean and minimal presentation */}
           {!isEditing && date && (
-            <View style={styles.metaContainer}>
-              <View style={styles.metaLeft}>
+            <View style={styles.metaSection}>
+              <View style={styles.metaContent}>
                 {isRecent && (
                   <View style={styles.recentBadge}>
                     <Text style={styles.recentBadgeText}>YENİ</Text>
                   </View>
                 )}
-              </View>
-              <View style={styles.metaRight}>
-                <Icon
-                  name={isRecent ? 'clock-outline' : 'calendar'}
-                  size={12}
-                  color={theme.colors.onSurfaceVariant + (isRecent ? '90' : '70')}
-                />
-                <Text style={[styles.dateText, isRecent && styles.recentDate]}>{relativeTime}</Text>
+                <View style={styles.dateContainer}>
+                  <Icon
+                    name={isRecent ? 'clock-outline' : 'calendar'}
+                    size={12}
+                    color={theme.colors.onSurfaceVariant + (isRecent ? '90' : '70')}
+                  />
+                  <Text style={[styles.dateText, isRecent && styles.recentDate]}>
+                    {relativeTime}
+                  </Text>
+                </View>
               </View>
             </View>
           )}
 
-          {/* Enhanced loading indicator */}
+          {/* 🔄 ENHANCED LOADING INDICATOR */}
           {isLoading && (
-            <View style={styles.loadingIndicator}>
+            <View style={styles.loadingSection}>
               <View style={styles.loadingDot} />
             </View>
           )}
 
-          {/* Enhanced editing actions */}
+          {/* ⚡ ENHANCED EDITING ACTIONS */}
           {renderEditingActions()}
         </View>
       </StatementCardWrapper>
@@ -430,94 +476,115 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       textAlign: 'left',
     },
 
-    // Elegant Variant - Enhanced refined presentation
+    // Elegant Variant - COMPACT and minimalist with polished aesthetics
     elegantContainer: {
       ...sharedStyles.getContainerStyle('minimal'),
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
-      borderColor: theme.colors.outline + '25',
-      borderLeftWidth: sharedStyles.layout.isCompact ? 3 : 4,
-      borderLeftColor: theme.colors.primary + '50',
+      borderColor: theme.colors.outline + '20',
+      borderLeftWidth: 3,
+      borderLeftColor: theme.colors.primary,
       borderRadius: theme.borderRadius.md,
       marginHorizontal: 0,
       marginBottom: theme.spacing.sm,
       overflow: 'visible', // CRITICAL: Allow menu to overflow
+      // Subtle shadow for depth
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      elevation: 2,
     } as ViewStyle,
 
     elegantContent: {
-      paddingHorizontal: sharedStyles.layout.getAdaptivePadding('lg'),
-      paddingVertical: sharedStyles.layout.getAdaptivePadding('md'),
+      paddingHorizontal: sharedStyles.layout.getAdaptivePadding('md'),
+      paddingVertical: sharedStyles.layout.getAdaptivePadding('sm'),
       overflow: 'visible', // CRITICAL: Allow menu to overflow
+      position: 'relative',
     } as ViewStyle,
 
     elegantStatement: {
-      ...sharedStyles.typography.statement.secondary,
-      fontSize: sharedStyles.layout.isCompact ? 16 : 17,
-      color: sharedStyles.colors.primary,
-      fontStyle: 'italic',
+      ...sharedStyles.typography.statement.primary,
+      fontSize: sharedStyles.layout.isCompact ? 17 : 18,
+      fontWeight: '500',
+      color: theme.colors.onSurface,
+      fontStyle: 'normal',
       textAlign: 'left',
+      lineHeight: sharedStyles.layout.isCompact ? 26 : 28,
       marginBottom: sharedStyles.spacing.elementGap,
+      letterSpacing: 0.3,
+      fontFamily: 'Lora-Medium',
+      // Enhanced text attractiveness
+      textShadowColor: theme.colors.shadow + '08',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
     },
 
-    // Enhanced Header Section
-    headerSection: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: sharedStyles.spacing.elementGap,
-      minHeight: 48, // Ensure adequate space for menu button
-      overflow: 'visible', // Allow menu to overflow
-      zIndex: 100, // Ensure proper stacking
-    } as ViewStyle,
+    // Old header styles removed - using enhanced cardHeader below
 
-    headerRight: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      overflow: 'visible', // Allow menu to overflow
-      zIndex: 100, // Ensure proper stacking
-    } as ViewStyle,
-
-    // Enhanced Sequence Indicator
+    // Enhanced Sequence Indicator - COMPACT and minimalist design
     sequenceContainer: {
       flexDirection: 'row',
       alignItems: 'center',
+      marginRight: sharedStyles.spacing.elementGap,
     } as ViewStyle,
 
     sequenceBadge: {
       width: 24,
       height: 24,
       borderRadius: 12,
-      backgroundColor: theme.colors.primaryContainer,
+      backgroundColor: theme.colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
-      ...sharedStyles.shadows.subtle,
+      // Minimal shadow
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 1,
     } as ViewStyle,
 
     sequenceText: {
-      fontFamily: 'Lora-Bold',
-      fontSize: 11,
-      fontWeight: '800',
-      color: theme.colors.onPrimaryContainer,
+      fontFamily: 'Lora-SemiBold',
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.colors.onPrimary,
+      letterSpacing: 0.2,
     },
 
-    // Enhanced Statement Container
-    statementContainer: {
+    // 💭 COMPACT STATEMENT SECTION: Clean content area
+    statementSection: {
       flex: 1,
-      paddingTop: sharedStyles.spacing.elementGap,
+      marginBottom: 0,
+    } as ViewStyle,
+
+    // 📝 COMPACT EDITING: Clean input design
+    editingContainer: {
+      flex: 1,
     } as ViewStyle,
 
     statementInput: {
-      color: sharedStyles.colors.primary,
-      minHeight: sharedStyles.layout.isCompact ? 100 : 110,
       borderWidth: 1,
       borderColor: theme.colors.outline + '40',
-      borderRadius: theme.borderRadius.lg,
-      padding: sharedStyles.layout.getAdaptivePadding('md'),
+      borderRadius: theme.borderRadius.sm,
+      padding: sharedStyles.spacing.elementGap,
+      minHeight: 60,
+      maxHeight: 120,
       backgroundColor: theme.colors.surface,
-      fontFamily: 'Lora-Regular',
-      fontSize: sharedStyles.layout.isCompact ? 16 : 17,
-      lineHeight: sharedStyles.layout.isCompact ? 24 : 26,
-      ...sharedStyles.shadows.subtle,
+      // Simple shadow
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    } as ViewStyle,
+
+    characterCounter: {
+      alignSelf: 'flex-end',
+      marginTop: sharedStyles.spacing.elementGap / 2,
+      fontSize: 12,
+      color: theme.colors.onSurfaceVariant,
+      opacity: 0.6,
     },
 
     inputFooter: {
@@ -538,28 +605,7 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       fontWeight: '600',
     },
 
-    // Enhanced Meta Container
-    metaContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginTop: sharedStyles.spacing.elementGap,
-      paddingTop: sharedStyles.spacing.elementGap,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline + '15',
-    } as ViewStyle,
-
-    metaLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: sharedStyles.spacing.elementGap,
-    } as ViewStyle,
-
-    metaRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: sharedStyles.spacing.elementGap / 2,
-    } as ViewStyle,
+    // Old meta container styles removed - using enhanced metaSection below
 
     metaText: {
       ...sharedStyles.typography.metadata.primary,
@@ -593,13 +639,7 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       letterSpacing: 0.5,
     },
 
-    // Enhanced Loading Indicator
-    loadingIndicator: {
-      position: 'absolute',
-      top: sharedStyles.spacing.contentGap,
-      right: sharedStyles.spacing.contentGap,
-      zIndex: 2,
-    } as ViewStyle,
+    // Old loading indicator removed - using enhanced loadingSection below
 
     loadingDot: {
       width: 10,
@@ -647,6 +687,139 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       fontWeight: '600',
       letterSpacing: 0.2,
     },
+
+    // 🎯 ENHANCED CARD HEADER: Better visual hierarchy with proper overflow handling
+    cardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: sharedStyles.spacing.elementGap,
+      minHeight: 44, // Adequate space for menu button
+      overflow: 'visible', // CRITICAL: Allow menu to overflow
+      zIndex: 100,
+      position: 'relative',
+      paddingRight: 4, // Extra padding for menu button
+    } as ViewStyle,
+
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      flex: 1,
+      overflow: 'visible',
+      zIndex: 100,
+    } as ViewStyle,
+
+    headerRight: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      overflow: 'visible', // CRITICAL: Allow menu to overflow
+      zIndex: 100,
+      position: 'relative',
+      minWidth: 44, // Ensure adequate space
+      justifyContent: 'flex-end',
+    } as ViewStyle,
+
+    // 🎨 ENHANCED STATEMENT CONTENT: Better spacing and typography
+    readingContainer: {
+      flex: 1,
+      paddingTop: sharedStyles.spacing.elementGap,
+    } as ViewStyle,
+
+    // 🕒 COMPACT META INFORMATION: Clean and minimal presentation
+    metaSection: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: sharedStyles.spacing.elementGap,
+      paddingTop: sharedStyles.spacing.elementGap / 2,
+      paddingHorizontal: 0,
+      backgroundColor: theme.colors.surface + '00', // Transparent using theme
+      borderRadius: 0,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.outline + '15',
+    } as ViewStyle,
+
+    metaContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: sharedStyles.spacing.elementGap / 2,
+    } as ViewStyle,
+
+    dateContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: sharedStyles.spacing.elementGap,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: sharedStyles.spacing.contentGap,
+      paddingVertical: sharedStyles.spacing.elementGap / 2,
+      borderRadius: theme.borderRadius.xs,
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '10',
+    } as ViewStyle,
+
+    // 🔄 ENHANCED LOADING INDICATOR
+    loadingSection: {
+      position: 'absolute',
+      top: sharedStyles.spacing.contentGap,
+      right: sharedStyles.spacing.contentGap,
+      zIndex: 2,
+    } as ViewStyle,
+
+    // Enhanced quote container styles - COMPACT and clean design
+    quoteContainer: {
+      position: 'relative',
+      paddingHorizontal: sharedStyles.spacing.elementGap,
+      paddingVertical: sharedStyles.spacing.elementGap / 2,
+      backgroundColor: theme.colors.surface + '00', // Transparent using theme
+      borderRadius: 0,
+      marginVertical: 0,
+    } as ViewStyle,
+
+    openQuote: {
+      position: 'absolute',
+      top: -2,
+      left: -2,
+      zIndex: 1,
+      opacity: 0.5,
+    } as ViewStyle,
+
+    closeQuote: {
+      position: 'absolute',
+      bottom: -2,
+      right: -2,
+      zIndex: 1,
+      opacity: 0.5,
+    } as ViewStyle,
+
+    // Enhanced text styles for better attractiveness
+    quotedText: {
+      fontStyle: 'italic',
+      color: theme.colors.onSurface,
+      fontSize: sharedStyles.layout.isCompact ? 17 : 18,
+      fontWeight: '500',
+      lineHeight: sharedStyles.layout.isCompact ? 26 : 28,
+      letterSpacing: 0.4,
+      fontFamily: 'Lora-MediumItalic',
+      textAlign: 'left',
+      paddingHorizontal: 12,
+    },
+
+    plainText: {
+      color: theme.colors.onSurface,
+      fontSize: sharedStyles.layout.isCompact ? 17 : 18,
+      fontWeight: '500',
+      lineHeight: sharedStyles.layout.isCompact ? 26 : 28,
+      letterSpacing: 0.3,
+      fontFamily: 'Lora-Medium',
+      textAlign: 'left',
+    },
+
+    // New sequence connector style
+    sequenceConnector: {
+      flex: 1,
+      height: 1,
+      backgroundColor: theme.colors.outline + '20',
+    } as ViewStyle,
   });
 
 StatementDetailCard.displayName = 'StatementDetailCard';

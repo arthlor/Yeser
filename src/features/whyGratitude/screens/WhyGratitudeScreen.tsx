@@ -15,6 +15,7 @@ import { useStreakData } from '@/features/streak/hooks/useStreakData';
 import { BenefitCard } from '../components/BenefitCard';
 import ErrorBoundary from '@/shared/components/layout/ErrorBoundary';
 import { analyticsService } from '@/services/analyticsService';
+import { logger } from '@/utils/debugConfig';
 import type { AppTheme } from '@/themes/types';
 import type { RootStackParamList } from '@/types/navigation';
 
@@ -82,10 +83,21 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
         user_id: profile?.id || 'anonymous',
       });
 
-      navigation.navigate('MainApp', {
-        screen: 'DailyEntryTab',
-        params: { initialPrompt: prompt || undefined },
-      });
+      // Add safety guard for navigation
+      setTimeout(() => {
+        try {
+          navigation.navigate('MainApp', {
+            screen: 'DailyEntryTab',
+            params: { initialPrompt: prompt || undefined },
+          });
+        } catch (error) {
+          logger.warn('Navigation failed in WhyGratitudeScreen:', { error });
+          // Fallback: just navigate to the tab without params
+          navigation.navigate('MainApp', {
+            screen: 'DailyEntryTab',
+          });
+        }
+      }, 100);
 
       // 🚀 TOAST INTEGRATION: Use centralized toast system instead of custom Snackbar
       if (prompt) {

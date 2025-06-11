@@ -81,7 +81,7 @@ const EnhancedEntryDetailScreen: React.FC<{
   } = useGratitudeEntry(entryDate);
 
   // Mutation hooks for editing operations only (delete removed for past entries)
-  const { editStatement, isEditingStatement, editStatementError } = useGratitudeMutations();
+  const { editStatement, editStatementError } = useGratitudeMutations();
 
   // Local state for editing
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
@@ -123,7 +123,7 @@ const EnhancedEntryDetailScreen: React.FC<{
   // Enhanced date formatting with relative time
   const formatEntryDate = () => {
     if (!entryDate) {
-      return { formattedDate: 'Tarih bilgisi yok', relativeTime: '' };
+      return { formattedDate: 'Tarih bilgisi yok', relativeTime: '', isToday: false };
     }
 
     const entryDateObj = new Date(entryDate);
@@ -139,7 +139,9 @@ const EnhancedEntryDetailScreen: React.FC<{
     });
 
     let relativeTime = '';
-    if (diffDays === 0) {
+    const isToday = diffDays === 0;
+
+    if (isToday) {
       relativeTime = 'Bugün';
     } else if (diffDays === 1) {
       relativeTime = 'Dün';
@@ -153,10 +155,10 @@ const EnhancedEntryDetailScreen: React.FC<{
       relativeTime = `${months} ay önce`;
     }
 
-    return { formattedDate, relativeTime };
+    return { formattedDate, relativeTime, isToday };
   };
 
-  const { formattedDate, relativeTime } = formatEntryDate();
+  const { formattedDate, relativeTime, isToday } = formatEntryDate();
 
   // 🎯 TOAST INTEGRATION: Handle mutations errors with toast notifications
   useEffect(() => {
@@ -322,7 +324,7 @@ const EnhancedEntryDetailScreen: React.FC<{
         />
       }
     >
-      {/* 🎯 ENHANCED HERO ZONE: Edge-to-Edge Header */}
+      {/* 🎯 ENHANCED HERO ZONE: More aesthetic header design */}
       <Animated.View
         style={[
           styles.heroZone,
@@ -354,9 +356,9 @@ const EnhancedEntryDetailScreen: React.FC<{
                   <Text style={styles.dateText}>{formattedDate}</Text>
                   <View style={styles.relativeDateContainer}>
                     <MaterialCommunityIcons
-                      name="clock-outline"
-                      size={14}
-                      color={theme.colors.onSurfaceVariant}
+                      name="calendar-heart"
+                      size={16}
+                      color={theme.colors.primary}
                     />
                     <Text style={styles.relativeDateText}>{relativeTime}</Text>
                   </View>
@@ -365,20 +367,33 @@ const EnhancedEntryDetailScreen: React.FC<{
 
               <View style={styles.statsSection}>
                 <View style={styles.countBadge}>
-                  <MaterialCommunityIcons name="heart" size={16} color={theme.colors.primary} />
+                  <MaterialCommunityIcons
+                    name="cards-heart"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
                   <Text style={styles.countText}>{gratitudeItems.length}</Text>
                 </View>
-                <Text style={styles.countLabel}>minnet kaydı</Text>
+                <Text style={styles.countLabel}>minnet</Text>
               </View>
             </View>
 
             {gratitudeItems.length > 0 && (
               <View style={styles.progressSection}>
                 <View style={styles.progressHeader}>
+                  <MaterialCommunityIcons
+                    name={gratitudeItems.length >= 3 ? 'trophy' : 'target'}
+                    size={16}
+                    color={gratitudeItems.length >= 3 ? theme.colors.success : theme.colors.primary}
+                  />
                   <Text style={styles.progressTitle}>
                     {gratitudeItems.length >= 3
-                      ? '🎉 O gün hedef tamamlanmıştı!'
-                      : `Hedefe ${3 - gratitudeItems.length} kaldı`}
+                      ? isToday
+                        ? '🎉 Bugün hedef tamamlandı!'
+                        : '🎉 O gün hedef tamamlanmıştı!'
+                      : isToday
+                        ? `Hedefe ${3 - gratitudeItems.length} kaldı`
+                        : `O gün hedefe ${3 - gratitudeItems.length} kalmıştı`}
                   </Text>
                 </View>
                 <View style={styles.progressLineContainer}>
@@ -400,7 +415,7 @@ const EnhancedEntryDetailScreen: React.FC<{
                     <View style={styles.goalCompleteIndicator}>
                       <MaterialCommunityIcons
                         name="check-circle"
-                        size={16}
+                        size={18}
                         color={theme.colors.success}
                       />
                     </View>
@@ -412,7 +427,7 @@ const EnhancedEntryDetailScreen: React.FC<{
         </ThemedCard>
       </Animated.View>
 
-      {/* 🎯 ENHANCED CONTENT ZONE: Edge-to-Edge Statements Display */}
+      {/* 🎯 ENHANCED CONTENT ZONE: More aesthetic statements display */}
       {gratitudeItems.length > 0 ? (
         <View style={styles.contentZone}>
           <ThemedCard
@@ -423,12 +438,16 @@ const EnhancedEntryDetailScreen: React.FC<{
           >
             <View style={styles.statementsHeader}>
               <View style={styles.statementsHeaderLeft}>
-                <MaterialCommunityIcons
-                  name="format-list-bulleted"
-                  size={20}
-                  color={theme.colors.onSurface}
-                />
-                <Text style={styles.statementsTitle}>O günkü minnetleriniz</Text>
+                <View style={styles.statementsIconContainer}>
+                  <MaterialCommunityIcons
+                    name="heart-multiple"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text style={styles.statementsTitle}>
+                  {isToday ? 'Bugünkü minnetleriniz' : 'O günkü minnetleriniz'}
+                </Text>
               </View>
               <View style={styles.statementsCounter}>
                 <Text style={styles.statementsCountText}>{gratitudeItems.length}</Text>
@@ -447,36 +466,34 @@ const EnhancedEntryDetailScreen: React.FC<{
                         {
                           translateY: animations.fadeAnim.interpolate({
                             inputRange: [0, 1],
-                            outputRange: [20 + index * 5, 0],
-                          }),
-                        },
-                        {
-                          scale: animations.fadeAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.95, 1],
+                            outputRange: [20, 0],
                           }),
                         },
                       ],
                     },
                   ]}
                 >
-                  {/* 🚀 ENHANCED StatementDetailCard - Perfect for Entry Detail Reading */}
                   <StatementDetailCard
                     statement={item}
-                    variant="detailed" // Enhanced readability for entry details
-                    index={index} // Sequence indicators for better reading flow
+                    date={entryDate}
+                    index={index}
                     totalCount={gratitudeItems.length}
+                    variant="elegant"
+                    showQuotes={true}
+                    showSequence={true}
+                    numberOfLines={undefined}
+                    animateEntrance={animationsReady}
                     isEditing={editingStatementIndex === index}
-                    isLoading={isEditingStatement}
                     onEdit={() => handleEditStatement(index)}
+                    onSave={(newStatement: string) =>
+                      handleSaveEditedStatement(index, newStatement)
+                    }
                     onCancel={handleCancelEditingStatement}
-                    onSave={(updatedText: string) => handleSaveEditedStatement(index, updatedText)}
-                    // Enhanced detail configuration
                     enableInlineEdit={true}
-                    confirmDelete={true}
+                    confirmDelete={false}
                     maxLength={500}
-                    // Accessibility
-                    accessibilityLabel={`Minnet: ${item}`}
+                    edgeToEdge={true}
+                    style={styles.enhancedStatementCard}
                   />
                 </Animated.View>
               ))}
@@ -598,13 +615,18 @@ const createStyles = (theme: AppTheme) =>
       paddingTop: theme.spacing.md,
     },
     progressHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
       marginBottom: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.xs,
     },
     progressTitle: {
-      ...theme.typography.titleSmall,
+      ...theme.typography.bodyMedium,
       color: theme.colors.onSurface,
       fontWeight: '600',
-      textAlign: 'center',
+      letterSpacing: -0.2,
+      flex: 1,
     },
     progressLineContainer: {
       flexDirection: 'row',
@@ -659,6 +681,14 @@ const createStyles = (theme: AppTheme) =>
       gap: theme.spacing.sm,
       flex: 1,
     },
+    statementsIconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: theme.colors.primaryContainer + '30',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     statementsTitle: {
       ...theme.typography.titleMedium,
       color: theme.colors.onSurface,
@@ -686,6 +716,11 @@ const createStyles = (theme: AppTheme) =>
     },
     statementWrapper: {
       // Container for individual statements
+    },
+    enhancedStatementCard: {
+      marginVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.lg,
+      overflow: 'hidden',
     },
 
     // 🎯 ENHANCED EMPTY STATE: Edge-to-Edge Inspiring Void

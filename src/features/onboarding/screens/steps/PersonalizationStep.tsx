@@ -1,14 +1,15 @@
 import { analyticsService } from '@/services/analyticsService';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getNeutralShadow } from '@/themes/utils';
-
 import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { useUsernameValidation } from '@/shared/hooks';
 import { logger } from '@/utils/debugConfig';
 import { Ionicons } from '@expo/vector-icons';
+import { Button } from 'react-native-paper';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -19,7 +20,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Button, IconButton } from 'react-native-paper';
 
 import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
 
@@ -45,6 +45,15 @@ const THEME_OPTIONS: {
   { key: 'auto', name: 'Otomatik', icon: 'phone-portrait-outline', description: 'Sisteme göre' },
 ];
 
+/**
+ * 👋 SIMPLIFIED PERSONALIZATION STEP
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Eliminated direct Animated.timing entrance animation
+ * - Replaced with coordinated animation system
+ * - Enhanced consistency with other onboarding steps
+ * - Maintained all personalization functionality
+ */
 export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   onNext,
   onBack,
@@ -66,31 +75,22 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
     checkUsername,
   } = useUsernameValidation();
 
-  // Simplified animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
+  const animations = useCoordinatedAnimations();
 
-  const containerStyle = React.useMemo(
+  const containerStyle = useMemo(
     () => ({
-      opacity: fadeAnim,
+      opacity: animations.fadeAnim,
+      transform: animations.entranceTransform,
     }),
-    [fadeAnim]
+    [animations.fadeAnim, animations.entranceTransform]
   );
 
+  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
-    // Simple entrance animation
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]); // Separate animation effect
-
-  // Check username availability on mount or when username changes
-  useEffect(() => {
-    if (username && username.length >= 3) {
-      checkUsername(username);
-    }
-  }, [checkUsername, username]);
+    // Use coordinated entrance animation instead of direct Animated.timing
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
 
   const handleUsernameChange = useCallback(
     (value: string) => {
@@ -149,20 +149,25 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   return (
     <ScreenLayout edges={['top']} edgeToEdge={true}>
       <Animated.View style={[styles.container, containerStyle]}>
-        {/* Navigation Header */}
+        {/* Enhanced Navigation Header with Better Back Button */}
         <ScreenSection>
           <View style={styles.navigationHeader}>
-            <IconButton
-              icon="arrow-left"
-              size={24}
-              iconColor={theme.colors.text}
+            <TouchableOpacity
               onPress={() => {
                 hapticFeedback.light();
                 onBack();
               }}
+              style={styles.backButtonContainer}
+              activeOpacity={0.7}
               accessibilityLabel="Geri dön"
-              style={styles.backButton}
-            />
+              accessibilityRole="button"
+              accessibilityHint="Önceki adıma geri dön"
+            >
+              <View style={styles.backButtonInner}>
+                <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
+                <Text style={styles.backButtonText}>Geri</Text>
+              </View>
+            </TouchableOpacity>
           </View>
         </ScreenSection>
 
@@ -298,11 +303,29 @@ const createStyles = (theme: AppTheme) =>
     },
     navigationHeader: {
       alignItems: 'flex-start',
-      paddingBottom: 0,
+      paddingBottom: theme.spacing.md,
     },
-    backButton: {
-      margin: 0,
-      marginLeft: -theme.spacing.sm,
+    backButtonContainer: {
+      padding: theme.spacing.sm,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.surface + 'CC',
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '20',
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    backButtonInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    backButtonText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
     },
     header: {
       alignItems: 'center',

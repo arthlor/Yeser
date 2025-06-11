@@ -7,6 +7,7 @@ import type { DailyPrompt } from '@/schemas/gratitudeEntrySchema';
 
 /**
  * Fetches a single random active daily prompt from the backend.
+ * **NETWORK RESILIENCE**: Enhanced error handling for network failures
  * @returns A DailyPrompt object or null if no prompt is found or an error occurs.
  */
 export const getRandomActivePrompt = async (): Promise<DailyPrompt | null> => {
@@ -14,6 +15,20 @@ export const getRandomActivePrompt = async (): Promise<DailyPrompt | null> => {
     const { data, error } = await supabase.rpc('get_random_active_prompt');
 
     if (error) {
+      // **ENHANCED ERROR HANDLING**: Better error categorization
+      if (error.message?.includes('function get_random_active_prompt') && error.message?.includes('does not exist')) {
+        logger.warn('Database function get_random_active_prompt does not exist - using fallback');
+        return null;
+      }
+      
+      // **NETWORK RESILIENCE**: Return null for network errors instead of throwing
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('Network request failed')) {
+        logger.warn('Network connectivity issue for prompt fetch - graceful fallback', {
+          error: error.message
+        });
+        return null;
+      }
+      
       throw handleAPIError(new Error(error.message), 'fetch random active prompt');
     }
 
@@ -26,6 +41,18 @@ export const getRandomActivePrompt = async (): Promise<DailyPrompt | null> => {
     return null;
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
+    
+    // **NETWORK RESILIENCE**: Handle network errors gracefully
+    if (error.message?.includes('Network request failed') || 
+        error.message?.includes('Failed to fetch') ||
+        error.message?.includes('TypeError: Network request failed')) {
+      logger.warn('Network connectivity issue for prompt fetch - graceful fallback', {
+        error: error.message,
+        type: error.name
+      });
+      return null; // Return null instead of throwing for network issues
+    }
+    
     throw handleAPIError(error, 'fetch random active prompt');
   }
 };

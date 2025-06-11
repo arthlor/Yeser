@@ -20,6 +20,7 @@ import {
   semanticSpacing,
   textColors,
 } from '@/themes/utils';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 // 🎯 SHARED TYPES AND INTERFACES
 export interface BaseStatementCardProps {
@@ -505,129 +506,35 @@ export const createSharedStyles = (
   };
 };
 
-// 🎭 OPTIMIZED ANIMATION HOOKS - STABLE REFERENCES
+// 🎭 COORDINATED ANIMATION HOOKS - UNIFIED APPROACH
 export const useStatementCardAnimations = () => {
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const pressAnim = useRef(new Animated.Value(1)).current;
-  const shakeAnim = useRef(new Animated.Value(0)).current;
-  const skeletonAnim = useRef(new Animated.Value(0)).current;
+  // **ANIMATION COORDINATION COMPLETED**: Use centralized coordinated system
+  const coordinatedAnimations = useCoordinatedAnimations();
 
-  // Enhanced entrance animation with spring physics - MEMOIZED
-  const animateEntrance = useCallback(
-    (delay = 0) => {
-      fadeAnim.setValue(0);
-      scaleAnim.setValue(0.92);
+  /**
+   * **ANIMATION SIMPLIFICATION COMPLETED**: 
+   * - Eliminated complex entrance animations with spring physics
+   * - Removed shake animation sequences for errors
+   * - Eliminated skeleton loading animations
+   * - Removed context menu animations
+   * - Replaced custom animation hooks with coordinated system
+   * - Unified all statement card animations under one system
+   */
 
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 800,
-          delay,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 120,
-          friction: 8,
-          delay,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    },
-    [fadeAnim, scaleAnim]
-  );
-
-  // Enhanced press animations with better physics - MEMOIZED
-  const animatePressIn = useCallback(() => {
-    Animated.spring(pressAnim, {
-      toValue: 0.97,
-      tension: 500,
-      friction: 30,
-      useNativeDriver: true,
-    }).start();
-  }, [pressAnim]);
-
-  const animatePressOut = useCallback(() => {
-    Animated.spring(pressAnim, {
-      toValue: 1,
-      tension: 500,
-      friction: 30,
-      useNativeDriver: true,
-    }).start();
-  }, [pressAnim]);
-
-  // Enhanced error animation with more natural feel - MEMOIZED
-  const animateError = useCallback(() => {
-    Animated.sequence([
-      Animated.timing(shakeAnim, { toValue: 8, duration: 100, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -8, duration: 100, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 4, duration: 100, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
-    ]).start();
-  }, [shakeAnim]);
-
-  // Skeleton loading animation for better loading states - MEMOIZED
-  const animateSkeleton = useCallback(() => {
-    const skeletonAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(skeletonAnim, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(skeletonAnim, {
-          toValue: 0,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    skeletonAnimation.start();
-    return () => skeletonAnimation.stop();
-  }, [skeletonAnim]);
-
-  // Context menu entrance with glassmorphism - MEMOIZED
-  const animateContextMenu = useCallback(
-    (show: boolean) => {
-      return Animated.spring(fadeAnim, {
-        toValue: show ? 1 : 0,
-        tension: 200,
-        friction: 10,
-        useNativeDriver: true,
-      });
-    },
-    [fadeAnim]
-  );
-
-  // STABLE OBJECT - ONLY CHANGES WHEN ANIMATION VALUES CHANGE
+  // STABLE OBJECT - COORDINATED API
   return useMemo(
     () => ({
-      fadeAnim,
-      scaleAnim,
-      pressAnim,
-      shakeAnim,
-      skeletonAnim,
-      animateEntrance,
-      animatePressIn,
-      animatePressOut,
-      animateError,
-      animateSkeleton,
-      animateContextMenu,
+      // Use coordinated animation values
+      pressAnim: coordinatedAnimations.scaleAnim,
+      fadeAnim: coordinatedAnimations.fadeAnim,
+      opacityAnim: coordinatedAnimations.opacityAnim,
+      
+      // Use coordinated animation methods
+      animatePressIn: coordinatedAnimations.animatePressIn,
+      animatePressOut: coordinatedAnimations.animatePressOut,
+      animateEntrance: coordinatedAnimations.animateEntrance,
     }),
-    [
-      fadeAnim,
-      scaleAnim,
-      pressAnim,
-      shakeAnim,
-      skeletonAnim,
-      animateEntrance,
-      animatePressIn,
-      animatePressOut,
-      animateError,
-      animateSkeleton,
-      animateContextMenu,
-    ]
+    [coordinatedAnimations]
   );
 };
 
@@ -768,11 +675,7 @@ export const StatementCardWrapper: React.FC<{
         containerStyle,
         style,
         {
-          opacity: animations.fadeAnim,
-          transform: [
-            { scale: Animated.multiply(animations.scaleAnim, animations.pressAnim) },
-            { translateX: animations.shakeAnim },
-          ],
+          opacity: animations.pressAnim,
         },
       ]}
     >
@@ -786,12 +689,7 @@ export const StatementCardSkeleton: React.FC<{
   variant?: 'default' | 'detailed' | 'compact';
 }> = ({ variant: _variant = 'default' }) => {
   const { theme } = useTheme();
-  const animations = useStatementCardAnimations();
-
-  React.useEffect(() => {
-    const cleanup = animations.animateSkeleton();
-    return cleanup;
-  }, [animations]);
+  // Removed unused animations variable
 
   const skeletonStyle = {
     backgroundColor: alpha(theme.colors.outline, 0.1),
@@ -802,12 +700,6 @@ export const StatementCardSkeleton: React.FC<{
     <Animated.View
       style={[
         skeletonStyle,
-        {
-          opacity: animations.skeletonAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0.3, 0.7],
-          }),
-        },
       ]}
     >
       {/* Skeleton content based on variant */}

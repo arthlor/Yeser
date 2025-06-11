@@ -133,12 +133,14 @@ export const validateConfig = (): void => {
     throw new Error('Invalid EXPO_PUBLIC_SUPABASE_URL format');
   }
 
-  // eslint-disable-next-line no-console
-  console.log(`✅ Configuration validated for ${environment} environment`);
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.log(`✅ Configuration validated for ${environment} environment`);
+  }
 };
 
 // Debug information (only in development)
-if (environment === 'development') {
+if (__DEV__) {
   // eslint-disable-next-line no-console
   console.log('🔧 Configuration loaded:', {
     environment: config.app.environment,

@@ -16,6 +16,7 @@ import {
 } from '@/components/calendar';
 import { useEntryDatesForMonth, useGratitudeEntry } from '@/features/gratitude/hooks';
 import { ScreenLayout } from '@/shared/components/layout';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
 import { analyticsService } from '@/services/analyticsService';
@@ -34,20 +35,28 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
 
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  const animations = useCoordinatedAnimations();
+
   const colorsRef = useRef({
     primary: theme.colors.primary,
     onPrimary: theme.colors.onPrimary,
   });
 
-  useEffect(() => {
-    colorsRef.current = {
+  const updateThemeColors = useCallback(() => {
+    const newColors = {
       primary: theme.colors.primary,
       onPrimary: theme.colors.onPrimary,
     };
+    
+    if (colorsRef.current.primary !== newColors.primary || 
+        colorsRef.current.onPrimary !== newColors.onPrimary) {
+      colorsRef.current = newColors;
+    }
   }, [theme.colors.primary, theme.colors.onPrimary]);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  useEffect(() => {
+    updateThemeColors();
+  }, [updateThemeColors]);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [markedDates, setMarkedDates] = useState<CustomMarkedDates>({});
@@ -71,28 +80,17 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
   } = useGratitudeEntry(selectedDate || '');
 
   useEffect(() => {
-    Animated.stagger(100, [
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 80,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
+    animations.animateEntrance({ duration: 100 });
+  }, [animations]);
 
   useEffect(() => {
+    const monthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth() + 1}`;
+    
     if (!analyticsTrackedRef.current) {
       analyticsService.logScreenView('calendar_screen');
       analyticsTrackedRef.current = true;
     }
-
-    const monthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth() + 1}`;
+    
     if (lastMonthAnalyticsRef.current !== monthKey && entryDates.length >= 0) {
       analyticsService.logEvent('calendar_screen_viewed', {
         current_year: currentMonth.getFullYear(),
@@ -102,9 +100,18 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
         selected_date: selectedDate || null,
         has_entry_for_selected: !!selectedEntry,
       });
+      
+      if (entryDates.length > 0) {
+        analyticsService.logEvent('calendar_month_viewed', {
+          year: currentMonth.getFullYear(),
+          month: currentMonth.getMonth() + 1,
+          entry_count: entryDates.length,
+        });
+      }
+      
       lastMonthAnalyticsRef.current = monthKey;
     }
-  }, [currentMonth, entryDates.length, selectedDate, selectedEntry]);
+  }, [currentMonth, entryDates, selectedDate, selectedEntry]);
 
   useEffect(() => {
     if (!Array.isArray(entryDates)) {
@@ -142,18 +149,6 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
       }
       return newMarkedDates;
     });
-
-    if (entryDates.length > 0) {
-      const monthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth() + 1}`;
-      if (lastMonthAnalyticsRef.current !== monthKey) {
-        analyticsService.logEvent('calendar_month_viewed', {
-          year: currentMonth.getFullYear(),
-          month: currentMonth.getMonth() + 1,
-          entry_count: entryDates.length,
-        });
-        lastMonthAnalyticsRef.current = monthKey;
-      }
-    }
   }, [entryDates, selectedDate, currentMonth]);
 
   const handleMonthChange = useCallback((dateData: DateData) => {
@@ -217,7 +212,6 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
     return isSameMonth(today, current) || isAfter(current, today);
   }, [currentMonth]);
 
-  // 🛡️ ERROR PROTECTION: Render a full-screen error state if the main query fails
   if (datesError) {
     return (
       <ScreenLayout>
@@ -236,13 +230,14 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
       keyboardAware={false}
       keyboardDismissMode="none"
       keyboardShouldPersistTaps="always"
+      backgroundColor={theme.colors.background}
     >
       <Animated.View
         style={[
           styles.animatedContainer,
           {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
+            opacity: animations.fadeAnim,
+            transform: animations.combinedTransform,
           },
         ]}
       >

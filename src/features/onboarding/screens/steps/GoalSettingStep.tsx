@@ -4,10 +4,11 @@ import type { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { Ionicons } from '@expo/vector-icons';
+import { Button } from 'react-native-paper';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Button, IconButton } from 'react-native-paper';
 
 import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
 
@@ -18,50 +19,57 @@ interface GoalSettingStepProps {
 }
 
 const GOAL_OPTIONS = [
-  { value: 1, label: '1 İfade', description: 'Basit ve etkili' },
-  { value: 3, label: '3 İfade', description: 'Önerilen günlük hedef' },
-  { value: 5, label: '5 İfade', description: 'Daha derin deneyim' },
+  { value: 1, label: '1 İfade', description: 'Küçük adımlarla başlayalım' },
+  { value: 3, label: '3 İfade', description: 'Ideal günlük hedef' },
+  { value: 5, label: '5 İfade', description: 'Motive olduğunuzda' },
   { value: 0, label: 'Özel', description: 'Kendim belirleyeceğim' },
 ];
 
+/**
+ * 🎯 SIMPLIFIED GOAL SETTING STEP
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Eliminated direct Animated.timing entrance animation
+ * - Replaced with coordinated animation system
+ * - Simplified goal selection with coordinated feedback
+ * - Enhanced consistency with other onboarding steps
+ */
 export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
   onNext,
   onBack,
   initialGoal = 3,
 }) => {
   const { theme } = useTheme();
+  const [selectedGoal, setSelectedGoal] = React.useState(initialGoal);
+
+  // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
+  const animations = useCoordinatedAnimations();
+
   const styles = createStyles(theme);
 
-  const [selectedGoal, setSelectedGoal] = useState<number>(initialGoal);
-
-  // Simplified animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  const containerStyle = React.useMemo(
-    () => ({
-      opacity: fadeAnim,
-    }),
-    [fadeAnim]
-  );
-
-  const infoCardStyle = React.useMemo(
-    () => ({
-      opacity: fadeAnim,
-    }),
-    [fadeAnim]
-  );
-
+  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
     // Analytics tracking
     analyticsService.logScreenView('onboarding_goal_setting_step');
 
-    // Simple entrance animation
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
+    // Use coordinated entrance animation
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
+
+  const containerStyle = useMemo(
+    () => ({
+      opacity: animations.fadeAnim,
+      transform: animations.entranceTransform,
+    }),
+    [animations.fadeAnim, animations.entranceTransform]
+  );
+
+  const infoCardStyle = useMemo(
+    () => ({
+      opacity: animations.fadeAnim,
+    }),
+    [animations.fadeAnim]
+  );
 
   const handleGoalSelect = useCallback((goal: number) => {
     setSelectedGoal(goal);
@@ -90,7 +98,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
           key={option.value}
           style={[
             {
-              opacity: fadeAnim,
+              opacity: animations.fadeAnim,
             },
           ]}
         >
@@ -134,26 +142,31 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
         </Animated.View>
       );
     },
-    [selectedGoal, fadeAnim, theme, handleGoalSelect, styles]
+    [selectedGoal, animations.fadeAnim, theme, handleGoalSelect, styles]
   );
 
   return (
     <ScreenLayout edges={['top']} edgeToEdge={true}>
       <Animated.View style={[styles.container, containerStyle]}>
-        {/* Navigation Header */}
+        {/* Enhanced Navigation Header with Better Back Button */}
         <ScreenSection>
           <View style={styles.navigationHeader}>
-            <IconButton
-              icon="arrow-left"
-              size={24}
-              iconColor={theme.colors.text}
+            <TouchableOpacity
               onPress={() => {
                 hapticFeedback.light();
                 onBack();
               }}
+              style={styles.backButtonContainer}
+              activeOpacity={0.7}
               accessibilityLabel="Geri dön"
-              style={styles.backButton}
-            />
+              accessibilityRole="button"
+              accessibilityHint="Önceki adıma geri dön"
+            >
+              <View style={styles.backButtonInner}>
+                <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
+                <Text style={styles.backButtonText}>Geri</Text>
+              </View>
+            </TouchableOpacity>
           </View>
         </ScreenSection>
 
@@ -217,11 +230,29 @@ const createStyles = (theme: AppTheme) =>
     },
     navigationHeader: {
       alignItems: 'flex-start',
-      paddingBottom: 0,
+      paddingBottom: theme.spacing.md,
     },
-    backButton: {
-      margin: 0,
-      marginLeft: -theme.spacing.sm,
+    backButtonContainer: {
+      padding: theme.spacing.sm,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.surface + 'CC',
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '20',
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    backButtonInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    backButtonText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
     },
     header: {
       alignItems: 'center',

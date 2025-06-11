@@ -60,6 +60,9 @@ class NotificationService {
   private readonly CLEANUP_INTERVAL = 10 * 60 * 1000; // 10 minutes
   private readonly MAX_TIMESTAMP_AGE = 60 * 60 * 1000; // 1 hour
 
+  // Reference to cleanup interval to allow teardown
+  private cleanupIntervalId: ReturnType<typeof setInterval> | null = null;
+
   /**
    * Initialize notification service with proper channel setup and monthly notification check
    */
@@ -82,8 +85,10 @@ class NotificationService {
         await this.checkAndRescheduleMonthlyNotifications();
       }
 
-      // 🚨 FIX: Start cleanup interval for debouncing maps
-      this.startDebounceCleanup();
+      // 🚨 FIX: Start cleanup interval for debouncing maps (prevent duplicates)
+      if (!this.cleanupIntervalId) {
+        this.startDebounceCleanup();
+      }
 
       analyticsService.logEvent('notification_service_initialized', {
         platform: Platform.OS,
@@ -1114,7 +1119,7 @@ class NotificationService {
    * 🚨 FIX: Cleanup old timestamps to prevent memory leaks
    */
   private startDebounceCleanup(): void {
-    setInterval(() => {
+    this.cleanupIntervalId = setInterval(() => {
       const now = Date.now();
       const keysToDelete: string[] = [];
 
@@ -1133,6 +1138,22 @@ class NotificationService {
         });
       }
     }, this.CLEANUP_INTERVAL);
+  }
+
+  /**
+   * Shutdown the service – clears timers & resets flags
+   */
+  shutdown(): void {
+    if (this.cleanupIntervalId) {
+      clearInterval(this.cleanupIntervalId);
+      this.cleanupIntervalId = null;
+    }
+
+    this.isInitialized = false;
+    this.schedulingInProgress.clear();
+    this.lastSchedulingCall.clear();
+
+    logger.debug('🔕 Notification Service shutdown complete');
   }
 }
 

@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, StyleSheet, Text, Vibration, View } from 'react-native';
-import { Easing } from 'react-native-reanimated';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Animated, StyleSheet, Text, Vibration, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 interface AdvancedStreakMilestonesProps {
   currentStreak: number;
@@ -31,7 +31,7 @@ export interface AdvancedMilestone {
   unlockedMessage: string;
 }
 
-const { width: screenWidth } = Dimensions.get('window');
+  // Removed unused screenWidth variable
 
 // Enhanced milestone system with 15 levels
 const ADVANCED_MILESTONES: AdvancedMilestone[] = [
@@ -247,6 +247,15 @@ const ADVANCED_MILESTONES: AdvancedMilestone[] = [
   },
 ];
 
+/**
+ * 🏆 COORDINATED STREAK MILESTONES
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Eliminated direct Animated.timing for progress animations
+ * - Replaced with coordinated animation system  
+ * - Simplified animation approach following "Barely Noticeable, Maximum Performance"
+ * - Enhanced consistency with coordinated animation philosophy
+ */
 const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
   currentStreak,
   longestStreak,
@@ -256,18 +265,8 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  // Animation refs
-  const celebrationScale = useRef(new Animated.Value(0)).current;
-  const particleAnimations = useRef(
-    Array.from({ length: 8 }, () => ({
-      opacity: new Animated.Value(0),
-      translateY: new Animated.Value(0),
-      translateX: new Animated.Value(0),
-      scale: new Animated.Value(0),
-    }))
-  ).current;
-  const glowAnimation = useRef(new Animated.Value(0)).current;
-  const progressAnimation = useRef(new Animated.Value(0)).current;
+  // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
+  const animations = useCoordinatedAnimations();
 
   const [currentMilestone, setCurrentMilestone] = useState<AdvancedMilestone | null>(null);
   const [nextMilestone, setNextMilestone] = useState<AdvancedMilestone | null>(null);
@@ -328,114 +327,24 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
     }
   }, []);
 
-  const startParticleAnimation = useCallback(() => {
-    particleAnimations.forEach((particle, index) => {
-      // Random positions for particles
-      const randomX = (Math.random() - 0.5) * screenWidth * 0.8;
-      const randomDelay = index * 150;
-
-      Animated.sequence([
-        Animated.delay(randomDelay),
-        Animated.parallel([
-          Animated.timing(particle.opacity, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(particle.scale, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(particle.translateX, {
-            toValue: randomX,
-            duration: 2000,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(particle.translateY, {
-            toValue: -200,
-            duration: 2000,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.timing(particle.opacity, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Reset particle
-        particle.opacity.setValue(0);
-        particle.scale.setValue(0);
-        particle.translateX.setValue(0);
-        particle.translateY.setValue(0);
-      });
-    });
-  }, [particleAnimations]);
-
-  const startCelebrationAnimation = useCallback(() => {
-    // Scale animation
-    Animated.sequence([
-      Animated.spring(celebrationScale, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.delay(3000),
-      Animated.spring(celebrationScale, {
-        toValue: 0,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Particle effects
-    startParticleAnimation();
-
-    // Glow effect
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnimation, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-        Animated.timing(glowAnimation, {
-          toValue: 0,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-      ]),
-      { iterations: 3 }
-    ).start();
-  }, [celebrationScale, glowAnimation, startParticleAnimation]);
-
-  // Celebration animation
+  // Simplified celebration - haptic feedback only
   useEffect(() => {
-    if (showCelebration) {
-      startCelebrationAnimation();
-      // Trigger haptic feedback for milestone achievement
-      if (currentMilestone) {
-        triggerHapticFeedback(currentMilestone);
-      }
+    if (showCelebration && currentMilestone) {
+      triggerHapticFeedback(currentMilestone);
     }
-  }, [showCelebration, currentMilestone, triggerHapticFeedback, startCelebrationAnimation]);
+  }, [showCelebration, currentMilestone, triggerHapticFeedback]);
 
-  // Progress bar animation
+  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
-    Animated.timing(progressAnimation, {
-      toValue: getProgressPercentage(),
-      duration: 1000,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [currentStreak, getProgressPercentage, progressAnimation]);
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
+
+  // **MINIMAL PROGRESS FEEDBACK**: Simple opacity change when progress updates
+  useEffect(() => {
+    if (currentStreak > 0) {
+      animations.animateFade(1, { duration: 200 });
+    }
+  }, [currentStreak, animations]);
 
   if (!currentMilestone) {
     return null;
@@ -453,71 +362,28 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
   };
 
   return (
-    <ThemedCard
-      variant="elevated"
-      density="standard"
-      elevation="card"
-      onPress={handlePress}
-      style={styles.container}
-      touchableProps={{
-        activeOpacity: 0.8,
-      }}
+    <Animated.View
+      style={[
+        {
+          opacity: animations.fadeAnim,
+          transform: animations.entranceTransform,
+        }
+      ]}
     >
-      {/* Glow effect for high streaks */}
-      {currentStreak >= 30 && (
-        <Animated.View
-          style={[
-            styles.glowEffect,
-            {
-              opacity: glowAnimation,
-              backgroundColor: currentMilestone.colorPrimary + '20',
-            },
-          ]}
-        />
-      )}
-
-      {/* Celebration overlay */}
+      <ThemedCard
+        variant="elevated"
+        density="standard"
+        elevation="card"
+        onPress={handlePress}
+        style={styles.container}
+        touchableProps={{
+          activeOpacity: 0.8,
+        }}
+      >
+      {/* Simplified celebration overlay */}
       {showCelebration && (
-        <Animated.View
-          style={[
-            styles.celebrationOverlay,
-            {
-              transform: [{ scale: celebrationScale }],
-            },
-          ]}
-        >
+        <View style={styles.celebrationOverlay}>
           <Text style={styles.celebrationText}>{currentMilestone.unlockedMessage}</Text>
-        </Animated.View>
-      )}
-
-      {/* Particle effects */}
-      {showCelebration && (
-        <View style={styles.particleContainer}>
-          {particleAnimations.map((particle, index) => (
-            <Animated.View
-              key={index}
-              style={[
-                styles.particle,
-                {
-                  opacity: particle.opacity,
-                  transform: [
-                    { translateX: particle.translateX },
-                    { translateY: particle.translateY },
-                    { scale: particle.scale },
-                  ],
-                },
-              ]}
-            >
-              <Text style={styles.particleEmoji}>
-                {currentMilestone.particleEffect === 'stars' && '⭐'}
-                {currentMilestone.particleEffect === 'hearts' && '💖'}
-                {currentMilestone.particleEffect === 'fire' && '🔥'}
-                {currentMilestone.particleEffect === 'sparks' && '✨'}
-                {currentMilestone.particleEffect === 'rainbow' && '🌈'}
-                {currentMilestone.particleEffect === 'galaxy' && '🌌'}
-              </Text>
-            </Animated.View>
-          ))}
         </View>
       )}
 
@@ -562,14 +428,11 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
             </Text>
 
             <View style={styles.progressBarContainer}>
-              <Animated.View
+              <View
                 style={[
                   styles.progressBar,
                   {
-                    width: progressAnimation.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ['0%', '100%'],
-                    }),
+                    width: `${getProgressPercentage()}%`,
                     backgroundColor: currentMilestone.colorPrimary,
                   },
                 ]}
@@ -598,8 +461,11 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
         )}
       </View>
     </ThemedCard>
+    </Animated.View>
   );
 };
+
+AdvancedStreakMilestones.displayName = 'AdvancedStreakMilestones';
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({

@@ -1,5 +1,6 @@
+/* global module */
 import React, { ReactNode, useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,9 +10,12 @@ import ErrorBoundary from '@/shared/components/layout/ErrorBoundary';
 import { firebaseService } from '@/services/firebaseService';
 import { networkMonitorService } from '@/services/networkMonitorService';
 import { logger } from '@/utils/debugConfig';
+import { cleanupSingletons } from '@/utils/cleanupSingletons';
 import { ThemeProvider } from './ThemeProvider';
 import { ToastProvider, useToast } from './ToastProvider';
 import { GlobalErrorProvider } from './GlobalErrorProvider';
+import { registerGlobalErrorHandlers } from '@/store/authStore';
+import { FirebaseDebugger } from '@/utils/firebaseDebug';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -35,8 +39,31 @@ const FirebaseInitializer: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (success) {
           logger.debug('✅ Firebase initialized successfully');
+          
+          // Run iOS-specific diagnostics in development
+          if (__DEV__ && Platform.OS === 'ios') {
+            logger.debug('🍎 Running iOS Firebase diagnostics...');
+            setTimeout(async () => {
+              try {
+                await FirebaseDebugger.printDiagnostics();
+              } catch {
+                logger.debug('Firebase diagnostics not ready yet');
+              }
+            }, 2000);
+          }
         } else {
           logger.warn('⚠️ Firebase initialization failed - continuing without Analytics');
+          
+          // Show detailed diagnostics for failed initialization
+          if (__DEV__) {
+            setTimeout(async () => {
+              try {
+                await FirebaseDebugger.printDiagnostics();
+              } catch {
+                logger.debug('Could not run Firebase diagnostics');
+              }
+            }, 1000);
+          }
         }
 
         // Always set ready to true to prevent blocking the app
@@ -49,7 +76,23 @@ const FirebaseInitializer: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     initializeServices();
+
+    // Cleanup on unmount to avoid memory-leaks
+    return () => {
+      cleanupSingletons();
+    };
   }, []);
+
+  // Dev-only hot reload safety – dispose singletons between reloads
+  if (__DEV__ && typeof module !== 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mod: any = module;
+    if (mod?.hot && typeof mod.hot.dispose === 'function') {
+      mod.hot.dispose(() => {
+        cleanupSingletons();
+      });
+    }
+  }
 
   // Don't block the app while Firebase initializes
   if (!isFirebaseReady) {
@@ -62,6 +105,11 @@ const FirebaseInitializer: React.FC<{ children: ReactNode }> = ({ children }) =>
 // Inner component that provides toast handlers to GlobalErrorProvider
 const ErrorProviderWithToast: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { showError, showSuccess } = useToast();
+
+  // **TOAST INTEGRATION**: Register global error handlers with auth store
+  React.useEffect(() => {
+    registerGlobalErrorHandlers({ showError, showSuccess });
+  }, [showError, showSuccess]);
 
   return (
     <GlobalErrorProvider toastHandlers={{ showError, showSuccess }}>{children}</GlobalErrorProvider>

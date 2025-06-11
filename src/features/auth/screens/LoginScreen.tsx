@@ -2,13 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Animated,
   Dimensions,
-  Easing,
   Keyboard,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -16,18 +16,18 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
-import { ScreenLayout } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import ThemedInput from '@/shared/components/ui/ThemedInput';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useToast } from '@/providers/ToastProvider';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { getPrimaryShadow } from '@/themes/utils';
 import { magicLinkSchema } from '@/schemas/authSchemas';
 import { analyticsService } from '@/services/analyticsService';
 import useAuthStore from '@/store/authStore';
 import { AppTheme } from '@/themes/types';
 import { AuthStackParamList } from '@/types/navigation';
-import { safeErrorDisplay } from '@/utils/errorTranslation';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -40,9 +40,16 @@ interface Props {
 /**
  * 🌟 POLISHED EDGE-TO-EDGE LOGIN SCREEN
  * Clean, spacious authentication experience with proper text sizing and layout
+ * 
+ * **SIMPLIFIED ANIMATION SYSTEM**: Using minimal, non-intrusive animations
+ * with 4 essential values: fadeAnim, scaleAnim, opacityAnim, heightAnim
+ * 
+ * **TOAST INTEGRATION**: Auth errors now show as toasts instead of inline display.
+ * Only field validation errors (emailError) show inline for immediate feedback.
  */
 const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) => {
   const { theme } = useTheme();
+  const { showWarning, showError } = useToast();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets);
 
@@ -50,10 +57,8 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     loginWithMagicLink,
     loginWithGoogle,
     isLoading,
-    error,
     magicLinkSent,
     canSendMagicLink,
-    clearError,
     resetMagicLinkSent,
   } = useAuthStore();
 
@@ -63,105 +68,96 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   const [isEmailValid, setIsEmailValid] = useState(false);
   const [showHelpSection, setShowHelpSection] = useState(false);
 
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const cardSlideAnim = useRef(new Animated.Value(30)).current;
-  const successPulseAnim = useRef(new Animated.Value(1)).current;
-  const helpSlideAnim = useRef(new Animated.Value(0)).current;
+  // **SIMPLIFIED ANIMATION SYSTEM**: Single minimal hook with 4 essential values
+  const animations = useCoordinatedAnimations();
 
-  // Help section height calculation
-  const helpHeight = useMemo(() => {
-    return helpSlideAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, 100], // Adjust this value based on your help content height
-    });
-  }, [helpSlideAnim]);
+  // Lightweight internal debounced callback to avoid external dependency
+  const useDebouncedCallbackString = (
+    callback: (value: string) => void,
+    delay: number
+  ): ((value: string) => void) => {
+    const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Start entrance animation on mount
-  useEffect(() => {
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 500,
-          easing: Easing.out(Easing.back(1.1)),
-          useNativeDriver: true,
-        }),
-        Animated.timing(cardSlideAnim, {
-          toValue: 0,
-          duration: 500,
-          delay: 100,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  }, [fadeAnim, slideAnim, cardSlideAnim]);
+    const debouncedFn = React.useCallback(
+      (value: string) => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => {
+          callback(value);
+        }, delay);
+      },
+      [callback, delay]
+    );
 
-  // Success pulse animation
-  useEffect(() => {
-    if (magicLinkSent) {
-      if (Platform.OS === 'ios') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
+    // Clear on unmount
+    React.useEffect(() => {
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
+    }, []);
 
-      Animated.sequence([
-        Animated.spring(successPulseAnim, {
-          toValue: 1.02,
-          useNativeDriver: true,
-          tension: 300,
-          friction: 10,
-        }),
-        Animated.spring(successPulseAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 300,
-          friction: 10,
-        }),
-      ]).start();
-    }
-  }, [magicLinkSent, successPulseAnim]);
+    return debouncedFn;
+  };
 
-  // Help section animation
-  const toggleHelpSection = useCallback(() => {
-    const toValue = showHelpSection ? 0 : 1;
-    setShowHelpSection(!showHelpSection);
-
-    Animated.timing(helpSlideAnim, {
-      toValue,
-      duration: 300,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [showHelpSection, helpSlideAnim]);
-
-  // Real-time email validation
-  const handleEmailChange = useCallback((text: string) => {
-    setEmail(text);
-    setEmailError(undefined);
-
+  // Debounced validator to avoid validation on every keystroke (300 ms after user stops typing)
+  const debouncedValidateEmail = useDebouncedCallbackString((text: string) => {
     if (text.length > 0) {
       const isValid = magicLinkSchema.safeParse({ email: text }).success;
       setIsEmailValid(isValid);
     } else {
       setIsEmailValid(false);
     }
-  }, []);
+  }, 300);
+
+  // **MINIMAL ENTRANCE**: Simple 400ms fade-in instead of complex sequence
+  const triggerEntranceAnimations = useCallback(() => {
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
+
+  // **MINIMAL SUCCESS FEEDBACK**: Simple fade effect instead of celebration
+  useEffect(() => {
+    if (magicLinkSent) {
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      // Simple fade effect instead of complex celebration
+      animations.animateFade(0.9, { duration: 200 });
+      setTimeout(() => {
+        animations.animateFade(1, { duration: 200 });
+      }, 300);
+    }
+  }, [magicLinkSent, animations]);
+
+  // **LAYOUT TRANSITION**: Using animateLayoutTransition instead of LayoutAnimation
+  const toggleHelpSection = useCallback(() => {
+    setShowHelpSection(!showHelpSection);
+    // Use layout transition animation (replaces LayoutAnimation)
+    animations.animateLayoutTransition(!showHelpSection, 120, { duration: 250 });
+  }, [showHelpSection, animations]);
+
+  // Start entrance animation on mount
+  useEffect(() => {
+    triggerEntranceAnimations();
+  }, [triggerEntranceAnimations]);
+
+  // Real-time email validation
+  const handleEmailChange = useCallback((text: string) => {
+    setEmail(text);
+    setEmailError(undefined);
+
+    // Trigger debounced validation
+    debouncedValidateEmail(text);
+  }, [debouncedValidateEmail]);
 
   // Clear errors when component unmounts
   useEffect(
     () => () => {
-      clearError();
       resetMagicLinkSent();
     },
-    [clearError, resetMagicLinkSent]
+    [resetMagicLinkSent]
   );
 
   // Log screen view
@@ -169,7 +165,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     analyticsService.logScreenView('login');
   }, []);
 
-  // Handle magic link login
+  // 🚀 TOAST INTEGRATION: Enhanced magic link login with complementary toast notifications
   const handleMagicLinkLogin = useCallback(async () => {
     Keyboard.dismiss();
 
@@ -180,7 +176,12 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     setEmailError(undefined);
 
     if (!canSendMagicLink()) {
+      // Keep inline error for immediate visibility + toast for emphasis
       setEmailError('Çok sık deneme yapıyorsunuz. Lütfen bir süre bekleyin.');
+      // 🚀 TOAST INTEGRATION: Add toast warning for rate limiting
+      showWarning('Çok sık giriş denemesi yapıyorsunuz. Lütfen 1 dakika bekleyip tekrar deneyin.', {
+        duration: 5000,
+      });
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
@@ -192,7 +193,10 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     if (!validationResult.success) {
       const { fieldErrors } = validationResult.error.formErrors;
       if (fieldErrors.email) {
+        // Keep inline error for immediate feedback
         setEmailError(fieldErrors.email[0]);
+        // 🚀 TOAST INTEGRATION: Add toast error for validation failure
+        showError('Lütfen geçerli bir email adresi girin');
         if (Platform.OS === 'ios') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         }
@@ -200,7 +204,6 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       return;
     }
 
-    clearError();
     analyticsService.logEvent('magic_link_request');
 
     await loginWithMagicLink({
@@ -210,7 +213,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
         emailRedirectTo: 'yeserapp://auth/confirm',
       },
     });
-  }, [email, canSendMagicLink, clearError, loginWithMagicLink]);
+  }, [email, canSendMagicLink, loginWithMagicLink, showWarning, showError]);
 
   // Handle Google login
   const handleGoogleLogin = useCallback(async () => {
@@ -218,35 +221,37 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
 
-    clearError();
     analyticsService.logEvent('google_auth_attempt');
 
     await loginWithGoogle();
-  }, [clearError, loginWithGoogle]);
+  }, [loginWithGoogle]);
 
-  // Gradient colors based on theme
+  // **ENHANCED GRADIENT COLORS**: More visible and properly structured
   const gradientColors = useMemo(() => {
     if (theme.name === 'dark') {
       return [
-        `${theme.colors.primary}15`,
-        `${theme.colors.secondary}08`,
-        `${theme.colors.background}95`,
+        `${theme.colors.primary}25`,
+        `${theme.colors.secondary}18`,
+        `${theme.colors.background}85`,
+        theme.colors.background,
       ] as const;
     }
     return [
-      `${theme.colors.primary}08`,
-      `${theme.colors.secondary}05`,
-      `${theme.colors.background}98`,
+      `${theme.colors.primary}15`,
+      `${theme.colors.secondary}12`,
+      `${theme.colors.background}90`,
+      theme.colors.background,
     ] as const;
   }, [theme]);
 
+  // **SIMPLIFIED HEADER**: Using minimal fade and scale only
   const renderHeader = () => (
     <Animated.View
       style={[
         styles.headerSection,
         {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
+          opacity: animations.fadeAnim,
+          transform: animations.entranceTransform,
         },
       ]}
     >
@@ -267,18 +272,23 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     </Animated.View>
   );
 
+  // **SIMPLIFIED MAIN CONTENT**: Separated transform and layout animations
   const renderMainContent = () => (
-    <Animated.View
-      style={[
-        styles.mainContent,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: cardSlideAnim }, { scale: successPulseAnim }],
-        },
-      ]}
-    >
-      <ThemedCard style={styles.contentCard}>
-        <View style={styles.cardInner}>
+    <View style={styles.mainContent}>
+      {/* Outer wrapper for layout animations */}
+      <Animated.View
+        style={{
+          opacity: animations.fadeAnim,
+        }}
+      >
+        {/* Inner wrapper for transform animations */}
+        <Animated.View
+          style={{
+            transform: animations.pressTransform,
+          }}
+        >
+          <ThemedCard style={styles.contentCard}>
+            <View style={styles.cardInner}>
           {!magicLinkSent && (
             <>
               {/* Trust Indicators */}
@@ -333,106 +343,97 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                 size="compact"
               />
 
-              {/* Collapsible Help Section */}
-              <Animated.View style={[styles.helpSection, { height: helpHeight }]}>
+              {/* **SIMPLIFIED HELP SECTION**: Using layout transition animation */}
+              <Animated.View 
+                style={[
+                  styles.helpSection, 
+                  { 
+                    height: animations.heightAnim,
+                    opacity: animations.opacityAnim,
+                  }
+                ]}
+              >
                 <View style={styles.helpContent}>
                   <Text style={styles.helpTitle}>🔒 Güvenli ve Kolay</Text>
                   <Text style={styles.helpText}>
                     Güvenli link ile şifre hatırlamaya gerek yok. E-postanıza özel bir bağlantı
-                    gönderiyoruz, tıklayıp güvenle giriş yapabilirsiniz.
+                    gönderiyoruz.
                   </Text>
                 </View>
               </Animated.View>
             </>
           )}
 
+          {/* Success State */}
           {magicLinkSent && (
-            <View style={styles.successContent}>
+            <View style={styles.successSection}>
               <View style={styles.successIcon}>
-                <Ionicons name="checkmark-circle" size={64} color={theme.colors.success} />
+                <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
               </View>
               <Text style={styles.successTitle}>Başarılı!</Text>
               <Text style={styles.successMessage}>
-                {email} adresine giriş bağlantısı gönderildi.
+                E-posta adresinizi kontrol edin ve güvenli giriş bağlantısına tıklayın.
               </Text>
-              <Text style={styles.successInstructions}>
-                E-postanızı açın ve "Giriş Yap" butonuna tıklayın.
-              </Text>
-
               <ThemedButton
-                title="Yeni E-posta Gönder"
-                variant="outline"
-                onPress={() => {
-                  resetMagicLinkSent();
-                  setEmail('');
-                  setIsEmailValid(false);
-                }}
+                title="Tekrar Gönder"
+                variant="secondary"
+                onPress={handleMagicLinkLogin}
+                disabled={!canSendMagicLink()}
                 style={styles.resendButton}
-                iconLeft="refresh"
               />
             </View>
           )}
-
-          {error && (
-            <View style={styles.errorContainer}>
-              <View style={styles.errorIconContainer}>
-                <Ionicons name="alert-circle" size={18} color={theme.colors.onErrorContainer} />
-              </View>
-              <Text style={styles.errorText}>{safeErrorDisplay(error)}</Text>
             </View>
-          )}
-        </View>
-      </ThemedCard>
-    </Animated.View>
+          </ThemedCard>
+        </Animated.View>
+      </Animated.View>
+    </View>
   );
 
+  // **SIMPLIFIED GOOGLE SECTION**: Basic fade animation
   const renderGoogleSection = () => (
     <Animated.View
       style={[
         styles.googleSection,
         {
-          opacity: fadeAnim,
-          transform: [{ translateY: cardSlideAnim }],
+          opacity: animations.fadeAnim,
         },
       ]}
     >
-      <View style={styles.dividerContainer}>
+      <View style={styles.divider}>
         <View style={styles.dividerLine} />
         <Text style={styles.dividerText}>veya</Text>
         <View style={styles.dividerLine} />
       </View>
 
       <ThemedButton
-        title="Google ile Giriş Yap"
-        variant="outline"
+        title="Google ile Devam Et"
         onPress={handleGoogleLogin}
-        isLoading={isLoading}
+        variant="secondary"
+        iconLeft="google"
         disabled={isLoading}
         style={styles.googleButton}
-        iconLeft="google"
         fullWidth
       />
     </Animated.View>
   );
 
   return (
-    <ScreenLayout edgeToEdge scrollable showStatusBar={false}>
-      <LinearGradient
-        colors={gradientColors}
-        style={styles.gradientBackground}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+    <LinearGradient colors={gradientColors} style={styles.fullScreenContainer}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.safeContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.container}>
-          {renderHeader()}
-
-          <View style={styles.contentArea}>
-            {renderMainContent()}
-            {!magicLinkSent && renderGoogleSection()}
-          </View>
+        {renderHeader()}
+        
+        <View style={styles.contentArea}>
+          {renderMainContent()}
+          {!magicLinkSent && renderGoogleSection()}
         </View>
-      </LinearGradient>
-    </ScreenLayout>
+      </ScrollView>
+    </LinearGradient>
   );
 });
 
@@ -441,13 +442,26 @@ const createStyles = (
   insets: { top: number; bottom: number; left: number; right: number }
 ) =>
   StyleSheet.create({
-    gradientBackground: {
+    // **FULL SCREEN GRADIENT**: Covers entire screen
+    fullScreenContainer: {
       flex: 1,
+    },
+    // **SCROLLABLE CONTAINER**: Enables scrolling while maintaining gradient
+    scrollView: {
+      flex: 1,
+    },
+    // **SAFE CONTENT CONTAINER**: Applies safe area insets and spacing
+    safeContainer: {
+      flexGrow: 1,
+      paddingTop: insets.top + theme.spacing.lg,
+      paddingBottom: insets.bottom + theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
     },
     container: {
       flex: 1,
       paddingTop: insets.top + theme.spacing.lg,
       paddingBottom: insets.bottom + theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
     },
 
     // Header section
@@ -495,7 +509,6 @@ const createStyles = (
     contentArea: {
       flex: 1,
       justifyContent: 'center',
-      paddingHorizontal: theme.spacing.lg,
       minHeight: screenHeight * 0.5,
     },
 
@@ -578,7 +591,7 @@ const createStyles = (
     },
 
     // Success state
-    successContent: {
+    successSection: {
       alignItems: 'center',
       paddingVertical: theme.spacing.lg,
     },
@@ -597,14 +610,6 @@ const createStyles = (
       textAlign: 'center',
       marginBottom: theme.spacing.sm,
       fontWeight: '500',
-    },
-    successInstructions: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      marginBottom: theme.spacing.xl,
-      lineHeight: 20,
-      paddingHorizontal: theme.spacing.md,
     },
     resendButton: {
       ...getPrimaryShadow.small(theme),
@@ -634,9 +639,9 @@ const createStyles = (
 
     // Google section
     googleSection: {
-      paddingHorizontal: 0,
+      paddingTop: theme.spacing.md,
     },
-    dividerContainer: {
+    divider: {
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: theme.spacing.lg,

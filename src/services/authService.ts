@@ -48,8 +48,11 @@ const handleAuthError = (error: AuthError | SimpleAuthError, operation: string) 
 // --- Magic Link Authentication ---
 export const signInWithMagicLink = async (credentials: MagicLinkCredentials) => {
   try {
+    // Final defensive email sanitization in case any invisible chars slipped through
+    const emailForSupabase = credentials.email.trim().toLowerCase().replace(/[\u200B-\u200D\uFEFF]/g, '');
+
     const { data, error } = await supabase.auth.signInWithOtp({
-      email: credentials.email,
+      email: emailForSupabase,
       options: {
         emailRedirectTo: credentials.options?.emailRedirectTo || 'yeserapp://auth/confirm',
         shouldCreateUser: credentials.options?.shouldCreateUser ?? true,

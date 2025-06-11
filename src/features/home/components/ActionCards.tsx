@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Animated, Platform, StyleSheet, Text, Vibration, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { getPrimaryShadow } from '@/themes/utils';
 
@@ -29,55 +30,67 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
 
-    // Animation values for enhanced micro-interactions
-    const primaryCardScale = useRef(new Animated.Value(1)).current;
-    const pastEntriesScale = useRef(new Animated.Value(1)).current;
-    const calendarScale = useRef(new Animated.Value(1)).current;
-    const whyGratitudeScale = useRef(new Animated.Value(1)).current;
+    // **RACE CONDITION FIX**: Use coordinated animation system
+    const primaryAnimations = useCoordinatedAnimations();
+    const pastEntriesAnimations = useCoordinatedAnimations();
+    const calendarAnimations = useCoordinatedAnimations();
+    const whyGratitudeAnimations = useCoordinatedAnimations();
 
     // Memoize dynamic styles to prevent object creation on every render
     const dynamicStyles = useMemo(
       () => ({
-        primaryCardTransform: { transform: [{ scale: primaryCardScale }] },
-        pastEntriesTransform: [styles.cardWrapper, { transform: [{ scale: pastEntriesScale }] }],
-        calendarTransform: [styles.cardWrapper, { transform: [{ scale: calendarScale }] }],
-        whyGratitudeTransform: [styles.cardWrapper, { transform: [{ scale: whyGratitudeScale }] }],
+        primaryCardTransform: { 
+          transform: primaryAnimations.combinedTransform,
+          opacity: primaryAnimations.fadeAnim,
+        },
+        pastEntriesTransform: [
+          styles.cardWrapper, 
+          { 
+            transform: pastEntriesAnimations.combinedTransform,
+            opacity: pastEntriesAnimations.fadeAnim,
+          }
+        ],
+        calendarTransform: [
+          styles.cardWrapper, 
+          { 
+            transform: calendarAnimations.combinedTransform,
+            opacity: calendarAnimations.fadeAnim,
+          }
+        ],
+        whyGratitudeTransform: [
+          styles.cardWrapper, 
+          { 
+            transform: whyGratitudeAnimations.combinedTransform,
+            opacity: whyGratitudeAnimations.fadeAnim,
+          }
+        ],
         progressBarWidth: {
           width: `${Math.min((currentCount / dailyGoal) * 100, 100)}%` as const,
         },
       }),
       [
-        primaryCardScale,
-        pastEntriesScale,
-        calendarScale,
-        whyGratitudeScale,
+        primaryAnimations,
+        pastEntriesAnimations,
+        calendarAnimations,
+        whyGratitudeAnimations,
         styles,
         currentCount,
         dailyGoal,
       ]
     );
 
-    const handlePressIn = useCallback((animValue: Animated.Value) => {
+    // **RACE CONDITION FIX**: Coordinated press handlers with haptic feedback
+    const handlePressIn = useCallback((animations: ReturnType<typeof useCoordinatedAnimations>) => {
       // Enhanced haptic feedback for iOS
       if (Platform.OS === 'ios') {
         Vibration.vibrate(10);
       }
 
-      Animated.spring(animValue, {
-        toValue: 0.96,
-        tension: 350,
-        friction: 8,
-        useNativeDriver: true,
-      }).start();
+      animations.animatePressIn();
     }, []);
 
-    const handlePressOut = useCallback((animValue: Animated.Value) => {
-      Animated.spring(animValue, {
-        toValue: 1,
-        tension: 350,
-        friction: 8,
-        useNativeDriver: true,
-      }).start();
+    const handlePressOut = useCallback((animations: ReturnType<typeof useCoordinatedAnimations>) => {
+      animations.animatePressOut();
     }, []);
 
     const getPrimaryActionData = useMemo(() => {
@@ -119,8 +132,8 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
               style={styles.primaryCard}
               containerStyle={styles.primaryCardContainer}
               touchableProps={{
-                onPressIn: () => handlePressIn(primaryCardScale),
-                onPressOut: () => handlePressOut(primaryCardScale),
+                onPressIn: () => handlePressIn(primaryAnimations),
+                onPressOut: () => handlePressOut(primaryAnimations),
                 activeOpacity: 1,
               }}
             >
@@ -162,8 +175,8 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                 onPress={onNavigateToPastEntries}
                 style={styles.secondaryCard}
                 touchableProps={{
-                  onPressIn: () => handlePressIn(pastEntriesScale),
-                  onPressOut: () => handlePressOut(pastEntriesScale),
+                  onPressIn: () => handlePressIn(pastEntriesAnimations),
+                  onPressOut: () => handlePressOut(pastEntriesAnimations),
                   activeOpacity: 1,
                 }}
               >
@@ -186,8 +199,8 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                 onPress={onNavigateToCalendar}
                 style={styles.secondaryCard}
                 touchableProps={{
-                  onPressIn: () => handlePressIn(calendarScale),
-                  onPressOut: () => handlePressOut(calendarScale),
+                  onPressIn: () => handlePressIn(calendarAnimations),
+                  onPressOut: () => handlePressOut(calendarAnimations),
                   activeOpacity: 1,
                 }}
               >
@@ -210,8 +223,8 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                 onPress={onNavigateToWhyGratitude}
                 style={styles.secondaryCard}
                 touchableProps={{
-                  onPressIn: () => handlePressIn(whyGratitudeScale),
-                  onPressOut: () => handlePressOut(whyGratitudeScale),
+                  onPressIn: () => handlePressIn(whyGratitudeAnimations),
+                  onPressOut: () => handlePressOut(whyGratitudeAnimations),
                   activeOpacity: 1,
                 }}
               >

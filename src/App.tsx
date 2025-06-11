@@ -14,9 +14,11 @@ import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import { StatusBar, type StatusBarStyle } from 'expo-status-bar';
 import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import * as ExpoSplashScreen from 'expo-splash-screen';
 import RootNavigator from './navigation/RootNavigator';
 import { useTheme } from './providers/ThemeProvider';
-import SplashScreen from './features/auth/screens/SplashScreen';
+import EnhancedSplashScreen from './features/auth/screens/SplashScreen';
 import { analyticsService } from './services/analyticsService';
 import { notificationService } from './services/notificationService';
 import useAuthStore from './store/authStore';
@@ -24,6 +26,7 @@ import { logger } from '@/utils/debugConfig';
 import { initializeGlobalErrorMonitoring } from '@/utils/errorTranslation';
 import { RootStackParamList } from './types/navigation';
 import { AppProviders } from './providers/AppProviders';
+import SplashOverlayProvider from './providers/SplashOverlayProvider';
 
 // Initialize global error monitoring as early as possible
 initializeGlobalErrorMonitoring();
@@ -274,7 +277,7 @@ const AppContent: React.FC = () => {
       ref={navigationRef}
       theme={navigationTheme}
       linking={linking}
-      fallback={<SplashScreen />}
+      fallback={<EnhancedSplashScreen />}
       onStateChange={(state) => {
         const previousRouteName = routeNameRef.current;
         const currentRouteName = getActiveRouteName(state);
@@ -291,10 +294,46 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => (
-  <AppProviders>
-    <AppContent />
-  </AppProviders>
-);
+// Root component responsible for hiding the native splash screen once the first frame is rendered
+const App: React.FC = () => {
+  const [appIsReady, setAppIsReady] = React.useState(false);
+
+  // Mark the app as ready once React has mounted providers (fonts & theme already preloaded inside providers)
+  React.useEffect(() => {
+    // Providers load fonts/assets internally; give them one tick to mount
+    const timer = setTimeout(() => {
+      setAppIsReady(true);
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Callback executed on the root view layout event
+  const onLayoutRootView = React.useCallback(async () => {
+    if (appIsReady) {
+      try {
+        await ExpoSplashScreen.hideAsync();
+      } catch {
+        // Intentionally swallow errors – splash will auto-hide eventually
+      }
+    }
+  }, [appIsReady]);
+
+  return (
+    <AppProviders>
+      <SplashOverlayProvider>
+        <View onLayout={onLayoutRootView} style={styles.container}>
+          <AppContent />
+        </View>
+      </SplashOverlayProvider>
+    </AppProviders>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 export default App;

@@ -1,9 +1,10 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button, Card, Divider } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
+import { useToast } from '@/providers/ToastProvider';
 import { analyticsService } from '@/services/analyticsService';
 import { useUserProfile } from '@/shared/hooks';
 import { useStreakData } from '@/features/streak/hooks';
@@ -24,10 +25,29 @@ interface AnalyticsDebuggerProps {
 export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose }) => {
   const { theme } = useTheme();
   const { showSuccess, showError } = useGlobalError();
+  const { showWarning, showInfo, hideToast } = useToast();
   const { profile } = useUserProfile();
   const { data: streakData } = useStreakData();
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isRunningTests, setIsRunningTests] = useState(false);
+
+  // 🛡️ MEMORY LEAK FIX: Add timer refs for cleanup (following ToastTester pattern)
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  // 🛡️ MEMORY LEAK FIX: Helper to track and clean timers
+  const addTimer = useCallback((timer: ReturnType<typeof setTimeout>) => {
+    timersRef.current.add(timer);
+    return timer;
+  }, []);
+
+  // 🛡️ MEMORY LEAK FIX: Cleanup all timers on unmount
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
 
   const styles = createStyles(theme);
 
@@ -164,6 +184,104 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
     }
   }, [addTestResult]);
 
+  // 🚀 TOAST TESTING FUNCTIONS
+  
+  // Test Basic Toast Types
+  const testBasicToasts = useCallback(() => {
+    addTimer(setTimeout(() => showSuccess('✅ Success toast - Operation completed successfully!'), 0));
+    addTimer(setTimeout(() => showError('❌ Error toast - Something went wrong!'), 1500));
+    addTimer(setTimeout(() => showWarning('⚠️ Warning toast - Please pay attention!'), 3000));
+    addTimer(setTimeout(() => showInfo('ℹ️ Info toast - Here is some information!'), 4500));
+    addTestResult('Basic Toast Types', true, 'Displayed all 4 toast types sequentially');
+  }, [addTimer, showSuccess, showError, showWarning, showInfo, addTestResult]);
+
+  // Test Toast with Action Buttons
+  const testActionToasts = useCallback(() => {
+    showWarning('🔄 Action Toast Test - Do you want to continue?', {
+      duration: 8000,
+      action: {
+        label: 'Continue',
+        onPress: () => {
+          showSuccess('✅ Action executed! You clicked Continue.');
+          addTestResult('Action Toast Response', true, 'User clicked the action button');
+        },
+      },
+    });
+    addTestResult('Action Toast', true, 'Displayed toast with action button');
+  }, [showWarning, showSuccess, addTestResult]);
+
+  // Test Different Durations
+  const testToastDurations = useCallback(() => {
+    showInfo('⚡ Quick toast (2s)', { duration: 2000 });
+    addTimer(setTimeout(() => showInfo('🕐 Medium toast (5s)', { duration: 5000 }), 500));
+    addTimer(setTimeout(() => showInfo('⏰ Long toast (10s)', { duration: 10000 }), 1000));
+    addTestResult('Toast Durations', true, 'Tested 2s, 5s, and 10s durations');
+  }, [addTimer, showInfo, addTestResult]);
+
+  // Test Toast Queue (Rapid Fire)
+  const testToastQueue = useCallback(() => {
+    // Fire multiple toasts rapidly to test queue behavior
+    showInfo('🔢 Toast 1 - First in queue');
+    showSuccess('🔢 Toast 2 - Second in queue');
+    showWarning('🔢 Toast 3 - Third in queue');
+    showError('🔢 Toast 4 - Last in queue');
+    addTestResult('Toast Queue', true, 'Fired 4 rapid toasts to test queue behavior');
+  }, [showInfo, showSuccess, showWarning, showError, addTestResult]);
+
+  // Test Long Message Handling
+  const testLongMessages = useCallback(() => {
+    showError('📝 This is a very long toast message that tests how the toast system handles lengthy text content. It should wrap properly and maintain good readability while staying within reasonable bounds for mobile UI.');
+    addTestResult('Long Message', true, 'Tested toast with very long message content');
+  }, [showError, addTestResult]);
+
+  // Test Toast with Retry Action
+  const testRetryToast = useCallback(() => {
+    showError('🔄 Network operation failed');
+    addTestResult('Retry Toast', true, 'Displayed error toast with retry action');
+  }, [showError, addTestResult]);
+
+  // Test Hide Toast Functionality
+  const testHideToast = useCallback(() => {
+    showInfo('⏱️ This toast will be hidden programmatically in 2 seconds...', {
+      duration: 10000, // Set long duration
+    });
+    addTimer(setTimeout(() => {
+      hideToast();
+      showSuccess('✅ Toast hidden programmatically!');
+    }, 2000));
+    addTestResult('Hide Toast', true, 'Tested programmatic toast hiding');
+  }, [addTimer, showInfo, hideToast, showSuccess, addTestResult]);
+
+  // Test All Toasts Comprehensive Demo
+  const testAllToastFeatures = useCallback(() => {
+    let delay = 0;
+    
+    // Success with action
+    addTimer(setTimeout(() => {
+      showSuccess('🎉 Complete success with action');
+    }, delay));
+    delay += 2000;
+
+    // Warning with long duration
+    addTimer(setTimeout(() => {
+      showWarning('⚠️ Important warning that needs attention');
+    }, delay));
+    delay += 1000;
+
+    // Error with retry
+    addTimer(setTimeout(() => {
+      showError('❌ Critical error occurred');
+    }, delay));
+    delay += 3000;
+
+    // Info with custom duration
+    addTimer(setTimeout(() => {
+      showInfo('ℹ️ Process completed successfully');
+    }, delay));
+
+    addTestResult('Comprehensive Toast Demo', true, 'Demonstrated all toast features with realistic scenarios');
+  }, [addTimer, showSuccess, showWarning, showError, showInfo, addTestResult]);
+
   // Test 9: All Screen Views (Comprehensive Coverage)
   const testAllScreenViews = useCallback(async () => {
     const screenTests = [
@@ -213,8 +331,8 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
         );
         successCount++;
 
-        // Small delay between tests
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        // 🛡️ MEMORY LEAK FIX: Track delay timers
+        await new Promise((resolve) => addTimer(setTimeout(resolve, 50)));
       } catch (error) {
         addTestResult(
           `Screen: ${screen.description}`,
@@ -229,7 +347,7 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
         (successCount / totalCount) * 100
       )}%`
     );
-  }, [addTestResult, showSuccess]);
+  }, [addTimer, addTestResult, showSuccess]);
 
   // Run All Tests
   const runAllTests = useCallback(async () => {
@@ -238,30 +356,31 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
 
     try {
       await testScreenViewTracking();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => addTimer(setTimeout(resolve, 100)));
 
       await testCustomEventLogging();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => addTimer(setTimeout(resolve, 100)));
 
       await testUserJourneyTracking();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => addTimer(setTimeout(resolve, 100)));
 
       await testPerformanceAnalytics();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => addTimer(setTimeout(resolve, 100)));
 
       await testEngagementAnalytics();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => addTimer(setTimeout(resolve, 100)));
 
       await testGamificationAnalytics();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => addTimer(setTimeout(resolve, 100)));
 
       await testContentAnalytics();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => addTimer(setTimeout(resolve, 100)));
 
       testScreenNameNormalization();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => addTimer(setTimeout(resolve, 100)));
 
       await testAllScreenViews();
+      await new Promise((resolve) => addTimer(setTimeout(resolve, 100)));
     } catch (error) {
       const errorMessage = `An error occurred during testing: ${(error as Error).message}`;
       addTestResult('Run All Tests', false, errorMessage);
@@ -270,6 +389,7 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
       setIsRunningTests(false);
     }
   }, [
+    addTimer,
     addTestResult,
     testScreenViewTracking,
     testCustomEventLogging,
@@ -348,6 +468,60 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
 
           <TouchableOpacity style={styles.testButton} onPress={testAllScreenViews}>
             <Text style={styles.testButtonText}>Test All Screen Views (NEW)</Text>
+          </TouchableOpacity>
+        </View>
+      </Card>
+
+      {/* 🚀 TOAST TESTING SECTION */}
+      <Card style={styles.testsCard}>
+        <Text style={styles.sectionTitle}>🍞 Toast System Tests</Text>
+        <Text style={styles.toastDescription}>
+          Test all toast functionality including types, durations, actions, and queue behavior.
+        </Text>
+
+        {/* Quick Test Buttons */}
+        <View style={styles.quickToastTests}>
+          <TouchableOpacity style={styles.toastTestButton} onPress={testBasicToasts}>
+            <Icon name="check-all" size={16} color={theme.colors.primary} />
+            <Text style={styles.toastTestButtonText}>All Toast Types</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.toastTestButton} onPress={testActionToasts}>
+            <Icon name="gesture-tap-button" size={16} color={theme.colors.warning} />
+            <Text style={styles.toastTestButtonText}>Action Buttons</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.toastTestButton} onPress={testToastQueue}>
+            <Icon name="playlist-check" size={16} color={theme.colors.info} />
+            <Text style={styles.toastTestButtonText}>Queue Test</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.toastTestButton} onPress={testAllToastFeatures}>
+            <Icon name="star" size={16} color={theme.colors.success} />
+            <Text style={styles.toastTestButtonText}>Full Demo</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Divider style={styles.divider} />
+
+        {/* Detailed Test Buttons */}
+        <View style={styles.detailedToastTests}>
+          <Text style={styles.individualTestsTitle}>Detailed Tests:</Text>
+
+          <TouchableOpacity style={styles.testButton} onPress={testToastDurations}>
+            <Text style={styles.testButtonText}>⏱️ Test Different Durations</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.testButton} onPress={testLongMessages}>
+            <Text style={styles.testButtonText}>📝 Test Long Messages</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.testButton} onPress={testRetryToast}>
+            <Text style={styles.testButtonText}>🔄 Test Retry Actions</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.testButton} onPress={testHideToast}>
+            <Text style={styles.testButtonText}>⏹️ Test Hide Toast</Text>
           </TouchableOpacity>
         </View>
       </Card>
@@ -496,5 +670,34 @@ const createStyles = (theme: AppTheme) =>
       fontSize: 11,
       color: theme.colors.onSurfaceVariant,
       marginLeft: 22,
+    },
+    toastDescription: {
+      fontSize: 12,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: 12,
+    },
+    quickToastTests: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    toastTestButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 8,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: 6,
+      marginBottom: 6,
+      width: '48%',
+    },
+    toastTestButtonText: {
+      fontSize: 11,
+      color: theme.colors.onSurfaceVariant,
+      marginLeft: 6,
+      flex: 1,
+    },
+    detailedToastTests: {
+      marginTop: 8,
     },
   });

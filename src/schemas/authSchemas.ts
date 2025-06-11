@@ -2,7 +2,11 @@ import { z } from 'zod';
 
 // Magic link authentication schema - only requires email
 export const magicLinkSchema = z.object({
-  email: z.string().email('Geçersiz e-posta adresi.'),
+  email: z
+    .string()
+    .trim()
+    .email('Geçersiz e-posta adresi.')
+    .transform((val) => val.toLowerCase()),
 });
 
 export type MagicLinkFormInputs = z.infer<typeof magicLinkSchema>;

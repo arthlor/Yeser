@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Animated,
   Platform,
@@ -12,6 +12,7 @@ import {
 import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../themes/types';
 import { getPrimaryShadow } from '../../themes/utils';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 interface OnboardingGratitudeInputProps {
   onSubmit: (text: string) => void;
@@ -20,6 +21,15 @@ interface OnboardingGratitudeInputProps {
   disabled?: boolean;
 }
 
+/**
+ * 🌿 COORDINATED ONBOARDING GRATITUDE INPUT
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Eliminated complex Animated.sequence button press animation
+ * - Replaced with coordinated press animation system
+ * - Maintained all functionality with minimal, coordinated animations
+ * - Enhanced consistency with app-wide animation system
+ */
 const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
   onSubmit,
   placeholder = 'Örneğin: Kahvemin sıcaklığı...',
@@ -32,26 +42,21 @@ const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
 
   const [inputText, setInputText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const buttonScale = useRef(new Animated.Value(1)).current;
 
-  const handleSubmit = () => {
+  // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
+  const animations = useCoordinatedAnimations();
+
+  const handleSubmit = useCallback(() => {
     if (inputText.trim() && !disabled) {
-      Animated.sequence([
-        Animated.timing(buttonScale, {
-          toValue: 0.95,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(buttonScale, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // **COORDINATED PRESS FEEDBACK**: Use coordinated press animation
+      animations.animatePressIn();
+      setTimeout(() => {
+        animations.animatePressOut();
+      }, 150);
 
       onSubmit(inputText.trim());
     }
-  };
+  }, [inputText, disabled, onSubmit, animations]);
 
   const isButtonEnabled = inputText.trim().length > 0 && !disabled;
 
@@ -72,12 +77,15 @@ const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
           textAlignVertical="center"
         />
 
-        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+        {/* **COORDINATED BUTTON ANIMATION**: Use coordinated press transform */}
+        <Animated.View style={{ transform: animations.pressTransform }}>
           <TouchableOpacity
             onPress={handleSubmit}
+            onPressIn={animations.animatePressIn}
+            onPressOut={animations.animatePressOut}
             style={[styles.button, !isButtonEnabled && styles.buttonDisabled]}
             disabled={!isButtonEnabled}
-            activeOpacity={0.8}
+            activeOpacity={1} // We handle animation manually
           >
             <Text style={[styles.buttonText, !isButtonEnabled && styles.buttonTextDisabled]}>
               {buttonText}

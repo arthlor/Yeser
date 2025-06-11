@@ -82,24 +82,38 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
   const [localStatement, setLocalStatement] = useState(statement);
   const textInputRef = useRef<TextInput>(null);
 
+  // 🛡️ MEMORY LEAK FIX: Cleanup ref on unmount for better GC
+  useEffect(() => {
+    return () => {
+      // Set ref to null on unmount to help with garbage collection
+      if (textInputRef.current) {
+        textInputRef.current = null;
+      }
+    };
+  }, []);
+
   // Sync local statement with prop changes
   useEffect(() => {
     setLocalStatement(statement);
   }, [statement]);
 
-  // Error animation
+  // **SIMPLIFIED ERROR FEEDBACK**: Remove complex error animation
+  // Following minimal animation philosophy - errors handled via toast system
   useEffect(() => {
     if (hasError) {
-      animations.animateError();
+      // Simple haptic feedback instead of animation
+      triggerHaptic('error');
     }
-  }, [hasError, animations]);
+  }, [hasError, triggerHaptic]);
 
-  // Entrance animation
+  // **SIMPLIFIED ENTRANCE**: Remove complex entrance animation
+  // Following minimal animation philosophy - cards appear naturally
   useEffect(() => {
     if (animateEntrance) {
-      animations.animateEntrance();
+      // Simple haptic feedback for card appearance instead of animation
+      triggerHaptic('light');
     }
-  }, [animateEntrance, animations]);
+  }, [animateEntrance, triggerHaptic]);
 
   // Enhanced date formatting
   const { relativeTime, isRecent } = formatStatementDate(date);

@@ -1,7 +1,6 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
-  Animated,
   StyleSheet,
   Text,
   TextStyle,
@@ -36,55 +35,23 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
 
-    // Optimized animation values to prevent flickering
-    const refreshRotation = useRef(new Animated.Value(0)).current;
-    const pulseAnim = useRef(new Animated.Value(1)).current;
+    /**
+     * **ANIMATION SIMPLIFICATION COMPLETED**: 
+     * - Eliminated refresh rotation animation (360deg spin)
+     * - Removed pulse animation for loading states
+     * - Simplified to basic state-based visual feedback
+     * - Maintained all functionality with cleaner, minimal approach
+     * - Reduced from 2+ animation instances to 0 animations
+     * - Performance improved by removing animation overhead
+     */
 
-    // Enhanced refresh handler with controlled animation
+    // Enhanced refresh handler - simplified without animations
     const handleRefresh = useCallback(() => {
       if (!onRefresh) {
         return;
       }
-
-      // Simple refresh button rotation
-      Animated.timing(refreshRotation, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => {
-        refreshRotation.setValue(0);
-      });
-
       onRefresh();
-    }, [onRefresh, refreshRotation]);
-
-    // Controlled pulse animation for loading state only
-    React.useEffect(() => {
-      if (isLoading) {
-        pulseAnim.setValue(1);
-        const pulseAnimation = Animated.loop(
-          Animated.sequence([
-            Animated.timing(pulseAnim, {
-              toValue: 0.98,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseAnim, {
-              toValue: 1,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-          ])
-        );
-        pulseAnimation.start();
-        return () => {
-          pulseAnimation.stop();
-          pulseAnim.setValue(1);
-        };
-      } else {
-        pulseAnim.setValue(1);
-      }
-    }, [isLoading, pulseAnim]);
+    }, [onRefresh]);
 
     // Debug logging - FIXED: Remove unstable timestamp to prevent infinite re-renders
     const debugData = useMemo(
@@ -113,14 +80,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
     // Enhanced loading state with better visual feedback
     if (isLoading) {
       return (
-        <Animated.View
-          style={[
-            styles.container,
-            {
-              transform: [{ scale: pulseAnim }],
-            },
-          ]}
-        >
+        <View style={styles.container}>
           <View style={styles.loadingCard}>
             <View style={styles.loadingIconContainer}>
               <ActivityIndicator size="small" color={theme.colors.primary} />
@@ -130,7 +90,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
               <Text style={styles.loadingSubtitle}>Güzel bir anı yükleniyor...</Text>
             </View>
           </View>
-        </Animated.View>
+        </View>
       );
     }
 
@@ -200,24 +160,11 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
               activeOpacity={0.8}
               disabled={isLoading}
             >
-              <Animated.View
-                style={{
-                  transform: [
-                    {
-                      rotate: refreshRotation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0deg', '360deg'],
-                      }),
-                    },
-                  ],
-                }}
-              >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color={theme.colors.primary} />
-                ) : (
-                  <Icon name="refresh" size={16} color={theme.colors.primary} />
-                )}
-              </Animated.View>
+              {isLoading ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <Icon name="refresh" size={16} color={theme.colors.primary} />
+              )}
             </TouchableOpacity>
           </View>
         </View>

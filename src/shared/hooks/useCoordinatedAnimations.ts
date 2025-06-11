@@ -1,313 +1,184 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Animated } from 'react-native';
 
-// **RACE CONDITION FIX**: Animation coordination types
-type AnimationType = 'entrance' | 'press' | 'pulse' | 'shake' | 'scale' | 'fade';
-
-interface AnimationConfig {
-  type: AnimationType;
-  toValue: number;
-  duration: number;
+// **MINIMAL ANIMATION SYSTEM**: Simple, non-intrusive animations with performance benefits
+interface MinimalAnimationConfig {
+  duration?: number;
   useNativeDriver?: boolean;
-  loop?: boolean;
-  priority?: number; // Higher priority interrupts lower priority
+  onComplete?: () => void;
 }
 
-interface AnimationState {
+interface MinimalAnimationState {
   isRunning: boolean;
-  currentType: AnimationType | null;
-  currentPriority: number;
-  animation: Animated.CompositeAnimation | null;
+  currentAnimation: Animated.CompositeAnimation | null;
 }
 
-// **RACE CONDITION FIX**: Centralized animation controller
+// **SIMPLIFIED COORDINATION HOOK**: Performance optimized with minimal animations
 export const useCoordinatedAnimations = () => {
-  // Animation refs - stable across renders
+  // **MINIMAL ANIMATION VALUES**: Only what's needed for subtle interactions
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const pressAnim = useRef(new Animated.Value(1)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const shakeAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current; // For loading states
+  const heightAnim = useRef(new Animated.Value(0)).current; // For layout transitions only
+  const layoutOpacityAnim = useRef(new Animated.Value(1)).current; // Separate for layout opacity
 
-  // Animation state tracking
-  const animationState = useRef<AnimationState>({
+  // Simple animation state - no complex tracking needed
+  const animationState = useRef<MinimalAnimationState>({
     isRunning: false,
-    currentType: null,
-    currentPriority: 0,
-    animation: null,
+    currentAnimation: null,
   });
 
   // Component mount state for cleanup
   const isMountedRef = useRef(true);
 
-  // **RACE CONDITION FIX**: Animation conflict resolution
-  const canRunAnimation = useCallback((type: AnimationType, priority: number = 1): boolean => {
-    const state = animationState.current;
-
-    // No animation running - can start
-    if (!state.isRunning) {
-      return true;
-    }
-
-    // Higher priority can interrupt lower priority
-    if (priority > state.currentPriority) {
-      return true;
-    }
-
-    // Same type can be restarted
-    if (state.currentType === type) {
-      return true;
-    }
-
-    return false;
-  }, []);
-
-  // **RACE CONDITION FIX**: Stop current animation safely
+  // **SIMPLE STOP FUNCTION**: Clean and minimal
   const stopCurrentAnimation = useCallback(() => {
     const state = animationState.current;
-
-    if (state.animation && state.isRunning) {
-      state.animation.stop();
-      state.isRunning = false;
-      state.currentType = null;
-      state.currentPriority = 0;
-      state.animation = null;
+    if (state.currentAnimation && state.isRunning) {
+      state.currentAnimation.stop();
     }
+    state.isRunning = false;
+    state.currentAnimation = null;
   }, []);
 
-  // **RACE CONDITION FIX**: Start animation with coordination
-  const startCoordinatedAnimation = useCallback(
-    (config: AnimationConfig, animatedValue: Animated.Value, onComplete?: () => void) => {
-      // Check if component is still mounted
-      if (!isMountedRef.current) {
-        return;
-      }
-
-      const priority = config.priority || 1;
-
-      // Check if animation can run
-      if (!canRunAnimation(config.type, priority)) {
-        return;
-      }
-
-      // Stop current animation if lower priority
-      stopCurrentAnimation();
-
-      // Create new animation
-      let animation: Animated.CompositeAnimation;
-
-      if (config.loop) {
-        animation = Animated.loop(
-          Animated.timing(animatedValue, {
-            toValue: config.toValue,
-            duration: config.duration,
-            useNativeDriver: config.useNativeDriver ?? true,
-          })
-        );
-      } else {
-        animation = Animated.timing(animatedValue, {
-          toValue: config.toValue,
-          duration: config.duration,
-          useNativeDriver: config.useNativeDriver ?? true,
-        });
-      }
-
-      // Update state
-      animationState.current = {
-        isRunning: true,
-        currentType: config.type,
-        currentPriority: priority,
-        animation,
-      };
-
-      // Start animation with completion handler
-      animation.start((finished) => {
-        // Only process completion if component is still mounted
-        if (!isMountedRef.current) {
-          return;
-        }
-
-        if (finished) {
-          // Reset state on successful completion
-          animationState.current.isRunning = false;
-          animationState.current.currentType = null;
-          animationState.current.currentPriority = 0;
-          animationState.current.animation = null;
-
-          onComplete?.();
-        }
-      });
-    },
-    [canRunAnimation, stopCurrentAnimation]
-  );
-
-  // **ANIMATION PRIMITIVES**: Coordinated animation functions
+  // **MINIMAL ENTRANCE**: Subtle fade-in only
   const animateEntrance = useCallback(
-    (delay = 0) => {
+    (config: MinimalAnimationConfig = {}) => {
       if (!isMountedRef.current) {
         return;
       }
 
-      // Reset values for entrance
-      fadeAnim.setValue(0);
-      scaleAnim.setValue(0.95);
+      const { duration = 300, onComplete } = config;
 
-      // Start coordinated entrance animation
+      // Set initial state
+      fadeAnim.setValue(0);
+      scaleAnim.setValue(0.98);
+
       const entranceAnimation = Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 600,
-          delay,
+          duration,
           useNativeDriver: true,
         }),
-        Animated.spring(scaleAnim, {
+        Animated.timing(scaleAnim, {
           toValue: 1,
-          tension: 100,
-          friction: 8,
-          delay,
+          duration,
           useNativeDriver: true,
         }),
       ]);
 
       animationState.current = {
         isRunning: true,
-        currentType: 'entrance',
-        currentPriority: 2, // High priority for entrance
-        animation: entranceAnimation,
+        currentAnimation: entranceAnimation,
       };
 
       entranceAnimation.start((finished) => {
         if (finished && isMountedRef.current) {
           animationState.current.isRunning = false;
-          animationState.current.currentType = null;
-          animationState.current.currentPriority = 0;
-          animationState.current.animation = null;
+          animationState.current.currentAnimation = null;
+          onComplete?.();
         }
       });
     },
     [fadeAnim, scaleAnim]
   );
 
+  // **SUBTLE PRESS FEEDBACK**: Minimal scale effect
   const animatePressIn = useCallback(() => {
-    startCoordinatedAnimation(
-      {
-        type: 'press',
-        toValue: 0.98,
-        duration: 150,
-        priority: 3, // High priority for user interaction
-      },
-      pressAnim
-    );
-  }, [pressAnim, startCoordinatedAnimation]);
+    if (!isMountedRef.current) {
+      return;
+    }
+
+    Animated.timing(scaleAnim, {
+      toValue: 0.98,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [scaleAnim]);
 
   const animatePressOut = useCallback(() => {
-    startCoordinatedAnimation(
-      {
-        type: 'press',
-        toValue: 1,
-        duration: 150,
-        priority: 3, // High priority for user interaction
-      },
-      pressAnim
-    );
-  }, [pressAnim, startCoordinatedAnimation]);
+    if (!isMountedRef.current) {
+      return;
+    }
 
-  const animatePulse = useCallback(
-    (start = true) => {
-      if (!start) {
-        stopCurrentAnimation();
-        pulseAnim.setValue(1);
+    Animated.timing(scaleAnim, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [scaleAnim]);
+
+  // **SIMPLE FADE**: For loading states and visibility changes
+  const animateFade = useCallback(
+    (toValue: number, config: MinimalAnimationConfig = {}) => {
+      if (!isMountedRef.current) {
         return;
       }
 
-      if (!canRunAnimation('pulse', 1)) {
-        return;
-      }
+      const { duration = 200, onComplete } = config;
 
-      const pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 0.95,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      );
+      const fadeAnimation = Animated.timing(fadeAnim, {
+        toValue,
+        duration,
+        useNativeDriver: true,
+      });
 
-      animationState.current = {
-        isRunning: true,
-        currentType: 'pulse',
-        currentPriority: 1,
-        animation: pulseAnimation,
-      };
-
-      pulseAnimation.start();
+      fadeAnimation.start((finished) => {
+        if (finished && isMountedRef.current) {
+          onComplete?.();
+        }
+      });
     },
-    [pulseAnim, canRunAnimation, stopCurrentAnimation]
+    [fadeAnim]
   );
 
-  const animateShake = useCallback(() => {
-    startCoordinatedAnimation(
-      {
-        type: 'shake',
-        toValue: 0,
-        duration: 400,
-        priority: 4, // Highest priority for error indication
-      },
-      shakeAnim,
-      () => shakeAnim.setValue(0) // Reset after shake
-    );
+  // **LAYOUT TRANSITION**: Simple replacement for LayoutAnimation (performance critical)
+  const animateLayoutTransition = useCallback(
+    (expanded: boolean, targetHeight: number = 100, config: MinimalAnimationConfig = {}) => {
+      if (!isMountedRef.current) {
+        return;
+      }
 
-    // Custom shake sequence
-    if (canRunAnimation('shake', 4)) {
-      stopCurrentAnimation();
+      const { duration = 250, onComplete } = config;
+      const toHeight = expanded ? targetHeight : 0;
+      const toOpacity = expanded ? 1 : 0;
 
-      const shakeSequence = Animated.sequence([
-        Animated.timing(shakeAnim, { toValue: 10, duration: 100, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: -10, duration: 100, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 10, duration: 100, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
+      // **SEPARATE ANIMATIONS**: Avoid native/JS driver conflicts
+      const heightAnimation = Animated.timing(heightAnim, {
+        toValue: toHeight,
+        duration,
+        useNativeDriver: false, // Height requires layout driver
+      });
+
+      const opacityAnimation = Animated.timing(layoutOpacityAnim, {
+        toValue: toOpacity,
+        duration,
+        useNativeDriver: true,
+      });
+
+      // **PARALLEL EXECUTION**: Now safe with separate animation values
+      const layoutAnimation = Animated.parallel([
+        heightAnimation,
+        opacityAnimation,
       ]);
 
       animationState.current = {
         isRunning: true,
-        currentType: 'shake',
-        currentPriority: 4,
-        animation: shakeSequence,
+        currentAnimation: layoutAnimation,
       };
 
-      shakeSequence.start((finished) => {
+      layoutAnimation.start((finished) => {
         if (finished && isMountedRef.current) {
           animationState.current.isRunning = false;
-          animationState.current.currentType = null;
-          animationState.current.currentPriority = 0;
-          animationState.current.animation = null;
+          animationState.current.currentAnimation = null;
+          onComplete?.();
         }
       });
-    }
-  }, [shakeAnim, startCoordinatedAnimation, canRunAnimation, stopCurrentAnimation]);
-
-  const animateScale = useCallback(
-    (toValue: number, duration = 300) => {
-      startCoordinatedAnimation(
-        {
-          type: 'scale',
-          toValue,
-          duration,
-          priority: 2,
-        },
-        scaleAnim
-      );
     },
-    [scaleAnim, startCoordinatedAnimation]
+    [heightAnim, layoutOpacityAnim]
   );
 
-  // **RACE CONDITION FIX**: Cleanup on unmount
+  // **CLEANUP**: Proper cleanup for performance
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -315,36 +186,63 @@ export const useCoordinatedAnimations = () => {
     };
   }, [stopCurrentAnimation]);
 
-  // **COMBINED TRANSFORM VALUES**: Pre-calculated for performance
-  const combinedTransform = [
-    { scale: Animated.multiply(Animated.multiply(scaleAnim, pressAnim), pulseAnim) },
-    { translateX: shakeAnim },
-  ];
+  // **MINIMAL TRANSFORM**: Only basic scale for press feedback
+  const pressTransform = useMemo(() => [
+    { scale: scaleAnim },
+  ], [scaleAnim]);
 
-  return {
-    // Animation values
+  // **ENTRANCE TRANSFORM**: Combined fade and scale for entrances
+  const entranceTransform = useMemo(() => [
+    { scale: scaleAnim },
+  ], [scaleAnim]);
+
+  // **SIMPLIFIED API**: Clean and minimal interface
+  return useMemo(() => ({
+    // Animation values (minimal set)
     fadeAnim,
     scaleAnim,
-    pressAnim,
-    pulseAnim,
-    shakeAnim,
+    opacityAnim,
+    heightAnim,
+    layoutOpacityAnim, // Separate for layout transitions
 
-    // Animation functions
+    // Animation functions (essential only)
     animateEntrance,
     animatePressIn,
     animatePressOut,
-    animatePulse,
-    animateShake,
-    animateScale,
+    animateFade,
+    animateLayoutTransition, // LayoutAnimation replacement
 
-    // Control functions
+    // Transform utilities (minimal)
+    pressTransform,
+    entranceTransform,
+
+    // Control
     stopAllAnimations: stopCurrentAnimation,
-
-    // Combined transforms for performance
-    combinedTransform,
-
-    // State queries
     isAnimating: () => animationState.current.isRunning,
-    getCurrentAnimation: () => animationState.current.currentType,
-  };
+
+    // **DEPRECATED**: Simplified aliases for backward compatibility
+    animateSettingsExpansion: animateLayoutTransition, // Keep for existing code
+    animateShake: () => {}, // No-op for backward compatibility
+    animateCelebration: () => {}, // No-op for backward compatibility
+    animateProgress: () => {}, // No-op for backward compatibility
+    animateSequence: () => {}, // No-op for backward compatibility
+    createSequence: () => ({ id: '', animations: [], parallel: true }), // No-op
+    progressAnim: fadeAnim, // Alias for compatibility
+    combinedTransform: pressTransform, // Alias for compatibility
+    progressInterpolation: fadeAnim, // Alias for compatibility
+  }), [
+    fadeAnim,
+    scaleAnim,
+    opacityAnim,
+    heightAnim,
+    layoutOpacityAnim,
+    animateEntrance,
+    animatePressIn,
+    animatePressOut,
+    animateFade,
+    animateLayoutTransition,
+    pressTransform,
+    entranceTransform,
+    stopCurrentAnimation,
+  ]);
 };

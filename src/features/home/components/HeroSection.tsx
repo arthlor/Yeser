@@ -2,8 +2,9 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -20,6 +21,15 @@ interface HeroSectionProps {
   onStreakPress?: () => void;
 }
 
+/**
+ * 🏠 COORDINATED HERO SECTION
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Eliminated direct Animated.timing for progress animations
+ * - Replaced with coordinated animation system
+ * - Simplified animation approach following "Barely Noticeable, Maximum Performance"
+ * - Enhanced consistency with coordinated animation philosophy
+ */
 const HeroSection: React.FC<HeroSectionProps> = ({
   greeting,
   username,
@@ -33,55 +43,20 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   const { status, statusMessage, canExtendToday } = useStreakStatus();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  // Animation values for enhanced entrance
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const celebrationScale = useRef(new Animated.Value(1)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
+  const animations = useCoordinatedAnimations();
 
+  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
-    // Entrance animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
 
+  // **MINIMAL PROGRESS FEEDBACK**: Simple opacity change when progress updates
   useEffect(() => {
-    // Progress animation
-    Animated.timing(progressAnim, {
-      toValue: currentCount / dailyGoal,
-      duration: 1000,
-      useNativeDriver: false,
-    }).start();
-  }, [currentCount, dailyGoal, progressAnim]);
-
-  useEffect(() => {
-    // Celebration animation when goal is reached
-    if (currentCount >= dailyGoal && currentCount > 0) {
-      Animated.sequence([
-        Animated.timing(celebrationScale, {
-          toValue: 1.05,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(celebrationScale, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    if (currentCount > 0) {
+      animations.animateFade(1, { duration: 200 });
     }
-  }, [currentCount, dailyGoal, celebrationScale]);
+  }, [currentCount, animations]);
 
   const getTimeBasedElements = () => {
     const hour = new Date().getHours();
@@ -190,13 +165,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   return (
-    <Animated.View
+    <Animated.View 
       style={[
         styles.container,
         {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }, { scale: celebrationScale }],
-        },
+          opacity: animations.fadeAnim,
+          transform: animations.entranceTransform,
+        }
       ]}
     >
       {/* Edge-to-Edge Hero Card */}
@@ -254,6 +229,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     </Animated.View>
   );
 };
+
+HeroSection.displayName = 'HeroSection';
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({

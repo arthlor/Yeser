@@ -144,3 +144,67 @@ dist/
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+
+# React Native & Expo specific
+*.hprof
+*.trace
+*.dSYM
+.flipper/
+flipper-server-state.json
+
+# Source maps (can be large)
+*.map
+
+# Bundle analyzer output
+bundle-report.html
+bundle-stats.json
+
+# Profiling data
+react-native-profile*
+*.cpuprofile
+
+# Husky
+.husky/_/
+
+# Lint reports and quality checks
+lint-report.json
+eslint-report.json
+*-report.json
+
+# Temporary patches
+*.patch
+*.diff
+
+# Firebase debug logs
+firebase-debug.log
+firestore-debug.log
+
+# Development database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Auto-generated files
+*.generated.*
+
+# Platform specific crash logs
+*.crash
+*.ips
+
+# React Native Debugger
+react-native-debugger.log
+
+# Xcode user settings
+*.xcuserstate
+*.xcscheme
+project.xcworkspace/
+
+# Pods (if using CocoaPods)
+Pods/
+*.xcworkspace/xcuserdata/
+
+# Fastlane (if using for CI/CD)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/

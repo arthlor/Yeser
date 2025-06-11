@@ -68,12 +68,14 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
     [statement]
   );
 
-  // Entrance animation with improved timing - OPTIMIZED DEPENDENCIES
+  // **SIMPLIFIED ENTRANCE**: Remove complex entrance animation
+  // Following minimal animation philosophy - cards appear naturally
   useEffect(() => {
     if (animateEntrance) {
-      animations.animateEntrance();
+      // Simple haptic feedback for card appearance instead of animation
+      triggerHaptic('light');
     }
-  }, [animateEntrance, animations]);
+  }, [animateEntrance, triggerHaptic]);
 
   // Handle press with enhanced haptic feedback - MEMOIZED
   const handlePress = useCallback(() => {

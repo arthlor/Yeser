@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { logger } from './debugConfig';
-import { robustFetch, testNetworkConnectivity } from './robustFetch';
+import { testNetworkConnectivity } from './robustFetch';
 
 interface NetworkDiagnostics {
   isConnected: boolean;

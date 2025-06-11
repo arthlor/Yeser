@@ -15,24 +15,22 @@ import { AppTheme } from '@/themes/types';
 import { MainTabParamList } from '@/types/navigation';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { analyticsService } from '@/services/analyticsService';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import { RouteProp } from '@react-navigation/native';
 import { ScreenLayout } from '@/shared/components/layout';
-import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { getPrimaryShadow } from '@/themes/utils';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  LayoutAnimation,
   Platform,
   RefreshControl,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  UIManager,
   View,
 } from 'react-native';
 import { ZodError } from 'zod';
@@ -45,13 +43,16 @@ interface Props {
   route?: DailyEntryScreenRouteProp;
 }
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 /**
  * Enhanced Daily Entry Screen - Beautiful Statement Cards Design
- * Now featuring StatementEditCard components optimized for daily entry editing
+ * 
+ * **ANIMATION COORDINATION REFACTORING**: Consolidated from 2 coordination instances
+ * + 5 LayoutAnimation calls + 2 custom refs into single coordinated system.
+ * 
+ * **Phase 1 & 2 Implementation**: 
+ * - Eliminated all LayoutAnimation.configureNext() calls (Phase 2)
+ * - Single coordination system for all animations (Phase 1)
+ * - Enhanced statement card interactions with coordinated feedback
  */
 const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const { theme } = useTheme();
@@ -94,33 +95,88 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [statementInputError, setStatementInputError] = useState<string | null>(null);
 
-  // Enhanced animations - More delightful and engaging
-  const masterFadeAnim = useRef(new Animated.Value(0)).current;
-  const heroSlideAnim = useRef(new Animated.Value(-50)).current;
+  const { fetchNewPrompt } = usePromptMutations();
 
-  // New animations for enhanced UX
-  const progressRingAnim = useRef(new Animated.Value(0)).current;
-  const celebrationAnim = useRef(new Animated.Value(0)).current;
+  // Extract profile data first
+  const { daily_gratitude_goal } = profile || {};
+
+  // 🎬 MINIMAL ANIMATIONS: Simple and non-intrusive animation system
+  const animations = useCoordinatedAnimations();
 
   // TanStack Query hooks for prompts - with refresh functionality
-  const { daily_gratitude_goal } = profile || {};
   const {
     promptText: currentPrompt,
     isLoading: promptLoading,
     error: promptError,
   } = usePromptText();
 
-  const { fetchNewPrompt, isFetchingNewPrompt } = usePromptMutations();
-
-  // Computed values
+  // Computed values (after profile data is available)
   const statements = currentEntry?.statements || [];
   const dailyGoal = daily_gratitude_goal || 3;
   const isToday = finalDateString === new Date().toISOString().split('T')[0];
   const progressPercentage = Math.min((statements.length / dailyGoal) * 100, 100);
   const isGoalComplete = statements.length >= dailyGoal;
   const wasGoalJustCompleted = useRef(false);
+
+  // 🛡️ MEMORY LEAK FIX: Add timer refs for cleanup
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const layoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 🛡️ MEMORY LEAK FIX: Cleanup all timers on unmount
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+      }
+      if (fadeTimerRef.current) {
+        clearTimeout(fadeTimerRef.current);
+      }
+      if (layoutTimerRef.current) {
+        clearTimeout(layoutTimerRef.current);
+      }
+    };
+  }, []);
+
+  // **SIMPLE ENTRANCE**: Just a subtle fade-in on screen load
+  useEffect(() => {
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
+
+  // **MINIMAL PROGRESS UPDATE**: Simple opacity change when statements change
+  useEffect(() => {
+    if (statements.length > 0) {
+      animations.animateFade(1, { duration: 200 });
+    }
+  }, [statements.length, animations]);
+
+  // **SIMPLE GOAL COMPLETION**: Toast notification instead of visual overlay
+  useEffect(() => {
+    if (isGoalComplete && !wasGoalJustCompleted.current) {
+      wasGoalJustCompleted.current = true;
+      // 🚀 TOAST INTEGRATION: Replace visual celebration with success toast
+      showSuccess('Tebrikler! Günlük hedefinizi tamamladınız! 🎉');
+      
+      // 📊 ANALYTICS TRACKING: Log goal completion achievement
+      analyticsService.logEvent('daily_goal_completed', {
+        entry_date: finalDateString,
+        is_today: isToday,
+        statements_count: statements.length,
+        daily_goal: dailyGoal,
+        completion_time: new Date().toISOString(),
+        user_id: profile?.id || null,
+      });
+      
+      // Simple fade effect for completion feedback
+      animations.animateFade(0.9, { duration: 300 });
+      animationTimerRef.current = setTimeout(() => {
+        animations.animateFade(1, { duration: 300 });
+      }, 600);
+    } else if (!isGoalComplete) {
+      wasGoalJustCompleted.current = false;
+    }
+  }, [isGoalComplete, animations, showSuccess, finalDateString, isToday, statements.length, dailyGoal, profile?.id]);
 
   // 🛡️ ERROR PROTECTION: Handle mutations errors with global error system
   useEffect(() => {
@@ -140,55 +196,6 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       handleMutationError(deleteStatementError, 'deleteStatement');
     }
   }, [deleteStatementError, handleMutationError]);
-
-  // Handle goal completion celebration
-  useEffect(() => {
-    if (isGoalComplete && !wasGoalJustCompleted.current) {
-      wasGoalJustCompleted.current = true;
-
-      // Celebration animation
-      Animated.sequence([
-        Animated.timing(celebrationAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(celebrationAnim, {
-          toValue: 0,
-          duration: 600,
-          delay: 2000,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else if (!isGoalComplete) {
-      wasGoalJustCompleted.current = false;
-    }
-  }, [isGoalComplete, celebrationAnim]);
-
-  // Initialize animations
-  useEffect(() => {
-    const animations = [
-      Animated.timing(masterFadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(heroSlideAnim, {
-        toValue: 0,
-        tension: 60,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.timing(progressRingAnim, {
-        toValue: progressPercentage / 100,
-        duration: 1200,
-        delay: 400,
-        useNativeDriver: false,
-      }),
-    ];
-
-    Animated.stagger(100, animations).start();
-  }, [masterFadeAnim, heroSlideAnim, progressRingAnim, progressPercentage]);
 
   // Analytics tracking with comprehensive context
   useEffect(() => {
@@ -216,46 +223,88 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     profile?.id,
   ]);
 
-  // Handle statement operations with enhanced UX
+  // **SIMPLE STATEMENT OPERATIONS**: Minimal animation feedback
   const handleAddStatement = useCallback(
     (statementText: string) => {
       try {
         gratitudeStatementSchema.parse(statementText);
-        setStatementInputError(null);
+
+        // Capture current state for contextual toasts
+        const isFirstStatement = statements.length === 0;
+        const newCount = statements.length + 1;
+        const newPercentage = (newCount / dailyGoal) * 100;
 
         addStatement(
           { entryDate: finalDateString, statement: statementText },
           {
             onSuccess: () => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              // 🚀 ENHANCED TOAST INTEGRATION: Contextual success feedback
+              if (isFirstStatement) {
+                showSuccess(`${isToday ? 'Günün' : 'Bu tarihin'} ilk minnettarlığı! Harika bir başlangıç ✨`);
+                analyticsService.logEvent('first_statement_added', {
+                  entry_date: finalDateString,
+                  is_today: isToday,
+                  daily_goal: dailyGoal,
+                });
+              } else if (newPercentage >= 80 && newPercentage < 100) {
+                showSuccess('Hedefinize çok yaklaştınız! Devam edin 🎯');
+                analyticsService.logEvent('progress_milestone_reached', {
+                  entry_date: finalDateString,
+                  new_count: newCount,
+                  daily_goal: dailyGoal,
+                  progress_percentage: Math.round(newPercentage),
+                  milestone: '80_percent',
+                });
+              } else {
+                showSuccess('Minnet ifadeniz eklendi! ✨');
+                analyticsService.logEvent('statement_added', {
+                  entry_date: finalDateString,
+                  new_count: newCount,
+                  daily_goal: dailyGoal,
+                  progress_percentage: Math.round(newPercentage),
+                });
+              }
+              
+              // **MINIMAL FEEDBACK**: Simple layout transition instead of complex animation
+              animations.animateLayoutTransition(true, 60, { duration: 200 });
+              layoutTimerRef.current = setTimeout(() => {
+                animations.animateLayoutTransition(false, 0, { duration: 200 });
+              }, 1000);
             },
           }
         );
       } catch (error) {
         if (error instanceof ZodError) {
-          setStatementInputError(error.issues[0]?.message || 'Invalid statement');
+          // 🚀 TOAST INTEGRATION: Use toast error instead of inline error state
+          showError(error.issues[0]?.message || 'Geçersiz minnet ifadesi');
+          // Simple fade feedback for errors instead of shake
+          animations.animateFade(0.7, { duration: 150 });
+          fadeTimerRef.current = setTimeout(() => {
+            animations.animateFade(1, { duration: 150 });
+          }, 300);
         }
       }
     },
-    [finalDateString, addStatement]
+    [finalDateString, addStatement, showSuccess, showError, animations, statements.length, dailyGoal, isToday]
   );
 
   const handleEditStatement = useCallback((index: number) => {
     setEditingStatementIndex(index);
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  }, []);
+    // **MINIMAL EDITING STATE**: Simple layout transition
+    animations.animateLayoutTransition(true, 100, { duration: 200 });
+  }, [animations]);
 
   const handleSaveEditedStatement = useCallback(
     async (index: number, updatedStatement: string) => {
       try {
         gratitudeStatementSchema.parse(updatedStatement);
-        setStatementInputError(null);
 
         await editStatement(
           { entryDate: finalDateString, statementIndex: index, updatedStatement },
           {
             onSuccess: () => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              // **MINIMAL COMPLETION**: Simple layout transition
+              animations.animateLayoutTransition(false, 0, { duration: 200 });
               setEditingStatementIndex(null);
               showSuccess('Minnet ifadesi güncellendi');
             },
@@ -263,17 +312,23 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         );
       } catch (error) {
         if (error instanceof ZodError) {
-          showError(error.issues[0]?.message || 'Invalid statement');
+          showError(error.issues[0]?.message || 'Geçersiz minnet ifadesi');
+          // Simple fade feedback for errors
+          animations.animateFade(0.7, { duration: 150 });
+          animationTimerRef.current = setTimeout(() => {
+            animations.animateFade(1, { duration: 150 });
+          }, 300);
         }
       }
     },
-    [finalDateString, editStatement, showSuccess, showError]
+    [finalDateString, editStatement, showSuccess, showError, animations]
   );
 
   const handleCancelEditing = useCallback(() => {
     setEditingStatementIndex(null);
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  }, []);
+    // **MINIMAL CANCEL**: Simple layout transition
+    animations.animateLayoutTransition(false, 0, { duration: 200 });
+  }, [animations]);
 
   const handleDeleteStatement = useCallback(
     (index: number) => {
@@ -281,13 +336,14 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         { entryDate: finalDateString, statementIndex: index },
         {
           onSuccess: () => {
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            // **MINIMAL DELETION FEEDBACK**: Simple layout transition
+            animations.animateLayoutTransition(false, 0, { duration: 200 });
             showSuccess('Minnet ifadesi silindi');
           },
         }
       );
     },
-    [finalDateString, deleteStatement, showSuccess]
+    [finalDateString, deleteStatement, showSuccess, animations]
   );
 
   const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
@@ -357,52 +413,55 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           />
         }
       >
-        {/* Hero Section with Date and Progress */}
+        {/* **EDGE-TO-EDGE HERO SECTION**: Full-width hero with proper spacing */}
         <Animated.View
           style={[
-            styles.heroSection,
+            styles.edgeToEdgeHeroSection,
             {
-              opacity: masterFadeAnim,
-              transform: [{ translateY: heroSlideAnim }],
+              opacity: animations.fadeAnim,
+              transform: animations.entranceTransform,
             },
           ]}
         >
-          <ThemedCard
-            variant="elevated"
-            density="comfortable"
-            elevation="floating"
-            style={styles.heroCard}
+          {/* Date Selection Header - Edge-to-edge */}
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            style={styles.edgeToEdgeDateHeader}
+            activeOpacity={0.8}
           >
-            <TouchableOpacity
-              onPress={() => setShowDatePicker(true)}
-              style={styles.dateButton}
-              activeOpacity={0.8}
-            >
-              <View style={styles.dateSection}>
+            <View style={styles.dateHeaderContent}>
+              <View style={styles.dateHeaderLeft}>
                 <Icon name="calendar-today" size={24} color={theme.colors.primary} />
                 <View style={styles.dateTextContainer}>
                   <Text style={styles.dateText}>{formatDate(effectiveDate)}</Text>
                   <Text style={styles.dateSubtext}>{isToday ? 'Bugün' : 'Geçmiş tarih'}</Text>
                 </View>
               </View>
-            </TouchableOpacity>
-
-            {/* Minimalistic Progress Bar */}
-            <View style={styles.progressSection}>
-              <View style={styles.progressStats}>
-                <Text style={styles.progressCount}>{statements.length}</Text>
-                <Text style={styles.progressGoal}>/ {dailyGoal}</Text>
+              <View style={styles.dateHeaderRight}>
+                <Icon name="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
               </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Progress Section - Edge-to-edge with gradient background */}
+          <View style={styles.edgeToEdgeProgressSection}>
+            <View style={styles.progressContent}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressTitle}>Günlük İlerleme</Text>
+                <View style={styles.progressBadge}>
+                  <Text style={styles.progressBadgeText}>
+                    {statements.length}/{dailyGoal}
+                  </Text>
+                </View>
+              </View>
+              
               <View style={styles.progressBarContainer}>
                 <View style={styles.progressTrack}>
                   <Animated.View
                     style={[
                       styles.progressFill,
                       {
-                        width: progressRingAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['0%', `${Math.min(progressPercentage, 100)}%`],
-                        }),
+                        width: `${progressPercentage}%`,
                         backgroundColor: isGoalComplete
                           ? theme.colors.success
                           : theme.colors.primary,
@@ -410,161 +469,104 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                     ]}
                   />
                 </View>
+                <Text style={styles.progressPercentageText}>
+                  {Math.round(progressPercentage)}% tamamlandı
+                </Text>
               </View>
-              <Text style={styles.progressLabel}>
-                {isGoalComplete
-                  ? '🎉 Hedef tamamlandı!'
-                  : `${Math.round(progressPercentage)}% tamamlandı`}
-              </Text>
+
+              {isGoalComplete && (
+                <View style={styles.goalCompleteBadge}>
+                  <Icon name="check-circle" size={16} color={theme.colors.success} />
+                  <Text style={styles.goalCompleteText}>Harika! Günlük hedefiniz tamamlandı 🎉</Text>
+                </View>
+              )}
             </View>
-          </ThemedCard>
+          </View>
         </Animated.View>
 
-        {/* Input Section - Now Edge-to-Edge with Integrated Prompt */}
-        <GratitudeInputBar
-          onSubmit={handleAddStatement}
-          error={statementInputError?.toString()}
-          disabled={!isToday || isAddingStatement}
-          placeholder={
-            isToday
-              ? isAddingStatement
-                ? 'Minnet ifadesi ekleniyor...'
-                : 'Bugün neye minnettar olduğunuzu yazın...'
-              : 'Geçmiş tarihler için yeni kayıt ekleyemezsiniz'
-          }
-          // Integrated prompt functionality
-          promptText={currentPrompt}
-          promptLoading={promptLoading || isFetchingNewPrompt}
-          promptError={promptError?.message || null}
-          onRefreshPrompt={handlePromptRefresh}
-          showPrompt={isToday && (profile?.useVariedPrompts ?? false)}
-        />
-
-        {/* Prompt Section - Now integrated into input bar for subtle experience */}
-        {/* DailyEntryPrompt component removed in favor of subtle integration */}
-
-        {/* Loading Overlay for Entry Data */}
-        {isLoadingEntry && (
-          <View style={styles.entryLoadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Minnet kayıtları yükleniyor...</Text>
+        {/* **EDGE-TO-EDGE CONTENT SECTION**: All content with proper edge-to-edge design */}
+        <Animated.View
+          style={[
+            styles.edgeToEdgeContentSection,
+            {
+              opacity: animations.fadeAnim,
+              transform: animations.pressTransform,
+            },
+          ]}
+        >
+          {/* Gratitude Input Bar - Enhanced edge-to-edge */}
+          <View style={styles.inputBarContainer}>
+            <GratitudeInputBar
+              promptText={profile?.useVariedPrompts ? currentPrompt : undefined}
+              onSubmit={handleAddStatement}
+              disabled={isAddingStatement}
+              error={null}
+              onRefreshPrompt={profile?.useVariedPrompts ? handlePromptRefresh : undefined}
+              promptLoading={profile?.useVariedPrompts ? (promptLoading || isLoadingEntry) : false}
+              promptError={profile?.useVariedPrompts ? (promptError?.message || null) : null}
+              showPrompt={profile?.useVariedPrompts ?? false}
+            />
           </View>
-        )}
 
-        {/* Beautiful Statement Cards Section */}
-        {statements.length > 0 ? (
-          <View style={styles.contentZone}>
-            {/* Section Header */}
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionHeaderLeft}>
-                <Icon name="format-list-bulleted" size={20} color={theme.colors.onSurface} />
-                <Text style={styles.sectionTitle}>
-                  {isToday ? 'Bugünkü minnetlerin' : 'O günkü minnetlerin'}
-                </Text>
+          {/* Statement Cards Section - Edge-to-edge layout */}
+          {statements.length > 0 ? (
+            <View style={styles.statementsSection}>
+              <View style={styles.statementsSectionHeader}>
+                <Text style={styles.statementsSectionTitle}>Bugünün Minnettarlıkları</Text>
+                <View style={styles.statementsCounter}>
+                  <Text style={styles.statementsCountText}>{statements.length}</Text>
+                </View>
               </View>
-              <View style={styles.statementsCounter}>
-                <Text style={styles.statementsCountText}>{statements.length}</Text>
+              
+              <View style={styles.statementsContainer}>
+                {statements.map((statement, index) => (
+                  <View key={`${finalDateString}-${index}`} style={styles.statementCardWrapper}>
+                    <StatementEditCard
+                      statement={statement}
+                      date={effectiveDate.toISOString()}
+                      isEditing={editingStatementIndex === index}
+                      onEdit={() => handleEditStatement(index)}
+                      onSave={(updatedStatement) => handleSaveEditedStatement(index, updatedStatement)}
+                      onCancel={handleCancelEditing}
+                      onDelete={() => handleDeleteStatement(index)}
+                      isLoading={isEditingStatement || isDeletingStatement}
+                      edgeToEdge={true}
+                    />
+                  </View>
+                ))}
               </View>
             </View>
-
-            {/* Beautiful Statement Cards */}
-            <View style={styles.statementsContainer}>
-              {statements.map((statement, index) => (
-                <Animated.View
-                  key={index}
-                  style={[
-                    styles.statementWrapper,
-                    {
-                      opacity: masterFadeAnim,
-                      transform: [
-                        {
-                          translateY: masterFadeAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [20 + index * 5, 0],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  {/* 🚀 ENHANCED StatementEditCard - Perfect for Daily Entry Editing */}
-                  <StatementEditCard
-                    statement={statement}
-                    variant="primary" // Enhanced editing variant for daily entries
-                    date={effectiveDate.toISOString()}
-                    isEditing={editingStatementIndex === index}
-                    isLoading={isEditingStatement || isDeletingStatement}
-                    onEdit={() => handleEditStatement(index)}
-                    onDelete={() => handleDeleteStatement(index)}
-                    onCancel={handleCancelEditing}
-                    onSave={(updatedText: string) => handleSaveEditedStatement(index, updatedText)}
-                    // Enhanced editing configuration
-                    enableInlineEdit={true}
-                    confirmDelete={true}
-                    maxLength={500}
-                    // Accessibility
-                    accessibilityLabel={`Minnet ifadesi ${index + 1}: ${statement}`}
-                  />
-                </Animated.View>
-              ))}
-            </View>
-          </View>
-        ) : (
-          /* Empty State */
-          <View style={styles.emptyStateContainer}>
-            <ThemedCard
-              variant="outlined"
-              density="comfortable"
-              elevation="card"
-              style={styles.emptyStateCard}
-            >
+          ) : (
+            /* Empty State - Edge-to-edge design */
+            <View style={styles.emptyStateSection}>
               <View style={styles.emptyStateContent}>
-                <Icon
-                  name={isToday ? 'heart-plus-outline' : 'book-open-outline'}
-                  size={64}
-                  color={theme.colors.primary + '40'}
-                />
+                <View style={styles.emptyStateIcon}>
+                  <Icon name="heart-plus-outline" size={48} color={theme.colors.primary + '40'} />
+                </View>
                 <Text style={styles.emptyStateTitle}>
-                  {isToday ? 'İlk minnetini ekle!' : 'O gün henüz minnet eklemedin'}
+                  {isToday ? 'Bugünün ilk minnettarlığını ekle' : 'Bu tarihte henüz bir giriş yok'}
                 </Text>
                 <Text style={styles.emptyStateSubtitle}>
-                  {isToday
-                    ? 'Bugün minnettarlık hissettiğin anları yazarak güne başla.'
-                    : 'Bu tarihte henüz bir minnet ifadesi bulunmuyor.'}
+                  {isToday 
+                    ? 'Günün güzel anlarını ve minnettarlıklarını paylaş'
+                    : 'Bu tarih için yeni minnettarlıklar ekleyebilirsin'
+                  }
                 </Text>
               </View>
-            </ThemedCard>
-          </View>
-        )}
-
-        {/* Goal Celebration Overlay */}
-        {isGoalComplete && (
-          <Animated.View
-            style={[
-              styles.celebrationOverlay,
-              {
-                opacity: celebrationAnim,
-                transform: [
-                  {
-                    scale: celebrationAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.8, 1],
-                    }),
-                  },
-                ],
-              },
-            ]}
-            pointerEvents="none"
-          >
-            <View style={styles.celebrationContent}>
-              <Text style={styles.celebrationEmoji}>🎉</Text>
-              <Text style={styles.celebrationText}>Günlük hedef tamamlandı!</Text>
             </View>
-          </Animated.View>
-        )}
+          )}
+
+          {/* Loading State - Improved design */}
+          {isLoadingEntry && statements.length === 0 && (
+            <View style={styles.loadingStateSection}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={styles.loadingStateText}>Günlük girişler yükleniyor...</Text>
+            </View>
+          )}
+        </Animated.View>
       </ScreenLayout>
 
-      {/* Date Picker */}
+      {/* Date Picker Modal */}
       {showDatePicker && (
         <DateTimePicker
           value={effectiveDate}
@@ -580,42 +582,150 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    // ... existing styles ...
-    contentZone: {
-      flex: 1,
+    // **EDGE-TO-EDGE HERO SECTION**: Full-width hero with proper spacing
+    edgeToEdgeHeroSection: {
+      marginBottom: theme.spacing.md,
     },
-    sectionHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.md,
+    edgeToEdgeDateHeader: {
       backgroundColor: theme.colors.surface,
-      borderTopWidth: 1,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline + '10',
+      borderBottomWidth: 1,
       borderBottomColor: theme.colors.outline + '15',
-      ...getPrimaryShadow.small(theme),
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
     },
-    sectionHeaderLeft: {
+    dateHeaderContent: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      justifyContent: 'space-between',
+    },
+    dateHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
       flex: 1,
     },
-    sectionTitle: {
-      ...theme.typography.titleMedium,
+    dateHeaderRight: {
+      paddingLeft: theme.spacing.md,
+    },
+    dateTextContainer: {
+      flex: 1,
+    },
+    dateText: {
+      ...theme.typography.titleLarge,
       color: theme.colors.onSurface,
       fontWeight: '700',
     },
+    dateSubtext: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      marginTop: 2,
+    },
+
+    // **EDGE-TO-EDGE PROGRESS SECTION**: Full-width progress with gradient background
+    edgeToEdgeProgressSection: {
+      backgroundColor: theme.colors.primaryContainer + '20',
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outline + '15',
+    },
+    progressContent: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.lg,
+    },
+    progressHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: theme.spacing.md,
+    },
+    progressTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
+    },
+    progressBadge: {
+      backgroundColor: theme.colors.primaryContainer,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.full,
+      minWidth: 32,
+      alignItems: 'center',
+    },
+    progressBadgeText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.onPrimaryContainer,
+      fontWeight: '800',
+    },
+    progressBarContainer: {
+      marginBottom: theme.spacing.sm,
+    },
+    progressTrack: {
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.outline + '20',
+      overflow: 'hidden',
+      marginBottom: theme.spacing.sm,
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: 4,
+      minWidth: 8,
+    },
+    progressPercentageText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      fontWeight: '500',
+    },
+    goalCompleteBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.sm,
+      backgroundColor: theme.colors.successContainer,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.md,
+      marginTop: theme.spacing.sm,
+    },
+    goalCompleteText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSuccessContainer,
+      fontWeight: '600',
+    },
+
+    // **EDGE-TO-EDGE CONTENT SECTION**: All content with proper edge-to-edge design
+    edgeToEdgeContentSection: {
+      flex: 1,
+    },
+    inputBarContainer: {
+      marginBottom: theme.spacing.lg,
+    },
+    statementsSection: {
+      flex: 1,
+    },
+    statementsSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      backgroundColor: theme.colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outline + '15',
+    },
+    statementsSectionTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
+    },
     statementsCounter: {
       backgroundColor: theme.colors.primaryContainer,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
       borderRadius: theme.borderRadius.full,
-      width: 32,
-      height: 32,
-      justifyContent: 'center',
+      minWidth: 28,
       alignItems: 'center',
-      ...getPrimaryShadow.small(theme),
+      justifyContent: 'center',
     },
     statementsCountText: {
       ...theme.typography.labelMedium,
@@ -623,6 +733,115 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '800',
     },
     statementsContainer: {
+      paddingVertical: theme.spacing.sm,
+    },
+    statementCardWrapper: {
+      marginBottom: theme.spacing.sm,
+    },
+
+    // **EMPTY STATE SECTION**: Edge-to-edge empty state design
+    emptyStateSection: {
+      flex: 1,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.xxxl,
+      justifyContent: 'center',
+    },
+    emptyStateContent: {
+      alignItems: 'center',
+      maxWidth: 320,
+      alignSelf: 'center',
+    },
+    emptyStateIcon: {
+      marginBottom: theme.spacing.lg,
+      opacity: 0.6,
+    },
+    emptyStateTitle: {
+      ...theme.typography.titleLarge,
+      color: theme.colors.onSurface,
+      textAlign: 'center',
+      marginBottom: theme.spacing.md,
+      fontWeight: '600',
+      lineHeight: 28,
+    },
+    emptyStateSubtitle: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      lineHeight: 24,
+    },
+
+    // **LOADING STATE SECTION**: Edge-to-edge loading state design
+    loadingStateSection: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.xxxl,
+    },
+    loadingStateText: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurface,
+      marginTop: theme.spacing.md,
+      fontWeight: '500',
+      textAlign: 'center',
+    },
+
+    // **LEGACY STYLES**: Maintained for compatibility (can be removed after testing)
+    contentZone: {
+      flex: 1,
+    },
+    contentSection: {
+      flex: 1,
+      paddingHorizontal: theme.spacing.md,
+    },
+    statementsList: {
+      paddingVertical: theme.spacing.sm,
+      gap: theme.spacing.sm,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      padding: theme.spacing.xl,
+      borderRadius: theme.borderRadius.lg,
+      margin: theme.spacing.md,
+      ...getPrimaryShadow.card(theme),
+    },
+    loadingText: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurface,
+      marginTop: theme.spacing.md,
+      fontWeight: '500',
+      textAlign: 'center',
+    },
+    sectionHeader: {
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outline + '15',
+    },
+    sectionHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    sectionTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
+    },
+    statementsContainer2: {
       paddingVertical: theme.spacing.sm,
     },
     statementWrapper: {
@@ -659,15 +878,6 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.lg,
       ...getPrimaryShadow.floating(theme),
     },
-    loadingText: {
-      ...theme.typography.bodyLarge,
-      color: theme.colors.onSurface,
-      marginTop: theme.spacing.md,
-      fontWeight: '500',
-      textAlign: 'center',
-    },
-
-    // Hero Section Styles
     heroSection: {
       marginBottom: theme.spacing.md,
     },
@@ -688,19 +898,6 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       gap: theme.spacing.md,
     },
-    dateTextContainer: {
-      flex: 1,
-    },
-    dateText: {
-      ...theme.typography.titleLarge,
-      color: theme.colors.onSurface,
-      fontWeight: '700',
-    },
-    dateSubtext: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurfaceVariant,
-      marginTop: 2,
-    },
     progressSection: {
       alignItems: 'center',
       paddingBottom: theme.spacing.md,
@@ -710,21 +907,6 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       alignItems: 'baseline',
       justifyContent: 'center',
-    },
-    progressBarContainer: {
-      width: '80%',
-      maxWidth: 200,
-    },
-    progressTrack: {
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: theme.colors.outline + '15',
-      overflow: 'hidden',
-    },
-    progressFill: {
-      height: '100%',
-      borderRadius: 3,
-      minWidth: 6,
     },
     progressCount: {
       ...theme.typography.headlineMedium,
@@ -742,7 +924,6 @@ const createStyles = (theme: AppTheme) =>
       marginTop: theme.spacing.sm,
       fontWeight: '500',
     },
-
     emptyStateContainer: {
       flex: 1,
       paddingVertical: theme.spacing.xl,
@@ -757,51 +938,6 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.surface,
       ...getPrimaryShadow.small(theme),
     },
-    emptyStateContent: {
-      alignItems: 'center',
-      // Padding handled by density="comfortable"
-    },
-    emptyStateTitle: {
-      ...theme.typography.titleLarge,
-      color: theme.colors.onSurface,
-      textAlign: 'center',
-      marginTop: theme.spacing.lg,
-      marginBottom: theme.spacing.md,
-      fontWeight: '600',
-    },
-    emptyStateSubtitle: {
-      ...theme.typography.bodyLarge,
-      color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      lineHeight: 24,
-      maxWidth: 280,
-    },
-    celebrationOverlay: {
-      position: 'absolute',
-      top: '40%',
-      left: 0,
-      right: 0,
-      alignItems: 'center',
-      zIndex: 1000,
-    },
-    celebrationContent: {
-      backgroundColor: theme.colors.primaryContainer,
-      paddingHorizontal: theme.spacing.xl,
-      paddingVertical: theme.spacing.lg,
-      borderRadius: theme.borderRadius.xl,
-      alignItems: 'center',
-      ...getPrimaryShadow.floating(theme),
-    },
-    celebrationEmoji: {
-      fontSize: 48,
-      marginBottom: theme.spacing.sm,
-    },
-    celebrationText: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onPrimaryContainer,
-      fontWeight: '700',
-    },
-
     entryLoadingContainer: {
       flex: 1,
       justifyContent: 'center',

@@ -1,8 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   Animated,
-  LayoutAnimation,
   Platform,
   StyleSheet,
   Text,
@@ -17,6 +15,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
+import { useToast } from '@/providers/ToastProvider';
 import { AppTheme } from '@/themes/types';
 import {
   alpha,
@@ -69,7 +68,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
   onPress,
   variant = 'default',
   showQuotes = true,
-  animateEntrance = true,
+  animateEntrance: _animateEntrance = true,
   numberOfLines,
   style,
 
@@ -96,56 +95,22 @@ const StatementCard: React.FC<StatementCardProps> = ({
 }) => {
   const { theme } = useTheme();
   const { showError } = useGlobalError();
+  const { showWarning, showSuccess } = useToast();
   const styles = React.useMemo(() => createStyles(theme), [theme]);
-
-  // **RACE CONDITION FIX**: Use coordinated animations
-  const animations = useCoordinatedAnimations();
 
   // Local state management
   const [localStatement, setLocalStatement] = useState(statement);
-  const editingAnim = useRef(new Animated.Value(0)).current;
+
+  // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
+  const animations = useCoordinatedAnimations();
 
   // Sync local statement with prop changes
   useEffect(() => {
     setLocalStatement(statement);
   }, [statement]);
 
-  // Editing state animation
-  useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-
-    Animated.timing(editingAnim, {
-      toValue: isEditing ? 1 : 0,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [isEditing, editingAnim]);
-
-  // **RACE CONDITION FIX**: Coordinated loading pulse animation
-  useEffect(() => {
-    if (isLoading) {
-      animations.animatePulse(true);
-    } else {
-      animations.animatePulse(false);
-    }
-  }, [isLoading, animations]);
-
-  // **RACE CONDITION FIX**: Coordinated error shake animation
-  useEffect(() => {
-    if (hasError) {
-      animations.animateShake();
-    }
-  }, [hasError, animations]);
-
-  // **RACE CONDITION FIX**: Coordinated entrance animation
-  useEffect(() => {
-    if (animateEntrance) {
-      animations.animateEntrance();
-    }
-  }, [animateEntrance, animations]);
-
   // Haptic feedback system
-  const triggerHaptic = (
+  const triggerHaptic = useCallback((
     type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'light'
   ) => {
     if (!hapticFeedback || Platform.OS === 'web') {
@@ -172,40 +137,40 @@ const StatementCard: React.FC<StatementCardProps> = ({
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         break;
     }
-  };
+  }, [hapticFeedback]);
 
-  // 🛡️ ERROR PROTECTION: Enhanced action handlers with global error system
+  // **COORDINATED EDITING ANIMATION**: Simple editing state animation
+  useEffect(() => {
+    if (isEditing) {
+      // Provide gentle haptic feedback for editing state
+      triggerHaptic('light');
+      animations.animateLayoutTransition(true, 1, { duration: 300 });
+    } else {
+      animations.animateLayoutTransition(false, 0, { duration: 300 });
+    }
+  }, [isEditing, animations, triggerHaptic]);
+
+  // 🚀 TOAST INTEGRATION: Enhanced action handlers with toast confirmation system
   const handleDelete = () => {
     if (confirmDelete) {
-      // TODO: Consider implementing a custom confirmation modal instead of Alert
-      Alert.alert('Minneti Sil', 'Bu minnet ifadesini silmek istediğinizden emin misiniz?', [
-        {
-          text: 'İptal',
-          style: 'cancel',
-          onPress: () => triggerHaptic('light'),
-        },
-        {
-          text: 'Sil',
-          style: 'destructive',
+      triggerHaptic('warning');
+      // 🚀 TOAST INTEGRATION: Use toast warning with action button instead of Alert.alert
+      showWarning('Bu minnet ifadesini silmek istediğinizden emin misiniz?', {
+        duration: 6000, // Give user time to read and decide
+        action: {
+          label: 'Sil',
           onPress: () => {
             triggerHaptic('error');
             onDelete?.();
+            showSuccess('Minnet ifadesi silindi');
           },
         },
-      ]);
+      });
     } else {
       triggerHaptic('error');
       onDelete?.();
+      showSuccess('Minnet ifadesi silindi');
     }
-  };
-
-  // **RACE CONDITION FIX**: Coordinated press animation handlers
-  const handlePressIn = () => {
-    animations.animatePressIn();
-  };
-
-  const handlePressOut = () => {
-    animations.animatePressOut();
   };
 
   const handleSave = async () => {
@@ -318,10 +283,6 @@ const StatementCard: React.FC<StatementCardProps> = ({
       style={[
         variantStyles.container,
         style,
-        {
-          opacity: animations.fadeAnim,
-          transform: animations.combinedTransform,
-        },
       ]}
     >
       <View style={variantStyles.content}>
@@ -356,13 +317,6 @@ const StatementCard: React.FC<StatementCardProps> = ({
             <Animated.View
               style={[
                 styles.loadingDot,
-                {
-                  transform: [
-                    {
-                      scale: animations.pulseAnim,
-                    },
-                  ],
-                },
               ]}
             />
           </View>
@@ -416,8 +370,6 @@ const StatementCard: React.FC<StatementCardProps> = ({
       <TouchableOpacity
         activeOpacity={1}
         onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
         accessibilityLabel={accessibilityLabel || `Minnet: ${statement}`}
         accessibilityRole="button"
       >

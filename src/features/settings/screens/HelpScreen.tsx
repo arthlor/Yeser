@@ -1,5 +1,5 @@
 // src/screens/EnhancedHelpScreen.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -11,12 +11,13 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
+import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTheme } from '@/providers/ThemeProvider';
 import { analyticsService } from '@/services/analyticsService';
-import { AppTheme } from '@/themes/types';
-import { getPrimaryShadow } from '@/themes/utils';
 import { hapticFeedback } from '@/utils/hapticFeedback';
-import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import type { AppTheme } from '@/themes/types';
+import { getPrimaryShadow } from '@/themes/utils';
 
 interface FAQItemProps {
   question: string;
@@ -28,21 +29,16 @@ interface FAQItemProps {
 const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) => {
   const [isOpen, setIsOpen] = useState(false);
   const styles = createStyles(theme);
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  
+  // **COORDINATED ANIMATION SYSTEM**: Single instance for FAQ interactions
+  const animations = useCoordinatedAnimations();
 
-  // Animate chevron rotation when expanding/collapsing
+  // **COORDINATED ENTRANCE**: Simple entrance animation for FAQ expansion
   useEffect(() => {
-    Animated.timing(rotateAnim, {
-      toValue: isOpen ? 1 : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [isOpen, rotateAnim]);
-
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
+    if (isOpen) {
+      animations.animateEntrance({ duration: 300 });
+    }
+  }, [isOpen, animations]);
 
   const toggleFAQ = () => {
     setIsOpen(!isOpen);
@@ -63,7 +59,14 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) =>
   };
 
   return (
-    <View style={styles.faqItemContainer}>
+    <Animated.View 
+      style={[
+        styles.faqItemContainer,
+        {
+          opacity: animations.fadeAnim,
+        }
+      ]}
+    >
       <TouchableOpacity
         onPress={toggleFAQ}
         style={styles.faqQuestionRow}
@@ -74,17 +77,24 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) =>
         accessibilityState={{ expanded: isOpen }}
       >
         <Text style={styles.faqQuestion}>{question}</Text>
-        <Animated.View style={{ transform: [{ rotate }] }}>
+        {/* **SIMPLIFIED CHEVRON ROTATION**: State-based rotation instead of complex animation */}
+        <View style={{ transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }}>
           <Icon name="chevron-down" size={24} color={theme.colors.primary} />
-        </Animated.View>
+        </View>
       </TouchableOpacity>
 
       {isOpen && (
-        <Text style={styles.faqAnswer} accessibilityRole="text">
-          {answer}
-        </Text>
+        <Animated.View
+          style={{
+            opacity: animations.opacityAnim,
+          }}
+        >
+          <Text style={styles.faqAnswer} accessibilityRole="text">
+            {answer}
+          </Text>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 };
 

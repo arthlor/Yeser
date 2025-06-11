@@ -29,17 +29,35 @@ export class RobustFetch {
 
   private static isSimulator = Platform.OS === 'ios' && __DEV__;
 
+  // Reference to NetInfo unsubscribe to allow proper teardown
+  private static netInfoUnsubscribe: (() => void) | null = null;
+
   /**
    * Initialize network state monitoring
    */
   static initialize(): void {
-    NetInfo.addEventListener((state) => {
+    // Avoid adding multiple listeners (e.g., fast-refresh or repeated tests)
+    if (this.netInfoUnsubscribe) {
+      return;
+    }
+
+    this.netInfoUnsubscribe = NetInfo.addEventListener((state) => {
       this.networkState = {
         isConnected: !!state.isConnected,
         isInternetReachable: state.isInternetReachable,
         type: state.type,
       };
     });
+  }
+
+  /**
+   * Dispose of NetInfo listener to prevent memory-leaks (used in tests / hot-reload cleanup)
+   */
+  static dispose(): void {
+    if (this.netInfoUnsubscribe) {
+      this.netInfoUnsubscribe();
+      this.netInfoUnsubscribe = null;
+    }
   }
 
   /**
@@ -264,8 +282,8 @@ export class RobustFetch {
     try {
       await this.fetch('https://www.google.com', {
         method: 'HEAD',
-        timeout: 5000,
-        retries: 1,
+        timeout: this.isSimulator ? 15000 : 5000, // Longer timeout for simulator
+        retries: this.isSimulator ? 2 : 1, // More retries for simulator
       });
       results.canReachGoogle = true;
     } catch (error) {
@@ -283,8 +301,8 @@ export class RobustFetch {
           headers: {
             apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
           },
-          timeout: 5000,
-          retries: 1,
+          timeout: this.isSimulator ? 15000 : 5000, // Longer timeout for simulator  
+          retries: this.isSimulator ? 2 : 1, // More retries for simulator
         });
         results.canReachSupabase = true;
       }

@@ -1,7 +1,8 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Animated, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 interface ThemedSwitchProps {
   value: boolean;
@@ -11,22 +12,39 @@ interface ThemedSwitchProps {
   testID?: string;
 }
 
+/**
+ * 🎛️ COORDINATED THEMED SWITCH
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Maintained essential color interpolation (JS-driven for colors)
+ * - Coordinated press feedback animations (native-driven)
+ * - Simplified animation system while preserving functionality
+ * - Enhanced consistency with coordinated animation philosophy
+ */
 const ThemedSwitch: React.FC<ThemedSwitchProps> = React.memo(
   ({ value, onValueChange, disabled = false, size = 'medium', testID }) => {
     const { theme } = useTheme();
     const styles = createStyles(theme, size);
+    
+    // **ESSENTIAL SWITCH ANIMATION**: Keep color interpolation as JS-driven (required for color changes)
+    const switchAnimatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
+    
+    // **COORDINATED PRESS FEEDBACK**: Use coordinated animation system for press feedback
+    const animations = useCoordinatedAnimations();
 
-    // Animation value for smooth transitions
-    const animatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
+    // **ESSENTIAL SWITCH STATE TRANSITION**: Keep for color interpolation
+    const animateSwitchTransition = useCallback((toValue: number) => {
+      Animated.timing(switchAnimatedValue, {
+        toValue,
+        duration: 250,
+        useNativeDriver: false, // Required for color interpolation
+      }).start();
+    }, [switchAnimatedValue]);
 
     // Update animation when value changes
-    React.useEffect(() => {
-      Animated.timing(animatedValue, {
-        toValue: value ? 1 : 0,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    }, [value, animatedValue]);
+    useEffect(() => {
+      animateSwitchTransition(value ? 1 : 0);
+    }, [value, animateSwitchTransition]);
 
     const handlePress = useCallback(() => {
       if (!disabled) {
@@ -34,18 +52,18 @@ const ThemedSwitch: React.FC<ThemedSwitchProps> = React.memo(
       }
     }, [disabled, onValueChange, value]);
 
-    // Interpolated values for smooth animations
-    const trackColor = animatedValue.interpolate({
+    // **ESSENTIAL COLOR INTERPOLATIONS**: Keep for switch functionality
+    const trackColor = switchAnimatedValue.interpolate({
       inputRange: [0, 1],
       outputRange: [theme.colors.outlineVariant, theme.colors.primary],
     });
 
-    const thumbTranslateX = animatedValue.interpolate({
+    const thumbTranslateX = switchAnimatedValue.interpolate({
       inputRange: [0, 1],
       outputRange: [2, getSwitchDimensions(size).width - getSwitchDimensions(size).thumbSize - 2],
     });
 
-    const thumbColor = animatedValue.interpolate({
+    const thumbColor = switchAnimatedValue.interpolate({
       inputRange: [0, 1],
       outputRange: [theme.colors.onSurfaceVariant, theme.colors.onPrimary],
     });
@@ -54,20 +72,41 @@ const ThemedSwitch: React.FC<ThemedSwitchProps> = React.memo(
       <TouchableOpacity
         testID={testID}
         onPress={handlePress}
+        onPressIn={animations.animatePressIn}
+        onPressOut={animations.animatePressOut}
         disabled={disabled}
-        activeOpacity={0.7}
+        activeOpacity={1} // We handle press animation manually
         style={[styles.container, disabled && styles.disabled]}
       >
-        <Animated.View style={[styles.track, { backgroundColor: trackColor }]}>
-          <Animated.View
+        {/* **COORDINATED PRESS ANIMATION**: Use coordinated press transform */}
+        <Animated.View 
+          style={[
+            {
+              transform: animations.pressTransform, // Coordinated press feedback
+            }
+          ]}
+        >
+          {/* **ESSENTIAL COLOR ANIMATION**: Keep color interpolation for switch functionality */}
+          <Animated.View 
             style={[
-              styles.thumb,
-              {
-                backgroundColor: thumbColor,
-                transform: [{ translateX: thumbTranslateX }],
-              },
+              styles.track, 
+              { 
+                backgroundColor: trackColor, // JS-driven color animation (essential)
+              }
             ]}
-          />
+          >
+            <Animated.View
+              style={[
+                styles.thumb,
+                {
+                  backgroundColor: thumbColor,
+                  transform: [
+                    { translateX: thumbTranslateX }, // JS-driven position change (essential)
+                  ],
+                },
+              ]}
+            />
+          </Animated.View>
         </Animated.View>
       </TouchableOpacity>
     );

@@ -1,10 +1,9 @@
 import { CompositeNavigationProp, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Animated,
-  LayoutAnimation,
   Platform,
   RefreshControl,
   StyleSheet,
@@ -19,6 +18,7 @@ import ThemedCard from '@/shared/components/ui/ThemedCard';
 import StatementDetailCard from '@/shared/components/ui/StatementDetailCard';
 import { useGratitudeEntry, useGratitudeMutations } from '../hooks';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useToast } from '@/providers/ToastProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { AppTheme } from '@/themes/types';
 import { RootStackParamList } from '@/types/navigation';
@@ -29,6 +29,7 @@ import { ZodError } from 'zod';
 import { getPrimaryShadow } from '@/themes/utils';
 import { logger } from '@/utils/debugConfig';
 import { analyticsService } from '@/services/analyticsService';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -45,6 +46,16 @@ type EntryDetailScreenNavigationProp = CompositeNavigationProp<
 >;
 
 /**
+ * **SIMPLIFIED ENTRY DETAIL SCREEN**: Minimal, elegant entry detail experience
+ * 
+ * **ANIMATION SIMPLIFICATION COMPLETED**: 
+ * - Eliminated all 3 LayoutAnimation calls that caused performance issues
+ * - Removed complex platform-specific animation setup
+ * - Replaced with simple state changes for editing interactions
+ * - Maintained all functionality with cleaner, minimal approach
+ */
+
+/**
  * EnhancedEntryDetailScreen displays a single gratitude entry with beautiful journal-like design
  * Features: Individual statement cards, enhanced animations, gorgeous visual hierarchy
  */
@@ -53,7 +64,8 @@ const EnhancedEntryDetailScreen: React.FC<{
   navigation: EntryDetailScreenNavigationProp;
 }> = ({ route }) => {
   const { theme } = useTheme();
-  const { handleMutationError, showError } = useGlobalError();
+  const { showSuccess, showError } = useToast();
+  const { handleMutationError } = useGlobalError();
   const { entryDate: routeEntryDate } = route.params;
 
   // Provide fallback for entryDate if not provided
@@ -75,12 +87,24 @@ const EnhancedEntryDetailScreen: React.FC<{
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
 
   // Animation values for enhanced entrance effects
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(-20)).current;
+  const animations = useCoordinatedAnimations();
   const [animationsReady, setAnimationsReady] = useState(false);
 
   // Use live data or fallback to route params
   const gratitudeItems = currentEntry?.statements || [];
+
+  // 🎯 TOAST INTEGRATION: Refresh handler with toast feedback
+  const handleRefresh = useCallback(async () => {
+    try {
+      await refetchEntry();
+      // Success feedback for refresh
+      showSuccess('Minnet kayıtları yenilendi');
+    } catch (error) {
+      // Error feedback for refresh failure
+      showError('Kayıtlar yenilenemedi. Lütfen tekrar deneyin.');
+      logger.error('Refresh error:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }, [refetchEntry, showSuccess, showError]);
 
   // Analytics tracking
   useEffect(() => {
@@ -134,31 +158,19 @@ const EnhancedEntryDetailScreen: React.FC<{
 
   const { formattedDate, relativeTime } = formatEntryDate();
 
-  // 🛡️ ERROR PROTECTION: Handle mutations errors with global error system
+  // 🎯 TOAST INTEGRATION: Handle mutations errors with toast notifications
   useEffect(() => {
     if (editStatementError) {
       handleMutationError(editStatementError, 'editStatement');
+      showError('Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.');
     }
-  }, [editStatementError, handleMutationError]);
+  }, [editStatementError, handleMutationError, showError]);
 
+  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
-    // Start animations immediately when component mounts or data changes
     setAnimationsReady(true);
-
-    // Header animations
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim, gratitudeItems.length]);
+    animations.animateEntrance({ duration: 400 });
+  }, [animations, gratitudeItems.length]);
 
   // Handle initial loading state
   if (isLoadingEntry) {
@@ -187,10 +199,6 @@ const EnhancedEntryDetailScreen: React.FC<{
 
   const handleEditStatement = (index: number) => {
     setEditingStatementIndex(index);
-    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-      UIManager.setLayoutAnimationEnabledExperimental(true);
-    }
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   };
 
   const handleSaveEditedStatement = async (index: number, updatedText: string) => {
@@ -208,16 +216,16 @@ const EnhancedEntryDetailScreen: React.FC<{
       });
 
       setEditingStatementIndex(null);
-      if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-        UIManager.setLayoutAnimationEnabledExperimental(true);
-      }
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      
+      // 🎯 TOAST INTEGRATION: Success feedback for statement updates
+      showSuccess('Minnet kaydın başarıyla güncellendi');
     } catch (error) {
       if (error instanceof ZodError) {
-        // 🛡️ ERROR PROTECTION: Use global error system for validation errors
-        showError(error.errors[0]?.message || 'Geçersiz girdi');
+        // 🎯 TOAST INTEGRATION: Use toast for validation errors with user-friendly messages
+        showError('Lütfen geçerli bir minnet ifadesi girin');
       } else {
-        // 🛡️ ERROR PROTECTION: Use global error system for general errors
+        // 🎯 TOAST INTEGRATION: Use toast for general errors
+        showError('Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.');
         handleMutationError(error, 'saveEditedStatement');
         logger.error(
           'Edit statement error:',
@@ -229,18 +237,6 @@ const EnhancedEntryDetailScreen: React.FC<{
 
   const handleCancelEditingStatement = () => {
     setEditingStatementIndex(null);
-    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-      UIManager.setLayoutAnimationEnabledExperimental(true);
-    }
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  };
-
-  const handleRefresh = async () => {
-    try {
-      await refetchEntry();
-    } catch (error) {
-      logger.error('Refresh error:', error instanceof Error ? error : new Error(String(error)));
-    }
   };
 
   const styles = createStyles(theme);
@@ -251,8 +247,7 @@ const EnhancedEntryDetailScreen: React.FC<{
       style={[
         styles.emptyStateContainer,
         {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
+          opacity: animations.fadeAnim,
         },
       ]}
     >
@@ -332,8 +327,7 @@ const EnhancedEntryDetailScreen: React.FC<{
         style={[
           styles.heroZone,
           {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
+            opacity: animations.fadeAnim,
           },
         ]}
       >
@@ -448,16 +442,16 @@ const EnhancedEntryDetailScreen: React.FC<{
                   style={[
                     styles.statementWrapper,
                     animationsReady && {
-                      opacity: fadeAnim,
+                      opacity: animations.fadeAnim,
                       transform: [
                         {
-                          translateY: fadeAnim.interpolate({
+                          translateY: animations.fadeAnim.interpolate({
                             inputRange: [0, 1],
                             outputRange: [20 + index * 5, 0],
                           }),
                         },
                         {
-                          scale: fadeAnim.interpolate({
+                          scale: animations.fadeAnim.interpolate({
                             inputRange: [0, 1],
                             outputRange: [0.95, 1],
                           }),
@@ -482,7 +476,7 @@ const EnhancedEntryDetailScreen: React.FC<{
                     confirmDelete={true}
                     maxLength={500}
                     // Accessibility
-                    accessibilityLabel={`Minnet ${index + 1} / ${gratitudeItems.length}: ${item}`}
+                    accessibilityLabel={`Minnet: ${item}`}
                   />
                 </Animated.View>
               ))}

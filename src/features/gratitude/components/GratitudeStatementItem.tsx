@@ -1,25 +1,31 @@
-import React, { useEffect, useRef, useState } from 'react';
+/**
+ * 🌿 SIMPLIFIED GRATITUDE STATEMENT ITEM
+ * 
+ * **ANIMATION SIMPLIFICATION COMPLETED**:
+ * - Eliminated complex Animated.parallel and Animated.sequence calls
+ * - Replaced with coordinated animation system using useCoordinatedAnimations
+ * - Simplified press feedback to basic haptic response
+ * - Maintained all functionality with minimal, non-intrusive approach
+ * - Performance improved by removing animation complexity
+ */
+
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Animated,
-  LayoutAnimation,
   Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  UIManager,
   View,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 const getThemedStyles = (theme: AppTheme) =>
   StyleSheet.create({
@@ -169,9 +175,9 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
 
   const [currentText, setCurrentText] = useState(statementText);
   const [showActions, setShowActions] = useState(false);
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const fadeValue = useRef(new Animated.Value(0)).current;
-  const slideValue = useRef(new Animated.Value(-20)).current;
+
+  // **SIMPLIFIED ANIMATION SYSTEM**: Replace complex refs with coordinated animations
+  const animations = useCoordinatedAnimations();
 
   useEffect(() => {
     if (!isEditing) {
@@ -179,65 +185,50 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
     }
   }, [statementText, isEditing]);
 
+  // **SIMPLIFIED ENTRANCE**: Remove complex parallel animations
   useEffect(() => {
-    LayoutAnimation.configureNext({
-      duration: 250,
-      create: { type: 'easeInEaseOut', property: 'opacity' },
-      update: { type: 'easeInEaseOut' },
-    });
-
     if (isEditing || showActions) {
-      Animated.parallel([
-        Animated.timing(fadeValue, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideValue, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      fadeValue.setValue(0);
-      slideValue.setValue(-20);
+      animations.animateEntrance({ duration: 250 });
     }
-  }, [isEditing, showActions, fadeValue, slideValue]);
+  }, [isEditing, showActions, animations]);
 
-  const handleSave = () => {
+  // **SIMPLIFIED SAVE**: Replace complex sequence with haptic feedback
+  const handleSave = useCallback(() => {
     if (onSave && currentText.trim()) {
-      Animated.sequence([
-        Animated.timing(scaleValue, {
-          toValue: 0.98,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleValue, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Simple haptic feedback instead of complex animation
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
       onSave(currentText.trim());
     }
-  };
+  }, [onSave, currentText]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setCurrentText(statementText);
     if (onCancelEdit) {
       onCancelEdit();
     }
-  };
+  }, [statementText, onCancelEdit]);
 
-  const toggleActions = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  const toggleActions = useCallback(() => {
     setShowActions(!showActions);
-  };
+    // Simple haptic feedback for interaction
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [showActions]);
 
   if (isEditing) {
     return (
-      <View style={styles.containerEditing}>
+      <Animated.View 
+        style={[
+          styles.containerEditing,
+          {
+            opacity: animations.fadeAnim,
+            transform: animations.entranceTransform,
+          }
+        ]}
+      >
         <View style={styles.editingHeader}>
           <View style={styles.editingIndicator} />
           <Text style={styles.editingLabel}>Düzenleniyor</Text>
@@ -262,8 +253,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
           style={[
             styles.editActionsContainer,
             {
-              opacity: fadeValue,
-              transform: [{ translateY: slideValue }],
+              opacity: animations.opacityAnim,
             },
           ]}
         >
@@ -293,7 +283,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
               </View>
             )}
             {onSave && (
-              <Animated.View style={[styles.buttonWrapper, { transform: [{ scale: scaleValue }] }]}>
+              <View style={styles.buttonWrapper}>
                 <ThemedButton
                   title="Kaydet"
                   onPress={handleSave}
@@ -301,16 +291,23 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
                   size="compact"
                   disabled={!currentText.trim()}
                 />
-              </Animated.View>
+              </View>
             )}
           </View>
         </Animated.View>
-      </View>
+      </Animated.View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Animated.View 
+      style={[
+        styles.container,
+        {
+          opacity: animations.fadeAnim,
+        }
+      ]}
+    >
       <TouchableOpacity style={styles.contentContainer} onPress={toggleActions} activeOpacity={0.7}>
         <View style={styles.textContainer}>
           <Text style={styles.statementText}>{statementText}</Text>
@@ -325,8 +322,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
           style={[
             styles.actionsContainer,
             {
-              opacity: fadeValue,
-              transform: [{ translateY: slideValue }],
+              opacity: animations.opacityAnim,
             },
           ]}
         >
@@ -360,7 +356,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
           </View>
         </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 };
 

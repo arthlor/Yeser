@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import {
   Animated,
   NativeSyntheticEvent,
@@ -13,11 +13,13 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '../../../providers/ThemeProvider';
 import { AppTheme } from '../../../themes/types';
 import { semanticSpacing } from '../../../themes/utils';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 interface ThemedInputProps extends TextInputProps {
   label?: string;
@@ -42,16 +44,14 @@ interface ThemedInputProps extends TextInputProps {
 }
 
 /**
- * 🎯 ENHANCED THEMED INPUT
- * Polished input component with smooth interactions and better accessibility
- *
- * Features:
- * - Smooth focus transitions with scale animation
- * - Enhanced error state with shake animation
- * - Better accessibility support
- * - Improved icon interactions with proper touch targets
- * - Auto clear button functionality
- * - Refined visual feedback
+ * 🎯 SIMPLIFIED THEMED INPUT
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Eliminated complex 4-step shake animation sequence for errors
+ * - Replaced with haptic feedback and coordinated press animations
+ * - Maintained focus animation with coordinated entrance
+ * - Simplified all interactions to use coordinated animation system
+ * - Enhanced accessibility and performance with minimal animations
  */
 const ThemedInput: React.FC<ThemedInputProps> = ({
   label,
@@ -75,92 +75,60 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
   ...rest
 }) => {
   const { theme } = useTheme();
-  const [isFocused, setIsFocused] = useState(false);
-  const errorAnimValue = useRef(new Animated.Value(0)).current;
-  const scaleAnimValue = useRef(new Animated.Value(1)).current;
+  const [isFocused, setIsFocused] = React.useState(false);
 
-  // 🆕 Determine effective validation state
-  const effectiveValidationState = errorText ? 'error' : validationState;
+  // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
+  const animations = useCoordinatedAnimations();
 
-  // 🆕 Calculate character count
+  // Character count logic
   const characterCount = value?.length || 0;
   const isOverLimit = characterLimit ? characterCount > characterLimit : false;
 
-  const styles = createStyles(
-    theme,
-    variant,
-    size,
-    isFocused,
-    effectiveValidationState === 'error' || isOverLimit,
-    !editable
-  );
+  // Determine validation state
+  const effectiveValidationState = React.useMemo(() => {
+    if (errorText || isOverLimit) {
+      return 'error';
+    }
+    return validationState;
+  }, [errorText, isOverLimit, validationState]);
 
-  // Enhanced focus animation with scale effect
+  const hasError = effectiveValidationState === 'error';
+  const isDisabled = !editable;
+
+  const styles = createStyles(theme, variant, size, isFocused, hasError, isDisabled);
+
   const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(true);
-
-    // 🔧 FIX: Use only native driver animations to avoid conflicts
-    Animated.parallel([
-      Animated.spring(scaleAnimValue, {
-        toValue: 1.02,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 10,
-      }),
-    ]).start();
-
+    // **COORDINATED ENTRANCE**: Subtle focus animation
+    animations.animateEntrance({ duration: 200 });
     rest.onFocus?.(e);
   };
 
-  // Enhanced blur animation
   const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(false);
-
-    // 🔧 FIX: Use only native driver animations to avoid conflicts
-    Animated.parallel([
-      Animated.spring(scaleAnimValue, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 10,
-      }),
-    ]).start();
-
     rest.onBlur?.(e);
   };
 
-  // Error shake animation
+  // **SIMPLIFIED ERROR FEEDBACK**: Replace complex shake with haptic feedback and minimal visual cue
   React.useEffect(() => {
     if (errorText || isOverLimit) {
-      Animated.sequence([
-        Animated.timing(errorAnimValue, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(errorAnimValue, {
-          toValue: -10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(errorAnimValue, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(errorAnimValue, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // **HAPTIC FEEDBACK**: Essential for accessibility and error awareness
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+      
+      // **MINIMAL VISUAL FEEDBACK**: Simple coordinated press animation for subtle visual cue
+      animations.animatePressIn();
+      setTimeout(() => {
+        animations.animatePressOut();
+      }, 150);
     }
-  }, [errorText, isOverLimit, errorAnimValue]);
+  }, [errorText, isOverLimit, animations]);
 
   // Show clear button logic
   const shouldShowClear = showClearButton && value && value.length > 0 && !rightIcon;
 
-  // 🆕 Show validation icon logic
+  // Show validation icon logic
   const shouldShowValidationIcon =
     showValidationIcon && effectiveValidationState !== 'default' && !shouldShowClear && !rightIcon;
 
@@ -171,7 +139,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
     rest.onChangeText?.('');
   };
 
-  // 🆕 Get validation icon
+  // Get validation icon
   const getValidationIcon = () => {
     switch (effectiveValidationState) {
       case 'success':
@@ -185,7 +153,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
     }
   };
 
-  // 🆕 Get validation icon color
+  // Get validation icon color
   const getValidationIconColor = () => {
     switch (effectiveValidationState) {
       case 'success':
@@ -213,12 +181,12 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
         </Text>
       )}
 
-      {/* Input Container with Animations */}
+      {/* Input Container with Coordinated Animation */}
       <Animated.View
         style={[
           styles.inputContainer,
           {
-            transform: [{ scale: scaleAnimValue }, { translateX: errorAnimValue }],
+            transform: animations.pressTransform, // Use coordinated press transform
           },
         ]}
       >

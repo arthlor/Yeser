@@ -10,6 +10,7 @@ import {
 } from '@/features/gratitude/hooks';
 import { useStreakData } from '@/features/streak/hooks';
 import { useUserProfile } from '@/shared/hooks';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { analyticsService } from '@/services/analyticsService';
@@ -19,10 +20,10 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ScreenLayout } from '@/shared/components/layout';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
+import { logger } from '@/utils/debugConfig';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, RefreshControl } from 'react-native';
-import { logger } from '@/utils/debugConfig';
+import { Animated, Modal, RefreshControl } from 'react-native';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabScreenProps<MainTabParamList, 'HomeTab'>['navigation'],
@@ -36,6 +37,9 @@ interface HomeScreenProps {
 const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }) => {
   const { theme } = useTheme();
   const { handleMutationError } = useGlobalError();
+
+  // **COORDINATED ANIMATION**: Add minimal entrance animation for consistency
+  const animations = useCoordinatedAnimations();
 
   // TanStack Query hooks replacing Zustand stores
   const { profile } = useUserProfile();
@@ -68,6 +72,11 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
   const [refreshing, setRefreshing] = useState(false);
   const [streakDetailsVisible, setStreakDetailsVisible] = useState(false);
+
+  // **MINIMAL ENTRANCE**: Simple screen entrance animation
+  useEffect(() => {
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
 
   const getGreeting = useCallback(() => {
     const hour = new Date().getHours();
@@ -155,41 +164,48 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
           />
         }
       >
-        {/* 1. Hero Section with Streak Info */}
-        <HeroSection
-          greeting={getGreeting()}
-          username={username}
-          currentCount={todaysGratitudeCount}
-          dailyGoal={dailyGoal}
-          currentStreak={streak?.current_streak ?? 0}
-          longestStreak={streak?.longest_streak}
-          onStreakPress={handleStreakPress}
-        />
-
-        {/* 2. Daily Inspiration - Replaces Quick Add */}
-        <DailyInspiration currentCount={todaysGratitudeCount} dailyGoal={dailyGoal} />
-
-        {/* 3. Enhanced Action Cards */}
-        <ActionCards
-          currentCount={todaysGratitudeCount}
-          dailyGoal={dailyGoal}
-          onNavigateToEntry={handleNewEntryPress}
-          onNavigateToPastEntries={() => {
-            navigation.navigate('PastEntriesTab');
+        <Animated.View
+          style={{
+            opacity: animations.fadeAnim,
+            transform: animations.entranceTransform,
           }}
-          onNavigateToCalendar={() => {
-            navigation.navigate('CalendarTab');
-          }}
-          onNavigateToWhyGratitude={handleWhyGratitudePress}
-        />
+        >
+          {/* 1. Hero Section with Streak Info */}
+          <HeroSection
+            greeting={getGreeting()}
+            username={username}
+            currentCount={todaysGratitudeCount}
+            dailyGoal={dailyGoal}
+            currentStreak={streak?.current_streak ?? 0}
+            longestStreak={streak?.longest_streak}
+            onStreakPress={handleStreakPress}
+          />
 
-        {/* 4. Geçmişten Anılar (Throwback Memories) */}
-        <ThrowbackTeaser
-          throwbackEntry={memoizedThrowbackEntry}
-          isLoading={throwbackLoading}
-          error={translatedThrowbackError}
-          onRefresh={handleThrowbackRefresh}
-        />
+          {/* 2. Daily Inspiration - Replaces Quick Add */}
+          <DailyInspiration currentCount={todaysGratitudeCount} dailyGoal={dailyGoal} />
+
+          {/* 3. Enhanced Action Cards */}
+          <ActionCards
+            currentCount={todaysGratitudeCount}
+            dailyGoal={dailyGoal}
+            onNavigateToEntry={handleNewEntryPress}
+            onNavigateToPastEntries={() => {
+              navigation.navigate('PastEntriesTab');
+            }}
+            onNavigateToCalendar={() => {
+              navigation.navigate('CalendarTab');
+            }}
+            onNavigateToWhyGratitude={handleWhyGratitudePress}
+          />
+
+          {/* 4. Geçmişten Anılar (Throwback Memories) */}
+          <ThrowbackTeaser
+            throwbackEntry={memoizedThrowbackEntry}
+            isLoading={throwbackLoading}
+            error={translatedThrowbackError}
+            onRefresh={handleThrowbackRefresh}
+          />
+        </Animated.View>
       </ScreenLayout>
 
       {/* Streak Details Modal */}

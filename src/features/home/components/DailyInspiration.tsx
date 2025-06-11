@@ -1,361 +1,317 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
-import { getPrimaryShadow } from '@/themes/utils';
-import ThemedCard from '@/shared/components/ui/ThemedCard';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  Dimensions,
-  FlatList,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface DailyInspirationProps {
   currentCount: number;
   dailyGoal: number;
+  onPress?: () => void;
+  animateEntrance?: boolean;
 }
 
-interface InspirationItem {
-  id: string;
-  icon: string;
-  title: string;
-  message: string;
-  color: string;
-}
+/**
+ * ✨ SWIPEABLE DAILY INSPIRATION
+ * 
+ * **EDGE-TO-EDGE INSPIRATION CAROUSEL**:
+ * - Swipeable inspiration cards with horizontal scrolling
+ * - Edge-to-edge design spanning full screen width
+ * - Subtle but striking visual design with coordinated animations
+ * - Multiple inspirational messages with progress-aware content
+ * - Smooth page indicator and minimal interaction design
+ */
+const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
+  ({ currentCount, dailyGoal, onPress, animateEntrance = true }) => {
+    const { theme } = useTheme();
+    const styles = createStyles(theme);
+    const scrollViewRef = useRef<ScrollView>(null);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    
+    // **COORDINATED ANIMATION SYSTEM**: Subtle entrance animation
+    const animations = useCoordinatedAnimations();
 
-const { width: screenWidth } = Dimensions.get('window');
+    // **COORDINATED ENTRANCE**: Subtle entrance animation
+    useEffect(() => {
+      if (animateEntrance) {
+        animations.animateEntrance({ duration: 600 });
+      }
+    }, [animateEntrance, animations]);
 
-const DailyInspiration: React.FC<DailyInspirationProps> = ({ currentCount, dailyGoal }) => {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
-
-  // Simplified animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
-
-  // Swipe state
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef<FlatList>(null);
-
-  useEffect(() => {
-    // Simple entrance animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
-
-  const getAllInspirationItems = useCallback((): InspirationItem[] => {
-    const hour = new Date().getHours();
-    const progress = currentCount / dailyGoal;
-
-    // Goal completed inspirations
-    if (currentCount >= dailyGoal) {
-      return [
+    // **INSPIRATION CONTENT**: Swipeable inspirational messages
+    const inspirationCards = useMemo(() => {
+      const baseCards = [
         {
-          id: 'celebration-1',
-          icon: 'check-circle',
-          title: 'Harika! Hedefi tamamladınız! 🎉',
-          message: 'Bugünkü minnettarlık yolculuğunuz tamamlandı.',
-          color: theme.colors.success,
+          icon: 'leaf-outline',
+          iconColor: theme.colors.primary,
+          title: 'Minnettarlık',
+          message: 'Her minnettarlık, kalbinde yeşeren bir umut tohumudur.',
+          gradient: [theme.colors.primary + '20', theme.colors.primary + '10'],
         },
         {
-          id: 'celebration-2',
-          icon: 'star',
-          title: 'Mükemmel bir gün! ✨',
-          message: 'Bu başarıyı kutlayın ve içinizde hissedin.',
-          color: theme.colors.success,
-        },
-        {
-          id: 'celebration-3',
-          icon: 'trophy',
-          title: 'Başarıyı elde ettiniz! 🏆',
-          message: 'Her minnet sizi daha güçlü kılıyor.',
-          color: theme.colors.success,
-        },
-      ];
-    }
-
-    // Progress inspirations
-    if (currentCount > 0) {
-      return [
-        {
-          id: 'progress-1',
           icon: 'heart',
-          title: 'Güzel ilerliyorsunuz! 💫',
-          message: 'Her minnet ruhunuzu güçlendiriyor.',
-          color: theme.colors.primary,
+          iconColor: '#FF6B6B',
+          title: 'İçsel Huzur',
+          message: 'Minnettarlık, ruhun en derin köşelerinde saklı huzuru bulmanın anahtarıdır.',
+          gradient: ['#FF6B6B20', '#FF6B6B10'],
         },
         {
-          id: 'progress-2',
-          icon: 'trending-up',
-          title: `${Math.round(progress * 100)}% tamamlandı! 📈`,
-          message: 'Hedefinize yaklaşıyorsunuz.',
-          color: theme.colors.primary,
+          icon: 'sunny',
+          iconColor: '#FFD93D',
+          title: 'Pozitif Enerji',
+          message: 'Minnettarlık, hayatına renk katan en güçlü pozitif enerji kaynağıdır.',
+          gradient: ['#FFD93D20', '#FFD93D10'],
         },
         {
-          id: 'progress-3',
-          icon: 'compass',
-          title: 'Doğru yoldasınız! 🧭',
-          message: 'Minnettarlık sizi doğru yönde yönlendiriyor.',
-          color: theme.colors.secondary,
+          icon: 'flower',
+          iconColor: '#6BCF7F',
+          title: 'Büyüme',
+          message: 'Her minnettarlık, kişisel gelişimin yolunda atılan sağlam bir adımdır.',
+          gradient: ['#6BCF7F20', '#6BCF7F10'],
         },
       ];
-    }
 
-    // Time-based inspirations
-    if (hour >= 5 && hour < 12) {
-      return [
-        {
-          id: 'morning-1',
-          icon: 'weather-sunny',
-          title: 'Güne minnetle başlayın 🌅',
-          message: 'Her yeni gün, yeni fırsatlar demektir.',
-          color: theme.colors.primary,
-        },
-        {
-          id: 'morning-2',
-          icon: 'coffee',
-          title: 'Huzurlu bir başlangıç ☀️',
-          message: 'Küçük anları keşfetmeye hazır mısınız?',
-          color: theme.colors.secondary,
-        },
-      ];
-    }
+      // Add progress-specific card
+      if (currentCount === 0) {
+        return [
+          {
+            icon: 'play-circle',
+            iconColor: theme.colors.primary,
+            title: 'Başlangıç',
+            message: 'Bugün için ilk minnettarlığını yazarak güzel bir başlangıç yap.',
+            gradient: [theme.colors.primary + '20', theme.colors.primary + '10'],
+          },
+          ...baseCards,
+        ];
+      } else if (currentCount >= dailyGoal) {
+        return [
+          {
+            icon: 'trophy',
+            iconColor: '#FFD700',
+            title: 'Başarı',
+            message: 'Bugünün hedefini tamamladın! Minnettarlığın hayatına renk katıyor.',
+            gradient: ['#FFD70020', '#FFD70010'],
+          },
+          ...baseCards,
+        ];
+      } else {
+        const remaining = dailyGoal - currentCount;
+        return [
+          {
+            icon: 'trending-up',
+            iconColor: theme.colors.primary,
+            title: 'Devam Et',
+            message: `${remaining} minnettarlık daha yazarak bugünün hedefine ulaşabilirsin.`,
+            gradient: [theme.colors.primary + '20', theme.colors.primary + '10'],
+          },
+          ...baseCards,
+        ];
+      }
+    }, [currentCount, dailyGoal, theme]);
 
-    if (hour >= 12 && hour < 17) {
-      return [
-        {
-          id: 'afternoon-1',
-          icon: 'heart-outline',
-          title: 'Günün ortasında bir mola 🌞',
-          message: 'Sevildiğinizi hissedin, minnet duyun.',
-          color: theme.colors.primary,
-        },
-        {
-          id: 'afternoon-2',
-          icon: 'leaf',
-          title: 'Doğanın armağanları 🍃',
-          message: 'Etrafınızdaki güzellikleri fark edin.',
-          color: theme.colors.secondary,
-        },
-      ];
-    }
+    const handlePress = useCallback(() => {
+      onPress?.();
+    }, [onPress]);
 
-    if (hour >= 17 && hour < 22) {
-      return [
-        {
-          id: 'evening-1',
-          icon: 'weather-sunset',
-          title: 'Günün güzelliklerini hatırlayın 🌆',
-          message: 'Bugün size neşe getiren anları düşünün.',
-          color: theme.colors.primary,
-        },
-        {
-          id: 'evening-2',
-          icon: 'home-heart',
-          title: 'Sıcak yuva hissi 🏠',
-          message: 'Size güven veren insanlar için minnettar olun.',
-          color: theme.colors.secondary,
-        },
-      ];
-    }
+    const handleScroll = useCallback((event: { nativeEvent: { contentOffset: { x: number } } }) => {
+      const scrollPosition = event.nativeEvent.contentOffset.x;
+      const index = Math.round(scrollPosition / SCREEN_WIDTH);
+      setCurrentIndex(index);
+    }, []);
 
-    // Night inspirations
-    return [
-      {
-        id: 'night-1',
-        icon: 'weather-night',
-        title: 'Gecenin sessizliğinde 🌙',
-        message: 'Bugün için minnettar olduğunuz anları düşünün.',
-        color: theme.colors.primary,
-      },
-      {
-        id: 'night-2',
-        icon: 'star-outline',
-        title: 'Huzurlu gece düşünceleri 😴',
-        message: 'Minnettarlık güzel rüyalar getirir.',
-        color: theme.colors.secondary,
-      },
-    ];
-  }, [currentCount, dailyGoal, theme]);
+    const scrollToIndex = useCallback((index: number) => {
+      scrollViewRef.current?.scrollTo({
+        x: index * SCREEN_WIDTH,
+        animated: true,
+      });
+    }, []);
 
-  const inspirationItems = getAllInspirationItems();
+    // 🛡️ MEMORY LEAK FIX: Cleanup ref on unmount for better GC
+    useEffect(() => {
+      return () => {
+        // Set ref to null on unmount to help with garbage collection
+        if (scrollViewRef.current) {
+          scrollViewRef.current = null;
+        }
+      };
+    }, []);
 
-  const dynamicStyles = useMemo(
-    () => ({
-      itemWidth: { width: screenWidth - 32 },
-      paginationDotActive: { width: 16 },
-      paginationDotInactive: { width: 6 },
-    }),
-    []
-  );
-
-  const renderInspirationItem = useCallback(
-    ({ item }: { item: InspirationItem }) => (
-      <View style={[styles.itemContainer, dynamicStyles.itemWidth]}>
-        <View style={styles.content}>
-          <View style={[styles.iconContainer, { backgroundColor: item.color + '15' }]}>
-            <Icon name={item.icon} size={16} color={item.color} />
-          </View>
-
-          <View style={styles.textContainer}>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.message}>{item.message}</Text>
-          </View>
-        </View>
-      </View>
-    ),
-    [styles, dynamicStyles.itemWidth]
-  );
-
-  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const contentOffset = event.nativeEvent.contentOffset;
-    const viewSize = event.nativeEvent.layoutMeasurement;
-    const pageNum = Math.floor(contentOffset.x / viewSize.width);
-    setCurrentIndex(pageNum);
-  }, []);
-
-  const handlePaginationPress = useCallback((index: number) => {
-    flatListRef.current?.scrollToIndex({
-      index,
-      animated: true,
-    });
-    setCurrentIndex(index);
-  }, []);
-
-  return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        },
-      ]}
-    >
-      <ThemedCard
-        variant="elevated"
-        density="compact"
-        elevation="card"
-        style={styles.inspirationCard}
+    return (
+      <Animated.View 
+        style={[
+          styles.container,
+          {
+            opacity: animations.fadeAnim,
+            transform: animations.entranceTransform,
+          }
+        ]}
       >
-        <FlatList
-          ref={flatListRef}
-          data={inspirationItems}
-          renderItem={renderInspirationItem}
-          keyExtractor={(item) => item.id}
+        {/* **SWIPEABLE CARDS**: Horizontal scrolling inspiration */}
+        <ScrollView
+          ref={scrollViewRef}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          onScroll={onScroll}
+          onScroll={handleScroll}
           scrollEventThrottle={16}
-          snapToInterval={screenWidth - 32}
-          snapToAlignment="center"
-          decelerationRate="fast"
-        />
-
-        {/* Compact pagination indicators */}
-        {inspirationItems.length > 1 && (
-          <View style={styles.paginationContainer}>
-            {inspirationItems.map((item, index) => (
-              <TouchableOpacity
-                key={index}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {inspirationCards.map((card, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={handlePress}
+              onPressIn={animations.animatePressIn}
+              onPressOut={animations.animatePressOut}
+              activeOpacity={0.95}
+              style={styles.card}
+            >
+              <Animated.View 
                 style={[
-                  styles.paginationDot,
+                  styles.cardContent,
                   {
-                    backgroundColor:
-                      currentIndex === index ? item.color : theme.colors.outline + '40',
-                  },
-                  currentIndex === index
-                    ? dynamicStyles.paginationDotActive
-                    : dynamicStyles.paginationDotInactive,
+                    transform: [{ scale: animations.scaleAnim }],
+                  }
                 ]}
-                onPress={() => handlePaginationPress(index)}
-                accessible={true}
-                accessibilityLabel={`${index + 1}. mesaja git`}
-                accessibilityRole="button"
-              />
-            ))}
-          </View>
-        )}
-      </ThemedCard>
-    </Animated.View>
-  );
-};
+              >
+                {/* **SUBTLE GRADIENT BACKGROUND** */}
+                <View style={[styles.gradientBackground, { backgroundColor: card.gradient[0] }]} />
+                
+                {/* **CARD HEADER** */}
+                                 <View style={styles.cardHeader}>
+                   <View style={[styles.iconContainer, { backgroundColor: card.iconColor + '20' }]}>
+                     <Ionicons name={card.icon as keyof typeof Ionicons.glyphMap} size={24} color={card.iconColor} />
+                   </View>
+                   <Text style={styles.cardTitle}>{card.title}</Text>
+                 </View>
+
+                {/* **INSPIRATION MESSAGE** */}
+                <Text style={styles.cardMessage}>"{card.message}"</Text>
+
+                {/* **PROGRESS INDICATOR** */}
+                <View style={styles.progressContainer}>
+                  <Text style={styles.progressText}>
+                    {currentCount} / {dailyGoal} minnettarlık
+                  </Text>
+                </View>
+              </Animated.View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* **PAGE INDICATOR**: Subtle dots */}
+        <View style={styles.pageIndicator}>
+          {inspirationCards.map((_, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={() => scrollToIndex(index)}
+              style={[
+                styles.dot,
+                index === currentIndex ? styles.activeDot : styles.inactiveDot,
+              ]}
+            />
+          ))}
+        </View>
+      </Animated.View>
+    );
+  }
+);
+
+DailyInspiration.displayName = 'DailyInspiration';
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
       marginBottom: theme.spacing.md,
-      marginHorizontal: theme.spacing.md,
     },
-    inspirationCard: {
-      borderRadius: theme.borderRadius.medium,
+    scrollView: {
+      flexGrow: 0,
+    },
+    scrollContent: {
+      alignItems: 'center',
+    },
+    card: {
+      width: SCREEN_WIDTH,
+      paddingHorizontal: theme.spacing.md,
+    },
+    cardContent: {
+      height: 160,
+      borderRadius: theme.borderRadius.large,
       backgroundColor: theme.colors.surface,
       overflow: 'hidden',
-      ...getPrimaryShadow.card(theme),
       elevation: 2,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
     },
-    itemContainer: {
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.sm,
+    gradientBackground: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
     },
-    content: {
+    cardHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      minHeight: 60,
+      padding: theme.spacing.md,
+      paddingBottom: theme.spacing.sm,
     },
     iconContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
       alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: theme.spacing.md,
+      marginRight: theme.spacing.sm,
     },
-    textContainer: {
-      flex: 1,
-      justifyContent: 'center',
-    },
-    title: {
-      ...theme.typography.titleSmall,
+    cardTitle: {
+      ...theme.typography.titleMedium,
       color: theme.colors.onSurface,
       fontWeight: '600',
-      marginBottom: theme.spacing.xs,
-      lineHeight: 18,
     },
-    message: {
+    cardMessage: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurface,
+      lineHeight: 24,
+      fontStyle: 'italic',
+      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
+    },
+    progressContainer: {
+      position: 'absolute',
+      bottom: theme.spacing.md,
+      right: theme.spacing.md,
+    },
+    progressText: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      lineHeight: 16,
-      opacity: 0.8,
+      fontWeight: '500',
     },
-    paginationContainer: {
+    pageIndicator: {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: theme.spacing.xs,
-      paddingVertical: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.xs,
     },
-    paginationDot: {
-      height: 6,
-      borderRadius: 8,
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginHorizontal: 4,
+    },
+    activeDot: {
+      backgroundColor: theme.colors.primary,
+    },
+    inactiveDot: {
+      backgroundColor: theme.colors.onSurfaceVariant,
+      opacity: 0.3,
     },
   });
 

@@ -1,11 +1,10 @@
 import React, { useCallback, useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Appbar, Button, Portal, Snackbar, Text } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Button, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInUp } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { useThemeStore } from '@/store/themeStore';
@@ -31,8 +30,6 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
   const { activeTheme } = useThemeStore();
   const { showError, showSuccess } = useGlobalError();
   const navigation = useNavigation<WhyGratitudeScreenNavigationProp>();
-  const [snackbarVisible, setSnackbarVisible] = React.useState(false);
-  const [snackbarMessage, setSnackbarMessage] = React.useState('');
 
   // Data fetching hooks
   const { data: benefits, isLoading, error, refetch } = useGratitudeBenefits();
@@ -49,8 +46,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
   // ✅ PERFORMANCE FIX: Separate static styles from dynamic values
   const styles = useMemo(() => createStyles(activeTheme), [activeTheme]);
 
-  // ✅ PERFORMANCE FIX: Memoize gradient calculations separately
-  const gradients = useMemo(() => createGradients(activeTheme), [activeTheme]);
+
 
   const userName = useMemo(() => profile?.username, [profile?.username]);
 
@@ -71,7 +67,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
     trackScreenView();
   }, [profile?.id, streak?.current_streak, benefits?.length]);
 
-  // Memoized event handlers
+  // 🚀 TOAST INTEGRATION: Enhanced event handlers with centralized toast notifications
   const handleStartJournaling = useCallback(
     (prompt?: string | null, source: 'main_button' | 'benefit_card' = 'main_button') => {
       // Track analytics
@@ -93,12 +89,12 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
         params: { initialPrompt: prompt || undefined },
       });
 
+      // 🚀 TOAST INTEGRATION: Use centralized toast system instead of custom Snackbar
       if (prompt) {
-        setSnackbarMessage(`Harika bir başlangıç! "${prompt}" seni bekliyor.`);
-        setSnackbarVisible(true);
+        showSuccess(`Harika bir başlangıç! "${prompt}" seni bekliyor.`);
       }
     },
-    [navigation, streak?.current_streak, profile?.id]
+    [navigation, streak?.current_streak, profile?.id, showSuccess]
   );
 
   const handleBenefitCtaPress = useCallback(
@@ -124,10 +120,6 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
     showSuccess('Yeniden yükleniyor...');
   }, [refetch, showSuccess]);
 
-  const onDismissSnackbar = useCallback(() => {
-    setSnackbarVisible(false);
-  }, []);
-
   const handleGoBack = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
@@ -139,7 +131,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <LinearGradient colors={gradients.loading} style={styles.loadingContainer}>
+        <View style={styles.loadingContainer}>
           <Animated.View entering={FadeIn.duration(600)} style={styles.loadingContent}>
             <ActivityIndicator
               animating={true}
@@ -150,7 +142,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
             <Text style={styles.loadingText}>İçerik yükleniyor...</Text>
             <Text style={styles.loadingSubtext}>Minnetin faydaları hazırlanıyor</Text>
           </Animated.View>
-        </LinearGradient>
+        </View>
       </SafeAreaView>
     );
   }
@@ -159,7 +151,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
   if (error) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <LinearGradient colors={gradients.error} style={styles.errorContainer}>
+        <View style={styles.errorContainer}>
           <Animated.View entering={FadeInUp.duration(600)} style={styles.errorContent}>
             <MaterialCommunityIcons
               name="alert-circle-outline"
@@ -182,7 +174,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
               Tekrar Dene
             </Button>
           </Animated.View>
-        </LinearGradient>
+        </View>
       </SafeAreaView>
     );
   }
@@ -206,8 +198,8 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
           </Appbar.Header>
         </Animated.View>
 
-        {/* Main Content with Gradient Background */}
-        <LinearGradient colors={gradients.background} style={styles.gradientContainer}>
+        {/* Content Container */}
+        <View style={styles.contentWrapper}>
           <ScrollView
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
@@ -220,13 +212,13 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
               style={styles.heroSection}
             >
               <View style={styles.heroIconContainer}>
-                <LinearGradient colors={gradients.heroIcon} style={styles.heroIconBackground}>
+                <View style={styles.heroIconBackground}>
                   <MaterialCommunityIcons
                     name="heart-multiple-outline"
                     size={48}
-                    color={activeTheme.colors.onPrimary}
+                    color={activeTheme.colors.primary}
                   />
-                </LinearGradient>
+                </View>
               </View>
 
               <Text style={styles.title}>
@@ -246,7 +238,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
                   entering={FadeInUp.delay(600).duration(600)}
                   style={styles.streakContainer}
                 >
-                  <LinearGradient colors={gradients.streak} style={styles.streakBackground}>
+                  <View style={styles.streakBackground}>
                     <MaterialCommunityIcons
                       name="fire"
                       size={24}
@@ -259,7 +251,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
                       <Text style={styles.streakNumber}>{streak.current_streak} günlük</Text>{' '}
                       serinle bu faydaların kilidini açmaya başladın bile.
                     </Text>
-                  </LinearGradient>
+                  </View>
                 </Animated.View>
               )}
             </Animated.View>
@@ -303,42 +295,24 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
                   Bu faydaları deneyimlemek için günlüğüne ilk adımını at
                 </Text>
 
-                <LinearGradient colors={gradients.ctaButton} style={styles.ctaButtonContainer}>
-                  <Button
-                    mode="contained"
-                    onPress={() => handleStartJournaling(primaryPrompt)}
-                    style={styles.ctaButton}
-                    labelStyle={styles.ctaButtonLabel}
-                    contentStyle={styles.ctaButtonContent}
-                    icon="pencil-plus-outline"
-                    buttonColor="transparent"
-                    textColor={activeTheme.colors.onPrimary}
-                    accessibilityLabel="Hemen günlüğüne başla"
-                    accessibilityHint="Günlük yazma ekranına gider"
-                  >
-                    Hemen Günlüğüne Başla
-                  </Button>
-                </LinearGradient>
+                <Button
+                  mode="contained"
+                  onPress={() => handleStartJournaling(primaryPrompt)}
+                  style={styles.ctaButton}
+                  labelStyle={styles.ctaButtonLabel}
+                  contentStyle={styles.ctaButtonContent}
+                  icon="pencil-plus-outline"
+                  buttonColor={activeTheme.colors.primary}
+                  textColor={activeTheme.colors.onPrimary}
+                  accessibilityLabel="Hemen günlüğüne başla"
+                  accessibilityHint="Günlük yazma ekranına gider"
+                >
+                  Hemen Günlüğüne Başla
+                </Button>
               </View>
             </Animated.View>
           </ScrollView>
-        </LinearGradient>
-
-        <Portal>
-          <Snackbar
-            visible={snackbarVisible}
-            onDismiss={onDismissSnackbar}
-            duration={3000}
-            style={styles.snackbar}
-            action={{
-              label: 'Kapat',
-              onPress: onDismissSnackbar,
-              textColor: activeTheme.colors.primary,
-            }}
-          >
-            {snackbarMessage}
-          </Snackbar>
-        </Portal>
+        </View>
       </SafeAreaView>
     </ErrorBoundary>
   );
@@ -346,31 +320,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
 
 WhyGratitudeScreen.displayName = 'WhyGratitudeScreen';
 
-// ✅ PERFORMANCE FIX: Separate gradient calculations from StyleSheet.create
-const createGradients = (theme: AppTheme) => {
-  const isDark = theme.name === 'dark';
-
-  return {
-    background: [
-      theme.colors.background,
-      isDark ? `${theme.colors.primary}08` : `${theme.colors.primary}04`,
-      theme.colors.background,
-    ] as const,
-    loading: [
-      theme.colors.background,
-      isDark ? `${theme.colors.primary}10` : `${theme.colors.primary}05`,
-    ] as const,
-    error: [
-      theme.colors.background,
-      isDark ? `${theme.colors.error}10` : `${theme.colors.error}05`,
-    ] as const,
-    heroIcon: [theme.colors.primary, theme.colors.primaryVariant] as const,
-    streak: [`${theme.colors.success}30`, `${theme.colors.success}10`] as const,
-    ctaButton: [theme.colors.primary, theme.colors.primaryVariant] as const,
-  };
-};
-
-// ✅ PERFORMANCE FIX: Pure StyleSheet.create with no dynamic values
+// **CLEAN DESIGN**: Simplified styles without gradients
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     safeArea: {
@@ -380,9 +330,9 @@ const createStyles = (theme: AppTheme) =>
 
     // Header styles
     appBar: {
-      backgroundColor: theme.colors.background,
-      elevation: 0,
-      shadowOpacity: 0,
+      backgroundColor: theme.colors.surface,
+      elevation: 2,
+      shadowOpacity: 0.1,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.outline,
     },
@@ -393,8 +343,9 @@ const createStyles = (theme: AppTheme) =>
     },
 
     // Layout containers
-    gradientContainer: {
+    contentWrapper: {
       flex: 1,
+      backgroundColor: theme.colors.background,
     },
     contentContainer: {
       paddingHorizontal: theme.spacing.lg,
@@ -414,6 +365,7 @@ const createStyles = (theme: AppTheme) =>
       width: 96,
       height: 96,
       borderRadius: 48,
+      backgroundColor: `${theme.colors.primary}15`,
       justifyContent: 'center',
       alignItems: 'center',
       ...theme.elevation.lg,
@@ -595,10 +547,5 @@ const createStyles = (theme: AppTheme) =>
     },
     retryButtonLabel: {
       fontWeight: '600',
-    },
-
-    // Snackbar
-    snackbar: {
-      backgroundColor: theme.colors.inverseSurface,
     },
   });

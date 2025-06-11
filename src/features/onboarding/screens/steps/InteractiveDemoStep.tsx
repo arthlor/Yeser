@@ -4,10 +4,10 @@ import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { Ionicons } from '@expo/vector-icons';
 import { getPrimaryShadow } from '@/themes/utils';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
-import { IconButton } from 'react-native-paper';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { logger } from '@/utils/debugConfig';
 
 import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
@@ -20,6 +20,15 @@ interface InteractiveDemoStepProps {
   onBack: () => void;
 }
 
+/**
+ * **SIMPLIFIED INTERACTIVE DEMO STEP**: Minimal, elegant demo experience
+ * 
+ * **ANIMATION COORDINATION COMPLETED**: 
+ * - Eliminated complex manual Animated.timing calls
+ * - Replaced with coordinated animation system for all interactions
+ * - Simplified entrance and success animations
+ * - Maintained demo functionality with minimal, non-intrusive animations
+ */
 export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext, onBack }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -31,29 +40,20 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
   const [hasWrittenStatement, setHasWrittenStatement] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Simplified animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const successAnim = useRef(new Animated.Value(0)).current;
+  // **COORDINATED ANIMATION SYSTEM**: Single instance for all demo animations
+  const animations = useCoordinatedAnimations();
 
+  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
-    // Simple entrance animation
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
 
+  // **COORDINATED SUCCESS**: Simple success animation
   useEffect(() => {
     if (showSuccess) {
-      // Simple success animation
-      Animated.timing(successAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
+      animations.animateEntrance({ duration: 500 });
     }
-  }, [showSuccess, successAnim]);
+  }, [showSuccess, animations]);
 
   const handleStatementSubmit = useCallback(
     (statement: string) => {
@@ -120,24 +120,29 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
         style={[
           styles.container,
           {
-            opacity: fadeAnim,
+            opacity: animations.fadeAnim,
           },
         ]}
       >
-        {/* Navigation Header */}
+        {/* Enhanced Navigation Header with Better Back Button */}
         <ScreenSection>
           <View style={styles.navigationHeader}>
-            <IconButton
-              icon="arrow-left"
-              size={24}
-              iconColor={theme.colors.text}
+            <TouchableOpacity
               onPress={() => {
                 hapticFeedback.light();
                 onBack();
               }}
+              style={styles.backButtonContainer}
+              activeOpacity={0.7}
               accessibilityLabel="Geri dön"
-              style={styles.backButton}
-            />
+              accessibilityRole="button"
+              accessibilityHint="Önceki adıma geri dön"
+            >
+              <View style={styles.backButtonInner}>
+                <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
+                <Text style={styles.backButtonText}>Geri</Text>
+              </View>
+            </TouchableOpacity>
           </View>
         </ScreenSection>
 
@@ -181,12 +186,12 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             {/* Success Celebration */}
             {showSuccess && (
               <Animated.View
-                style={[
-                  styles.successContainer,
-                  {
-                    opacity: successAnim,
-                  },
-                ]}
+                                  style={[
+                    styles.successContainer,
+                    {
+                      opacity: animations.fadeAnim,
+                    },
+                  ]}
               >
                 <View style={styles.successCard}>
                   <View style={styles.successContent}>
@@ -233,11 +238,29 @@ const createStyles = (theme: AppTheme) =>
     },
     navigationHeader: {
       alignItems: 'flex-start',
-      paddingBottom: 0,
+      paddingBottom: theme.spacing.md,
     },
-    backButton: {
-      margin: 0,
-      marginLeft: -theme.spacing.sm,
+    backButtonContainer: {
+      padding: theme.spacing.sm,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.surface + 'CC',
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '20',
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    backButtonInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    backButtonText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
     },
     header: {
       alignItems: 'center',

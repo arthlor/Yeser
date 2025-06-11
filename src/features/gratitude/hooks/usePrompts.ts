@@ -11,7 +11,7 @@ export const STATIC_DEFAULT_PROMPT = 'Bugün neler için minnettarsın?';
 
 /**
  * Hook to get current daily prompt with TanStack Query
- * Automatically manages caching and background updates
+ * **NETWORK RESILIENCE**: Enhanced error handling and fallback strategies
  */
 export const useCurrentPrompt = () => {
   const user = useAuthStore((state) => state.user);
@@ -19,19 +19,34 @@ export const useCurrentPrompt = () => {
   return useQuery({
     queryKey: queryKeys.currentPrompt(user?.id),
     queryFn: async () => {
-      const prompt = await getRandomActivePrompt();
-      return prompt;
+      try {
+        const prompt = await getRandomActivePrompt();
+        return prompt;
+      } catch (error) {
+        logger.warn('Prompt API failed, returning null for graceful fallback:', { error: error instanceof Error ? error.message : String(error) });
+        // Return null instead of throwing to prevent cascade failures
+        return null;
+      }
     },
     enabled: !!user?.id,
     staleTime: 60 * 60 * 1000, // 1 hour - prompts don't change frequently
     gcTime: 24 * 60 * 60 * 1000, // 24 hours
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    retry: (failureCount, error) => {
+      // **NETWORK RESILIENCE**: Stop retrying on network errors after 1 attempt
+      if (error.message?.includes('Network request failed')) {
+        return failureCount < 1;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 15000),
+    // **GRACEFUL DEGRADATION**: Don't throw on error, use fallback instead
+    throwOnError: false,
   });
 };
 
 /**
  * Hook to get multiple random prompts for varied inspiration
+ * **NETWORK RESILIENCE**: Enhanced with graceful fallback to empty array
  */
 export const useMultiplePrompts = (limit: number = 10) => {
   const user = useAuthStore((state) => state.user);
@@ -39,14 +54,28 @@ export const useMultiplePrompts = (limit: number = 10) => {
   return useQuery({
     queryKey: [...queryKeys.currentPrompt(user?.id), 'multiple', limit],
     queryFn: async () => {
-      const prompts = await getMultipleRandomActivePrompts(limit);
-      return prompts;
+      try {
+        const prompts = await getMultipleRandomActivePrompts(limit);
+        return prompts;
+      } catch (error) {
+        logger.warn('Multiple prompts API failed, returning empty array for graceful fallback:', { error: error instanceof Error ? error.message : String(error) });
+        // Return empty array instead of throwing
+        return [];
+      }
     },
     enabled: !!user?.id,
     staleTime: 30 * 60 * 1000, // 30 minutes - refresh more often for variety
     gcTime: 2 * 60 * 60 * 1000, // 2 hours
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    retry: (failureCount, error) => {
+      // **NETWORK RESILIENCE**: Reduced retries for network failures
+      if (error.message?.includes('Network request failed')) {
+        return failureCount < 1;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 15000),
+    // **GRACEFUL DEGRADATION**: Don't throw on error
+    throwOnError: false,
   });
 };
 

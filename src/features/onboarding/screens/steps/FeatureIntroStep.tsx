@@ -4,13 +4,14 @@ import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { Ionicons } from '@expo/vector-icons';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Button, IconButton } from 'react-native-paper';
+import { Button } from 'react-native-paper';
 
 import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
 
 import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 interface FeatureIntroStepProps {
   onNext: (features: FeaturePreferences) => void;
@@ -44,20 +45,17 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
     throwbackFrequency: initialPreferences?.throwbackFrequency ?? 'weekly',
   });
 
-  // Simplified animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
+  const animations = useCoordinatedAnimations();
 
+  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
     // Analytics tracking
     analyticsService.logScreenView('onboarding_feature_intro_step');
 
-    // Simple entrance animation
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
+    // Use coordinated entrance animation
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
 
   const handleFeatureToggle = useCallback(
     (feature: keyof FeaturePreferences, value: boolean | string) => {
@@ -92,25 +90,30 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
         style={[
           styles.container,
           {
-            opacity: fadeAnim,
+            opacity: animations.fadeAnim,
           },
         ]}
       >
-        {/* Navigation Header */}
+        {/* Enhanced Navigation Header with Better Back Button */}
         {onBack && (
           <ScreenSection>
             <View style={styles.navigationHeader}>
-              <IconButton
-                icon="arrow-left"
-                size={24}
-                iconColor={theme.colors.text}
+              <TouchableOpacity
                 onPress={() => {
                   hapticFeedback.light();
                   onBack();
                 }}
+                style={styles.backButtonContainer}
+                activeOpacity={0.7}
                 accessibilityLabel="Geri dön"
-                style={styles.backButton}
-              />
+                accessibilityRole="button"
+                accessibilityHint="Önceki adıma geri dön"
+              >
+                <View style={styles.backButtonInner}>
+                  <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
+                  <Text style={styles.backButtonText}>Geri</Text>
+                </View>
+              </TouchableOpacity>
             </View>
           </ScreenSection>
         )}
@@ -129,14 +132,7 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
         {/* Features Section */}
         <ScreenSection variant="edge-to-edge">
           {/* Varied Prompts Feature */}
-          <Animated.View
-            style={[
-              {
-                opacity: fadeAnim,
-              },
-            ]}
-          >
-            <View style={styles.featureCard}>
+          <View style={styles.featureCard}>
               <View style={styles.featureHeader}>
                 <View style={styles.featureIconWrapper}>
                   <Ionicons name="bulb" size={24} color={theme.colors.primary} />
@@ -156,17 +152,9 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
                 />
               </View>
             </View>
-          </Animated.View>
 
           {/* Throwback Feature */}
-          <Animated.View
-            style={[
-              {
-                opacity: fadeAnim,
-              },
-            ]}
-          >
-            <View style={styles.featureCard}>
+          <View style={styles.featureCard}>
               <View style={styles.featureHeader}>
                 <View style={styles.featureIconWrapper}>
                   <Ionicons name="time" size={24} color={theme.colors.primary} />
@@ -237,17 +225,9 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
                 </View>
               )}
             </View>
-          </Animated.View>
 
           {/* Info Card */}
-          <Animated.View
-            style={[
-              {
-                opacity: fadeAnim,
-              },
-            ]}
-          >
-            <View style={styles.infoCard}>
+          <View style={styles.infoCard}>
               <View style={styles.infoContent}>
                 <Ionicons
                   name="information-circle-outline"
@@ -260,7 +240,6 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
                 </Text>
               </View>
             </View>
-          </Animated.View>
         </ScreenSection>
 
         {/* Actions Section */}
@@ -289,11 +268,29 @@ const createStyles = (theme: AppTheme) =>
     },
     navigationHeader: {
       alignItems: 'flex-start',
-      paddingBottom: 0,
+      paddingBottom: theme.spacing.md,
     },
-    backButton: {
-      margin: 0,
-      marginLeft: -theme.spacing.sm,
+    backButtonContainer: {
+      padding: theme.spacing.sm,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.surface + 'CC',
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '20',
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    backButtonInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    backButtonText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
     },
     header: {
       alignItems: 'center',

@@ -130,6 +130,17 @@ export default {
         },
       ],
       [
+        '@react-native-firebase/app',
+        {
+          ios: {
+            googleServicesFile: 'ios/YeerDev/GoogleService-Info.plist',
+          },
+          android: {
+            googleServicesFile: 'android/app/google-services.json',
+          },
+        },
+      ],
+      [
         'expo-build-properties',
         {
           android: {

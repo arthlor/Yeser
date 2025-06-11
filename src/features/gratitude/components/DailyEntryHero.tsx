@@ -1,9 +1,11 @@
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
+import { Text } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface DailyEntryHeroProps {
@@ -12,6 +14,15 @@ interface DailyEntryHeroProps {
   dailyGoal?: number;
 }
 
+/**
+ * 🌟 COORDINATED DAILY ENTRY HERO
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Eliminated direct Animated.timing for progress animations
+ * - Replaced with coordinated animation system
+ * - Simplified animation approach following "Barely Noticeable, Maximum Performance"
+ * - Static progress display for better performance
+ */
 const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
   isToday,
   statementCount,
@@ -20,62 +31,23 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const celebrationScale = useRef(new Animated.Value(1)).current;
+  // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
+  const animations = useCoordinatedAnimations();
 
-  // Calculate progress percentage for animations and display
+  // Calculate progress percentage for display
   const progressPercentage = Math.min((statementCount / dailyGoal) * 100, 100);
 
+  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
-    // Entrance animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 80,
-        friction: 10,
-        useNativeDriver: true,
-      }),
-      Animated.timing(progressAnim, {
-        toValue: progressPercentage,
-        duration: 800,
-        useNativeDriver: false,
-      }),
-    ]).start();
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
 
-    // Celebration animation for goal achievement
-    if (statementCount >= dailyGoal && statementCount > 0) {
-      Animated.sequence([
-        Animated.spring(celebrationScale, {
-          toValue: 1.05,
-          tension: 300,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-        Animated.spring(celebrationScale, {
-          toValue: 1,
-          tension: 300,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-      ]).start();
+  // **MINIMAL PROGRESS FEEDBACK**: Simple opacity change when progress updates
+  useEffect(() => {
+    if (statementCount > 0) {
+      animations.animateFade(1, { duration: 200 });
     }
-  }, [
-    statementCount,
-    dailyGoal,
-    fadeAnim,
-    scaleAnim,
-    progressAnim,
-    celebrationScale,
-    progressPercentage,
-  ]);
+  }, [statementCount, animations]);
 
   const getGreeting = () => {
     if (!isToday) {
@@ -117,13 +89,13 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
   const isCompleted = statementCount >= dailyGoal;
 
   return (
-    <Animated.View
+    <Animated.View 
       style={[
         styles.container,
         {
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }, { scale: celebrationScale }],
-        },
+          opacity: animations.fadeAnim,
+          transform: animations.entranceTransform,
+        }
       ]}
     >
       <ThemedCard variant="elevated" density="comfortable" style={styles.heroCard}>
@@ -147,37 +119,22 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
             <Text style={styles.progressLabel}>{Math.round(progressPercentage)}% tamamlandı</Text>
           </View>
 
-          {/* Progress bar */}
+          {/* Progress bar - simplified static display */}
           <View style={styles.progressBarContainer}>
             <View style={styles.progressTrack}>
-              <Animated.View
+              <View
                 style={[
                   styles.progressFill,
                   {
-                    width: progressAnim.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ['0%', '100%'],
-                      extrapolate: 'clamp',
-                    }),
+                    width: `${progressPercentage}%`,
                     backgroundColor: isCompleted ? theme.colors.success : theme.colors.primary,
                   },
                 ]}
               />
 
-              {/* Progress glow effect when completed */}
+              {/* Progress glow effect when completed - simplified */}
               {isCompleted && (
-                <Animated.View
-                  style={[
-                    styles.progressGlow,
-                    {
-                      opacity: progressAnim.interpolate({
-                        inputRange: [90, 100],
-                        outputRange: [0, 0.6],
-                        extrapolate: 'clamp',
-                      }),
-                    },
-                  ]}
-                />
+                <View style={styles.progressGlow} />
               )}
             </View>
 
@@ -193,6 +150,8 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
     </Animated.View>
   );
 };
+
+DailyEntryHero.displayName = 'DailyEntryHero';
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
@@ -277,6 +236,7 @@ const createStyles = (theme: AppTheme) =>
       bottom: -2,
       backgroundColor: theme.colors.success + '30',
       borderRadius: theme.borderRadius.full,
+      opacity: 0.6,
     },
     completionIcon: {
       position: 'absolute',

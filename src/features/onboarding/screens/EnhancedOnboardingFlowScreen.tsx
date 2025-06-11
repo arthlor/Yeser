@@ -4,13 +4,14 @@ import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, BackHandler, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { BackHandler, StyleSheet, View } from 'react-native';
 
 import CompletionStep from './steps/CompletionStep';
 import FeatureIntroStep from './steps/FeatureIntroStep';
 import GoalSettingStep from './steps/GoalSettingStep';
 import InteractiveDemoStep from './steps/InteractiveDemoStep';
+import NotificationSettingsStep from './steps/NotificationSettingsStep';
 import PersonalizationStep from './steps/PersonalizationStep';
 import WelcomeStep from './steps/WelcomeStep';
 import { logger } from '@/utils/debugConfig';
@@ -24,6 +25,7 @@ const ONBOARDING_STEPS = [
   'goal',
   'personalization',
   'features',
+  'notifications',
   'completion',
 ] as const;
 
@@ -37,6 +39,10 @@ interface OnboardingData {
   throwbackEnabled: boolean;
   throwbackFrequency: 'daily' | 'weekly' | 'monthly';
   hasCompletedDemo: boolean;
+  // Notification settings
+  dailyReminderEnabled: boolean;
+  dailyReminderTime: string;
+  throwbackTime: string;
 }
 
 export const EnhancedOnboardingFlowScreen: React.FC = () => {
@@ -44,7 +50,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   const styles = createStyles(theme);
 
   // TanStack Query for profile updates
-  const { profile, updateProfile } = useUserProfile();
+  const { updateProfile } = useUserProfile();
 
   // Onboarding state
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
@@ -55,34 +61,18 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
     throwbackEnabled: true,
     throwbackFrequency: 'weekly',
     hasCompletedDemo: false,
+    // Notification defaults
+    dailyReminderEnabled: true,
+    dailyReminderTime: '20:00:00',
+    throwbackTime: '10:00:00',
   });
 
-  // Animation for step transitions (simplified)
-  const stepAnim = useRef(new Animated.Value(1)).current;
-
-  // Animate step transitions
-  const animateStepTransition = useCallback(() => {
-    Animated.sequence([
-      Animated.timing(stepAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(stepAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [stepAnim]);
-
-  // Navigate to previous step (moved before useEffect)
+    // Navigate to previous step (moved before useEffect)
   const handleStepBack = useCallback(() => {
     const currentIndex = ONBOARDING_STEPS.indexOf(currentStep);
     if (currentIndex > 0) {
       const previousStep = ONBOARDING_STEPS[currentIndex - 1];
       setCurrentStep(previousStep);
-      animateStepTransition();
 
       // Track step back navigation
       analyticsService.logEvent('onboarding_step_back', {
@@ -91,7 +81,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         step_index: currentIndex,
       });
     }
-  }, [currentStep, animateStepTransition]);
+  }, [currentStep]);
 
   // Navigate to next step
   const handleStepNext = useCallback(
@@ -104,7 +94,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
       if (currentIndex < ONBOARDING_STEPS.length - 1) {
         const nextStep = ONBOARDING_STEPS[currentIndex + 1];
         setCurrentStep(nextStep);
-        animateStepTransition();
 
         // Track step progression
         analyticsService.logEvent('onboarding_step_completed', {
@@ -114,7 +103,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         });
       }
     },
-    [currentStep, animateStepTransition]
+    [currentStep]
   );
 
   useEffect(() => {
@@ -124,14 +113,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
       total_steps: ONBOARDING_STEPS.length,
     });
 
-    // Initial animation for first step
-    stepAnim.setValue(0);
-    Animated.timing(stepAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
     // Handle Android back button
     const handleBackPress = () => {
       handleStepBack();
@@ -140,7 +121,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
     return () => backHandler.remove();
-  }, [stepAnim, handleStepBack]);
+  }, [handleStepBack]);
 
   // Complete onboarding and save data
   const handleOnboardingComplete = useCallback(async () => {
@@ -151,10 +132,11 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         use_varied_prompts: onboardingData.useVariedPrompts ?? true,
         throwback_reminder_enabled: onboardingData.throwbackEnabled ?? true,
         throwback_reminder_frequency: onboardingData.throwbackFrequency || 'weekly',
+        throwback_reminder_time: onboardingData.throwbackTime || '10:00:00',
         onboarded: true,
-        // Keep existing reminder settings from the profile
-        reminder_enabled: profile?.reminder_enabled ?? true,
-        reminder_time: profile?.reminder_time || '09:00:00',
+        // Use notification settings configured during onboarding
+        reminder_enabled: onboardingData.dailyReminderEnabled ?? true,
+        reminder_time: onboardingData.dailyReminderTime || '20:00:00',
       };
 
       // Save to profile using TanStack Query
@@ -169,6 +151,9 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         varied_prompts: finalData.use_varied_prompts,
         throwback_enabled: finalData.throwback_reminder_enabled,
         throwback_frequency: finalData.throwback_reminder_frequency,
+        throwback_time: finalData.throwback_reminder_time,
+        daily_reminder_enabled: finalData.reminder_enabled,
+        daily_reminder_time: finalData.reminder_time,
         completed_demo: onboardingData.hasCompletedDemo || false,
       });
 
@@ -182,7 +167,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
-  }, [onboardingData, profile, updateProfile]);
+  }, [onboardingData, updateProfile]);
 
   // Render current step
   const renderCurrentStep = () => {
@@ -248,6 +233,29 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
           />
         );
 
+      case 'notifications':
+        return (
+          <NotificationSettingsStep
+            {...stepProps}
+            onNext={(notificationSettings) =>
+              handleStepNext({
+                dailyReminderEnabled: notificationSettings.dailyReminderEnabled,
+                dailyReminderTime: notificationSettings.dailyReminderTime,
+                throwbackEnabled: notificationSettings.throwbackEnabled,
+                throwbackFrequency: notificationSettings.throwbackFrequency,
+                throwbackTime: notificationSettings.throwbackTime,
+              })
+            }
+            initialSettings={{
+              dailyReminderEnabled: onboardingData.dailyReminderEnabled ?? true,
+              dailyReminderTime: onboardingData.dailyReminderTime ?? '20:00:00',
+              throwbackEnabled: onboardingData.throwbackEnabled ?? true,
+              throwbackFrequency: onboardingData.throwbackFrequency ?? 'weekly',
+              throwbackTime: onboardingData.throwbackTime ?? '10:00:00',
+            }}
+          />
+        );
+
       case 'completion':
         return (
           <CompletionStep
@@ -273,30 +281,15 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   return (
     <ScreenLayout showsVerticalScrollIndicator={false} edges={['top']} edgeToEdge={true}>
       <View style={styles.container}>
-        <Animated.View
-          style={[
-            styles.stepContainer,
-            {
-              opacity: stepAnim,
-              transform: [
-                {
-                  translateX: stepAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [50, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
+        <View style={styles.stepContainer}>
           {renderCurrentStep()}
-        </Animated.View>
+        </View>
 
         {/* Step Progress Indicator */}
         {currentStep !== 'completion' && (
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <Animated.View
+              <View
                 style={[
                   styles.progressFill,
                   {
@@ -319,11 +312,11 @@ const createStyles = (theme: AppTheme) =>
     },
     stepContainer: {
       flex: 1,
-      paddingTop: theme.spacing.xl,
+      paddingTop: theme.spacing.xxl + theme.spacing.lg,
     },
     progressContainer: {
       position: 'absolute',
-      top: theme.spacing.xl + 10,
+      top: theme.spacing.lg,
       left: theme.spacing.lg,
       right: theme.spacing.lg,
       zIndex: 10,

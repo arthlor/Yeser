@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -11,13 +11,13 @@ import { cleanupTemporaryFile, prepareUserExportFile, shareExportedFile } from '
 import AboutSettings from '@/components/settings/AboutSettings';
 import AccountSettings from '@/components/settings/AccountSettings';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
+import DailyGoalSettings from '@/components/settings/DailyGoalSettings';
 import DailyReminderSettings from '@/components/settings/DailyReminderSettings';
 import ThrowbackReminderSettings from '@/components/settings/ThrowbackReminderSettings';
-import NotificationTestingSettings from '@/components/settings/NotificationTestingSettings';
-import NotificationDebugSettings from '@/components/settings/NotificationDebugSettings';
 import { ScreenContent, ScreenLayout } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import { useUserProfile } from '@/shared/hooks';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { analyticsService } from '@/services/analyticsService';
@@ -27,6 +27,7 @@ import { logger } from '@/utils/debugConfig';
 import { AppTheme, ThemeName } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import { notificationService } from '@/services/notificationService';
+
 
 // Fix navigation types by extending the base interfaces
 interface MainAppTabParamListFixed extends Record<string, object | undefined> {
@@ -60,6 +61,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { handleMutationError } = useGlobalError();
   const styles = createStyles(theme);
 
+  // **COORDINATED ANIMATION**: Add minimal entrance animation for consistency
+  const animations = useCoordinatedAnimations();
+
   const [isExporting, setIsExporting] = useState(false);
 
   // TanStack Query - Replace Zustand profile store
@@ -68,6 +72,11 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   const { logout } = useAuthStore();
   const { colorMode, toggleColorMode } = useTheme();
+
+  // **MINIMAL ENTRANCE**: Simple screen entrance animation
+  useEffect(() => {
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
 
   // Log screen view
   useEffect(() => {
@@ -252,9 +261,18 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handleVariedPromptsUpdate = (useVariedPrompts: boolean) => {
+  const handleVariedPromptsToggle = useCallback((useVariedPrompts: boolean) => {
     updateProfile({ useVariedPrompts });
-  };
+  }, [updateProfile]);
+
+  const handleDailyGoalUpdate = useCallback((dailyGoal: number) => {
+    updateProfile({ daily_gratitude_goal: dailyGoal });
+
+    analyticsService.logEvent('daily_goal_updated_from_settings', {
+      old_goal: profile?.daily_gratitude_goal || 3,
+      new_goal: dailyGoal,
+    });
+  }, [updateProfile, profile?.daily_gratitude_goal]);
 
   const navigateToPrivacyPolicy = () => {
     navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('PrivacyPolicy');
@@ -299,6 +317,12 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         {/* Preferences Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tercihler</Text>
+          
+          <DailyGoalSettings
+            currentGoal={profile?.daily_gratitude_goal ?? 3}
+            onUpdateGoal={handleDailyGoalUpdate}
+          />
+
           <DailyReminderSettings
             reminderEnabled={profile?.reminder_enabled ?? false}
             reminderTime={profile?.reminder_time}
@@ -317,20 +341,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             onToggleTheme={toggleColorMode}
           />
 
-          {/* 🔔 NOTIFICATION TESTING SECTION (Development only) */}
-          {__DEV__ && (
-            <>
-              <NotificationTestingSettings isVisible={true} />
-              <NotificationDebugSettings isVisible={true} />
-            </>
-          )}
-
           {/* Varied Prompts Setting */}
           <View style={styles.settingCard}>
-            <TouchableOpacity
-              style={styles.settingRow}
-              onPress={() => handleVariedPromptsUpdate(!(profile?.useVariedPrompts ?? false))}
-            >
+            <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <View style={styles.iconContainer}>
                   <Icon name="lightbulb-outline" size={20} color={theme.colors.primary} />
@@ -338,17 +351,17 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.textContainer}>
                   <Text style={styles.settingTitle}>Çeşitli Öneriler</Text>
                   <Text style={styles.settingDescription}>
-                    Günlük minnet yazma sayfasında yenilenebilir soru önerileri görüntüle
+                    Çeşitli şükretme önerileri göster
                   </Text>
                 </View>
               </View>
-              <ThemedSwitch
-                value={profile?.useVariedPrompts ?? false}
-                onValueChange={(value) => handleVariedPromptsUpdate(value)}
-                size="medium"
-                testID="varied-prompts-switch"
-              />
-            </TouchableOpacity>
+              <View style={styles.actionContainer}>
+                <ThemedSwitch
+                  value={profile?.useVariedPrompts ?? true}
+                  onValueChange={handleVariedPromptsToggle}
+                />
+              </View>
+            </View>
           </View>
         </View>
 

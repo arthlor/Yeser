@@ -1,4 +1,4 @@
-# Yeşer - Şükran Günlüğü 🌱
+# Yeşer - Minnet Günlüğü 🌱
 
 > Modern, güvenli ve kullanıcı dostu şükran günlüğü uygulaması
 

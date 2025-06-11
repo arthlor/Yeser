@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import * as Notifications from 'expo-notifications';
 
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
@@ -18,7 +19,7 @@ interface NotificationDebugInfo {
   identifier: string;
   title: string;
   body: string;
-  trigger: any;
+  trigger: Notifications.NotificationTrigger | null;
   categoryIdentifier?: string;
 }
 

@@ -3,7 +3,6 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import React, { useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
-  Alert,
   Platform,
   StyleSheet,
   Switch,

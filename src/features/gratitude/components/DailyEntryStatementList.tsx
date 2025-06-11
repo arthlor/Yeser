@@ -3,8 +3,9 @@ import { AppTheme } from '@/themes/types';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { StatementCard } from '@/shared/components/ui';
 import { getPrimaryShadow } from '@/themes/utils';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Animated,
   FlatList,
@@ -28,6 +29,64 @@ interface DailyEntryStatementListProps {
   // Editing is handled by the parent DailyEntryScreen component
 }
 
+// **RACE CONDITION FIX**: Separate component for individual statement animations - moved outside main component
+const StatementItemWrapper: React.FC<{
+  item: string;
+  index: number;
+  styles: ReturnType<typeof createStyles>;
+  theme: AppTheme;
+}> = React.memo(({ item, index, styles, theme }) => {
+  // Create individual coordinated animations for each item
+  const itemAnimations = useCoordinatedAnimations();
+  
+  // **SIMPLIFIED STAGGER**: Use minimal animation with proper config
+  useEffect(() => {
+    const delay = Math.min(index * 100, 500); // Cap stagger delay
+    itemAnimations.animateEntrance({ duration: 300 + delay });
+  }, [index, itemAnimations]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.statementItemContainer,
+        {
+          opacity: itemAnimations.fadeAnim,
+          transform: [
+            ...itemAnimations.combinedTransform,
+            {
+              translateY: itemAnimations.fadeAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [50, 0],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <StatementCard
+        statement={item}
+        variant="minimal"
+        showQuotes={false}
+        animateEntrance={false} // Already animated by coordinated system
+        // Configuration for minimal list variant - READ-ONLY MODE
+        enableInlineEdit={false} // Disabled: handled by parent screen
+        maxLength={500}
+        // Accessibility
+        accessibilityLabel={`Minnet: ${item}`}
+        hapticFeedback={false}
+        style={{
+          marginBottom: theme.spacing.sm,
+        }}
+        // 🚫 REMOVED: Edit/delete functionality to prevent conflicts
+        // isEditing, onEdit, onDelete, onCancel, onSave removed
+        // All editing is handled by the parent DailyEntryScreen
+      />
+    </Animated.View>
+  );
+});
+
+StatementItemWrapper.displayName = 'StatementItemWrapper';
+
 const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
   statements,
   isToday,
@@ -37,77 +96,48 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  // Create animated values for each statement
-  const animatedValuesRef = useRef<Animated.Value[]>([]);
+  // **RACE CONDITION FIX**: Use coordinated animation system
+  const animations = useCoordinatedAnimations();
+  
+  // Track previous statements length for staggered animations
+  const previousLengthRef = useRef(statements.length);
+  const animationTriggeredRef = useRef(false);
 
-  // Initialize or adjust animated values based on statements length
+  // **RACE CONDITION FIX**: Coordinated staggered entrance animations
+  const triggerStaggeredAnimations = useCallback(() => {
+    if (statements.length > 0 && !animationTriggeredRef.current) {
+      // Use coordinated entrance animation for the list
+      animations.animateEntrance({ duration: 300 });
+      animationTriggeredRef.current = true;
+    }
+  }, [statements.length, animations]);
+
+  // Initialize animations when statements change
   useEffect(() => {
-    // Ensure we have animated values for all statements
-    while (animatedValuesRef.current.length < statements.length) {
-      animatedValuesRef.current.push(new Animated.Value(0));
+    const currentLength = statements.length;
+    const previousLength = previousLengthRef.current;
+
+    // Reset animation trigger when statements change significantly
+    if (currentLength !== previousLength) {
+      animationTriggeredRef.current = false;
+      triggerStaggeredAnimations();
+      previousLengthRef.current = currentLength;
     }
+  }, [statements, triggerStaggeredAnimations]);
 
-    // Remove excess animated values if statements decreased
-    if (animatedValuesRef.current.length > statements.length) {
-      animatedValuesRef.current = animatedValuesRef.current.slice(0, statements.length);
-    }
-
-    // Stagger animations for new statements
-    const animations = animatedValuesRef.current.map((anim, index) =>
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 400,
-        delay: index * 100, // Stagger effect
-        useNativeDriver: true,
-      })
-    );
-
-    Animated.parallel(animations).start();
-  }, [statements]);
-
-  const renderStatementItem = ({ item, index }: ListRenderItemInfo<string>) => {
-    const animatedValue = animatedValuesRef.current[index] || new Animated.Value(1);
-
+  // **RACE CONDITION FIX**: Memoized render function with coordinated animations
+  const renderStatementItem = useCallback(({ item, index }: ListRenderItemInfo<string>) => {
     return (
-      <Animated.View
-        style={[
-          styles.statementItemContainer,
-          {
-            opacity: animatedValue,
-            transform: [
-              {
-                translateY: animatedValue.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [50, 0],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <StatementCard
-          statement={item}
-          variant="minimal"
-          showQuotes={false}
-          animateEntrance={false} // Already animated by parent
-          // Configuration for minimal list variant - READ-ONLY MODE
-          enableInlineEdit={false} // Disabled: handled by parent screen
-          maxLength={500}
-          // Accessibility
-          accessibilityLabel={`Minnet ${index + 1}: ${item}`}
-          hapticFeedback={false}
-          style={{
-            marginBottom: theme.spacing.sm,
-          }}
-          // 🚫 REMOVED: Edit/delete functionality to prevent conflicts
-          // isEditing, onEdit, onDelete, onCancel, onSave removed
-          // All editing is handled by the parent DailyEntryScreen
-        />
-      </Animated.View>
+      <StatementItemWrapper 
+        item={item} 
+        index={index} 
+        styles={styles} 
+        theme={theme} 
+      />
     );
-  };
+  }, [styles, theme]);
 
-  const renderEmptyState = () => (
+  const renderEmptyState = useCallback(() => (
     <View style={styles.emptyContainer}>
       <ThemedCard variant="outlined" style={styles.emptyCard}>
         <View style={styles.emptyContent}>
@@ -129,16 +159,28 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
         </View>
       </ThemedCard>
     </View>
+  ), [isToday, styles, theme]);
+
+  const renderSeparator = useCallback(() => <View style={styles.itemSeparator} />, [styles]);
+
+  // **RACE CONDITION FIX**: Memoized key extractor for performance
+  const keyExtractor = useCallback((item: string, index: number) => 
+    `${index}-${item.slice(0, 20)}`, []
   );
 
-  const renderSeparator = () => <View style={styles.itemSeparator} />;
+  // **RACE CONDITION FIX**: Memoized item layout for performance
+  const getItemLayout = useCallback((data: ArrayLike<string> | null | undefined, index: number) => ({
+    length: 120, // Estimated item height
+    offset: 120 * index,
+    index,
+  }), []);
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: animations.fadeAnim }]}>
       <FlatList
         data={statements}
         renderItem={renderStatementItem}
-        keyExtractor={(item, index) => `${index}-${item.slice(0, 20)}`}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={renderSeparator}
         ListEmptyComponent={renderEmptyState}
@@ -158,13 +200,9 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
         maxToRenderPerBatch={10}
         windowSize={10}
         initialNumToRender={5}
-        getItemLayout={(data, index) => ({
-          length: 120, // Estimated item height
-          offset: 120 * index,
-          index,
-        })}
+        getItemLayout={getItemLayout}
       />
-    </View>
+    </Animated.View>
   );
 };
 

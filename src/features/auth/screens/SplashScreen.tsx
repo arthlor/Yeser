@@ -1,5 +1,5 @@
 // src/screens/EnhancedSplashScreen.tsx
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
 import LottieView from 'lottie-react-native';
 
@@ -7,6 +7,7 @@ import splashAnimation from '@/assets/animations/splash.json';
 
 import { ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { analyticsService } from '@/services/analyticsService';
 import { getPrimaryShadow } from '@/themes/utils';
@@ -15,97 +16,63 @@ import { AppTheme } from '@/themes/types';
 const { width: screenWidth } = Dimensions.get('window');
 
 /**
- * Premium splash screen with Lottie animations
- * Features sophisticated animations and modern design
+ * **SIMPLIFIED SPLASH SCREEN**: Minimal, non-intrusive animations
+ * 
+ * **ANIMATION SIMPLIFICATION COMPLETED**: 
+ * - Reduced from 5 animation instances to 1 (80% reduction)
+ * - Eliminated complex staged sequences (mainAnimations, logoAnimations, bottomAnimations, pulseAnimations, dotsAnimations)
+ * - Replaced with subtle 400ms entrance fade following roadmap philosophy
+ * - Removed translateY stages and pulse effects for cleaner, minimal experience
+ * - Maintained Lottie animation without complex coordination overhead
  */
 const EnhancedSplashScreen: React.FC = () => {
   const { theme } = useTheme();
   const { showError } = useGlobalError();
   const styles = createStyles(theme);
 
-  // Animation refs
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const logoSlideAnim = useRef(new Animated.Value(-50)).current;
-  const bottomSlideAnim = useRef(new Animated.Value(50)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  // **SIMPLIFIED ANIMATION SYSTEM**: Single coordinated instance (5 → 1, 80% reduction)
+  const animations = useCoordinatedAnimations();
 
   // Lottie animation ref
-  const lottieRef = useRef<LottieView>(null);
+  const lottieRef = React.useRef<LottieView>(null);
+
+  // 🛡️ MEMORY LEAK FIX: Cleanup ref on unmount for better GC
+  React.useEffect(() => {
+    return () => {
+      // Set ref to null on unmount to help with garbage collection
+      if (lottieRef.current) {
+        lottieRef.current = null;
+      }
+    };
+  }, []);
+
+  // **MINIMAL ENTRANCE**: Simple 400ms fade-in, barely noticeable
+  const triggerEntranceAnimations = useCallback(() => {
+    // Single subtle entrance animation - no complex sequences
+    animations.animateEntrance({ duration: 400 });
+    
+    // Start Lottie animation with minimal delay
+    setTimeout(() => {
+      if (lottieRef.current) {
+        lottieRef.current.play();
+      }
+    }, 200);
+  }, [animations]);
 
   // Log screen view for analytics
   useEffect(() => {
     try {
       analyticsService.logScreenView('splash_screen');
-    } catch (error) {
+    } catch {
       // 🛡️ ERROR PROTECTION: Handle analytics errors silently
       showError('Uygulama başlatılırken bir hata oluştu.');
     }
   }, [showError]);
 
-  // Start entrance animations
+  // Start minimal entrance animation
   useEffect(() => {
-    // Main entrance sequence
-    Animated.sequence([
-      // Initial fade and scale in
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 80,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.spring(logoSlideAnim, {
-          toValue: 0,
-          tension: 100,
-          friction: 8,
-          delay: 200,
-          useNativeDriver: true,
-        }),
-      ]),
-      // Bottom elements slide up
-      Animated.spring(bottomSlideAnim, {
-        toValue: 0,
-        tension: 80,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Gentle pulse animation synchronized with flower bloom
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.1,
-          duration: 1400, // Slower, more elegant pulse
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1400,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulseAnimation.start();
-
-    // Start Lottie animation with delay for entrance effect
-    const animationTimer = setTimeout(() => {
-      if (lottieRef.current) {
-        lottieRef.current.play();
-      }
-    }, 600); // Start flower animation after entrance animations
-
-    return () => {
-      pulseAnimation.stop();
-      clearTimeout(animationTimer);
-    };
-  }, [fadeAnim, scaleAnim, logoSlideAnim, bottomSlideAnim, pulseAnim]);
+    triggerEntranceAnimations();
+  }, [triggerEntranceAnimations]);
 
   return (
     <ScreenLayout scrollable={false} edges={['top']} edgeToEdge={true} style={styles.container}>
@@ -113,8 +80,8 @@ const EnhancedSplashScreen: React.FC = () => {
         style={[
           styles.content,
           {
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }],
+            opacity: animations.fadeAnim,
+            transform: animations.entranceTransform,
           },
         ]}
       >
@@ -123,15 +90,8 @@ const EnhancedSplashScreen: React.FC = () => {
 
         {/* Main Content Container */}
         <View style={styles.mainContent}>
-          {/* Logo Section */}
-          <Animated.View
-            style={[
-              styles.logoSection,
-              {
-                transform: [{ translateY: logoSlideAnim }],
-              },
-            ]}
-          >
+          {/* Logo Section - No separate animations, unified entrance */}
+          <View style={styles.logoSection}>
             {/* App Logo with Enhanced Typography */}
             <View style={styles.logoContainer}>
               <Text
@@ -145,20 +105,13 @@ const EnhancedSplashScreen: React.FC = () => {
             </View>
 
             {/* Subtitle */}
-            <Animated.Text style={[styles.subtitle, { opacity: fadeAnim }]}>
+            <Text style={styles.subtitle}>
               Minnettarlık Yolculuğun
-            </Animated.Text>
-          </Animated.View>
+            </Text>
+          </View>
 
-          {/* Lottie Animation Section */}
-          <Animated.View
-            style={[
-              styles.animationContainer,
-              {
-                transform: [{ scale: pulseAnim }],
-              },
-            ]}
-          >
+          {/* Lottie Animation Section - Simple, no pulse effects */}
+          <View style={styles.animationContainer}>
             {/* Beautiful flower bloom animation from splash.json */}
             <LottieView
               ref={lottieRef}
@@ -174,33 +127,27 @@ const EnhancedSplashScreen: React.FC = () => {
             <View style={styles.fallbackContainer}>
               {/* Green dot and loading ring removed as requested */}
             </View>
-          </Animated.View>
+          </View>
         </View>
 
-        {/* Bottom Section */}
-        <Animated.View
-          style={[
-            styles.bottomSection,
-            {
-              transform: [{ translateY: bottomSlideAnim }],
-            },
-          ]}
-        >
+        {/* Bottom Section - No separate animations, unified entrance */}
+        <View style={styles.bottomSection}>
           {/* Loading Text */}
           <View style={styles.loadingTextContainer}>
             <Text style={styles.loadingText} accessibilityLabel="Yükleniyor">
               Hazırlanıyor...
             </Text>
+            {/* Simplified loading dots - no pulsing animation */}
             <View style={styles.loadingDots}>
-              <Animated.View style={[styles.dot, { opacity: pulseAnim }]} />
-              <Animated.View style={[styles.dot, { opacity: pulseAnim }]} />
-              <Animated.View style={[styles.dot, { opacity: pulseAnim }]} />
+              <View style={styles.dot} />
+              <View style={styles.dot} />
+              <View style={styles.dot} />
             </View>
           </View>
 
-          {/* App Version */}
-          <Text style={styles.versionText}>v1.0.0</Text>
-        </Animated.View>
+          {/* Version Info */}
+          <Text style={styles.versionText}>Yeşer • Versiyon 1.0</Text>
+        </View>
       </Animated.View>
     </ScreenLayout>
   );

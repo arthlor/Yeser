@@ -5,6 +5,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import { logger } from '@/utils/debugConfig';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface GratitudeInputBarProps {
@@ -21,6 +22,15 @@ interface GratitudeInputBarProps {
   showPrompt?: boolean;
 }
 
+/**
+ * 📝 COORDINATED GRATITUDE INPUT BAR
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Eliminated gradient animation for focus states
+ * - Replaced with coordinated animation system
+ * - Simplified animation approach following "Barely Noticeable, Maximum Performance"
+ * - Enhanced consistency with coordinated animation philosophy
+ */
 const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   onSubmit,
   placeholder = 'Bugün neye minnettarsın?',
@@ -42,8 +52,8 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const [fallbackPromptIndex, setFallbackPromptIndex] = useState(0);
 
-  // Animation values for enhanced interactivity
-  const gradientAnim = useRef(new Animated.Value(0)).current;
+  // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
+  const animations = useCoordinatedAnimations();
 
   // Fallback prompts for when varied prompts are disabled or unavailable
   const fallbackPrompts = [
@@ -53,6 +63,11 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
     'Hangi deneyimler için minnettar hissediyorsun?',
     'Bugün yaşadığın pozitif anları düşün...',
   ];
+
+  // **COORDINATED ENTRANCE**: Simple entrance animation
+  useEffect(() => {
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
 
   // Robust auto-focus without interference
   useEffect(() => {
@@ -67,16 +82,15 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
     }
   }, [autoFocus, disabled]);
 
-  // Removed pulse animation for cleaner UX
-
-  // Gradient animation for focus state
+  // 🛡️ MEMORY LEAK FIX: Cleanup ref on unmount for better GC
   useEffect(() => {
-    Animated.timing(gradientAnim, {
-      toValue: isFocused ? 1 : 0,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [isFocused, gradientAnim]);
+    return () => {
+      // Set ref to null on unmount to help with garbage collection
+      if (inputRef.current) {
+        inputRef.current = null;
+      }
+    };
+  }, []);
 
   const handleSubmit = () => {
     logger.debug('GratitudeInputBar: Submit button pressed', { text: inputText.trim() });
@@ -123,7 +137,15 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   const displayPrompt = promptText || fallbackPrompts[fallbackPromptIndex];
 
   return (
-    <View style={styles.container}>
+    <Animated.View 
+      style={[
+        styles.container,
+        {
+          opacity: animations.fadeAnim,
+          transform: animations.entranceTransform,
+        }
+      ]}
+    >
       {/* Striking Header Section with Gradient Background */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -142,23 +164,11 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
         </View>
       </View>
 
-      {/* Enhanced Input Section with Gradient Border */}
-      <Animated.View
+      {/* Enhanced Input Section - simplified styling */}
+      <View
         style={[
           styles.inputContainer,
-          {
-            borderColor: gradientAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [theme.colors.outline + '40', theme.colors.primary + '80'],
-            }),
-            backgroundColor: gradientAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [
-                theme.colors.surfaceVariant + '30',
-                theme.colors.primaryContainer + '20',
-              ],
-            }),
-          },
+          isFocused && styles.inputContainerFocused,
         ]}
       >
         <TextInput
@@ -197,7 +207,7 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
             color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
           />
         </TouchableOpacity>
-      </Animated.View>
+      </View>
 
       {/* Subtle Inspirational Prompt */}
       {!inputText && !isFocused && showPrompt && (
@@ -238,25 +248,28 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 };
 
+GratitudeInputBar.displayName = 'GratitudeInputBar';
+
 const createStyles = (theme: AppTheme, disabled: boolean = false) =>
   StyleSheet.create({
-    // Enhanced edge-to-edge container with striking design
+    // **EDGE-TO-EDGE CONTAINER**: Full-width design with striking visual hierarchy
     container: {
-      borderRadius: 0,
       backgroundColor: theme.colors.surface,
       borderWidth: 0,
-      borderTopWidth: 2,
-      borderBottomWidth: 2,
-      borderTopColor: theme.colors.primary + '20',
-      borderBottomColor: theme.colors.primary + '20',
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderTopColor: theme.colors.outline + '15',
+      borderBottomColor: theme.colors.outline + '15',
       overflow: 'hidden',
       opacity: disabled ? 0.6 : 1,
       ...getPrimaryShadow.card(theme),
     },
+
+    // **ENHANCED HEADER**: Edge-to-edge header with better visual separation
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -264,7 +277,9 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.lg,
       paddingBottom: theme.spacing.md,
-      backgroundColor: `linear-gradient(135deg, ${theme.colors.primary}15, ${theme.colors.primaryContainer}25)`,
+      backgroundColor: theme.colors.primaryContainer + '08',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outline + '12',
     },
     headerLeft: {
       flexDirection: 'row',
@@ -273,9 +288,9 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       flex: 1,
     },
     iconContainer: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 42,
+      height: 42,
+      borderRadius: 21,
       backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
@@ -301,18 +316,20 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       opacity: 0.8,
     },
     characterCountContainer: {
-      backgroundColor: theme.colors.primary + '15',
+      backgroundColor: theme.colors.primary + '12',
       borderRadius: theme.borderRadius.md,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,
       borderWidth: 1,
-      borderColor: theme.colors.primary + '30',
+      borderColor: theme.colors.primary + '25',
     },
     characterCount: {
       ...theme.typography.labelSmall,
       color: theme.colors.primary,
       fontWeight: '600',
     },
+
+    // **EDGE-TO-EDGE INPUT SECTION**: Full-width input with enhanced design
     inputContainer: {
       flexDirection: 'row',
       alignItems: 'flex-end',
@@ -321,11 +338,9 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       paddingVertical: theme.spacing.lg,
       gap: theme.spacing.md,
       minHeight: 100,
-      borderWidth: 2,
-      borderTopWidth: 0,
-      borderBottomWidth: 0,
-      borderLeftWidth: 0,
-      borderRightWidth: 0,
+    },
+    inputContainerFocused: {
+      backgroundColor: theme.colors.primaryContainer + '10',
     },
     input: {
       flex: 1,
@@ -337,7 +352,7 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.md,
       borderWidth: 2,
-      borderColor: theme.colors.outline + '30',
+      borderColor: theme.colors.outline + '25',
       borderRadius: theme.borderRadius.lg,
       backgroundColor: theme.colors.surface,
       textAlignVertical: 'top',
@@ -359,16 +374,18 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
     buttonDisabled: {
       backgroundColor: theme.colors.surfaceVariant,
     },
-    // Subtle prompt styles
+
+    // **EDGE-TO-EDGE PROMPT SECTION**: Full-width prompt with subtle design
     promptContainer: {
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.sm,
-      backgroundColor: theme.colors.primaryContainer + '15',
+      paddingVertical: theme.spacing.md,
+      backgroundColor: theme.colors.primaryContainer + '08',
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline + '20',
+      borderTopColor: theme.colors.outline + '15',
     },
     promptLoadingContainer: {
       alignItems: 'center',
+      paddingVertical: theme.spacing.sm,
     },
     promptLoadingText: {
       ...theme.typography.bodySmall,
@@ -380,34 +397,41 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      paddingVertical: theme.spacing.xs,
     },
     promptActiveContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      paddingVertical: theme.spacing.xs,
     },
     promptText: {
-      ...theme.typography.bodySmall,
+      ...theme.typography.bodyMedium,
       color: theme.colors.onSurface,
       fontStyle: 'italic',
       flex: 1,
       marginRight: theme.spacing.sm,
       fontWeight: '400',
-      lineHeight: 18,
+      lineHeight: 20,
     },
     refreshButton: {
-      padding: theme.spacing.xs,
-      borderRadius: theme.borderRadius.sm,
-      backgroundColor: theme.colors.primary + '20',
+      padding: theme.spacing.sm,
+      borderRadius: theme.borderRadius.md,
+      backgroundColor: theme.colors.primary + '15',
       justifyContent: 'center',
       alignItems: 'center',
+      minWidth: 36,
+      minHeight: 36,
     },
+
+    // **EDGE-TO-EDGE ERROR SECTION**: Full-width error display
     errorContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.lg,
       paddingBottom: theme.spacing.md,
-      gap: theme.spacing.xs,
+      gap: theme.spacing.sm,
+      backgroundColor: theme.colors.errorContainer + '08',
     },
     errorText: {
       ...theme.typography.labelMedium,

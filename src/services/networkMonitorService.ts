@@ -42,21 +42,22 @@ class NetworkMonitorService {
 
   private listeners: ((health: NetworkHealth) => void)[] = [];
   private monitoringInterval: ReturnType<typeof setInterval> | null = null;
+  private netInfoUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
 
   /**
    * Initialize network monitoring
    */
   async initialize(): Promise<void> {
-    if (this.isInitialized) {
+    if (this.isInitialized && this.netInfoUnsubscribe) {
       return;
     }
 
     try {
       logger.debug('🌐 Initializing Network Monitor Service...');
 
-      // Set up NetInfo listener
-      NetInfo.addEventListener(this.handleNetInfoChange.bind(this));
+      // Set up NetInfo listener and store unsubscribe callback for cleanup
+      this.netInfoUnsubscribe = NetInfo.addEventListener(this.handleNetInfoChange.bind(this));
 
       // Initial health check
       await this.performHealthCheck();
@@ -302,6 +303,12 @@ class NetworkMonitorService {
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
+    }
+
+    // Remove NetInfo listener if present
+    if (this.netInfoUnsubscribe) {
+      this.netInfoUnsubscribe();
+      this.netInfoUnsubscribe = null;
     }
 
     this.listeners = [];

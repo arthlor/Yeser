@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View, ViewStyle } from 'react-native';
 
-import { useTheme } from '../../../providers/ThemeProvider';
-import { AppTheme } from '../../../themes/types';
-import { semanticSpacing } from '../../../themes/utils';
+import { useTheme } from '@/providers/ThemeProvider';
+import { AppTheme } from '@/themes/types';
+import { semanticSpacing } from '@/themes/utils';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 interface LoadingSkeletonProps {
   width?: number | string;
@@ -17,16 +18,13 @@ interface LoadingSkeletonProps {
 }
 
 /**
- * 🎯 LOADING SKELETON COMPONENT
- * Beautiful, animated loading states for better user experience
- *
- * Features:
- * - Smooth shimmer animation
- * - Multiple variants (text, circular, rectangular, rounded)
- * - Multi-line text skeleton support
- * - Customizable appearance and timing
- * - Semantic spacing integration
- * - Theme-aware styling
+ * 🎯 COORDINATED LOADING SKELETON
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Integrated coordinated animation system for consistency
+ * - Maintained essential shimmer animation for loading feedback
+ * - Simplified animation system while preserving functionality
+ * - Enhanced performance with coordinated approach
  */
 const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
   width,
@@ -39,12 +37,17 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
   shimmerSpeed = 1500,
 }) => {
   const { theme } = useTheme();
-  const animatedValue = useRef(new Animated.Value(0)).current;
+  
+  // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
+  const animations = useCoordinatedAnimations();
+  
+  // **ESSENTIAL SHIMMER ANIMATION**: Keep minimal shimmer for loading feedback
+  const shimmerValue = useRef(new Animated.Value(0)).current;
 
-  // Shimmer animation
+  // **MINIMAL SHIMMER**: Essential loading indication
   useEffect(() => {
     const animation = Animated.loop(
-      Animated.timing(animatedValue, {
+      Animated.timing(shimmerValue, {
         toValue: 1,
         duration: shimmerSpeed,
         useNativeDriver: true,
@@ -53,24 +56,39 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
     animation.start();
 
     return () => animation.stop();
-  }, [animatedValue, shimmerSpeed]);
+  }, [shimmerValue, shimmerSpeed]);
+
+  // **COORDINATED ENTRANCE**: Simple entrance animation
+  useEffect(() => {
+    animations.animateEntrance({ duration: 300 });
+  }, [animations]);
 
   const styles = createStyles(theme, variant, width, height, borderRadius);
 
-  // Shimmer effect
-  const translateX = animatedValue.interpolate({
+  // **MINIMAL SHIMMER EFFECT**: Essential for loading indication
+  const translateX = shimmerValue.interpolate({
     inputRange: [0, 1],
     outputRange: [-200, 200],
   });
 
-  const opacity = animatedValue.interpolate({
+  const opacity = shimmerValue.interpolate({
     inputRange: [0, 0.5, 1],
     outputRange: [0.3, 0.7, 0.3],
   });
 
   // Single skeleton item
   const renderSkeletonItem = (itemStyle?: ViewStyle, key?: number) => (
-    <View key={key} style={[styles.skeleton, itemStyle, style]}>
+    <Animated.View 
+      key={key} 
+      style={[
+        styles.skeleton, 
+        itemStyle, 
+        style,
+        {
+          opacity: animations.fadeAnim, // Coordinated entrance animation
+        }
+      ]}
+    >
       <Animated.View
         style={[
           styles.shimmer,
@@ -80,7 +98,7 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
           },
         ]}
       />
-    </View>
+    </Animated.View>
   );
 
   // Multi-line text skeleton
@@ -107,6 +125,8 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
   // Single skeleton item
   return renderSkeletonItem();
 };
+
+LoadingSkeleton.displayName = 'LoadingSkeleton';
 
 /**
  * 🎨 SKELETON STYLING SYSTEM
@@ -196,7 +216,7 @@ export const CardSkeleton: React.FC<Omit<LoadingSkeletonProps, 'variant'>> = (pr
 
 // Button skeleton
 export const ButtonSkeleton: React.FC<Omit<LoadingSkeletonProps, 'variant'>> = ({
-  height = 44,
+  height = 48,
   ...props
 }) => <LoadingSkeleton variant="rounded" height={height} {...props} />;
 
@@ -207,36 +227,36 @@ export const AvatarSkeleton: React.FC<{ size?: number }> = ({ size = 40 }) => (
 
 // List item skeleton
 export const ListItemSkeleton: React.FC<{ showAvatar?: boolean }> = ({ showAvatar = false }) => {
-  const { theme } = useTheme();
-  const spacing = semanticSpacing(theme);
+  const listItemStyles = StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
+    },
+    avatarContainer: {
+      marginRight: 12,
+    },
+    contentContainer: {
+      flex: 1,
+    },
+    titleSkeleton: {
+      marginBottom: 8,
+    },
+  });
 
   return (
-    <View style={[styles.listItem, { padding: spacing.listItemPadding }]}>
+    <View style={listItemStyles.container}>
       {showAvatar && (
-        <View style={styles.avatar}>
-          <AvatarSkeleton size={40} />
+        <View style={listItemStyles.avatarContainer}>
+          <AvatarSkeleton />
         </View>
       )}
-      <View style={styles.content}>
-        <TextSkeleton height={16} style={{ marginBottom: spacing.elementGap }} />
-        <TextSkeleton height={14} width="70%" />
+      <View style={listItemStyles.contentContainer}>
+        <TextSkeleton height={16} style={listItemStyles.titleSkeleton} />
+        <TextSkeleton height={14} width="60%" />
       </View>
     </View>
   );
 };
-
-// Shared styles for composite skeletons
-const styles = StyleSheet.create({
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    marginRight: 12,
-  },
-  content: {
-    flex: 1,
-  },
-});
 
 export default LoadingSkeleton;

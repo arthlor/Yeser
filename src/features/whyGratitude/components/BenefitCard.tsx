@@ -33,6 +33,14 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
     // ✅ PERFORMANCE FIX: Reduce animation complexity - use simpler scale animation
     const scale = useSharedValue(1);
 
+    // 🛡️ MEMORY LEAK FIX: Cleanup SharedValue on unmount for better GC
+    React.useEffect(() => {
+      return () => {
+        // Reset SharedValue to initial state on unmount to help with garbage collection
+        scale.value = 1;
+      };
+    }, [scale]);
+
     // ✅ PERFORMANCE FIX: Memoize all theme-dependent calculations
     const styles = useMemo(() => createStyles(activeTheme), [activeTheme]);
     const animationDelay = useMemo(() => index * 150, [index]);
@@ -105,11 +113,11 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
 
     return (
       <View testID={testID}>
-        <Animated.View
-          entering={FadeInUp.delay(animationDelay).duration(700)}
-          style={animatedCardStyle}
-        >
-          <View style={styles.cardShadowWrapper}>
+        {/* Outer wrapper for layout/entering animations */}
+        <Animated.View entering={FadeInUp.delay(animationDelay).duration(700)}>
+          {/* Inner wrapper for transform animations */}
+          <Animated.View style={animatedCardStyle}>
+            <View style={styles.cardShadowWrapper}>
             <Card
               style={styles.card}
               accessible={true}
@@ -178,7 +186,8 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
                 </List.Accordion>
               </View>
             </Card>
-          </View>
+            </View>
+          </Animated.View>
         </Animated.View>
       </View>
     );

@@ -63,11 +63,11 @@
         "changesNotSentForReview": false
       },
       "ios": {
-        "appleId": "your-apple-id@example.com",
+        "appleId": "anilkaraca140@gmail.com",
         "ascAppId": "1234567890",
-        "appleTeamId": "ABCD123456",
-        "sku": "yeser-gratitude-001",
-        "bundleIdentifier": "com.yeser"
+        "appleTeamId": "9SG3PV8BMM",
+        "sku": "yeser",
+        "bundleIdentifier": "com.arthlor.yeser"
       }
     },
     "preview": {
@@ -77,9 +77,9 @@
         "releaseStatus": "draft"
       },
       "ios": {
-        "appleId": "your-apple-id@example.com",
+        "appleId": "anilkaraca140@gmail.com",
         "ascAppId": "1234567890",
-        "appleTeamId": "ABCD123456"
+        "appleTeamId": "9SG3PV8BMM"
       }
     }
   }

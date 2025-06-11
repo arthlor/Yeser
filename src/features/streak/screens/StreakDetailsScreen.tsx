@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -10,6 +10,7 @@ import { useStreakData } from '@/features/streak/hooks/useStreakData';
 import { ADVANCED_MILESTONES } from '@/features/streak/components/AdvancedStreakMilestones';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { analyticsService } from '@/services/analyticsService';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import type { AppTheme } from '@/themes/types';
 import type { AdvancedMilestone } from '@/features/streak/components/AdvancedStreakMilestones';
@@ -20,6 +21,15 @@ interface StreakDetailsScreenProps {
   };
 }
 
+/**
+ * 🏆 COORDINATED STREAK DETAILS SCREEN
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Eliminated direct Animated.timing for slide and progress animations
+ * - Replaced with coordinated animation system
+ * - Simplified animation approach following "Barely Noticeable, Maximum Performance"
+ * - Static progress display for better performance
+ */
 const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -28,9 +38,8 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
   const currentStreak = streakData?.current_streak || 0;
   const longestStreak = streakData?.longest_streak || 0;
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
+  const animations = useCoordinatedAnimations();
 
   const getCurrentMilestone = useCallback((): AdvancedMilestone => {
     return (
@@ -58,34 +67,16 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
     return Math.max(0, Math.min(100, progress));
   }, [currentStreak, getCurrentMilestone, getNextMilestone]);
 
+  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Animate progress bar
-    Animated.timing(progressAnim, {
-      toValue: 1,
-      duration: 800,
-      delay: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [fadeAnim, slideAnim, progressAnim]);
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
 
   // Analytics tracking
   useEffect(() => {
     analyticsService.logScreenView('streak_details_screen');
 
-    // Track streak insights
+    // Track streak insights with enhanced educational content engagement
     analyticsService.logEvent('streak_details_viewed', {
       current_streak: currentStreak,
       longest_streak: longestStreak,
@@ -98,6 +89,12 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
         const milestone = getNextMilestone();
         return milestone ? milestone.minDays - currentStreak : 0;
       })(),
+      // Enhanced educational context tracking
+      streak_stage: currentStreak === 0 ? 'new' : currentStreak < 7 ? 'beginner' : currentStreak < 30 ? 'developing' : 'established',
+      shows_benefits_section: true,
+      shows_maintenance_tips: getNextMilestone() !== null,
+      educational_content_available: true,
+      user_education_level: currentStreak >= 30 ? 'advanced' : currentStreak >= 7 ? 'intermediate' : 'basic',
     });
   }, [currentStreak, longestStreak, getCurrentMilestone, getNextMilestone, getProgressPercentage]);
 
@@ -138,8 +135,8 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
         style={[
           styles.contentContainer,
           {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
+            opacity: animations.fadeAnim,
+            transform: animations.entranceTransform,
           },
         ]}
       >
@@ -164,6 +161,21 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                     {currentMilestone.title}
                   </Text>
                 </View>
+              </View>
+
+              {/* 📚 SUBTLE INFO: Streak explanation */}
+              <View style={styles.streakExplanationContainer}>
+                <Icon name="information-outline" size={16} color={theme.colors.onSurfaceVariant} />
+                <Text style={styles.streakExplanationText}>
+                  {currentStreak === 0 
+                    ? "Seri, art arda günlerde minnet girişi yaparak başlar. Günlük pratiğin güçlü alışkanlıklar oluşturur."
+                    : currentStreak < 7
+                    ? "Mükemmel başlangıç! Her gün devam ettiğin sürece serin güçlenir ve daha büyük başarılar açar."
+                    : currentStreak < 30  
+                    ? "Serin momentum kazanıyor! Bu ritim zihinsel sağlığını destekler ve pozitif düşünce alışkanlığı oluşturur."
+                    : "Güçlü bir alışkanlık oluşturdun! Araştırmalar günlük minnettarlığın stresi azalttığını ve mutluluğu artırdığını gösteriyor."
+                  }
+                </Text>
               </View>
 
               {longestStreak > currentStreak && (
@@ -203,14 +215,11 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
 
               <View style={styles.progressVisualization}>
                 <View style={styles.progressBarContainer}>
-                  <Animated.View
+                  <View
                     style={[
                       styles.progressBarFill,
                       {
-                        width: progressAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['0%', `${progressPercentage}%`],
-                        }),
+                        width: `${progressPercentage}%`,
                         backgroundColor: currentMilestone.colorPrimary,
                       },
                     ]}
@@ -218,6 +227,13 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                 </View>
                 <Text style={styles.progressPercent}>
                   {Math.round(progressPercentage)}% tamamlandı
+                </Text>
+              </View>
+
+              {/* 📚 SUBTLE INFO: How to maintain streak */}
+              <View style={styles.streakMaintenanceInfo}>
+                <Text style={styles.streakMaintenanceText}>
+                  💡 İpucu: Serini korumak için her gün en az bir minnet girişi yap. Geç saatlerde unutursan 23:59'a kadar girişin sayılır!
                 </Text>
               </View>
             </ThemedCard>
@@ -361,6 +377,67 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
           </ThemedCard>
         </View>
 
+        {/* 📚 SUBTLE INFO: Benefits information */}
+        <View style={styles.benefitsSection}>
+          <ThemedCard
+            variant="elevated"
+            density="comfortable"
+            elevation="card"
+            style={styles.benefitsCard}
+          >
+            <View style={styles.benefitsHeader}>
+              <Icon name="heart-pulse" size={20} color={theme.colors.success} />
+              <Text style={styles.benefitsSectionTitle}>Seri Faydaları</Text>
+            </View>
+            
+            <View style={styles.benefitsList}>
+              <View style={styles.benefitItem}>
+                <Text style={styles.benefitEmoji}>🧠</Text>
+                <View style={styles.benefitContent}>
+                  <Text style={styles.benefitTitle}>Zihinsel Sağlık</Text>
+                  <Text style={styles.benefitDescription}>Günlük minnettarlık stresi azaltmaya ve uyku kalitesini artırmaya yardımcı olur.</Text>
+                </View>
+              </View>
+              
+              <View style={styles.benefitItem}>
+                <Text style={styles.benefitEmoji}>😊</Text>
+                <View style={styles.benefitContent}>
+                  <Text style={styles.benefitTitle}>Mutluluk Seviyesi</Text>
+                  <Text style={styles.benefitDescription}>21 günlük düzenli pratik mutluluk hormonlarını artırabilir.</Text>
+                </View>
+              </View>
+              
+              <View style={styles.benefitItem}>
+                <Text style={styles.benefitEmoji}>🤝</Text>
+                <View style={styles.benefitContent}>
+                  <Text style={styles.benefitTitle}>İlişki Kalitesi</Text>
+                  <Text style={styles.benefitDescription}>Minnettarlık pratiği empatiyi güçlendirir ve sosyal bağları artırır.</Text>
+                </View>
+              </View>
+              
+              {currentStreak >= 7 && (
+                <View style={styles.benefitItem}>
+                  <Text style={styles.benefitEmoji}>⚡</Text>
+                  <View style={styles.benefitContent}>
+                    <Text style={styles.benefitTitle}>Enerji & Motivasyon</Text>
+                    <Text style={styles.benefitDescription}>1 haftalık seri enerjiyi artırır ve motivasyonu güçlendirir</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* 📚 SUBTLE INFO: Research-based tip for advanced users */}
+              {currentStreak >= 21 && (
+                <View style={styles.researchTipContainer}>
+                  <Icon name="school-outline" size={14} color={theme.colors.secondary} />
+                  <Text style={styles.researchTipText}>
+                    🔬 21+ günlük minnettarlık pratiği yaşam memnuniyetini önemli ölçüde artırır.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </ThemedCard>
+        </View>
+
         {/* Bottom Spacing for Edge-to-Edge */}
         <View style={styles.bottomSpacing} />
       </Animated.View>
@@ -439,6 +516,23 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.titleMedium,
       fontWeight: '700',
       letterSpacing: -0.2,
+    },
+    streakExplanationContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
+      backgroundColor: theme.colors.surfaceVariant + '40',
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.md,
+      gap: theme.spacing.sm,
+    },
+    streakExplanationText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '500',
+      flex: 1,
+      lineHeight: 20,
     },
     recordContainer: {
       flexDirection: 'row',
@@ -538,6 +632,24 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.primary,
       textAlign: 'center',
       letterSpacing: 0.2,
+    },
+
+    // Streak maintenance info styles
+    streakMaintenanceInfo: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      backgroundColor: theme.colors.primaryContainer + '12',
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.md,
+      marginTop: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    streakMaintenanceText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurface,
+      fontWeight: '500',
+      flex: 1,
+      lineHeight: 18,
     },
 
     // Stats Section - Edge-to-Edge
@@ -687,6 +799,78 @@ const createStyles = (theme: AppTheme) =>
     // Bottom Spacing
     bottomSpacing: {
       height: theme.spacing.xl,
+    },
+
+    // Benefits Section
+    benefitsSection: {
+      marginBottom: theme.spacing.lg,
+    },
+    benefitsCard: {
+      borderRadius: 0, // Edge-to-edge
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderTopColor: theme.colors.outline + '10',
+      borderBottomColor: theme.colors.outline + '10',
+    },
+    benefitsHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: theme.spacing.lg,
+      paddingBottom: theme.spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outline + '15',
+    },
+    benefitsSectionTitle: {
+      ...theme.typography.titleMedium,
+      fontWeight: '700',
+      color: theme.colors.onSurface,
+      flex: 1,
+      marginLeft: theme.spacing.sm,
+      letterSpacing: -0.2,
+    },
+    benefitsList: {
+      padding: theme.spacing.sm,
+    },
+    benefitItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    benefitEmoji: {
+      fontSize: 24,
+      marginRight: theme.spacing.sm,
+    },
+    benefitContent: {
+      flex: 1,
+    },
+    benefitTitle: {
+      ...theme.typography.labelMedium,
+      fontWeight: '700',
+      color: theme.colors.onSurface,
+      marginBottom: theme.spacing.xs,
+    },
+    benefitDescription: {
+      ...theme.typography.bodyMedium,
+      fontWeight: '600',
+      color: theme.colors.onSurfaceVariant,
+    },
+
+    // Research Tip Styles
+    researchTipContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primaryContainer + '12',
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.md,
+      marginTop: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    researchTipText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurface,
+      fontWeight: '500',
+      flex: 1,
+      lineHeight: 18,
     },
   });
 

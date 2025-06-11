@@ -292,10 +292,6 @@ const createPDFTemplate = (data: ExportData): string => {
             <label>E-posta:</label>
             <span>${profile.email || 'Belirtilmemiş'}</span>
           </div>
-          <div class="profile-item">
-            <label>Günlük Hedef:</label>
-            <span>${profile.daily_gratitude_goal || 3} minnet</span>
-          </div>
         </div>
       </div>
 

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -12,6 +11,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
+import { useToast } from '@/providers/ToastProvider';
 import { AppTheme } from '@/themes/types';
 import {
   createSharedStyles,
@@ -53,10 +53,10 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
   ({
     statement,
     date,
-    index,
+    index: _index,
     variant = 'detailed',
     showQuotes: _showQuotes = true,
-    showSequence = true,
+    showSequence: _showSequence = true,
     numberOfLines,
     animateEntrance = true,
     onPress,
@@ -84,6 +84,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
   }) => {
     const { theme } = useTheme();
     const { showError } = useGlobalError();
+    const { showWarning, showSuccess } = useToast();
     const layout = useResponsiveLayout();
     const sharedStyles = createSharedStyles(theme, layout);
     const styles = useMemo(() => createStyles(theme, sharedStyles), [theme, sharedStyles]);
@@ -99,19 +100,23 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
       setLocalStatement(statement);
     }, [statement]);
 
-    // Error animation
+    // **SIMPLIFIED ERROR FEEDBACK**: Remove complex error animation
+    // Following minimal animation philosophy - errors handled via toast system
     useEffect(() => {
       if (hasError) {
-        animations.animateError();
+        // Simple haptic feedback instead of animation
+        triggerHaptic('error');
       }
-    }, [hasError, animations]);
+    }, [hasError, triggerHaptic]);
 
-    // Entrance animation with stagger based on index
+    // **SIMPLIFIED ENTRANCE**: Remove complex entrance animation with stagger
+    // Following minimal animation philosophy - cards appear naturally
     useEffect(() => {
       if (animateEntrance) {
-        animations.animateEntrance(index * 150); // Enhanced stagger animation
+        // Simple haptic feedback for card appearance instead of animation
+        triggerHaptic('light');
       }
-    }, [animateEntrance, animations, index]);
+    }, [animateEntrance, triggerHaptic]);
 
     // Enhanced date formatting
     const { relativeTime, isRecent } = formatStatementDate(date);
@@ -121,25 +126,22 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
       triggerHaptic('warning');
 
       if (confirmDelete) {
-        // TODO: Consider implementing a custom confirmation modal instead of Alert
-        Alert.alert('Minneti Sil', 'Bu minnet ifadesini silmek istediğinizden emin misiniz?', [
-          {
-            text: 'İptal',
-            style: 'cancel',
-            onPress: () => triggerHaptic('light'),
-          },
-          {
-            text: 'Sil',
-            style: 'destructive',
+        // 🚀 TOAST INTEGRATION: Use toast warning with action button instead of Alert.alert
+        showWarning('Bu minnet ifadesini silmek istediğinizden emin misiniz?', {
+          duration: 6000, // Give user time to read and decide
+          action: {
+            label: 'Sil',
             onPress: () => {
               triggerHaptic('error');
               onDelete?.();
+              showSuccess('Minnet ifadesi silindi');
             },
           },
-        ]);
+        });
       } else {
         triggerHaptic('error');
         onDelete?.();
+        showSuccess('Minnet ifadesi silindi');
       }
     };
 
@@ -225,19 +227,9 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
 
     const interactiveStyles = getInteractiveStyles();
 
-    // Enhanced sequence indicator - SIMPLIFIED
+    // Enhanced sequence indicator - REMOVED per user request
     const renderSequenceIndicator = () => {
-      if (!showSequence || isEditing) {
-        return null;
-      }
-
-      return (
-        <View style={styles.sequenceContainer}>
-          <View style={styles.sequenceBadge}>
-            <Text style={styles.sequenceText}>{index + 1}</Text>
-          </View>
-        </View>
-      );
+      return null;
     };
 
     // Enhanced editing action buttons - MINIMAL DESIGN
@@ -332,29 +324,25 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
           </View>
 
           {/* Enhanced meta information */}
-          {!isEditing && (
+          {!isEditing && date && (
             <View style={styles.metaContainer}>
               <View style={styles.metaLeft}>
-                <Icon name="heart" size={14} color={theme.colors.primary + '70'} />
-                <Text style={styles.metaText}>Minnet {index + 1}</Text>
                 {isRecent && (
                   <View style={styles.recentBadge}>
                     <Text style={styles.recentBadgeText}>YENİ</Text>
                   </View>
                 )}
               </View>
-              {date && (
-                <View style={styles.metaRight}>
-                  <Icon
-                    name={isRecent ? 'clock-outline' : 'calendar'}
-                    size={12}
-                    color={theme.colors.onSurfaceVariant + (isRecent ? '90' : '70')}
-                  />
-                  <Text style={[styles.dateText, isRecent && styles.recentDate]}>
-                    {relativeTime}
-                  </Text>
-                </View>
-              )}
+              <View style={styles.metaRight}>
+                <Icon
+                  name={isRecent ? 'clock-outline' : 'calendar'}
+                  size={12}
+                  color={theme.colors.onSurfaceVariant + (isRecent ? '90' : '70')}
+                />
+                <Text style={[styles.dateText, isRecent && styles.recentDate]}>
+                  {relativeTime}
+                </Text>
+              </View>
             </View>
           )}
 
@@ -379,7 +367,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
           onPress={handlePress}
           onPressIn={animations.animatePressIn}
           onPressOut={animations.animatePressOut}
-          accessibilityLabel={accessibilityLabel || `Minnet ${index + 1}: ${statement}`}
+          accessibilityLabel={accessibilityLabel || `Minnet: ${statement}`}
           accessibilityRole="button"
         >
           {CardContent}

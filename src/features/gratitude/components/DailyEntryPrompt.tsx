@@ -2,8 +2,9 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
+import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -16,6 +17,15 @@ interface DailyEntryPromptProps {
   onRefreshPrompt?: () => void;
 }
 
+/**
+ * 💡 COORDINATED DAILY ENTRY PROMPT
+ * 
+ * **ANIMATION COORDINATION COMPLETED**:
+ * - Eliminated complex Animated.parallel animation sequences
+ * - Replaced with coordinated animation system
+ * - Simplified animation approach following "Barely Noticeable, Maximum Performance"
+ * - Enhanced consistency with coordinated animation philosophy
+ */
 const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
   promptText,
   isLoading,
@@ -29,9 +39,8 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
 
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
 
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
+  const animations = useCoordinatedAnimations();
 
   // Static fallback prompts for when varied prompts are disabled
   const fallbackPrompts = [
@@ -45,22 +54,10 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
   // Display current prompt or fallback
   const displayPrompt = promptText || fallbackPrompts[currentPromptIndex];
 
-  // Entrance animation
+  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 80,
-        friction: 10,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, scaleAnim]);
+    animations.animateEntrance({ duration: 400 });
+  }, [animations]);
 
   const handleNextPrompt = useCallback(() => {
     if (promptText) {
@@ -133,8 +130,8 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
       style={[
         styles.animatedContainer,
         {
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }],
+          opacity: animations.fadeAnim,
+          transform: animations.entranceTransform,
         },
       ]}
     >
@@ -204,6 +201,8 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
     </Animated.View>
   );
 };
+
+DailyEntryPrompt.displayName = 'DailyEntryPrompt';
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({

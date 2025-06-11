@@ -67,7 +67,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
     throwbackTime: '10:00:00',
   });
 
-    // Navigate to previous step (moved before useEffect)
+  // Navigate to previous step (moved before useEffect)
   const handleStepBack = useCallback(() => {
     const currentIndex = ONBOARDING_STEPS.indexOf(currentStep);
     if (currentIndex > 0) {
@@ -281,9 +281,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   return (
     <ScreenLayout showsVerticalScrollIndicator={false} edges={['top']} edgeToEdge={true}>
       <View style={styles.container}>
-        <View style={styles.stepContainer}>
-          {renderCurrentStep()}
-        </View>
+        <View style={styles.stepContainer}>{renderCurrentStep()}</View>
 
         {/* Step Progress Indicator */}
         {currentStep !== 'completion' && (

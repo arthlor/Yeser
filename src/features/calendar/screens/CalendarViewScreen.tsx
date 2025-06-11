@@ -47,9 +47,11 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
       primary: theme.colors.primary,
       onPrimary: theme.colors.onPrimary,
     };
-    
-    if (colorsRef.current.primary !== newColors.primary || 
-        colorsRef.current.onPrimary !== newColors.onPrimary) {
+
+    if (
+      colorsRef.current.primary !== newColors.primary ||
+      colorsRef.current.onPrimary !== newColors.onPrimary
+    ) {
       colorsRef.current = newColors;
     }
   }, [theme.colors.primary, theme.colors.onPrimary]);
@@ -85,12 +87,12 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
 
   useEffect(() => {
     const monthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth() + 1}`;
-    
+
     if (!analyticsTrackedRef.current) {
       analyticsService.logScreenView('calendar_screen');
       analyticsTrackedRef.current = true;
     }
-    
+
     if (lastMonthAnalyticsRef.current !== monthKey && entryDates.length >= 0) {
       analyticsService.logEvent('calendar_screen_viewed', {
         current_year: currentMonth.getFullYear(),
@@ -100,7 +102,7 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
         selected_date: selectedDate || null,
         has_entry_for_selected: !!selectedEntry,
       });
-      
+
       if (entryDates.length > 0) {
         analyticsService.logEvent('calendar_month_viewed', {
           year: currentMonth.getFullYear(),
@@ -108,7 +110,7 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
           entry_count: entryDates.length,
         });
       }
-      
+
       lastMonthAnalyticsRef.current = monthKey;
     }
   }, [currentMonth, entryDates, selectedDate, selectedEntry]);

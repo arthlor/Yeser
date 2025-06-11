@@ -39,7 +39,7 @@ const FirebaseInitializer: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (success) {
           logger.debug('✅ Firebase initialized successfully');
-          
+
           // Run iOS-specific diagnostics in development
           if (__DEV__ && Platform.OS === 'ios') {
             logger.debug('🍎 Running iOS Firebase diagnostics...');
@@ -53,7 +53,7 @@ const FirebaseInitializer: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         } else {
           logger.warn('⚠️ Firebase initialization failed - continuing without Analytics');
-          
+
           // Show detailed diagnostics for failed initialization
           if (__DEV__) {
             setTimeout(async () => {

@@ -29,7 +29,7 @@ interface FAQItemProps {
 const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) => {
   const [isOpen, setIsOpen] = useState(false);
   const styles = createStyles(theme);
-  
+
   // **COORDINATED ANIMATION SYSTEM**: Single instance for FAQ interactions
   const animations = useCoordinatedAnimations();
 
@@ -59,12 +59,12 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) =>
   };
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.faqItemContainer,
         {
           opacity: animations.fadeAnim,
-        }
+        },
       ]}
     >
       <TouchableOpacity

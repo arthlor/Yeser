@@ -39,30 +39,30 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
     // Memoize dynamic styles to prevent object creation on every render
     const dynamicStyles = useMemo(
       () => ({
-        primaryCardTransform: { 
+        primaryCardTransform: {
           transform: primaryAnimations.combinedTransform,
           opacity: primaryAnimations.fadeAnim,
         },
         pastEntriesTransform: [
-          styles.cardWrapper, 
-          { 
+          styles.cardWrapper,
+          {
             transform: pastEntriesAnimations.combinedTransform,
             opacity: pastEntriesAnimations.fadeAnim,
-          }
+          },
         ],
         calendarTransform: [
-          styles.cardWrapper, 
-          { 
+          styles.cardWrapper,
+          {
             transform: calendarAnimations.combinedTransform,
             opacity: calendarAnimations.fadeAnim,
-          }
+          },
         ],
         whyGratitudeTransform: [
-          styles.cardWrapper, 
-          { 
+          styles.cardWrapper,
+          {
             transform: whyGratitudeAnimations.combinedTransform,
             opacity: whyGratitudeAnimations.fadeAnim,
-          }
+          },
         ],
         progressBarWidth: {
           width: `${Math.min((currentCount / dailyGoal) * 100, 100)}%` as const,
@@ -89,9 +89,12 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
       animations.animatePressIn();
     }, []);
 
-    const handlePressOut = useCallback((animations: ReturnType<typeof useCoordinatedAnimations>) => {
-      animations.animatePressOut();
-    }, []);
+    const handlePressOut = useCallback(
+      (animations: ReturnType<typeof useCoordinatedAnimations>) => {
+        animations.animatePressOut();
+      },
+      []
+    );
 
     const getPrimaryActionData = useMemo(() => {
       const progress = currentCount / dailyGoal;

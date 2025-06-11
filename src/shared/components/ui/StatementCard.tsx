@@ -110,34 +110,35 @@ const StatementCard: React.FC<StatementCardProps> = ({
   }, [statement]);
 
   // Haptic feedback system
-  const triggerHaptic = useCallback((
-    type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'light'
-  ) => {
-    if (!hapticFeedback || Platform.OS === 'web') {
-      return;
-    }
+  const triggerHaptic = useCallback(
+    (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'light') => {
+      if (!hapticFeedback || Platform.OS === 'web') {
+        return;
+      }
 
-    switch (type) {
-      case 'light':
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        break;
-      case 'medium':
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        break;
-      case 'heavy':
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        break;
-      case 'success':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        break;
-      case 'warning':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        break;
-      case 'error':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        break;
-    }
-  }, [hapticFeedback]);
+      switch (type) {
+        case 'light':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          break;
+        case 'medium':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          break;
+        case 'heavy':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          break;
+        case 'success':
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          break;
+        case 'warning':
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          break;
+        case 'error':
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          break;
+      }
+    },
+    [hapticFeedback]
+  );
 
   // **COORDINATED EDITING ANIMATION**: Simple editing state animation
   useEffect(() => {
@@ -279,12 +280,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
 
   // Main card content
   const CardContent = (
-    <Animated.View
-      style={[
-        variantStyles.container,
-        style,
-      ]}
-    >
+    <Animated.View style={[variantStyles.container, style]}>
       <View style={variantStyles.content}>
         {/* Three Dots Menu - Only show if actions are available */}
         {(onEdit || onDelete) && (
@@ -314,11 +310,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
         {/* Loading indicator */}
         {isLoading && (
           <View style={styles.loadingIndicator}>
-            <Animated.View
-              style={[
-                styles.loadingDot,
-              ]}
-            />
+            <Animated.View style={[styles.loadingDot]} />
           </View>
         )}
 

@@ -23,7 +23,7 @@ interface OnboardingGratitudeInputProps {
 
 /**
  * 🌿 COORDINATED ONBOARDING GRATITUDE INPUT
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated complex Animated.sequence button press animation
  * - Replaced with coordinated press animation system

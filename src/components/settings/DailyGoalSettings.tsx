@@ -1,10 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TextInput } from 'react-native-paper';
 
@@ -40,33 +35,35 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
     const [isUpdating, setIsUpdating] = useState(false);
 
     const getCurrentGoalOption = () => {
-      return GOAL_OPTIONS.find(option => option.value === currentGoal) || {
-        value: currentGoal,
-        label: `${currentGoal} Minnet`,
-        description: 'Özel hedef',
-        icon: 'target',
-      };
+      return (
+        GOAL_OPTIONS.find((option) => option.value === currentGoal) || {
+          value: currentGoal,
+          label: `${currentGoal} Minnet`,
+          description: 'Özel hedef',
+          icon: 'target',
+        }
+      );
     };
 
     const getCustomGoalValidation = useCallback(() => {
       const numValue = parseInt(customGoalInput, 10);
-      
+
       if (!customGoalInput || isNaN(numValue)) {
         return { isValid: false, message: '' };
       }
-      
+
       if (numValue < 1) {
         return { isValid: false, message: 'En az 1 olmalıdır' };
       }
-      
+
       if (numValue > MAX_CUSTOM_GOAL) {
         return { isValid: false, message: `En fazla ${MAX_CUSTOM_GOAL} olmalıdır` };
       }
-      
+
       if (numValue === currentGoal) {
         return { isValid: false, message: 'Mevcut hedefle aynı' };
       }
-      
+
       return { isValid: true, message: '' };
     }, [customGoalInput, currentGoal]);
 
@@ -74,7 +71,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
       if (isUpdating) {
         return;
       }
-      
+
       setIsExpanded(!isExpanded);
       hapticFeedback.light();
 
@@ -92,10 +89,10 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
 
         setIsUpdating(true);
         hapticFeedback.medium();
-        
+
         try {
           onUpdateGoal(goal);
-          
+
           analyticsService.logEvent('daily_goal_changed', {
             old_goal: currentGoal,
             new_goal: goal,
@@ -124,7 +121,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
       if (isUpdating) {
         return;
       }
-      
+
       setShowCustomInput(!showCustomInput);
       setCustomGoalInput(currentGoal.toString());
       hapticFeedback.light();
@@ -134,20 +131,20 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
       if (isUpdating) {
         return;
       }
-      
+
       const validation = getCustomGoalValidation();
       if (!validation.isValid) {
         return;
       }
-      
+
       const customGoal = parseInt(customGoalInput, 10);
       setIsUpdating(true);
-      
+
       try {
         onUpdateGoal(customGoal);
         setShowCustomInput(false);
         setIsExpanded(false);
-        
+
         analyticsService.logEvent('custom_daily_goal_set', {
           old_goal: currentGoal,
           new_goal: customGoal,
@@ -159,7 +156,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
       }
     }, [customGoalInput, currentGoal, onUpdateGoal, isUpdating, getCustomGoalValidation]);
 
-    const isCustomGoal = !GOAL_OPTIONS.find(option => option.value === currentGoal);
+    const isCustomGoal = !GOAL_OPTIONS.find((option) => option.value === currentGoal);
     const currentOption = getCurrentGoalOption();
     const customValidation = getCustomGoalValidation();
 
@@ -184,18 +181,16 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                 <Text style={[styles.currentGoalBadge, isCustomGoal && styles.customGoalBadge]}>
                   {currentOption.label}
                 </Text>
-                <Text style={styles.settingDescription}>
-                  {currentOption.description}
-                </Text>
+                <Text style={styles.settingDescription}>{currentOption.description}</Text>
               </View>
             </View>
           </View>
-          
+
           <View style={styles.expandContainer}>
-            <Icon 
-              name={isExpanded ? "chevron-up" : "chevron-down"}
-              size={18} 
-              color={isExpanded ? theme.colors.primary : theme.colors.onSurfaceVariant} 
+            <Icon
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color={isExpanded ? theme.colors.primary : theme.colors.onSurfaceVariant}
             />
           </View>
         </TouchableOpacity>
@@ -204,7 +199,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
         {isExpanded && (
           <View style={styles.expandedContainer}>
             <View style={styles.divider} />
-            
+
             {/* Subtle Warning */}
             <View style={styles.warningContainer}>
               <Icon name="information-outline" size={16} color={theme.colors.onSurfaceVariant} />
@@ -212,17 +207,14 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                 Günde en fazla {MAX_CUSTOM_GOAL} minnettarlık girişi yapabilirsiniz.
               </Text>
             </View>
-            
+
             {GOAL_OPTIONS.map((option) => {
               const isSelected = option.value === currentGoal;
-              
+
               return (
                 <TouchableOpacity
                   key={option.value}
-                  style={[
-                    styles.goalOption,
-                    isSelected && styles.goalOptionSelected,
-                  ]}
+                  style={[styles.goalOption, isSelected && styles.goalOptionSelected]}
                   onPress={() => handleGoalSelect(option.value)}
                   activeOpacity={0.7}
                   disabled={isUpdating}
@@ -232,34 +224,33 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                 >
                   <View style={styles.goalOptionContent}>
                     <View style={styles.goalIconContainer}>
-                      <Icon 
-                        name={option.icon} 
-                        size={18} 
-                        color={isSelected ? theme.colors.primary : theme.colors.onSurfaceVariant} 
+                      <Icon
+                        name={option.icon}
+                        size={18}
+                        color={isSelected ? theme.colors.primary : theme.colors.onSurfaceVariant}
                       />
                     </View>
-                    
+
                     <View style={styles.goalTextContainer}>
-                      <Text style={[
-                        styles.goalLabel,
-                        isSelected && styles.goalLabelSelected,
-                      ]}>
+                      <Text style={[styles.goalLabel, isSelected && styles.goalLabelSelected]}>
                         {option.label}
                       </Text>
-                      <Text style={[
-                        styles.goalDescription,
-                        isSelected && styles.goalDescriptionSelected,
-                      ]}>
+                      <Text
+                        style={[
+                          styles.goalDescription,
+                          isSelected && styles.goalDescriptionSelected,
+                        ]}
+                      >
                         {option.description}
                       </Text>
                     </View>
-                    
+
                     {isSelected && (
                       <View style={styles.selectedIndicator}>
                         <Icon name="check" size={16} color={theme.colors.primary} />
                       </View>
                     )}
-                    
+
                     {option.value === 3 && !isSelected && (
                       <View style={styles.recommendedBadge}>
                         <Text style={styles.recommendedText}>Önerilen</Text>
@@ -284,28 +275,38 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
             >
               <View style={styles.goalOptionContent}>
                 <View style={styles.goalIconContainer}>
-                  <Icon 
-                    name="pencil" 
-                    size={18} 
-                    color={(isCustomGoal || showCustomInput) ? theme.colors.primary : theme.colors.onSurfaceVariant} 
+                  <Icon
+                    name="pencil"
+                    size={18}
+                    color={
+                      isCustomGoal || showCustomInput
+                        ? theme.colors.primary
+                        : theme.colors.onSurfaceVariant
+                    }
                   />
                 </View>
-                
+
                 <View style={styles.goalTextContainer}>
-                  <Text style={[
-                    styles.goalLabel,
-                    (isCustomGoal || showCustomInput) && styles.goalLabelSelected,
-                  ]}>
+                  <Text
+                    style={[
+                      styles.goalLabel,
+                      (isCustomGoal || showCustomInput) && styles.goalLabelSelected,
+                    ]}
+                  >
                     Özel Hedef
                   </Text>
-                  <Text style={[
-                    styles.goalDescription,
-                    (isCustomGoal || showCustomInput) && styles.goalDescriptionSelected,
-                  ]}>
-                    {isCustomGoal ? `Mevcut: ${currentGoal} Minnet` : 'Kendi hedefini belirle (1-20)'}
+                  <Text
+                    style={[
+                      styles.goalDescription,
+                      (isCustomGoal || showCustomInput) && styles.goalDescriptionSelected,
+                    ]}
+                  >
+                    {isCustomGoal
+                      ? `Mevcut: ${currentGoal} Minnet`
+                      : 'Kendi hedefini belirle (1-20)'}
                   </Text>
                 </View>
-                
+
                 {(isCustomGoal || showCustomInput) && (
                   <View style={styles.selectedIndicator}>
                     <Icon name="check" size={16} color={theme.colors.primary} />
@@ -332,10 +333,14 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                     error={customValidation.message !== '' && !customValidation.isValid}
                   />
                   {customValidation.message !== '' && (
-                    <Text style={[
-                      styles.validationMessage,
-                      customValidation.isValid ? styles.validationSuccess : styles.validationError
-                    ]}>
+                    <Text
+                      style={[
+                        styles.validationMessage,
+                        customValidation.isValid
+                          ? styles.validationSuccess
+                          : styles.validationError,
+                      ]}
+                    >
                       {customValidation.message}
                     </Text>
                   )}
@@ -343,15 +348,19 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                 <TouchableOpacity
                   style={[
                     styles.customSubmitButton,
-                    (!customValidation.isValid || isUpdating) && styles.customSubmitButtonDisabled
+                    (!customValidation.isValid || isUpdating) && styles.customSubmitButtonDisabled,
                   ]}
                   onPress={handleCustomGoalSubmit}
                   disabled={!customValidation.isValid || isUpdating}
                 >
-                  <Icon 
-                    name="check" 
-                    size={20} 
-                    color={customValidation.isValid && !isUpdating ? theme.colors.onPrimary : theme.colors.onSurfaceVariant} 
+                  <Icon
+                    name="check"
+                    size={20}
+                    color={
+                      customValidation.isValid && !isUpdating
+                        ? theme.colors.onPrimary
+                        : theme.colors.onSurfaceVariant
+                    }
                   />
                 </TouchableOpacity>
               </View>
@@ -568,4 +577,4 @@ const createStyles = (theme: AppTheme) =>
 
 DailyGoalSettings.displayName = 'DailyGoalSettings';
 
-export default DailyGoalSettings; 
+export default DailyGoalSettings;

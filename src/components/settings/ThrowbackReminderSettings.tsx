@@ -1,14 +1,7 @@
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Animated,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
@@ -53,8 +46,8 @@ interface ThrowbackReminderSettingsProps {
 
 /**
  * **SIMPLIFIED THROWBACK REMINDER SETTINGS**: Minimal, elegant settings experience
- * 
- * **ANIMATION SIMPLIFICATION COMPLETED**: 
+ *
+ * **ANIMATION SIMPLIFICATION COMPLETED**:
  * - Reduced from 15+ animation instances to 1 (93% reduction)
  * - Eliminated LayoutAnimation calls (cardScale, expandAnimation, timePickerOpacity, timePickerHeight, iconRotation)
  * - Replaced with subtle layout transitions using coordinated animations
@@ -86,10 +79,13 @@ const EnhancedThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps
     }, [throwbackFrequency, throwbackReminderTime]);
 
     // **MINIMAL LAYOUT TRANSITIONS**: Replace LayoutAnimation with coordinated transitions
-    const handleLayoutTransition = useCallback((expanded: boolean) => {
-      const targetHeight = expanded ? 100 : 0;
-      animations.animateLayoutTransition(expanded, targetHeight, { duration: 300 });
-    }, [animations]);
+    const handleLayoutTransition = useCallback(
+      (expanded: boolean) => {
+        const targetHeight = expanded ? 100 : 0;
+        animations.animateLayoutTransition(expanded, targetHeight, { duration: 300 });
+      },
+      [animations]
+    );
 
     const animateTimePicker = useCallback(
       (show: boolean) => {
@@ -134,7 +130,14 @@ const EnhancedThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps
         frequency: selectedFrequency,
         time: timeString,
       });
-    }, [throwbackEnabled, selectedFrequency, selectedTime, onUpdateSettings, animations, handleLayoutTransition]);
+    }, [
+      throwbackEnabled,
+      selectedFrequency,
+      selectedTime,
+      onUpdateSettings,
+      animations,
+      handleLayoutTransition,
+    ]);
 
     const handleFrequencyChange = useCallback(
       (frequency: Profile['throwback_reminder_frequency']) => {

@@ -301,7 +301,7 @@ export class RobustFetch {
           headers: {
             apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
           },
-          timeout: this.isSimulator ? 15000 : 5000, // Longer timeout for simulator  
+          timeout: this.isSimulator ? 15000 : 5000, // Longer timeout for simulator
           retries: this.isSimulator ? 2 : 1, // More retries for simulator
         });
         results.canReachSupabase = true;

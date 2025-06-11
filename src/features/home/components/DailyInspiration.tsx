@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -17,7 +25,7 @@ interface DailyInspirationProps {
 
 /**
  * ✨ SWIPEABLE DAILY INSPIRATION
- * 
+ *
  * **EDGE-TO-EDGE INSPIRATION CAROUSEL**:
  * - Swipeable inspiration cards with horizontal scrolling
  * - Edge-to-edge design spanning full screen width
@@ -31,7 +39,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
     const styles = createStyles(theme);
     const scrollViewRef = useRef<ScrollView>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
-    
+
     // **COORDINATED ANIMATION SYSTEM**: Subtle entrance animation
     const animations = useCoordinatedAnimations();
 
@@ -141,13 +149,13 @@ const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
     }, []);
 
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.container,
           {
             opacity: animations.fadeAnim,
             transform: animations.entranceTransform,
-          }
+          },
         ]}
       >
         {/* **SWIPEABLE CARDS**: Horizontal scrolling inspiration */}
@@ -170,24 +178,28 @@ const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
               activeOpacity={0.95}
               style={styles.card}
             >
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.cardContent,
                   {
                     transform: [{ scale: animations.scaleAnim }],
-                  }
+                  },
                 ]}
               >
                 {/* **SUBTLE GRADIENT BACKGROUND** */}
                 <View style={[styles.gradientBackground, { backgroundColor: card.gradient[0] }]} />
-                
+
                 {/* **CARD HEADER** */}
-                                 <View style={styles.cardHeader}>
-                   <View style={[styles.iconContainer, { backgroundColor: card.iconColor + '20' }]}>
-                     <Ionicons name={card.icon as keyof typeof Ionicons.glyphMap} size={24} color={card.iconColor} />
-                   </View>
-                   <Text style={styles.cardTitle}>{card.title}</Text>
-                 </View>
+                <View style={styles.cardHeader}>
+                  <View style={[styles.iconContainer, { backgroundColor: card.iconColor + '20' }]}>
+                    <Ionicons
+                      name={card.icon as keyof typeof Ionicons.glyphMap}
+                      size={24}
+                      color={card.iconColor}
+                    />
+                  </View>
+                  <Text style={styles.cardTitle}>{card.title}</Text>
+                </View>
 
                 {/* **INSPIRATION MESSAGE** */}
                 <Text style={styles.cardMessage}>"{card.message}"</Text>
@@ -209,10 +221,7 @@ const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
             <TouchableOpacity
               key={index}
               onPress={() => scrollToIndex(index)}
-              style={[
-                styles.dot,
-                index === currentIndex ? styles.activeDot : styles.inactiveDot,
-              ]}
+              style={[styles.dot, index === currentIndex ? styles.activeDot : styles.inactiveDot]}
             />
           ))}
         </View>

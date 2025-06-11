@@ -24,7 +24,7 @@ interface GratitudeInputBarProps {
 
 /**
  * 📝 COORDINATED GRATITUDE INPUT BAR
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated gradient animation for focus states
  * - Replaced with coordinated animation system
@@ -137,13 +137,13 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   const displayPrompt = promptText || fallbackPrompts[fallbackPromptIndex];
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         {
           opacity: animations.fadeAnim,
           transform: animations.entranceTransform,
-        }
+        },
       ]}
     >
       {/* Striking Header Section with Gradient Background */}
@@ -165,12 +165,7 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
       </View>
 
       {/* Enhanced Input Section - simplified styling */}
-      <View
-        style={[
-          styles.inputContainer,
-          isFocused && styles.inputContainerFocused,
-        ]}
-      >
+      <View style={[styles.inputContainer, isFocused && styles.inputContainerFocused]}>
         <TextInput
           ref={inputRef}
           style={styles.input}

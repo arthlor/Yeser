@@ -16,7 +16,7 @@ interface DailyEntryHeroProps {
 
 /**
  * 🌟 COORDINATED DAILY ENTRY HERO
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated direct Animated.timing for progress animations
  * - Replaced with coordinated animation system
@@ -89,13 +89,13 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
   const isCompleted = statementCount >= dailyGoal;
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         {
           opacity: animations.fadeAnim,
           transform: animations.entranceTransform,
-        }
+        },
       ]}
     >
       <ThemedCard variant="elevated" density="comfortable" style={styles.heroCard}>
@@ -133,9 +133,7 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
               />
 
               {/* Progress glow effect when completed - simplified */}
-              {isCompleted && (
-                <View style={styles.progressGlow} />
-              )}
+              {isCompleted && <View style={styles.progressGlow} />}
             </View>
 
             {/* Completion icon */}

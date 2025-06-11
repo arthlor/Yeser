@@ -38,7 +38,7 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
   useEffect(() => {
     const timers = timersRef.current;
     return () => {
-      timers.forEach(timer => clearTimeout(timer));
+      timers.forEach((timer) => clearTimeout(timer));
       timers.clear();
     };
   }, []);
@@ -64,9 +64,12 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
 
   // Advanced Toast Tests
   const testLongMessage = useCallback(() => {
-    showError('📝 This is a very long toast message that demonstrates how the toast system handles lengthy text content. It should wrap properly and maintain good readability.', {
-      duration: 6000,
-    });
+    showError(
+      '📝 This is a very long toast message that demonstrates how the toast system handles lengthy text content. It should wrap properly and maintain good readability.',
+      {
+        duration: 6000,
+      }
+    );
   }, [showError]);
 
   const testWithAction = useCallback(() => {
@@ -87,10 +90,12 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
 
   const testHideToast = useCallback(() => {
     showInfo('⏱️ This toast will be hidden in 2 seconds...', { duration: 10000 });
-    addTimer(setTimeout(() => {
-      hideToast();
-      showSuccess('✅ Toast hidden programmatically!');
-    }, 2000));
+    addTimer(
+      setTimeout(() => {
+        hideToast();
+        showSuccess('✅ Toast hidden programmatically!');
+      }, 2000)
+    );
   }, [showInfo, hideToast, showSuccess, addTimer]);
 
   const testToastQueue = useCallback(() => {
@@ -109,11 +114,11 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
 
   const testAllFeatures = useCallback(() => {
     let delay = 0;
-    
+
     // Success with action
     setTimeout(() => {
       showSuccess('🎉 Success with action!', {
-        action: { label: 'View', onPress: () => showInfo('Success action clicked!') }
+        action: { label: 'View', onPress: () => showInfo('Success action clicked!') },
       });
     }, delay);
     delay += 2000;
@@ -127,10 +132,10 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
     // Error with retry
     setTimeout(() => {
       showError('❌ Critical error occurred', {
-        action: { 
-          label: 'Retry', 
-          onPress: () => showSuccess('🔧 Error resolved!') 
-        }
+        action: {
+          label: 'Retry',
+          onPress: () => showSuccess('🔧 Error resolved!'),
+        },
       });
     }, delay);
     delay += 3000;
@@ -142,7 +147,7 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
   }, [showSuccess, showWarning, showError, showInfo]);
 
   // 🚨 RACE CONDITION TESTING FUNCTIONS
-  
+
   // Test 1: Rapid Fire Race Condition
   const testRapidFireRace = useCallback(async (): Promise<boolean> => {
     let passed = true;
@@ -150,12 +155,12 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
       // Fire 10 toasts within 50ms
       for (let i = 0; i < 10; i++) {
         showInfo(`Rapid Toast ${i + 1}`, { duration: 1000 });
-        await new Promise(resolve => setTimeout(resolve, 5)); // 5ms delay
+        await new Promise((resolve) => setTimeout(resolve, 5)); // 5ms delay
       }
-      
+
       // Wait for potential conflicts to manifest
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       logger.debug('Rapid fire race condition test completed');
       passed = true; // If we reach here without crashes, test passes
     } catch (error) {
@@ -171,16 +176,16 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
     try {
       // Start a toast, then immediately interrupt with another
       showSuccess('First toast starting...', { duration: 5000 });
-      
+
       // Interrupt after 50ms (during animation)
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       showError('Interrupting toast!', { duration: 2000 });
-      
+
       // Interrupt again after 25ms
-      await new Promise(resolve => setTimeout(resolve, 25));
+      await new Promise((resolve) => setTimeout(resolve, 25));
       showWarning('Double interruption!', { duration: 1000 });
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
       passed = true;
     } catch (error) {
       logger.error('Animation interruption race test failed:', error as Error);
@@ -195,14 +200,14 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
     try {
       // Show toast then immediately hide and show again
       showInfo('About to be hidden...', { duration: 5000 });
-      
+
       // Immediate hide
       hideToast();
-      
+
       // Immediate show (potential conflict with hide animation)
       showSuccess('Immediately shown after hide', { duration: 2000 });
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
       passed = true;
     } catch (error) {
       logger.error('Hide/show conflict race test failed:', error as Error);
@@ -217,18 +222,18 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
     try {
       // Create multiple toasts with different durations to test timer management
       showInfo('Timer 1 (3s)', { duration: 3000 });
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       showWarning('Timer 2 (2s)', { duration: 2000 });
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       showError('Timer 3 (1s)', { duration: 1000 });
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       showSuccess('Timer 4 (4s)', { duration: 4000 });
-      
+
       // Wait for all timers to potentially conflict
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       passed = true;
     } catch (error) {
       logger.error('Timer overlap race test failed:', error as Error);
@@ -246,21 +251,21 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
         duration: 5000,
         action: {
           label: 'Click',
-          onPress: () => showInfo('Action 1 clicked')
-        }
+          onPress: () => showInfo('Action 1 clicked'),
+        },
       });
-      
+
       // Immediately replace with another action toast
-      await new Promise(resolve => setTimeout(resolve, 25));
+      await new Promise((resolve) => setTimeout(resolve, 25));
       showError('Replaced toast with action', {
         duration: 3000,
         action: {
           label: 'Retry',
-          onPress: () => showSuccess('Action 2 clicked')
-        }
+          onPress: () => showSuccess('Action 2 clicked'),
+        },
       });
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
       passed = true;
     } catch (error) {
       logger.error('Action button race test failed:', error as Error);
@@ -277,11 +282,11 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
       for (let i = 0; i < 50; i++) {
         showInfo(`Stress test ${i + 1}`, { duration: 100 });
         if (i % 10 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 1)); // Micro delay
+          await new Promise((resolve) => setTimeout(resolve, 1)); // Micro delay
         }
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
       passed = true;
     } catch (error) {
       logger.error('Memory leak stress test failed:', error as Error);
@@ -317,7 +322,7 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
           if (result) {
             passCount++;
           }
-          await new Promise(resolve => setTimeout(resolve, 100)); // Cool down between iterations
+          await new Promise((resolve) => setTimeout(resolve, 100)); // Cool down between iterations
         } catch (error) {
           logger.error(`Race test ${name} iteration ${i} failed:`, error as Error);
         }
@@ -339,7 +344,7 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
     setRaceTestResults(results);
     setIsRunningRaceTests(false);
 
-    const overallPass = results.every(r => r.passed);
+    const overallPass = results.every((r) => r.passed);
     if (overallPass) {
       showSuccess('🎉 All race condition tests passed!');
     } else {
@@ -353,7 +358,7 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
     testActionButtonRace,
     testMemoryLeakStress,
     showSuccess,
-    showWarning
+    showWarning,
   ]);
 
   return (
@@ -371,7 +376,8 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
           )}
         </View>
         <Text style={styles.subtitle}>
-          Test all toast notification features including types, durations, actions, and queue behavior.
+          Test all toast notification features including types, durations, actions, and queue
+          behavior.
         </Text>
       </Card>
 
@@ -404,7 +410,7 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
       {/* Advanced Features */}
       <Card style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>Advanced Features</Text>
-        
+
         <TouchableOpacity style={styles.featureButton} onPress={testWithAction}>
           <Icon name="gesture-tap-button" size={18} color={theme.colors.primary} />
           <Text style={styles.featureButtonText}>Toast with Action Button</Text>
@@ -429,7 +435,7 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
       {/* Queue & Sequence Tests */}
       <Card style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>Queue & Sequence Tests</Text>
-        
+
         <TouchableOpacity style={styles.featureButton} onPress={testToastQueue}>
           <Icon name="playlist-check" size={18} color={theme.colors.primary} />
           <Text style={styles.featureButtonText}>Rapid Fire Queue Test</Text>
@@ -442,12 +448,7 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
 
         <Divider style={styles.divider} />
 
-        <Button
-          mode="contained"
-          onPress={testAllFeatures}
-          style={styles.demoButton}
-          icon="star"
-        >
+        <Button mode="contained" onPress={testAllFeatures} style={styles.demoButton} icon="star">
           🚀 Complete Demo
         </Button>
       </Card>
@@ -458,7 +459,7 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
         <Text style={styles.raceTestDescription}>
           Test toast system for race conditions, animation conflicts, and memory leaks.
         </Text>
-        
+
         <Button
           mode="contained"
           onPress={runRaceConditionTests}
@@ -481,32 +482,30 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
                     size={16}
                     color={result.passed ? theme.colors.success : theme.colors.error}
                   />
-                  <Text style={[
-                    styles.raceResultName,
-                    { color: result.passed ? theme.colors.success : theme.colors.error }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.raceResultName,
+                      { color: result.passed ? theme.colors.success : theme.colors.error },
+                    ]}
+                  >
                     {result.test}
                   </Text>
-                  <Text style={styles.raceResultTime}>
-                    {result.duration.toFixed(0)}ms
-                  </Text>
+                  <Text style={styles.raceResultTime}>{result.duration.toFixed(0)}ms</Text>
                 </View>
-                <Text style={styles.raceResultDetails}>
-                  {result.details}
-                </Text>
+                <Text style={styles.raceResultDetails}>{result.details}</Text>
               </View>
             ))}
-            
+
             {/* Overall Results Summary */}
             <View style={styles.raceSummary}>
               <Text style={styles.raceSummaryText}>
-                Overall: {raceTestResults.filter(r => r.passed).length}/{raceTestResults.length} tests passed
+                Overall: {raceTestResults.filter((r) => r.passed).length}/{raceTestResults.length}{' '}
+                tests passed
               </Text>
               <Text style={styles.raceSummarySubtext}>
-                {raceTestResults.every(r => r.passed) 
+                {raceTestResults.every((r) => r.passed)
                   ? '✅ No race conditions detected!'
-                  : '⚠️ Some race conditions need attention'
-                }
+                  : '⚠️ Some race conditions need attention'}
               </Text>
             </View>
           </View>
@@ -663,4 +662,4 @@ const createStyles = (theme: AppTheme) =>
       fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
-  }); 
+  });

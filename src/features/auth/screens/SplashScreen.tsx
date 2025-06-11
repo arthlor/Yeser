@@ -17,8 +17,8 @@ const { width: screenWidth } = Dimensions.get('window');
 
 /**
  * **SIMPLIFIED SPLASH SCREEN**: Minimal, non-intrusive animations
- * 
- * **ANIMATION SIMPLIFICATION COMPLETED**: 
+ *
+ * **ANIMATION SIMPLIFICATION COMPLETED**:
  * - Reduced from 5 animation instances to 1 (80% reduction)
  * - Eliminated complex staged sequences (mainAnimations, logoAnimations, bottomAnimations, pulseAnimations, dotsAnimations)
  * - Replaced with subtle 400ms entrance fade following roadmap philosophy
@@ -50,7 +50,7 @@ const EnhancedSplashScreen: React.FC = () => {
   const triggerEntranceAnimations = useCallback(() => {
     // Single subtle entrance animation - no complex sequences
     animations.animateEntrance({ duration: 400 });
-    
+
     // Start Lottie animation with minimal delay
     setTimeout(() => {
       if (lottieRef.current) {
@@ -105,9 +105,7 @@ const EnhancedSplashScreen: React.FC = () => {
             </View>
 
             {/* Subtitle */}
-            <Text style={styles.subtitle}>
-              Minnettarlık Yolculuğun
-            </Text>
+            <Text style={styles.subtitle}>Minnettarlık Yolculuğun</Text>
           </View>
 
           {/* Lottie Animation Section - Simple, no pulse effects */}

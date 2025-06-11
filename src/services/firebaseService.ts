@@ -29,10 +29,11 @@ class FirebaseService {
       const apps = getApps();
 
       if (apps.length === 0) {
-        const errorMessage = Platform.OS === 'ios' 
-          ? 'Firebase not initialized on iOS. Check that:\n1. GoogleService-Info.plist is in ios/YeerDev/ folder\n2. FirebaseApp.configure() is called in AppDelegate.swift\n3. @react-native-firebase/app plugin is configured in app.config.js'
-          : 'Firebase not initialized on Android. Check that google-services.json is in android/app/ folder';
-        
+        const errorMessage =
+          Platform.OS === 'ios'
+            ? 'Firebase not initialized on iOS. Check that:\n1. GoogleService-Info.plist is in ios/YeerDev/ folder\n2. FirebaseApp.configure() is called in AppDelegate.swift\n3. @react-native-firebase/app plugin is configured in app.config.js'
+            : 'Firebase not initialized on Android. Check that google-services.json is in android/app/ folder';
+
         logger.warn(errorMessage);
         return false;
       }
@@ -63,10 +64,11 @@ class FirebaseService {
       this.isInitialized = true;
       return true;
     } catch (error) {
-      const enhancedError = Platform.OS === 'ios'
-        ? `iOS Firebase initialization failed. Common causes:\n1. Missing GoogleService-Info.plist\n2. Missing FirebaseApp.configure() in AppDelegate.swift\n3. Incorrect Bundle ID\nOriginal error: ${(error as Error).message}`
-        : `Android Firebase initialization failed: ${(error as Error).message}`;
-        
+      const enhancedError =
+        Platform.OS === 'ios'
+          ? `iOS Firebase initialization failed. Common causes:\n1. Missing GoogleService-Info.plist\n2. Missing FirebaseApp.configure() in AppDelegate.swift\n3. Incorrect Bundle ID\nOriginal error: ${(error as Error).message}`
+          : `Android Firebase initialization failed: ${(error as Error).message}`;
+
       logger.error(enhancedError);
       this.isInitialized = false;
       this.app = null;
@@ -79,11 +81,11 @@ class FirebaseService {
    */
   isFirebaseReady(): boolean {
     const isReady = this.isInitialized && this.app !== null && getApps().length > 0;
-    
+
     if (!isReady && Platform.OS === 'ios') {
       logger.debug('🍎 iOS Firebase not ready. Check AppDelegate.swift Firebase initialization');
     }
-    
+
     return isReady;
   }
 
@@ -92,9 +94,10 @@ class FirebaseService {
    */
   getApp(): ReturnType<typeof getApp> {
     if (!this.isFirebaseReady() || !this.app) {
-      const errorMessage = Platform.OS === 'ios'
-        ? 'iOS Firebase is not initialized. Ensure FirebaseApp.configure() is called in AppDelegate.swift'
-        : 'Firebase is not initialized. Call initialize() first.';
+      const errorMessage =
+        Platform.OS === 'ios'
+          ? 'iOS Firebase is not initialized. Ensure FirebaseApp.configure() is called in AppDelegate.swift'
+          : 'Firebase is not initialized. Call initialize() first.';
       throw new Error(errorMessage);
     }
     return this.app;

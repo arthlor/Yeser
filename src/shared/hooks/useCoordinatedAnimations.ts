@@ -157,10 +157,7 @@ export const useCoordinatedAnimations = () => {
       });
 
       // **PARALLEL EXECUTION**: Now safe with separate animation values
-      const layoutAnimation = Animated.parallel([
-        heightAnimation,
-        opacityAnimation,
-      ]);
+      const layoutAnimation = Animated.parallel([heightAnimation, opacityAnimation]);
 
       animationState.current = {
         isRunning: true,
@@ -187,62 +184,61 @@ export const useCoordinatedAnimations = () => {
   }, [stopCurrentAnimation]);
 
   // **MINIMAL TRANSFORM**: Only basic scale for press feedback
-  const pressTransform = useMemo(() => [
-    { scale: scaleAnim },
-  ], [scaleAnim]);
+  const pressTransform = useMemo(() => [{ scale: scaleAnim }], [scaleAnim]);
 
   // **ENTRANCE TRANSFORM**: Combined fade and scale for entrances
-  const entranceTransform = useMemo(() => [
-    { scale: scaleAnim },
-  ], [scaleAnim]);
+  const entranceTransform = useMemo(() => [{ scale: scaleAnim }], [scaleAnim]);
 
   // **SIMPLIFIED API**: Clean and minimal interface
-  return useMemo(() => ({
-    // Animation values (minimal set)
-    fadeAnim,
-    scaleAnim,
-    opacityAnim,
-    heightAnim,
-    layoutOpacityAnim, // Separate for layout transitions
+  return useMemo(
+    () => ({
+      // Animation values (minimal set)
+      fadeAnim,
+      scaleAnim,
+      opacityAnim,
+      heightAnim,
+      layoutOpacityAnim, // Separate for layout transitions
 
-    // Animation functions (essential only)
-    animateEntrance,
-    animatePressIn,
-    animatePressOut,
-    animateFade,
-    animateLayoutTransition, // LayoutAnimation replacement
+      // Animation functions (essential only)
+      animateEntrance,
+      animatePressIn,
+      animatePressOut,
+      animateFade,
+      animateLayoutTransition, // LayoutAnimation replacement
 
-    // Transform utilities (minimal)
-    pressTransform,
-    entranceTransform,
+      // Transform utilities (minimal)
+      pressTransform,
+      entranceTransform,
 
-    // Control
-    stopAllAnimations: stopCurrentAnimation,
-    isAnimating: () => animationState.current.isRunning,
+      // Control
+      stopAllAnimations: stopCurrentAnimation,
+      isAnimating: () => animationState.current.isRunning,
 
-    // **DEPRECATED**: Simplified aliases for backward compatibility
-    animateSettingsExpansion: animateLayoutTransition, // Keep for existing code
-    animateShake: () => {}, // No-op for backward compatibility
-    animateCelebration: () => {}, // No-op for backward compatibility
-    animateProgress: () => {}, // No-op for backward compatibility
-    animateSequence: () => {}, // No-op for backward compatibility
-    createSequence: () => ({ id: '', animations: [], parallel: true }), // No-op
-    progressAnim: fadeAnim, // Alias for compatibility
-    combinedTransform: pressTransform, // Alias for compatibility
-    progressInterpolation: fadeAnim, // Alias for compatibility
-  }), [
-    fadeAnim,
-    scaleAnim,
-    opacityAnim,
-    heightAnim,
-    layoutOpacityAnim,
-    animateEntrance,
-    animatePressIn,
-    animatePressOut,
-    animateFade,
-    animateLayoutTransition,
-    pressTransform,
-    entranceTransform,
-    stopCurrentAnimation,
-  ]);
+      // **DEPRECATED**: Simplified aliases for backward compatibility
+      animateSettingsExpansion: animateLayoutTransition, // Keep for existing code
+      animateShake: () => {}, // No-op for backward compatibility
+      animateCelebration: () => {}, // No-op for backward compatibility
+      animateProgress: () => {}, // No-op for backward compatibility
+      animateSequence: () => {}, // No-op for backward compatibility
+      createSequence: () => ({ id: '', animations: [], parallel: true }), // No-op
+      progressAnim: fadeAnim, // Alias for compatibility
+      combinedTransform: pressTransform, // Alias for compatibility
+      progressInterpolation: fadeAnim, // Alias for compatibility
+    }),
+    [
+      fadeAnim,
+      scaleAnim,
+      opacityAnim,
+      heightAnim,
+      layoutOpacityAnim,
+      animateEntrance,
+      animatePressIn,
+      animatePressOut,
+      animateFade,
+      animateLayoutTransition,
+      pressTransform,
+      entranceTransform,
+      stopCurrentAnimation,
+    ]
+  );
 };

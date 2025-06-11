@@ -27,88 +27,104 @@ export const ToastAnalyzer: React.FC<ToastAnalyzerProps> = ({ onClose: _onClose 
 
   const analyzeToastImplementation = useCallback(async () => {
     setIsAnalyzing(true);
-    
+
     // Simulate analysis of the toast implementation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     const vulnerabilities: VulnerabilityAnalysis[] = [
       {
         category: 'Animation State Management',
         severity: 'medium',
-        description: 'Current implementation may have race conditions when animations are interrupted by new toasts',
-        recommendation: 'Implement animation queue or proper animation cleanup before starting new ones',
-        detected: true
+        description:
+          'Current implementation may have race conditions when animations are interrupted by new toasts',
+        recommendation:
+          'Implement animation queue or proper animation cleanup before starting new ones',
+        detected: true,
       },
       {
         category: 'Timer Management',
         severity: 'low',
         description: 'Multiple setTimeout calls could potentially overlap',
-        recommendation: 'Current clearTimeout implementation appears adequate for preventing timer conflicts',
-        detected: false
+        recommendation:
+          'Current clearTimeout implementation appears adequate for preventing timer conflicts',
+        detected: false,
       },
       {
         category: 'State Update Race',
         severity: 'medium',
         description: 'Rapid state updates could cause visual inconsistencies',
         recommendation: 'Consider implementing a state update queue or debouncing mechanism',
-        detected: true
+        detected: true,
       },
       {
         category: 'Memory Leak Risk',
         severity: 'low',
         description: 'Animation listeners and timeout refs could accumulate',
-        recommendation: 'Current cleanup in useEffect appears sufficient, but stress testing recommended',
-        detected: false
+        recommendation:
+          'Current cleanup in useEffect appears sufficient, but stress testing recommended',
+        detected: false,
       },
       {
         category: 'Action Button Conflicts',
         severity: 'medium',
         description: 'Action button callbacks might conflict when toasts are rapidly replaced',
         recommendation: 'Implement action callback debouncing or cleanup',
-        detected: true
+        detected: true,
       },
       {
         category: 'Visual Consistency',
         severity: 'high',
         description: 'Rapid toast replacement can cause jarring visual jumps',
         recommendation: 'Implement smooth transition animations between different toast states',
-        detected: true
-      }
+        detected: true,
+      },
     ];
 
     setAnalysis(vulnerabilities);
     setIsAnalyzing(false);
 
     // Log analysis results
-    const detectedCount = vulnerabilities.filter(v => v.detected).length;
-    const criticalCount = vulnerabilities.filter(v => v.detected && v.severity === 'critical').length;
-    const highCount = vulnerabilities.filter(v => v.detected && v.severity === 'high').length;
-    
+    const detectedCount = vulnerabilities.filter((v) => v.detected).length;
+    const criticalCount = vulnerabilities.filter(
+      (v) => v.detected && v.severity === 'critical'
+    ).length;
+    const highCount = vulnerabilities.filter((v) => v.detected && v.severity === 'high').length;
+
     logger.debug('Toast vulnerability analysis completed:', {
       total: vulnerabilities.length,
       detected: detectedCount,
       critical: criticalCount,
-      high: highCount
+      high: highCount,
     });
   }, []);
 
   const getSeverityColor = (severity: VulnerabilityAnalysis['severity']) => {
     switch (severity) {
-      case 'critical': return theme.colors.error;
-      case 'high': return '#FF6B35';
-      case 'medium': return theme.colors.warning;
-      case 'low': return theme.colors.success;
-      default: return theme.colors.onSurfaceVariant;
+      case 'critical':
+        return theme.colors.error;
+      case 'high':
+        return '#FF6B35';
+      case 'medium':
+        return theme.colors.warning;
+      case 'low':
+        return theme.colors.success;
+      default:
+        return theme.colors.onSurfaceVariant;
     }
   };
 
   const getSeverityIcon = (severity: VulnerabilityAnalysis['severity']) => {
     switch (severity) {
-      case 'critical': return 'alert-octagon';
-      case 'high': return 'alert-circle';
-      case 'medium': return 'alert';
-      case 'low': return 'information';
-      default: return 'help-circle';
+      case 'critical':
+        return 'alert-octagon';
+      case 'high':
+        return 'alert-circle';
+      case 'medium':
+        return 'alert';
+      case 'low':
+        return 'information';
+      default:
+        return 'help-circle';
     }
   };
 
@@ -117,9 +133,10 @@ export const ToastAnalyzer: React.FC<ToastAnalyzerProps> = ({ onClose: _onClose 
       <Card style={styles.headerCard}>
         <Text style={styles.title}>Toast Race Condition Analyzer</Text>
         <Text style={styles.subtitle}>
-          Analyze the current toast implementation for potential race conditions and vulnerabilities.
+          Analyze the current toast implementation for potential race conditions and
+          vulnerabilities.
         </Text>
-        
+
         <Button
           mode="contained"
           onPress={analyzeToastImplementation}
@@ -135,21 +152,26 @@ export const ToastAnalyzer: React.FC<ToastAnalyzerProps> = ({ onClose: _onClose 
       {analysis.length > 0 && (
         <Card style={styles.resultsCard}>
           <Text style={styles.resultsTitle}>Analysis Results</Text>
-          
+
           {/* Summary */}
           <View style={styles.summary}>
             <Text style={styles.summaryText}>
-              Found {analysis.filter(a => a.detected).length} potential issues
+              Found {analysis.filter((a) => a.detected).length} potential issues
             </Text>
             <View style={styles.severityCounts}>
-              {['critical', 'high', 'medium', 'low'].map(severity => {
-                const count = analysis.filter(a => a.detected && a.severity === severity).length;
+              {['critical', 'high', 'medium', 'low'].map((severity) => {
+                const count = analysis.filter((a) => a.detected && a.severity === severity).length;
                 if (count === 0) {
                   return null;
                 }
                 return (
                   <View key={severity} style={styles.severityBadge}>
-                    <Text style={[styles.severityBadgeText, { color: getSeverityColor(severity as VulnerabilityAnalysis['severity']) }]}>
+                    <Text
+                      style={[
+                        styles.severityBadgeText,
+                        { color: getSeverityColor(severity as VulnerabilityAnalysis['severity']) },
+                      ]}
+                    >
                       {count} {severity}
                     </Text>
                   </View>
@@ -168,20 +190,22 @@ export const ToastAnalyzer: React.FC<ToastAnalyzerProps> = ({ onClose: _onClose 
                   color={item.detected ? getSeverityColor(item.severity) : theme.colors.success}
                 />
                 <Text style={styles.analysisCategory}>{item.category}</Text>
-                <View style={[
-                  styles.severityTag,
-                  { backgroundColor: getSeverityColor(item.severity) + '20' }
-                ]}>
-                  <Text style={[styles.severityTagText, { color: getSeverityColor(item.severity) }]}>
+                <View
+                  style={[
+                    styles.severityTag,
+                    { backgroundColor: getSeverityColor(item.severity) + '20' },
+                  ]}
+                >
+                  <Text
+                    style={[styles.severityTagText, { color: getSeverityColor(item.severity) }]}
+                  >
                     {item.severity.toUpperCase()}
                   </Text>
                 </View>
               </View>
-              
+
               <Text style={styles.analysisDescription}>{item.description}</Text>
-              <Text style={styles.analysisRecommendation}>
-                💡 {item.recommendation}
-              </Text>
+              <Text style={styles.analysisRecommendation}>💡 {item.recommendation}</Text>
             </View>
           ))}
         </Card>
@@ -289,4 +313,4 @@ const createStyles = (theme: AppTheme) =>
       fontStyle: 'italic',
       lineHeight: 16,
     },
-  }); 
+  });

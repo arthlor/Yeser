@@ -7,7 +7,14 @@ import { getPrimaryShadow } from '@/themes/utils';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { logger } from '@/utils/debugConfig';
 
 import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
@@ -22,8 +29,8 @@ interface InteractiveDemoStepProps {
 
 /**
  * **SIMPLIFIED INTERACTIVE DEMO STEP**: Minimal, elegant demo experience
- * 
- * **ANIMATION COORDINATION COMPLETED**: 
+ *
+ * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated complex manual Animated.timing calls
  * - Replaced with coordinated animation system for all interactions
  * - Simplified entrance and success animations
@@ -186,12 +193,12 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             {/* Success Celebration */}
             {showSuccess && (
               <Animated.View
-                                  style={[
-                    styles.successContainer,
-                    {
-                      opacity: animations.fadeAnim,
-                    },
-                  ]}
+                style={[
+                  styles.successContainer,
+                  {
+                    opacity: animations.fadeAnim,
+                  },
+                ]}
               >
                 <View style={styles.successCard}>
                   <View style={styles.successContent}>

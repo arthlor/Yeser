@@ -37,4 +37,4 @@ export const canOpenSettings = async (): Promise<boolean> => {
     logger.error('Failed to check settings availability:', error as Error);
     return false;
   }
-}; 
+};

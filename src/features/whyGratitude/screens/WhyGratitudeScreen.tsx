@@ -46,8 +46,6 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
   // ✅ PERFORMANCE FIX: Separate static styles from dynamic values
   const styles = useMemo(() => createStyles(activeTheme), [activeTheme]);
 
-
-
   const userName = useMemo(() => profile?.username, [profile?.username]);
 
   // ✅ PERFORMANCE FIX: Consolidate analytics tracking

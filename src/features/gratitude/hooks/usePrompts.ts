@@ -23,7 +23,9 @@ export const useCurrentPrompt = () => {
         const prompt = await getRandomActivePrompt();
         return prompt;
       } catch (error) {
-        logger.warn('Prompt API failed, returning null for graceful fallback:', { error: error instanceof Error ? error.message : String(error) });
+        logger.warn('Prompt API failed, returning null for graceful fallback:', {
+          error: error instanceof Error ? error.message : String(error),
+        });
         // Return null instead of throwing to prevent cascade failures
         return null;
       }
@@ -58,7 +60,9 @@ export const useMultiplePrompts = (limit: number = 10) => {
         const prompts = await getMultipleRandomActivePrompts(limit);
         return prompts;
       } catch (error) {
-        logger.warn('Multiple prompts API failed, returning empty array for graceful fallback:', { error: error instanceof Error ? error.message : String(error) });
+        logger.warn('Multiple prompts API failed, returning empty array for graceful fallback:', {
+          error: error instanceof Error ? error.message : String(error),
+        });
         // Return empty array instead of throwing
         return [];
       }

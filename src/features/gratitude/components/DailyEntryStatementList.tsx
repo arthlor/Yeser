@@ -38,7 +38,7 @@ const StatementItemWrapper: React.FC<{
 }> = React.memo(({ item, index, styles, theme }) => {
   // Create individual coordinated animations for each item
   const itemAnimations = useCoordinatedAnimations();
-  
+
   // **SIMPLIFIED STAGGER**: Use minimal animation with proper config
   useEffect(() => {
     const delay = Math.min(index * 100, 500); // Cap stagger delay
@@ -98,7 +98,7 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
 
   // **RACE CONDITION FIX**: Use coordinated animation system
   const animations = useCoordinatedAnimations();
-  
+
   // Track previous statements length for staggered animations
   const previousLengthRef = useRef(statements.length);
   const animationTriggeredRef = useRef(false);
@@ -126,54 +126,57 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
   }, [statements, triggerStaggeredAnimations]);
 
   // **RACE CONDITION FIX**: Memoized render function with coordinated animations
-  const renderStatementItem = useCallback(({ item, index }: ListRenderItemInfo<string>) => {
-    return (
-      <StatementItemWrapper 
-        item={item} 
-        index={index} 
-        styles={styles} 
-        theme={theme} 
-      />
-    );
-  }, [styles, theme]);
+  const renderStatementItem = useCallback(
+    ({ item, index }: ListRenderItemInfo<string>) => {
+      return <StatementItemWrapper item={item} index={index} styles={styles} theme={theme} />;
+    },
+    [styles, theme]
+  );
 
-  const renderEmptyState = useCallback(() => (
-    <View style={styles.emptyContainer}>
-      <ThemedCard variant="outlined" style={styles.emptyCard}>
-        <View style={styles.emptyContent}>
-          <View style={styles.emptyIconContainer}>
-            <Icon
-              name={isToday ? 'heart-plus-outline' : 'book-open-outline'}
-              size={48}
-              color={theme.colors.primary + '40'}
-            />
+  const renderEmptyState = useCallback(
+    () => (
+      <View style={styles.emptyContainer}>
+        <ThemedCard variant="outlined" style={styles.emptyCard}>
+          <View style={styles.emptyContent}>
+            <View style={styles.emptyIconContainer}>
+              <Icon
+                name={isToday ? 'heart-plus-outline' : 'book-open-outline'}
+                size={48}
+                color={theme.colors.primary + '40'}
+              />
+            </View>
+            <Text style={styles.emptyTitle}>
+              {isToday ? 'İlk minnetini ekle!' : 'O gün henüz minnet eklemedin'}
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              {isToday
+                ? 'Bugün minnettarlık hissettiğin anları yazarak güne başla.'
+                : 'Bu tarihte henüz bir minnet ifadesi bulunmuyor.'}
+            </Text>
           </View>
-          <Text style={styles.emptyTitle}>
-            {isToday ? 'İlk minnetini ekle!' : 'O gün henüz minnet eklemedin'}
-          </Text>
-          <Text style={styles.emptySubtitle}>
-            {isToday
-              ? 'Bugün minnettarlık hissettiğin anları yazarak güne başla.'
-              : 'Bu tarihte henüz bir minnet ifadesi bulunmuyor.'}
-          </Text>
-        </View>
-      </ThemedCard>
-    </View>
-  ), [isToday, styles, theme]);
+        </ThemedCard>
+      </View>
+    ),
+    [isToday, styles, theme]
+  );
 
   const renderSeparator = useCallback(() => <View style={styles.itemSeparator} />, [styles]);
 
   // **RACE CONDITION FIX**: Memoized key extractor for performance
-  const keyExtractor = useCallback((item: string, index: number) => 
-    `${index}-${item.slice(0, 20)}`, []
+  const keyExtractor = useCallback(
+    (item: string, index: number) => `${index}-${item.slice(0, 20)}`,
+    []
   );
 
   // **RACE CONDITION FIX**: Memoized item layout for performance
-  const getItemLayout = useCallback((data: ArrayLike<string> | null | undefined, index: number) => ({
-    length: 120, // Estimated item height
-    offset: 120 * index,
-    index,
-  }), []);
+  const getItemLayout = useCallback(
+    (data: ArrayLike<string> | null | undefined, index: number) => ({
+      length: 120, // Estimated item height
+      offset: 120 * index,
+      index,
+    }),
+    []
+  );
 
   return (
     <Animated.View style={[styles.container, { opacity: animations.fadeAnim }]}>

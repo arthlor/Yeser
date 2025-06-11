@@ -64,16 +64,16 @@ let isListenerActive = false;
 // **TOAST INTEGRATION**: Helper function to handle errors via toast system
 const handleStoreError = (error: unknown, fallbackMessage?: string): void => {
   const errorMessage = safeErrorDisplay(error);
-  
+
   // Only show error if it's not empty (cancellations return empty string)
   if (errorMessage && errorMessage.trim() !== '') {
     if (globalErrorHandlers?.showError) {
       globalErrorHandlers.showError(errorMessage);
     } else {
       // Fallback to console if handlers not registered yet
-      logger.error('Auth error (no toast handlers available):', { 
+      logger.error('Auth error (no toast handlers available):', {
         error: errorMessage,
-        fallback: fallbackMessage 
+        fallback: fallbackMessage,
       });
     }
   }

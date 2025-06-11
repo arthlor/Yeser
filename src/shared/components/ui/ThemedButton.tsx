@@ -43,7 +43,7 @@ interface ThemedButtonProps {
 
 /**
  * 🎯 SIMPLIFIED THEMED BUTTON
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated complex Animated.parallel sequences in press animations
  * - Implemented coordinated animatePressIn/animatePressOut methods

@@ -24,4 +24,4 @@ export const cleanupSingletons = (): void => {
   } catch {
     // ignored – service may not have been initialised
   }
-}; 
+};

@@ -1,12 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, ViewStyle } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -339,9 +332,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
                   size={12}
                   color={theme.colors.onSurfaceVariant + (isRecent ? '90' : '70')}
                 />
-                <Text style={[styles.dateText, isRecent && styles.recentDate]}>
-                  {relativeTime}
-                </Text>
+                <Text style={[styles.dateText, isRecent && styles.recentDate]}>{relativeTime}</Text>
               </View>
             </View>
           )}

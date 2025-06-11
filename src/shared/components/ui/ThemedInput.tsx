@@ -45,7 +45,7 @@ interface ThemedInputProps extends TextInputProps {
 
 /**
  * 🎯 SIMPLIFIED THEMED INPUT
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated complex 4-step shake animation sequence for errors
  * - Replaced with haptic feedback and coordinated press animations
@@ -116,7 +116,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
-      
+
       // **MINIMAL VISUAL FEEDBACK**: Simple coordinated press animation for subtle visual cue
       animations.animatePressIn();
       setTimeout(() => {

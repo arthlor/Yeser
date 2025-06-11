@@ -23,7 +23,7 @@ interface StreakDetailsScreenProps {
 
 /**
  * 🏆 COORDINATED STREAK DETAILS SCREEN
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated direct Animated.timing for slide and progress animations
  * - Replaced with coordinated animation system
@@ -90,11 +90,19 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
         return milestone ? milestone.minDays - currentStreak : 0;
       })(),
       // Enhanced educational context tracking
-      streak_stage: currentStreak === 0 ? 'new' : currentStreak < 7 ? 'beginner' : currentStreak < 30 ? 'developing' : 'established',
+      streak_stage:
+        currentStreak === 0
+          ? 'new'
+          : currentStreak < 7
+            ? 'beginner'
+            : currentStreak < 30
+              ? 'developing'
+              : 'established',
       shows_benefits_section: true,
       shows_maintenance_tips: getNextMilestone() !== null,
       educational_content_available: true,
-      user_education_level: currentStreak >= 30 ? 'advanced' : currentStreak >= 7 ? 'intermediate' : 'basic',
+      user_education_level:
+        currentStreak >= 30 ? 'advanced' : currentStreak >= 7 ? 'intermediate' : 'basic',
     });
   }, [currentStreak, longestStreak, getCurrentMilestone, getNextMilestone, getProgressPercentage]);
 
@@ -167,14 +175,13 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
               <View style={styles.streakExplanationContainer}>
                 <Icon name="information-outline" size={16} color={theme.colors.onSurfaceVariant} />
                 <Text style={styles.streakExplanationText}>
-                  {currentStreak === 0 
-                    ? "Seri, art arda günlerde minnet girişi yaparak başlar. Günlük pratiğin güçlü alışkanlıklar oluşturur."
+                  {currentStreak === 0
+                    ? 'Seri, art arda günlerde minnet girişi yaparak başlar. Günlük pratiğin güçlü alışkanlıklar oluşturur.'
                     : currentStreak < 7
-                    ? "Mükemmel başlangıç! Her gün devam ettiğin sürece serin güçlenir ve daha büyük başarılar açar."
-                    : currentStreak < 30  
-                    ? "Serin momentum kazanıyor! Bu ritim zihinsel sağlığını destekler ve pozitif düşünce alışkanlığı oluşturur."
-                    : "Güçlü bir alışkanlık oluşturdun! Araştırmalar günlük minnettarlığın stresi azalttığını ve mutluluğu artırdığını gösteriyor."
-                  }
+                      ? 'Mükemmel başlangıç! Her gün devam ettiğin sürece serin güçlenir ve daha büyük başarılar açar.'
+                      : currentStreak < 30
+                        ? 'Serin momentum kazanıyor! Bu ritim zihinsel sağlığını destekler ve pozitif düşünce alışkanlığı oluşturur.'
+                        : 'Güçlü bir alışkanlık oluşturdun! Araştırmalar günlük minnettarlığın stresi azalttığını ve mutluluğu artırdığını gösteriyor.'}
                 </Text>
               </View>
 
@@ -233,7 +240,8 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
               {/* 📚 SUBTLE INFO: How to maintain streak */}
               <View style={styles.streakMaintenanceInfo}>
                 <Text style={styles.streakMaintenanceText}>
-                  💡 İpucu: Serini korumak için her gün en az bir minnet girişi yap. Geç saatlerde unutursan 23:59'a kadar girişin sayılır!
+                  💡 İpucu: Serini korumak için her gün en az bir minnet girişi yap. Geç saatlerde
+                  unutursan 23:59'a kadar girişin sayılır!
                 </Text>
               </View>
             </ThemedCard>
@@ -389,38 +397,46 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
               <Icon name="heart-pulse" size={20} color={theme.colors.success} />
               <Text style={styles.benefitsSectionTitle}>Seri Faydaları</Text>
             </View>
-            
+
             <View style={styles.benefitsList}>
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitEmoji}>🧠</Text>
                 <View style={styles.benefitContent}>
                   <Text style={styles.benefitTitle}>Zihinsel Sağlık</Text>
-                  <Text style={styles.benefitDescription}>Günlük minnettarlık stresi azaltmaya ve uyku kalitesini artırmaya yardımcı olur.</Text>
+                  <Text style={styles.benefitDescription}>
+                    Günlük minnettarlık stresi azaltmaya ve uyku kalitesini artırmaya yardımcı olur.
+                  </Text>
                 </View>
               </View>
-              
+
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitEmoji}>😊</Text>
                 <View style={styles.benefitContent}>
                   <Text style={styles.benefitTitle}>Mutluluk Seviyesi</Text>
-                  <Text style={styles.benefitDescription}>21 günlük düzenli pratik mutluluk hormonlarını artırabilir.</Text>
+                  <Text style={styles.benefitDescription}>
+                    21 günlük düzenli pratik mutluluk hormonlarını artırabilir.
+                  </Text>
                 </View>
               </View>
-              
+
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitEmoji}>🤝</Text>
                 <View style={styles.benefitContent}>
                   <Text style={styles.benefitTitle}>İlişki Kalitesi</Text>
-                  <Text style={styles.benefitDescription}>Minnettarlık pratiği empatiyi güçlendirir ve sosyal bağları artırır.</Text>
+                  <Text style={styles.benefitDescription}>
+                    Minnettarlık pratiği empatiyi güçlendirir ve sosyal bağları artırır.
+                  </Text>
                 </View>
               </View>
-              
+
               {currentStreak >= 7 && (
                 <View style={styles.benefitItem}>
                   <Text style={styles.benefitEmoji}>⚡</Text>
                   <View style={styles.benefitContent}>
                     <Text style={styles.benefitTitle}>Enerji & Motivasyon</Text>
-                    <Text style={styles.benefitDescription}>1 haftalık seri enerjiyi artırır ve motivasyonu güçlendirir</Text>
+                    <Text style={styles.benefitDescription}>
+                      1 haftalık seri enerjiyi artırır ve motivasyonu güçlendirir
+                    </Text>
                   </View>
                 </View>
               )}

@@ -47,7 +47,7 @@ const THEME_OPTIONS: {
 
 /**
  * 👋 SIMPLIFIED PERSONALIZATION STEP
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated direct Animated.timing entrance animation
  * - Replaced with coordinated animation system

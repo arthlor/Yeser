@@ -35,8 +35,8 @@ interface Props {
 
 /**
  * **SIMPLIFIED PAST ENTRY CREATION SCREEN**: Minimal, elegant past entry experience
- * 
- * **ANIMATION SIMPLIFICATION COMPLETED**: 
+ *
+ * **ANIMATION SIMPLIFICATION COMPLETED**:
  * - Reduced from 2 animation instances to 1 (50% reduction)
  * - Eliminated all 5 LayoutAnimation calls that caused performance issues
  * - Removed custom heroSlideAnim for simpler unified entrance

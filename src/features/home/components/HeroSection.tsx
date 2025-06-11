@@ -23,7 +23,7 @@ interface HeroSectionProps {
 
 /**
  * 🏠 COORDINATED HERO SECTION
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated direct Animated.timing for progress animations
  * - Replaced with coordinated animation system
@@ -165,13 +165,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         {
           opacity: animations.fadeAnim,
           transform: animations.entranceTransform,
-        }
+        },
       ]}
     >
       {/* Edge-to-Edge Hero Card */}

@@ -20,4 +20,4 @@ export const useProfileService = () => {
   return {
     updateProfile,
   };
-}; 
+};

@@ -15,8 +15,8 @@ interface WelcomeStepProps {
 
 /**
  * **SIMPLIFIED WELCOME STEP**: Minimal, elegant welcome experience
- * 
- * **ANIMATION SIMPLIFICATION COMPLETED**: 
+ *
+ * **ANIMATION SIMPLIFICATION COMPLETED**:
  * - Reduced from 4 animation instances to 1 (75% reduction)
  * - Eliminated complex staged sequences (headerAnimations, featuresAnimations, encouragementAnimations, actionAnimations)
  * - Removed custom slideAnim for simpler unified entrance
@@ -52,7 +52,7 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
 
   return (
     <ScreenLayout edges={['top', 'bottom']} edgeToEdge={false}>
-      <Animated.View 
+      <Animated.View
         style={[
           styles.container,
           {
@@ -110,16 +110,16 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
         </View>
 
         {/* **SIMPLIFIED ACTION**: No separate animations, unified entrance */}
-                 <View style={styles.actionSection}>
-                        <Button
-               mode="contained"
-               onPress={handleGetStarted}
-               style={styles.nextButton}
-               labelStyle={styles.nextButtonText}
-             >
-               Başlayalım
-             </Button>
-         </View>
+        <View style={styles.actionSection}>
+          <Button
+            mode="contained"
+            onPress={handleGetStarted}
+            style={styles.nextButton}
+            labelStyle={styles.nextButtonText}
+          >
+            Başlayalım
+          </Button>
+        </View>
       </Animated.View>
     </ScreenLayout>
   );

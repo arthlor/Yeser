@@ -4,4 +4,4 @@ declare module 'use-debounce' {
     callback: T,
     delay: number
   ): T;
-} 
+}

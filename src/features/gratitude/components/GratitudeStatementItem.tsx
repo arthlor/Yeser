@@ -1,6 +1,6 @@
 /**
  * 🌿 SIMPLIFIED GRATITUDE STATEMENT ITEM
- * 
+ *
  * **ANIMATION SIMPLIFICATION COMPLETED**:
  * - Eliminated complex Animated.parallel and Animated.sequence calls
  * - Replaced with coordinated animation system using useCoordinatedAnimations
@@ -220,13 +220,13 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
 
   if (isEditing) {
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.containerEditing,
           {
             opacity: animations.fadeAnim,
             transform: animations.entranceTransform,
-          }
+          },
         ]}
       >
         <View style={styles.editingHeader}>
@@ -300,12 +300,12 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
   }
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         {
           opacity: animations.fadeAnim,
-        }
+        },
       ]}
     >
       <TouchableOpacity style={styles.contentContainer} onPress={toggleActions} activeOpacity={0.7}>

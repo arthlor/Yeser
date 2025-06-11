@@ -50,7 +50,7 @@ const EnhancedDailyReminderSettings: React.FC<DailyReminderSettingsProps> = Reac
     const [isScheduling, setIsScheduling] = useState(false);
 
     /**
-     * **ANIMATION SIMPLIFICATION COMPLETED**: 
+     * **ANIMATION SIMPLIFICATION COMPLETED**:
      * - Eliminated 6+ animation instances (cardScale, timePickerOpacity, timePickerHeight, iconRotation)
      * - Removed complex animation sequences and parallel animations
      * - Simplified time picker to basic state toggle

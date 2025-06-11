@@ -133,113 +133,109 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
         <ScreenSection variant="edge-to-edge">
           {/* Varied Prompts Feature */}
           <View style={styles.featureCard}>
-              <View style={styles.featureHeader}>
-                <View style={styles.featureIconWrapper}>
-                  <Ionicons name="bulb" size={24} color={theme.colors.primary} />
-                </View>
-                <View style={styles.featureTitleContainer}>
-                  <Text style={styles.featureTitle}>Çeşitli İlham Soruları</Text>
-                  <Text style={styles.featureDescription}>
-                    Her gün farklı sorularla minnettarlığını keşfet. "Bugün seni güldüren neydi?"
-                    gibi yaratıcı sorular.
-                  </Text>
-                </View>
-                <ThemedSwitch
-                  value={features.useVariedPrompts}
-                  onValueChange={(value: boolean) => handleFeatureToggle('useVariedPrompts', value)}
-                  size="medium"
-                  testID="onboarding-varied-prompts-switch"
-                />
+            <View style={styles.featureHeader}>
+              <View style={styles.featureIconWrapper}>
+                <Ionicons name="bulb" size={24} color={theme.colors.primary} />
               </View>
+              <View style={styles.featureTitleContainer}>
+                <Text style={styles.featureTitle}>Çeşitli İlham Soruları</Text>
+                <Text style={styles.featureDescription}>
+                  Her gün farklı sorularla minnettarlığını keşfet. "Bugün seni güldüren neydi?" gibi
+                  yaratıcı sorular.
+                </Text>
+              </View>
+              <ThemedSwitch
+                value={features.useVariedPrompts}
+                onValueChange={(value: boolean) => handleFeatureToggle('useVariedPrompts', value)}
+                size="medium"
+                testID="onboarding-varied-prompts-switch"
+              />
             </View>
+          </View>
 
           {/* Throwback Feature */}
           <View style={styles.featureCard}>
-              <View style={styles.featureHeader}>
-                <View style={styles.featureIconWrapper}>
-                  <Ionicons name="time" size={24} color={theme.colors.primary} />
-                </View>
-                <View style={styles.featureTitleContainer}>
-                  <Text style={styles.featureTitle}>Anı Pırıltıları</Text>
-                  <Text style={styles.featureDescription}>
-                    Geçmişteki güzel anılarını yeniden keşfet. Eski minnettarlıklarını hatırlatan
-                    bildirimler al.
-                  </Text>
-                </View>
-                <ThemedSwitch
-                  value={features.throwbackEnabled}
-                  onValueChange={(value: boolean) => handleFeatureToggle('throwbackEnabled', value)}
-                  size="medium"
-                  testID="onboarding-throwback-switch"
-                />
+            <View style={styles.featureHeader}>
+              <View style={styles.featureIconWrapper}>
+                <Ionicons name="time" size={24} color={theme.colors.primary} />
               </View>
-
-              {/* Throwback Frequency Options */}
-              {features.throwbackEnabled && (
-                <View style={styles.frequencyContainer}>
-                  <Text style={styles.frequencyTitle}>Ne sıklıkla hatırlatayım?</Text>
-                  <View style={styles.frequencyOptions}>
-                    {THROWBACK_FREQUENCIES.map((option) => (
-                      <TouchableOpacity
-                        key={option.key}
-                        onPress={() => handleFeatureToggle('throwbackFrequency', option.key)}
-                        style={[
-                          styles.frequencyOption,
-                          features.throwbackFrequency === option.key &&
-                            styles.frequencyOptionSelected,
-                        ]}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.frequencyOptionContent}>
-                          <View
-                            style={[
-                              styles.radioButton,
-                              features.throwbackFrequency === option.key &&
-                                styles.radioButtonSelected,
-                            ]}
-                          />
-                          <View style={styles.frequencyOptionText}>
-                            <Text
-                              style={[
-                                styles.frequencyOptionLabel,
-                                features.throwbackFrequency === option.key &&
-                                  styles.frequencyOptionLabelSelected,
-                              ]}
-                            >
-                              {option.label}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.frequencyOptionDescription,
-                                features.throwbackFrequency === option.key &&
-                                  styles.frequencyOptionDescriptionSelected,
-                              ]}
-                            >
-                              {option.description}
-                            </Text>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              )}
+              <View style={styles.featureTitleContainer}>
+                <Text style={styles.featureTitle}>Anı Pırıltıları</Text>
+                <Text style={styles.featureDescription}>
+                  Geçmişteki güzel anılarını yeniden keşfet. Eski minnettarlıklarını hatırlatan
+                  bildirimler al.
+                </Text>
+              </View>
+              <ThemedSwitch
+                value={features.throwbackEnabled}
+                onValueChange={(value: boolean) => handleFeatureToggle('throwbackEnabled', value)}
+                size="medium"
+                testID="onboarding-throwback-switch"
+              />
             </View>
+
+            {/* Throwback Frequency Options */}
+            {features.throwbackEnabled && (
+              <View style={styles.frequencyContainer}>
+                <Text style={styles.frequencyTitle}>Ne sıklıkla hatırlatayım?</Text>
+                <View style={styles.frequencyOptions}>
+                  {THROWBACK_FREQUENCIES.map((option) => (
+                    <TouchableOpacity
+                      key={option.key}
+                      onPress={() => handleFeatureToggle('throwbackFrequency', option.key)}
+                      style={[
+                        styles.frequencyOption,
+                        features.throwbackFrequency === option.key &&
+                          styles.frequencyOptionSelected,
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.frequencyOptionContent}>
+                        <View
+                          style={[
+                            styles.radioButton,
+                            features.throwbackFrequency === option.key &&
+                              styles.radioButtonSelected,
+                          ]}
+                        />
+                        <View style={styles.frequencyOptionText}>
+                          <Text
+                            style={[
+                              styles.frequencyOptionLabel,
+                              features.throwbackFrequency === option.key &&
+                                styles.frequencyOptionLabelSelected,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.frequencyOptionDescription,
+                              features.throwbackFrequency === option.key &&
+                                styles.frequencyOptionDescriptionSelected,
+                            ]}
+                          >
+                            {option.description}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
 
           {/* Info Card */}
           <View style={styles.infoCard}>
-              <View style={styles.infoContent}>
-                <Ionicons
-                  name="information-circle-outline"
-                  size={20}
-                  color={theme.colors.primary}
-                />
-                <Text style={styles.infoText}>
-                  Bu ayarları istediğin zaman profil ayarlarından değiştirebilirsin. Deneyimi
-                  tamamen senin kontrolünde!
-                </Text>
-              </View>
+            <View style={styles.infoContent}>
+              <Ionicons name="information-circle-outline" size={20} color={theme.colors.primary} />
+              <Text style={styles.infoText}>
+                Bu ayarları istediğin zaman profil ayarlarından değiştirebilirsin. Deneyimi tamamen
+                senin kontrolünde!
+              </Text>
             </View>
+          </View>
         </ScreenSection>
 
         {/* Actions Section */}

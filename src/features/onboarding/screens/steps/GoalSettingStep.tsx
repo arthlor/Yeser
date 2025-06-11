@@ -27,7 +27,7 @@ const GOAL_OPTIONS = [
 
 /**
  * 🎯 SIMPLIFIED GOAL SETTING STEP
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated direct Animated.timing entrance animation
  * - Replaced with coordinated animation system

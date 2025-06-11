@@ -1,4 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,7 +59,7 @@ interface ToastProviderProps {
 
 /**
  * 🎯 COORDINATED TOAST SYSTEM
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated complex Animated.parallel sequences
  * - Replaced with coordinated animation system
@@ -62,10 +70,11 @@ interface ToastProviderProps {
 const getToastConfig = (theme: AppTheme, type: ToastState['type']) => {
   const baseConfig = {
     // Modern minimalistic approach with subtle glass-morphism effect
-    backgroundColor: theme.name === 'dark' 
-      ? 'rgba(32, 35, 42, 0.95)' // Dark mode: deep charcoal with transparency
-      : 'rgba(255, 255, 255, 0.95)', // Light mode: white with transparency
-    
+    backgroundColor:
+      theme.name === 'dark'
+        ? 'rgba(32, 35, 42, 0.95)' // Dark mode: deep charcoal with transparency
+        : 'rgba(255, 255, 255, 0.95)', // Light mode: white with transparency
+
     borderColor: theme.colors.outline + '40', // Very subtle border
     textColor: theme.colors.onSurface,
     shadowColor: theme.name === 'dark' ? '#000000' : '#000000',
@@ -128,38 +137,41 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
     // **COORDINATED HIDE**: Simple fade out
     animations.animateFade(0, { duration: 200 });
-    
+
     // Hide after animation completes
     setTimeout(() => {
-      setToastState(prev => ({ ...prev, visible: false }));
+      setToastState((prev) => ({ ...prev, visible: false }));
     }, 200);
   }, [animations]);
 
-  const showToast = useCallback((message: string, options: ToastOptions = {}) => {
-    const { duration = 4000, type = 'info', action } = options;
+  const showToast = useCallback(
+    (message: string, options: ToastOptions = {}) => {
+      const { duration = 4000, type = 'info', action } = options;
 
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
 
-    // Update state
-    setToastState({
-      visible: true,
-      message,
-      type,
-      duration,
-      action,
-    });
+      // Update state
+      setToastState({
+        visible: true,
+        message,
+        type,
+        duration,
+        action,
+      });
 
-    // **COORDINATED SHOW**: Simple entrance animation
-    animations.animateEntrance({ duration: 300 });
+      // **COORDINATED SHOW**: Simple entrance animation
+      animations.animateEntrance({ duration: 300 });
 
-    // Auto hide after duration
-    timeoutRef.current = setTimeout(() => {
-      hideToast();
-    }, duration);
-  }, [animations, hideToast]);
+      // Auto hide after duration
+      timeoutRef.current = setTimeout(() => {
+        hideToast();
+      }, duration);
+    },
+    [animations, hideToast]
+  );
 
   const showSuccess = useCallback(
     (message: string, options: Omit<ToastOptions, 'type'> = {}) => {
@@ -199,7 +211,10 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   }, []);
 
   // Memoize config to prevent unnecessary re-renders
-  const toastConfig = useMemo(() => getToastConfig(theme, toastState.type), [theme, toastState.type]);
+  const toastConfig = useMemo(
+    () => getToastConfig(theme, toastState.type),
+    [theme, toastState.type]
+  );
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue: ToastContextType = useMemo(
@@ -223,29 +238,21 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         <Animated.View
           style={[
             styles.container,
-                          {
-                transform: animations.entranceTransform,
-                opacity: animations.fadeAnim,
-              },
+            {
+              transform: animations.entranceTransform,
+              opacity: animations.fadeAnim,
+            },
           ]}
         >
-          <TouchableOpacity
-            activeOpacity={0.98}
-            onPress={hideToast}
-            style={styles.toast}
-          >
+          <TouchableOpacity activeOpacity={0.98} onPress={hideToast} style={styles.toast}>
             {/* Accent line for visual hierarchy */}
             <View style={[styles.accentLine, { backgroundColor: toastConfig.accentColor }]} />
-            
+
             {/* Content container */}
             <View style={styles.content}>
               {/* Icon */}
               <View style={styles.iconContainer}>
-                <Icon
-                  name={toastConfig.iconName}
-                  size={18}
-                  color={toastConfig.accentColor}
-                />
+                <Icon name={toastConfig.iconName} size={18} color={toastConfig.accentColor} />
               </View>
 
               {/* Message */}
@@ -279,8 +286,8 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 ToastProvider.displayName = 'ToastProvider';
 
 const createStyles = (
-  theme: AppTheme, 
-  insets: { top: number; bottom: number; left: number; right: number }, 
+  theme: AppTheme,
+  insets: { top: number; bottom: number; left: number; right: number },
   config: ReturnType<typeof getToastConfig>
 ) =>
   StyleSheet.create({
@@ -296,7 +303,7 @@ const createStyles = (
       borderRadius: 12, // Modern rounded corners
       borderWidth: 1,
       borderColor: config.borderColor,
-      
+
       // Sophisticated shadow system
       shadowColor: config.shadowColor,
       shadowOffset: {
@@ -306,7 +313,7 @@ const createStyles = (
       shadowOpacity: theme.name === 'dark' ? 0.3 : 0.15,
       shadowRadius: 12,
       elevation: 8, // Android elevation
-      
+
       // Subtle backdrop blur effect simulation
       overflow: 'hidden',
     },

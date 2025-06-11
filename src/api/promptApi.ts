@@ -16,19 +16,25 @@ export const getRandomActivePrompt = async (): Promise<DailyPrompt | null> => {
 
     if (error) {
       // **ENHANCED ERROR HANDLING**: Better error categorization
-      if (error.message?.includes('function get_random_active_prompt') && error.message?.includes('does not exist')) {
+      if (
+        error.message?.includes('function get_random_active_prompt') &&
+        error.message?.includes('does not exist')
+      ) {
         logger.warn('Database function get_random_active_prompt does not exist - using fallback');
         return null;
       }
-      
+
       // **NETWORK RESILIENCE**: Return null for network errors instead of throwing
-      if (error.message?.includes('Failed to fetch') || error.message?.includes('Network request failed')) {
+      if (
+        error.message?.includes('Failed to fetch') ||
+        error.message?.includes('Network request failed')
+      ) {
         logger.warn('Network connectivity issue for prompt fetch - graceful fallback', {
-          error: error.message
+          error: error.message,
         });
         return null;
       }
-      
+
       throw handleAPIError(new Error(error.message), 'fetch random active prompt');
     }
 
@@ -41,18 +47,20 @@ export const getRandomActivePrompt = async (): Promise<DailyPrompt | null> => {
     return null;
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
-    
+
     // **NETWORK RESILIENCE**: Handle network errors gracefully
-    if (error.message?.includes('Network request failed') || 
-        error.message?.includes('Failed to fetch') ||
-        error.message?.includes('TypeError: Network request failed')) {
+    if (
+      error.message?.includes('Network request failed') ||
+      error.message?.includes('Failed to fetch') ||
+      error.message?.includes('TypeError: Network request failed')
+    ) {
       logger.warn('Network connectivity issue for prompt fetch - graceful fallback', {
         error: error.message,
-        type: error.name
+        type: error.name,
       });
       return null; // Return null instead of throwing for network issues
     }
-    
+
     throw handleAPIError(error, 'fetch random active prompt');
   }
 };

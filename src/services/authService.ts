@@ -49,7 +49,10 @@ const handleAuthError = (error: AuthError | SimpleAuthError, operation: string) 
 export const signInWithMagicLink = async (credentials: MagicLinkCredentials) => {
   try {
     // Final defensive email sanitization in case any invisible chars slipped through
-    const emailForSupabase = credentials.email.trim().toLowerCase().replace(/[\u200B-\u200D\uFEFF]/g, '');
+    const emailForSupabase = credentials.email
+      .trim()
+      .toLowerCase()
+      .replace(/[\u200B-\u200D\uFEFF]/g, '');
 
     const { data, error } = await supabase.auth.signInWithOtp({
       email: emailForSupabase,

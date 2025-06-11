@@ -40,10 +40,10 @@ interface Props {
 /**
  * 🌟 POLISHED EDGE-TO-EDGE LOGIN SCREEN
  * Clean, spacious authentication experience with proper text sizing and layout
- * 
+ *
  * **SIMPLIFIED ANIMATION SYSTEM**: Using minimal, non-intrusive animations
  * with 4 essential values: fadeAnim, scaleAnim, opacityAnim, heightAnim
- * 
+ *
  * **TOAST INTEGRATION**: Auth errors now show as toasts instead of inline display.
  * Only field validation errors (emailError) show inline for immediate feedback.
  */
@@ -144,13 +144,16 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   }, [triggerEntranceAnimations]);
 
   // Real-time email validation
-  const handleEmailChange = useCallback((text: string) => {
-    setEmail(text);
-    setEmailError(undefined);
+  const handleEmailChange = useCallback(
+    (text: string) => {
+      setEmail(text);
+      setEmailError(undefined);
 
-    // Trigger debounced validation
-    debouncedValidateEmail(text);
-  }, [debouncedValidateEmail]);
+      // Trigger debounced validation
+      debouncedValidateEmail(text);
+    },
+    [debouncedValidateEmail]
+  );
 
   // Clear errors when component unmounts
   useEffect(
@@ -289,100 +292,100 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
         >
           <ThemedCard style={styles.contentCard}>
             <View style={styles.cardInner}>
-          {!magicLinkSent && (
-            <>
-              {/* Trust Indicators */}
-              <View style={styles.trustSection}>
-                <View style={styles.trustBadge}>
-                  <Ionicons name="shield-checkmark" size={14} color={theme.colors.success} />
-                  <Text style={styles.trustText}>Güvenli Giriş</Text>
-                </View>
-                <View style={styles.trustBadge}>
-                  <Ionicons name="lock-closed" size={14} color={theme.colors.success} />
-                  <Text style={styles.trustText}>Şifresiz</Text>
-                </View>
-              </View>
+              {!magicLinkSent && (
+                <>
+                  {/* Trust Indicators */}
+                  <View style={styles.trustSection}>
+                    <View style={styles.trustBadge}>
+                      <Ionicons name="shield-checkmark" size={14} color={theme.colors.success} />
+                      <Text style={styles.trustText}>Güvenli Giriş</Text>
+                    </View>
+                    <View style={styles.trustBadge}>
+                      <Ionicons name="lock-closed" size={14} color={theme.colors.success} />
+                      <Text style={styles.trustText}>Şifresiz</Text>
+                    </View>
+                  </View>
 
-              {/* Email Input */}
-              <View style={styles.inputSection}>
-                <ThemedInput
-                  label="E-posta Adresi"
-                  value={email}
-                  onChangeText={handleEmailChange}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  autoCorrect={false}
-                  errorText={emailError}
-                  leftIcon="mail"
-                  editable={!isLoading}
-                  validationState={isEmailValid ? 'success' : 'default'}
-                  showValidationIcon={email.length > 0}
-                  placeholder="ornek@email.com"
-                />
-              </View>
+                  {/* Email Input */}
+                  <View style={styles.inputSection}>
+                    <ThemedInput
+                      label="E-posta Adresi"
+                      value={email}
+                      onChangeText={handleEmailChange}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      autoCorrect={false}
+                      errorText={emailError}
+                      leftIcon="mail"
+                      editable={!isLoading}
+                      validationState={isEmailValid ? 'success' : 'default'}
+                      showValidationIcon={email.length > 0}
+                      placeholder="ornek@email.com"
+                    />
+                  </View>
 
-              {/* Login Button */}
-              <ThemedButton
-                title={isLoading ? 'Gönderiliyor...' : 'Giriş Bağlantısı Gönder'}
-                onPress={handleMagicLinkLogin}
-                variant="primary"
-                isLoading={isLoading}
-                disabled={isLoading || !email.trim() || !canSendMagicLink() || !isEmailValid}
-                style={styles.loginButton}
-                fullWidth
-              />
+                  {/* Login Button */}
+                  <ThemedButton
+                    title={isLoading ? 'Gönderiliyor...' : 'Giriş Bağlantısı Gönder'}
+                    onPress={handleMagicLinkLogin}
+                    variant="primary"
+                    isLoading={isLoading}
+                    disabled={isLoading || !email.trim() || !canSendMagicLink() || !isEmailValid}
+                    style={styles.loginButton}
+                    fullWidth
+                  />
 
-              {/* Help Section Toggle */}
-              <ThemedButton
-                title={showHelpSection ? 'Yardımı Gizle' : 'Güvenli Link Nedir?'}
-                variant="ghost"
-                onPress={toggleHelpSection}
-                style={styles.helpToggle}
-                iconLeft={showHelpSection ? 'chevron-up' : 'help-circle-outline'}
-                size="compact"
-              />
+                  {/* Help Section Toggle */}
+                  <ThemedButton
+                    title={showHelpSection ? 'Yardımı Gizle' : 'Güvenli Link Nedir?'}
+                    variant="ghost"
+                    onPress={toggleHelpSection}
+                    style={styles.helpToggle}
+                    iconLeft={showHelpSection ? 'chevron-up' : 'help-circle-outline'}
+                    size="compact"
+                  />
 
-              {/* **SIMPLIFIED HELP SECTION**: Using layout transition animation */}
-              <Animated.View 
-                style={[
-                  styles.helpSection, 
-                  { 
-                    height: animations.heightAnim,
-                    opacity: animations.opacityAnim,
-                  }
-                ]}
-              >
-                <View style={styles.helpContent}>
-                  <Text style={styles.helpTitle}>🔒 Güvenli ve Kolay</Text>
-                  <Text style={styles.helpText}>
-                    Güvenli link ile şifre hatırlamaya gerek yok. E-postanıza özel bir bağlantı
-                    gönderiyoruz.
+                  {/* **SIMPLIFIED HELP SECTION**: Using layout transition animation */}
+                  <Animated.View
+                    style={[
+                      styles.helpSection,
+                      {
+                        height: animations.heightAnim,
+                        opacity: animations.opacityAnim,
+                      },
+                    ]}
+                  >
+                    <View style={styles.helpContent}>
+                      <Text style={styles.helpTitle}>🔒 Güvenli ve Kolay</Text>
+                      <Text style={styles.helpText}>
+                        Güvenli link ile şifre hatırlamaya gerek yok. E-postanıza özel bir bağlantı
+                        gönderiyoruz.
+                      </Text>
+                    </View>
+                  </Animated.View>
+                </>
+              )}
+
+              {/* Success State */}
+              {magicLinkSent && (
+                <View style={styles.successSection}>
+                  <View style={styles.successIcon}>
+                    <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
+                  </View>
+                  <Text style={styles.successTitle}>Başarılı!</Text>
+                  <Text style={styles.successMessage}>
+                    E-posta adresinizi kontrol edin ve güvenli giriş bağlantısına tıklayın.
                   </Text>
+                  <ThemedButton
+                    title="Tekrar Gönder"
+                    variant="secondary"
+                    onPress={handleMagicLinkLogin}
+                    disabled={!canSendMagicLink()}
+                    style={styles.resendButton}
+                  />
                 </View>
-              </Animated.View>
-            </>
-          )}
-
-          {/* Success State */}
-          {magicLinkSent && (
-            <View style={styles.successSection}>
-              <View style={styles.successIcon}>
-                <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
-              </View>
-              <Text style={styles.successTitle}>Başarılı!</Text>
-              <Text style={styles.successMessage}>
-                E-posta adresinizi kontrol edin ve güvenli giriş bağlantısına tıklayın.
-              </Text>
-              <ThemedButton
-                title="Tekrar Gönder"
-                variant="secondary"
-                onPress={handleMagicLinkLogin}
-                disabled={!canSendMagicLink()}
-                style={styles.resendButton}
-              />
-            </View>
-          )}
+              )}
             </View>
           </ThemedCard>
         </Animated.View>
@@ -420,14 +423,14 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
 
   return (
     <LinearGradient colors={gradientColors} style={styles.fullScreenContainer}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.safeContainer}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         {renderHeader()}
-        
+
         <View style={styles.contentArea}>
           {renderMainContent()}
           {!magicLinkSent && renderGoogleSection()}

@@ -118,74 +118,74 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
           {/* Inner wrapper for transform animations */}
           <Animated.View style={animatedCardStyle}>
             <View style={styles.cardShadowWrapper}>
-            <Card
-              style={styles.card}
-              accessible={true}
-              accessibilityLabel={`${title} kartı`}
-              accessibilityHint={expanded ? 'Daraltmak için dokunun' : 'Genişletmek için dokunun'}
-            >
-              <View style={styles.cardContentWrapper}>
-                <List.Accordion
-                  title={title}
-                  titleStyle={styles.title}
-                  titleNumberOfLines={2}
-                  left={leftIconRenderer}
-                  expanded={expanded}
-                  onPress={handlePress}
-                  style={styles.accordion}
-                  theme={memoizedTheme}
-                  rippleColor={rippleColor}
-                >
-                  <Card.Content style={styles.content}>
-                    <Text
-                      style={styles.description}
-                      accessibilityLabel={`Açıklama: ${description}`}
-                    >
-                      {description}
-                    </Text>
-                    {stat && (
-                      <View
-                        style={styles.statContainer}
-                        accessible={true}
-                        accessibilityLabel={`İstatistik: ${stat}`}
+              <Card
+                style={styles.card}
+                accessible={true}
+                accessibilityLabel={`${title} kartı`}
+                accessibilityHint={expanded ? 'Daraltmak için dokunun' : 'Genişletmek için dokunun'}
+              >
+                <View style={styles.cardContentWrapper}>
+                  <List.Accordion
+                    title={title}
+                    titleStyle={styles.title}
+                    titleNumberOfLines={2}
+                    left={leftIconRenderer}
+                    expanded={expanded}
+                    onPress={handlePress}
+                    style={styles.accordion}
+                    theme={memoizedTheme}
+                    rippleColor={rippleColor}
+                  >
+                    <Card.Content style={styles.content}>
+                      <Text
+                        style={styles.description}
+                        accessibilityLabel={`Açıklama: ${description}`}
                       >
-                        <View style={styles.statBackground}>
-                          <MaterialCommunityIcons
-                            name="chart-line-variant"
-                            size={20}
-                            color={activeTheme.colors.accent}
-                            style={styles.statIcon}
-                          />
-                          <Text style={styles.statText}>{stat}</Text>
+                        {description}
+                      </Text>
+                      {stat && (
+                        <View
+                          style={styles.statContainer}
+                          accessible={true}
+                          accessibilityLabel={`İstatistik: ${stat}`}
+                        >
+                          <View style={styles.statBackground}>
+                            <MaterialCommunityIcons
+                              name="chart-line-variant"
+                              size={20}
+                              color={activeTheme.colors.accent}
+                              style={styles.statIcon}
+                            />
+                            <Text style={styles.statText}>{stat}</Text>
+                          </View>
                         </View>
-                      </View>
-                    )}
+                      )}
 
-                    {ctaPrompt && (
-                      <View style={styles.ctaContainer}>
-                        <Text style={styles.ctaPromptText}>💭 "{ctaPrompt}"</Text>
-                        <LinearGradient colors={gradients.cta} style={styles.ctaButtonGradient}>
-                          <Button
-                            mode="contained"
-                            onPress={handleCtaPress}
-                            style={styles.ctaButton}
-                            labelStyle={styles.ctaButtonLabel}
-                            contentStyle={styles.ctaButtonContent}
-                            buttonColor="transparent"
-                            textColor={activeTheme.colors.onPrimary}
-                            icon="pencil-outline"
-                            accessibilityLabel={`Bu konu hakkında yaz: ${ctaPrompt}`}
-                            accessibilityHint="Günlük yazma ekranına gider"
-                          >
-                            Bu Konu Hakkında Yaz
-                          </Button>
-                        </LinearGradient>
-                      </View>
-                    )}
-                  </Card.Content>
-                </List.Accordion>
-              </View>
-            </Card>
+                      {ctaPrompt && (
+                        <View style={styles.ctaContainer}>
+                          <Text style={styles.ctaPromptText}>💭 "{ctaPrompt}"</Text>
+                          <LinearGradient colors={gradients.cta} style={styles.ctaButtonGradient}>
+                            <Button
+                              mode="contained"
+                              onPress={handleCtaPress}
+                              style={styles.ctaButton}
+                              labelStyle={styles.ctaButtonLabel}
+                              contentStyle={styles.ctaButtonContent}
+                              buttonColor="transparent"
+                              textColor={activeTheme.colors.onPrimary}
+                              icon="pencil-outline"
+                              accessibilityLabel={`Bu konu hakkında yaz: ${ctaPrompt}`}
+                              accessibilityHint="Günlük yazma ekranına gider"
+                            >
+                              Bu Konu Hakkında Yaz
+                            </Button>
+                          </LinearGradient>
+                        </View>
+                      )}
+                    </Card.Content>
+                  </List.Accordion>
+                </View>
+              </Card>
             </View>
           </Animated.View>
         </Animated.View>

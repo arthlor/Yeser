@@ -36,7 +36,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
     const styles = useMemo(() => createStyles(theme), [theme]);
 
     /**
-     * **ANIMATION SIMPLIFICATION COMPLETED**: 
+     * **ANIMATION SIMPLIFICATION COMPLETED**:
      * - Eliminated refresh rotation animation (360deg spin)
      * - Removed pulse animation for loading states
      * - Simplified to basic state-based visual feedback

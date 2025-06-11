@@ -28,7 +28,6 @@ import { AppTheme, ThemeName } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import { notificationService } from '@/services/notificationService';
 
-
 // Fix navigation types by extending the base interfaces
 interface MainAppTabParamListFixed extends Record<string, object | undefined> {
   SettingsTab: undefined;
@@ -261,18 +260,24 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handleVariedPromptsToggle = useCallback((useVariedPrompts: boolean) => {
-    updateProfile({ useVariedPrompts });
-  }, [updateProfile]);
+  const handleVariedPromptsToggle = useCallback(
+    (useVariedPrompts: boolean) => {
+      updateProfile({ useVariedPrompts });
+    },
+    [updateProfile]
+  );
 
-  const handleDailyGoalUpdate = useCallback((dailyGoal: number) => {
-    updateProfile({ daily_gratitude_goal: dailyGoal });
+  const handleDailyGoalUpdate = useCallback(
+    (dailyGoal: number) => {
+      updateProfile({ daily_gratitude_goal: dailyGoal });
 
-    analyticsService.logEvent('daily_goal_updated_from_settings', {
-      old_goal: profile?.daily_gratitude_goal || 3,
-      new_goal: dailyGoal,
-    });
-  }, [updateProfile, profile?.daily_gratitude_goal]);
+      analyticsService.logEvent('daily_goal_updated_from_settings', {
+        old_goal: profile?.daily_gratitude_goal || 3,
+        new_goal: dailyGoal,
+      });
+    },
+    [updateProfile, profile?.daily_gratitude_goal]
+  );
 
   const navigateToPrivacyPolicy = () => {
     navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('PrivacyPolicy');
@@ -317,7 +322,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         {/* Preferences Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tercihler</Text>
-          
+
           <DailyGoalSettings
             currentGoal={profile?.daily_gratitude_goal ?? 3}
             onUpdateGoal={handleDailyGoalUpdate}
@@ -350,9 +355,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                 </View>
                 <View style={styles.textContainer}>
                   <Text style={styles.settingTitle}>Çeşitli Öneriler</Text>
-                  <Text style={styles.settingDescription}>
-                    Çeşitli şükretme önerileri göster
-                  </Text>
+                  <Text style={styles.settingDescription}>Çeşitli şükretme önerileri göster</Text>
                 </View>
               </View>
               <View style={styles.actionContainer}>

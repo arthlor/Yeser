@@ -44,7 +44,7 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
   useEffect(() => {
     const timers = timersRef.current;
     return () => {
-      timers.forEach(timer => clearTimeout(timer));
+      timers.forEach((timer) => clearTimeout(timer));
       timers.clear();
     };
   }, []);
@@ -185,10 +185,12 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
   }, [addTestResult]);
 
   // 🚀 TOAST TESTING FUNCTIONS
-  
+
   // Test Basic Toast Types
   const testBasicToasts = useCallback(() => {
-    addTimer(setTimeout(() => showSuccess('✅ Success toast - Operation completed successfully!'), 0));
+    addTimer(
+      setTimeout(() => showSuccess('✅ Success toast - Operation completed successfully!'), 0)
+    );
     addTimer(setTimeout(() => showError('❌ Error toast - Something went wrong!'), 1500));
     addTimer(setTimeout(() => showWarning('⚠️ Warning toast - Please pay attention!'), 3000));
     addTimer(setTimeout(() => showInfo('ℹ️ Info toast - Here is some information!'), 4500));
@@ -230,7 +232,9 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
 
   // Test Long Message Handling
   const testLongMessages = useCallback(() => {
-    showError('📝 This is a very long toast message that tests how the toast system handles lengthy text content. It should wrap properly and maintain good readability while staying within reasonable bounds for mobile UI.');
+    showError(
+      '📝 This is a very long toast message that tests how the toast system handles lengthy text content. It should wrap properly and maintain good readability while staying within reasonable bounds for mobile UI.'
+    );
     addTestResult('Long Message', true, 'Tested toast with very long message content');
   }, [showError, addTestResult]);
 
@@ -245,41 +249,55 @@ export const AnalyticsDebugger: React.FC<AnalyticsDebuggerProps> = ({ onClose })
     showInfo('⏱️ This toast will be hidden programmatically in 2 seconds...', {
       duration: 10000, // Set long duration
     });
-    addTimer(setTimeout(() => {
-      hideToast();
-      showSuccess('✅ Toast hidden programmatically!');
-    }, 2000));
+    addTimer(
+      setTimeout(() => {
+        hideToast();
+        showSuccess('✅ Toast hidden programmatically!');
+      }, 2000)
+    );
     addTestResult('Hide Toast', true, 'Tested programmatic toast hiding');
   }, [addTimer, showInfo, hideToast, showSuccess, addTestResult]);
 
   // Test All Toasts Comprehensive Demo
   const testAllToastFeatures = useCallback(() => {
     let delay = 0;
-    
+
     // Success with action
-    addTimer(setTimeout(() => {
-      showSuccess('🎉 Complete success with action');
-    }, delay));
+    addTimer(
+      setTimeout(() => {
+        showSuccess('🎉 Complete success with action');
+      }, delay)
+    );
     delay += 2000;
 
     // Warning with long duration
-    addTimer(setTimeout(() => {
-      showWarning('⚠️ Important warning that needs attention');
-    }, delay));
+    addTimer(
+      setTimeout(() => {
+        showWarning('⚠️ Important warning that needs attention');
+      }, delay)
+    );
     delay += 1000;
 
     // Error with retry
-    addTimer(setTimeout(() => {
-      showError('❌ Critical error occurred');
-    }, delay));
+    addTimer(
+      setTimeout(() => {
+        showError('❌ Critical error occurred');
+      }, delay)
+    );
     delay += 3000;
 
     // Info with custom duration
-    addTimer(setTimeout(() => {
-      showInfo('ℹ️ Process completed successfully');
-    }, delay));
+    addTimer(
+      setTimeout(() => {
+        showInfo('ℹ️ Process completed successfully');
+      }, delay)
+    );
 
-    addTestResult('Comprehensive Toast Demo', true, 'Demonstrated all toast features with realistic scenarios');
+    addTestResult(
+      'Comprehensive Toast Demo',
+      true,
+      'Demonstrated all toast features with realistic scenarios'
+    );
   }, [addTimer, showSuccess, showWarning, showError, showInfo, addTestResult]);
 
   // Test 9: All Screen Views (Comprehensive Coverage)

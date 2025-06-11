@@ -14,7 +14,7 @@ interface ThemedSwitchProps {
 
 /**
  * 🎛️ COORDINATED THEMED SWITCH
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Maintained essential color interpolation (JS-driven for colors)
  * - Coordinated press feedback animations (native-driven)
@@ -25,21 +25,24 @@ const ThemedSwitch: React.FC<ThemedSwitchProps> = React.memo(
   ({ value, onValueChange, disabled = false, size = 'medium', testID }) => {
     const { theme } = useTheme();
     const styles = createStyles(theme, size);
-    
+
     // **ESSENTIAL SWITCH ANIMATION**: Keep color interpolation as JS-driven (required for color changes)
     const switchAnimatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
-    
+
     // **COORDINATED PRESS FEEDBACK**: Use coordinated animation system for press feedback
     const animations = useCoordinatedAnimations();
 
     // **ESSENTIAL SWITCH STATE TRANSITION**: Keep for color interpolation
-    const animateSwitchTransition = useCallback((toValue: number) => {
-      Animated.timing(switchAnimatedValue, {
-        toValue,
-        duration: 250,
-        useNativeDriver: false, // Required for color interpolation
-      }).start();
-    }, [switchAnimatedValue]);
+    const animateSwitchTransition = useCallback(
+      (toValue: number) => {
+        Animated.timing(switchAnimatedValue, {
+          toValue,
+          duration: 250,
+          useNativeDriver: false, // Required for color interpolation
+        }).start();
+      },
+      [switchAnimatedValue]
+    );
 
     // Update animation when value changes
     useEffect(() => {
@@ -79,20 +82,20 @@ const ThemedSwitch: React.FC<ThemedSwitchProps> = React.memo(
         style={[styles.container, disabled && styles.disabled]}
       >
         {/* **COORDINATED PRESS ANIMATION**: Use coordinated press transform */}
-        <Animated.View 
+        <Animated.View
           style={[
             {
               transform: animations.pressTransform, // Coordinated press feedback
-            }
+            },
           ]}
         >
           {/* **ESSENTIAL COLOR ANIMATION**: Keep color interpolation for switch functionality */}
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.track, 
-              { 
+              styles.track,
+              {
                 backgroundColor: trackColor, // JS-driven color animation (essential)
-              }
+              },
             ]}
           >
             <Animated.View

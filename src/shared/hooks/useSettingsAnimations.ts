@@ -3,10 +3,10 @@ import { useCoordinatedAnimations } from './useCoordinatedAnimations';
 
 /**
  * **SIMPLIFIED SETTINGS ANIMATIONS**: Minimal, non-intrusive settings animations
- * 
+ *
  * Provides subtle animation patterns for settings components following the
  * "barely noticeable, maximum performance" philosophy.
- * 
+ *
  * **Replaces**: Complex LayoutAnimation patterns with simple coordinated transitions
  */
 export const useSettingsAnimations = () => {
@@ -53,13 +53,13 @@ export const useSettingsAnimations = () => {
   return {
     // Core animations from coordinated hook
     ...animations,
-    
+
     // Settings-specific simplified patterns
     animateExpansion,
     animateToggle,
     animateError,
     animateSuccess,
-    
+
     // Simple convenience method for any setting change
     animateSettingChange: () => {
       animations.animatePressIn();
@@ -70,16 +70,16 @@ export const useSettingsAnimations = () => {
 
 /**
  * **SIMPLIFIED MIGRATION HELPER**: Easy LayoutAnimation replacement
- * 
+ *
  * BEFORE: LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
  * AFTER: settingsAnimations.animateExpansion(expanded);
  */
 export const replaceLayoutAnimation = {
   easeInEaseOut: (
-    settingsAnimations: ReturnType<typeof useSettingsAnimations>, 
-    expanded: boolean, 
+    settingsAnimations: ReturnType<typeof useSettingsAnimations>,
+    expanded: boolean,
     height = 100
   ) => {
     settingsAnimations.animateExpansion(expanded, height);
   },
-}; 
+};

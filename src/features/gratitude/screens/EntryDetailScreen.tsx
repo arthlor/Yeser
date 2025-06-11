@@ -47,8 +47,8 @@ type EntryDetailScreenNavigationProp = CompositeNavigationProp<
 
 /**
  * **SIMPLIFIED ENTRY DETAIL SCREEN**: Minimal, elegant entry detail experience
- * 
- * **ANIMATION SIMPLIFICATION COMPLETED**: 
+ *
+ * **ANIMATION SIMPLIFICATION COMPLETED**:
  * - Eliminated all 3 LayoutAnimation calls that caused performance issues
  * - Removed complex platform-specific animation setup
  * - Replaced with simple state changes for editing interactions
@@ -216,7 +216,7 @@ const EnhancedEntryDetailScreen: React.FC<{
       });
 
       setEditingStatementIndex(null);
-      
+
       // 🎯 TOAST INTEGRATION: Success feedback for statement updates
       showSuccess('Minnet kaydın başarıyla güncellendi');
     } catch (error) {

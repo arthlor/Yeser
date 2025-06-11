@@ -31,7 +31,7 @@ export interface AdvancedMilestone {
   unlockedMessage: string;
 }
 
-  // Removed unused screenWidth variable
+// Removed unused screenWidth variable
 
 // Enhanced milestone system with 15 levels
 const ADVANCED_MILESTONES: AdvancedMilestone[] = [
@@ -249,10 +249,10 @@ const ADVANCED_MILESTONES: AdvancedMilestone[] = [
 
 /**
  * 🏆 COORDINATED STREAK MILESTONES
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Eliminated direct Animated.timing for progress animations
- * - Replaced with coordinated animation system  
+ * - Replaced with coordinated animation system
  * - Simplified animation approach following "Barely Noticeable, Maximum Performance"
  * - Enhanced consistency with coordinated animation philosophy
  */
@@ -367,7 +367,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
         {
           opacity: animations.fadeAnim,
           transform: animations.entranceTransform,
-        }
+        },
       ]}
     >
       <ThemedCard
@@ -380,87 +380,87 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
           activeOpacity: 0.8,
         }}
       >
-      {/* Simplified celebration overlay */}
-      {showCelebration && (
-        <View style={styles.celebrationOverlay}>
-          <Text style={styles.celebrationText}>{currentMilestone.unlockedMessage}</Text>
-        </View>
-      )}
+        {/* Simplified celebration overlay */}
+        {showCelebration && (
+          <View style={styles.celebrationOverlay}>
+            <Text style={styles.celebrationText}>{currentMilestone.unlockedMessage}</Text>
+          </View>
+        )}
 
-      <View style={styles.content}>
-        {/* Current milestone display */}
-        <View style={styles.milestoneHeader}>
-          <View style={styles.milestoneIconContainer}>
-            <Text style={styles.milestoneEmoji}>{currentMilestone.emoji}</Text>
+        <View style={styles.content}>
+          {/* Current milestone display */}
+          <View style={styles.milestoneHeader}>
+            <View style={styles.milestoneIconContainer}>
+              <Text style={styles.milestoneEmoji}>{currentMilestone.emoji}</Text>
+            </View>
+            <View style={styles.milestoneInfo}>
+              <Text style={[styles.milestoneTitle, { color: currentMilestone.colorPrimary }]}>
+                {currentMilestone.title}
+              </Text>
+              <Text style={styles.milestoneDescription}>{currentMilestone.description}</Text>
+            </View>
+            {/* Subtle clickable indicator */}
+            {onPress && (
+              <View style={styles.clickableIndicator}>
+                <Icon name="chevron-right" size={16} color={theme.colors.onSurfaceVariant} />
+              </View>
+            )}
           </View>
-          <View style={styles.milestoneInfo}>
-            <Text style={[styles.milestoneTitle, { color: currentMilestone.colorPrimary }]}>
-              {currentMilestone.title}
-            </Text>
-            <Text style={styles.milestoneDescription}>{currentMilestone.description}</Text>
+
+          {/* Compact streak counter */}
+          <View style={styles.streakCounter}>
+            <Text style={styles.streakNumber}>{currentStreak}</Text>
+            <Text style={styles.streakLabel}>günlük seri</Text>
+
+            {isPersonalRecord && (
+              <View style={styles.recordBadge}>
+                <Icon name="trophy" size={10} color={theme.colors.warning} />
+                <Text style={styles.recordText}>YENİ REKOR!</Text>
+              </View>
+            )}
           </View>
-          {/* Subtle clickable indicator */}
-          {onPress && (
-            <View style={styles.clickableIndicator}>
-              <Icon name="chevron-right" size={16} color={theme.colors.onSurfaceVariant} />
+
+          {/* Progress to next milestone */}
+          {nextMilestone && (
+            <View style={styles.progressSection}>
+              <Text style={styles.progressLabel}>
+                Sonraki: {nextMilestone.title} ({daysToNext} gün)
+              </Text>
+
+              <View style={styles.progressBarContainer}>
+                <View
+                  style={[
+                    styles.progressBar,
+                    {
+                      width: `${getProgressPercentage()}%`,
+                      backgroundColor: currentMilestone.colorPrimary,
+                    },
+                  ]}
+                />
+              </View>
             </View>
           )}
-        </View>
 
-        {/* Compact streak counter */}
-        <View style={styles.streakCounter}>
-          <Text style={styles.streakNumber}>{currentStreak}</Text>
-          <Text style={styles.streakLabel}>günlük seri</Text>
-
-          {isPersonalRecord && (
-            <View style={styles.recordBadge}>
-              <Icon name="trophy" size={10} color={theme.colors.warning} />
-              <Text style={styles.recordText}>YENİ REKOR!</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Progress to next milestone */}
-        {nextMilestone && (
-          <View style={styles.progressSection}>
-            <Text style={styles.progressLabel}>
-              Sonraki: {nextMilestone.title} ({daysToNext} gün)
-            </Text>
-
-            <View style={styles.progressBarContainer}>
+          {/* Compact achievement showcase */}
+          <View style={styles.achievementGrid}>
+            {ADVANCED_MILESTONES.slice(0, 6).map((milestone) => (
               <View
-                style={[
-                  styles.progressBar,
-                  {
-                    width: `${getProgressPercentage()}%`,
-                    backgroundColor: currentMilestone.colorPrimary,
-                  },
-                ]}
-              />
-            </View>
+                key={milestone.id}
+                style={[styles.achievementBadge, getAchievementBadgeStyle[milestone.id]]}
+              >
+                <Text style={styles.achievementEmoji}>{milestone.emoji}</Text>
+              </View>
+            ))}
           </View>
-        )}
 
-        {/* Compact achievement showcase */}
-        <View style={styles.achievementGrid}>
-          {ADVANCED_MILESTONES.slice(0, 6).map((milestone) => (
-            <View
-              key={milestone.id}
-              style={[styles.achievementBadge, getAchievementBadgeStyle[milestone.id]]}
-            >
-              <Text style={styles.achievementEmoji}>{milestone.emoji}</Text>
+          {/* Subtle hint at bottom */}
+          {onPress && (
+            <View style={styles.tapHint}>
+              <Text style={styles.tapHintText}>Detayları görmek için dokunun</Text>
             </View>
-          ))}
+          )}
         </View>
-
-        {/* Subtle hint at bottom */}
-        {onPress && (
-          <View style={styles.tapHint}>
-            <Text style={styles.tapHintText}>Detayları görmek için dokunun</Text>
-          </View>
-        )}
-      </View>
-    </ThemedCard>
+      </ThemedCard>
     </Animated.View>
   );
 };

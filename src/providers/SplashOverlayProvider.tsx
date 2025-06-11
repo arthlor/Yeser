@@ -73,7 +73,8 @@ const SplashOverlayProvider: React.FC<SplashOverlayProviderProps> = ({ children 
   return (
     <>
       {children}
-      <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, animatedStyle]}
+      <Animated.View
+        style={[StyleSheet.absoluteFill, styles.overlay, animatedStyle]}
         pointerEvents="none"
       >
         <EnhancedSplashScreen />
@@ -88,4 +89,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SplashOverlayProvider; 
+export default SplashOverlayProvider;

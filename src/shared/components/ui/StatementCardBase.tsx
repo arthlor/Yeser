@@ -512,7 +512,7 @@ export const useStatementCardAnimations = () => {
   const coordinatedAnimations = useCoordinatedAnimations();
 
   /**
-   * **ANIMATION SIMPLIFICATION COMPLETED**: 
+   * **ANIMATION SIMPLIFICATION COMPLETED**:
    * - Eliminated complex entrance animations with spring physics
    * - Removed shake animation sequences for errors
    * - Eliminated skeleton loading animations
@@ -528,7 +528,7 @@ export const useStatementCardAnimations = () => {
       pressAnim: coordinatedAnimations.scaleAnim,
       fadeAnim: coordinatedAnimations.fadeAnim,
       opacityAnim: coordinatedAnimations.opacityAnim,
-      
+
       // Use coordinated animation methods
       animatePressIn: coordinatedAnimations.animatePressIn,
       animatePressOut: coordinatedAnimations.animatePressOut,
@@ -697,12 +697,6 @@ export const StatementCardSkeleton: React.FC<{
   };
 
   return (
-    <Animated.View
-      style={[
-        skeletonStyle,
-      ]}
-    >
-      {/* Skeleton content based on variant */}
-    </Animated.View>
+    <Animated.View style={[skeletonStyle]}>{/* Skeleton content based on variant */}</Animated.View>
   );
 };

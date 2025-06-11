@@ -29,7 +29,9 @@ export class FirebaseDebugger {
     if (!isFirebaseInitialized) {
       if (Platform.OS === 'ios') {
         issues.push('Firebase not initialized on iOS');
-        recommendations.push('Add FirebaseApp.configure() to AppDelegate.swift in didFinishLaunchingWithOptions');
+        recommendations.push(
+          'Add FirebaseApp.configure() to AppDelegate.swift in didFinishLaunchingWithOptions'
+        );
         recommendations.push('Verify GoogleService-Info.plist is in ios/YeerDev/ folder');
         recommendations.push('Check @react-native-firebase/app plugin in app.config.js');
       } else {
@@ -44,7 +46,7 @@ export class FirebaseDebugger {
         const { getAnalytics } = await import('@react-native-firebase/analytics');
         getAnalytics(); // Initialize analytics to verify it works
         analyticsReady = true;
-        
+
         if (Platform.OS === 'ios') {
           logger.debug('✅ iOS Firebase Analytics is working correctly');
         }
@@ -63,8 +65,10 @@ export class FirebaseDebugger {
     if (Platform.OS === 'ios') {
       recommendations.push('Bundle ID should be: com.arthlor.yeser');
       recommendations.push('GoogleService-Info.plist should be in ios/YeerDev/ folder');
-      recommendations.push('AppDelegate.swift should import Firebase and call FirebaseApp.configure()');
-      
+      recommendations.push(
+        'AppDelegate.swift should import Firebase and call FirebaseApp.configure()'
+      );
+
       if (!analyticsReady) {
         recommendations.push('Run: cd ios && pod install to update iOS dependencies');
         recommendations.push('Clean build: npx expo run:ios --clear');
@@ -87,7 +91,7 @@ export class FirebaseDebugger {
    */
   static async printDiagnostics(): Promise<void> {
     const diagnosis = await this.diagnose();
-    
+
     logger.debug('🔥 Firebase Diagnostics Report');
     logger.debug('================================');
     logger.debug(`Platform: ${diagnosis.platform}`);
@@ -95,21 +99,21 @@ export class FirebaseDebugger {
     logger.debug(`Firebase Apps Count: ${diagnosis.firebaseAppsCount}`);
     logger.debug(`Analytics Ready: ${diagnosis.analyticsReady ? '✅' : '❌'}`);
     logger.debug(`Expected Bundle ID: ${diagnosis.expectedBundleId}`);
-    
+
     if (diagnosis.configurationIssues.length > 0) {
       logger.debug('\n❌ Configuration Issues:');
       diagnosis.configurationIssues.forEach((issue, index) => {
         logger.debug(`${index + 1}. ${issue}`);
       });
     }
-    
+
     if (diagnosis.recommendations.length > 0) {
       logger.debug('\n💡 Recommendations:');
       diagnosis.recommendations.forEach((rec, index) => {
         logger.debug(`${index + 1}. ${rec}`);
       });
     }
-    
+
     // Firebase service debug info
     if (firebaseService) {
       logger.debug('\n🔧 Firebase Service Status:');
@@ -125,12 +129,12 @@ export class FirebaseDebugger {
     try {
       const diagnosis = await this.diagnose();
       const isHealthy = diagnosis.isFirebaseInitialized && diagnosis.analyticsReady;
-      
+
       if (!isHealthy && Platform.OS === 'ios') {
         logger.warn('🍎 iOS Firebase Analytics health check failed');
         await this.printDiagnostics();
       }
-      
+
       return isHealthy;
     } catch (error) {
       logger.error('Firebase health check failed:', error as Error);
@@ -151,4 +155,4 @@ if (__DEV__ && Platform.OS === 'ios') {
       logger.debug('Firebase diagnostics not available yet');
     }
   }, 3000);
-} 
+}

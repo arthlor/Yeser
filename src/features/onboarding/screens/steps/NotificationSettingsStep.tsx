@@ -11,14 +11,7 @@ import { Button } from 'react-native-paper';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { 
-  Animated, 
-  Platform, 
-  StyleSheet, 
-  Text, 
-  TouchableOpacity, 
-  View 
-} from 'react-native';
+import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
 import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
@@ -85,7 +78,7 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
       try {
         const hasPermissions = await notificationService.requestPermissions();
         setPermissionsRequested(true);
-        
+
         if (!hasPermissions) {
           // 🚀 TOAST INTEGRATION: Use toast warning with action button instead of Alert.alert
           showWarning(
@@ -113,7 +106,7 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
 
   const handleSettingChange = useCallback(
     (key: keyof NotificationSettings, value: boolean | string) => {
-      setSettings(prev => ({
+      setSettings((prev) => ({
         ...prev,
         [key]: value,
       }));
@@ -128,8 +121,7 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
   );
 
   const handleTimeChange = useCallback(
-    (type: 'daily' | 'throwback') => 
-    (event: DateTimePickerEvent, selectedDate?: Date) => {
+    (type: 'daily' | 'throwback') => (event: DateTimePickerEvent, selectedDate?: Date) => {
       if (Platform.OS === 'android') {
         if (type === 'daily') {
           setShowDailyTimePicker(false);
@@ -141,7 +133,7 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
       if (selectedDate) {
         const timeString = selectedDate.toTimeString().split(' ')[0]; // HH:MM:SS
         const setting = type === 'daily' ? 'dailyReminderTime' : 'throwbackTime';
-        
+
         handleSettingChange(setting, timeString);
         hapticFeedback.light();
 
@@ -168,7 +160,7 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
 
   const handleContinue = useCallback(() => {
     hapticFeedback.success();
-    
+
     analyticsService.logEvent('onboarding_notif_settings_done', {
       daily_enabled: settings.dailyReminderEnabled,
       daily_time: settings.dailyReminderTime,
@@ -213,8 +205,8 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
           <View style={styles.header}>
             <Text style={styles.title}>Bildirim Ayarları 🔔</Text>
             <Text style={styles.subtitle}>
-              Minnettarlık alışkanlığını güçlendirmek için hatırlatıcıları ayarlayalım.
-              İstediğin zaman değiştirebilirsin.
+              Minnettarlık alışkanlığını güçlendirmek için hatırlatıcıları ayarlayalım. İstediğin
+              zaman değiştirebilirsin.
             </Text>
           </View>
         </ScreenSection>
@@ -234,7 +226,7 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
               </View>
               <ThemedSwitch
                 value={settings.dailyReminderEnabled}
-                onValueChange={(value: boolean) => 
+                onValueChange={(value: boolean) =>
                   handleSettingChange('dailyReminderEnabled', value)
                 }
                 size="medium"
@@ -252,9 +244,7 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
                 <Text style={styles.timeSelectorLabel}>Saat:</Text>
                 <View style={styles.timeDisplay}>
                   <Ionicons name="time" size={18} color={theme.colors.primary} />
-                  <Text style={styles.timeText}>
-                    {formatTime(settings.dailyReminderTime)}
-                  </Text>
+                  <Text style={styles.timeText}>{formatTime(settings.dailyReminderTime)}</Text>
                 </View>
               </TouchableOpacity>
             )}
@@ -270,15 +260,11 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
               </View>
               <View style={styles.settingTitleContainer}>
                 <Text style={styles.settingTitle}>Anı Pırıltıları</Text>
-                <Text style={styles.settingDescription}>
-                  Geçmiş minnettarlıklarını hatırlat
-                </Text>
+                <Text style={styles.settingDescription}>Geçmiş minnettarlıklarını hatırlat</Text>
               </View>
               <ThemedSwitch
                 value={settings.throwbackEnabled}
-                onValueChange={(value: boolean) => 
-                  handleSettingChange('throwbackEnabled', value)
-                }
+                onValueChange={(value: boolean) => handleSettingChange('throwbackEnabled', value)}
                 size="medium"
                 testID="throwback-reminder-switch"
               />
@@ -296,16 +282,20 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
                         onPress={() => handleSettingChange('throwbackFrequency', option.key)}
                         style={[
                           styles.frequencyOption,
-                          settings.throwbackFrequency === option.key && styles.frequencyOptionSelected,
+                          settings.throwbackFrequency === option.key &&
+                            styles.frequencyOptionSelected,
                         ]}
                         accessibilityLabel={`${option.label}: ${option.description}`}
                         accessibilityRole="radio"
-                        accessibilityState={{ selected: settings.throwbackFrequency === option.key }}
+                        accessibilityState={{
+                          selected: settings.throwbackFrequency === option.key,
+                        }}
                       >
                         <Text
                           style={[
                             styles.frequencyOptionText,
-                            settings.throwbackFrequency === option.key && styles.frequencyOptionTextSelected,
+                            settings.throwbackFrequency === option.key &&
+                              styles.frequencyOptionTextSelected,
                           ]}
                         >
                           {option.label}
@@ -325,9 +315,7 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
                   <Text style={styles.timeSelectorLabel}>Saat:</Text>
                   <View style={styles.timeDisplay}>
                     <Ionicons name="time" size={18} color={theme.colors.primary} />
-                    <Text style={styles.timeText}>
-                      {formatTime(settings.throwbackTime)}
-                    </Text>
+                    <Text style={styles.timeText}>{formatTime(settings.throwbackTime)}</Text>
                   </View>
                 </TouchableOpacity>
               </>
@@ -531,4 +519,4 @@ const createStyles = (theme: AppTheme) =>
     },
   });
 
-export default NotificationSettingsStep; 
+export default NotificationSettingsStep;

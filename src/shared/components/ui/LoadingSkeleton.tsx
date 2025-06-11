@@ -19,7 +19,7 @@ interface LoadingSkeletonProps {
 
 /**
  * 🎯 COORDINATED LOADING SKELETON
- * 
+ *
  * **ANIMATION COORDINATION COMPLETED**:
  * - Integrated coordinated animation system for consistency
  * - Maintained essential shimmer animation for loading feedback
@@ -37,10 +37,10 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
   shimmerSpeed = 1500,
 }) => {
   const { theme } = useTheme();
-  
+
   // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
   const animations = useCoordinatedAnimations();
-  
+
   // **ESSENTIAL SHIMMER ANIMATION**: Keep minimal shimmer for loading feedback
   const shimmerValue = useRef(new Animated.Value(0)).current;
 
@@ -78,15 +78,15 @@ const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
 
   // Single skeleton item
   const renderSkeletonItem = (itemStyle?: ViewStyle, key?: number) => (
-    <Animated.View 
-      key={key} 
+    <Animated.View
+      key={key}
       style={[
-        styles.skeleton, 
-        itemStyle, 
+        styles.skeleton,
+        itemStyle,
         style,
         {
           opacity: animations.fadeAnim, // Coordinated entrance animation
-        }
+        },
       ]}
     >
       <Animated.View

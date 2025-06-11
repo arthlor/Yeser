@@ -9,24 +9,29 @@ const getAnalyticsInstance = () => {
   try {
     if (!firebaseService.isFirebaseReady()) {
       if (Platform.OS === 'ios') {
-        logger.warn('🍎 iOS Firebase not ready for Analytics. Check AppDelegate.swift initialization');
+        logger.warn(
+          '🍎 iOS Firebase not ready for Analytics. Check AppDelegate.swift initialization'
+        );
         logger.debug('Firebase Debug Info:', firebaseService.getDebugInfo());
       } else {
         logger.warn('Firebase not ready, skipping analytics');
       }
       return null;
     }
-    
+
     const analytics = getAnalytics();
-    
+
     if (Platform.OS === 'ios') {
       logger.debug('✅ iOS Firebase Analytics instance obtained successfully');
     }
-    
+
     return analytics;
   } catch (error) {
     if (Platform.OS === 'ios') {
-      logger.error('❌ iOS Firebase Analytics failed to initialize. Common causes:\n1. Missing GoogleService-Info.plist\n2. Missing FirebaseApp.configure() in AppDelegate.swift\n3. Analytics not enabled in Firebase console\n4. Bundle ID mismatch', error as Error);
+      logger.error(
+        '❌ iOS Firebase Analytics failed to initialize. Common causes:\n1. Missing GoogleService-Info.plist\n2. Missing FirebaseApp.configure() in AppDelegate.swift\n3. Analytics not enabled in Firebase console\n4. Bundle ID mismatch',
+        error as Error
+      );
     } else {
       logger.warn('Analytics not available:', { error: (error as Error).message });
     }

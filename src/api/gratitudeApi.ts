@@ -367,6 +367,7 @@ export const getRandomGratitudeEntry = async (): Promise<GratitudeEntry | null> 
     if (!user) {
       throw new Error('No user found in session');
     }
+
     // The SQL function 'get_random_gratitude_entry' expects p_user_id
     // and returns SETOF gratitude_entries.
     // We call it as an RPC that returns an array, and we take the first element.
@@ -375,20 +376,17 @@ export const getRandomGratitudeEntry = async (): Promise<GratitudeEntry | null> 
     });
 
     if (error) {
-      throw handleAPIError(new Error(error.message), 'fetch random gratitude entry');
+      throw handleAPIError(error, 'fetch random gratitude entry');
     }
 
-    // The RPC call for a SETOF function returns an array of rows.
-    // Since we LIMIT 1 in SQL, it should be an array with 0 or 1 elements.
-    if (data && Array.isArray(data) && data.length > 0) {
-      // Data is GratitudeEntryRow[] with one element
-      const rawEntry = data[0] as GratitudeEntryRow; // Explicitly take the first element
-      return mapAndValidateRawEntry(rawEntry); // Map the single entry
+    // The RPC returns an array, so we take the first element
+    if (data && data.length > 0) {
+      return mapAndValidateRawEntry(data[0] as GratitudeEntryRow);
     }
-    return null; // No entry found or unexpected data format
-  } catch (err) {
-    const error = err instanceof Error ? err : new Error(String(err));
-    throw handleAPIError(error, 'fetch random gratitude entry');
+
+    return null;
+  } catch (error) {
+    throw handleAPIError(error as Error, 'fetch random gratitude entry');
   }
 };
 

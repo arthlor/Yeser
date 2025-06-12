@@ -1,6 +1,5 @@
-/* global module */
 import React, { ReactNode, useEffect } from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,136 +8,83 @@ import { queryClient } from '@/api/queryClient';
 import ErrorBoundary from '@/shared/components/layout/ErrorBoundary';
 import { firebaseService } from '@/services/firebaseService';
 import { networkMonitorService } from '@/services/networkMonitorService';
+import { backgroundSyncService } from '@/services/backgroundSyncService';
 import { logger } from '@/utils/debugConfig';
 import { cleanupSingletons } from '@/utils/cleanupSingletons';
 import { ThemeProvider } from './ThemeProvider';
 import { ToastProvider, useToast } from './ToastProvider';
 import { GlobalErrorProvider } from './GlobalErrorProvider';
 import { registerGlobalErrorHandlers } from '@/store/authStore';
-import { FirebaseDebugger } from '@/utils/firebaseDebug';
 
 interface AppProvidersProps {
   children: ReactNode;
 }
 
-// Firebase initialization component
-const FirebaseInitializer: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isFirebaseReady, setIsFirebaseReady] = React.useState(false);
+const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
+  const { showError, showSuccess } = useToast();
 
   useEffect(() => {
+    // Initialize core services with enhanced error protection
     const initializeServices = async () => {
       try {
-        logger.debug('🚀 Initializing app services...');
+        // Register global error handlers with enhanced 7-layer protection
+        registerGlobalErrorHandlers({ showError, showSuccess });
 
-        // Initialize network monitoring first
-        await networkMonitorService.initialize();
+        // Initialize Firebase Analytics (non-blocking)
+        firebaseService.initialize().catch((error) => {
+          logger.error('Firebase Analytics initialization failed (non-critical):', { error });
+        });
 
-        // Then initialize Firebase
-        logger.debug('🔥 Initializing Firebase...');
-        const success = await firebaseService.initialize();
+        // Initialize network monitoring (non-blocking)
+        networkMonitorService.initialize().catch((error) => {
+          logger.error('Network monitoring initialization failed (non-critical):', { error });
+        });
 
-        if (success) {
-          logger.debug('✅ Firebase initialized successfully');
+        // Background sync service initializes automatically in constructor
+        logger.debug('Background sync service initialized');
 
-          // Run iOS-specific diagnostics in development
-          if (__DEV__ && Platform.OS === 'ios') {
-            logger.debug('🍎 Running iOS Firebase diagnostics...');
-            setTimeout(async () => {
-              try {
-                await FirebaseDebugger.printDiagnostics();
-              } catch {
-                logger.debug('Firebase diagnostics not ready yet');
-              }
-            }, 2000);
-          }
-        } else {
-          logger.warn('⚠️ Firebase initialization failed - continuing without Analytics');
-
-          // Show detailed diagnostics for failed initialization
-          if (__DEV__) {
-            setTimeout(async () => {
-              try {
-                await FirebaseDebugger.printDiagnostics();
-              } catch {
-                logger.debug('Could not run Firebase diagnostics');
-              }
-            }, 1000);
-          }
-        }
-
-        // Always set ready to true to prevent blocking the app
-        setIsFirebaseReady(true);
+        logger.debug('Core services initialized successfully');
       } catch (error) {
-        logger.error('❌ Service initialization error:', error as Error);
-        // Don't block the app if services fail
-        setIsFirebaseReady(true);
+        logger.error('Service initialization failed:', { error });
+        // Don't throw - app should still function with limited features
       }
     };
 
     initializeServices();
 
-    // Cleanup on unmount to avoid memory-leaks
+    // Cleanup function
     return () => {
       cleanupSingletons();
+      backgroundSyncService.stopPeriodicSync();
+      logger.debug('App providers cleanup completed');
     };
-  }, []);
-
-  // Dev-only hot reload safety – dispose singletons between reloads
-  if (__DEV__ && typeof module !== 'undefined') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mod: any = module;
-    if (mod?.hot && typeof mod.hot.dispose === 'function') {
-      mod.hot.dispose(() => {
-        cleanupSingletons();
-      });
-    }
-  }
-
-  // Don't block the app while Firebase initializes
-  if (!isFirebaseReady) {
-    logger.debug('🔄 Waiting for Firebase initialization...');
-  }
-
-  return <>{children}</>;
-};
-
-// Inner component that provides toast handlers to GlobalErrorProvider
-const ErrorProviderWithToast: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { showError, showSuccess } = useToast();
-
-  // **TOAST INTEGRATION**: Register global error handlers with auth store
-  React.useEffect(() => {
-    registerGlobalErrorHandlers({ showError, showSuccess });
   }, [showError, showSuccess]);
 
   return (
-    <GlobalErrorProvider toastHandlers={{ showError, showSuccess }}>{children}</GlobalErrorProvider>
-  );
-};
-
-// 🚨 FIX: Consolidated provider composition with Firebase initialization
-export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
-  return (
     <ErrorBoundary>
-      <SafeAreaProvider>
-        <GestureHandlerRootView style={styles.gestureHandler}>
-          <FirebaseInitializer>
-            <ThemeProvider>
-              <QueryClientProvider client={queryClient}>
-                <ToastProvider>
-                  <ErrorProviderWithToast>{children}</ErrorProviderWithToast>
-                </ToastProvider>
-              </QueryClientProvider>
-            </ThemeProvider>
-          </FirebaseInitializer>
-        </GestureHandlerRootView>
-      </SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <GlobalErrorProvider>
+          <GestureHandlerRootView style={styles.container}>
+            <SafeAreaProvider>{children}</SafeAreaProvider>
+          </GestureHandlerRootView>
+        </GlobalErrorProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 };
 
+export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
+  return (
+    <ThemeProvider>
+      <ToastProvider>
+        <AppProvidersContent>{children}</AppProvidersContent>
+      </ToastProvider>
+    </ThemeProvider>
+  );
+};
+
 const styles = StyleSheet.create({
-  gestureHandler: {
+  container: {
     flex: 1,
   },
 });

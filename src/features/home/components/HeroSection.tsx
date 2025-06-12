@@ -92,7 +92,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     if (currentCount > 0) {
       return {
         primary: `${timeElements.icon} ${greeting}, ${displayName}`,
-        secondary: `${timeElements.timeText} devam ediyorsunuz`,
+        secondary: timeElements.timeText,
         accent: 'Güzel ilerleme kaydediyorsunuz! 💫',
       };
     }

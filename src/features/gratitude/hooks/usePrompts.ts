@@ -1,6 +1,7 @@
 import { getMultipleRandomActivePrompts, getRandomActivePrompt } from '@/api/promptApi';
 import type { DailyPrompt } from '@/schemas/gratitudeEntrySchema';
 import { queryKeys } from '@/api/queryKeys';
+import { QUERY_STALE_TIMES } from '@/api/queryClient';
 import useAuthStore from '@/store/authStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/debugConfig';
@@ -31,8 +32,8 @@ export const useCurrentPrompt = () => {
       }
     },
     enabled: !!user?.id,
-    staleTime: 60 * 60 * 1000, // 1 hour - prompts don't change frequently
-    gcTime: 24 * 60 * 60 * 1000, // 24 hours
+    staleTime: QUERY_STALE_TIMES.prompts, // 15 minutes - varied but not critical
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours - keep for session
     retry: (failureCount, error) => {
       // **NETWORK RESILIENCE**: Stop retrying on network errors after 1 attempt
       if (error.message?.includes('Network request failed')) {
@@ -68,8 +69,8 @@ export const useMultiplePrompts = (limit: number = 10) => {
       }
     },
     enabled: !!user?.id,
-    staleTime: 30 * 60 * 1000, // 30 minutes - refresh more often for variety
-    gcTime: 2 * 60 * 60 * 1000, // 2 hours
+    staleTime: QUERY_STALE_TIMES.prompts, // 15 minutes - refresh for variety
+    gcTime: 90 * 60 * 1000, // 90 minutes - keep for session variety
     retry: (failureCount, error) => {
       // **NETWORK RESILIENCE**: Reduced retries for network failures
       if (error.message?.includes('Network request failed')) {

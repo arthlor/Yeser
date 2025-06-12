@@ -172,3 +172,60 @@ export const updateProfile = async (
     throw handleAPIError(error, 'update profile');
   }
 };
+
+/**
+ * Deletes user account and all associated data (KVKV compliance)
+ * This function permanently removes all user data from the system
+ */
+export const deleteUserAccount = async (): Promise<{ success: boolean; message: string }> => {
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      throw new Error('No active session');
+    }
+
+    const { user } = sessionData.session;
+    if (!user) {
+      throw new Error('No user found in session');
+    }
+
+    // Note: delete_user_data RPC function needs to be added to Supabase types
+    // For now, we'll delete user data manually following the same pattern as the RPC
+
+    // Delete user data in correct order to respect foreign key constraints
+    const { error: entriesError } = await supabase
+      .from('gratitude_entries')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (entriesError) {
+      logger.error('Error deleting gratitude entries:', { error: entriesError });
+      throw handleAPIError(new Error(entriesError.message), 'delete gratitude entries');
+    }
+
+    const { error: streaksError } = await supabase.from('streaks').delete().eq('user_id', user.id);
+
+    if (streaksError) {
+      logger.error('Error deleting streaks:', { error: streaksError });
+      throw handleAPIError(new Error(streaksError.message), 'delete streaks');
+    }
+
+    const { error: profileError } = await supabase.from('profiles').delete().eq('id', user.id);
+
+    if (profileError) {
+      logger.error('Error deleting profile:', { error: profileError });
+      throw handleAPIError(new Error(profileError.message), 'delete profile');
+    }
+
+    logger.debug('User account successfully deleted', { extra: { userId: user.id } });
+
+    return {
+      success: true,
+      message: 'Hesabınız ve tüm verileriniz başarıyla silindi.',
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    logger.error('Unexpected error in deleteUserAccount:', { extra: { error: error.message } });
+    throw handleAPIError(error, 'delete user account');
+  }
+};

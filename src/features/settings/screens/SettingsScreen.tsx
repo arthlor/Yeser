@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -9,7 +9,6 @@ import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
 
 import { cleanupTemporaryFile, prepareUserExportFile, shareExportedFile } from '@/api/userDataApi';
 import AboutSettings from '@/components/settings/AboutSettings';
-import AccountSettings from '@/components/settings/AccountSettings';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
 import DailyGoalSettings from '@/components/settings/DailyGoalSettings';
 import DailyReminderSettings from '@/components/settings/DailyReminderSettings';
@@ -20,6 +19,7 @@ import { useUserProfile } from '@/shared/hooks';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
+import { useToast } from '@/providers/ToastProvider';
 import { analyticsService } from '@/services/analyticsService';
 import useAuthStore from '@/store/authStore';
 
@@ -58,6 +58,7 @@ interface Props {
 const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
   const { handleMutationError } = useGlobalError();
+  const { showError: showToastError } = useToast();
   const styles = createStyles(theme);
 
   // **COORDINATED ANIMATION**: Add minimal entrance animation for consistency
@@ -66,8 +67,15 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const [isExporting, setIsExporting] = useState(false);
 
   // TanStack Query - Replace Zustand profile store
-  const { profile, isLoadingProfile, profileError, updateProfile, refetchProfile } =
-    useUserProfile();
+  const {
+    profile,
+    isLoadingProfile,
+    profileError,
+    updateProfile,
+    refetchProfile,
+    deleteAccount,
+    isDeletingAccount,
+  } = useUserProfile();
 
   const { logout } = useAuthStore();
   const { colorMode, toggleColorMode } = useTheme();
@@ -297,6 +305,46 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('WhyGratitude');
   };
 
+  // Account management handlers
+  const handleLogoutPress = () => {
+    try {
+      logout();
+    } catch {
+      showToastError('Çıkış işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+    }
+  };
+
+  const handleDeleteAccountPress = () => {
+    Alert.alert(
+      'Hesabı Sil',
+      'Bu işlem kalıcıdır ve geri alınamaz. Tüm verileriniz silinecektir. Devam etmek istediğinizden emin misiniz?',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: confirmAccountDeletion,
+        },
+      ]
+    );
+  };
+
+  const confirmAccountDeletion = () => {
+    deleteAccount(undefined, {
+      onSuccess: (data) => {
+        showToastError(data.message || 'Hesabınız başarıyla silindi.');
+      },
+      onError: (_error) => {
+        showToastError(
+          'Hesap silme işlemi başarısız oldu. Lütfen tekrar deneyin veya destek ile iletişime geçin.'
+        );
+      },
+    });
+  };
+
   return (
     <ScreenLayout edges={['top']} edgeToEdge={true}>
       <ScreenContent
@@ -313,11 +361,25 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Account Section - Moved to top */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hesap</Text>
-          <AccountSettings onLogout={logout} username={profile?.username} />
-        </View>
+        {/* User Profile Section - Compact username display only */}
+        {profile?.username && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Kullanıcı</Text>
+            <View style={styles.settingCard}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <View style={styles.iconContainer}>
+                    <Icon name="account-circle" size={20} color={theme.colors.primary} />
+                  </View>
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingTitle}>Kullanıcı Adı</Text>
+                    <Text style={styles.settingDescription}>{profile.username}</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Preferences Section */}
         <View style={styles.section}>
@@ -406,6 +468,33 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             onNavigateToHelp={navigateToHelp}
             onNavigateToWhyGratitude={navigateToWhyGratitude}
           />
+        </View>
+
+        {/* Compact Account Management Section - Moved to bottom */}
+        <View style={styles.section}>
+          <View style={styles.compactAccountActions}>
+            {/* Sign Out Button - Compact */}
+            <TouchableOpacity style={styles.compactActionButton} onPress={handleLogoutPress}>
+              <Icon name="logout" size={18} color={theme.colors.error} />
+              <Text style={styles.compactActionText}>Hesaptan Çık</Text>
+            </TouchableOpacity>
+
+            {/* Delete Account Button - Compact */}
+            <TouchableOpacity
+              style={[styles.compactActionButton, styles.deleteActionButton]}
+              onPress={handleDeleteAccountPress}
+              disabled={isDeletingAccount}
+            >
+              <Icon
+                name={isDeletingAccount ? 'loading' : 'delete-forever'}
+                size={18}
+                color={theme.colors.error}
+              />
+              <Text style={styles.compactActionText}>
+                {isDeletingAccount ? 'Siliniyor...' : 'Hesabımı Sil'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Footer Section */}
@@ -518,6 +607,37 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.labelSmall,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
+    },
+    compactAccountActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-around',
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      marginHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      ...getPrimaryShadow.small(theme),
+    },
+    compactActionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      borderRadius: theme.borderRadius.md,
+      flex: 1,
+      justifyContent: 'center',
+      marginHorizontal: theme.spacing.xs,
+    },
+    compactActionText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.error,
+      marginLeft: theme.spacing.sm,
+      fontWeight: '500',
+    },
+    deleteActionButton: {
+      backgroundColor: theme.colors.errorContainer + '20',
+      borderWidth: 1,
+      borderColor: theme.colors.error + '30',
     },
   });
 

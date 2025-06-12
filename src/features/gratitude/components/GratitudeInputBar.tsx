@@ -1,5 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+// Create animated LinearGradient component
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
@@ -23,13 +27,12 @@ interface GratitudeInputBarProps {
 }
 
 /**
- * 📝 COORDINATED GRATITUDE INPUT BAR
+ * 📝 ENHANCED GRATITUDE INPUT BAR WITH GRADIENT ANIMATED BORDER
  *
- * **ANIMATION COORDINATION COMPLETED**:
- * - Eliminated gradient animation for focus states
- * - Replaced with coordinated animation system
- * - Simplified animation approach following "Barely Noticeable, Maximum Performance"
- * - Enhanced consistency with coordinated animation philosophy
+ * **SPECIAL ANIMATION EXCEPTION**:
+ * - Added gradient animated border for visual appeal
+ * - Custom gradient rotation animation
+ * - Enhanced focus state with animated border
  */
 const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   onSubmit,
@@ -55,6 +58,10 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
   const animations = useCoordinatedAnimations();
 
+  // **GRADIENT BORDER ANIMATION**: Custom gradient border opacity and color flow
+  const gradientOpacity = useRef(new Animated.Value(0.8)).current;
+  const gradientFlow = useRef(new Animated.Value(0)).current;
+
   // Fallback prompts for when varied prompts are disabled or unavailable
   const fallbackPrompts = [
     'Bugün hangi güzel anlar için şükrediyorsun?',
@@ -63,6 +70,40 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
     'Hangi deneyimler için minnettar hissediyorsun?',
     'Bugün yaşadığın pozitif anları düşün...',
   ];
+
+  // **GRADIENT BORDER ANIMATION SETUP**
+  useEffect(() => {
+    const opacityAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(gradientOpacity, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(gradientOpacity, {
+          toValue: 0.7,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+
+    const flowAnimation = Animated.loop(
+      Animated.timing(gradientFlow, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: false,
+      })
+    );
+
+    opacityAnimation.start();
+    flowAnimation.start();
+
+    return () => {
+      opacityAnimation.stop();
+      flowAnimation.stop();
+    };
+  }, [gradientOpacity, gradientFlow]);
 
   // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
@@ -136,6 +177,27 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
   // Determine which prompt to display
   const displayPrompt = promptText || fallbackPrompts[fallbackPromptIndex];
 
+  // **GRADIENT FLOW INTERPOLATION**: Animate gradient start and end points
+  const gradientStartX = gradientFlow.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [0, 0.3, 1, 0.7, 0],
+  });
+
+  const gradientStartY = gradientFlow.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [0, 0.7, 1, 0.3, 0],
+  });
+
+  const gradientEndX = gradientFlow.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [1, 0.7, 0, 0.3, 1],
+  });
+
+  const gradientEndY = gradientFlow.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [1, 0.3, 0, 0.7, 1],
+  });
+
   return (
     <Animated.View
       style={[
@@ -164,31 +226,55 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
         </View>
       </View>
 
-      {/* Enhanced Input Section - simplified styling */}
+      {/* Enhanced Input Section with Animated Gradient Border */}
       <View style={[styles.inputContainer, isFocused && styles.inputContainerFocused]}>
-        <TextInput
-          ref={inputRef}
-          style={styles.input}
-          value={inputText}
-          onChangeText={handleChangeText}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          placeholder={placeholder}
-          placeholderTextColor={theme.colors.onSurfaceVariant + '60'}
-          multiline={true}
-          textAlignVertical="top"
-          maxLength={500}
-          editable={!disabled}
-          scrollEnabled={false}
-          returnKeyType="send"
-          onSubmitEditing={handleSubmit}
-          blurOnSubmit={false}
-          autoCorrect={true}
-          autoCapitalize="sentences"
-          keyboardType="default"
-          selectionColor={theme.colors.primary}
-          autoFocus={false} // We handle this manually
-        />
+        {/* **ANIMATED GRADIENT BORDER FOR INPUT** */}
+        <View style={styles.inputWrapper}>
+          <Animated.View
+            style={[
+              styles.inputGradientBorderContainer,
+              {
+                opacity: gradientOpacity,
+              },
+            ]}
+          >
+            <AnimatedLinearGradient
+              colors={[
+                theme.colors.primary,
+                theme.colors.secondary || theme.colors.primaryContainer,
+                theme.colors.tertiary || theme.colors.primary,
+                theme.colors.primary,
+              ]}
+              style={styles.inputGradientBorder}
+              start={{ x: gradientStartX, y: gradientStartY }}
+              end={{ x: gradientEndX, y: gradientEndY }}
+            />
+          </Animated.View>
+
+          <TextInput
+            ref={inputRef}
+            style={styles.input}
+            value={inputText}
+            onChangeText={handleChangeText}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            placeholder={placeholder}
+            placeholderTextColor={theme.colors.onSurfaceVariant + '60'}
+            multiline={true}
+            textAlignVertical="top"
+            maxLength={500}
+            editable={!disabled}
+            scrollEnabled={false}
+            returnKeyType="send"
+            onSubmitEditing={handleSubmit}
+            blurOnSubmit={false}
+            autoCorrect={true}
+            autoCapitalize="sentences"
+            keyboardType="default"
+            selectionColor={theme.colors.primary}
+            autoFocus={false} // We handle this manually
+          />
+        </View>
 
         <TouchableOpacity
           onPress={handleSubmit}
@@ -337,6 +423,28 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
     inputContainerFocused: {
       backgroundColor: theme.colors.primaryContainer + '10',
     },
+
+    // **INPUT WRAPPER FOR GRADIENT BORDER**
+    inputWrapper: {
+      flex: 1,
+      position: 'relative',
+    },
+
+    // **GRADIENT BORDER FOR INPUT**
+    inputGradientBorderContainer: {
+      position: 'absolute',
+      top: -1,
+      left: -1,
+      right: -1,
+      bottom: -1,
+      borderRadius: theme.borderRadius.lg + 1,
+      zIndex: 0,
+    },
+    inputGradientBorder: {
+      flex: 1,
+      borderRadius: theme.borderRadius.lg + 1,
+    },
+
     input: {
       flex: 1,
       fontSize: 18,
@@ -353,6 +461,8 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       textAlignVertical: 'top',
       lineHeight: 26,
       fontWeight: '400',
+      zIndex: 1,
+      position: 'relative',
       ...getPrimaryShadow.small(theme),
     },
     button: {

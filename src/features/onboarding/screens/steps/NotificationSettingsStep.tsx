@@ -32,7 +32,7 @@ interface NotificationSettings {
 }
 
 const THROWBACK_FREQUENCIES = [
-  { key: 'daily', label: 'Her Gün', description: 'Günlük geçmiş hatırlatmaları' },
+  { key: 'daily', label: 'Her gün', description: 'Günlük geçmiş hatırlatmaları' },
   { key: 'weekly', label: 'Haftalık', description: 'Haftada bir geçmiş hatırlatması' },
   { key: 'monthly', label: 'Aylık', description: 'Ayda bir geçmiş hatırlatması' },
 ] as const;

@@ -148,7 +148,7 @@ const MainAppNavigator: React.FC = () => {
         name="DailyEntryTab"
         component={DailyEntryScreen}
         options={({ navigation: _navigation, route: _route }) => ({
-          title: 'Yeni Kayıt',
+          title: 'Minnet Ekle',
           tabBarAccessibilityLabel: 'Yeni günlük kayıt oluştur',
           listeners: {
             tabPress: (_e: EventArg<'tabPress', true>) => {
@@ -281,11 +281,53 @@ const RootNavigator: React.FC = () => {
     }
   }, [isProfileError, isAuthenticated, profileError]);
 
-  // 🚨 FIX: Consolidated loading state logic
-  const isAppLoading =
-    authIsLoading ||
-    !minimumTimeElapsed ||
-    (isAuthenticated && isLoadingProfile && !isProfileError);
+  // 🚨 CRITICAL FIX: Profile loading timeout to prevent indefinite splash
+  const profileLoadingStartRef = React.useRef<number | null>(null);
+
+  // 🚨 CRITICAL FIX: Improved loading state logic with profile loading timeout
+  const isAppLoading = React.useMemo(() => {
+    // Always show splash during auth loading or minimum time
+    if (authIsLoading || !minimumTimeElapsed) {
+      return true;
+    }
+
+    // If user is authenticated but profile is still loading (and no error),
+    // only wait for profile for maximum 5 seconds to prevent indefinite splash
+    if (isAuthenticated && isLoadingProfile && !isProfileError) {
+      // Initialize timer on first profile loading
+      if (profileLoadingStartRef.current === null) {
+        profileLoadingStartRef.current = Date.now();
+      }
+
+      const maxProfileLoadingTime = 5000; // 5 seconds max
+      const loadingTime = Date.now() - profileLoadingStartRef.current;
+
+      if (loadingTime > maxProfileLoadingTime) {
+        logger.warn('Profile loading timeout - proceeding without profile data', {
+          loadingTime,
+          isAuthenticated,
+          hasProfile: !!profile,
+        });
+        profileLoadingStartRef.current = null; // Reset timer
+        return false; // Stop loading and proceed
+      }
+      return true;
+    }
+
+    // Reset timer when not loading profile
+    if (profileLoadingStartRef.current !== null) {
+      profileLoadingStartRef.current = null;
+    }
+
+    return false;
+  }, [
+    authIsLoading,
+    minimumTimeElapsed,
+    isAuthenticated,
+    isLoadingProfile,
+    isProfileError,
+    profile,
+  ]);
 
   // 🚨 FIX: Show splash screen with consolidated logic
   if (isAppLoading) {

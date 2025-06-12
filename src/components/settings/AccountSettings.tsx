@@ -1,9 +1,11 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { useGlobalError } from '../../providers/GlobalErrorProvider';
+import { useToast } from '../../providers/ToastProvider';
+import { useUserProfile } from '../../shared/hooks/useUserProfile';
 import { getPrimaryShadow } from '@/themes/utils';
 
 import type { AppTheme } from '../../themes/types';
@@ -16,6 +18,8 @@ interface AccountSettingsProps {
 const AccountSettings: React.FC<AccountSettingsProps> = ({ onLogout, username }) => {
   const { theme } = useTheme();
   const { showError } = useGlobalError();
+  const { showError: showToastError } = useToast();
+  const { deleteAccount, isDeletingAccount } = useUserProfile();
   const styles = createStyles(theme);
 
   const handleLogoutPress = () => {
@@ -27,6 +31,37 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ onLogout, username })
       // 🛡️ ERROR PROTECTION: Handle logout errors gracefully
       showError('Çıkış işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.');
     }
+  };
+
+  const handleDeleteAccountPress = () => {
+    Alert.alert(
+      'Hesabı Sil',
+      'Bu işlem kalıcıdır ve geri alınamaz. Tüm verileriniz silinecektir. Devam etmek istediğinizden emin misiniz?',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: confirmAccountDeletion,
+        },
+      ]
+    );
+  };
+
+  const confirmAccountDeletion = () => {
+    deleteAccount(undefined, {
+      onSuccess: (data) => {
+        showToastError(data.message || 'Hesabınız başarıyla silindi.');
+      },
+      onError: (_error) => {
+        showToastError(
+          'Hesap silme işlemi başarısız oldu. Lütfen tekrar deneyin veya destek ile iletişime geçin.'
+        );
+      },
+    });
   };
 
   return (
@@ -51,6 +86,30 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ onLogout, username })
             <Icon name="logout" size={20} color={theme.colors.error} />
           </View>
           <Text style={styles.logoutButtonText}>Hesaptan Çıkış Yap</Text>
+          <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+        </TouchableOpacity>
+      </View>
+
+      {/* KVKK Compliance: Account Deletion */}
+      <View style={styles.deleteButton}>
+        <TouchableOpacity
+          style={styles.deleteContent}
+          onPress={handleDeleteAccountPress}
+          disabled={isDeletingAccount}
+        >
+          <View style={styles.deleteIconContainer}>
+            <Icon
+              name={isDeletingAccount ? 'loading' : 'delete-forever'}
+              size={20}
+              color={theme.colors.error}
+            />
+          </View>
+          <View style={styles.deleteTextContainer}>
+            <Text style={styles.deleteButtonText}>
+              {isDeletingAccount ? 'Hesap Siliniyor...' : 'Hesabımı Sil'}
+            </Text>
+            <Text style={styles.deleteWarningText}>Kalıcı işlem - geri alınamaz</Text>
+          </View>
           <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
         </TouchableOpacity>
       </View>
@@ -104,6 +163,7 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
       marginHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
       // 🌟 Medium primary shadow for consistency with user card - matches SettingsScreen pattern
       ...getPrimaryShadow.medium(theme),
     },
@@ -127,6 +187,44 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.bodyLarge,
       color: theme.colors.error,
       fontWeight: '600',
+    },
+    deleteButton: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      marginHorizontal: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.error + '30',
+      // 🌟 Medium primary shadow for consistency
+      ...getPrimaryShadow.medium(theme),
+    },
+    deleteContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.lg,
+    },
+    deleteIconContainer: {
+      width: 36,
+      height: 36,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.errorContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: theme.spacing.sm,
+    },
+    deleteTextContainer: {
+      flex: 1,
+    },
+    deleteButtonText: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.error,
+      fontWeight: '600',
+    },
+    deleteWarningText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      fontStyle: 'italic',
+      marginTop: theme.spacing.xs / 2,
     },
   });
 

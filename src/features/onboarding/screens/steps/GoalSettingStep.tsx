@@ -19,9 +19,9 @@ interface GoalSettingStepProps {
 }
 
 const GOAL_OPTIONS = [
-  { value: 1, label: '1 İfade', description: 'Küçük adımlarla başlayalım' },
-  { value: 3, label: '3 İfade', description: 'Ideal günlük hedef' },
-  { value: 5, label: '5 İfade', description: 'Motive olduğunuzda' },
+  { value: 1, label: 'Bir Minnet', description: 'Küçük adımlarla başlayalım' },
+  { value: 3, label: 'Üç Minnet', description: 'Ideal günlük hedef' },
+  { value: 5, label: 'Beş Minnet', description: 'Motive olduğunuzda' },
   { value: 0, label: 'Özel', description: 'Kendim belirleyeceğim' },
 ];
 

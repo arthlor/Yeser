@@ -109,16 +109,20 @@ const TermsOfServiceScreen: React.FC = () => {
           <TermsSection number="4" title="Hesap Yönetimi ve Sonlandırma">
             <Text style={styles.paragraph}>Hesabınızı yönetme ve sonlandırma koşulları:</Text>
             <Text style={styles.listItem}>
-              • Hesap Sorumluluğu: Hesap güvenliğinden siz sorumlusunuz
+              • Hesap Güvenliği: Hesap güvenliğinden siz sorumlusunuz
             </Text>
             <Text style={styles.listItem}>
-              • Hesap Silme: İstediğiniz zaman hesabınızı silebilirsiniz
+              • Hesap Silme: KVKK kapsamında Ayarlar {'>'} Hesap {'>'} Hesabımı Sil menüsünden
+              hesabınızı silebilirsiniz
             </Text>
             <Text style={styles.listItem}>
-              • Veri Yedekleme: Hesap silmeden önce verilerinizi yedeklemeniz önerilir
+              • Kalıcı İşlem: Silme işlemi GERİ ALINAMAZ, tüm verileriniz anında silinir
             </Text>
             <Text style={styles.listItem}>
-              • Otomatik Silme: 2 yıl boyunca kullanılmayan hesaplar silinebilir
+              • Yedekleme Önerisi: Silmeden önce verilerinizi dışa aktarın
+            </Text>
+            <Text style={styles.listItem}>
+              • Tekrar Kayıt: Aynı e-posta ile yeniden kayıt olabilirsiniz (veriler geri gelmez)
             </Text>
           </TermsSection>
 

@@ -209,11 +209,11 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
         </Animated.View>
       </ScreenLayout>
 
-      {/* Streak Details Modal */}
+      {/* Streak Details Modal - Fixed to fullscreen on iOS */}
       <Modal
         visible={streakDetailsVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={() => setStreakDetailsVisible(false)}
       >
         <StreakDetailsScreen

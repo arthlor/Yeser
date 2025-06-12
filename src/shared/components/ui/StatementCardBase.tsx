@@ -251,15 +251,8 @@ const createRobustMenuStyles = (theme: AppTheme) => {
       borderRadius: theme.borderRadius.md,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: alpha(theme.colors.onSurfaceVariant, 0.06),
-      borderWidth: 1,
-      borderColor: alpha(theme.colors.outline, 0.12),
-      // Enhanced visual design with better shadows
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08,
-      shadowRadius: 3,
-      elevation: 1,
+      borderWidth: 0, // Remove border
+      // No background - transparent by default
     } as ViewStyle,
 
     menu: {

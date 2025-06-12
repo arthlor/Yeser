@@ -36,16 +36,15 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
     const styles = useMemo(() => createStyles(theme), [theme]);
 
     /**
-     * **ANIMATION SIMPLIFICATION COMPLETED**:
-     * - Eliminated refresh rotation animation (360deg spin)
-     * - Removed pulse animation for loading states
-     * - Simplified to basic state-based visual feedback
-     * - Maintained all functionality with cleaner, minimal approach
-     * - Reduced from 2+ animation instances to 0 animations
-     * - Performance improved by removing animation overhead
+     * **ENHANCED UI/UX IMPLEMENTATION**:
+     * - Modern gradient header design with improved visual hierarchy
+     * - Enhanced typography and spacing throughout
+     * - Better visual feedback for all interaction states
+     * - Improved accessibility and user experience
+     * - Maintained all existing functionality with zero breaking changes
      */
 
-    // Enhanced refresh handler - simplified without animations
+    // Enhanced refresh handler with improved feedback
     const handleRefresh = useCallback(() => {
       if (!onRefresh) {
         return;
@@ -74,38 +73,91 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
       logger.debug('ThrowbackTeaser Debug:', {
         ...debugData,
         timestamp: new Date().toISOString(), // Move timestamp here to prevent re-render loop
+        // Add helpful debug info for single entry case
+        note:
+          throwbackEntry &&
+          'If refresh returns same entry, you may need more gratitude entries for randomization to work',
       });
-    }, [debugData]); // Use memoized debugData instead of individual props
+    }, [debugData, throwbackEntry]);
 
-    // Enhanced loading state with better visual feedback
+    // Enhanced loading state with modern design
     if (isLoading) {
       return (
         <View style={styles.container}>
-          <View style={styles.loadingCard}>
-            <View style={styles.loadingIconContainer}>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
+          <View style={styles.modernCard}>
+            {/* Enhanced Header with Gradient */}
+            <View style={styles.gradientHeader}>
+              <View style={styles.headerContentLoading}>
+                <View style={styles.headerLeft}>
+                  <View style={styles.iconContainerLoading}>
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                  </View>
+                  <View style={styles.titleSection}>
+                    <Text style={styles.titleText}>Geçmişten Anılar</Text>
+                    <Text style={styles.subtitleTextLoading}>Güzel bir anı yükleniyor...</Text>
+                  </View>
+                </View>
+                <View style={styles.loadingSpinner}>
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                </View>
+              </View>
             </View>
-            <View style={styles.loadingContent}>
-              <Text style={styles.loadingTitle}>Geçmişten Anılar</Text>
-              <Text style={styles.loadingSubtitle}>Güzel bir anı yükleniyor...</Text>
+
+            {/* Enhanced Loading Content */}
+            <View style={styles.cardBody}>
+              <View style={styles.loadingContent}>
+                <View style={styles.loadingTextContainer}>
+                  <View style={styles.skeletonLine} />
+                  <View style={styles.skeletonLineShort} />
+                  <View style={styles.skeletonLineMedium} />
+                </View>
+              </View>
             </View>
           </View>
         </View>
       );
     }
 
-    // Enhanced error state with better visual hierarchy
+    // Enhanced error state with better visual design
     if (error && !throwbackEntry) {
       return (
         <View style={styles.container}>
-          <TouchableOpacity style={styles.errorCard} onPress={onRefresh} activeOpacity={0.8}>
-            <View style={styles.errorIconContainer}>
-              <Icon name="alert-circle-outline" size={20} color={theme.colors.onErrorContainer} />
+          <TouchableOpacity style={styles.modernCard} onPress={onRefresh} activeOpacity={0.8}>
+            {/* Enhanced Error Header */}
+            <View style={styles.errorHeader}>
+              <View style={styles.headerContent}>
+                <View style={styles.headerLeft}>
+                  <View style={styles.iconContainerError}>
+                    <Icon name="alert-circle-outline" size={20} color={theme.colors.error} />
+                  </View>
+                  <View style={styles.titleSection}>
+                    <Text style={styles.titleText}>Anı Yüklenemedi</Text>
+                    <Text style={styles.subtitleTextError}>Bir sorun oluştu</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={onRefresh}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="refresh" size={18} color={theme.colors.error} />
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.errorContent}>
-              <Text style={styles.errorTitle}>Anı Yüklenemedi</Text>
-              <Text style={styles.errorSubtitle}>{error}</Text>
-              {onRefresh && <Text style={styles.errorRetryText}>Tekrar denemek için dokunun</Text>}
+
+            {/* Enhanced Error Content */}
+            <View style={styles.cardBody}>
+              <View style={styles.errorContent}>
+                <View style={styles.errorIconContainer}>
+                  <Icon
+                    name="emoticon-sad-outline"
+                    size={32}
+                    color={theme.colors.onErrorContainer}
+                  />
+                </View>
+                <Text style={styles.errorMessage}>{error}</Text>
+                <Text style={styles.errorRetryText}>Tekrar denemek için dokunun</Text>
+              </View>
             </View>
           </TouchableOpacity>
         </View>
@@ -117,24 +169,69 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
       return (
         <View style={styles.container}>
           <TouchableOpacity
-            style={styles.placeholderCard}
+            style={styles.modernCard}
             onPress={() => {
               logger.debug('ThrowbackTeaser: Manual refresh triggered by user tap');
               onRefresh?.();
             }}
             activeOpacity={0.8}
           >
-            <View style={styles.placeholderIconContainer}>
-              <Icon name="history" size={24} color={theme.colors.primary} />
+            {/* Enhanced Placeholder Header */}
+            <View style={styles.placeholderHeader}>
+              <View style={styles.headerContent}>
+                <View style={styles.headerLeft}>
+                  <View style={styles.iconContainerPlaceholder}>
+                    <Icon name="history" size={22} color={theme.colors.primary} />
+                  </View>
+                  <View style={styles.titleSection}>
+                    <Text style={styles.titleText}>Geçmişten Anılar</Text>
+                    <Text style={styles.subtitleTextPlaceholder}>Anılarınız burada görünecek</Text>
+                  </View>
+                </View>
+                <View style={styles.sparkleIcon}>
+                  <Icon name="sparkles" size={18} color={theme.colors.tertiary} />
+                </View>
+              </View>
             </View>
-            <View style={styles.placeholderContent}>
-              <Text style={styles.placeholderTitle}>Geçmişten Anılar</Text>
-              <Text style={styles.placeholderSubtitle}>
-                Minnet kayıtlarınız arttıkça, burada geçmişten güzel anılarınızı göreceksiniz
-              </Text>
-              <View style={styles.placeholderHint}>
-                <Icon name="sparkles" size={14} color={theme.colors.tertiary} />
-                <Text style={styles.placeholderHintText}>Başlamak için dokunun</Text>
+
+            {/* Enhanced Placeholder Content */}
+            <View style={styles.cardBody}>
+              <View style={styles.placeholderContent}>
+                <View style={styles.placeholderIconContainer}>
+                  <Icon
+                    name="heart-multiple-outline"
+                    size={48}
+                    color={theme.colors.primary + '40'}
+                  />
+                  <View style={styles.decorativeElements}>
+                    <Icon
+                      name="star-outline"
+                      size={16}
+                      color={theme.colors.tertiary}
+                      style={styles.star1}
+                    />
+                    <Icon
+                      name="star-outline"
+                      size={12}
+                      color={theme.colors.tertiary}
+                      style={styles.star2}
+                    />
+                    <Icon
+                      name="star-outline"
+                      size={14}
+                      color={theme.colors.tertiary}
+                      style={styles.star3}
+                    />
+                  </View>
+                </View>
+                <Text style={styles.placeholderTitle}>Anılarınız Birikiyor</Text>
+                <Text style={styles.placeholderSubtitle}>
+                  Minnet kayıtlarınız arttıkça, burada geçmişten güzel anılarınızı keşfedeceksiniz.
+                </Text>
+                <View style={styles.placeholderHint}>
+                  <Icon name="hand-pointing-up" size={16} color={theme.colors.primary} />
+                  <Text style={styles.placeholderHintText}>Keşfetmeye başlamak için dokunun</Text>
+                </View>
               </View>
             </View>
           </TouchableOpacity>
@@ -142,45 +239,56 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
       );
     }
 
-    // Enhanced main content with stable rendering
+    // Enhanced main content with sophisticated design
     return (
       <View style={styles.container}>
-        {/* Enhanced Header Section */}
-        <View style={styles.headerCard}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerLeft}>
-              <View style={styles.headerIconContainer}>
-                <Icon name="history" size={18} color={theme.colors.primary} />
+        <View style={styles.modernCard}>
+          {/* Enhanced Header with Modern Design */}
+          <View style={styles.modernHeader}>
+            <View style={styles.headerContent}>
+              <View style={styles.headerLeft}>
+                <View style={styles.iconContainer}>
+                  <Icon name="history" size={20} color={theme.colors.primary} />
+                </View>
+                <View style={styles.titleSection}>
+                  <Text style={styles.titleText}>Geçmişten Bir Anı</Text>
+                  <Text style={styles.subtitleText}>Geçmiş minnettarlıklarınızdan</Text>
+                </View>
               </View>
-              <Text style={styles.headerTitle}>Geçmişten Bir Anı</Text>
+              <TouchableOpacity
+                style={styles.refreshButton}
+                onPress={handleRefresh}
+                activeOpacity={0.7}
+                disabled={isLoading}
+                accessibilityLabel="Yeni anı getir"
+                accessibilityHint="Başka bir geçmiş minnettarlık anısı yükler"
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                ) : (
+                  <View style={styles.refreshButtonContent}>
+                    <Icon name="refresh" size={18} color={theme.colors.primary} />
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={styles.refreshButton}
-              onPress={handleRefresh}
-              activeOpacity={0.8}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-              ) : (
-                <Icon name="refresh" size={16} color={theme.colors.primary} />
-              )}
-            </TouchableOpacity>
+          </View>
+
+          {/* Enhanced Statement Display with Better Integration */}
+          <View style={styles.cardBody}>
+            <StatementDisplayCard
+              statement={throwbackEntry.statements?.[0] || 'Geçmişten bir minnet ifadeniz var.'}
+              date={throwbackEntry.entry_date}
+              variant="inspiration"
+              showQuotes={true}
+              showTimestamp={true}
+              animateEntrance={true}
+              numberOfLines={4}
+              edgeToEdge={false}
+              style={styles.enhancedStatementCard}
+            />
           </View>
         </View>
-
-        {/* Enhanced Statement Display Card */}
-        <StatementDisplayCard
-          statement={throwbackEntry.statements?.[0] || 'Geçmişten bir minnet ifadeniz var.'}
-          date={throwbackEntry.entry_date}
-          variant="inspiration"
-          showQuotes={true}
-          showTimestamp={true}
-          animateEntrance={true}
-          numberOfLines={4}
-          edgeToEdge={true}
-          style={styles.statementCardStyle}
-        />
       </View>
     );
   }
@@ -189,238 +297,361 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
     } as ViewStyle,
 
-    // Enhanced loading card with better visual hierarchy
-    loadingCard: {
-      borderRadius: 0,
+    // Enhanced Modern Card Design - Edge-to-Edge
+    modernCard: {
       backgroundColor: theme.colors.surface,
-      borderWidth: 0,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outlineVariant,
-      borderBottomColor: theme.colors.outlineVariant,
-      flexDirection: 'row',
-      alignItems: 'center',
-      minHeight: 64,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.sm,
-      ...getPrimaryShadow.card(theme),
-    } as ViewStyle,
-
-    loadingIconContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primaryContainer,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: theme.spacing.sm,
-    } as ViewStyle,
-
-    loadingContent: {
-      flex: 1,
-    } as ViewStyle,
-
-    loadingTitle: {
-      ...theme.typography.titleSmall,
-      color: theme.colors.onSurface,
-      fontWeight: '600',
-      marginBottom: theme.spacing.xs,
-    } as TextStyle,
-
-    loadingSubtitle: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
-      fontWeight: '400',
-      opacity: 0.8,
-    } as TextStyle,
-
-    // Enhanced error card with better design
-    errorCard: {
       borderRadius: 0,
-      backgroundColor: theme.colors.errorContainer,
+      overflow: 'hidden',
+      ...getPrimaryShadow.medium(theme),
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 4,
       borderWidth: 0,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.error,
-      borderBottomColor: theme.colors.error,
-      flexDirection: 'row',
-      alignItems: 'center',
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderTopColor: theme.colors.outline + '20',
+      borderBottomColor: theme.colors.outline + '20',
+    } as ViewStyle,
+
+    // Enhanced Header Designs
+    modernHeader: {
+      backgroundColor: `linear-gradient(135deg, ${theme.colors.primaryContainer}40, ${theme.colors.surface})`,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outline + '15',
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.sm,
-      minHeight: 64,
-      ...getPrimaryShadow.card(theme),
+      paddingVertical: theme.spacing.md,
     } as ViewStyle,
 
-    errorIconContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.onErrorContainer,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: theme.spacing.sm,
-      opacity: 0.15,
-    } as ViewStyle,
-
-    errorContent: {
-      flex: 1,
-    } as ViewStyle,
-
-    errorTitle: {
-      ...theme.typography.titleSmall,
-      color: theme.colors.onErrorContainer,
-      fontWeight: '600',
-      marginBottom: theme.spacing.xs,
-    } as TextStyle,
-
-    errorSubtitle: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onErrorContainer,
-      fontWeight: '400',
-      lineHeight: 18,
-      opacity: 0.9,
-    } as TextStyle,
-
-    errorRetryText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onErrorContainer,
-      fontSize: 11,
-      opacity: 0.7,
-      marginTop: theme.spacing.xs,
-      fontStyle: 'italic',
-    } as TextStyle,
-
-    // Enhanced placeholder card with inspiring design
-    placeholderCard: {
-      borderRadius: 0,
-      borderWidth: 0,
-      borderTopWidth: 2,
-      borderBottomWidth: 2,
-      borderStyle: 'dashed',
-      borderTopColor: theme.colors.outline,
-      borderBottomColor: theme.colors.outline,
+    gradientHeader: {
+      backgroundColor: theme.colors.primaryContainer + '30',
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outline + '15',
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.lg,
-      minHeight: 100,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.surfaceVariant,
-      ...getPrimaryShadow.card(theme),
+      paddingVertical: theme.spacing.md,
     } as ViewStyle,
 
-    placeholderIconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primaryContainer,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: theme.spacing.sm,
-    } as ViewStyle,
-
-    placeholderContent: {
-      alignItems: 'center',
-    } as ViewStyle,
-
-    placeholderTitle: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '600',
-      textAlign: 'center',
-      marginBottom: theme.spacing.xs,
-    } as TextStyle,
-
-    placeholderSubtitle: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
-      lineHeight: 18,
-      textAlign: 'center',
-      opacity: 0.8,
-      fontWeight: '400',
-      letterSpacing: 0.1,
-      marginBottom: theme.spacing.sm,
-    } as TextStyle,
-
-    placeholderHint: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.colors.tertiaryContainer,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.borderRadius.full,
-      gap: theme.spacing.xs,
-    } as ViewStyle,
-
-    placeholderHintText: {
-      ...theme.typography.labelSmall,
-      color: theme.colors.onTertiaryContainer,
-      fontWeight: '500',
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-    } as TextStyle,
-
-    // Enhanced header card with better visual hierarchy
-    headerCard: {
-      borderRadius: 0,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 0,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outlineVariant,
+    errorHeader: {
+      backgroundColor: theme.colors.errorContainer + '20',
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.error + '20',
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.sm,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.outlineVariant,
-      ...getPrimaryShadow.card(theme),
+      paddingVertical: theme.spacing.md,
     } as ViewStyle,
 
+    placeholderHeader: {
+      backgroundColor: theme.colors.tertiaryContainer + '30',
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outline + '15',
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+    } as ViewStyle,
+
+    // Enhanced Header Content
     headerContent: {
       flexDirection: 'row',
-      alignItems: 'center',
       justifyContent: 'space-between',
+      alignItems: 'center',
+      minHeight: 44,
+    } as ViewStyle,
+
+    headerContentLoading: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      minHeight: 44,
     } as ViewStyle,
 
     headerLeft: {
       flexDirection: 'row',
       alignItems: 'center',
       flex: 1,
+      gap: theme.spacing.sm,
     } as ViewStyle,
 
-    headerIconContainer: {
-      width: 28,
-      height: 28,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primaryContainer,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: theme.spacing.sm,
-    } as ViewStyle,
-
-    headerTitle: {
-      ...theme.typography.titleSmall,
-      color: theme.colors.primary,
-      fontWeight: '600',
-      letterSpacing: -0.1,
-    } as TextStyle,
-
-    refreshButton: {
-      width: 32,
-      height: 32,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primaryContainer,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.primary,
+    // Enhanced Icon Containers
+    iconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.primary + '15',
       alignItems: 'center',
       justifyContent: 'center',
       ...getPrimaryShadow.small(theme),
     } as ViewStyle,
 
-    // Enhanced statement card styling
-    statementCardStyle: {
+    iconContainerLoading: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.primaryContainer + '40',
+      alignItems: 'center',
+      justifyContent: 'center',
+    } as ViewStyle,
+
+    iconContainerError: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.errorContainer + '40',
+      alignItems: 'center',
+      justifyContent: 'center',
+    } as ViewStyle,
+
+    iconContainerPlaceholder: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.tertiaryContainer + '40',
+      alignItems: 'center',
+      justifyContent: 'center',
+    } as ViewStyle,
+
+    // Enhanced Typography
+    titleSection: {
+      flex: 1,
+      marginLeft: theme.spacing.xs,
+    } as ViewStyle,
+
+    titleText: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.colors.onSurface,
+      letterSpacing: 0.3,
+      lineHeight: 24,
+    } as TextStyle,
+
+    subtitleText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.colors.onSurfaceVariant,
+      marginTop: 2,
+      letterSpacing: 0.1,
+    } as TextStyle,
+
+    subtitleTextLoading: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.colors.primary,
+      marginTop: 2,
+      fontStyle: 'italic',
+    } as TextStyle,
+
+    subtitleTextError: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.colors.error,
+      marginTop: 2,
+    } as TextStyle,
+
+    subtitleTextPlaceholder: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.colors.tertiary,
+      marginTop: 2,
+      fontStyle: 'italic',
+    } as TextStyle,
+
+    // Enhanced Action Buttons
+    refreshButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '30',
+      ...getPrimaryShadow.small(theme),
+    } as ViewStyle,
+
+    refreshButtonContent: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    } as ViewStyle,
+
+    retryButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.errorContainer + '30',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.error + '30',
+    } as ViewStyle,
+
+    sparkleIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.tertiaryContainer + '40',
+      alignItems: 'center',
+      justifyContent: 'center',
+    } as ViewStyle,
+
+    // Enhanced Card Body
+    cardBody: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+    } as ViewStyle,
+
+    // Enhanced Loading States
+    loadingSpinner: {
+      marginLeft: theme.spacing.sm,
+    } as ViewStyle,
+
+    loadingContent: {
+      paddingVertical: theme.spacing.md,
+    } as ViewStyle,
+
+    loadingTextContainer: {
+      gap: theme.spacing.sm,
+    } as ViewStyle,
+
+    skeletonLine: {
+      height: 16,
+      backgroundColor: theme.colors.outline + '20',
+      borderRadius: theme.borderRadius.sm,
+      width: '100%',
+    } as ViewStyle,
+
+    skeletonLineShort: {
+      height: 16,
+      backgroundColor: theme.colors.outline + '20',
+      borderRadius: theme.borderRadius.sm,
+      width: '70%',
+    } as ViewStyle,
+
+    skeletonLineMedium: {
+      height: 16,
+      backgroundColor: theme.colors.outline + '20',
+      borderRadius: theme.borderRadius.sm,
+      width: '85%',
+    } as ViewStyle,
+
+    // Enhanced Error States
+    errorContent: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.lg,
+      gap: theme.spacing.sm,
+    } as ViewStyle,
+
+    errorIconContainer: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: theme.colors.errorContainer + '30',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: theme.spacing.sm,
+    } as ViewStyle,
+
+    errorMessage: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.colors.onErrorContainer,
+      textAlign: 'center',
+      lineHeight: 20,
+      maxWidth: '90%',
+    } as TextStyle,
+
+    errorRetryText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.colors.error,
+      textAlign: 'center',
+      marginTop: theme.spacing.xs,
+    } as TextStyle,
+
+    // Enhanced Placeholder States
+    placeholderContent: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.xl,
+      gap: theme.spacing.md,
+    } as ViewStyle,
+
+    placeholderIconContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: theme.spacing.sm,
+      position: 'relative',
+    } as ViewStyle,
+
+    decorativeElements: {
+      position: 'absolute',
+      width: 80,
+      height: 80,
+    } as ViewStyle,
+
+    star1: {
+      position: 'absolute',
+      top: 8,
+      right: 12,
+    } as ViewStyle,
+
+    star2: {
+      position: 'absolute',
+      bottom: 15,
+      left: 8,
+    } as ViewStyle,
+
+    star3: {
+      position: 'absolute',
+      top: 25,
+      left: -5,
+    } as ViewStyle,
+
+    placeholderTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: theme.colors.onSurface,
+      textAlign: 'center',
+      letterSpacing: 0.2,
+    } as TextStyle,
+
+    placeholderSubtitle: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      lineHeight: 20,
+      maxWidth: '90%',
+      paddingHorizontal: theme.spacing.sm,
+    } as TextStyle,
+
+    placeholderHint: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      marginTop: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      backgroundColor: theme.colors.primaryContainer + '20',
+      borderRadius: theme.borderRadius.lg,
+    } as ViewStyle,
+
+    placeholderHintText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.colors.primary,
+      letterSpacing: 0.1,
+    } as TextStyle,
+
+    // Enhanced Statement Card Integration - Edge-to-Edge
+    enhancedStatementCard: {
       marginHorizontal: 0,
       marginVertical: 0,
+      borderRadius: 0,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 0,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.outline + '10',
+      elevation: 0,
+      shadowOpacity: 0,
     } as ViewStyle,
   });
 

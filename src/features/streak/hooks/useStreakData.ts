@@ -1,4 +1,5 @@
 import { queryKeys } from '@/api/queryKeys';
+import { QUERY_STALE_TIMES } from '@/api/queryClient';
 import { getStreakData } from '@/api/streakApi';
 import { Streak } from '@/schemas/streakSchema';
 import useAuthStore from '@/store/authStore';
@@ -12,8 +13,8 @@ export const useStreakData = () => {
     queryKey: queryKeys.streaks(user?.id),
     queryFn: getStreakData,
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (replaces cacheTime in newer versions)
+    staleTime: QUERY_STALE_TIMES.streaks, // 6 minutes - updates with new entries
+    gcTime: 15 * 60 * 1000, // 15 minutes for better navigation UX
   });
 };
 

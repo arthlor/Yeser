@@ -1,5 +1,6 @@
-import { getProfile, updateProfile } from '@/api/profileApi';
+import { deleteUserAccount, getProfile, updateProfile } from '@/api/profileApi';
 import { queryKeys } from '@/api/queryKeys';
+import { QUERY_STALE_TIMES } from '@/api/queryClient';
 import { Profile, UpdateProfilePayload } from '@/schemas/profileSchema';
 import useAuthStore from '@/store/authStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -21,7 +22,8 @@ export const useUserProfile = () => {
     queryKey: queryKeys.profile(user?.id),
     queryFn: getProfile,
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 10, // Profile data stays fresh for 10 minutes
+    staleTime: QUERY_STALE_TIMES.profile, // 8 minutes - optimized for settings changes
+    gcTime: 20 * 60 * 1000, // 20 minutes for better UX
   });
 
   const {
@@ -46,6 +48,27 @@ export const useUserProfile = () => {
     },
   });
 
+  const {
+    mutate: deleteAccountMutation,
+    isPending: isDeletingAccount,
+    error: deleteAccountError,
+  } = useMutation<{ success: boolean; message: string }, Error, void>({
+    mutationFn: deleteUserAccount,
+    onSuccess: (data) => {
+      // Clear all cache data
+      queryClient.clear();
+
+      // Force logout after successful deletion
+      useAuthStore.getState().logout();
+
+      logger.debug('Account deletion successful:', data);
+    },
+    onError: (error) => {
+      logger.error('Account deletion failed:', error);
+      handleMutationError(error, 'delete account');
+    },
+  });
+
   return {
     profile,
     isLoadingProfile: isLoading,
@@ -55,5 +78,8 @@ export const useUserProfile = () => {
     updateProfile: updateProfileMutation,
     isUpdatingProfile,
     updateProfileError: updateError,
+    deleteAccount: deleteAccountMutation,
+    isDeletingAccount,
+    deleteAccountError,
   };
 };

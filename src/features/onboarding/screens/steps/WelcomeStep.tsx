@@ -74,13 +74,11 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
         <View style={styles.featuresSection}>
           <View style={styles.featureItem}>
             <View style={styles.featureIconContainer}>
-              <Ionicons name="journal-outline" size={28} color={theme.colors.primary} />
+              <Ionicons name="heart-outline" size={28} color={theme.colors.primary} />
             </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Günlük Minnetler</Text>
-              <Text style={styles.featureDescription}>
-                Her gün küçük şeyler için şükret, hayatın daha güzel görün
-              </Text>
+              <Text style={styles.featureDescription}>Her gün küçük şeyler için minnettar ol</Text>
             </View>
           </View>
 
@@ -98,7 +96,7 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
 
           <View style={styles.featureItem}>
             <View style={styles.featureIconContainer}>
-              <Ionicons name="trending-up-outline" size={28} color="#4ECDC4" />
+              <Ionicons name="leaf-outline" size={28} color="#4ECDC4" />
             </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Kişisel Gelişim</Text>

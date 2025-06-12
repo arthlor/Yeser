@@ -34,24 +34,42 @@ const NotificationTestingSettings: React.FC<NotificationTestingSettingsProps> = 
     hapticFeedback.medium();
 
     try {
+      logger.debug('Starting daily test notification with navigation debugging...', {
+        currentTime: new Date().toISOString(),
+        platform: Platform.OS,
+      });
+
       const result = await notificationService.sendTestNotification('daily');
 
       if (result.success) {
-        showSuccess('Test daily reminder sent! It should navigate to New Entry screen.');
+        showSuccess(
+          `✅ Daily test notification sent! Identifier: ${result.identifier}. Check logs for navigation details when you tap the notification.`
+        );
 
         analyticsService.logEvent('test_daily_notification_sent', {
           identifier: result.identifier || 'unknown',
+          platform: Platform.OS,
         });
 
-        logger.debug('Daily test notification sent successfully', {
+        logger.debug('Daily test notification sent successfully - Navigation Debug Info:', {
           identifier: result.identifier,
+          notificationType: 'DAILY_REMINDER',
+          expectedNavigationTarget: 'MainApp -> DailyEntryTab',
+          expectedData: {
+            type: 'daily_reminder',
+            action: 'open_daily_entry',
+            date: new Date().toISOString().split('T')[0],
+            isTest: 'true',
+          },
+          debugInstructions:
+            'When you tap this notification, check the logs for "Notification response received" and "Navigating to daily entry from notification"',
         });
       } else {
-        showError(`Test notification failed: ${result.error?.message || 'Unknown error'}`);
+        showError(`❌ Test notification failed: ${result.error?.message || 'Unknown error'}`);
         logger.error('Daily test notification failed', result.error);
       }
     } catch (error) {
-      showError('Test notification error occurred');
+      showError('❌ Test notification error occurred');
       logger.error('Daily test notification error', error as Error);
     } finally {
       setIsSendingDaily(false);
@@ -63,24 +81,42 @@ const NotificationTestingSettings: React.FC<NotificationTestingSettingsProps> = 
     hapticFeedback.medium();
 
     try {
+      logger.debug('Starting throwback test notification with navigation debugging...', {
+        currentTime: new Date().toISOString(),
+        platform: Platform.OS,
+      });
+
       const result = await notificationService.sendTestNotification('throwback');
 
       if (result.success) {
-        showSuccess('Test throwback reminder sent! It should navigate to Past Entries screen.');
+        showSuccess(
+          `✅ Throwback test notification sent! Identifier: ${result.identifier}. Check logs for navigation details when you tap the notification.`
+        );
 
         analyticsService.logEvent('test_throwback_notification_sent', {
           identifier: result.identifier || 'unknown',
+          platform: Platform.OS,
         });
 
-        logger.debug('Throwback test notification sent successfully', {
+        logger.debug('Throwback test notification sent successfully - Navigation Debug Info:', {
           identifier: result.identifier,
+          notificationType: 'THROWBACK_REMINDER',
+          expectedNavigationTarget: 'MainApp -> PastEntriesTab',
+          expectedData: {
+            type: 'throwback_reminder',
+            action: 'open_past_entries',
+            frequency: 'test',
+            isTest: 'true',
+          },
+          debugInstructions:
+            'When you tap this notification, check the logs for "Notification response received" and "Navigating from throwback reminder"',
         });
       } else {
-        showError(`Test notification failed: ${result.error?.message || 'Unknown error'}`);
+        showError(`❌ Test notification failed: ${result.error?.message || 'Unknown error'}`);
         logger.error('Throwback test notification failed', result.error);
       }
     } catch (error) {
-      showError('Test notification error occurred');
+      showError('❌ Test notification error occurred');
       logger.error('Throwback test notification error', error as Error);
     } finally {
       setIsSendingThrowback(false);

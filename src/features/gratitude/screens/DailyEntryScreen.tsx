@@ -533,19 +533,28 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             />
           </View>
 
-          {/* Statement Cards Section - Edge-to-edge layout */}
+          {/* Statement Cards Section - Enhanced Edge-to-edge layout */}
           {statements.length > 0 ? (
             <View style={styles.statementsSection}>
-              <View style={styles.statementsSectionHeader}>
-                <Text style={styles.statementsSectionTitle}>Bugünün Minnettarlıkları</Text>
-                <View style={styles.statementsCounter}>
-                  <Text style={styles.statementsCountText}>{statements.length}</Text>
+              {/* Enhanced section header with modern design */}
+              <View style={styles.modernSectionHeader}>
+                <View style={styles.sectionHeaderContent}>
+                  <View style={styles.sectionHeaderLeft}>
+                    <View style={styles.sectionIconContainer}>
+                      <Icon name="heart-multiple" size={20} color={theme.colors.primary} />
+                    </View>
+                    <Text style={styles.modernSectionTitle}>Bugünün Minnettarlıkları</Text>
+                  </View>
+                  <View style={styles.sectionCounterContainer}>
+                    <Text style={styles.sectionCounterText}>{statements.length}</Text>
+                  </View>
                 </View>
               </View>
 
-              <View style={styles.statementsContainer}>
+              {/* Modern statements container - Full edge-to-edge */}
+              <View style={styles.modernStatementsContainer}>
                 {statements.map((statement, index) => (
-                  <View key={`${finalDateString}-${index}`} style={styles.statementCardWrapper}>
+                  <View key={`${finalDateString}-${index}`} style={styles.modernStatementWrapper}>
                     <StatementEditCard
                       statement={statement}
                       date={effectiveDate.toISOString()}
@@ -558,26 +567,45 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                       onDelete={() => handleDeleteStatement(index)}
                       isLoading={isEditingStatement || isDeletingStatement}
                       edgeToEdge={true}
+                      variant="primary"
+                      showQuotes={true}
+                      animateEntrance={true}
                     />
                   </View>
                 ))}
               </View>
             </View>
           ) : (
-            /* Empty State - Edge-to-edge design */
-            <View style={styles.emptyStateSection}>
+            /* Enhanced Empty State - Modern design */
+            <View style={styles.modernEmptyState}>
               <View style={styles.emptyStateContent}>
-                <View style={styles.emptyStateIcon}>
-                  <Icon name="heart-plus-outline" size={48} color={theme.colors.primary + '40'} />
+                <View style={styles.modernEmptyIcon}>
+                  <Icon name="heart-plus-outline" size={56} color={theme.colors.primary + '30'} />
                 </View>
-                <Text style={styles.emptyStateTitle}>
-                  {isToday ? 'Bugünün ilk minnettarlığını ekle' : 'Bu tarihte henüz bir giriş yok'}
+                <Text style={styles.modernEmptyTitle}>
+                  {isToday ? 'Günün ilk minnettarlığını ekle' : 'Bu tarihte henüz bir giriş yok'}
                 </Text>
-                <Text style={styles.emptyStateSubtitle}>
+                <Text style={styles.modernEmptySubtitle}>
                   {isToday
-                    ? 'Günün güzel anlarını ve minnettarlıklarını paylaş'
+                    ? 'Günün güzel anlarını ve minnettarlıklarını paylaş ✨'
                     : 'Bu tarih için yeni minnettarlıklar ekleyebilirsin'}
                 </Text>
+                {isToday && (
+                  <TouchableOpacity
+                    style={styles.emptyStateButton}
+                    onPress={() => {
+                      // Focus on the input bar - could be enhanced with ref
+                      animations.animateFade(0.7, { duration: 200 });
+                      setTimeout(() => {
+                        animations.animateFade(1, { duration: 200 });
+                      }, 400);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Icon name="plus" size={18} color={theme.colors.onPrimary} />
+                    <Text style={styles.emptyStateButtonText}>İlk minnettarlığını ekle</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           )}
@@ -729,22 +757,34 @@ const createStyles = (theme: AppTheme) =>
     statementsSection: {
       flex: 1,
     },
-    statementsSectionHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+    modernSectionHeader: {
+      backgroundColor: theme.colors.surface,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.md,
-      backgroundColor: theme.colors.surface,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.outline + '15',
     },
-    statementsSectionTitle: {
+    sectionHeaderContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    sectionHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    sectionIconContainer: {
+      backgroundColor: theme.colors.primaryContainer,
+      padding: theme.spacing.xs,
+      borderRadius: theme.borderRadius.full,
+    },
+    modernSectionTitle: {
       ...theme.typography.titleMedium,
       color: theme.colors.onSurface,
       fontWeight: '600',
     },
-    statementsCounter: {
+    sectionCounterContainer: {
       backgroundColor: theme.colors.primaryContainer,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,
@@ -753,20 +793,18 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    statementsCountText: {
+    sectionCounterText: {
       ...theme.typography.labelMedium,
       color: theme.colors.onPrimaryContainer,
       fontWeight: '800',
     },
-    statementsContainer: {
+    modernStatementsContainer: {
       paddingVertical: theme.spacing.sm,
     },
-    statementCardWrapper: {
+    modernStatementWrapper: {
       marginBottom: theme.spacing.sm,
     },
-
-    // **EMPTY STATE SECTION**: Edge-to-edge empty state design
-    emptyStateSection: {
+    modernEmptyState: {
       flex: 1,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.xxxl,
@@ -777,11 +815,11 @@ const createStyles = (theme: AppTheme) =>
       maxWidth: 320,
       alignSelf: 'center',
     },
-    emptyStateIcon: {
+    modernEmptyIcon: {
       marginBottom: theme.spacing.lg,
       opacity: 0.6,
     },
-    emptyStateTitle: {
+    modernEmptyTitle: {
       ...theme.typography.titleLarge,
       color: theme.colors.onSurface,
       textAlign: 'center',
@@ -789,11 +827,32 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '600',
       lineHeight: 28,
     },
-    emptyStateSubtitle: {
+    modernEmptySubtitle: {
       ...theme.typography.bodyLarge,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 24,
+    },
+    emptyStateButton: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      borderRadius: theme.borderRadius.xl,
+      marginTop: theme.spacing.lg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+      // Enhanced shadow
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    emptyStateButtonText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onPrimary,
+      fontWeight: '600',
     },
 
     // **LOADING STATE SECTION**: Edge-to-edge loading state design
@@ -856,11 +915,6 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: theme.spacing.sm,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.outline + '15',
-    },
-    sectionHeaderLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
     },
     sectionTitle: {
       ...theme.typography.titleMedium,

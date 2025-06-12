@@ -903,6 +903,16 @@ class NotificationService {
       let identifier: string;
 
       if (type === 'daily') {
+        logger.debug('Creating daily test notification with navigation data...', {
+          categoryIdentifier: 'DAILY_REMINDER',
+          data: {
+            type: 'daily_reminder',
+            action: 'open_daily_entry',
+            date: new Date().toISOString().split('T')[0],
+            isTest: 'true',
+          },
+        });
+
         identifier = await Notifications.scheduleNotificationAsync({
           content: {
             title: '🌟 Test: Minnettarlık Zamanı!',
@@ -920,6 +930,16 @@ class NotificationService {
           trigger: null, // Send immediately
         });
       } else {
+        logger.debug('Creating throwback test notification with navigation data...', {
+          categoryIdentifier: 'THROWBACK_REMINDER',
+          data: {
+            type: 'throwback_reminder',
+            action: 'open_past_entries',
+            frequency: 'test',
+            isTest: 'true',
+          },
+        });
+
         identifier = await Notifications.scheduleNotificationAsync({
           content: {
             title: '📚 Test: Geçmiş Anıların Zamanı!',
@@ -941,6 +961,8 @@ class NotificationService {
       logger.debug('Test notification sent successfully', {
         type,
         identifier,
+        platform: Platform.OS,
+        message: `Test ${type} notification should appear immediately and navigate when tapped`,
       });
 
       return { success: true, identifier };

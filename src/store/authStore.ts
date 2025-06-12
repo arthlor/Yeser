@@ -301,10 +301,25 @@ const useAuthStore = create<AuthState>((set, get) => ({
         // **TOAST INTEGRATION**: Show error via toast
         handleStoreError(error, 'Magic link confirmation failed');
       } else if (user && session) {
-        // Auth state change listener will handle the state update
-        logger.debug('Magic link confirmed successfully');
+        // 🚨 CRITICAL FIX: Immediately update auth store state for synchronous navigation
+        // Don't rely solely on auth listener which may have timing delays
+        set({
+          isAuthenticated: true,
+          user: session.user,
+          isLoading: false,
+          magicLinkSent: false,
+        });
+
+        logger.debug('Magic link confirmed successfully - state updated immediately', {
+          userId: session.user?.id,
+          isAuthenticated: true,
+          hasSession: !!session,
+        });
+
         // **TOAST INTEGRATION**: Show success message
         handleStoreSuccess('Başarıyla giriş yaptınız!');
+
+        // Auth state change listener will also fire as backup, but state is already set
       } else {
         set({
           isLoading: false,
@@ -372,6 +387,15 @@ const useAuthStore = create<AuthState>((set, get) => ({
           // **TOAST INTEGRATION**: Show error via toast
           handleStoreError(error, 'Logout failed');
         } else {
+          // 🚨 CRITICAL FIX: Immediately update auth store state for synchronous navigation
+          // Clear authenticated state before cleaning up listener
+          set({
+            isAuthenticated: false,
+            user: null,
+            isLoading: false,
+            magicLinkSent: false,
+          });
+
           // **RACE CONDITION FIX**: Properly cleanup auth listener on logout
           if (authListenerSubscription) {
             authListenerSubscription.unsubscribe();
@@ -381,9 +405,17 @@ const useAuthStore = create<AuthState>((set, get) => ({
 
           // Clear all cached data
           queryClient.clear();
-          logger.debug('Logout successful');
+
+          logger.debug('Logout successful - state updated immediately', {
+            isAuthenticated: false,
+            hasUser: false,
+            hasSession: false,
+          });
+
           // **TOAST INTEGRATION**: Show success message
           handleStoreSuccess('Başarıyla çıkış yaptınız');
+
+          // Auth state change listener was already cleaned up, so immediate state update is critical
         }
       } catch (error) {
         logger.error('Unexpected logout error:', error as Error);
@@ -428,10 +460,25 @@ const useAuthStore = create<AuthState>((set, get) => ({
         // **TOAST INTEGRATION**: Show error via toast
         handleStoreError(error, 'Session setup failed');
       } else if (user && session) {
-        // Auth state change listener will handle the state update
-        logger.debug('OAuth token authentication successful');
+        // 🚨 CRITICAL FIX: Immediately update auth store state for synchronous navigation
+        // Don't rely solely on auth listener which may have timing delays
+        set({
+          isAuthenticated: true,
+          user: session.user,
+          isLoading: false,
+          magicLinkSent: false,
+        });
+
+        logger.debug('OAuth token authentication successful - state updated immediately', {
+          userId: session.user?.id,
+          isAuthenticated: true,
+          hasSession: !!session,
+        });
+
         // **TOAST INTEGRATION**: Show success message
         handleStoreSuccess('Başarıyla giriş yaptınız!');
+
+        // Auth state change listener will also fire as backup, but state is already set
       } else {
         set({
           isLoading: false,

@@ -7,6 +7,7 @@ import {
   getTotalGratitudeEntriesCount,
 } from '@/api/gratitudeApi';
 import { queryKeys } from '@/api/queryKeys';
+import { QUERY_STALE_TIMES } from '@/api/queryClient';
 import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 import useAuthStore from '@/store/authStore';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
@@ -19,7 +20,8 @@ export const useGratitudeEntries = () => {
     queryKey: queryKeys.gratitudeEntries(user?.id),
     queryFn: getGratitudeDailyEntries,
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 2, // 2 minutes - entries change more frequently
+    staleTime: QUERY_STALE_TIMES.entries, // 2 minutes - user actively modifying
+    gcTime: 10 * 60 * 1000, // 10 minutes cache
   });
 };
 
@@ -30,7 +32,8 @@ export const useGratitudeEntriesPaginated = (pageSize: number = 20) => {
     queryKey: queryKeys.gratitudeEntriesPaginated(user?.id, pageSize),
     queryFn: ({ pageParam = 0 }) => getGratitudeDailyEntriesPaginated(pageParam, pageSize),
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 2, // 2 minutes - entries change more frequently
+    staleTime: QUERY_STALE_TIMES.entries, // 2 minutes - dynamic content
+    gcTime: 15 * 60 * 1000, // 15 minutes for pagination UX
     getNextPageParam: (lastPage) => {
       return lastPage.hasMore ? lastPage.currentPage + 1 : undefined;
     },
@@ -45,7 +48,8 @@ export const useGratitudeEntry = (entryDate: string) => {
     queryKey: queryKeys.gratitudeEntry(user?.id, entryDate),
     queryFn: () => getGratitudeDailyEntryByDate(entryDate),
     enabled: !!user?.id && !!entryDate,
-    staleTime: 1000 * 60 * 5, // Individual entries are more stable
+    staleTime: QUERY_STALE_TIMES.entries, // 2 minutes - individual entries can be edited
+    gcTime: 20 * 60 * 1000, // 20 minutes for navigation UX
   });
 };
 
@@ -56,7 +60,8 @@ export const useEntryDatesForMonth = (year: number, month: number) => {
     queryKey: queryKeys.gratitudeEntriesByMonth(user?.id, year, month),
     queryFn: () => getEntryDatesForMonth(year, month),
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 15, // Monthly data changes less frequently
+    staleTime: QUERY_STALE_TIMES.monthlyData, // 20 minutes - historical data changes less
+    gcTime: 30 * 60 * 1000, // 30 minutes cache for calendar navigation
   });
 };
 
@@ -67,7 +72,8 @@ export const useGratitudeTotalCount = () => {
     queryKey: queryKeys.gratitudeTotalCount(user?.id),
     queryFn: getTotalGratitudeEntriesCount,
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 10, // Count changes less frequently
+    staleTime: QUERY_STALE_TIMES.totalCount, // 10 minutes - count changes slowly
+    gcTime: 25 * 60 * 1000, // 25 minutes cache
   });
 };
 
@@ -104,7 +110,8 @@ export const useRandomGratitudeEntry = () => {
       }
     },
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 5, // 5 minutes - random entry can be cached briefly
+    staleTime: QUERY_STALE_TIMES.randomEntry, // 0 - always fresh for variety
+    gcTime: 5 * 60 * 1000, // 5 minutes for back navigation
     retry: (failureCount, error) => {
       logger.debug('useRandomGratitudeEntry: Retry attempt', {
         failureCount,

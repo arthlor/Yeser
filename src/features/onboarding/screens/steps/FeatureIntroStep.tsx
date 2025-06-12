@@ -26,7 +26,7 @@ interface FeaturePreferences {
 }
 
 const THROWBACK_FREQUENCIES = [
-  { key: 'daily', label: 'Her Gün', description: 'Günlük anı hatırlatmaları' },
+  { key: 'daily', label: 'Her gün', description: 'Günlük anı hatırlatmaları' },
   { key: 'weekly', label: 'Haftalık', description: 'Haftada bir anı hatırlatması' },
   { key: 'monthly', label: 'Aylık', description: 'Ayda bir anı hatırlatması' },
 ] as const;
@@ -140,8 +140,8 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
               <View style={styles.featureTitleContainer}>
                 <Text style={styles.featureTitle}>Çeşitli İlham Soruları</Text>
                 <Text style={styles.featureDescription}>
-                  Her gün farklı sorularla minnettarlığını keşfet. "Bugün seni güldüren neydi?" gibi
-                  yaratıcı sorular.
+                  Minnet Ekle sayfasında farklı sorulardan ilham al. "Bugün seni güldüren neydi?"
+                  gibi yaratıcı sorular.
                 </Text>
               </View>
               <ThemedSwitch

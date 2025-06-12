@@ -21,7 +21,6 @@ export const queryKeys = {
 
   // Gratitude benefits queries (Why Gratitude Matters screen)
   gratitudeBenefits: () => [...queryKeys.all, 'gratitudeBenefits'] as const,
-  gratitudeBenefit: (id: number) => [...queryKeys.gratitudeBenefits(), { id }] as const,
 
   // Random/throwback queries
   randomGratitudeEntry: (userId?: string) =>

@@ -25,6 +25,8 @@
     "validate-env:dev": "echo 'Development environment validation passed'",
     "validate-env:preview": "echo 'Preview environment validation passed'",
     "validate-env:prod": "echo 'Production environment validation passed'",
+    "validate:local": "chmod +x scripts/local-validation.sh && ./scripts/local-validation.sh",
+    "debug:ci": "npm run validate:local",
     "fix:eslint": "eslint src/ --fix",
     "lint:fix": "eslint src/ --fix",
     "lint:check": "eslint src/ --max-warnings=56",

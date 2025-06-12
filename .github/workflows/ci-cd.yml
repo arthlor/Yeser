@@ -23,7 +23,7 @@ on:
 
 env:
   NODE_VERSION: '18'
-  CACHE_VERSION: 'v4'
+  CACHE_VERSION: 'v5'
 
 jobs:
   # 🔍 Code Quality & Validation
@@ -43,15 +43,22 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      - name: 📦 Install Dependencies
+      - name: 📦 Clean Install Dependencies
         run: |
-          npm ci --prefer-offline --no-audit
-          echo "Dependencies installed successfully"
+          echo "🧹 Cleaning any existing node_modules..."
+          rm -rf node_modules package-lock.json || true
+          echo "📦 Installing dependencies with clean state..."
+          npm install --package-lock-only
+          npm ci --prefer-offline --no-audit --verbose
+          echo "✅ Dependencies installed successfully"
 
       - name: 🔍 Environment Validation
         run: |
           echo "🔒 Validating environment configuration..."
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
           npm run validate-env:dev
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL || 'placeholder' }}
@@ -108,6 +115,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
       - name: 🏗️ Setup EAS
         uses: expo/expo-github-action@v8
@@ -115,20 +123,46 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📦 Install Dependencies
-        run: npm ci --prefer-offline --no-audit
+      - name: 📦 Clean Install Dependencies
+        run: |
+          echo "🧹 Cleaning any existing node_modules..."
+          rm -rf node_modules package-lock.json || true
+          echo "📦 Installing dependencies with clean state..."
+          npm install --package-lock-only
+          npm ci --prefer-offline --no-audit --verbose
+          echo "✅ Dependencies installed successfully"
+
+      - name: 🔍 Debug Environment
+        run: |
+          echo "🔍 Environment Debug Information:"
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          echo "EAS CLI version: $(eas --version)"
+          echo "Environment variables check:"
+          echo "EXPO_PUBLIC_ENV: ${{ env.EXPO_PUBLIC_ENV }}"
+          echo "EXPO_TOKEN exists: ${{ secrets.EXPO_TOKEN != '' }}"
+          echo "STAGING_SUPABASE_URL exists: ${{ secrets.STAGING_SUPABASE_URL != '' }}"
+          echo "STAGING_SUPABASE_ANON_KEY exists: ${{ secrets.STAGING_SUPABASE_ANON_KEY != '' }}"
 
       - name: 🔒 Environment Validation (Preview)
-        run: npm run validate-env:preview
+        run: |
+          echo "🔒 Validating preview environment..."
+          npm run validate-env:preview --verbose
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_ENV: preview
 
-      - name: 🔨 Build Preview (All Platforms)
-        run: |
-          echo "🚀 Building preview version for internal testing..."
-          echo "📱 Building for iOS and Android..."
-          npm run build:preview
+      - name: 🔨 Build Preview (Retry on Failure)
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 30
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            echo "🚀 Building preview version for internal testing..."
+            echo "📱 Building for iOS and Android with verbose logging..."
+            npm run build:preview --verbose
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
@@ -139,6 +173,15 @@ jobs:
           echo "🎉 Preview build completed successfully!"
           echo "📱 iOS and Android builds are ready for internal testing"
           echo "🔗 Check EAS dashboard for download links"
+
+      - name: 🚨 Build Failure Debug
+        if: failure()
+        run: |
+          echo "🚨 Build failed - collecting debug information:"
+          echo "Last 100 lines of npm debug log:"
+          tail -100 ~/.npm/_logs/*.log || echo "No npm debug logs found"
+          echo "EAS build status:"
+          eas build:list --limit=5 || echo "Cannot fetch EAS build list"
 
   # 🌟 Production Build Pipeline
   build-production:
@@ -162,6 +205,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
       - name: 🏗️ Setup EAS
         uses: expo/expo-github-action@v8
@@ -169,14 +213,35 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📦 Install Dependencies
-        run: npm ci --prefer-offline --no-audit
+      - name: 📦 Clean Install Dependencies
+        run: |
+          echo "🧹 Cleaning any existing node_modules..."
+          rm -rf node_modules package-lock.json || true
+          echo "📦 Installing dependencies with clean state..."
+          npm install --package-lock-only
+          npm ci --prefer-offline --no-audit --verbose
+          echo "✅ Dependencies installed successfully"
+
+      - name: 🔍 Debug Environment
+        run: |
+          echo "🔍 Production Environment Debug Information:"
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          echo "EAS CLI version: $(eas --version)"
+          echo "Environment variables check:"
+          echo "EXPO_PUBLIC_ENV: ${{ env.EXPO_PUBLIC_ENV }}"
+          echo "EXPO_TOKEN exists: ${{ secrets.EXPO_TOKEN != '' }}"
+          echo "PRODUCTION_SUPABASE_URL exists: ${{ secrets.PRODUCTION_SUPABASE_URL != '' }}"
+          echo "PRODUCTION_SUPABASE_ANON_KEY exists: ${{ secrets.PRODUCTION_SUPABASE_ANON_KEY != '' }}"
 
       - name: 🔒 Environment Validation (Production)
-        run: npm run validate-env:prod
+        run: |
+          echo "🔒 Validating production environment..."
+          npm run validate-env:prod --verbose
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.PRODUCTION_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PRODUCTION_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_ENV: production
 
       - name: ✅ Pre-Build Validation
         run: |
@@ -184,16 +249,32 @@ jobs:
           npm run type-check
           echo "✅ All pre-build validations passed"
 
-      - name: 🔨 Build Production (All Platforms)
-        run: |
-          echo "🚀 Building production version for app stores..."
-          echo "📦 This build will be ready for App Store submission"
-          echo "🍏 iOS credentials configured - building both platforms"
-          npm run build:production
+      - name: 🔨 Build Production (Retry on Failure)
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 45
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: |
+            echo "🚀 Building production version for app stores..."
+            echo "📦 This build will be ready for App Store submission"
+            echo "🍏 iOS credentials configured - building both platforms"
+            npm run build:production --verbose
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.PRODUCTION_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PRODUCTION_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_ENV: production
+
+      - name: 🚨 Production Build Failure Debug
+        if: failure()
+        run: |
+          echo "🚨 Production build failed - collecting debug information:"
+          echo "Last 100 lines of npm debug log:"
+          tail -100 ~/.npm/_logs/*.log || echo "No npm debug logs found"
+          echo "EAS build status:"
+          eas build:list --limit=5 || echo "Cannot fetch EAS build list"
+          echo "Credentials status:"
+          eas credentials --platform=all --non-interactive || echo "Cannot fetch credentials"
 
       - name: 🎯 Check Deploy Conditions
         id: check-deploy

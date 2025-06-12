@@ -65,8 +65,9 @@
         "changesNotSentForReview": false
       },
       "ios": {
-        "appleId": "anilkaraca140@gmail.com",
-        "ascAppId": "1234567890",
+        "ascApiKeyPath": "../secrets/app-store-connect-api-key.p8",
+        "ascApiKeyId": "ZJKXUD58PX",
+        "ascApiKeyIssuerId": "62a8db2d-f03b-4352-abcc-b6e68b6e2c25",
         "appleTeamId": "9SG3PV8BMM",
         "sku": "yeser",
         "bundleIdentifier": "com.arthlor.yeser"
@@ -79,8 +80,9 @@
         "releaseStatus": "draft"
       },
       "ios": {
-        "appleId": "anilkaraca140@gmail.com",
-        "ascAppId": "1234567890",
+        "ascApiKeyPath": "../secrets/app-store-connect-api-key.p8",
+        "ascApiKeyId": "ZJKXUD58PX",
+        "ascApiKeyIssuerId": "62a8db2d-f03b-4352-abcc-b6e68b6e2c25",
         "appleTeamId": "9SG3PV8BMM"
       }
     }

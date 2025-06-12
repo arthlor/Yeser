@@ -54,7 +54,6 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: getBundleIdentifier(),
-      buildNumber: '1',
       config: {
         usesNonExemptEncryption: false,
       },
@@ -79,7 +78,6 @@ export default {
         backgroundColor: '#5DB0A5', // Use brand primary color for better visibility
       },
       package: getBundleIdentifier(),
-      versionCode: 1,
       // Configure edge-to-edge for Android 16+ compatibility
       edgeToEdgeEnabled: true,
       googleServicesFile: 'android/app/google-services.json',

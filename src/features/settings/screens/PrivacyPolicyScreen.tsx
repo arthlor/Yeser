@@ -88,11 +88,10 @@ const PrivacyPolicyScreen: React.FC = () => {
         <ThemedCard style={styles.card}>
           <Section title="Giriş">
             <Text style={styles.paragraph}>
-              Yeşer olarak gizliliğinize değer veriyoruz. Bu
-              Gizlilik Politikası, Yeşer mobil uygulamasını kullandığınızda bilgilerinizi nasıl
-              topladığımızı, kullandığımızı, açıkladığımızı ve koruduğumuzu açıklamaktadır. Bu
-              politika 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve ilgili mevzuata
-              uygun olarak hazırlanmıştır.
+              Yeşer olarak gizliliğinize değer veriyoruz. Bu Gizlilik Politikası, Yeşer mobil
+              uygulamasını kullandığınızda bilgilerinizi nasıl topladığımızı, kullandığımızı,
+              açıkladığımızı ve koruduğumuzu açıklamaktadır. Bu politika 6698 sayılı Kişisel
+              Verilerin Korunması Kanunu (KVKK) ve ilgili mevzuata uygun olarak hazırlanmıştır.
             </Text>
           </Section>
 
@@ -143,9 +142,7 @@ const PrivacyPolicyScreen: React.FC = () => {
           </Section>
 
           <Section title="Veri Saklama Süreleri">
-            <Text style={styles.paragraph}>
-              Kişisel verilerinizi aşağıdaki sürelerle saklarız:
-            </Text>
+            <Text style={styles.paragraph}>Kişisel verilerinizi aşağıdaki sürelerle saklarız:</Text>
             <ListItem text="Hesap Bilgileri: Hesabınız aktif olduğu sürece" />
             <ListItem text="Minnettarlık Kayıtları: Hesap silme tarihinden itibaren 30 gün" />
             <ListItem text="Analytics Verileri: Anonim hale getirilerek 26 ay" />

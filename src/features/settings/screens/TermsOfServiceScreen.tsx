@@ -69,17 +69,17 @@ const TermsOfServiceScreen: React.FC = () => {
         <ThemedCard density="comfortable" elevation="card" style={styles.card}>
           <TermsSection number="1" title="Giriş ve Kabul">
             <Text style={styles.paragraph}>
-              Yeşer mobil uygulamasına hoş geldiniz. Bu Kullanım Koşulları, Uygulamaya erişiminizi ve 
-              Uygulamayı kullanımınızı yönetir. Uygulamayı
-              indirerek, yükleyerek veya kullanarak bu Koşullara bağlı kalmayı kabul edersiniz.
-              Bu koşulları kabul etmiyorsanız, lütfen uygulamayı kullanmayın.
+              Yeşer mobil uygulamasına hoş geldiniz. Bu Kullanım Koşulları, Uygulamaya erişiminizi
+              ve Uygulamayı kullanımınızı yönetir. Uygulamayı indirerek, yükleyerek veya kullanarak
+              bu Koşullara bağlı kalmayı kabul edersiniz. Bu koşulları kabul etmiyorsanız, lütfen
+              uygulamayı kullanmayın.
             </Text>
           </TermsSection>
 
           <TermsSection number="2" title="Premium Uygulama ve Ödeme Koşulları">
             <Text style={styles.paragraph}>
-              Yeşer ücretli bir premium uygulamadır. Uygulama 39,99 TL tek seferlik ödeme ile
-              satın alınır ve tüm özelliklerine sınırsız erişim sağlar. Ödeme koşulları:
+              Yeşer ücretli bir premium uygulamadır. Uygulama 39,99 TL tek seferlik ödeme ile satın
+              alınır ve tüm özelliklerine sınırsız erişim sağlar. Ödeme koşulları:
             </Text>
             <Text style={styles.listItem}>
               • Tek Seferlik Ödeme: Abonelik sistemi yoktur, sadece bir kez ödersiniz
@@ -90,38 +90,24 @@ const TermsOfServiceScreen: React.FC = () => {
             <Text style={styles.listItem}>
               • İade Politikası: İade talepleri Apple/Google'ın politikalarına tabidir
             </Text>
-            <Text style={styles.listItem}>
-              • KDV Dahil: Belirtilen fiyat KDV dahildir
-            </Text>
+            <Text style={styles.listItem}>• KDV Dahil: Belirtilen fiyat KDV dahildir</Text>
           </TermsSection>
 
           <TermsSection number="3" title="Uygulamanın Kullanımı ve Yaş Sınırı">
             <Text style={styles.paragraph}>
               Uygulamayı yalnızca yasal amaçlarla ve bu Koşullara uygun olarak kullanmayı kabul
-              edersiniz. Uygulama 13 yaş ve üzeri kullanıcılar için tasarlanmıştır. 13 yaş
-              altındaki kullanıcılar ebeveyn izni olmadan uygulamayı kullanamaz.
+              edersiniz. Uygulama 13 yaş ve üzeri kullanıcılar için tasarlanmıştır. 13 yaş altındaki
+              kullanıcılar ebeveyn izni olmadan uygulamayı kullanamaz.
             </Text>
-            <Text style={styles.paragraph}>
-              Yasak kullanımlar:
-            </Text>
-            <Text style={styles.listItem}>
-              • Yasa dışı veya zararlı içerik paylaşmak
-            </Text>
-            <Text style={styles.listItem}>
-              • Başkalarının haklarını ihlal etmek
-            </Text>
-            <Text style={styles.listItem}>
-              • Uygulamanın güvenliğini tehlikeye atmak
-            </Text>
-            <Text style={styles.listItem}>
-              • Ticari amaçlarla izinsiz kullanım
-            </Text>
+            <Text style={styles.paragraph}>Yasak kullanımlar:</Text>
+            <Text style={styles.listItem}>• Yasa dışı veya zararlı içerik paylaşmak</Text>
+            <Text style={styles.listItem}>• Başkalarının haklarını ihlal etmek</Text>
+            <Text style={styles.listItem}>• Uygulamanın güvenliğini tehlikeye atmak</Text>
+            <Text style={styles.listItem}>• Ticari amaçlarla izinsiz kullanım</Text>
           </TermsSection>
 
           <TermsSection number="4" title="Hesap Yönetimi ve Sonlandırma">
-            <Text style={styles.paragraph}>
-              Hesabınızı yönetme ve sonlandırma koşulları:
-            </Text>
+            <Text style={styles.paragraph}>Hesabınızı yönetme ve sonlandırma koşulları:</Text>
             <Text style={styles.listItem}>
               • Hesap Sorumluluğu: Hesap güvenliğinden siz sorumlusunuz
             </Text>
@@ -158,9 +144,7 @@ const TermsOfServiceScreen: React.FC = () => {
             <Text style={styles.listItem}>
               • Kullanıcı Sorumluluğu: Önemli verilerinizi düzenli olarak dışa aktarmanız önerilir
             </Text>
-            <Text style={styles.listItem}>
-              • Sunucu Bakımı: Planlı bakımlar önceden duyurulur
-            </Text>
+            <Text style={styles.listItem}>• Sunucu Bakımı: Planlı bakımlar önceden duyurulur</Text>
           </TermsSection>
 
           <TermsSection number="7" title="Sorumluluğun Reddi">
@@ -183,8 +167,8 @@ const TermsOfServiceScreen: React.FC = () => {
 
           <TermsSection number="9" title="Geçerli Hukuk ve Yargı Yetkisi">
             <Text style={styles.paragraph}>
-              Bu Koşullar Türkiye Cumhuriyeti yasalarına tabidir ve bu yasalara göre yorumlanır.
-              Bu Koşullardan kaynaklanan uyuşmazlıklar yerel mahkemeler ve İcra Müdürlüklerinin
+              Bu Koşullar Türkiye Cumhuriyeti yasalarına tabidir ve bu yasalara göre yorumlanır. Bu
+              Koşullardan kaynaklanan uyuşmazlıklar yerel mahkemeler ve İcra Müdürlüklerinin
               yetkisindedir.
             </Text>
           </TermsSection>

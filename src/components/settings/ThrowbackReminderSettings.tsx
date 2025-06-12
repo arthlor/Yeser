@@ -335,7 +335,6 @@ const EnhancedThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps
                     >
                       {option.label}
                     </Text>
-
                   </TouchableOpacity>
                 ))}
               </View>
@@ -357,9 +356,7 @@ const EnhancedThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps
                   <View style={styles.timePickerContent}>
                     <View style={styles.timeDisplayContainer}>
                       <Text style={styles.timeText}>{formatTime(selectedTime)}</Text>
-                      <Text style={styles.timeLabel}>
-                        Hatırlatma saati
-                      </Text>
+                      <Text style={styles.timeLabel}>Hatırlatma saati</Text>
                     </View>
                     <View
                       style={{
@@ -556,7 +553,6 @@ const createStyles = (theme: AppTheme) =>
     frequencyOptionTextSelected: {
       color: theme.colors.primary,
     },
-
 
     timeSection: {
       paddingBottom: theme.spacing.md,

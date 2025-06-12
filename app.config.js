@@ -36,6 +36,9 @@ const getBundleIdentifier = () => {
   return 'com.arthlor.yeser';
 };
 
+// Asset background color - Dark Slate Gray for consistent branding
+const ASSET_BACKGROUND_COLOR = '#2F4F4F';
+
 export default {
   expo: {
     name: getAppName(),
@@ -48,7 +51,7 @@ export default {
     splash: {
       image: 'src/assets/assets/splash-icon.png',
       resizeMode: 'contain',
-      backgroundColor: '#ffffff',
+      backgroundColor: ASSET_BACKGROUND_COLOR,
     },
     assetBundlePatterns: ['**/*'],
     ios: {
@@ -75,7 +78,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: 'src/assets/assets/adaptive-icon.png',
-        backgroundColor: '#5DB0A5', // Use brand primary color for better visibility
+        backgroundColor: ASSET_BACKGROUND_COLOR, // Dark slate gray for consistent branding
       },
       package: getBundleIdentifier(),
       // Configure edge-to-edge for Android 16+ compatibility
@@ -115,7 +118,7 @@ export default {
         'expo-notifications',
         {
           icon: 'src/assets/assets/notification-icon.png',
-          color: '#5DB0A5',
+          color: ASSET_BACKGROUND_COLOR,
           defaultChannel: 'yeser-reminders',
           sounds: ['src/assets/assets/sounds/notification_sound.wav'],
           androidMode: 'default',

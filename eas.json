@@ -35,7 +35,8 @@
       },
       "ios": {
         "buildConfiguration": "Release",
-        "simulator": false
+        "simulator": false,
+        "credentialsSource": "remote"
       }
     },
     "production": {
@@ -50,7 +51,8 @@
         "gradleCommand": ":app:bundleRelease"
       },
       "ios": {
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "credentialsSource": "remote"
       }
     }
   },

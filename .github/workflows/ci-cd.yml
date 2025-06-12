@@ -188,6 +188,7 @@ jobs:
         run: |
           echo "🚀 Building production version for app stores..."
           echo "📦 This build will be ready for App Store submission"
+          echo "🍏 iOS credentials configured - building both platforms"
           npm run build:production
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.PRODUCTION_SUPABASE_URL }}

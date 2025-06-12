@@ -51,8 +51,11 @@ jobs:
           rm -rf node_modules package-lock.json || true
           echo "📦 Installing dependencies with clean state..."
           npm install --package-lock-only
+          echo "🔧 Installing dependencies (CI-friendly mode)..."
           npm ci --prefer-offline --no-audit --verbose
           echo "✅ Dependencies installed successfully"
+        env:
+          CI: true
 
       - name: 🔍 Environment Validation
         run: |
@@ -129,8 +132,11 @@ jobs:
           rm -rf node_modules package-lock.json || true
           echo "📦 Installing dependencies with clean state..."
           npm install --package-lock-only
+          echo "🔧 Installing dependencies (CI-friendly mode)..."
           npm ci --prefer-offline --no-audit --verbose
           echo "✅ Dependencies installed successfully"
+        env:
+          CI: true
 
       - name: 🔍 Debug Environment
         run: |
@@ -219,8 +225,11 @@ jobs:
           rm -rf node_modules package-lock.json || true
           echo "📦 Installing dependencies with clean state..."
           npm install --package-lock-only
+          echo "🔧 Installing dependencies (CI-friendly mode)..."
           npm ci --prefer-offline --no-audit --verbose
           echo "✅ Dependencies installed successfully"
+        env:
+          CI: true
 
       - name: 🔍 Debug Environment
         run: |

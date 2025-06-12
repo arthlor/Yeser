@@ -78,7 +78,7 @@ const PrivacyPolicyScreen: React.FC = () => {
             Gizlilik Politikası
           </Text>
           <Text style={styles.lastUpdated} accessibilityLabel="Son güncelleme tarihi">
-            Son Güncelleme: 01.06.2025
+            Son Güncelleme: 12 Haziran 2025
           </Text>
         </View>
       </ScreenSection>
@@ -88,82 +88,113 @@ const PrivacyPolicyScreen: React.FC = () => {
         <ThemedCard style={styles.card}>
           <Section title="Giriş">
             <Text style={styles.paragraph}>
-              Yeşer ("biz", "bizim" veya "uygulama") olarak gizliliğinize değer veriyoruz. Bu
+              Yeşer olarak gizliliğinize değer veriyoruz. Bu
               Gizlilik Politikası, Yeşer mobil uygulamasını kullandığınızda bilgilerinizi nasıl
-              topladığımızı, kullandığımızı, açıkladığımızı ve koruduğumuzu açıklamaktadır. Lütfen
-              bu gizlilik politikasını dikkatlice okuyun. Bu gizlilik politikasının şartlarını kabul
-              etmiyorsanız, lütfen uygulamaya erişmeyin.
+              topladığımızı, kullandığımızı, açıkladığımızı ve koruduğumuzu açıklamaktadır. Bu
+              politika 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve ilgili mevzuata
+              uygun olarak hazırlanmıştır.
             </Text>
           </Section>
 
-          <Section title="Bilgilerinizin Toplanması">
+          <Section title="Toplanan Kişisel Veriler">
             <Text style={styles.paragraph}>
-              Uygulamayı kullandığınızda sizden çeşitli şekillerde bilgi toplayabiliriz. Uygulama
-              aracılığıyla toplayabileceğimiz bilgiler şunları içerir:
+              Uygulamayı kullandığınızda aşağıdaki kişisel verilerinizi işleyebiliriz:
             </Text>
-            <ListItem text="Kişisel Veriler: E-posta adresiniz, kullanıcı adınız gibi gönüllü olarak bize verdiğiniz kişisel kimlik bilgileri." />
-            <ListItem text="Minnettarlık Günlüğü Verileri: Uygulamaya girdiğiniz minnettarlık kayıtlarınız. Bu veriler hesabınızla ilişkilendirilir ve güvenli bir şekilde saklanır." />
-            <ListItem text="Kullanım Verileri: Uygulamadaki özelliklerle nasıl etkileşimde bulunduğunuz gibi otomatik olarak toplanan bilgiler." />
+            <ListItem text="Kimlik Bilgileri: E-posta adresiniz, kullanıcı adınız ve tam adınız" />
+            <ListItem text="Minnettarlık Kayıtları: Uygulamaya girdiğiniz günlük minnettarlık notlarınız" />
+            <ListItem text="Tercih Bilgileri: Bildirim ayarları, günlük hedefler ve tema tercihleri" />
+            <ListItem text="Teknik Veriler: Cihaz bilgileri, IP adresi, uygulama kullanım istatistikleri" />
+            <ListItem text="Google OAuth Verileri: Google ile giriş yapmanız durumunda Google'dan alınan temel profil bilgileri" />
+            <ListItem text="Analytics Verileri: Firebase Analytics aracılığıyla toplanan anonim kullanım verileri" />
           </Section>
 
-          <Section title="Bilgilerinizin Kullanımı">
+          <Section title="Veri İşleme Amaçları">
             <Text style={styles.paragraph}>
-              Hakkınızda doğru bilgilere sahip olmak, size sorunsuz, verimli ve özelleştirilmiş bir
-              deneyim sunmamızı sağlar. Özellikle, uygulama aracılığıyla hakkınızda toplanan
-              bilgileri şu amaçlarla kullanabiliriz:
+              Kişisel verilerinizi KVKK'ya uygun olarak aşağıdaki amaçlarla işliyoruz:
             </Text>
-            <ListItem text="Hesabınızı oluşturmak ve yönetmek." />
-            <ListItem text="Size minnettarlık günlüğü özelliklerini sunmak." />
-            <ListItem text="Uygulamayı iyileştirmek ve kullanıcı deneyimini kişiselleştirmek." />
-            <ListItem text="Kullanım ve eğilimleri analiz etmek." />
+            <ListItem text="Hesabınızı oluşturmak ve yönetmek" />
+            <ListItem text="Minnettarlık günlüğü hizmetlerini sunmak" />
+            <ListItem text="Kişiselleştirilmiş bildirimler göndermek" />
+            <ListItem text="Uygulama performansını iyileştirmek" />
+            <ListItem text="Müşteri destek hizmetleri sunmak" />
+            <ListItem text="Yasal yükümlülüklerimizi yerine getirmek" />
           </Section>
 
-          <Section title="Bilgilerinizin Açıklanması">
+          <Section title="Veri Paylaşımı ve Aktarımı">
             <Text style={styles.paragraph}>
-              Aşağıdaki durumlar dışında bilgilerinizi herhangi bir üçüncü tarafa satmayız,
-              dağıtmayız veya kiralamayız:
+              Kişisel verilerinizi aşağıdaki durumlar dışında üçüncü taraflarla paylaşmayız:
             </Text>
-            <ListItem text="Yasalar Gerektirdiğinde: Yasal süreçlere yanıt vermek, potansiyel politika ihlallerini araştırmak veya haklarımızı, mülkiyetimizi ve güvenliğimizi korumak için bilgi açıklamasının gerekli olduğuna inandığımızda." />
-            <ListItem text="Hizmet Sağlayıcılar: Veri depolama veya müşteri hizmetleri gibi bizim adımıza hizmet veren üçüncü taraf hizmet sağlayıcılarla. Bu hizmet sağlayıcıların bilgilerinizi korumaları ve yalnızca bizim adımıza hizmet vermek için kullanmaları gerekmektedir." />
+            <ListItem text="Hizmet Sağlayıcılar: Supabase (veri depolama), Google (OAuth ve Analytics), Firebase (Analytics)" />
+            <ListItem text="Yasal Yükümlülükler: Yasal makamların talebi üzerine" />
+            <ListItem text="Veri Güvenliği: Verileriniz şifrelenmiş olarak saklanır ve güvenli protokollerle aktarılır" />
+            <ListItem text="Uluslararası Aktarım: Verileriniz AB ve ABD'deki sunucularda işlenebilir" />
           </Section>
 
-          <Section title="Bilgilerinizin Güvenliği">
+          <Section title="KVKK Kapsamındaki Haklarınız">
             <Text style={styles.paragraph}>
-              Bilgilerinizi korumak için idari, teknik ve fiziksel güvenlik önlemleri kullanıyoruz.
-              Makul önlemler alsak da, hiçbir güvenlik önleminin mükemmel veya aşılmaz olmadığını ve
-              hiçbir veri aktarım yönteminin herhangi bir müdahaleye veya başka tür bir kötüye
-              kullanıma karşı garanti edilemeyeceğini lütfen unutmayın.
+              KVKK'nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:
             </Text>
+            <ListItem text="Bilgi Talep Etme: Verilerinizin işlenip işlenmediğini öğrenme" />
+            <ListItem text="Erişim Hakkı: İşlenen verileriniz hakkında bilgi alma" />
+            <ListItem text="Düzeltme Hakkı: Yanlış veya eksik verilerin düzeltilmesini isteme" />
+            <ListItem text="Silme Hakkı: Belirli şartlarda verilerinizin silinmesini isteme" />
+            <ListItem text="İtiraz Hakkı: Veri işleme faaliyetlerine itiraz etme" />
+            <ListItem text="Taşınabilirlik: Verilerinizi yapılandırılmış formatta alma" />
+          </Section>
+
+          <Section title="Veri Saklama Süreleri">
+            <Text style={styles.paragraph}>
+              Kişisel verilerinizi aşağıdaki sürelerle saklarız:
+            </Text>
+            <ListItem text="Hesap Bilgileri: Hesabınız aktif olduğu sürece" />
+            <ListItem text="Minnettarlık Kayıtları: Hesap silme tarihinden itibaren 30 gün" />
+            <ListItem text="Analytics Verileri: Anonim hale getirilerek 26 ay" />
+            <ListItem text="Log Kayıtları: Güvenlik amaçlı 12 ay" />
+          </Section>
+
+          <Section title="Veri Güvenliği">
+            <Text style={styles.paragraph}>
+              Verilerinizi korumak için aşağıdaki güvenlik önlemlerini alıyoruz:
+            </Text>
+            <ListItem text="SSL/TLS şifreleme ile güvenli veri aktarımı" />
+            <ListItem text="Veri izolasyonu" />
+            <ListItem text="Düzenli güvenlik güncellemeleri ve penetrasyon testleri" />
+            <ListItem text="Minimum veri toplama prensibi" />
+            <ListItem text="Şifrelenmiş veri depolama" />
           </Section>
 
           <Section title="Çocukların Gizliliği">
             <Text style={styles.paragraph}>
-              13 yaşın altındaki çocuklardan bilerek kişisel kimlik bilgileri toplamıyoruz. Ebeveyn
-              veya vasi iseniz ve çocuğunuzun bize kişisel bilgiler verdiğini fark ederseniz, lütfen
-              bizimle iletişime geçin.
+              Uygulamamız 13 yaş altındaki çocuklar için tasarlanmamıştır. 13 yaş altındaki
+              çocuklardan bilerek kişisel veri toplamıyoruz. Ebeveyn veya vasi iseniz ve çocuğunuzun
+              bize kişisel bilgi verdiğini fark ederseniz, lütfen bizimle iletişime geçin.
             </Text>
           </Section>
 
-          <Section title="Bu Gizlilik Politikasındaki Değişiklikler">
+          <Section title="Bu Politikadaki Değişiklikler">
             <Text style={styles.paragraph}>
-              Bu Gizlilik Politikasını zaman zaman güncelleyebiliriz. Bu sayfada yeni Gizlilik
-              Politikasını yayınlayarak herhangi bir değişikliği size bildireceğiz. Herhangi bir
-              değişiklik için bu Gizlilik Politikasını periyodik olarak gözden geçirmeniz önerilir.
+              Bu Gizlilik Politikasını zaman zaman güncelleyebiliriz. Önemli değişiklikler için size
+              uygulama içi bildirim göndereceğiz. Bu politikayı düzenli olarak gözden geçirmenizi
+              öneririz.
             </Text>
           </Section>
 
-          <Section title="Bize Ulaşın">
+          <Section title="İletişim ve Başvuru">
             <Text style={styles.paragraph}>
-              Bu Gizlilik Politikası hakkında herhangi bir sorunuz veya yorumunuz varsa, lütfen
-              bizimle iletişime geçin:
+              KVKK haklarınızı kullanmak veya gizlilik konularında sorularınız için bizimle
+              iletişime geçebilirsiniz:
             </Text>
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="E-posta ile iletişime geç"
               accessibilityHint="Gizlilik politikası hakkında soru sormak için e-posta gönder"
             >
-              <Text style={styles.contactLink}>iletisim@yeserapp.com</Text>
+              <Text style={styles.contactLink}>E-posta: anilkaraca140@gmail.com</Text>
             </TouchableOpacity>
+            <Text style={styles.paragraph}>
+              Başvurularınızı KVKK'nın 13. maddesi uyarınca değerlendirip, en geç 30 gün içinde
+              sonuçlandıracağız.
+            </Text>
           </Section>
         </ThemedCard>
       </ScreenSection>

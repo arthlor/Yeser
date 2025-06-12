@@ -47,18 +47,9 @@ Yeşer, günlük minnettarlık pratiğinizi destekleyen, sezgisel ve güçlü bi
 • Verileriniz sadece sizin kontrolünüzde
 • İsteğe bağlı veri dışa aktarımı
 
-🧠 BİLİMSEL TEMELLİ FAYDALAR:
-
-Araştırmalar gösteriyor ki düzenli minnettarlık pratiği:
-• Stres seviyelerini %23 azaltır
-• Uyku kalitesini %25 artırır
-• Genel mutluluk hissini artırır
-• İlişki kalitesini geliştirir
-• İmmün sistemi güçlendirir
-
 💎 NEDEN YEŞER?
 
-Yeşer, sadece bir minnettarlık uygulaması değil; yaşam kalitenizi artırmak için tasarlanmış kapsamlı bir wellness aracıdır. Basit ama güçlü özellikleri ile hem yeni başlayanlar hem de deneyimli kullanıcılar için mükemmeldir.
+Yeşer, sadece bir minnettarlık uygulaması değil; yaşam kalitenizi artırmak için tasarlanmış kapsamlı bir iyileşme aracıdır. Basit ama güçlü özellikleri ile hem yeni başlayanlar hem de deneyimli kullanıcılar için mükemmeldir.
 
 🎁 TEK SEFERLIK ÖDEME
 Yeşer premium bir uygulama olarak 39.99 TL ile tüm özelliklerine sınırsız erişim sağlar. Aylık abonelik yok, gizli maliyet yok!
@@ -67,7 +58,7 @@ Bugün daha minnettar bir yaşama başlayın! 🌟
 ```
 
 **Keywords** (100 characters max):
-`minnettarlık,günlük,sağlık,wellness,meditasyon,pozitif,yaşam,mutluluk,zihin,therapy`
+`minnettarlık,günlük,manifest,sağlık,wellness,meditasyon,pozitif,yaşam,mutluluk,zihin,terapi`
 
 ### **Google Play Console**
 
@@ -119,15 +110,6 @@ Yeşer ile günlük minnettarlık pratiğinizi geliştirin ve yaşam kalitenizi 
 • İsteğe bağlı veri dışa aktarımı
 • Bulut senkronizasyonu
 • Veri yedekleme özellikleri
-
-🧠 BİLİMSEL FAYDALAR
-
-Düzenli minnettarlık pratiğinin kanıtlanmış faydaları:
-• Stres ve anksiyete azalması (%23 iyileşme)
-• Uyku kalitesinde artış (%25 iyileşme)
-• Genel mutluluk seviyesinde yükselme
-• Sosyal ilişkilerde gelişme
-• Fiziksel sağlık göstergelerinde iyileşme
 
 💎 PREMIUM DENEYİM
 
@@ -185,8 +167,8 @@ Bugün Yeşer'i indirin ve daha minnettar, daha pozitif bir yaşama adım atın!
 **Primary Keywords:**
 - minnettarlık
 - günlük  
-- wellness
-- pozitif düşünce
+- manifest
+- terapi
 - mental sağlık
 
 **Secondary Keywords:**
@@ -211,7 +193,7 @@ Bugün Yeşer'i indirin ve daha minnettar, daha pozitif bir yaşama adım atın!
 
 ## 📞 **SUPPORT INFORMATION**
 
-**Developer**: Yeşer Team
+**Developer**: Anıl Karaca
 **Support Email**: iletisim@yeserapp.com
 **Privacy Policy**: In-app (Settings > Gizlilik Politikası)  
 **Terms of Service**: In-app (Settings > Kullanım Şartları) 

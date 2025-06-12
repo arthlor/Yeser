@@ -76,7 +76,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: 'src/assets/assets/adaptive-icon.png',
-        backgroundColor: '#ffffff',
+        backgroundColor: '#5DB0A5', // Use brand primary color for better visibility
       },
       package: getBundleIdentifier(),
       versionCode: 1,

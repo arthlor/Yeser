@@ -312,7 +312,7 @@ const EnhancedEntryDetailScreen: React.FC<{
       scrollable={true}
       showsVerticalScrollIndicator={false}
       density="compact"
-      edges={['top']}
+      edges={[]}
       edgeToEdge={true}
       refreshControl={
         <RefreshControl
@@ -511,7 +511,7 @@ const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     // 🎯 ENHANCED HERO ZONE: Edge-to-Edge Header
     heroZone: {
-      paddingBottom: theme.spacing.lg,
+      // Removed paddingBottom to eliminate black padding below header
     },
     heroCard: {
       borderRadius: 0,

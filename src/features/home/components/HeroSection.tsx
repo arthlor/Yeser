@@ -170,8 +170,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({
         styles.container,
         {
           opacity: animations.fadeAnim,
-          transform: animations.entranceTransform,
-          // **iOS ANTI-BLUR OPTIMIZATIONS**
+          // **REMOVED TRANSFORM**: Prevents iOS blurriness on streak section
+          // transform: animations.entranceTransform,
+          // **iOS ANTI-BLUR OPTIMIZATIONS**: Ensure pixel-perfect rendering
           ...(Platform.OS === 'ios' && {
             shouldRasterizeIOS: true,
             rasterizationScale: 2, // Use 2x for Retina displays

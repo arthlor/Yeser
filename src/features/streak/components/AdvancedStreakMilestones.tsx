@@ -346,8 +346,8 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
     }
   }, [currentStreak, animations]);
 
-  // **SIMPLIFIED TRANSFORM**: Use animations directly for consistency
-  const optimizedTransform = animations.entranceTransform;
+  // **REMOVED TRANSFORM**: Prevents iOS blurriness
+  // const optimizedTransform = animations.entranceTransform;
 
   if (!currentMilestone) {
     return null;
@@ -369,8 +369,9 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
       style={[
         {
           opacity: animations.fadeAnim,
-          transform: optimizedTransform,
-          // **iOS ANTI-BLUR OPTIMIZATIONS**
+          // **REMOVED TRANSFORM**: Prevents iOS blurriness on streak section
+          // transform: optimizedTransform,
+          // **iOS ANTI-BLUR OPTIMIZATIONS**: Ensure pixel-perfect rendering
           ...(Platform.OS === 'ios' && {
             shouldRasterizeIOS: true,
             rasterizationScale: 2, // Use 2x for Retina displays

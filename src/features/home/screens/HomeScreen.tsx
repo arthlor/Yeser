@@ -167,7 +167,8 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
         <Animated.View
           style={{
             opacity: animations.fadeAnim,
-            transform: animations.entranceTransform,
+            // **REMOVED TRANSFORM**: Prevents iOS blurriness on streak section
+            // transform: animations.entranceTransform,
           }}
         >
           {/* 1. Hero Section with Streak Info */}

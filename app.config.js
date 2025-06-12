@@ -44,6 +44,7 @@ export default {
     orientation: 'portrait',
     icon: 'src/assets/assets/icon.png',
     userInterfaceStyle: 'automatic',
+    scheme: getUrlScheme(),
     splash: {
       image: 'src/assets/assets/splash-icon.png',
       resizeMode: 'contain',

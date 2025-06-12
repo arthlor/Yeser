@@ -21,16 +21,14 @@ const frequencyOptions: {
   label: string;
   value: Profile['throwback_reminder_frequency'];
   icon: string;
-  description: string;
 }[] = [
   {
     label: 'Günlük',
     value: 'daily',
     icon: 'calendar-today',
-    description: 'Her gün geçmiş kayıtlarınızdan',
   },
-  { label: 'Haftalık', value: 'weekly', icon: 'calendar-week', description: 'Haftada bir kez' },
-  { label: 'Aylık', value: 'monthly', icon: 'calendar-month', description: 'Ayda bir kez' },
+  { label: 'Haftalık', value: 'weekly', icon: 'calendar-week' },
+  { label: 'Aylık', value: 'monthly', icon: 'calendar-month' },
 ];
 
 interface ThrowbackReminderSettingsProps {
@@ -251,11 +249,6 @@ const EnhancedThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps
       }
     }, [throwbackEnabled, selectedTime, selectedFrequency, formatTime, getFrequencyLabel]);
 
-    const selectedOption = useMemo(
-      () => frequencyOptions.find((opt) => opt.value === selectedFrequency),
-      [selectedFrequency]
-    );
-
     // **SIMPLIFIED STYLES**: Basic memoized styles for minimal animation system
     const cardTransform = useMemo(() => [{ scale: animations.scaleAnim }], [animations.scaleAnim]);
 
@@ -342,15 +335,7 @@ const EnhancedThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps
                     >
                       {option.label}
                     </Text>
-                    <Text
-                      style={[
-                        styles.frequencyOptionDescription,
-                        selectedFrequency === option.value &&
-                          styles.frequencyOptionDescriptionSelected,
-                      ]}
-                    >
-                      {option.description}
-                    </Text>
+
                   </TouchableOpacity>
                 ))}
               </View>
@@ -373,9 +358,7 @@ const EnhancedThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps
                     <View style={styles.timeDisplayContainer}>
                       <Text style={styles.timeText}>{formatTime(selectedTime)}</Text>
                       <Text style={styles.timeLabel}>
-                        {selectedOption
-                          ? `${selectedOption.description} bildirim`
-                          : 'Hatırlatma saati'}
+                        Hatırlatma saati
                       </Text>
                     </View>
                     <View
@@ -544,7 +527,7 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       borderWidth: 2,
       borderColor: theme.colors.surfaceVariant + '40',
-      minHeight: 80,
+      minHeight: 60,
     },
     frequencyOptionSelected: {
       backgroundColor: theme.colors.primaryContainer + '80',
@@ -573,15 +556,7 @@ const createStyles = (theme: AppTheme) =>
     frequencyOptionTextSelected: {
       color: theme.colors.primary,
     },
-    frequencyOptionDescription: {
-      ...theme.typography.labelSmall,
-      color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      lineHeight: 14,
-    },
-    frequencyOptionDescriptionSelected: {
-      color: theme.colors.primary + 'CC',
-    },
+
 
     timeSection: {
       paddingBottom: theme.spacing.md,

@@ -25,7 +25,6 @@ import useAuthStore from './store/authStore';
 import { useUserProfile } from './shared/hooks/useUserProfile';
 import { logger } from '@/utils/debugConfig';
 import { initializeGlobalErrorMonitoring } from '@/utils/errorTranslation';
-import { debugMagicLinks } from '@/utils/debugMagicLinks';
 import { RootStackParamList } from './types/navigation';
 import { AppProviders } from './providers/AppProviders';
 import SplashOverlayProvider from './providers/SplashOverlayProvider';
@@ -51,10 +50,6 @@ const getActiveRouteName = (state: NavigationState | undefined): string | undefi
 const handleDeepLink = async (url: string) => {
   try {
     logger.debug('Deep link received:', { url });
-
-    // Debug the deep link for troubleshooting
-    const debugResult = debugMagicLinks.testDeepLink(url);
-    logger.debug('Deep link debug result:', debugResult);
 
     // Parse the URL
     const parsedUrl = new URL(url);

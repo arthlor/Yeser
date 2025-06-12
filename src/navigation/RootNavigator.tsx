@@ -380,6 +380,7 @@ const RootNavigator: React.FC = () => {
           presentation: 'modal',
           headerTitleAlign: 'center',
           gestureEnabled: true,
+          headerBackTitle: '', // Remove back title text on iOS
           cardStyleInterpolator: ({ current }: StackCardInterpolationProps) => {
             return {
               cardStyle: {
@@ -401,9 +402,24 @@ const RootNavigator: React.FC = () => {
         component={EntryDetailScreen}
         options={{
           headerShown: true,
-          title: '', // Empty title to prevent "MainApp" from showing
+          title: 'Günlük Kayıt', // Empty title to prevent "MainApp" from showing
           headerTitleAlign: 'center',
           gestureEnabled: true,
+          headerBackTitle: '', // Remove back title text on iOS
+          headerStyle: {
+            height: 44, // Fixed header height
+          },
+          headerTitleStyle: {
+            fontSize: 17,
+            fontWeight: '600',
+          },
+          // Remove default header padding
+          headerLeftContainerStyle: {
+            paddingLeft: 16,
+          },
+          headerRightContainerStyle: {
+            paddingRight: 16,
+          },
         }}
       />
       <Root.Screen
@@ -415,6 +431,7 @@ const RootNavigator: React.FC = () => {
           presentation: 'modal',
           headerTitleAlign: 'center',
           gestureEnabled: true,
+          headerBackTitle: '', // Remove back title text on iOS
         }}
       />
       <Root.Screen
@@ -426,6 +443,7 @@ const RootNavigator: React.FC = () => {
           presentation: 'modal',
           headerTitleAlign: 'center',
           gestureEnabled: true,
+          headerBackTitle: '', // Remove back title text on iOS
           cardStyleInterpolator: ({ current }: StackCardInterpolationProps) => {
             return {
               cardStyle: {
@@ -451,6 +469,7 @@ const RootNavigator: React.FC = () => {
           presentation: 'modal',
           headerTitleAlign: 'center',
           gestureEnabled: true,
+          headerBackTitle: '', // Remove back title text on iOS
           cardStyleInterpolator: ({ current }: StackCardInterpolationProps) => {
             return {
               cardStyle: {
@@ -476,6 +495,7 @@ const RootNavigator: React.FC = () => {
           presentation: 'modal',
           headerTitleAlign: 'center',
           gestureEnabled: true,
+          headerBackTitle: '', // Remove back title text on iOS
           cardStyleInterpolator: ({ current }: StackCardInterpolationProps) => {
             return {
               cardStyle: {

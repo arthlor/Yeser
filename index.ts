@@ -1,5 +1,4 @@
 import 'react-native-gesture-handler';
-import 'expo-dev-client';
 import { enableFreeze, enableScreens } from 'react-native-screens';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 
@@ -14,8 +13,6 @@ globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
 import '@react-native-firebase/app';
 
 import { registerRootComponent } from 'expo';
-// Removed Firebase JS SDK initialization
-
 import App from './src/App';
 
 // Enable react-native-screens optimisations globally (avoids off-screen mounts flicker)

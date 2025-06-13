@@ -102,11 +102,7 @@ jobs:
     name: 📱 Build Preview (Internal)
     runs-on: ubuntu-latest
     needs: quality-check
-    if: |
-      (github.ref == 'refs/heads/develop' || 
-       github.ref == 'refs/heads/feature/premium-payment-integration' || 
-       github.event_name == 'pull_request' ||
-       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'preview'))
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'preview'
     timeout-minutes: 45
     
     steps:
@@ -194,9 +190,7 @@ jobs:
     name: 🚀 Build Production
     runs-on: ubuntu-latest
     needs: quality-check
-    if: |
-      (github.ref == 'refs/heads/main' || 
-       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'))
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
     timeout-minutes: 60
     
     outputs:

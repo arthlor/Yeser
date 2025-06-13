@@ -47,6 +47,22 @@
         "EXPO_PUBLIC_ENV": "production"
       },
       "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "ios": {
+        "buildConfiguration": "Release",
+        "credentialsSource": "remote"
+      }
+    },
+    "production-aab": {
+      "autoIncrement": true,
+      "prebuildCommand": "node scripts/validate-env.cjs production",
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_ENV": "production"
+      },
+      "android": {
         "buildType": "app-bundle",
         "gradleCommand": ":app:bundleRelease"
       },

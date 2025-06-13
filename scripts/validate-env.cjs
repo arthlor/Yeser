@@ -173,7 +173,8 @@ function validateEASConfig() {
  * Main validation function
  */
 function main() {
-  const environment = process.argv[2] || 'development';
+  const args = process.argv.slice(2);
+  const environment = args.find(arg => !arg.startsWith('--')) || 'development';
   
   console.log(`${colors.cyan}${colors.bold}🚀 Yeşer Environment Validation${colors.reset}`);
   console.log(`${colors.cyan}Environment: ${environment}${colors.reset}`);

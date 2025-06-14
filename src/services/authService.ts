@@ -6,7 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
-import { robustFetch } from '@/utils/robustFetch';
+// robustFetch import removed - no longer needed after performance optimization
 
 // Define a type for our custom, simplified error shape
 type SimpleAuthError = {
@@ -125,49 +125,9 @@ export const setSessionFromTokens = async (accessToken: string, refreshToken: st
       refreshTokenLength: refreshToken?.length || 0,
     });
 
-    // 🚨 FIX: Use robust fetch for enhanced network reliability
-    try {
-      const testResponse = await robustFetch('https://httpbin.org/get', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000,
-        retries: 2,
-      });
-      logger.debug('Network connectivity test:', {
-        status: testResponse.status,
-        canReachInternet: testResponse.ok,
-      });
-    } catch (networkError) {
-      logger.error('Basic network connectivity failed:', {
-        error: networkError instanceof Error ? networkError.message : String(networkError),
-        type: 'NETWORK_CONNECTIVITY_ISSUE',
-      });
-    }
-
-    // 🚨 FIX: Use robust fetch for Supabase API connectivity test
-    try {
-      const supabaseHealthCheck = await robustFetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/`,
-        {
-          method: 'GET',
-          headers: {
-            apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
-            'Content-Type': 'application/json',
-          },
-          timeout: 10000,
-          retries: 2,
-        }
-      );
-      logger.debug('Supabase API connectivity test:', {
-        status: supabaseHealthCheck.status,
-        canReachSupabase: supabaseHealthCheck.status < 500,
-      });
-    } catch (supabaseError) {
-      logger.error('Supabase API connectivity failed:', {
-        error: supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
-        type: 'SUPABASE_CONNECTIVITY_ISSUE',
-      });
-    }
+    // 🚨 PERFORMANCE FIX: Remove unnecessary network connectivity tests
+    // These tests were adding 2-4+ seconds of delay to magic link auth
+    // The Supabase session setup will fail naturally if there are network issues
 
     const { data, error } = await supabase.auth.setSession({
       access_token: accessToken,
@@ -275,6 +235,28 @@ export const signInWithGoogle = async (): Promise<{
   error: (AuthError | SimpleAuthError) | null;
 }> => {
   try {
+    // 🚨 CRITICAL FIX: Check if user is already authenticated before OAuth
+    // Note: This check prevents unnecessary OAuth when user is already logged in
+    // but allows re-authentication after logout (when currentSession is null)
+    const currentSession = await getCurrentSession();
+    if (currentSession && currentSession.user) {
+      logger.warn('Google OAuth attempted while user already has active session', {
+        userId: currentSession.user.id,
+        sessionExpiry: currentSession.expires_at,
+      });
+
+      // Return the existing session instead of starting new OAuth
+      return {
+        user: currentSession.user,
+        session: currentSession,
+        error: null,
+      };
+    }
+
+    logger.debug('No current session found, proceeding with Google OAuth', {
+      sessionExists: !!currentSession,
+    });
+
     // **PRODUCTION-READY URL SCHEME**: Use correct URL scheme matching app.config.js
     const getRedirectUrl = () => {
       const env = process.env.EXPO_PUBLIC_ENV || 'development';
@@ -325,18 +307,40 @@ export const signInWithGoogle = async (): Promise<{
         const refreshToken = params.get('refresh_token');
 
         if (accessToken && refreshToken) {
-          const { error: sessionError } = await supabase.auth.setSession({
+          logger.debug('Setting session with Google OAuth tokens', {
+            hasAccessToken: !!accessToken,
+            hasRefreshToken: !!refreshToken,
+            accessTokenLength: accessToken?.length || 0,
+            refreshTokenLength: refreshToken?.length || 0,
+          });
+
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
 
           if (sessionError) {
+            logger.error('Google OAuth setSession error details:', {
+              message: sessionError.message,
+              name: sessionError.name,
+              status: (sessionError as Error & { status?: number | string }).status,
+              isNetworkError:
+                sessionError.message.includes('Network') || sessionError.message.includes('fetch'),
+              errorType: 'GOOGLE_OAUTH_SET_SESSION_ERROR',
+            });
+
             return {
               user: null,
               session: null,
               error: handleAuthError(sessionError, 'signInWithGoogle (setSession)'),
             };
           }
+
+          logger.debug('Google OAuth session set successfully', {
+            hasUser: !!sessionData?.user,
+            hasSession: !!sessionData?.session,
+            userId: sessionData?.user?.id,
+          });
 
           // At this point, the onAuthStateChange listener will fire with SIGNED_IN
           // and the user/session will be updated globally.

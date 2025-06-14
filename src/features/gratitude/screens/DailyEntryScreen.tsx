@@ -436,7 +436,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           />
         }
       >
-        {/* **EDGE-TO-EDGE HERO SECTION**: Full-width hero with proper spacing */}
+        {/* **EDGE-TO-EDGE HERO SECTION**: Built-in navigation header */}
         <Animated.View
           style={[
             styles.edgeToEdgeHeroSection,
@@ -446,6 +446,13 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             },
           ]}
         >
+          {/* Built-in Navigation Header - Edge-to-edge */}
+          <View style={styles.builtInNavigationHeader}>
+            <View style={styles.navigationContent}>
+              <Text style={styles.navigationTitle}>Minnettarlık Günlüğü</Text>
+            </View>
+          </View>
+
           {/* Date Selection Header - Edge-to-edge */}
           <TouchableOpacity
             onPress={() => setShowDatePicker(true)}
@@ -466,7 +473,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             </View>
           </TouchableOpacity>
 
-          {/* Progress Section - Edge-to-edge with gradient background */}
+          {/* Progress Section - Edge-to-edge */}
           <View style={styles.edgeToEdgeProgressSection}>
             <View style={styles.progressContent}>
               <View style={styles.progressHeader}>
@@ -519,7 +526,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             },
           ]}
         >
-          {/* Gratitude Input Bar - Enhanced edge-to-edge */}
+          {/* Gratitude Input Bar */}
           <View style={styles.inputBarContainer}>
             <GratitudeInputBar
               promptText={profile?.useVariedPrompts ? currentPrompt : undefined}
@@ -636,9 +643,25 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    // **EDGE-TO-EDGE HERO SECTION**: Full-width hero with proper spacing
+    // **EDGE-TO-EDGE HERO SECTION**: Full-width hero with built-in navigation
     edgeToEdgeHeroSection: {
       marginBottom: theme.spacing.md,
+    },
+    builtInNavigationHeader: {
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.md,
+      paddingBottom: theme.spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outline + '20',
+    },
+    navigationContent: {
+      alignItems: 'center',
+    },
+    navigationTitle: {
+      ...theme.typography.titleLarge,
+      color: theme.colors.onBackground,
+      fontWeight: '600',
     },
     edgeToEdgeDateHeader: {
       backgroundColor: theme.colors.surface,
@@ -875,10 +898,6 @@ const createStyles = (theme: AppTheme) =>
     contentZone: {
       flex: 1,
     },
-    contentSection: {
-      flex: 1,
-      paddingHorizontal: theme.spacing.md,
-    },
     statementsList: {
       paddingVertical: theme.spacing.sm,
       gap: theme.spacing.sm,
@@ -958,8 +977,11 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.lg,
       ...getPrimaryShadow.floating(theme),
     },
-    heroSection: {
-      marginBottom: theme.spacing.md,
+    headerStyle: {
+      marginBottom: theme.spacing.sm,
+      backgroundColor: theme.colors.background,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outline + '20',
     },
     heroCard: {
       borderRadius: 0,
@@ -977,11 +999,6 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.md,
-    },
-    progressSection: {
-      alignItems: 'center',
-      paddingBottom: theme.spacing.md,
-      gap: theme.spacing.sm,
     },
     progressStats: {
       flexDirection: 'row',

@@ -281,42 +281,83 @@ const RootNavigator: React.FC = () => {
     }
   }, [isProfileError, isAuthenticated, profileError]);
 
-  // 🚨 CRITICAL FIX: Profile loading timeout to prevent indefinite splash
   const profileLoadingStartRef = React.useRef<number | null>(null);
 
-  // 🚨 CRITICAL FIX: Improved loading state logic with profile loading timeout
+  // 🚨 RACE CONDITION FIX: Profile loading timeout with comprehensive cleanup
+  const [profileTimedOut, setProfileTimedOut] = React.useState(false);
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    // **RACE CONDITION FIX**: Clear any existing timeout first
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    if (isAuthenticated && isLoadingProfile && !isProfileError) {
+      // Start timer when profile loading begins
+      if (profileLoadingStartRef.current === null) {
+        profileLoadingStartRef.current = Date.now();
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        const loadingTime = Date.now() - (profileLoadingStartRef.current || Date.now());
+
+        logger.warn('Profile loading timeout - proceeding without profile data', {
+          loadingTime,
+          isAuthenticated,
+          hasProfile: !!profile,
+          scenario: 'profile_loading_timeout',
+        });
+
+        // Reset timer and trigger timeout state
+        profileLoadingStartRef.current = null;
+        setProfileTimedOut(true);
+        timeoutRef.current = null;
+
+        // Reset magicLinkSent flag to prevent UI confusion
+        const resetMagicLinkSent = useAuthStore.getState().resetMagicLinkSent;
+        resetMagicLinkSent();
+
+        // Analytics for monitoring
+        analyticsService.logEvent('profile_loading_timeout', {
+          loadingTime,
+          isAuthenticated,
+          hasProfile: !!profile,
+        });
+      }, 3000); // 3 second timeout
+    } else {
+      // Reset timer when not loading profile
+      if (profileLoadingStartRef.current !== null) {
+        profileLoadingStartRef.current = null;
+        setProfileTimedOut(false);
+      }
+    }
+
+    // **RACE CONDITION FIX**: Comprehensive cleanup on unmount/deps change
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [isAuthenticated, isLoadingProfile, isProfileError, profile]);
+
+  // 🚨 RACE CONDITION FIX: Clean loading state calculation without side effects
   const isAppLoading = React.useMemo(() => {
     // Always show splash during auth loading or minimum time
     if (authIsLoading || !minimumTimeElapsed) {
       return true;
     }
 
-    // If user is authenticated but profile is still loading (and no error),
-    // only wait for profile for maximum 5 seconds to prevent indefinite splash
-    if (isAuthenticated && isLoadingProfile && !isProfileError) {
-      // Initialize timer on first profile loading
-      if (profileLoadingStartRef.current === null) {
-        profileLoadingStartRef.current = Date.now();
-      }
-
-      const maxProfileLoadingTime = 5000; // 5 seconds max
-      const loadingTime = Date.now() - profileLoadingStartRef.current;
-
-      if (loadingTime > maxProfileLoadingTime) {
-        logger.warn('Profile loading timeout - proceeding without profile data', {
-          loadingTime,
-          isAuthenticated,
-          hasProfile: !!profile,
-        });
-        profileLoadingStartRef.current = null; // Reset timer
-        return false; // Stop loading and proceed
-      }
-      return true;
+    // If profile timed out, don't show loading
+    if (profileTimedOut) {
+      return false;
     }
 
-    // Reset timer when not loading profile
-    if (profileLoadingStartRef.current !== null) {
-      profileLoadingStartRef.current = null;
+    // Show loading while waiting for profile (unless timed out)
+    if (isAuthenticated && isLoadingProfile && !isProfileError) {
+      return true;
     }
 
     return false;
@@ -326,7 +367,7 @@ const RootNavigator: React.FC = () => {
     isAuthenticated,
     isLoadingProfile,
     isProfileError,
-    profile,
+    profileTimedOut,
   ]);
 
   // 🚨 FIX: Show splash screen with consolidated logic
@@ -342,6 +383,11 @@ const RootNavigator: React.FC = () => {
       error: profileError?.message,
       hasProfile: !!profile,
     });
+
+    // 🚨 CRITICAL FIX: Reset magicLinkSent flag when profile error occurs
+    // This ensures clean state for any subsequent auth attempts
+    const resetMagicLinkSent = useAuthStore.getState().resetMagicLinkSent;
+    resetMagicLinkSent();
   }
 
   return (
@@ -443,25 +489,8 @@ const RootNavigator: React.FC = () => {
         name="EntryDetail"
         component={EntryDetailScreen}
         options={{
-          headerShown: true,
-          title: 'Günlük Kayıt', // Empty title to prevent "MainApp" from showing
-          headerTitleAlign: 'center',
+          headerShown: false, // Component handles its own header
           gestureEnabled: true,
-          headerBackTitle: '', // Remove back title text on iOS
-          headerStyle: {
-            height: 44, // Fixed header height
-          },
-          headerTitleStyle: {
-            fontSize: 17,
-            fontWeight: '600',
-          },
-          // Remove default header padding
-          headerLeftContainerStyle: {
-            paddingLeft: 16,
-          },
-          headerRightContainerStyle: {
-            paddingRight: 16,
-          },
         }}
       />
       <Root.Screen

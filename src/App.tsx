@@ -1,3 +1,5 @@
+'use strict';
+
 import 'react-native-url-polyfill/auto';
 
 import {
@@ -14,7 +16,7 @@ import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import { StatusBar, type StatusBarStyle } from 'expo-status-bar';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { AppState, AppStateStatus, InteractionManager, StyleSheet, View } from 'react-native';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import RootNavigator from './navigation/RootNavigator';
 import { useTheme } from './providers/ThemeProvider';
@@ -24,13 +26,10 @@ import { notificationService } from './services/notificationService';
 import useAuthStore from './store/authStore';
 import { useUserProfile } from './shared/hooks/useUserProfile';
 import { logger } from '@/utils/debugConfig';
-import { initializeGlobalErrorMonitoring } from '@/utils/errorTranslation';
+// DISABLED: import { initializeGlobalErrorMonitoring } from '@/utils/errorTranslation';
 import { RootStackParamList } from './types/navigation';
 import { AppProviders } from './providers/AppProviders';
 import SplashOverlayProvider from './providers/SplashOverlayProvider';
-
-// Initialize global error monitoring as early as possible
-initializeGlobalErrorMonitoring();
 
 // Helper function to get the active route name
 const getActiveRouteName = (state: NavigationState | undefined): string | undefined => {
@@ -46,12 +45,78 @@ const getActiveRouteName = (state: NavigationState | undefined): string | undefi
   return route.name;
 };
 
-// Helper function to handle deep links
+// **RACE CONDITION FIX**: Track URL processing state to prevent duplicate handling
+interface UrlProcessingState {
+  status: 'processing' | 'completed';
+  timestamp: number;
+}
+const urlProcessingMap = new Map<string, UrlProcessingState>();
+
+// **MEMORY LEAK FIX**: Store cleanup timeout references
+const cleanupTimeoutRefs = new Map<string, ReturnType<typeof setTimeout>>();
+
+// **RACE CONDITION FIX**: Atomic URL processing state management
+const atomicUrlProcessingCheck = (url: string): boolean => {
+  try {
+    const existingState = urlProcessingMap.get(url);
+    const now = Date.now();
+
+    // Check if URL is currently being processed
+    if (existingState?.status === 'processing') {
+      logger.debug('URL already being processed, ignoring duplicate:', { url });
+      return false;
+    }
+
+    // Check if URL was recently completed (within 30 seconds)
+    if (existingState?.status === 'completed' && now - existingState.timestamp < 30000) {
+      logger.debug('URL recently processed, ignoring duplicate:', { url });
+      return false;
+    }
+
+    // Mark URL as being processed atomically
+    urlProcessingMap.set(url, { status: 'processing', timestamp: now });
+    return true;
+  } catch (error) {
+    logger.error('Error in atomicUrlProcessingCheck:', { error: (error as Error).message, url });
+    return false;
+  }
+};
+
+// **RACE CONDITION FIX**: Mark URL processing as completed
+const markUrlProcessingCompleted = (url: string): void => {
+  try {
+    urlProcessingMap.set(url, { status: 'completed', timestamp: Date.now() });
+
+    // **MEMORY LEAK FIX**: Clear existing timeout before setting new one
+    const existingTimeout = cleanupTimeoutRefs.get(url);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    // Cleanup old entries to prevent memory leaks
+    const timeoutRef = setTimeout(() => {
+      const entry = urlProcessingMap.get(url);
+      if (entry?.status === 'completed' && Date.now() - entry.timestamp > 60000) {
+        urlProcessingMap.delete(url);
+        cleanupTimeoutRefs.delete(url);
+      }
+    }, 60000);
+
+    cleanupTimeoutRefs.set(url, timeoutRef);
+  } catch (error) {
+    logger.error('Error in markUrlProcessingCompleted:', { error: (error as Error).message, url });
+  }
+};
+
 const handleDeepLink = async (url: string) => {
   try {
     logger.debug('Deep link received:', { url });
 
-    // Parse the URL
+    // **RACE CONDITION FIX**: Atomic duplicate processing prevention
+    if (!atomicUrlProcessingCheck(url)) {
+      return;
+    }
+    // Parse the URL with error protection
     const parsedUrl = new URL(url);
 
     // Check if it's a magic link confirmation - FIXED to match actual Supabase redirect URL
@@ -118,6 +183,9 @@ const handleDeepLink = async (url: string) => {
   } catch (error) {
     logger.error('Error parsing deep link:', { error: (error as Error).message, url });
     analyticsService.logEvent('deep_link_error', { error: (error as Error).message });
+  } finally {
+    // **RACE CONDITION FIX**: Mark URL processing as completed
+    markUrlProcessingCompleted(url);
   }
 };
 
@@ -181,6 +249,51 @@ const AppContent: React.FC = () => {
   // Check if user is fully ready for MainApp navigation
   const isMainAppReady = isAuthenticated && profile?.onboarded;
 
+  // 🚨 COLD START DEBUG: Add AppState logging to confirm the theory
+  const appStateRef = React.useRef(AppState.currentState);
+  const appStartTimeRef = React.useRef(Date.now());
+
+  React.useEffect(() => {
+    logger.debug('[COLD START DEBUG] Initial AppState:', {
+      extra: {
+        initialState: appStateRef.current,
+        appStartTime: appStartTimeRef.current,
+      },
+    });
+
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      const timeSinceStart = Date.now() - appStartTimeRef.current;
+      const previousState = appStateRef.current;
+
+      logger.debug('[COLD START DEBUG] AppState changed:', {
+        extra: {
+          from: previousState,
+          to: nextAppState,
+          timeSinceStart,
+          isAuthenticated,
+          hasProfile: !!profile,
+        },
+      });
+
+      if (nextAppState === 'active' && previousState !== 'active') {
+        logger.debug('[COLD START DEBUG] ⭐ App became ACTIVE - this could fix hanging promises', {
+          extra: {
+            timeSinceStart,
+            isAuthenticated,
+            hasProfile: !!profile,
+          },
+        });
+      }
+      appStateRef.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isAuthenticated, profile]);
+
   React.useEffect(() => {
     void analyticsService.logAppOpen();
 
@@ -191,138 +304,22 @@ const AppContent: React.FC = () => {
 
     // Enhanced notification response handler with comprehensive navigation
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      logger.debug('Notification response received:', { extra: { response } });
+      const data = response.notification.request.content.data;
+      logger.debug('Notification response received:', { extra: data });
 
-      const categoryIdentifier = response.notification.request.content.categoryIdentifier;
-      const notificationData = response.notification.request.content.data;
-
-      // Track notification interaction for analytics
-      analyticsService.logEvent('notification_tapped', {
-        category: categoryIdentifier || 'unknown',
-        type: typeof notificationData?.type === 'string' ? notificationData.type : 'unknown',
-        action: typeof notificationData?.action === 'string' ? notificationData.action : 'unknown',
-        timestamp: Date.now(),
-      });
-
-      if (categoryIdentifier === 'DAILY_REMINDER') {
-        // Enhanced daily reminder navigation to New Entry screen
-        logger.debug('Navigating to daily entry from notification', {
-          action:
-            typeof notificationData?.action === 'string' ? notificationData.action : 'unknown',
-          date:
-            typeof notificationData?.date === 'string'
-              ? notificationData.date
-              : new Date().toISOString().split('T')[0],
-        });
-
-        // Navigate to New Entry screen (DailyEntryTab) with today's date
-        // Add delay to ensure navigator is ready AND check authentication
-        setTimeout(() => {
-          if (navigationRef.current?.isReady() && isMainAppReady) {
-            navigationRef.current?.navigate('MainApp', {
-              screen: 'DailyEntryTab',
-              params: {
-                initialDate: new Date().toISOString().split('T')[0], // Always today for daily reminders
-              },
-            });
-          } else {
-            logger.warn(
-              'Cannot navigate to MainApp: navigator not ready or user not authenticated/onboarded',
-              {
-                isReady: navigationRef.current?.isReady(),
-                isMainAppReady,
-                isAuthenticated,
-                onboarded: profile?.onboarded,
-              }
-            );
-          }
-        }, 100);
-
-        // Track successful navigation
-        analyticsService.logEvent('daily_reminder_navigation_success', {
-          target_screen: 'DailyEntryTab',
-          date: new Date().toISOString().split('T')[0],
-        });
-      } else if (categoryIdentifier === 'THROWBACK_REMINDER') {
-        // Enhanced throwback reminder navigation
-        logger.debug('Navigating from throwback reminder', {
-          action:
-            typeof notificationData?.action === 'string' ? notificationData.action : 'unknown',
-          entryId: typeof notificationData?.entryId === 'string' ? notificationData.entryId : null,
-          frequency:
-            typeof notificationData?.frequency === 'string'
-              ? notificationData.frequency
-              : 'unknown',
-        });
-
-        if (typeof notificationData?.entryId === 'string' && notificationData.entryId) {
-          // Navigate to specific entry detail if entryId is provided
-          setTimeout(() => {
-            if (navigationRef.current?.isReady()) {
-              navigationRef.current?.navigate('EntryDetail', {
-                entryId: notificationData.entryId as string,
-              });
-            }
-          }, 100);
-
-          analyticsService.logEvent('throwback_entry_navigation_success', {
-            target_screen: 'EntryDetail',
-            entry_id: notificationData.entryId,
-          });
-        } else {
-          // Navigate to past entries list
-          setTimeout(() => {
-            if (navigationRef.current?.isReady() && isMainAppReady) {
-              navigationRef.current?.navigate('MainApp', {
-                screen: 'PastEntriesTab',
-              });
-            } else {
-              logger.warn(
-                'Cannot navigate to MainApp: navigator not ready or user not authenticated/onboarded',
-                {
-                  isReady: navigationRef.current?.isReady(),
-                  isMainAppReady,
-                  isAuthenticated,
-                  onboarded: profile?.onboarded,
-                }
-              );
-            }
-          }, 100);
-
-          analyticsService.logEvent('throwback_list_navigation_success', {
-            target_screen: 'PastEntriesTab',
-            frequency:
-              typeof notificationData?.frequency === 'string'
-                ? notificationData.frequency
-                : 'unknown',
+      // Navigate based on notification type
+      if (data?.type === 'daily_reminder') {
+        // Navigate to daily entry screen
+        if (isMainAppReady && navigationRef.current) {
+          navigationRef.current.navigate('DailyEntry');
+        }
+      } else if (data?.type === 'throwback_reminder') {
+        // Navigate to home screen (where throwback is displayed)
+        if (isMainAppReady && navigationRef.current) {
+          navigationRef.current.navigate('MainApp', {
+            screen: 'Home',
           });
         }
-      } else {
-        // Handle unknown notification types
-        logger.warn('Unknown notification category received', {
-          category: categoryIdentifier,
-          data: notificationData,
-        });
-
-        // Default fallback - navigate to home (only if user is ready)
-        setTimeout(() => {
-          if (navigationRef.current?.isReady() && isMainAppReady) {
-            navigationRef.current?.navigate('MainApp', {
-              screen: 'HomeTab',
-            });
-          } else {
-            logger.warn(
-              'Cannot navigate to MainApp: navigator not ready or user not authenticated/onboarded',
-              {
-                isReady: navigationRef.current?.isReady(),
-                isMainAppReady,
-                isAuthenticated,
-                onboarded: profile?.onboarded,
-              }
-            );
-            // Don't attempt navigation if user isn't ready - they'll be guided through auth/onboarding flow
-          }
-        }, 100);
       }
     });
 
@@ -387,27 +384,69 @@ const AppContent: React.FC = () => {
 // Root component responsible for hiding the native splash screen once the first frame is rendered
 const App: React.FC = () => {
   const [appIsReady, setAppIsReady] = React.useState(false);
+  const [authInitialized, setAuthInitialized] = React.useState(false);
 
-  // Mark the app as ready once React has mounted providers (fonts & theme already preloaded inside providers)
   React.useEffect(() => {
-    // Providers load fonts/assets internally; give them one tick to mount
-    const timer = setTimeout(() => {
-      setAppIsReady(true);
-    }, 0);
+    // 🚨 COLD START FIX: Progressive initialization to prevent AsyncStorage deadlocks
+    const initializeApp = async () => {
+      try {
+        // Step 1: Let React render cycle complete first
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        setAppIsReady(true);
 
-    return () => clearTimeout(timer);
+        // Step 2: Wait for UI to be interactive before touching AsyncStorage
+        // This prevents AsyncStorage deadlocks during cold starts
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        // Step 2.5: Wait for all interactions to complete (most reliable approach)
+        await new Promise((resolve) => {
+          InteractionManager.runAfterInteractions(() => resolve(undefined));
+        });
+
+        // Step 3: Initialize auth after UI is ready and stable
+        logger.debug('[COLD START FIX] Starting deferred auth initialization');
+        const authStore = useAuthStore.getState();
+        await authStore.initializeAuth();
+        setAuthInitialized(true);
+        logger.debug('[COLD START FIX] Auth initialization completed successfully');
+      } catch (error) {
+        logger.error(
+          '[COLD START FIX] Auth initialization failed, proceeding with unauthenticated state:',
+          error as Error
+        );
+        // Don't block the app - user can try to log in manually
+        setAuthInitialized(true);
+      }
+    };
+
+    initializeApp();
   }, []);
 
   // Callback executed on the root view layout event
   const onLayoutRootView = React.useCallback(async () => {
+    // Hide splash screen once UI is ready, don't wait for auth
     if (appIsReady) {
       try {
         await ExpoSplashScreen.hideAsync();
+        logger.debug('[COLD START FIX] Splash screen hidden, app UI ready');
       } catch {
         // Intentionally swallow errors – splash will auto-hide eventually
       }
     }
   }, [appIsReady]);
+
+  // Show loading state while auth is being initialized
+  if (!authInitialized) {
+    return (
+      <AppProviders>
+        <SplashOverlayProvider>
+          <View onLayout={onLayoutRootView} style={styles.container}>
+            <EnhancedSplashScreen />
+          </View>
+        </SplashOverlayProvider>
+      </AppProviders>
+    );
+  }
 
   return (
     <AppProviders>

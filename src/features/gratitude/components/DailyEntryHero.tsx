@@ -68,7 +68,9 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
     const progress = statementCount / dailyGoal;
 
     if (statementCount === 0) {
-      return isToday ? 'Bugün hangi şeyler için minnettarsın?' : 'O gün hangi anlar için şükredin?';
+      return isToday
+        ? 'Bugün hangi şeyler için minnettarsın?'
+        : 'O gün hangi anlar için minnet duydun?';
     }
 
     if (progress >= 1) {

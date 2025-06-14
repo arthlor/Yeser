@@ -6,11 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Button } from 'react-native-paper';
 
 import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
 
-import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { ScreenSection } from '@/shared/components/layout';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 interface FeatureIntroStepProps {
@@ -85,7 +86,7 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
   }, [features, onNext]);
 
   return (
-    <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <OnboardingLayout edgeToEdge={true}>
       <Animated.View
         style={[
           styles.container,
@@ -241,19 +242,15 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
         {/* Actions Section */}
         <ScreenSection>
           <View style={styles.footer}>
-            <Button
-              mode="contained"
+            <OnboardingButton
               onPress={handleContinue}
-              style={styles.continueButton}
-              contentStyle={styles.buttonContentSmall}
-              labelStyle={styles.buttonTextSmall}
-            >
-              Devam Et
-            </Button>
+              title="Devam Et"
+              accessibilityLabel="Özellikleri ayarla ve devam et"
+            />
           </View>
         </ScreenSection>
       </Animated.View>
-    </ScreenLayout>
+    </OnboardingLayout>
   );
 };
 
@@ -427,25 +424,7 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       gap: theme.spacing.xs,
     },
-    continueButton: {
-      width: '100%',
-      borderRadius: theme.borderRadius.lg,
-    },
-    buttonContent: {
-      paddingVertical: theme.spacing.xs,
-    },
-    buttonText: {
-      ...theme.typography.bodyMedium,
-      fontWeight: '600',
-    },
-    buttonContentSmall: {
-      paddingVertical: theme.spacing.xs * 0.5,
-      paddingHorizontal: theme.spacing.md,
-    },
-    buttonTextSmall: {
-      ...theme.typography.bodySmall,
-      fontWeight: '600',
-    },
+    // Removed button styles - handled by OnboardingButton component
   });
 
 export default FeatureIntroStep;

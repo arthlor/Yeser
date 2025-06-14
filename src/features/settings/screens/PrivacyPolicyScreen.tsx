@@ -40,7 +40,7 @@ const PrivacyPolicyScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>2. Toplanan Veriler</Text>
           <Text style={styles.sectionText}>
             Uygulamamızda şu kişisel veriler toplanmaktadır:{'\n\n'}• E-posta adresiniz (giriş için)
-            {'\n'}• Kullanıcı adınız (isteğe bağlı){'\n'}• Şükür günlüğü girişleriniz{'\n'}•
+            {'\n'}• Kullanıcı adınız (isteğe bağlı){'\n'}• Minnet günlüğü girişleriniz{'\n'}•
             Bildirim tercihleri{'\n'}• Uygulama kullanım istatistikleri (anonim)
           </Text>
         </View>
@@ -111,7 +111,7 @@ const PrivacyPolicyScreen: React.FC = () => {
             KVKK kapsamında "unutulma hakkınız" bulunmaktadır. Hesabınızı silme konusunda:{'\n\n'}•
             Hesap Silme Süreci: Ayarlar {'>'} Hesap {'>'} Hesabımı Sil menüsünden
             gerçekleştirebilirsiniz{'\n'}• Kalıcı Silme: Bu işlem GERİ ALINAMAZ ve tüm verileriniz
-            kalıcı olarak silinir{'\n'}• Silinen Veriler: Şükür günlüğü girişleriniz, hesap
+            kalıcı olarak silinir{'\n'}• Silinen Veriler: Minnet günlüğü girişleriniz, hesap
             bilgileri, istatistikleriniz, bildirim ayarlarınız{'\n'}• Silme Süresi: Hesap silme
             işlemi ANINDA gerçekleşir{'\n'}• Yedekleme Önerisi: Silmeden önce verilerinizi dışa
             aktarmanızı önemle tavsiye ederiz{'\n'}• Tekrar Kayıt: Aynı e-posta ile tekrar kayıt
@@ -125,7 +125,7 @@ const PrivacyPolicyScreen: React.FC = () => {
             KVKK kapsamındaki diğer haklarınızı kullanmak için:{'\n\n'}• Veri Dışa Aktarma: Ayarlar{' '}
             {'>'} Veri Dışa Aktarma menüsünden JSON formatında{'\n'}• Bildirim Ayarları: Uygulama
             içinden dilediğiniz zaman değiştirebilirsiniz{'\n'}• Veri Düzeltme: Profil bilgilerinizi
-            ve şükür girişlerinizi düzenleyebilirsiniz{'\n'}• Destek Talebi: Uygulama içindeki
+            ve Minnet girişlerinizi düzenleyebilirsiniz{'\n'}• Destek Talebi: Uygulama içindeki
             destek kanalları üzerinden bizimle iletişime geçebilirsiniz{'\n'}• Şikayet Hakkı: Veri
             İşleme Değerlendirme Kurulu'na başvuru hakkınız bulunmaktadır
           </Text>

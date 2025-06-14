@@ -36,6 +36,13 @@ const getBundleIdentifier = () => {
   return 'com.arthlor.yeser';
 };
 
+// 🚨 FIX: Environment-specific iOS folder names
+const getIosTargetName = () => {
+  if (IS_DEV) return 'YeerDev';
+  if (IS_PREVIEW) return 'YeerPreview';
+  return 'Yeer'; // Production target name
+};
+
 // Asset background color - Dark Slate Gray for consistent branding
 const ASSET_BACKGROUND_COLOR = '#2F4F4F';
 
@@ -48,6 +55,7 @@ export default {
     icon: 'src/assets/assets/icon.png',
     userInterfaceStyle: 'automatic',
     scheme: getUrlScheme(),
+    platforms: ['ios', 'android'],
     splash: {
       image: 'src/assets/assets/splash-icon.png',
       resizeMode: 'contain',
@@ -139,7 +147,7 @@ export default {
         '@react-native-firebase/app',
         {
           ios: {
-            googleServicesFile: 'ios/YeerDev/GoogleService-Info.plist',
+            googleServicesFile: `ios/${getIosTargetName()}/GoogleService-Info.plist`,
           },
           android: {
             googleServicesFile: 'android/app/google-services.json',
@@ -168,6 +176,33 @@ export default {
       environment: environment,
       supabaseUrl: getEnv('EXPO_PUBLIC_SUPABASE_URL'),
       supabaseAnonKey: getEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
+      // Inject environment variables into the app bundle
+      env: {
+        EXPO_PUBLIC_SUPABASE_URL: getEnv('EXPO_PUBLIC_SUPABASE_URL'),
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: getEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
+        EXPO_PUBLIC_FIREBASE_API_KEY: getEnv('EXPO_PUBLIC_FIREBASE_API_KEY'),
+        EXPO_PUBLIC_FIREBASE_PROJECT_ID: getEnv('EXPO_PUBLIC_FIREBASE_PROJECT_ID'),
+        EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: getEnv('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+        EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: getEnv('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET'),
+        EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: getEnv(
+          'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'
+        ),
+        EXPO_PUBLIC_FIREBASE_APP_ID: getEnv('EXPO_PUBLIC_FIREBASE_APP_ID'),
+        EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: getEnv('EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID'),
+        EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS: getEnv('EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS'),
+        EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID: getEnv('EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID'),
+        EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB: getEnv('EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB'),
+        EXPO_PUBLIC_REDIRECT_URI: getEnv('EXPO_PUBLIC_REDIRECT_URI'),
+        EXPO_PUBLIC_APP_VERSION: getEnv('EXPO_PUBLIC_APP_VERSION', '1.0.0'),
+        EXPO_PUBLIC_APP_BUILD_NUMBER: getEnv('EXPO_PUBLIC_APP_BUILD_NUMBER', '1'),
+        EXPO_PUBLIC_APP_ENVIRONMENT: getEnv('EXPO_PUBLIC_APP_ENVIRONMENT', 'production'),
+        EXPO_PUBLIC_ENABLE_ANALYTICS: getEnv('EXPO_PUBLIC_ENABLE_ANALYTICS', 'true'),
+        EXPO_PUBLIC_ENABLE_CRASHLYTICS: getEnv('EXPO_PUBLIC_ENABLE_CRASHLYTICS', 'true'),
+        EXPO_PUBLIC_ENABLE_THROWBACK: getEnv('EXPO_PUBLIC_ENABLE_THROWBACK', 'true'),
+        EXPO_PUBLIC_ENABLE_VARIED_PROMPTS: getEnv('EXPO_PUBLIC_ENABLE_VARIED_PROMPTS', 'true'),
+        EXPO_PUBLIC_DEBUG_MODE: getEnv('EXPO_PUBLIC_DEBUG_MODE', 'false'),
+        EXPO_PUBLIC_LOG_LEVEL: getEnv('EXPO_PUBLIC_LOG_LEVEL', 'info'),
+      },
     },
     updates: {
       url: 'https://u.expo.dev/7465061f-a28e-47f5-a4ac-dbbdd4abe243',

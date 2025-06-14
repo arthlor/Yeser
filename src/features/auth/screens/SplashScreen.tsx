@@ -1,5 +1,5 @@
 // src/screens/EnhancedSplashScreen.tsx
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
 import LottieView from 'lottie-react-native';
 
@@ -15,51 +15,104 @@ import { AppTheme } from '@/themes/types';
 
 const { width: screenWidth } = Dimensions.get('window');
 
+// Turkish gratitude tips that rotate while users wait
+const GRATITUDE_TIPS = [
+  {
+    title: 'Küçük Anları Fark Et',
+    description:
+      'Günlük hayattaki basit zevkleri keşfet. Bir fincan çay, güzel bir manzara, sevdiklerinin gülümsemesi...',
+  },
+  {
+    title: 'Zorluklardan Öğren',
+    description:
+      'Yaşadığın zorluklar seni güçlendirdi. Her deneyim, bugünkü bilge ve güçlü haline katkı sağladı.',
+  },
+  {
+    title: 'İlişkilerini Değerlendir',
+    description:
+      'Hayatındaki insanlar senin için orada. Dostluklar, aile bağları, destekçilerin... Hepsi birer armağan.',
+  },
+  {
+    title: 'Sağlığına Minnet Duy',
+    description:
+      'Nefes alabilmek, hareket edebilmek, hissetmek... Vücudun her gün senin için mucizeler gerçekleştiriyor.',
+  },
+  {
+    title: 'Büyüme Fırsatları',
+    description:
+      'Öğrenme, gelişme ve yeni deneyimler yaşama şansın var. Her gün yeni bir keşif, yeni bir adım.',
+  },
+];
+
 /**
- * **SIMPLIFIED SPLASH SCREEN**: Minimal, non-intrusive animations
+ * **ENHANCED SPLASH SCREEN WITH GRATITUDE TIPS**
  *
- * **ANIMATION SIMPLIFICATION COMPLETED**:
- * - Reduced from 5 animation instances to 1 (80% reduction)
- * - Eliminated complex staged sequences (mainAnimations, logoAnimations, bottomAnimations, pulseAnimations, dotsAnimations)
- * - Replaced with subtle 400ms entrance fade following roadmap philosophy
- * - Removed translateY stages and pulse effects for cleaner, minimal experience
- * - Maintained Lottie animation without complex coordination overhead
+ * Features:
+ * - Rotating Turkish gratitude tips (5 different messages)
+ * - Smooth transitions between tips
+ * - Extended duration to prevent race conditions
+ * - Educational content while users wait
  */
 const EnhancedSplashScreen: React.FC = () => {
   const { theme } = useTheme();
   const { showError } = useGlobalError();
   const styles = createStyles(theme);
 
-  // **SIMPLIFIED ANIMATION SYSTEM**: Single coordinated instance (5 → 1, 80% reduction)
+  // Tip rotation state
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
+  const [tipOpacity] = useState(new Animated.Value(1));
+
+  // Animation system
   const animations = useCoordinatedAnimations();
 
   // Lottie animation ref
   const lottieRef = React.useRef<LottieView>(null);
 
-  // 🛡️ MEMORY LEAK FIX: Cleanup ref on unmount for better GC
+  // 🛡️ MEMORY LEAK FIX: Cleanup refs on unmount
   React.useEffect(() => {
     return () => {
-      // Set ref to null on unmount to help with garbage collection
       if (lottieRef.current) {
         lottieRef.current = null;
       }
     };
   }, []);
 
-  // **MINIMAL ENTRANCE**: Simple 400ms fade-in, barely noticeable
-  const triggerEntranceAnimations = useCallback(() => {
-    // Single subtle entrance animation - no complex sequences
-    animations.animateEntrance({ duration: 400 });
+  // **TIP ROTATION SYSTEM**: Cycle through gratitude tips every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Fade out current tip
+      Animated.timing(tipOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        // Change tip and fade in
+        setCurrentTipIndex((prev) => (prev + 1) % GRATITUDE_TIPS.length);
+        Animated.timing(tipOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 3000); // Change every 3 seconds
 
-    // Start Lottie animation with minimal delay
+    return () => clearInterval(interval);
+  }, [tipOpacity]);
+
+  // **ENTRANCE ANIMATIONS**: Smooth coordinated entrance
+  const triggerEntranceAnimations = useCallback(() => {
+    // Subtle entrance animation
+    animations.animateEntrance({ duration: 600 });
+
+    // Start Lottie animation
     setTimeout(() => {
       if (lottieRef.current) {
         lottieRef.current.play();
       }
-    }, 200);
+    }, 300);
   }, [animations]);
 
-  // Log screen view for analytics
+  // Analytics and initialization
   useEffect(() => {
     try {
       analyticsService.logScreenView('splash_screen');
@@ -69,10 +122,12 @@ const EnhancedSplashScreen: React.FC = () => {
     }
   }, [showError]);
 
-  // Start minimal entrance animation
+  // Start entrance animations
   useEffect(() => {
     triggerEntranceAnimations();
   }, [triggerEntranceAnimations]);
+
+  const currentTip = GRATITUDE_TIPS[currentTipIndex];
 
   return (
     <ScreenLayout scrollable={false} edges={['top']} edgeToEdge={true} style={styles.container}>
@@ -90,9 +145,8 @@ const EnhancedSplashScreen: React.FC = () => {
 
         {/* Main Content Container */}
         <View style={styles.mainContent}>
-          {/* Logo Section - No separate animations, unified entrance */}
+          {/* Logo Section */}
           <View style={styles.logoSection}>
-            {/* App Logo with Enhanced Typography */}
             <View style={styles.logoContainer}>
               <Text
                 style={styles.title}
@@ -103,14 +157,11 @@ const EnhancedSplashScreen: React.FC = () => {
               </Text>
               <View style={styles.logoUnderline} />
             </View>
-
-            {/* Subtitle */}
-            <Text style={styles.subtitle}>Minnettarlık Yolculuğun</Text>
+            <Text style={styles.subtitle}>Minnettarlık Yolculuğun...</Text>
           </View>
 
-          {/* Lottie Animation Section - Simple, no pulse effects */}
+          {/* Lottie Animation Section */}
           <View style={styles.animationContainer}>
-            {/* Beautiful flower bloom animation from splash.json */}
             <LottieView
               ref={lottieRef}
               source={splashAnimation}
@@ -118,29 +169,34 @@ const EnhancedSplashScreen: React.FC = () => {
               autoPlay={false}
               loop={true}
               resizeMode="contain"
-              speed={0.8} // Slightly slower for more elegant feel
+              speed={0.8}
             />
-
-            {/* Fallback loading indicator if Lottie fails */}
-            <View style={styles.fallbackContainer}>
-              {/* Green dot and loading ring removed as requested */}
-            </View>
           </View>
+
+          {/* **NEW**: Rotating Gratitude Tips Section */}
+          <Animated.View style={[styles.tipContainer, { opacity: tipOpacity }]}>
+            <Text style={styles.tipTitle}>{currentTip.title}</Text>
+            <Text style={styles.tipDescription}>{currentTip.description}</Text>
+          </Animated.View>
         </View>
 
-        {/* Bottom Section - No separate animations, unified entrance */}
+        {/* Bottom Section */}
         <View style={styles.bottomSection}>
           {/* Loading Text */}
           <View style={styles.loadingTextContainer}>
             <Text style={styles.loadingText} accessibilityLabel="Yükleniyor">
               Hazırlanıyor...
             </Text>
-            {/* Simplified loading dots - no pulsing animation */}
-            <View style={styles.loadingDots}>
-              <View style={styles.dot} />
-              <View style={styles.dot} />
-              <View style={styles.dot} />
-            </View>
+          </View>
+
+          {/* Tip Progress Indicator */}
+          <View style={styles.progressContainer}>
+            {GRATITUDE_TIPS.map((_, index) => (
+              <View
+                key={index}
+                style={[styles.progressDot, currentTipIndex === index && styles.progressDotActive]}
+              />
+            ))}
           </View>
 
           {/* Version Info */}
@@ -162,7 +218,7 @@ const createStyles = (theme: AppTheme) =>
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: `${theme.colors.primary}08`, // Very subtle primary tint
+      backgroundColor: `${theme.colors.primary}08`,
     },
     content: {
       flex: 1,
@@ -179,7 +235,7 @@ const createStyles = (theme: AppTheme) =>
     },
     logoSection: {
       alignItems: 'center',
-      marginBottom: theme.spacing.xxl * 2,
+      marginBottom: theme.spacing.xl,
     },
     logoContainer: {
       alignItems: 'center',
@@ -192,7 +248,6 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.primary,
       textAlign: 'center',
       letterSpacing: -2,
-      // Enhanced shadow for logo
       textShadowColor: theme.colors.primary + '40',
       textShadowOffset: { width: 0, height: 4 },
       textShadowRadius: 12,
@@ -215,31 +270,49 @@ const createStyles = (theme: AppTheme) =>
     animationContainer: {
       alignItems: 'center',
       justifyContent: 'center',
-      width: screenWidth * 0.65, // Slightly larger for flower animation
-      height: screenWidth * 0.65,
-      maxWidth: 320,
-      maxHeight: 320,
-      marginBottom: theme.spacing.xl,
+      width: screenWidth * 0.5, // Smaller to make room for tips
+      height: screenWidth * 0.5,
+      maxWidth: 240,
+      maxHeight: 240,
+      marginBottom: theme.spacing.lg,
     },
     lottieAnimation: {
       width: '100%',
       height: '100%',
     },
-    fallbackContainer: {
-      position: 'absolute',
-      width: '100%',
-      height: '100%',
+    // **NEW**: Gratitude Tips Styling
+    tipContainer: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      padding: theme.spacing.lg,
+      marginHorizontal: theme.spacing.md,
+      maxWidth: screenWidth * 0.85,
       alignItems: 'center',
-      justifyContent: 'center',
+      ...getPrimaryShadow.small(theme),
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '20',
     },
-
+    tipTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.primary,
+      textAlign: 'center',
+      fontWeight: '700',
+      marginBottom: theme.spacing.sm,
+    },
+    tipDescription: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      textAlign: 'center',
+      lineHeight: 22,
+      opacity: 0.8,
+    },
     bottomSection: {
       alignItems: 'center',
       width: '100%',
     },
     loadingTextContainer: {
       alignItems: 'center',
-      marginBottom: theme.spacing.xl,
+      marginBottom: theme.spacing.md,
     },
     loadingText: {
       ...theme.typography.titleMedium,
@@ -257,6 +330,23 @@ const createStyles = (theme: AppTheme) =>
       height: 8,
       borderRadius: 4,
       backgroundColor: theme.colors.primary,
+    },
+    // **NEW**: Progress Indicator for Tips
+    progressContainer: {
+      flexDirection: 'row',
+      gap: theme.spacing.xs,
+      marginBottom: theme.spacing.lg,
+    },
+    progressDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: theme.colors.outline,
+      opacity: 0.3,
+    },
+    progressDotActive: {
+      backgroundColor: theme.colors.primary,
+      opacity: 1,
     },
     versionText: {
       ...theme.typography.labelSmall,

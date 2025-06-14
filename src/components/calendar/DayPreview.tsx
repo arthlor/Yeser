@@ -158,7 +158,7 @@ const DayPreview: React.FC<DayPreviewProps> = ({
                   { color: theme.colors.onSurfaceVariant },
                 ]}
               >
-                Bu tarih için şükür notu ekle
+                Bu tarih için minnet notu ekle
               </Text>
             </View>
           </TouchableOpacity>

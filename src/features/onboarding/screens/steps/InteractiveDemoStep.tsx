@@ -17,7 +17,8 @@ import {
 } from 'react-native';
 import { logger } from '@/utils/debugConfig';
 
-import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { ScreenSection } from '@/shared/components/layout';
 import OnboardingGratitudeInput from '@/components/onboarding/OnboardingGratitudeInput';
 import { useGratitudeMutations } from '@/features/gratitude/hooks';
 import { useCurrentPrompt } from '@/features/gratitude/hooks';
@@ -122,7 +123,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
   };
 
   return (
-    <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <OnboardingLayout edgeToEdge={true}>
       <Animated.View
         style={[
           styles.container,
@@ -234,7 +235,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
           </View>
         </ScreenSection>
       </Animated.View>
-    </ScreenLayout>
+    </OnboardingLayout>
   );
 };
 

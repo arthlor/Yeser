@@ -25,7 +25,6 @@ const SplashOverlayProvider: React.FC<SplashOverlayProviderProps> = ({ children 
   // We purposefully call the hook only if the user is authenticated to avoid an extra request
   const { isLoadingProfile, isProfileError } = useUserProfile();
 
-  // Minimum visible time (1.5s) so the splash does not disappear too abruptly
   const [minimumTimeElapsed, setMinimumTimeElapsed] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setMinimumTimeElapsed(true), 1500);

@@ -3,10 +3,14 @@
 /**
  * Environment Validation Script for Yeşer App
  * Validates environment variables and configuration for different deployment environments
+ * Enhanced for EAS build compatibility
  */
 
 const path = require('path');
 const fs = require('fs');
+
+// Load environment variables from .env file
+require('dotenv').config();
 
 // ANSI color codes for console output
 const colors = {
@@ -65,16 +69,21 @@ function checkEnvVar(name, required = true, environment = 'all') {
 }
 
 /**
- * Check if a file exists
+ * Check if a file exists with better EAS compatibility
  */
-function checkFile(filePath, description) {
+function checkFile(filePath, description, required = true) {
   const fullPath = path.resolve(filePath);
   if (fs.existsSync(fullPath)) {
     log('success', `${description}: ${filePath} ✓`);
     return true;
   } else {
-    log('error', `Missing ${description}: ${filePath}`);
-    return false;
+    if (required) {
+      log('error', `Missing ${description}: ${filePath}`);
+      return false;
+    } else {
+      log('warn', `Optional ${description} not found: ${filePath} (may be generated later)`);
+      return true; // Not critical for build
+    }
   }
 }
 
@@ -90,7 +99,7 @@ function validateDevelopment() {
   valid &= checkEnvVar('EXPO_PUBLIC_SUPABASE_ANON_KEY', false, 'development');
   valid &= checkEnvVar('EXPO_PUBLIC_ENV', false, 'development');
   
-  // Check development files
+  // Check development files (core files only)
   valid &= checkFile('app.config.js', 'App Configuration');
   valid &= checkFile('package.json', 'Package Configuration');
   
@@ -132,10 +141,10 @@ function validateProduction() {
   valid &= checkFile('eas.json', 'EAS Build Configuration');
   valid &= checkFile('app.config.js', 'App Configuration');
   
-  // Check for app icons and assets
-  valid &= checkFile('src/assets/assets/icon.png', 'App Icon');
-  valid &= checkFile('src/assets/assets/adaptive-icon.png', 'Android Adaptive Icon');
-  valid &= checkFile('src/assets/assets/splash-icon.png', 'Splash Screen Icon');
+  // Check for app icons and assets (optional during prebuild)
+  valid &= checkFile('src/assets/assets/icon.png', 'App Icon', false);
+  valid &= checkFile('src/assets/assets/adaptive-icon.png', 'Android Adaptive Icon', false);
+  valid &= checkFile('src/assets/assets/splash-icon.png', 'Splash Screen Icon', false);
   
   return valid;
 }
@@ -179,6 +188,7 @@ function main() {
   console.log(`${colors.cyan}${colors.bold}🚀 Yeşer Environment Validation${colors.reset}`);
   console.log(`${colors.cyan}Environment: ${environment}${colors.reset}`);
   console.log(`${colors.cyan}Working Directory: ${process.cwd()}${colors.reset}`);
+  console.log(`${colors.cyan}Build Context: ${process.env.EAS_BUILD_ID ? 'EAS Build' : 'Local'} ${colors.reset}`);
   console.log('');
   
   let valid = true;

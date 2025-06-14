@@ -107,7 +107,9 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
                 </View>
                 <View style={styles.stepContent}>
                   <Text style={styles.stepTitle}>Minnettarlıklarını yaz</Text>
-                  <Text style={styles.stepDescription}>Bugün için şükrettiğin 3 şeyi paylaş</Text>
+                  <Text style={styles.stepDescription}>
+                    Bugün için minnet duyduğun 3 şeyi paylaş
+                  </Text>
                 </View>
               </View>
 

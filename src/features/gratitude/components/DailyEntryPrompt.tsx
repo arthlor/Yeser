@@ -48,7 +48,7 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
     'Hangi anlardan dolayı minnettar hissediyorsun?',
     'Bugün hayatında olan güzel şeyler neler?',
     'Seni gülümsetmiş olan anları düşün...',
-    'Bugün hangi deneyimler için şükrediyorsun?',
+    'Bugün hangi deneyimler için minnettarsın?',
   ];
 
   // Display current prompt or fallback

@@ -1,5 +1,6 @@
 {
   "react-native": {
+    "app_auto_initialization": false,
     "analytics_auto_collection_enabled": true,
     "crashlytics_auto_collection_enabled": true,
     "crashlytics_debug_enabled": true,

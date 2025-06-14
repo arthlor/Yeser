@@ -7,14 +7,15 @@ import { notificationService } from '@/services/notificationService';
 import { logger } from '@/utils/debugConfig';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Button } from 'react-native-paper';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
-import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
+import { ScreenSection } from '@/shared/components/layout';
 import { openNotificationSettings } from '../../../../utils/deviceUtils';
 
 interface NotificationSettingsStepProps {
@@ -174,7 +175,7 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
   }, [settings, permissionsRequested, onNext]);
 
   return (
-    <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <OnboardingLayout edgeToEdge={true}>
       <Animated.View style={[styles.container, { opacity: animations.fadeAnim }]}>
         {/* Enhanced Navigation Header with Better Back Button */}
         {onBack && (
@@ -325,15 +326,11 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
 
         {/* Continue Button */}
         <ScreenSection>
-          <Button
-            mode="contained"
+          <OnboardingButton
             onPress={handleContinue}
-            style={styles.continueButton}
-            contentStyle={styles.continueButtonContent}
-            accessibilityLabel="Devam et"
-          >
-            Devam Et
-          </Button>
+            title="Devam Et"
+            accessibilityLabel="Bildirim ayarlarını kaydet ve devam et"
+          />
         </ScreenSection>
 
         {/* Time Pickers */}
@@ -359,7 +356,7 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
           />
         )}
       </Animated.View>
-    </ScreenLayout>
+    </OnboardingLayout>
   );
 };
 

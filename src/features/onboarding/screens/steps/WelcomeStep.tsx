@@ -1,5 +1,6 @@
 import { analyticsService } from '@/services/analyticsService';
-import { ScreenLayout } from '@/shared/components/layout';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import type { AppTheme } from '@/themes/types';
@@ -8,7 +9,6 @@ import { hapticFeedback } from '@/utils/hapticFeedback';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { Button } from 'react-native-paper';
 
 interface WelcomeStepProps {
   onNext: () => void;
@@ -52,7 +52,7 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
   }, [onNext]);
 
   return (
-    <ScreenLayout edges={['top', 'bottom']} edgeToEdge={false}>
+    <OnboardingLayout edgeToEdge={true}>
       <Animated.View
         style={[
           styles.container,
@@ -114,19 +114,16 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
           </Text>
         </View>
 
-        {/* **SIMPLIFIED ACTION**: No separate animations, unified entrance */}
+        {/* **STANDARDIZED BUTTON**: Using OnboardingButton for consistency */}
         <View style={styles.actionSection}>
-          <Button
-            mode="contained"
+          <OnboardingButton
             onPress={handleGetStarted}
-            style={styles.nextButton}
-            labelStyle={styles.nextButtonText}
-          >
-            Başlayalım
-          </Button>
+            title="Başlayalım"
+            accessibilityLabel="Onboarding sürecine başla"
+          />
         </View>
       </Animated.View>
-    </ScreenLayout>
+    </OnboardingLayout>
   );
 };
 
@@ -135,7 +132,7 @@ const createStyles = (theme: AppTheme) =>
     container: {
       flex: 1,
       justifyContent: 'space-between',
-      paddingHorizontal: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg, // Add back padding for edge-to-edge mode
     },
     headerSection: {
       alignItems: 'center',
@@ -216,18 +213,10 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing.md,
     },
     actionSection: {
-      paddingBottom: theme.spacing.xl,
+      paddingBottom: theme.spacing.xl * 2, // Increased padding to prevent device menu overlap
       paddingTop: theme.spacing.lg,
     },
-    nextButton: {
-      borderRadius: theme.borderRadius.lg,
-      ...getPrimaryShadow.medium(theme),
-    },
-    nextButtonText: {
-      ...theme.typography.bodyMedium,
-      fontSize: 16,
-      fontWeight: '600',
-    },
+    // Removed button styles - handled by OnboardingButton component
   });
 
 export default WelcomeStep;

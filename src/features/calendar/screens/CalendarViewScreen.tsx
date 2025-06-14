@@ -271,7 +271,7 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
           <View style={styles.guideContent}>
             <Icon name="lightbulb-outline" size={20} color={theme.colors.secondary} />
             <Text style={styles.guideText}>
-              Noktalı günler şükür notları içerir • Aylar arası geçiş için kaydırın
+              Noktalı günler minnet notları içerir • Aylar arası geçiş için kaydırın
             </Text>
           </View>
         </View>

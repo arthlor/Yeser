@@ -9,7 +9,7 @@ import {
 import { queryKeys } from '@/api/queryKeys';
 import { QUERY_STALE_TIMES } from '@/api/queryClient';
 import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
-import useAuthStore from '@/store/authStore';
+import useAuthStore, { shouldEnableQueries } from '@/store/authStore';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { logger } from '@/utils/debugConfig';
 
@@ -19,7 +19,7 @@ export const useGratitudeEntries = () => {
   return useQuery<GratitudeEntry[], Error>({
     queryKey: queryKeys.gratitudeEntries(user?.id),
     queryFn: getGratitudeDailyEntries,
-    enabled: !!user?.id,
+    enabled: shouldEnableQueries(user),
     staleTime: QUERY_STALE_TIMES.entries, // 2 minutes - user actively modifying
     gcTime: 10 * 60 * 1000, // 10 minutes cache
   });
@@ -31,7 +31,7 @@ export const useGratitudeEntriesPaginated = (pageSize: number = 20) => {
   return useInfiniteQuery({
     queryKey: queryKeys.gratitudeEntriesPaginated(user?.id, pageSize),
     queryFn: ({ pageParam = 0 }) => getGratitudeDailyEntriesPaginated(pageParam, pageSize),
-    enabled: !!user?.id,
+    enabled: shouldEnableQueries(user),
     staleTime: QUERY_STALE_TIMES.entries, // 2 minutes - dynamic content
     gcTime: 15 * 60 * 1000, // 15 minutes for pagination UX
     getNextPageParam: (lastPage) => {
@@ -47,7 +47,7 @@ export const useGratitudeEntry = (entryDate: string) => {
   return useQuery<GratitudeEntry | null, Error>({
     queryKey: queryKeys.gratitudeEntry(user?.id, entryDate),
     queryFn: () => getGratitudeDailyEntryByDate(entryDate),
-    enabled: !!user?.id && !!entryDate,
+    enabled: shouldEnableQueries(user) && !!entryDate,
     staleTime: QUERY_STALE_TIMES.entries, // 2 minutes - individual entries can be edited
     gcTime: 20 * 60 * 1000, // 20 minutes for navigation UX
   });
@@ -59,7 +59,7 @@ export const useEntryDatesForMonth = (year: number, month: number) => {
   return useQuery<string[], Error>({
     queryKey: queryKeys.gratitudeEntriesByMonth(user?.id, year, month),
     queryFn: () => getEntryDatesForMonth(year, month),
-    enabled: !!user?.id,
+    enabled: shouldEnableQueries(user),
     staleTime: QUERY_STALE_TIMES.monthlyData, // 20 minutes - historical data changes less
     gcTime: 30 * 60 * 1000, // 30 minutes cache for calendar navigation
   });
@@ -71,7 +71,7 @@ export const useGratitudeTotalCount = () => {
   return useQuery<number, Error>({
     queryKey: queryKeys.gratitudeTotalCount(user?.id),
     queryFn: getTotalGratitudeEntriesCount,
-    enabled: !!user?.id,
+    enabled: shouldEnableQueries(user),
     staleTime: QUERY_STALE_TIMES.totalCount, // 10 minutes - count changes slowly
     gcTime: 25 * 60 * 1000, // 25 minutes cache
   });
@@ -86,7 +86,7 @@ export const useRandomGratitudeEntry = () => {
       logger.debug('useRandomGratitudeEntry: Starting query', {
         userId: user?.id,
         userExists: !!user,
-        queryEnabled: !!user?.id,
+        queryEnabled: shouldEnableQueries(user),
         timestamp: new Date().toISOString(),
       });
 
@@ -109,7 +109,7 @@ export const useRandomGratitudeEntry = () => {
         throw error;
       }
     },
-    enabled: !!user?.id,
+    enabled: shouldEnableQueries(user),
     staleTime: QUERY_STALE_TIMES.randomEntry, // 0 - always fresh for variety
     gcTime: 5 * 60 * 1000, // 5 minutes for back navigation
     retry: (failureCount, error) => {

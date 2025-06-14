@@ -70,7 +70,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress
       style={[styles.dayContainer, containerStyle]}
       onPress={handlePress}
       disabled={isDisabled}
-      accessibilityLabel={`${dayNumber} ${hasEntry ? 'şükür notu var' : 'şükür notu yok'}`}
+      accessibilityLabel={`${dayNumber} ${hasEntry ? 'minnet notu var' : 'minnet notu yok'}`}
       accessibilityRole="button"
       accessibilityState={{
         selected: isSelectedDay,

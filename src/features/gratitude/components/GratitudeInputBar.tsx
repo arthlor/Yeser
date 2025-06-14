@@ -64,7 +64,7 @@ const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
 
   // Fallback prompts for when varied prompts are disabled or unavailable
   const fallbackPrompts = [
-    'Bugün hangi güzel anlar için şükrediyorsun?',
+    'Bugün hangi güzel anlar için minnettarsın?',
     'Hayatındaki hangi kişiler seni mutlu ediyor?',
     'Bugün seni gülümsetmiş olan şeyler neler?',
     'Hangi deneyimler için minnettar hissediyorsun?',

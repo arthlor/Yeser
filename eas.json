@@ -8,7 +8,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "prebuildCommand": "node scripts/validate-env.cjs development",
+      "prebuildCommand": "npm run validate-env:dev",
       "channel": "development",
       "env": {
         "EXPO_PUBLIC_ENV": "development"
@@ -24,7 +24,7 @@
     },
     "preview": {
       "distribution": "internal",
-      "prebuildCommand": "node scripts/validate-env.cjs preview",
+      "prebuildCommand": "npm run validate-env:preview",
       "channel": "preview",
       "env": {
         "EXPO_PUBLIC_ENV": "preview"
@@ -41,7 +41,7 @@
     },
     "production": {
       "autoIncrement": true,
-      "prebuildCommand": "node scripts/validate-env.cjs production",
+      "prebuildCommand": "npm run validate-env:prod",
       "channel": "production",
       "env": {
         "EXPO_PUBLIC_ENV": "production"
@@ -57,7 +57,7 @@
     },
     "production-aab": {
       "autoIncrement": true,
-      "prebuildCommand": "node scripts/validate-env.cjs production",
+      "prebuildCommand": "npm run validate-env:prod",
       "channel": "production",
       "env": {
         "EXPO_PUBLIC_ENV": "production"

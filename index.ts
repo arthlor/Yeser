@@ -10,7 +10,9 @@ declare global {
 globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
 
 // Import Firebase app module to ensure proper initialization
-import '@react-native-firebase/app';
+// 🚨 COLD START DEBUG: Commenting this out to prevent native-level auto-initialization.
+// We will initialize Firebase manually inside our application logic.
+// import '@react-native-firebase/app';
 
 import { registerRootComponent } from 'expo';
 import App from './src/App';

@@ -235,6 +235,9 @@ export const safeErrorDisplay = (error: Error | string | unknown): string => {
 
 // Track if global error monitoring is active
 let isGlobalErrorMonitoringActive = false;
+// Store original console methods to prevent recursion
+let originalConsoleError: typeof console.error;
+let originalConsoleWarn: typeof console.warn;
 
 /**
  * Initialize global error monitoring to catch system-level errors
@@ -245,44 +248,53 @@ export const initializeGlobalErrorMonitoring = () => {
     return; // Already initialized
   }
 
+  // Store original console methods first
+  originalConsoleError = console.error.bind(console);
+  originalConsoleWarn = console.warn.bind(console);
+
   // Don't show console errors in production builds
   if (!__DEV__) {
     // Override console.error in production
-    // eslint-disable-next-line no-console
     console.error = (...args: unknown[]) => {
-      // Log to debug system but don't show to users
-      logger.error('Console error intercepted in production:', {
-        args: JSON.stringify(args).substring(0, 1000),
-      });
-
-      // Don't call original console.error in production
-      // Users should never see console outputs
+      // Use original method to prevent recursion
+      try {
+        // Log to original console for debugging only
+        originalConsoleError(
+          'Production error intercepted:',
+          args.length > 0 ? String(args[0]) : 'Unknown error'
+        );
+      } catch {
+        // If even this fails, fail silently
+      }
     };
 
     // Override console.warn in production
-    // eslint-disable-next-line no-console
     console.warn = (...args: unknown[]) => {
-      // Log to debug system but don't show to users
-      logger.warn('Console warning intercepted in production:', {
-        args: JSON.stringify(args).substring(0, 1000),
-      });
-
-      // Don't call original console.warn in production
+      // Use original method to prevent recursion
+      try {
+        // Log to original console for debugging only
+        originalConsoleWarn(
+          'Production warning intercepted:',
+          args.length > 0 ? String(args[0]) : 'Unknown warning'
+        );
+      } catch {
+        // If even this fails, fail silently
+      }
     };
   }
 
   // Global error event handler for unhandled errors
   const handleGlobalError = (error: Error | string, isFatal?: boolean) => {
-    // Log technical details for debugging
-    logger.error('Global error intercepted:', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      isFatal: isFatal || false,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Prevent error from reaching users by not re-throwing
-    // Our error boundaries and stores will handle user-facing errors
+    // Use original console method to prevent recursion
+    try {
+      originalConsoleError('Global error intercepted:', {
+        error: error instanceof Error ? error.message : String(error),
+        isFatal: isFatal || false,
+        timestamp: new Date().toISOString(),
+      });
+    } catch {
+      // Fail silently to prevent further crashes
+    }
   };
 
   // Set up global error handlers (React Native specific)
@@ -318,7 +330,15 @@ export const initializeGlobalErrorMonitoring = () => {
   }
 
   isGlobalErrorMonitoringActive = true;
-  logger.debug('Global error monitoring initialized');
+
+  // Use original console method to log initialization in development only
+  if (__DEV__) {
+    try {
+      originalConsoleError('Global error monitoring initialized safely');
+    } catch {
+      // Fail silently
+    }
+  }
 };
 
 /**

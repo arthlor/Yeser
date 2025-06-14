@@ -173,9 +173,15 @@ export const updateProfile = async (
   }
 };
 
+// Function name constant for the delete user account edge function
+const DELETE_USER_ACCOUNT_FUNCTION_NAME = 'delete-user';
+
 /**
  * Deletes user account and all associated data (KVKV compliance)
- * This function permanently removes all user data from the system
+ * This function permanently removes all user data from the system AND the authentication user
+ *
+ * 🚨 FIXED: Now properly deletes both database data AND authentication user
+ * Previous bug: Users could log back in after "deletion" because auth user wasn't deleted
  */
 export const deleteUserAccount = async (): Promise<{ success: boolean; message: string }> => {
   try {
@@ -189,39 +195,38 @@ export const deleteUserAccount = async (): Promise<{ success: boolean; message: 
       throw new Error('No user found in session');
     }
 
-    // Note: delete_user_data RPC function needs to be added to Supabase types
-    // For now, we'll delete user data manually following the same pattern as the RPC
+    logger.debug('Starting account deletion process', { extra: { userId: user.id } });
 
-    // Delete user data in correct order to respect foreign key constraints
-    const { error: entriesError } = await supabase
-      .from('gratitude_entries')
-      .delete()
-      .eq('user_id', user.id);
+    // Call the Supabase Edge Function that handles both database and auth user deletion
+    // This requires service_role permissions which can only be used server-side
+    const { data, error: invokeError } = await supabase.functions.invoke(
+      DELETE_USER_ACCOUNT_FUNCTION_NAME,
+      {
+        method: 'POST',
+      }
+    );
 
-    if (entriesError) {
-      logger.error('Error deleting gratitude entries:', { error: entriesError });
-      throw handleAPIError(new Error(entriesError.message), 'delete gratitude entries');
+    if (invokeError) {
+      logger.error('Edge function invocation error:', { error: invokeError });
+      throw handleAPIError(
+        new Error(invokeError.message || 'Failed to invoke delete user account function'),
+        'invoke delete user account function'
+      );
     }
 
-    const { error: streaksError } = await supabase.from('streaks').delete().eq('user_id', user.id);
-
-    if (streaksError) {
-      logger.error('Error deleting streaks:', { error: streaksError });
-      throw handleAPIError(new Error(streaksError.message), 'delete streaks');
+    // Check if the edge function returned an error in the response
+    if (data && !data.success) {
+      logger.error('Edge function returned error:', { error: data.error, message: data.message });
+      throw new Error(data.message || data.error || 'Account deletion failed');
     }
 
-    const { error: profileError } = await supabase.from('profiles').delete().eq('id', user.id);
-
-    if (profileError) {
-      logger.error('Error deleting profile:', { error: profileError });
-      throw handleAPIError(new Error(profileError.message), 'delete profile');
-    }
-
-    logger.debug('User account successfully deleted', { extra: { userId: user.id } });
+    logger.debug('Account deletion completed successfully', {
+      extra: { userId: user.id, response: data },
+    });
 
     return {
       success: true,
-      message: 'Hesabınız ve tüm verileriniz başarıyla silindi.',
+      message: data?.message || 'Hesabınız ve tüm verileriniz kalıcı olarak silindi.',
     };
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));

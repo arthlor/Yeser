@@ -417,7 +417,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                 </View>
                 <View style={styles.textContainer}>
                   <Text style={styles.settingTitle}>Çeşitli Öneriler</Text>
-                  <Text style={styles.settingDescription}>Çeşitli şükretme önerileri göster</Text>
+                  <Text style={styles.settingDescription}>
+                    "Minnet Ekle" sayfasında çeşitli ilhamlar göster.
+                  </Text>
                 </View>
               </View>
               <View style={styles.actionContainer}>

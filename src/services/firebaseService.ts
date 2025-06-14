@@ -1,4 +1,4 @@
-import { getApp, getApps } from '@react-native-firebase/app';
+import { getApp, getApps, initializeApp } from '@react-native-firebase/app';
 import { logger } from '@/utils/debugConfig';
 import { config } from '@/utils/config';
 import { Platform } from 'react-native';
@@ -6,6 +6,33 @@ import { Platform } from 'react-native';
 class FirebaseService {
   private isInitialized = false;
   private app: ReturnType<typeof getApp> | null = null;
+
+  /**
+   * 🚨 COLD START FIX: Manually initialize Firebase to control the startup sequence.
+   * This is called from our JS code instead of relying on automatic native initialization.
+   */
+  async initializeFirebase(): Promise<void> {
+    try {
+      if (getApps().length > 0) {
+        logger.debug('Firebase already initialized, getting default app.');
+        this.app = getApp();
+      } else {
+        logger.debug('Initializing new Firebase default app...');
+        // This performs the native initialization that was previously automatic
+        // @ts-ignore - RNFirebase uses default config when no args are passed
+        this.app = await initializeApp();
+        logger.debug('✅ New Firebase default app initialized successfully.');
+      }
+      this.isInitialized = true;
+    } catch (error) {
+      logger.error('CRITICAL: Manual Firebase initialization failed.', {
+        error: error instanceof Error ? error.message : 'Unknown Firebase init error',
+        errorObject: error,
+      });
+      // Re-throw to be caught by the calling function
+      throw error;
+    }
+  }
 
   /**
    * Initialize Firebase if not already initialized

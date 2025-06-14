@@ -6,7 +6,8 @@ import { hapticFeedback } from '@/utils/hapticFeedback';
 import { useUsernameValidation } from '@/shared/hooks';
 import { logger } from '@/utils/debugConfig';
 import { Ionicons } from '@expo/vector-icons';
-import { Button } from 'react-native-paper';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -21,7 +22,7 @@ import {
   View,
 } from 'react-native';
 
-import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { ScreenSection } from '@/shared/components/layout';
 
 type ThemeKey = 'light' | 'dark' | 'auto';
 
@@ -147,7 +148,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   }, [username, validationError, isChecking, isAvailable, canContinue]); // canContinue needed as it's used inside
 
   return (
-    <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <OnboardingLayout edgeToEdge={true}>
       <Animated.View style={[styles.container, containerStyle]}>
         {/* Enhanced Navigation Header with Better Back Button */}
         <ScreenSection>
@@ -279,20 +280,16 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
         {/* Actions Section */}
         <ScreenSection>
           <View style={styles.footer}>
-            <Button
-              mode="contained"
+            <OnboardingButton
               onPress={handleContinue}
+              title="Devam Et"
               disabled={!canContinue}
-              style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
-              contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonText}
-            >
-              Devam Et
-            </Button>
+              accessibilityLabel="Kişiselleştirme ayarlarını kaydet ve devam et"
+            />
           </View>
         </ScreenSection>
       </Animated.View>
-    </ScreenLayout>
+    </OnboardingLayout>
   );
 };
 
@@ -433,20 +430,7 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       gap: theme.spacing.xs,
     },
-    continueButton: {
-      width: '100%',
-      borderRadius: theme.borderRadius.lg,
-    },
-    continueButtonDisabled: {
-      backgroundColor: theme.colors.surfaceVariant,
-    },
-    buttonContent: {
-      paddingVertical: theme.spacing.xs,
-    },
-    buttonText: {
-      ...theme.typography.bodyMedium,
-      fontWeight: '600',
-    },
+    // Removed button styles - handled by OnboardingButton component
   });
 
 export default PersonalizationStep;

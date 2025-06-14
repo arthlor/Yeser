@@ -4,13 +4,14 @@ import type { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { Ionicons } from '@expo/vector-icons';
-import { Button } from 'react-native-paper';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
+import { ScreenSection } from '@/shared/components/layout';
 
 interface GoalSettingStepProps {
   onNext: (selectedGoal: number) => void;
@@ -146,7 +147,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
   );
 
   return (
-    <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <OnboardingLayout edgeToEdge={true}>
       <Animated.View style={[styles.container, containerStyle]}>
         {/* Enhanced Navigation Header with Better Back Button */}
         <ScreenSection>
@@ -207,19 +208,15 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
         {/* Actions Section */}
         <ScreenSection>
           <View style={styles.footer}>
-            <Button
-              mode="contained"
+            <OnboardingButton
               onPress={handleContinue}
-              style={styles.continueButton}
-              contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonText}
-            >
-              Devam Et
-            </Button>
+              title="Devam Et"
+              accessibilityLabel="Hedef ayarını kaydet ve devam et"
+            />
           </View>
         </ScreenSection>
       </Animated.View>
-    </ScreenLayout>
+    </OnboardingLayout>
   );
 };
 

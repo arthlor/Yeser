@@ -1,16 +1,9 @@
 import React, { useCallback, useEffect } from 'react';
-import {
-  Animated,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { Button } from 'react-native-paper';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { hapticFeedback } from '@/utils/hapticFeedback';
@@ -98,133 +91,120 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
   const styles = createStyles(theme);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
+    <OnboardingLayout edgeToEdge={true}>
+      {/* Enhanced Navigation Header with Better Back Button */}
+      <View style={styles.navigationHeader}>
+        <TouchableOpacity
+          onPress={() => {
+            hapticFeedback.light();
+            onBack();
+          }}
+          style={styles.backButtonContainer}
+          activeOpacity={0.7}
+          accessibilityLabel="Geri dön"
+          accessibilityRole="button"
+          accessibilityHint="Önceki adıma geri dön"
+        >
+          <View style={styles.backButtonInner}>
+            <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
+            <Text style={styles.backButtonText}>Geri</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* **UNIFIED ENTRANCE**: Single animation for all content */}
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: animations.fadeAnim,
+            transform: animations.entranceTransform,
+          },
+        ]}
       >
-        {/* Enhanced Navigation Header with Better Back Button */}
-        <View style={styles.navigationHeader}>
-          <TouchableOpacity
-            onPress={() => {
-              hapticFeedback.light();
-              onBack();
-            }}
-            style={styles.backButtonContainer}
-            activeOpacity={0.7}
-            accessibilityLabel="Geri dön"
-            accessibilityRole="button"
-            accessibilityHint="Önceki adıma geri dön"
-          >
-            <View style={styles.backButtonInner}>
-              <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
-              <Text style={styles.backButtonText}>Geri</Text>
-            </View>
-          </TouchableOpacity>
+        {/* **SIMPLIFIED CELEBRATION**: Static celebration with minimal animation */}
+        <View style={styles.celebrationContainer}>
+          <Text style={styles.congratsTitle}>Tebrikler {userSummary.username}! 🎉</Text>
+          <Text style={styles.congratsSubtitle}>
+            Minnettarlık yolculuğuna başlamaya hazırsın! Senin için özel olarak hazırlanmış
+            deneyimin burada.
+          </Text>
         </View>
 
-        {/* **UNIFIED ENTRANCE**: Single animation for all content */}
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: animations.fadeAnim,
-              transform: animations.entranceTransform,
-            },
-          ]}
-        >
-          {/* **SIMPLIFIED CELEBRATION**: Static celebration with minimal animation */}
-          <View style={styles.celebrationContainer}>
-            <Text style={styles.congratsTitle}>Tebrikler {userSummary.username}! 🎉</Text>
-            <Text style={styles.congratsSubtitle}>
-              Minnettarlık yolculuğuna başlamaya hazırsın! Senin için özel olarak hazırlanmış
-              deneyimin burada.
-            </Text>
+        {/* **SIMPLIFIED SUMMARY**: No complex slide animations */}
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Senin Profilin</Text>
+
+          <View style={styles.summaryItems}>
+            <View style={styles.summaryItem}>
+              <View style={styles.summaryIconWrapper}>
+                <Ionicons name="person" size={16} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.summaryText}>{userSummary.username}</Text>
+            </View>
+
+            <View style={styles.summaryItem}>
+              <View style={styles.summaryIconWrapper}>
+                <Ionicons name="golf" size={16} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.summaryText}>{getGoalText()}</Text>
+            </View>
+
+            <View style={styles.summaryItem}>
+              <View style={styles.summaryIconWrapper}>
+                <Ionicons name="color-palette" size={16} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.summaryText}>{getThemeText()}</Text>
+            </View>
+
+            {userSummary.featuresEnabled.length > 0 && (
+              <View style={styles.summaryItem}>
+                <View style={styles.summaryIconWrapper}>
+                  <Ionicons name="star" size={16} color={theme.colors.primary} />
+                </View>
+                <Text style={styles.summaryText}>
+                  {userSummary.featuresEnabled.join(', ')} aktif
+                </Text>
+              </View>
+            )}
           </View>
+        </View>
 
-          {/* **SIMPLIFIED SUMMARY**: No complex slide animations */}
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Senin Profilin</Text>
+        {/* **SIMPLIFIED ENCOURAGEMENT**: Static content, no complex animations */}
+        <View style={styles.encouragementContainer}>
+          <View style={styles.encouragementContent}>
+            <Text style={styles.encouragementTitle}>Hazırsın! ✨</Text>
+            <Text style={styles.encouragementText}>
+              Her gün küçük minnettarlık ifadeleri büyük değişimler yaratır. Yolculuğun boyunca
+              seninle olacağız.
+            </Text>
 
-            <View style={styles.summaryItems}>
-              <View style={styles.summaryItem}>
-                <View style={styles.summaryIconWrapper}>
-                  <Ionicons name="person" size={16} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.summaryText}>{userSummary.username}</Text>
-              </View>
-
-              <View style={styles.summaryItem}>
-                <View style={styles.summaryIconWrapper}>
-                  <Ionicons name="golf" size={16} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.summaryText}>{getGoalText()}</Text>
-              </View>
-
-              <View style={styles.summaryItem}>
-                <View style={styles.summaryIconWrapper}>
-                  <Ionicons name="color-palette" size={16} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.summaryText}>{getThemeText()}</Text>
-              </View>
-
-              {userSummary.featuresEnabled.length > 0 && (
-                <View style={styles.summaryItem}>
-                  <View style={styles.summaryIconWrapper}>
-                    <Ionicons name="star" size={16} color={theme.colors.primary} />
-                  </View>
-                  <Text style={styles.summaryText}>
-                    {userSummary.featuresEnabled.join(', ')} aktif
-                  </Text>
-                </View>
-              )}
+            {/* **STATIC CELEBRATION ICONS**: No rotating sparkles */}
+            <View style={styles.staticCelebrationIcons}>
+              <Text style={styles.celebrationIcon}>🌱</Text>
+              <Text style={styles.celebrationIcon}>✨</Text>
+              <Text style={styles.celebrationIcon}>💚</Text>
             </View>
           </View>
+        </View>
 
-          {/* **SIMPLIFIED ENCOURAGEMENT**: Static content, no complex animations */}
-          <View style={styles.encouragementContainer}>
-            <View style={styles.encouragementContent}>
-              <Text style={styles.encouragementTitle}>Hazırsın! ✨</Text>
-              <Text style={styles.encouragementText}>
-                Her gün küçük minnettarlık ifadeleri büyük değişimler yaratır. Yolculuğun boyunca
-                seninle olacağız.
-              </Text>
-
-              {/* **STATIC CELEBRATION ICONS**: No rotating sparkles */}
-              <View style={styles.staticCelebrationIcons}>
-                <Text style={styles.celebrationIcon}>🌱</Text>
-                <Text style={styles.celebrationIcon}>✨</Text>
-                <Text style={styles.celebrationIcon}>💚</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* **START JOURNEY BUTTON**: Simple press feedback only */}
-          <Animated.View style={{ transform: animations.pressTransform }}>
-            <Button
-              mode="contained"
-              onPress={handleStartJourney}
-              onPressIn={animations.animatePressIn}
-              onPressOut={animations.animatePressOut}
-              style={styles.startButton}
-              contentStyle={styles.startButtonContent}
-              labelStyle={styles.startButtonText}
-              accessibilityLabel="Minnettarlık yolculuğuna başla"
-            >
-              Yolculuğa Başla
-            </Button>
-          </Animated.View>
-
-          {/* **MINIMAL FOOTER**: Simple text, no complex animations */}
-          <View style={styles.footerContainer}>
-            <Text style={styles.footerText}>
-              İstediğin zaman ayarlarından tercihlerini değiştirebilirsin.
-            </Text>
-          </View>
+        {/* **STANDARDIZED BUTTON**: Using OnboardingButton for consistency */}
+        <Animated.View style={{ transform: animations.pressTransform }}>
+          <OnboardingButton
+            onPress={handleStartJourney}
+            title="Yolculuğa Başla"
+            accessibilityLabel="Minnettarlık yolculuğuna başla"
+          />
         </Animated.View>
-      </ScrollView>
-    </SafeAreaView>
+
+        {/* **MINIMAL FOOTER**: Simple text, no complex animations */}
+        <View style={styles.footerContainer}>
+          <Text style={styles.footerText}>
+            İstediğin zaman ayarlarından tercihlerini değiştirebilirsin.
+          </Text>
+        </View>
+      </Animated.View>
+    </OnboardingLayout>
   );
 };
 
@@ -236,7 +216,7 @@ const createStyles = (theme: AppTheme) =>
     },
     navigationHeader: {
       alignItems: 'flex-start',
-      paddingHorizontal: theme.spacing.page,
+      paddingHorizontal: theme.spacing.lg,
       paddingTop: 0,
       paddingBottom: theme.spacing.md,
     },
@@ -272,6 +252,7 @@ const createStyles = (theme: AppTheme) =>
     content: {
       flex: 1,
       justifyContent: 'center',
+      paddingHorizontal: theme.spacing.lg,
     },
     celebrationContainer: {
       alignItems: 'center',

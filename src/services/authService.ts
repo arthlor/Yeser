@@ -1,22 +1,14 @@
 // src/services/authService.ts
 import { AuthError, Session, User } from '@supabase/supabase-js';
 
-import * as WebBrowser from 'expo-web-browser';
-
-import { supabase } from '../utils/supabaseClient';
+import { supabaseService } from '../utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
-// robustFetch import removed - no longer needed after performance optimization
 
 // Define a type for our custom, simplified error shape
 type SimpleAuthError = {
   name: string;
   message: string;
-};
-
-// Type guard to check if an object is a Supabase AuthError
-const isAuthError = (error: unknown): error is AuthError => {
-  return typeof error === 'object' && error !== null && '__isAuthError' in error;
 };
 
 // Magic link credentials interface
@@ -45,9 +37,22 @@ const handleAuthError = (error: AuthError | SimpleAuthError, operation: string) 
   };
 };
 
+// Helper function to ensure Supabase client is initialized
+const ensureSupabaseClient = async () => {
+  try {
+    await supabaseService.initializeLazy();
+    return supabaseService.getClient();
+  } catch (error) {
+    logger.error('[COLD START] Failed to initialize Supabase client:', error as Error);
+    throw new Error('Database connection failed. Please try again.');
+  }
+};
+
 // --- Magic Link Authentication ---
 export const signInWithMagicLink = async (credentials: MagicLinkCredentials) => {
   try {
+    const supabase = await ensureSupabaseClient();
+
     // Final defensive email sanitization in case any invisible chars slipped through
     const emailForSupabase = credentials.email
       .trim()
@@ -88,6 +93,8 @@ export const signInWithMagicLink = async (credentials: MagicLinkCredentials) => 
 // --- Handle Magic Link Confirmation ---
 export const confirmMagicLink = async (tokenHash: string, type: string = 'magiclink') => {
   try {
+    const supabase = await ensureSupabaseClient();
+
     logger.debug('Magic link confirmation attempt', { type });
 
     const { data, error } = await supabase.auth.verifyOtp({
@@ -118,6 +125,8 @@ export const confirmMagicLink = async (tokenHash: string, type: string = 'magicl
 // --- Handle OAuth-style Magic Link Tokens ---
 export const setSessionFromTokens = async (accessToken: string, refreshToken: string) => {
   try {
+    const supabase = await ensureSupabaseClient();
+
     logger.debug('OAuth token session setup attempt', {
       hasAccessToken: !!accessToken,
       hasRefreshToken: !!refreshToken,
@@ -191,6 +200,8 @@ export const setSessionFromTokens = async (accessToken: string, refreshToken: st
 // --- Sign Out ---
 export const signOut = async () => {
   try {
+    const supabase = await ensureSupabaseClient();
+
     const { error } = await supabase.auth.signOut();
     if (error) {
       return { error: handleAuthError(error, 'signOut') };
@@ -205,9 +216,10 @@ export const signOut = async () => {
 // --- Get Current Session ---
 export const getCurrentSession = async (): Promise<Session | null> => {
   try {
+    const supabase = await ensureSupabaseClient();
+
     const { data, error } = await supabase.auth.getSession();
     if (error) {
-      // Log the error but return null as per original logic
       handleAuthError(error, 'getCurrentSession');
       return null;
     }
@@ -219,181 +231,56 @@ export const getCurrentSession = async (): Promise<Session | null> => {
   }
 };
 
-// --- On Auth State Change ---
-// This function allows you to subscribe to auth changes (SIGNED_IN, SIGNED_OUT, USER_UPDATED, etc.)
-// The callback will receive an event string and a session object (or null)
+// --- Auth State Change Listener ---
 export const onAuthStateChange = (callback: (event: string, session: Session | null) => void) => {
-  const { data: authListener } = supabase.auth.onAuthStateChange(callback);
-  return authListener?.subscription;
-  // To unsubscribe: subscription.unsubscribe()
+  // Only setup listener if client is already initialized
+  if (!supabaseService.isInitialized()) {
+    logger.warn('Auth state change listener requested but Supabase client not initialized');
+    return { unsubscribe: () => {} };
+  }
+
+  const client = supabaseService.getClient();
+  return client.auth.onAuthStateChange(callback);
 };
 
-// --- Sign In with Google (OAuth) ---
+// --- Google OAuth ---
 export const signInWithGoogle = async (): Promise<{
   user: User | null;
   session: Session | null;
   error: (AuthError | SimpleAuthError) | null;
 }> => {
   try {
-    // 🚨 CRITICAL FIX: Check if user is already authenticated before OAuth
-    // Note: This check prevents unnecessary OAuth when user is already logged in
-    // but allows re-authentication after logout (when currentSession is null)
-    const currentSession = await getCurrentSession();
-    if (currentSession && currentSession.user) {
-      logger.warn('Google OAuth attempted while user already has active session', {
-        userId: currentSession.user.id,
-        sessionExpiry: currentSession.expires_at,
-      });
-
-      // Return the existing session instead of starting new OAuth
-      return {
-        user: currentSession.user,
-        session: currentSession,
-        error: null,
-      };
-    }
-
-    logger.debug('No current session found, proceeding with Google OAuth', {
-      sessionExists: !!currentSession,
-    });
+    const supabase = await ensureSupabaseClient();
 
     // **PRODUCTION-READY URL SCHEME**: Use correct URL scheme matching app.config.js
     const getRedirectUrl = () => {
       const env = process.env.EXPO_PUBLIC_ENV || 'development';
       if (env === 'development') {
-        return 'yeser-dev://auth/oauth-callback';
+        return 'yeser-dev://auth/callback';
       } else if (env === 'preview') {
-        return 'yeser-preview://auth/oauth-callback';
+        return 'yeser-preview://auth/callback';
       } else {
-        return 'yeser://auth/oauth-callback'; // Production URL scheme
+        return 'yeser://auth/callback'; // Production URL scheme
       }
     };
 
-    const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: getRedirectUrl(),
-        skipBrowserRedirect: true,
+        // No need for additional scopes - basic profile info is sufficient
       },
     });
 
-    if (oauthError) {
-      return {
-        user: null,
-        session: null,
-        error: handleAuthError(oauthError, 'signInWithGoogle (OAuth setup)'),
-      };
+    if (error) {
+      return { user: null, session: null, error: handleAuthError(error, 'Google OAuth') };
     }
 
-    if (data?.url) {
-      const response = await WebBrowser.openAuthSessionAsync(data.url, getRedirectUrl());
-
-      if (response.type === 'success' && response.url) {
-        const hashFragment = response.url.split('#')[1];
-        if (!hashFragment) {
-          const error: SimpleAuthError = {
-            name: 'AuthInvalidRedirectError',
-            message: 'Google Sign-In: No hash fragment in redirect URL',
-          };
-          return {
-            user: null,
-            session: null,
-            error: handleAuthError(error, 'signInWithGoogle (URL parsing)'),
-          };
-        }
-
-        const params = new URLSearchParams(hashFragment);
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-
-        if (accessToken && refreshToken) {
-          logger.debug('Setting session with Google OAuth tokens', {
-            hasAccessToken: !!accessToken,
-            hasRefreshToken: !!refreshToken,
-            accessTokenLength: accessToken?.length || 0,
-            refreshTokenLength: refreshToken?.length || 0,
-          });
-
-          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          if (sessionError) {
-            logger.error('Google OAuth setSession error details:', {
-              message: sessionError.message,
-              name: sessionError.name,
-              status: (sessionError as Error & { status?: number | string }).status,
-              isNetworkError:
-                sessionError.message.includes('Network') || sessionError.message.includes('fetch'),
-              errorType: 'GOOGLE_OAUTH_SET_SESSION_ERROR',
-            });
-
-            return {
-              user: null,
-              session: null,
-              error: handleAuthError(sessionError, 'signInWithGoogle (setSession)'),
-            };
-          }
-
-          logger.debug('Google OAuth session set successfully', {
-            hasUser: !!sessionData?.user,
-            hasSession: !!sessionData?.session,
-            userId: sessionData?.user?.id,
-          });
-
-          // At this point, the onAuthStateChange listener will fire with SIGNED_IN
-          // and the user/session will be updated globally.
-          return { user: null, session: null, error: null }; // Success
-        } else {
-          const error: SimpleAuthError = {
-            name: 'AuthTokensMissingError',
-            message: 'Google Sign-In: Tokens not found in redirect URL',
-          };
-          return {
-            user: null,
-            session: null,
-            error: handleAuthError(error, 'signInWithGoogle (token parsing)'),
-          };
-        }
-      } else if (response.type === 'cancel' || response.type === 'dismiss') {
-        // User cancelled the OAuth flow
-        // Return a standard error object that authStore can identify
-        return {
-          user: null,
-          session: null,
-          error: { name: 'AuthCancelledError', message: 'User cancelled Google Sign-In' },
-        };
-      }
-    }
-    // Fallback if no URL is returned
-    const error: SimpleAuthError = {
-      name: 'AuthURLMissingError',
-      message: 'Google Sign-In: No URL returned from Supabase',
-    };
-    return {
-      user: null,
-      session: null,
-      error: handleAuthError(error, 'signInWithGoogle (no URL)'),
-    };
+    // For OAuth, we initiate the process but actual session is handled by callback
+    return { user: null, session: null, error: null };
   } catch (err) {
-    if (isAuthError(err)) {
-      return {
-        user: null,
-        session: null,
-        error: handleAuthError(err, 'signInWithGoogle (catch-all)'),
-      };
-    }
-    const error: SimpleAuthError = {
-      name: 'UnknownAuthError',
-      message:
-        err instanceof Error ? err.message : 'An unknown error occurred during Google Sign-In',
-    };
-    return {
-      user: null,
-      session: null,
-      error: handleAuthError(error, 'signInWithGoogle (catch-all)'),
-    };
+    const error = err as AuthError;
+    return { user: null, session: null, error: handleAuthError(error, 'Google OAuth') };
   }
 };
 

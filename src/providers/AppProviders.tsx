@@ -6,9 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { queryClient } from '@/api/queryClient';
 import ErrorBoundary from '@/shared/components/layout/ErrorBoundary';
-import { firebaseService } from '@/services/firebaseService';
-import { networkMonitorService } from '@/services/networkMonitorService';
-import { backgroundSyncService } from '@/services/backgroundSyncService';
+import { useInitialization } from '@/hooks/useInitialization';
 import { logger } from '@/utils/debugConfig';
 import { cleanupSingletons } from '@/utils/cleanupSingletons';
 import useAuthStore from '@/store/authStore';
@@ -24,41 +22,18 @@ interface AppProvidersProps {
 const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
   const { showError, showSuccess } = useToast();
 
+  // 🚀 COLD START: Use staged initialization system
+  const initialization = useInitialization();
+
   useEffect(() => {
-    // Initialize core services with enhanced error protection
-    const initializeServices = async () => {
-      try {
-        // 🚨 COLD START FIX: Manually initialize Firebase first
-        await firebaseService.initializeFirebase();
+    // Register global error handlers with enhanced 7-layer protection
+    registerGlobalErrorHandlers({ showError, showSuccess });
 
-        // Register global error handlers with enhanced 7-layer protection
-        registerGlobalErrorHandlers({ showError, showSuccess });
-
-        // Initialize Firebase Analytics (non-blocking) - now depends on manual init
-        firebaseService.initialize().catch((error) => {
-          logger.error('Firebase Analytics initialization failed (non-critical):', { error });
-        });
-
-        // Initialize network monitoring (non-blocking)
-        networkMonitorService.initialize().catch((error) => {
-          logger.error('Network monitoring initialization failed (non-critical):', { error });
-        });
-
-        // Background sync service initializes automatically in constructor
-        logger.debug('Background sync service initialized');
-
-        logger.debug('Core services initialized successfully');
-      } catch (error) {
-        logger.error('Service initialization failed:', { error });
-        // Don't throw - app should still function with limited features
-      }
-    };
-
-    // 🚨 COLD START FIX: Don't initialize services immediately
-    // Use setTimeout to defer initialization and prevent blocking the main thread
-    const initTimer = setTimeout(() => {
-      initializeServices();
-    }, 100);
+    logger.debug('[COLD START] AppProviders initialized - staged initialization running...', {
+      stage: initialization.stage,
+      progress: initialization.progress,
+      databaseReady: initialization.databaseReady,
+    });
 
     // 🚨 FORCE QUIT FIX: AppState listener to detect and fix AsyncStorage deadlocks
     // When app is force quit during onboarding, AsyncStorage operations can deadlock
@@ -95,13 +70,17 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
 
     // Cleanup function
     return () => {
-      clearTimeout(initTimer);
       appStateSubscription?.remove();
       cleanupSingletons();
-      backgroundSyncService.stopPeriodicSync();
       logger.debug('App providers cleanup completed');
     };
-  }, [showError, showSuccess]);
+  }, [
+    showError,
+    showSuccess,
+    initialization.stage,
+    initialization.progress,
+    initialization.databaseReady,
+  ]);
 
   return (
     <ErrorBoundary>

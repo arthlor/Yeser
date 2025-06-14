@@ -345,7 +345,7 @@ const useAuthStore = create<AuthState>((set, get) => ({
         isListenerActive = true;
 
         // Subscribe to auth state changes
-        authListenerSubscription = authService.onAuthStateChange(async (event, session) => {
+        const authListener = authService.onAuthStateChange(async (event, session) => {
           if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
             // **RACE CONDITION FIX**: Cancel queries before auth state change
             await cancelQueriesForAuthTransition();
@@ -380,6 +380,15 @@ const useAuthStore = create<AuthState>((set, get) => ({
             completeAuthTransition(); // No need to cancel queries for initial state
           }
         });
+
+        // Store the subscription - handle Supabase union return type
+        if ('data' in authListener && authListener.data?.subscription) {
+          authListenerSubscription = {
+            unsubscribe: () => authListener.data.subscription.unsubscribe(),
+          };
+        } else if ('unsubscribe' in authListener) {
+          authListenerSubscription = authListener;
+        }
 
         logger.debug('Auth listener setup complete within atomic operation');
       } catch (error) {

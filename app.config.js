@@ -21,7 +21,9 @@ if (!isEASBuild) {
 const getEnv = (name, defaultValue = '') => {
   try {
     const value = process.env[name];
-    if (value === undefined || value === null) {
+    console.log(`🔍 Checking env var ${name}: ${value ? 'SET' : 'NOT SET'}`);
+
+    if (value === undefined || value === null || value === '') {
       if (defaultValue) {
         console.log(`🔧 Using default value for ${name}: ${defaultValue}`);
         return defaultValue;
@@ -30,6 +32,7 @@ const getEnv = (name, defaultValue = '') => {
         return '';
       }
     }
+    console.log(`✅ Using environment value for ${name}`);
     return value;
   } catch (error) {
     console.error(`❌ Error accessing environment variable ${name}:`, error);

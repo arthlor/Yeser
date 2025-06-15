@@ -210,16 +210,13 @@ export default {
       bundler: 'metro',
     },
     plugins: [
+      // Expo Notifications - simplified for EAS build compatibility
       [
         'expo-notifications',
         {
-          icon: 'src/assets/assets/notification-icon.png',
-          color: ASSET_BACKGROUND_COLOR,
+          icon: './src/assets/assets/notification-icon.png',
+          color: '#2F4F4F',
           defaultChannel: 'yeser-reminders',
-          sounds: ['src/assets/assets/sounds/notification_sound.wav'],
-          androidMode: 'default',
-          androidCollapsedTitle: getAppName(),
-          iosDisplayInForeground: true,
         },
       ],
       [

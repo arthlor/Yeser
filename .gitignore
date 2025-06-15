@@ -27,7 +27,10 @@ expo-env.d.ts
 credentials.json
 
 # iOS
-ios/
+ios/*
+!ios/Yeer/
+ios/Yeer/*
+!ios/Yeer/GoogleService-Info.plist
 
 # Metro
 .metro-health-check*

@@ -1,8 +1,0 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Notification bell shape -->
-  <path d="M12 2C13.1 2 14 2.9 14 4C16.2 4.7 17.9 6.6 18.1 9V12.5L20 14.5V16H4V14.5L6 12.5V9C6.1 6.6 7.8 4.7 10 4C10 2.9 10.9 2 12 2Z" fill="#5DB0A5"/>
-  <!-- Bell clapper -->
-  <circle cx="12" cy="19" r="2" fill="#5DB0A5"/>
-  <!-- Notification dot -->
-  <circle cx="17" cy="7" r="3" fill="#FF6B6B"/>
-</svg> 

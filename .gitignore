@@ -43,7 +43,10 @@ yarn-debug.*
 yarn-error.*
 
 # Android
-android/
+android/*
+!android/app/
+android/app/*
+!android/app/google-services.json
 
 # macOS
 .DS_Store
@@ -190,8 +193,7 @@ firestore-debug.log
 # Auto-generated files
 *.generated.*
 
-# Platform specific crash logs
-*.crash
+# Platform specific logs
 *.ips
 
 # React Native Debugger

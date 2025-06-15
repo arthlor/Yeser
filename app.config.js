@@ -15,24 +15,29 @@ if (!isEASBuild) {
   }
 } else {
   console.log('🔧 Running in EAS Build environment - using provided environment variables');
+  // Debug: List all EXPO_PUBLIC_ environment variables
+  const expoPublicVars = Object.keys(process.env).filter((key) => key.startsWith('EXPO_PUBLIC_'));
+  console.log(`🔍 Available EXPO_PUBLIC_ vars: ${expoPublicVars.join(', ')}`);
 }
 
 // Enhanced environment variable access with better EAS support
 const getEnv = (name, defaultValue = '') => {
   try {
     const value = process.env[name];
-    console.log(`🔍 Checking env var ${name}: ${value ? 'SET' : 'NOT SET'}`);
+    // Safe logging - show first 10 chars for debugging without exposing secrets
+    const valuePreview = value ? `${value.substring(0, 10)}...` : 'undefined/null/empty';
+    console.log(`🔍 Checking env var ${name}: ${valuePreview}`);
 
     if (value === undefined || value === null || value === '') {
       if (defaultValue) {
-        console.log(`🔧 Using default value for ${name}: ${defaultValue}`);
+        console.log(`🔧 Using default value for ${name}: ${defaultValue.substring(0, 20)}...`);
         return defaultValue;
       } else {
         console.log(`⚠️ Environment variable ${name} is not set, using empty string`);
         return '';
       }
     }
-    console.log(`✅ Using environment value for ${name}`);
+    console.log(`✅ Using environment value for ${name}: ${value.substring(0, 10)}...`);
     return value;
   } catch (error) {
     console.error(`❌ Error accessing environment variable ${name}:`, error);

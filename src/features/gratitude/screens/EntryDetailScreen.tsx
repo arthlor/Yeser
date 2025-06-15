@@ -73,8 +73,14 @@ const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
       error: entryError,
     } = useGratitudeEntry(entryDate);
 
-    // Mutation hooks for editing operations only (delete removed for past entries)
-    const { editStatement, editStatementError } = useGratitudeMutations();
+    // Mutation hooks for editing and deleting operations
+    const {
+      editStatement,
+      editStatementError,
+      deleteStatement,
+      isDeletingStatement,
+      deleteStatementError,
+    } = useGratitudeMutations();
 
     // Local state for editing
     const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
@@ -190,6 +196,30 @@ const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
       setEditingStatementIndex(null);
     }, []);
 
+    // ✅ PERFORMANCE FIX: Memoized delete handler
+    const handleDeleteStatement = useCallback(
+      async (index: number) => {
+        try {
+          await deleteStatement({
+            entryDate: entryDate,
+            statementIndex: index,
+          });
+
+          // 🎯 TOAST INTEGRATION: Success feedback for statement deletion
+          showSuccess('Minnet ifadesi başarıyla silindi');
+        } catch (error) {
+          // 🎯 TOAST INTEGRATION: Use toast for general errors
+          showError('Silme işlemi başarısız oldu. Lütfen tekrar deneyin.');
+          handleMutationError(error, 'deleteStatement');
+          logger.error(
+            'Delete statement error:',
+            error instanceof Error ? error : new Error(String(error))
+          );
+        }
+      },
+      [entryDate, deleteStatement, showSuccess, showError, handleMutationError]
+    );
+
     // Analytics tracking
     useEffect(() => {
       analyticsService.logScreenView('entry_detail_screen');
@@ -211,6 +241,13 @@ const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
         showError('Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.');
       }
     }, [editStatementError, handleMutationError, showError]);
+
+    useEffect(() => {
+      if (deleteStatementError) {
+        handleMutationError(deleteStatementError, 'deleteStatement');
+        showError('Silme işlemi başarısız oldu. Lütfen tekrar deneyin.');
+      }
+    }, [deleteStatementError, handleMutationError, showError]);
 
     // **COORDINATED ENTRANCE**: Simple entrance animation
     useEffect(() => {
@@ -492,13 +529,15 @@ const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
                       numberOfLines={undefined}
                       animateEntrance={animationsReady}
                       isEditing={editingStatementIndex === index}
+                      isLoading={isDeletingStatement}
                       onEdit={() => handleEditStatement(index)}
+                      onDelete={() => handleDeleteStatement(index)}
                       onSave={(newStatement: string) =>
                         handleSaveEditedStatement(index, newStatement)
                       }
                       onCancel={handleCancelEditingStatement}
                       enableInlineEdit={true}
-                      confirmDelete={false}
+                      confirmDelete={true}
                       maxLength={500}
                       edgeToEdge={true}
                       style={styles.enhancedStatementCard}
@@ -521,10 +560,10 @@ EnhancedEntryDetailScreen.displayName = 'EnhancedEntryDetailScreen';
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    // 🎯 ENHANCED HERO ZONE: Edge-to-edge layout with proper spacing
+    // 🎯 ENHANCED HERO ZONE: True edge-to-edge layout with minimal margins
     heroZone: {
       marginTop: theme.spacing.md,
-      marginHorizontal: theme.spacing.page,
+      marginHorizontal: theme.spacing.sm, // Reduced from page to sm for more edge-to-edge feel
     },
     heroCard: {
       borderRadius: theme.borderRadius.xl,
@@ -663,10 +702,10 @@ const createStyles = (theme: AppTheme) =>
       ...getPrimaryShadow.small(theme),
     },
 
-    // 🎯 ENHANCED CONTENT ZONE: Edge-to-edge layout with proper spacing
+    // 🎯 ENHANCED CONTENT ZONE: True edge-to-edge layout with minimal margins
     contentZone: {
       marginBottom: theme.spacing.xl,
-      marginHorizontal: theme.spacing.page,
+      marginHorizontal: theme.spacing.sm, // Reduced from page to sm for more edge-to-edge feel
     },
     statementsCard: {
       borderRadius: theme.borderRadius.xl,

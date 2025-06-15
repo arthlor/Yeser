@@ -29,12 +29,20 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
     // Register global error handlers with enhanced 7-layer protection
     registerGlobalErrorHandlers({ showError, showSuccess });
 
-    logger.debug('[COLD START] AppProviders initialized - staged initialization running...', {
+    logger.debug('[COLD START] AppProviders initialized - staged initialization running...');
+  }, [showError, showSuccess]);
+
+  // Separate effect for initialization logging to avoid re-mounting providers
+  useEffect(() => {
+    logger.debug('[COLD START] Initialization stage update:', {
       stage: initialization.stage,
       progress: initialization.progress,
       databaseReady: initialization.databaseReady,
     });
+  }, [initialization.stage, initialization.progress, initialization.databaseReady]);
 
+  // Separate effect for AppState handling to avoid re-mounting providers
+  useEffect(() => {
     // 🚨 FORCE QUIT FIX: AppState listener to detect and fix AsyncStorage deadlocks
     // When app is force quit during onboarding, AsyncStorage operations can deadlock
     // Background → foreground cycle resets the native module and fixes the issue
@@ -72,15 +80,9 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
     return () => {
       appStateSubscription?.remove();
       cleanupSingletons();
-      logger.debug('App providers cleanup completed');
+      logger.debug('[AppProviders] Cleaning up providers...');
     };
-  }, [
-    showError,
-    showSuccess,
-    initialization.stage,
-    initialization.progress,
-    initialization.databaseReady,
-  ]);
+  }, []); // 🚨 FIX: Empty dependency array to prevent re-mounting providers during initialization
 
   return (
     <ErrorBoundary>

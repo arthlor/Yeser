@@ -35,6 +35,12 @@ const envSchema = z.object({
     .optional(),
   EXPO_PUBLIC_FIREBASE_APP_ID: z.string().min(1, 'Firebase app ID is required').optional(),
   EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: z.string().optional(),
+
+  EXPO_PUBLIC_REDIRECT_URI: z.string().min(1, 'Redirect URI is required').optional(),
+  EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB: z
+    .string()
+    .min(1, 'Google web client ID is required')
+    .optional(),
   EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS: z
     .string()
     .min(1, 'Google iOS client ID is required')
@@ -43,21 +49,12 @@ const envSchema = z.object({
     .string()
     .min(1, 'Google Android client ID is required')
     .optional(),
-  EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB: z
-    .string()
-    .min(1, 'Google web client ID is required')
-    .optional(),
-  EXPO_PUBLIC_REDIRECT_URI: z.string().min(1, 'Redirect URI is required').optional(),
   EXPO_PUBLIC_APP_VERSION: z.string().default('1.0.0'),
   EXPO_PUBLIC_APP_BUILD_NUMBER: z.string().default('1'),
   EXPO_PUBLIC_APP_ENVIRONMENT: z
     .enum(['development', 'staging', 'production'])
     .default('development'),
   EXPO_PUBLIC_ENABLE_ANALYTICS: z
-    .string()
-    .transform((val) => val === 'true')
-    .default('true'),
-  EXPO_PUBLIC_ENABLE_CRASHLYTICS: z
     .string()
     .transform((val) => val === 'true')
     .default('true'),
@@ -88,15 +85,15 @@ const buildEnvObject = () => {
     'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
     'EXPO_PUBLIC_FIREBASE_APP_ID',
     'EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID',
+
+    'EXPO_PUBLIC_REDIRECT_URI',
+    'EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB',
     'EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS',
     'EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID',
-    'EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB',
-    'EXPO_PUBLIC_REDIRECT_URI',
     'EXPO_PUBLIC_APP_VERSION',
     'EXPO_PUBLIC_APP_BUILD_NUMBER',
     'EXPO_PUBLIC_APP_ENVIRONMENT',
     'EXPO_PUBLIC_ENABLE_ANALYTICS',
-    'EXPO_PUBLIC_ENABLE_CRASHLYTICS',
     'EXPO_PUBLIC_ENABLE_THROWBACK',
     'EXPO_PUBLIC_ENABLE_VARIED_PROMPTS',
     'EXPO_PUBLIC_DEBUG_MODE',
@@ -152,12 +149,12 @@ export const config = {
     measurementId: env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
   },
   oauth: {
+    redirectUri: env.EXPO_PUBLIC_REDIRECT_URI,
     googleClientIds: {
+      web: env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
       ios: env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
       android: env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
-      web: env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,
     },
-    redirectUri: env.EXPO_PUBLIC_REDIRECT_URI,
   },
   app: {
     version: env.EXPO_PUBLIC_APP_VERSION,
@@ -166,13 +163,12 @@ export const config = {
   },
   features: {
     analytics: env.EXPO_PUBLIC_ENABLE_ANALYTICS,
-    crashlytics: env.EXPO_PUBLIC_ENABLE_CRASHLYTICS,
     throwback: env.EXPO_PUBLIC_ENABLE_THROWBACK,
     variedPrompts: env.EXPO_PUBLIC_ENABLE_VARIED_PROMPTS,
   },
   debug: {
-    enabled: env.EXPO_PUBLIC_DEBUG_MODE,
-    logLevel: env.EXPO_PUBLIC_LOG_LEVEL,
+    enabled: env.EXPO_PUBLIC_DEBUG_MODE || true,
+    logLevel: env.EXPO_PUBLIC_LOG_LEVEL || 'debug',
   },
 } as const;
 

@@ -1,9 +1,10 @@
 // src/services/authService.ts
-import { AuthError, Session, User } from '@supabase/supabase-js';
+import { AuthError, Session } from '@supabase/supabase-js';
 
 import { supabaseService } from '../utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
+import { config } from '@/utils/config';
 
 // Define a type for our custom, simplified error shape
 type SimpleAuthError = {
@@ -59,16 +60,24 @@ export const signInWithMagicLink = async (credentials: MagicLinkCredentials) => 
       .toLowerCase()
       .replace(/[\u200B-\u200D\uFEFF]/g, '');
 
-    // **PRODUCTION-READY URL SCHEME**: Use correct URL scheme matching app.config.js
-    const getRedirectUrl = () => {
-      const env = process.env.EXPO_PUBLIC_ENV || 'development';
-      if (env === 'development') {
-        return 'yeser-dev://auth/callback';
-      } else if (env === 'preview') {
-        return 'yeser-preview://auth/callback';
-      } else {
-        return 'yeser://auth/callback'; // Production URL scheme
+    // ✅ CENTRALIZED REDIRECT URL RESOLUTION
+    // 1. Prefer EXPO_PUBLIC_REDIRECT_URI (configured via app.config + Supabase dashboard)
+    // 2. Fallback to environment-based schemes for developer convenience
+    const getRedirectUrl = (): string => {
+      if (config.oauth.redirectUri) {
+        return config.oauth.redirectUri;
       }
+
+      // Fallback – maintain previous behaviour to avoid breaking dev environments
+      const env = process.env.EXPO_PUBLIC_ENV || config.app.environment || 'development';
+      if (env === 'preview') {
+        return 'yeser-preview://auth/callback';
+      }
+      if (env === 'production') {
+        return 'yeser://auth/callback';
+      }
+      // Default to development scheme
+      return 'yeser-dev://auth/callback';
     };
 
     const { data, error } = await supabase.auth.signInWithOtp({
@@ -243,48 +252,38 @@ export const onAuthStateChange = (callback: (event: string, session: Session | n
   return client.auth.onAuthStateChange(callback);
 };
 
-// --- Google OAuth ---
-export const signInWithGoogle = async (): Promise<{
-  user: User | null;
-  session: Session | null;
-  error: (AuthError | SimpleAuthError) | null;
-}> => {
+// --- Google OAuth Authentication ---
+export const signInWithGoogleIdToken = async (idToken: string) => {
   try {
     const supabase = await ensureSupabaseClient();
 
-    // **PRODUCTION-READY URL SCHEME**: Use correct URL scheme matching app.config.js
-    const getRedirectUrl = () => {
-      const env = process.env.EXPO_PUBLIC_ENV || 'development';
-      if (env === 'development') {
-        return 'yeser-dev://auth/callback';
-      } else if (env === 'preview') {
-        return 'yeser-preview://auth/callback';
-      } else {
-        return 'yeser://auth/callback'; // Production URL scheme
-      }
-    };
+    logger.debug('Google OAuth: Exchanging ID token with Supabase');
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
-      options: {
-        redirectTo: getRedirectUrl(),
-        // No need for additional scopes - basic profile info is sufficient
-      },
+      token: idToken,
     });
 
     if (error) {
-      return { user: null, session: null, error: handleAuthError(error, 'Google OAuth') };
+      return {
+        user: null,
+        session: null,
+        error: handleAuthError(error, 'Google OAuth ID token exchange'),
+      };
     }
 
-    // For OAuth, we initiate the process but actual session is handled by callback
-    return { user: null, session: null, error: null };
+    logger.debug('Google OAuth: Token exchange successful', {
+      hasUser: !!data?.user,
+      hasSession: !!data?.session,
+    });
+
+    return { user: data?.user, session: data?.session, error: null };
   } catch (err) {
     const error = err as AuthError;
-    return { user: null, session: null, error: handleAuthError(error, 'Google OAuth') };
+    return {
+      user: null,
+      session: null,
+      error: handleAuthError(error, 'Google OAuth ID token exchange'),
+    };
   }
 };
-
-// Password-based authentication functions removed - using magic link authentication only
-
-// Potentially add other functions like:
-// - updateUserAttributes

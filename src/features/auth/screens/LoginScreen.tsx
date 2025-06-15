@@ -3,16 +3,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Animated,
-  Dimensions,
-  Keyboard,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, Dimensions, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
@@ -25,9 +16,18 @@ import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimation
 import { getPrimaryShadow } from '@/themes/utils';
 import { magicLinkSchema } from '@/schemas/authSchemas';
 import { analyticsService } from '@/services/analyticsService';
-import useAuthStore from '@/store/authStore';
+import { logger } from '@/utils/debugConfig';
+import {
+  useAuthActions,
+  useCoreAuth,
+  useGoogleAuthState,
+  useGoogleOAuth,
+  useMagicLink,
+  useMagicLinkState,
+} from '@/features/auth';
 import { AppTheme } from '@/themes/types';
 import { AuthStackParamList } from '@/types/navigation';
+import { supabaseService } from '@/utils/supabaseClient';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -41,6 +41,8 @@ interface Props {
  * 🌟 POLISHED EDGE-TO-EDGE LOGIN SCREEN
  * Clean, spacious authentication experience with proper text sizing and layout
  *
+ * **REFACTORED**: Now uses unified modern auth hooks for consistent state management
+ *
  * **SIMPLIFIED ANIMATION SYSTEM**: Using minimal, non-intrusive animations
  * with 4 essential values: fadeAnim, scaleAnim, opacityAnim, heightAnim
  *
@@ -49,18 +51,58 @@ interface Props {
  */
 const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) => {
   const { theme } = useTheme();
-  const { showWarning, showError } = useToast();
+  const { showWarning, showError, showSuccess } = useToast();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets);
 
+  // Modern selective auth state for better performance
+  const { isAuthenticated, isLoading: coreLoading } = useCoreAuth();
+  const { isLoading: magicLinkLoading } = useMagicLinkState();
   const {
-    loginWithMagicLink,
-    loginWithGoogle,
-    isLoading,
-    magicLinkSent,
-    canSendMagicLink,
-    resetMagicLinkSent,
-  } = useAuthStore();
+    isLoading: googleOAuthLoading,
+    isInitialized: googleOAuthReady,
+    canAttemptSignIn: canAttemptGoogleSignIn,
+  } = useGoogleAuthState();
+
+  // Modern unified auth actions
+  const { sendMagicLink, signInWithGoogle, resetMagicLink } = useAuthActions();
+
+  // Magic link specific state and actions
+  const { lastSentEmail, lastSentAt, canSendMagicLink } = useMagicLink();
+
+  // Google OAuth specific state and actions
+  const { initialize: initializeGoogle } = useGoogleOAuth();
+
+  // Derive magic link sent state (matches legacy behavior)
+  const magicLinkSent = !!(lastSentEmail && lastSentAt);
+  const isLoading = coreLoading || magicLinkLoading;
+
+  // Track OAuth callback state
+  const [isWaitingForOAuthCallback, setIsWaitingForOAuthCallback] = useState(false);
+
+  // Reset OAuth callback state after timeout
+  useEffect(() => {
+    if (isWaitingForOAuthCallback) {
+      const timeout = setTimeout(() => {
+        setIsWaitingForOAuthCallback(false);
+        logger.debug('OAuth callback timeout - resetting state');
+      }, 60000); // 1 minute timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isWaitingForOAuthCallback]);
+
+  // Reset OAuth callback state when user becomes authenticated
+  useEffect(() => {
+    if (isAuthenticated && isWaitingForOAuthCallback) {
+      setIsWaitingForOAuthCallback(false);
+      logger.debug('OAuth callback successful - resetting state');
+      // Show success message for OAuth completion
+      setTimeout(() => {
+        showSuccess?.('Google ile başarıyla giriş yaptınız!');
+      }, 100); // Small delay to ensure UI is ready
+    }
+  }, [isAuthenticated, isWaitingForOAuthCallback, showSuccess]);
 
   // Form state
   const [email, setEmail] = useState('');
@@ -117,17 +159,14 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     animations.animateEntrance({ duration: 400 });
   }, [animations]);
 
-  // **MINIMAL SUCCESS FEEDBACK**: Simple fade effect instead of celebration
+  // **OPTIMIZED SUCCESS FEEDBACK**: Immediate and smooth transition
   useEffect(() => {
     if (magicLinkSent) {
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      // Simple fade effect instead of complex celebration
-      animations.animateFade(0.9, { duration: 200 });
-      setTimeout(() => {
-        animations.animateFade(1, { duration: 200 });
-      }, 300);
+      // OPTIMIZED: Immediate smooth transition without artificial delay
+      animations.animateFade(1, { duration: 150 }); // Faster, smoother transition
     }
   }, [magicLinkSent, animations]);
 
@@ -142,6 +181,37 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   useEffect(() => {
     triggerEntranceAnimations();
   }, [triggerEntranceAnimations]);
+
+  // Initialize Google OAuth after database is ready
+  useEffect(() => {
+    const initGoogle = async () => {
+      try {
+        // Only initialize if Supabase is ready (proper database readiness check)
+        if (supabaseService.isInitialized()) {
+          await initializeGoogle();
+          logger.debug('Google OAuth initialized after database ready');
+        } else {
+          // Wait for database to be ready
+          const checkReady = setInterval(async () => {
+            if (supabaseService.isInitialized()) {
+              clearInterval(checkReady);
+              await initializeGoogle();
+              logger.debug('Google OAuth initialized after database became ready');
+            }
+          }, 500);
+
+          // Cleanup after 10 seconds to prevent infinite waiting
+          setTimeout(() => clearInterval(checkReady), 10000);
+        }
+      } catch (error) {
+        logger.debug('Google OAuth initialization failed (non-critical):', {
+          message: (error as Error).message,
+        });
+      }
+    };
+
+    initGoogle();
+  }, [initializeGoogle]);
 
   // Real-time email validation
   const handleEmailChange = useCallback(
@@ -158,9 +228,9 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   // Clear errors when component unmounts
   useEffect(
     () => () => {
-      resetMagicLinkSent();
+      resetMagicLink();
     },
-    [resetMagicLinkSent]
+    [resetMagicLink]
   );
 
   // Log screen view
@@ -169,64 +239,64 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   }, []);
 
   // 🚀 TOAST INTEGRATION: Enhanced magic link login with complementary toast notifications
-  const handleMagicLinkLogin = useCallback(async () => {
-    Keyboard.dismiss();
-
-    if (Platform.OS === 'ios') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
-
-    setEmailError(undefined);
-
+  const handleSendMagicLink = useCallback(async () => {
     if (!canSendMagicLink()) {
-      // Keep inline error for immediate visibility + toast for emphasis
-      setEmailError('Çok sık deneme yapıyorsunuz. Lütfen bir süre bekleyin.');
-      // 🚀 TOAST INTEGRATION: Add toast warning for rate limiting
-      showWarning('Çok sık giriş denemesi yapıyorsunuz. Lütfen 1 dakika bekleyip tekrar deneyin.', {
-        duration: 5000,
-      });
-      if (Platform.OS === 'ios') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
+      showWarning('Lütfen bekleyin, çok fazla istek gönderdiniz.');
       return;
     }
 
-    const validationResult = magicLinkSchema.safeParse({ email });
+    // Simple email validation
+    if (!email || !email.includes('@')) {
+      showError('Geçerli bir email adresi girin');
+      return;
+    }
 
-    if (!validationResult.success) {
-      const { fieldErrors } = validationResult.error.formErrors;
-      if (fieldErrors.email) {
-        // Keep inline error for immediate feedback
-        setEmailError(fieldErrors.email[0]);
-        // 🚀 TOAST INTEGRATION: Add toast error for validation failure
-        showError('Lütfen geçerli bir email adresi girin');
-        if (Platform.OS === 'ios') {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    try {
+      await sendMagicLink(
+        {
+          email: email.trim().toLowerCase(),
+          options: {
+            shouldCreateUser: true,
+          },
+        },
+        // Success callback - this will be called when magic link is sent successfully
+        (message: string) => {
+          showSuccess(message); // This will now work!
+          logger.debug('Magic link sent successfully with UI feedback');
+        },
+        // Error callback - this will be called if there's an error
+        (error: Error) => {
+          showError(error.message);
+          logger.error('Magic link send failed with UI feedback:', error);
         }
-      }
+      );
+    } catch (error) {
+      // This catch is for any remaining unhandled errors
+      logger.error('Magic link send failed in UI catch block:', error as Error);
+    }
+  }, [email, canSendMagicLink, sendMagicLink, showWarning, showError, showSuccess]);
+
+  const handleGoogleLogin = useCallback(async (): Promise<void> => {
+    if (!canAttemptGoogleSignIn) {
+      showWarning('Google servisleri henüz hazır değil. Lütfen bekleyin.');
       return;
     }
 
-    analyticsService.logEvent('magic_link_request');
+    try {
+      analyticsService.logEvent('google_oauth_attempt');
+      setIsWaitingForOAuthCallback(true);
 
-    await loginWithMagicLink({
-      email: validationResult.data.email,
-      options: {
-        shouldCreateUser: true,
-      },
-    });
-  }, [email, canSendMagicLink, loginWithMagicLink, showWarning, showError]);
+      // Use the unified auth actions
+      await signInWithGoogle();
 
-  // Handle Google login
-  const handleGoogleLogin = useCallback(async () => {
-    if (Platform.OS === 'ios') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      // The result handling is done in the store, but we need to manage UI state
+      setIsWaitingForOAuthCallback(false);
+    } catch (error) {
+      setIsWaitingForOAuthCallback(false);
+      // Error handling is managed by the auth store and global error provider
+      logger.error('Google OAuth error in UI:', error as Error);
     }
-
-    analyticsService.logEvent('google_auth_attempt');
-
-    await loginWithGoogle();
-  }, [loginWithGoogle]);
+  }, [canAttemptGoogleSignIn, signInWithGoogle, showWarning]);
 
   // **ENHANCED GRADIENT COLORS**: More visible and properly structured
   const gradientColors = useMemo(() => {
@@ -327,13 +397,54 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                   {/* Login Button */}
                   <ThemedButton
                     title={isLoading ? 'Gönderiliyor...' : 'Giriş Bağlantısı Gönder'}
-                    onPress={handleMagicLinkLogin}
+                    onPress={handleSendMagicLink}
                     variant="primary"
                     isLoading={isLoading}
                     disabled={isLoading || !email.trim() || !canSendMagicLink() || !isEmailValid}
                     style={styles.loginButton}
                     fullWidth
                   />
+
+                  {/* Google OAuth Section */}
+                  <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>veya</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  <ThemedButton
+                    title={
+                      !googleOAuthReady
+                        ? 'Google servisleri hazırlanıyor...'
+                        : isWaitingForOAuthCallback
+                          ? 'Tarayıcıda giriş yapın...'
+                          : googleOAuthLoading
+                            ? 'Google ile giriş yapılıyor...'
+                            : 'Google ile Devam Et'
+                    }
+                    onPress={handleGoogleLogin}
+                    variant="secondary"
+                    iconLeft="google"
+                    disabled={
+                      isLoading ||
+                      googleOAuthLoading ||
+                      !googleOAuthReady ||
+                      !canAttemptGoogleSignIn ||
+                      isWaitingForOAuthCallback
+                    }
+                    style={styles.googleButton}
+                    fullWidth
+                  />
+
+                  {/* OAuth Callback Waiting Indicator */}
+                  {isWaitingForOAuthCallback && (
+                    <View style={styles.oauthCallbackIndicator}>
+                      <Ionicons name="open-outline" size={16} color={theme.colors.primary} />
+                      <Text style={styles.oauthCallbackText}>
+                        Tarayıcıda Google ile giriş yapın ve bu uygulamaya geri dönün
+                      </Text>
+                    </View>
+                  )}
 
                   {/* Help Section Toggle */}
                   <ThemedButton
@@ -379,7 +490,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                   <ThemedButton
                     title="Tekrar Gönder"
                     variant="secondary"
-                    onPress={handleMagicLinkLogin}
+                    onPress={handleSendMagicLink}
                     disabled={!canSendMagicLink()}
                     style={styles.resendButton}
                   />
@@ -392,34 +503,6 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     </View>
   );
 
-  // **SIMPLIFIED GOOGLE SECTION**: Basic fade animation
-  const renderGoogleSection = () => (
-    <Animated.View
-      style={[
-        styles.googleSection,
-        {
-          opacity: animations.fadeAnim,
-        },
-      ]}
-    >
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>veya</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <ThemedButton
-        title="Google ile Devam Et"
-        onPress={handleGoogleLogin}
-        variant="secondary"
-        iconLeft="google"
-        disabled={isLoading}
-        style={styles.googleButton}
-        fullWidth
-      />
-    </Animated.View>
-  );
-
   return (
     <LinearGradient colors={gradientColors} style={styles.fullScreenContainer}>
       <ScrollView
@@ -430,10 +513,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       >
         {renderHeader()}
 
-        <View style={styles.contentArea}>
-          {renderMainContent()}
-          {!magicLinkSent && renderGoogleSection()}
-        </View>
+        <View style={styles.contentArea}>{renderMainContent()}</View>
       </ScrollView>
     </LinearGradient>
   );
@@ -486,6 +566,10 @@ const createStyles = (
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: theme.spacing.md,
+    },
+    brandIconImage: {
+      width: 24,
+      height: 24,
     },
     brandText: {
       ...theme.typography.headlineMedium,
@@ -666,6 +750,24 @@ const createStyles = (
       borderColor: `${theme.colors.outline}30`,
       minHeight: 52, // Increased for better text accommodation
       ...getPrimaryShadow.small(theme),
+    },
+    oauthCallbackIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.md,
+      padding: theme.spacing.md,
+      backgroundColor: `${theme.colors.primary}08`,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: `${theme.colors.primary}20`,
+    },
+    oauthCallbackText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.primary,
+      flex: 1,
+      lineHeight: 18,
+      fontWeight: '500',
     },
   });
 

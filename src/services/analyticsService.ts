@@ -379,8 +379,8 @@ const trackContentAnalytics = async (
 };
 
 /**
- * 🚀 ENHANCED ERROR ANALYTICS: Crashlytics-like error tracking
- * Provides comprehensive error insights without additional dependencies
+ * 🚀 ENHANCED ERROR ANALYTICS: Comprehensive error tracking
+ * Provides comprehensive error insights using Firebase Analytics
  */
 const trackDetailedError = async (
   error: Error,
@@ -394,8 +394,8 @@ const trackDetailedError = async (
   } = {}
 ): Promise<void> => {
   try {
-    // Enhanced error event with crashlytics-like data
-    await logEvent('detailed_error_tracking', {
+    // Enhanced error event with comprehensive data
+    await logEvent('error_tracking', {
       // Error details
       error_message: error.message.substring(0, 1000),
       error_name: error.name,
@@ -420,13 +420,12 @@ const trackDetailedError = async (
       error_severity: determineErrorSeverity(error),
       error_category: categorizeError(error),
       app_version: '1.0.0', // From config
-      error_frequency: 1, // Could be enhanced with local tracking
     });
 
-    // Also log as a separate crash-like event for grouping
-    await logEvent('error_crash_simulation', {
-      crash_group: generateErrorGroup(error),
-      crash_fingerprint: generateErrorFingerprint(error),
+    // Also log as a separate error grouping event
+    await logEvent('error_group', {
+      error_group: generateErrorGroup(error),
+      error_fingerprint: generateErrorFingerprint(error),
       is_fatal: false,
       recovery_action: 'user_notified',
     });
@@ -436,7 +435,7 @@ const trackDetailedError = async (
 };
 
 /**
- * Generate error grouping similar to Crashlytics
+ * Generate error grouping for analytics
  */
 const generateErrorGroup = (error: Error): string => {
   // Simple grouping based on error name and first stack frame

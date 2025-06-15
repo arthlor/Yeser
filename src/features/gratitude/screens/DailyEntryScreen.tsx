@@ -9,6 +9,7 @@ import {
 import { useUserProfile } from '@/shared/hooks';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
+import { useToast } from '@/providers/ToastProvider';
 import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
 import StatementEditCard from '@/shared/components/ui/StatementEditCard';
 import { AppTheme } from '@/themes/types';
@@ -56,7 +57,8 @@ interface Props {
  */
 const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const { theme } = useTheme();
-  const { handleMutationError, showError, showSuccess } = useGlobalError();
+  const { handleMutationError, showError } = useGlobalError();
+  const { showSuccess } = useToast();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [manualDate, setManualDate] = useState<Date | null>(null);
@@ -230,6 +232,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     isGoalComplete,
     currentPrompt,
     profile?.id,
+    showSuccess,
   ]);
 
   // **SIMPLE STATEMENT OPERATIONS**: Minimal animation feedback
@@ -418,7 +421,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       <StatusBar barStyle="default" backgroundColor="transparent" translucent />
 
       <ScreenLayout
-        edges={['top']}
+        edges={['top', 'bottom']}
         scrollable={true}
         density="compact"
         edgeToEdge={true}
@@ -446,10 +449,21 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             },
           ]}
         >
-          {/* Built-in Navigation Header - Edge-to-edge */}
-          <View style={styles.builtInNavigationHeader}>
-            <View style={styles.navigationContent}>
-              <Text style={styles.navigationTitle}>Minnettarlık Günlüğü</Text>
+          {/* Enhanced Navigation Header - Beautiful Title Design */}
+          <View style={styles.enhancedNavigationHeader}>
+            <View style={styles.enhancedNavigationBackground} />
+            <View style={styles.enhancedNavigationContent}>
+              <View style={styles.titleContainer}>
+                <View style={styles.titleIconContainer}>
+                  <Icon name="book-open-page-variant" size={28} color={theme.colors.primary} />
+                </View>
+                <View style={styles.titleTextContainer}>
+                  <Text style={styles.enhancedNavigationTitle}>Minnettarlık Günlüğü</Text>
+                  <Text style={styles.enhancedNavigationSubtitle}>
+                    {isToday ? 'Bugünün güzel anları' : 'Geçmiş anıların ışığı'}
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
 
@@ -655,6 +669,70 @@ const createStyles = (theme: AppTheme) =>
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.outline + '20',
     },
+    enhancedNavigationHeader: {
+      position: 'relative',
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outline + '15',
+      overflow: 'hidden',
+    },
+    enhancedNavigationBackground: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: `linear-gradient(135deg, ${theme.colors.primaryContainer}15, ${theme.colors.secondaryContainer}10)`,
+      opacity: 0.3,
+    },
+    enhancedNavigationContent: {
+      position: 'relative',
+      zIndex: 1,
+    },
+    titleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.md,
+    },
+    titleIconContainer: {
+      backgroundColor: theme.colors.primaryContainer + '40',
+      padding: theme.spacing.sm,
+      borderRadius: theme.borderRadius.full,
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    titleTextContainer: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    enhancedNavigationTitle: {
+      ...theme.typography.headlineSmall,
+      color: theme.colors.onBackground,
+      fontWeight: '700',
+      fontSize: 24,
+      lineHeight: 28,
+      letterSpacing: -0.5,
+      textAlign: 'center',
+      marginBottom: 2,
+      fontFamily: 'Lora-Bold',
+    },
+    enhancedNavigationSubtitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.primary,
+      fontWeight: '500',
+      fontSize: 14,
+      lineHeight: 18,
+      textAlign: 'center',
+      letterSpacing: 0.1,
+      fontStyle: 'italic',
+    },
     navigationContent: {
       alignItems: 'center',
     },
@@ -823,6 +901,7 @@ const createStyles = (theme: AppTheme) =>
     },
     modernStatementsContainer: {
       paddingVertical: theme.spacing.sm,
+      paddingBottom: theme.spacing.xl, // Extra space from bottom navigator
     },
     modernStatementWrapper: {
       marginBottom: theme.spacing.sm,
@@ -831,6 +910,7 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.xxxl,
+      paddingBottom: theme.spacing.xxxl + theme.spacing.xl, // Extra space from bottom navigator
       justifyContent: 'center',
     },
     emptyStateContent: {

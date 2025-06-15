@@ -30,6 +30,8 @@ import { logger } from '@/utils/debugConfig';
 import { RootStackParamList } from './types/navigation';
 import { AppProviders } from './providers/AppProviders';
 import SplashOverlayProvider from './providers/SplashOverlayProvider';
+import { authCoordinator } from './features/auth/services/authCoordinator';
+import { supabaseService } from './utils/supabaseClient';
 
 // Helper function to get the active route name
 const getActiveRouteName = (state: NavigationState | undefined): string | undefined => {
@@ -54,6 +56,13 @@ const urlProcessingMap = new Map<string, UrlProcessingState>();
 
 // **MEMORY LEAK FIX**: Store cleanup timeout references
 const cleanupTimeoutRefs = new Map<string, ReturnType<typeof setTimeout>>();
+
+// 🚨 OTP TOKEN QUEUEING SYSTEM: Now handled by authCoordinator
+
+// Process queued OTP tokens when database becomes ready
+const processQueuedTokens = async (): Promise<void> => {
+  await authCoordinator.processQueuedTokens();
+};
 
 // **RACE CONDITION FIX**: Atomic URL processing state management
 const atomicUrlProcessingCheck = (url: string): boolean => {
@@ -108,9 +117,9 @@ const markUrlProcessingCompleted = (url: string): void => {
   }
 };
 
-const handleDeepLink = async (url: string) => {
+const handleDeepLink = async (url: string, databaseReady: boolean = false) => {
   try {
-    logger.debug('Deep link received:', { url });
+    logger.debug('Deep link received:', { url, databaseReady });
 
     // **RACE CONDITION FIX**: Atomic duplicate processing prevention
     if (!atomicUrlProcessingCheck(url)) {
@@ -138,16 +147,24 @@ const handleDeepLink = async (url: string) => {
       const refreshToken = fragmentParams.get('refresh_token') || queryParams.get('refresh_token');
 
       if (accessToken && refreshToken) {
-        // Handle OAuth-style magic links
-        logger.debug('OAuth tokens found, setting session...');
-        try {
-          const setSessionFromTokens = useAuthStore.getState().setSessionFromTokens;
-          await setSessionFromTokens(accessToken, refreshToken);
-          logger.debug('OAuth token authentication completed successfully');
-          analyticsService.logEvent('magic_link_oauth_tokens');
-        } catch (error) {
-          logger.error('OAuth token authentication failed:', { error: (error as Error).message });
-          analyticsService.logEvent('magic_link_oauth_error', { error: (error as Error).message });
+        // Handle OAuth-style tokens (Google OAuth callback)
+        if (databaseReady) {
+          logger.debug('OAuth tokens found, processing immediately');
+          try {
+            const authStore = useAuthStore.getState();
+            await authStore.setSessionFromTokens(accessToken, refreshToken);
+            logger.debug('OAuth token authentication completed successfully');
+            analyticsService.logEvent('oauth_tokens_processed');
+          } catch (error) {
+            logger.error('OAuth token authentication failed:', {
+              error: (error as Error).message,
+            });
+            analyticsService.logEvent('oauth_tokens_error', { error: (error as Error).message });
+          }
+        } else {
+          // Database not ready, delegate to authCoordinator for queuing
+          logger.debug('OAuth tokens found but database not ready, delegating to authCoordinator');
+          await authCoordinator.handleAuthCallback(url, databaseReady);
         }
       } else {
         // Handle OTP-style tokens (fallback for traditional magic links)
@@ -156,22 +173,11 @@ const handleDeepLink = async (url: string) => {
           fragmentParams.get('token') ||
           queryParams.get('token_hash') ||
           queryParams.get('token');
-        const type = fragmentParams.get('type') || queryParams.get('type') || 'magiclink';
-
         if (tokenHash) {
-          logger.debug('OTP token found, confirming magic link...');
-          try {
-            // 🚨 FIX: Use direct state access for consistency with setSessionFromTokens
-            const confirmMagicLink = useAuthStore.getState().confirmMagicLink;
-            await confirmMagicLink(tokenHash, type);
-            logger.debug('OTP magic link authentication completed successfully');
-            analyticsService.logEvent('magic_link_clicked', { type });
-          } catch (error) {
-            logger.error('OTP magic link authentication failed:', {
-              error: (error as Error).message,
-            });
-            analyticsService.logEvent('magic_link_otp_error', { error: (error as Error).message });
-          }
+          logger.debug('OTP token found, delegating to authCoordinator...');
+
+          // Delegate to the new auth coordinator
+          await authCoordinator.handleAuthCallback(url, databaseReady);
         } else {
           logger.error('No valid tokens found in magic link URL');
           analyticsService.logEvent('magic_link_invalid');
@@ -249,6 +255,9 @@ const AppContent: React.FC = () => {
   // Check if user is fully ready for MainApp navigation
   const isMainAppReady = isAuthenticated && profile?.onboarded;
 
+  // 🚨 OAUTH QUEUE: Track database readiness for token processing
+  const [databaseReady, setDatabaseReady] = React.useState(false);
+
   // 🚨 COLD START DEBUG: Add AppState logging to confirm the theory
   const appStateRef = React.useRef(AppState.currentState);
   const appStartTimeRef = React.useRef(Date.now());
@@ -302,44 +311,113 @@ const AppContent: React.FC = () => {
       logger.debug('Notifications initialized:', { extra: { hasPermissions } });
     });
 
-    // Enhanced notification response handler with comprehensive navigation
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data;
-      logger.debug('Notification response received:', { extra: data });
+    // 🚨 OAUTH QUEUE: Monitor Supabase initialization to detect database readiness
+    const checkDatabaseReadiness = () => {
+      // Database is ready when Supabase client is actually initialized
+      const isReady = supabaseService.isInitialized();
 
-      // Navigate based on notification type
-      if (data?.type === 'daily_reminder') {
-        // Navigate to daily entry screen
-        if (isMainAppReady && navigationRef.current) {
-          navigationRef.current.navigate('DailyEntry');
-        }
-      } else if (data?.type === 'throwback_reminder') {
-        // Navigate to home screen (where throwback is displayed)
-        if (isMainAppReady && navigationRef.current) {
-          navigationRef.current.navigate('MainApp', {
-            screen: 'Home',
+      if (isReady && !databaseReady) {
+        logger.debug('[OAUTH QUEUE] Database ready detected, processing queued tokens');
+        setDatabaseReady(true);
+
+        // Process any queued OTP tokens
+        const queueStatus = authCoordinator.getAuthStatus().deepLink;
+        if (queueStatus.otpTokens > 0) {
+          logger.debug('[OTP QUEUE] Found queued tokens, processing now');
+          processQueuedTokens().catch((error) => {
+            logger.error('[OTP QUEUE] Failed to process queued tokens:', error as Error);
           });
         }
+      }
+    };
+
+    // Check immediately
+    checkDatabaseReadiness();
+
+    // Set up periodic check for database readiness
+    const readinessInterval = setInterval(checkDatabaseReadiness, 500);
+
+    // Cleanup interval
+    const cleanupReadinessCheck = () => {
+      clearInterval(readinessInterval);
+    };
+
+    // 🚨 NOTIFICATION FIX: Enhanced notification response handler with comprehensive navigation
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data;
+      logger.debug('[NOTIFICATION FIX] Notification response received:', {
+        data,
+        isMainAppReady,
+        navigationReady: !!navigationRef.current,
+      });
+
+      // Navigate based on notification type with proper error handling
+      if (data?.type === 'daily_reminder') {
+        // 🚨 NAVIGATION FIX: Navigate to MainApp -> DailyEntryTab (Daily Entry Screen)
+        if (isMainAppReady && navigationRef.current) {
+          try {
+            navigationRef.current.navigate('MainApp', {
+              screen: 'DailyEntryTab', // ✅ FIXED: Proper nested navigation to DailyEntryTab
+            });
+            logger.debug(
+              '[NOTIFICATION FIX] ✅ Successfully navigated to DailyEntryTab from daily reminder'
+            );
+          } catch (error) {
+            logger.error('[NOTIFICATION FIX] Failed to navigate to DailyEntryTab:', error as Error);
+          }
+        } else {
+          logger.warn('[NOTIFICATION FIX] Cannot navigate to DailyEntryTab - app not ready', {
+            isMainAppReady,
+            hasNavigation: !!navigationRef.current,
+          });
+        }
+      } else if (data?.type === 'throwback_reminder') {
+        // 🚨 NAVIGATION FIX: Navigate to MainApp -> PastEntriesTab (Past Entries Screen)
+        if (isMainAppReady && navigationRef.current) {
+          try {
+            navigationRef.current.navigate('MainApp', {
+              screen: 'PastEntriesTab', // ✅ FIXED: Proper nested navigation to PastEntriesTab
+            });
+            logger.debug(
+              '[NOTIFICATION FIX] ✅ Successfully navigated to PastEntriesTab from throwback reminder'
+            );
+          } catch (error) {
+            logger.error(
+              '[NOTIFICATION FIX] Failed to navigate to PastEntriesTab:',
+              error as Error
+            );
+          }
+        } else {
+          logger.warn('[NOTIFICATION FIX] Cannot navigate to PastEntriesTab - app not ready', {
+            isMainAppReady,
+            hasNavigation: !!navigationRef.current,
+          });
+        }
+      } else {
+        logger.warn('[NOTIFICATION FIX] Unknown notification type:', {
+          notificationType: data?.type,
+        });
       }
     });
 
     // Handle deep links when app is already running
     const linkingSubscription = Linking.addEventListener('url', (event) => {
-      void handleDeepLink(event.url);
+      void handleDeepLink(event.url, databaseReady);
     });
 
     // Handle deep links when app is opened from a closed state
     Linking.getInitialURL().then((url) => {
       if (url) {
-        void handleDeepLink(url);
+        void handleDeepLink(url, databaseReady);
       }
     });
 
     return () => {
       subscription.remove();
       linkingSubscription.remove();
+      cleanupReadinessCheck();
     };
-  }, [isMainAppReady, isAuthenticated, profile?.onboarded]);
+  }, [isMainAppReady, isAuthenticated, profile?.onboarded, databaseReady]);
 
   const navigationTheme = React.useMemo(
     () => ({

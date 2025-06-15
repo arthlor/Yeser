@@ -213,14 +213,14 @@ export default {
       [
         '@react-native-google-signin/google-signin',
         {
-          iosUrlScheme: getEnvWithDefault('EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME'),
+          iosUrlScheme: 'com.googleusercontent.apps.384355046895-d6l39k419j64r0ur9l5jp7qr0dk28o3n',
         },
       ],
       [
         '@react-native-firebase/app',
         {
           ios: {
-            googleServicesFile: `ios/${getIosTargetName()}/GoogleService-Info.plist`,
+            googleServicesFile: 'ios/Yeer/GoogleService-Info.plist',
           },
           android: {
             googleServicesFile: 'android/app/google-services.json',

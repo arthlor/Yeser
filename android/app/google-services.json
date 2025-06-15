@@ -12,25 +12,34 @@
           "package_name": "com.arthlor.yeser"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "384355046895-un55q9co2thln0a1dv2m50votb7i08d3.apps.googleusercontent.com",
-          "client_type": 1
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAahcQFDSHZJ3RFewxz6Kes-jMoXr5hMG4"
+          "current_key": "AIzaSyBfsLCIfPz73HlUl0aXo-e4N0e5G9GrEYU"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "384355046895-crbbb1q3vg8n33ukb3kmmhk1dtls6v7l.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:747763611639:android:5679917b99914307e460f2",
+        "android_client_info": {
+          "package_name": "com.arthlor.yeser.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfsLCIfPz73HlUl0aXo-e4N0e5G9GrEYU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
         }
       }
     }

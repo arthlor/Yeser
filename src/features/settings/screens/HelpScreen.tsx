@@ -125,7 +125,7 @@ const EnhancedHelpScreen: React.FC = () => {
     {
       question: 'Geri bildirimde nasıl bulunabilirim?',
       answer:
-        'Uygulama hakkındaki düşüncelerinizi ve önerilerinizi destek@yeser.app adresine e-posta göndererek bizimle paylaşabilirsiniz.',
+        'Uygulama hakkındaki düşüncelerinizi ve önerilerinizi anilkaraca140@gmail.com adresine e-posta göndererek bizimle paylaşabilirsiniz.',
     },
     {
       question: 'Minnettarlık günlüğü tutmanın faydaları nelerdir?',
@@ -140,7 +140,7 @@ const EnhancedHelpScreen: React.FC = () => {
     // Log analytics event
     analyticsService.logEvent('contact_support_clicked');
 
-    Linking.openURL('mailto:destek@yeser.app?subject=Yeşer Destek Talebi');
+    Linking.openURL('mailto:anilkaraca140@gmail.com?subject=Yeşer Destek Talebi');
   };
 
   const styles = createStyles(theme);

@@ -78,7 +78,7 @@ const getEnvWithDefault = (name, fallback = '') => {
   return getEnv(name, fallback);
 };
 
-export default {
+module.exports = {
   expo: {
     name: getAppName(),
     slug: 'yeser',
@@ -239,4 +239,4 @@ export default {
       policy: 'appVersion',
     },
   },
-};
+}; 

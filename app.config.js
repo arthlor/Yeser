@@ -122,6 +122,7 @@ export default {
       },
       package: getBundleIdentifier(),
       edgeToEdgeEnabled: true,
+      googleServicesFile: './android/app/google-services.json',
       // Firebase config will be provided via EAS Build secrets
       permissions: [
         'RECEIVE_BOOT_COMPLETED',
@@ -156,8 +157,10 @@ export default {
       [
         '@react-native-firebase/app',
         {
-          // Firebase config files will be provided via EAS Build secrets
-          // No need to specify file paths when using environment variables
+          // Firebase config files
+          android: {
+            googleServicesFile: './android/app/google-services.json',
+          },
         },
       ],
       [

@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import { logger } from '@/utils/debugConfig';
 import { atomicOperationManager } from '../utils/atomicOperations';
 import { magicLinkService } from '../services/magicLinkService';
+import { FEATURE_FLAGS } from '@/utils/featureFlags';
+import { PerformanceProfiler } from '@/utils/performanceProfiler';
 
 import type { MagicLinkCredentials } from '@/services/authService';
 
@@ -55,6 +57,45 @@ export const useMagicLinkStore = create<MagicLinkState>((set, get) => ({
     onSuccess?: (message: string) => void,
     onError?: (error: Error) => void
   ) => {
+    // 🚀 Feature-flagged optimized implementation
+    if (FEATURE_FLAGS.OPTIMIZED_MAGIC_LINK_V1 || FEATURE_FLAGS.OPTIMIZED_MAGIC_LINK_V2) {
+      const endTimer = PerformanceProfiler.startTimer('magic_link_store_optimized');
+
+      try {
+        await magicLinkService.sendMagicLinkOptimized(credentials, {
+          onSuccess: (message: string) => {
+            set({
+              lastSentEmail: credentials.email,
+              lastSentAt: Date.now(),
+              error: null,
+              isLoading: false,
+            });
+            logger.debug('Magic link store optimized: Success', { email: credentials.email });
+            onSuccess?.(message);
+          },
+          onError: (error: Error) => {
+            set({
+              error: error.message,
+              isLoading: false,
+            });
+            logger.error('Magic link store optimized: Error', error);
+            onError?.(error);
+          },
+          onStateChange: ({ isLoading, magicLinkSent: _magicLinkSent, error }) => {
+            set({
+              isLoading,
+              error: error || null,
+            });
+            // Additional state updates handled in success/error callbacks
+          },
+        });
+      } finally {
+        endTimer();
+      }
+      return;
+    }
+
+    // 📜 Legacy implementation (fallback)
     const operationKey = `magic_link_${credentials.email}`;
 
     try {

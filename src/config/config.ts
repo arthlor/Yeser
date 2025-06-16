@@ -29,6 +29,8 @@ interface Config {
     updates: boolean;
     analytics: boolean;
     crashReporting: boolean;
+    optimizedMagicLink: boolean;
+    performanceMonitoring: boolean;
   };
 }
 
@@ -110,6 +112,8 @@ const config: Config = {
     updates: environment === 'production',
     analytics: environment !== 'development',
     crashReporting: environment === 'production',
+    optimizedMagicLink: getEnvVar('EXPO_PUBLIC_FF_OPTIMIZED_MAGIC_LINK_V2', 'false') === 'true',
+    performanceMonitoring: getEnvVar('EXPO_PUBLIC_FF_PERFORMANCE_MONITORING', 'true') === 'true',
   },
 };
 

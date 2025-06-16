@@ -8,6 +8,14 @@ import {
   validateMagicLinkCredentials,
 } from '../utils/authValidation';
 import { atomicOperationManager } from '../utils/atomicOperations';
+import { PerformanceProfiler } from '@/utils/performanceProfiler';
+import { FEATURE_FLAGS, getUserOptimizationTier } from '@/utils/featureFlags';
+import {
+  convertToModernCallbacks,
+  isLegacyCallbacks,
+  LegacyMagicLinkCallbacks,
+  MagicLinkCallbacks,
+} from '../types/magicLinkTypes';
 
 import type { MagicLinkCredentials } from '@/services/authService';
 
@@ -197,9 +205,235 @@ export class MagicLinkService {
   }
 
   /**
+   * 🚀 Phase 2: Optimized Magic Link with Unified Callbacks
+   *
+   * Feature-flagged optimized implementation that reduces callback overhead
+   * while maintaining 100% backward compatibility
+   */
+  async sendMagicLinkOptimized(
+    credentials: MagicLinkCredentials,
+    callbacks: MagicLinkCallbacks | LegacyMagicLinkCallbacks
+  ): Promise<void> {
+    const optimizationTier = getUserOptimizationTier(credentials.email);
+
+    // Fallback to existing implementation if optimizations are disabled
+    if (optimizationTier === 'legacy' || !FEATURE_FLAGS.OPTIMIZED_MAGIC_LINK_V1) {
+      return this.sendMagicLinkLegacyFallback(credentials, callbacks);
+    }
+
+    // Use optimized implementation
+    return this.sendMagicLinkOptimizedInternal(credentials, callbacks, optimizationTier);
+  }
+
+  /**
+   * Legacy fallback method that uses the original implementation
+   */
+  private async sendMagicLinkLegacyFallback(
+    credentials: MagicLinkCredentials,
+    callbacks: MagicLinkCallbacks | LegacyMagicLinkCallbacks
+  ): Promise<void> {
+    if (isLegacyCallbacks(callbacks)) {
+      // Use original method with legacy callbacks
+      return this.sendMagicLink(
+        credentials,
+        callbacks.onSuccess,
+        callbacks.onError,
+        callbacks.setLoading,
+        callbacks.setMagicLinkSent
+      );
+    } else {
+      // Convert modern callbacks to legacy format for original method
+      const legacyCallbacks = {
+        onSuccess: callbacks.onSuccess,
+        onError: callbacks.onError,
+        setLoading: (loading: boolean) =>
+          callbacks.onStateChange({ isLoading: loading, magicLinkSent: false }),
+        setMagicLinkSent: (sent: boolean) =>
+          callbacks.onStateChange({ isLoading: false, magicLinkSent: sent }),
+      };
+
+      return this.sendMagicLink(
+        credentials,
+        legacyCallbacks.onSuccess,
+        legacyCallbacks.onError,
+        legacyCallbacks.setLoading,
+        legacyCallbacks.setMagicLinkSent
+      );
+    }
+  }
+
+  /**
+   * Internal optimized implementation with performance tracking
+   */
+  private async sendMagicLinkOptimizedInternal(
+    credentials: MagicLinkCredentials,
+    callbacks: MagicLinkCallbacks | LegacyMagicLinkCallbacks,
+    optimizationTier: 'v1' | 'v2'
+  ): Promise<void> {
+    const endTimer = PerformanceProfiler.startTimer('magic_link_optimized_v1', {
+      tier: optimizationTier,
+      email: credentials.email.charAt(0) + '***',
+    });
+
+    // Convert to unified callbacks if needed
+    const unifiedCallbacks = isLegacyCallbacks(callbacks)
+      ? convertToModernCallbacks(callbacks)
+      : callbacks;
+
+    try {
+      if (optimizationTier === 'v2') {
+        // Phase 3: Single atomic operation (no store-level atomic overhead)
+        await this.sendMagicLinkSingleAtomic(credentials, unifiedCallbacks);
+      } else {
+        // Phase 2: Optimized callbacks but dual atomic operations
+        await this.sendMagicLinkWithOptimizedCallbacks(credentials, unifiedCallbacks);
+      }
+    } finally {
+      endTimer();
+    }
+  }
+
+  /**
+   * Phase 2: Optimized with unified callbacks but dual atomic operations
+   */
+  private async sendMagicLinkWithOptimizedCallbacks(
+    credentials: MagicLinkCredentials,
+    callbacks: MagicLinkCallbacks
+  ): Promise<void> {
+    const operationKey = `magic_link_${credentials.email}`;
+
+    await atomicOperationManager.ensureAtomicOperation(
+      operationKey,
+      'magic_link_send',
+      async () => {
+        const endCallbackTimer = PerformanceProfiler.startTimer('magic_link_callback_overhead');
+
+        // Single state update: loading start
+        callbacks.onStateChange({ isLoading: true, magicLinkSent: false });
+
+        try {
+          // Validation and rate limiting
+          const validation = validateMagicLinkCredentials(credentials);
+          if (!validation.isValid) {
+            callbacks.onStateChange({ isLoading: false, magicLinkSent: false });
+            callbacks.onError(new Error(validation.error || 'Invalid credentials'));
+            return;
+          }
+
+          if (!this.canSendMagicLink()) {
+            const remainingTime = this.getMagicLinkCooldownRemaining();
+            callbacks.onStateChange({ isLoading: false, magicLinkSent: false });
+            callbacks.onError(
+              new Error(`Lütfen ${remainingTime} saniye bekleyin ve tekrar deneyin.`)
+            );
+            return;
+          }
+
+          // API call with timing
+          const endApiTimer = PerformanceProfiler.startTimer('magic_link_api_call');
+          const { error } = await authService.signInWithMagicLink({
+            ...credentials,
+            email: validation.sanitizedEmail || credentials.email,
+          });
+          endApiTimer();
+
+          if (error) {
+            callbacks.onStateChange({ isLoading: false, magicLinkSent: false });
+            callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+          } else {
+            this.lastSuccessfulMagicLinkTime = Date.now();
+            // Single state update: success
+            callbacks.onStateChange({ isLoading: false, magicLinkSent: true });
+            callbacks.onSuccess('Giriş bağlantısı email adresinize gönderildi!');
+
+            analyticsService.logEvent('magic_link_sent', {
+              email: credentials.email.charAt(0) + '***',
+              optimization: 'v1',
+            });
+          }
+        } catch (error) {
+          callbacks.onStateChange({ isLoading: false, magicLinkSent: false });
+          callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+        }
+
+        endCallbackTimer();
+      }
+    );
+  }
+
+  /**
+   * 🚀 Phase 3: Single Atomic Operation (Maximum Performance)
+   *
+   * Eliminates store-level atomic operation overhead by handling
+   * everything at the service level
+   */
+  private async sendMagicLinkSingleAtomic(
+    credentials: MagicLinkCredentials,
+    callbacks: MagicLinkCallbacks
+  ): Promise<void> {
+    const operationKey = `magic_link_service_${credentials.email}`;
+
+    return atomicOperationManager.ensureAtomicOperation(
+      operationKey,
+      'magic_link_send',
+      async () => {
+        const endTimer = PerformanceProfiler.startTimer('magic_link_single_atomic');
+
+        // Fast validation
+        const validation = validateMagicLinkCredentials(credentials);
+        if (!validation.isValid) {
+          throw new Error(validation.error || 'Invalid credentials');
+        }
+
+        // Fast rate limiting check
+        if (!this.canSendMagicLink()) {
+          const remainingTime = this.getMagicLinkCooldownRemaining();
+          throw new Error(`Lütfen ${remainingTime} saniye bekleyin ve tekrar deneyin.`);
+        }
+
+        // Single state update: loading start
+        callbacks.onStateChange({ isLoading: true, magicLinkSent: false });
+
+        try {
+          // API call (main bottleneck - unavoidable)
+          const endApiTimer = PerformanceProfiler.startTimer('magic_link_api_only');
+          const { error } = await authService.signInWithMagicLink({
+            ...credentials,
+            email: validation.sanitizedEmail || credentials.email,
+          });
+          endApiTimer();
+
+          if (error) {
+            callbacks.onStateChange({ isLoading: false, magicLinkSent: false });
+            callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+          } else {
+            this.lastSuccessfulMagicLinkTime = Date.now();
+            callbacks.onStateChange({ isLoading: false, magicLinkSent: true });
+            callbacks.onSuccess('Giriş bağlantısı email adresinize gönderildi!');
+
+            analyticsService.logEvent('magic_link_sent', {
+              email: credentials.email.charAt(0) + '***',
+              optimization: 'v2',
+            });
+          }
+        } catch (error) {
+          callbacks.onStateChange({ isLoading: false, magicLinkSent: false });
+          callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+        }
+
+        endTimer();
+      }
+    );
+  }
+
+  /**
    * PERFORMANCE OPTIMIZATION: Process a single request immediately without queue overhead
    */
   private async processRequestImmediately(request: MagicLinkRequest): Promise<void> {
+    const endTimer = PerformanceProfiler.startTimer('magic_link_immediate_total', {
+      email: request.credentials.email.charAt(0) + '***',
+    });
+
     this.isProcessingQueue = true;
     const { onSuccess, onError, setLoading, setMagicLinkSent } = request.callbacks;
 
@@ -250,6 +484,7 @@ export class MagicLinkService {
       request.promise.reject(errorObj);
     } finally {
       this.isProcessingQueue = false;
+      endTimer();
     }
   }
 

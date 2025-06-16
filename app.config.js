@@ -2,8 +2,7 @@
 /* eslint-disable no-undef */
 
 // Load environment variables safely (EAS-compatible)
-// Note: EAS environment variables are NOT available during app.config.js evaluation
-// They become available during the actual build process
+// Note: EAS environment variables ARE available during app.config.js evaluation when set in eas.json
 const isEASBuild = process.env.EAS_BUILD === 'true' || process.env.CI === 'true';
 
 if (!isEASBuild) {
@@ -16,14 +15,13 @@ if (!isEASBuild) {
   }
 } else {
   console.log('🔧 Running in EAS Build environment');
-  console.log('📝 Note: EAS environment variables are not available during config evaluation');
-  console.log('📝 They will be available during the build process itself');
+  console.log('📝 EAS environment variables from eas.json are available during config evaluation');
   // Debug: List all EXPO_PUBLIC_ environment variables
   const expoPublicVars = Object.keys(process.env).filter((key) => key.startsWith('EXPO_PUBLIC_'));
   console.log(`🔍 Available EXPO_PUBLIC_ vars during config: ${expoPublicVars.join(', ')}`);
 }
 
-// Enhanced environment variable access with EAS Build support
+// Enhanced environment variable access with validation
 const getEnv = (name, defaultValue = '') => {
   try {
     const value = process.env[name];
@@ -86,27 +84,7 @@ const getIosTargetName = () => {
 // Asset background color - Dark Slate Gray for consistent branding
 const ASSET_BACKGROUND_COLOR = '#2F4F4F';
 
-// Production values for EAS builds (since EAS env vars aren't available during config evaluation)
-const PRODUCTION_VALUES = {
-  EXPO_PUBLIC_SUPABASE_URL: 'https://svnexpdbckqiexdjbaca.supabase.co',
-  EXPO_PUBLIC_SUPABASE_ANON_KEY:
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2bmV4cGRiY2txaWV4ZGpiYWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3MDYxNTgsImV4cCI6MjA2NDI4MjE1OH0.tlO7pmgyjmM3CGEYwbz5IleMIMqN7FWTTARxWerRzmE',
-  EXPO_PUBLIC_FIREBASE_API_KEY: 'AIzaSyAfVMLrX2Fu3QGEBW0epmufdRkqkC2WSnM',
-  EXPO_PUBLIC_FIREBASE_PROJECT_ID: 'yeser-2b816',
-  EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: 'yeser-2b816.firebaseapp.com',
-  EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: 'yeser-2b816.firebasestorage.app',
-  EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '747763611639',
-  EXPO_PUBLIC_FIREBASE_APP_ID: '1:747763611639:ios:8345c9073f3d3e19e460f2',
-  EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS:
-    '384355046895-d6l39k419j64r0ur9l5jp7qr0dk28o3n.apps.googleusercontent.com',
-  EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID:
-    '384355046895-un55q9co2thln0a1dv2m50votb7i08d3.apps.googleusercontent.com',
-  EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME:
-    'com.googleusercontent.apps.384355046895-d6l39k419j64r0ur9l5jp7qr0dk28o3n',
-  EXPO_PUBLIC_REDIRECT_URI: 'yeser://auth/callback',
-};
-
-// Default/fallback values for development
+// Default/fallback values for development only
 const DEFAULT_VALUES = {
   EXPO_PUBLIC_SUPABASE_URL: 'https://placeholder.supabase.co',
   EXPO_PUBLIC_SUPABASE_ANON_KEY: 'placeholder-key',
@@ -127,11 +105,7 @@ const DEFAULT_VALUES = {
 
 // Helper to get environment variable with sensible defaults
 const getEnvWithDefault = (name) => {
-  // For EAS builds, use production values since EAS env vars aren't available during config evaluation
-  if (isEASBuild && IS_PRODUCTION && PRODUCTION_VALUES[name]) {
-    console.log(`🏭 Using production value for ${name} (EAS Build)`);
-    return PRODUCTION_VALUES[name];
-  }
+  // For development, use defaults if env var is not set
   return getEnv(name, DEFAULT_VALUES[name] || '');
 };
 

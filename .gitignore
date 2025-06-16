@@ -26,6 +26,9 @@ expo-env.d.ts
 # EAS Credentials (contains sensitive passwords)
 credentials.json
 
+# EAS Configuration with sensitive environment variables
+eas.json
+
 # iOS
 ios/*
 !ios/Yeer/

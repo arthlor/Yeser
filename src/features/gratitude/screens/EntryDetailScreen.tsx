@@ -2,7 +2,8 @@ import { CompositeNavigationProp, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Animated, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Animated, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import ErrorState from '@/shared/components/ui/ErrorState';
 import LoadingState from '@/components/states/LoadingState';
@@ -14,8 +15,9 @@ import { useToast } from '@/providers/ToastProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { AppTheme } from '@/themes/types';
 import { RootStackParamList } from '@/types/navigation';
-import { ScreenHeader, ScreenLayout } from '@/shared/components/layout';
+import { ScreenLayout } from '@/shared/components/layout';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
 import { ZodError } from 'zod';
 import { getPrimaryShadow } from '@/themes/utils';
@@ -361,13 +363,62 @@ const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
           />
         }
       >
-        {/* Header */}
-        <ScreenHeader
-          title="Kayıt Detayı"
-          showBackButton={true}
-          onBackPress={() => navigation.goBack()}
-        />
-        {/* 🎯 ENHANCED HERO ZONE: More aesthetic header design */}
+        {/* 🎨 CUSTOM EDGE-TO-EDGE HEADER */}
+        <View style={styles.headerContainer}>
+          <LinearGradient
+            colors={[
+              theme.colors.primary + '15',
+              theme.colors.primaryContainer + '10',
+              theme.colors.surface + 'F0',
+              theme.colors.surface,
+            ]}
+            style={styles.headerGradient}
+          >
+            <View style={styles.headerContent}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+                activeOpacity={0.7}
+              >
+                <View style={styles.backButtonInner}>
+                  <Ionicons name="chevron-back" size={24} color={theme.colors.onSurface} />
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.headerTitleSection}>
+                <View style={styles.headerIconContainer}>
+                  <MaterialCommunityIcons
+                    name="book-open-page-variant"
+                    size={24}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={styles.headerTextContainer}>
+                  <Text style={styles.headerTitle}>Kayıt Detayı</Text>
+                  <Text style={styles.headerSubtitle}>
+                    {gratitudeItems.length} minnet • {relativeTime}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.headerActions}>
+                <TouchableOpacity
+                  onPress={handleRefresh}
+                  style={styles.headerActionButton}
+                  activeOpacity={0.7}
+                >
+                  <MaterialCommunityIcons
+                    name="refresh"
+                    size={20}
+                    color={theme.colors.onSurfaceVariant}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </LinearGradient>
+        </View>
+
+        {/* 🎯 ENHANCED HERO ZONE: Complete edge-to-edge */}
         <Animated.View
           style={[
             styles.heroZone,
@@ -472,7 +523,7 @@ const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
           </ThemedCard>
         </Animated.View>
 
-        {/* 🎯 ENHANCED CONTENT ZONE: More aesthetic statements display */}
+        {/* 🎯 ENHANCED CONTENT ZONE: Complete edge-to-edge */}
         {gratitudeItems.length > 0 ? (
           <View style={styles.contentZone}>
             <ThemedCard
@@ -560,58 +611,136 @@ EnhancedEntryDetailScreen.displayName = 'EnhancedEntryDetailScreen';
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    // 🎯 ENHANCED HERO ZONE: True edge-to-edge layout with minimal margins
-    heroZone: {
-      marginTop: theme.spacing.md,
-      marginHorizontal: theme.spacing.sm, // Reduced from page to sm for more edge-to-edge feel
-    },
-    heroCard: {
-      borderRadius: theme.borderRadius.xl,
+    // 🎨 CUSTOM EDGE-TO-EDGE HEADER STYLES
+    headerContainer: {
       backgroundColor: theme.colors.surface,
+    },
+    headerGradient: {
+      paddingTop: theme.spacing.md,
+      paddingBottom: theme.spacing.lg,
+    },
+    headerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.md,
+      gap: theme.spacing.md,
+    },
+    backButton: {
+      padding: theme.spacing.xs,
+    },
+    backButtonInner: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.surface + 'E0',
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...getPrimaryShadow.small(theme),
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.outline + '20',
+    },
+    headerTitleSection: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    headerIconContainer: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.primaryContainer + '40',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: theme.colors.primary + '20',
+    },
+    headerTextContainer: {
+      flex: 1,
+    },
+    headerTitle: {
+      ...theme.typography.headlineSmall,
+      color: theme.colors.onSurface,
+      fontWeight: '800',
+      letterSpacing: -0.5,
+      lineHeight: 28,
+    },
+    headerSubtitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '500',
+      marginTop: 2,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      gap: theme.spacing.sm,
+    },
+    headerActionButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.surface + 'E0',
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...getPrimaryShadow.small(theme),
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
+    },
+
+    // 🎯 ENHANCED HERO ZONE: Complete edge-to-edge layout
+    heroZone: {
+      marginTop: theme.spacing.sm,
+      // Removed marginHorizontal for complete edge-to-edge
+    },
+    heroCard: {
+      borderRadius: 0, // Sharp edges for true edge-to-edge
+      backgroundColor: theme.colors.surface,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.outline + '15',
+      borderBottomColor: theme.colors.outline + '15',
       ...getPrimaryShadow.floating(theme),
     },
     heroContent: {
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.xl,
     },
     dateSection: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
     },
     dateDisplayContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.md,
+      gap: theme.spacing.lg,
       flex: 1,
     },
     dateDisplayBadge: {
-      width: 52,
-      height: 52,
-      borderRadius: theme.borderRadius.lg,
+      width: 60,
+      height: 60,
+      borderRadius: theme.borderRadius.xl,
       backgroundColor: theme.colors.primaryContainer,
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 2,
+      borderWidth: 3,
       borderColor: theme.colors.primary + '30',
-      ...getPrimaryShadow.small(theme),
+      ...getPrimaryShadow.medium(theme),
     },
     dayNumber: {
       ...theme.typography.titleLarge,
       color: theme.colors.onPrimaryContainer,
       fontWeight: '900',
-      fontSize: 20,
-      lineHeight: 22,
+      fontSize: 22,
+      lineHeight: 24,
     },
     monthText: {
       ...theme.typography.labelSmall,
       color: theme.colors.onPrimaryContainer,
-      fontWeight: '700',
-      fontSize: 8,
-      letterSpacing: 1,
+      fontWeight: '800',
+      fontSize: 9,
+      letterSpacing: 1.2,
     },
     dateInfo: {
       flex: 1,
@@ -619,75 +748,87 @@ const createStyles = (theme: AppTheme) =>
     dateText: {
       ...theme.typography.headlineSmall,
       color: theme.colors.onSurface,
-      fontWeight: '700',
-      letterSpacing: -0.5,
-      marginBottom: theme.spacing.xs,
-      lineHeight: 28,
+      fontWeight: '800',
+      letterSpacing: -0.7,
+      marginBottom: theme.spacing.sm,
+      lineHeight: 30,
     },
     relativeDateContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.xs,
+      gap: theme.spacing.sm,
+      backgroundColor: theme.colors.primaryContainer + '20',
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.full,
     },
     relativeDateText: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.onSurfaceVariant,
-      fontWeight: '500',
+      color: theme.colors.primary,
+      fontWeight: '600',
     },
     statsSection: {
       alignItems: 'center',
-      gap: theme.spacing.xs,
+      gap: theme.spacing.sm,
     },
     countBadge: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.primaryContainer,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
       borderRadius: theme.borderRadius.full,
-      gap: theme.spacing.xs,
-      ...getPrimaryShadow.small(theme),
+      gap: theme.spacing.sm,
+      ...getPrimaryShadow.medium(theme),
+      borderWidth: 2,
+      borderColor: theme.colors.primary + '20',
     },
     countText: {
-      ...theme.typography.titleMedium,
+      ...theme.typography.titleLarge,
       color: theme.colors.onPrimaryContainer,
-      fontWeight: '700',
+      fontWeight: '900',
+      fontSize: 18,
     },
     countLabel: {
-      ...theme.typography.labelSmall,
+      ...theme.typography.labelMedium,
       color: theme.colors.onSurfaceVariant,
-      fontWeight: '500',
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
     },
 
     // Enhanced Progress Section
     progressSection: {
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.outline + '15',
-      paddingTop: theme.spacing.md,
+      borderTopWidth: 2,
+      borderTopColor: theme.colors.outline + '10',
+      paddingTop: theme.spacing.lg,
+      backgroundColor: theme.colors.surface + 'F8',
+      marginHorizontal: -theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
+      borderRadius: theme.borderRadius.lg,
     },
     progressHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.xs,
+      gap: theme.spacing.md,
+      marginBottom: theme.spacing.md,
     },
     progressTitle: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodyLarge,
       color: theme.colors.onSurface,
-      fontWeight: '600',
-      letterSpacing: -0.2,
+      fontWeight: '700',
+      letterSpacing: -0.3,
       flex: 1,
     },
     progressLineContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.md,
     },
     progressLine: {
       flex: 1,
-      height: 4,
-      backgroundColor: theme.colors.primaryContainer + '40',
+      height: 6,
+      backgroundColor: theme.colors.primaryContainer + '30',
       borderRadius: theme.borderRadius.full,
       overflow: 'hidden',
     },
@@ -698,98 +839,107 @@ const createStyles = (theme: AppTheme) =>
     goalCompleteIndicator: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.full,
-      padding: 2,
+      padding: 4,
       ...getPrimaryShadow.small(theme),
     },
 
-    // 🎯 ENHANCED CONTENT ZONE: True edge-to-edge layout with minimal margins
+    // 🎯 ENHANCED CONTENT ZONE: Complete edge-to-edge layout
     contentZone: {
+      marginTop: theme.spacing.md,
       marginBottom: theme.spacing.xl,
-      marginHorizontal: theme.spacing.sm, // Reduced from page to sm for more edge-to-edge feel
+      // Removed marginHorizontal for complete edge-to-edge
     },
     statementsCard: {
-      borderRadius: theme.borderRadius.xl,
+      borderRadius: 0, // Sharp edges for true edge-to-edge
       backgroundColor: theme.colors.surface,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '20',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.outline + '15',
+      borderBottomColor: theme.colors.outline + '15',
       ...getPrimaryShadow.card(theme),
     },
     statementsHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.lg,
       marginBottom: theme.spacing.sm,
       backgroundColor: theme.colors.surface,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.outline + '15',
+      borderBottomWidth: 2,
+      borderBottomColor: theme.colors.outline + '10',
     },
     statementsHeaderLeft: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.md,
       flex: 1,
     },
     statementsIconContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: theme.colors.primaryContainer + '30',
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.primaryContainer + '40',
       justifyContent: 'center',
       alignItems: 'center',
+      borderWidth: 2,
+      borderColor: theme.colors.primary + '20',
     },
     statementsTitle: {
-      ...theme.typography.titleMedium,
+      ...theme.typography.titleLarge,
       color: theme.colors.onSurface,
-      fontWeight: '700',
+      fontWeight: '800',
+      letterSpacing: -0.5,
     },
     statementsCounter: {
       backgroundColor: theme.colors.primaryContainer,
       borderRadius: theme.borderRadius.full,
-      width: 32,
-      height: 32,
+      width: 36,
+      height: 36,
       justifyContent: 'center',
       alignItems: 'center',
       ...getPrimaryShadow.small(theme),
+      borderWidth: 2,
+      borderColor: theme.colors.primary + '20',
     },
     statementsCountText: {
-      ...theme.typography.labelMedium,
+      ...theme.typography.labelLarge,
       color: theme.colors.onPrimaryContainer,
-      fontWeight: '800',
+      fontWeight: '900',
     },
     statementsContainer: {
       gap: 0,
-      paddingHorizontal: theme.spacing.sm,
-      paddingBottom: theme.spacing.md,
-      paddingTop: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.lg,
+      paddingTop: theme.spacing.sm,
     },
     statementWrapper: {
       // Container for individual statements
     },
     enhancedStatementCard: {
-      marginVertical: theme.spacing.xs,
+      marginVertical: theme.spacing.sm,
       borderRadius: theme.borderRadius.lg,
       overflow: 'hidden',
     },
 
-    // 🎯 ENHANCED EMPTY STATE: Edge-to-Edge Inspiring Void
+    // 🎯 ENHANCED EMPTY STATE: Complete Edge-to-Edge
     emptyStateContainer: {
       paddingVertical: theme.spacing.xl,
     },
     emptyStateCard: {
-      borderRadius: 0,
-      borderTopWidth: 2,
-      borderBottomWidth: 2,
+      borderRadius: 0, // Sharp edges for edge-to-edge
+      borderTopWidth: 3,
+      borderBottomWidth: 3,
       borderStyle: 'dashed',
-      borderColor: theme.colors.outline,
+      borderTopColor: theme.colors.primary + '40',
+      borderBottomColor: theme.colors.primary + '40',
       backgroundColor: theme.colors.surface,
-      marginHorizontal: theme.spacing.md,
+      // Removed marginHorizontal for complete edge-to-edge
       ...getPrimaryShadow.card(theme),
     },
     emptyState: {
       alignItems: 'center',
-      paddingVertical: theme.spacing.xxl * 1.5,
+      paddingVertical: theme.spacing.xxl * 2,
       paddingHorizontal: theme.spacing.xl,
     },
     emptyIconContainer: {
@@ -800,8 +950,8 @@ const createStyles = (theme: AppTheme) =>
     },
     sparkleContainer: {
       position: 'absolute',
-      width: 120,
-      height: 120,
+      width: 140,
+      height: 140,
     },
     sparkle1: {
       position: 'absolute',
@@ -819,35 +969,37 @@ const createStyles = (theme: AppTheme) =>
       left: 10,
     },
     emptyTitle: {
-      ...theme.typography.headlineSmall,
+      ...theme.typography.headlineMedium,
       color: theme.colors.onSurface,
-      fontWeight: '700',
+      fontWeight: '800',
       textAlign: 'center',
-      marginBottom: theme.spacing.md,
-      letterSpacing: -0.3,
+      marginBottom: theme.spacing.lg,
+      letterSpacing: -0.5,
     },
     emptySubtitle: {
       ...theme.typography.bodyLarge,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 24,
-      marginBottom: theme.spacing.lg,
+      lineHeight: 26,
+      marginBottom: theme.spacing.xl,
     },
     emptyQuote: {
       alignItems: 'center',
-      backgroundColor: theme.colors.primaryContainer + '20',
-      padding: theme.spacing.md,
-      borderRadius: theme.borderRadius.lg,
-      borderLeftWidth: 3,
+      backgroundColor: theme.colors.primaryContainer + '30',
+      padding: theme.spacing.lg,
+      borderRadius: theme.borderRadius.xl,
+      borderLeftWidth: 4,
       borderLeftColor: theme.colors.primary,
+      ...getPrimaryShadow.small(theme),
     },
     emptyQuoteText: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodyLarge,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       fontStyle: 'italic',
-      lineHeight: 20,
+      lineHeight: 24,
       marginTop: theme.spacing.sm,
+      fontWeight: '500',
     },
   });
 

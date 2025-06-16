@@ -162,6 +162,22 @@ export default {
             googleServicesFile:
               process.env.GOOGLE_SERVICES_JSON || './android/app/google-services.json',
           },
+          ios: {
+            googleServicesFile:
+              process.env.IOS_GOOGLE_SERVICE_INFO_PLIST || './ios/Yeer/GoogleService-Info.plist',
+          },
+        },
+      ],
+      [
+        '@react-native-firebase/analytics',
+        {
+          // Disable advertising identifier collection
+          android: {
+            disableAdIdCollection: true,
+          },
+          ios: {
+            disableAdIdCollection: true,
+          },
         },
       ],
       [
@@ -201,17 +217,13 @@ export default {
         ),
         EXPO_PUBLIC_FIREBASE_APP_ID: getEnvWithDefault('EXPO_PUBLIC_FIREBASE_APP_ID'),
         EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: getEnvWithDefault(
-          'EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID',
-          'G-EJJY3MEQ7L'
+          'EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID'
         ),
         EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS: getEnvWithDefault('EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS'),
         EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID: getEnvWithDefault(
           'EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID'
         ),
-        EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB: getEnvWithDefault(
-          'EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB',
-          '384355046895-crbbb1q3vg8n33ukb3kmmhk1dtls6v7l.apps.googleusercontent.com'
-        ),
+        EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB: getEnvWithDefault('EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB'),
         EXPO_PUBLIC_REDIRECT_URI: getEnvWithDefault('EXPO_PUBLIC_REDIRECT_URI'),
         EXPO_PUBLIC_APP_VERSION: getEnvWithDefault('EXPO_PUBLIC_APP_VERSION', '1.0.0'),
         EXPO_PUBLIC_APP_BUILD_NUMBER: getEnvWithDefault('EXPO_PUBLIC_APP_BUILD_NUMBER', '1'),

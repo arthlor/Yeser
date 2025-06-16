@@ -119,8 +119,8 @@ export const useGoogleOAuthStore = create<GoogleOAuthState>((set, get) => ({
               error: null,
             });
             logger.debug('Google OAuth store: OAuth flow initiated, waiting for callback');
-            // Throw a special error to indicate callback is required (not a real error)
-            throw new Error('OAUTH_CALLBACK_REQUIRED');
+            // ✅ FIX: Don't throw error for normal OAuth flow - just return successfully
+            return; // OAuth flow is now in progress, deep link will handle completion
           } else if (result.success && result.user && result.session) {
             // Direct sign-in successful (ID token exchange method)
             const coreAuthStore = useCoreAuthStore.getState();

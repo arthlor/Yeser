@@ -293,8 +293,10 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       setIsWaitingForOAuthCallback(false);
     } catch (error) {
       setIsWaitingForOAuthCallback(false);
-      // Error handling is managed by the auth store and global error provider
-      logger.error('Google OAuth error in UI:', error as Error);
+      // Only log actual errors, not the normal OAuth callback flow
+      if (error instanceof Error && error.message !== 'OAUTH_CALLBACK_REQUIRED') {
+        logger.error('Google OAuth error in UI:', error as Error);
+      }
     }
   }, [canAttemptGoogleSignIn, signInWithGoogle, showWarning]);
 

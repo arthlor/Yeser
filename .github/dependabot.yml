@@ -28,6 +28,8 @@ updates:
           - "expo-auth-session"
           - "expo-crypto"
           - "expo-secure-store"
+          - "expo-build-properties"
+          - "expo-constants"
         update-types:
           - "security"
           - "patch"

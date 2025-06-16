@@ -122,7 +122,7 @@ export default {
       },
       package: getBundleIdentifier(),
       edgeToEdgeEnabled: true,
-      googleServicesFile: './android/app/google-services.json',
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON || './android/app/google-services.json',
       // Firebase config will be provided via EAS Build secrets
       permissions: [
         'RECEIVE_BOOT_COMPLETED',
@@ -159,7 +159,8 @@ export default {
         {
           // Firebase config files
           android: {
-            googleServicesFile: './android/app/google-services.json',
+            googleServicesFile:
+              process.env.GOOGLE_SERVICES_JSON || './android/app/google-services.json',
           },
         },
       ],

@@ -79,6 +79,27 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: 📦 Install Dependencies
+        run: |
+          echo "📦 Installing all dependencies for EAS build..."
+          npm ci --prefer-offline --no-audit
+          echo "✅ Dependencies installed successfully"
+        env:
+          CI: true
+
+      - name: 🧪 Test Build Configuration
+        run: |
+          echo "🧪 Testing build configuration..."
+          npm run test:build-config
+          echo "✅ Build configuration validated"
+
       - name: 🏗️ Setup EAS
         uses: expo/expo-github-action@v8
         with:
@@ -110,6 +131,27 @@ jobs:
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: 📦 Install Dependencies
+        run: |
+          echo "📦 Installing all dependencies for EAS build..."
+          npm ci --prefer-offline --no-audit
+          echo "✅ Dependencies installed successfully"
+        env:
+          CI: true
+
+      - name: 🧪 Test Build Configuration
+        run: |
+          echo "🧪 Testing build configuration..."
+          npm run test:build-config
+          echo "✅ Build configuration validated"
 
       - name: 🏗️ Setup EAS
         uses: expo/expo-github-action@v8

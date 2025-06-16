@@ -211,12 +211,6 @@ export default {
     },
     plugins: [
       [
-        '@react-native-google-signin/google-signin',
-        {
-          iosUrlScheme: 'com.googleusercontent.apps.384355046895-d6l39k419j64r0ur9l5jp7qr0dk28o3n',
-        },
-      ],
-      [
         '@react-native-firebase/app',
         {
           ios: {

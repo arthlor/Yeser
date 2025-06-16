@@ -3,10 +3,10 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 
 import { logger } from '@/utils/debugConfig';
 import { atomicOperationManager } from '../utils/atomicOperations';
-import { googleOAuthService } from '../services/googleOAuthService';
+import { googleOAuthService } from '../services';
 import { useCoreAuthStore } from './coreAuthStore';
 
-import type { GoogleOAuthResult } from '../services/googleOAuthService';
+import type { GoogleOAuthResult } from '../services';
 
 /**
  * Google OAuth State Interface

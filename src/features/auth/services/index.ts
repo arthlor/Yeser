@@ -7,5 +7,8 @@
 export { AuthCoordinator, authCoordinator } from './authCoordinator';
 export { DeepLinkService, deepLinkService } from './deepLinkService';
 export { MagicLinkService, magicLinkService } from './magicLinkService';
-export { GoogleOAuthService, googleOAuthService } from './googleOAuthService';
-export type { GoogleOAuthResult } from './googleOAuthService';
+export {
+  ExpoGoogleOAuthService as GoogleOAuthService,
+  expoGoogleOAuthService as googleOAuthService,
+} from './expoGoogleOAuthService';
+export type { GoogleOAuthResult } from './expoGoogleOAuthService';

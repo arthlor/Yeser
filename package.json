@@ -31,7 +31,6 @@
     "@react-native-community/netinfo": "^11.4.1",
     "@react-native-firebase/analytics": "^22.2.1",
     "@react-native-firebase/app": "^22.2.1",
-    "@react-native-google-signin/google-signin": "^14.0.1",
     "@react-native-picker/picker": "^2.11.0",
     "@react-navigation/bottom-tabs": "^7.3.14",
     "@react-navigation/native": "^7.1.10",

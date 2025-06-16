@@ -2,7 +2,6 @@
 /* eslint-disable no-undef */
 
 // Load environment variables safely (EAS-compatible)
-// Note: EAS environment variables ARE available during app.config.js evaluation when set in eas.json
 const isEASBuild = process.env.EAS_BUILD === 'true' || process.env.CI === 'true';
 
 if (!isEASBuild) {
@@ -15,33 +14,23 @@ if (!isEASBuild) {
   }
 } else {
   console.log('🔧 Running in EAS Build environment');
-  console.log('📝 EAS environment variables from eas.json are available during config evaluation');
-  // Debug: List all EXPO_PUBLIC_ environment variables
-  const expoPublicVars = Object.keys(process.env).filter((key) => key.startsWith('EXPO_PUBLIC_'));
-  console.log(`🔍 Available EXPO_PUBLIC_ vars during config: ${expoPublicVars.join(', ')}`);
 }
 
-// Enhanced environment variable access with validation
+// Secure environment variable access - NO LOGGING OF VALUES
 const getEnv = (name, defaultValue = '') => {
   try {
     const value = process.env[name];
-    // Safe logging - show first 10 chars for debugging without exposing secrets
-    const valuePreview = value ? `${value.substring(0, 10)}...` : 'undefined/null/empty';
-    console.log(`🔍 Checking env var ${name}: ${valuePreview}`);
 
     if (value === undefined || value === null || value === '') {
       if (defaultValue) {
-        console.log(`🔧 Using default value for ${name}: ${defaultValue.substring(0, 20)}...`);
         return defaultValue;
       } else {
-        console.log(`⚠️ Environment variable ${name} is not set, using empty string`);
         return '';
       }
     }
-    console.log(`✅ Using environment value for ${name}: ${value.substring(0, 10)}...`);
     return value;
   } catch (error) {
-    console.error(`❌ Error accessing environment variable ${name}:`, error);
+    console.error(`❌ Error accessing environment variable ${name}`);
     return defaultValue;
   }
 };
@@ -74,7 +63,7 @@ const getBundleIdentifier = () => {
   return 'com.arthlor.yeser';
 };
 
-// Environment-specific iOS folder names with validation
+// Environment-specific iOS folder names
 const getIosTargetName = () => {
   const targetName = IS_DEV ? 'YeerDev' : IS_PREVIEW ? 'YeerPreview' : 'Yeer';
   console.log(`📱 iOS target: ${targetName} (environment: ${environment})`);
@@ -84,29 +73,9 @@ const getIosTargetName = () => {
 // Asset background color - Dark Slate Gray for consistent branding
 const ASSET_BACKGROUND_COLOR = '#2F4F4F';
 
-// Default/fallback values for development only
-const DEFAULT_VALUES = {
-  EXPO_PUBLIC_SUPABASE_URL: 'https://placeholder.supabase.co',
-  EXPO_PUBLIC_SUPABASE_ANON_KEY: 'placeholder-key',
-  EXPO_PUBLIC_FIREBASE_API_KEY: 'placeholder-api-key',
-  EXPO_PUBLIC_FIREBASE_PROJECT_ID: 'yeser-2b816',
-  EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: 'yeser-2b816.firebaseapp.com',
-  EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: 'yeser-2b816.firebasestorage.app',
-  EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '747763611639',
-  EXPO_PUBLIC_FIREBASE_APP_ID: '1:747763611639:ios:8345c9073f3d3e19e460f2',
-  EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS:
-    '384355046895-d6l39k419j64r0ur9l5jp7qr0dk28o3n.apps.googleusercontent.com',
-  EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID:
-    '384355046895-un55q9co2thln0a1dv2m50votb7i08d3.apps.googleusercontent.com',
-  EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME:
-    'com.googleusercontent.apps.384355046895-d6l39k419j64r0ur9l5jp7qr0dk28o3n',
-  EXPO_PUBLIC_REDIRECT_URI: 'yeser://auth/callback',
-};
-
-// Helper to get environment variable with sensible defaults
-const getEnvWithDefault = (name) => {
-  // For development, use defaults if env var is not set
-  return getEnv(name, DEFAULT_VALUES[name] || '');
+// Secure environment variable helper - no hardcoded production secrets
+const getEnvWithDefault = (name, fallback = '') => {
+  return getEnv(name, fallback);
 };
 
 export default {
@@ -153,7 +122,7 @@ export default {
       },
       package: getBundleIdentifier(),
       edgeToEdgeEnabled: true,
-      googleServicesFile: 'android/app/google-services.json',
+      // Firebase config will be provided via EAS Build secrets
       permissions: [
         'RECEIVE_BOOT_COMPLETED',
         'VIBRATE',
@@ -187,12 +156,8 @@ export default {
       [
         '@react-native-firebase/app',
         {
-          ios: {
-            googleServicesFile: 'ios/Yeer/GoogleService-Info.plist',
-          },
-          android: {
-            googleServicesFile: 'android/app/google-services.json',
-          },
+          // Firebase config files will be provided via EAS Build secrets
+          // No need to specify file paths when using environment variables
         },
       ],
       [
@@ -217,7 +182,7 @@ export default {
       environment: environment,
       supabaseUrl: getEnvWithDefault('EXPO_PUBLIC_SUPABASE_URL'),
       supabaseAnonKey: getEnvWithDefault('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
-      // Inject environment variables into the app bundle with defaults
+      // Environment variables for app runtime - all from EAS secrets
       env: {
         EXPO_PUBLIC_SUPABASE_URL: getEnvWithDefault('EXPO_PUBLIC_SUPABASE_URL'),
         EXPO_PUBLIC_SUPABASE_ANON_KEY: getEnvWithDefault('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
@@ -231,7 +196,7 @@ export default {
           'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'
         ),
         EXPO_PUBLIC_FIREBASE_APP_ID: getEnvWithDefault('EXPO_PUBLIC_FIREBASE_APP_ID'),
-        EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: getEnv(
+        EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: getEnvWithDefault(
           'EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID',
           'G-EJJY3MEQ7L'
         ),
@@ -239,16 +204,16 @@ export default {
         EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID: getEnvWithDefault(
           'EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID'
         ),
-        EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB: getEnv(
+        EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB: getEnvWithDefault(
           'EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB',
           '384355046895-crbbb1q3vg8n33ukb3kmmhk1dtls6v7l.apps.googleusercontent.com'
         ),
         EXPO_PUBLIC_REDIRECT_URI: getEnvWithDefault('EXPO_PUBLIC_REDIRECT_URI'),
-        EXPO_PUBLIC_APP_VERSION: getEnv('EXPO_PUBLIC_APP_VERSION', '1.0.0'),
-        EXPO_PUBLIC_APP_BUILD_NUMBER: getEnv('EXPO_PUBLIC_APP_BUILD_NUMBER', '1'),
-        EXPO_PUBLIC_APP_ENVIRONMENT: getEnv('EXPO_PUBLIC_APP_ENVIRONMENT', environment),
-        EXPO_PUBLIC_ENABLE_ANALYTICS: getEnv('EXPO_PUBLIC_ENABLE_ANALYTICS', 'true'),
-        EXPO_PUBLIC_ENABLE_THROWBACK: getEnv('EXPO_PUBLIC_ENABLE_THROWBACK', 'true'),
+        EXPO_PUBLIC_APP_VERSION: getEnvWithDefault('EXPO_PUBLIC_APP_VERSION', '1.0.0'),
+        EXPO_PUBLIC_APP_BUILD_NUMBER: getEnvWithDefault('EXPO_PUBLIC_APP_BUILD_NUMBER', '1'),
+        EXPO_PUBLIC_APP_ENVIRONMENT: getEnvWithDefault('EXPO_PUBLIC_APP_ENVIRONMENT', environment),
+        EXPO_PUBLIC_ENABLE_ANALYTICS: getEnvWithDefault('EXPO_PUBLIC_ENABLE_ANALYTICS', 'true'),
+        EXPO_PUBLIC_ENABLE_THROWBACK: getEnvWithDefault('EXPO_PUBLIC_ENABLE_THROWBACK', 'true'),
       },
     },
     updates: {

@@ -33,7 +33,8 @@ eas.json
 ios/*
 !ios/Yeer/
 ios/Yeer/*
-!ios/Yeer/GoogleService-Info.plist
+# Firebase config files (security sensitive)
+ios/Yeer/GoogleService-Info.plist
 
 # Metro
 .metro-health-check*
@@ -52,7 +53,8 @@ yarn-error.*
 android/*
 !android/app/
 android/app/*
-!android/app/google-services.json
+# Firebase config files (security sensitive)
+android/app/google-services.json
 
 # macOS
 .DS_Store

@@ -1,174 +1,301 @@
 # Development Guide
 
-## 🚀 Getting Started
+> Complete guide to developing and maintaining the Yeser gratitude journaling app.
 
-This guide covers the development setup, coding standards, and best practices for the Yeser React Native gratitude journaling application.
+## 🚀 Quick Start
 
-## 📋 Prerequisites
+### Prerequisites
 
-### Required Software
+- **Node.js** 18+ with npm or yarn
+- **Expo CLI** 2.0+ (`npm install -g @expo/cli`)
+- **EAS CLI** (`npm install -g eas-cli`)
+- **Git** for version control
+- **iOS Simulator** (macOS) and/or **Android Emulator**
+- **Supabase Account** for backend services
 
-- **Node.js**: v18.x or later
-- **npm**: v9.x or later
-- **React Native CLI**: Latest version
-- **Expo CLI**: Latest version
-- **Git**: Latest version
-
-### Development Tools
-
-- **VS Code**: Recommended IDE with extensions:
-  - ES7+ React/Redux/React-Native snippets
-  - TypeScript Hero
-  - Prettier - Code formatter
-  - ESLint
-  - React Native Tools
-  - GitLens
-
-### Platform-Specific Requirements
-
-#### iOS Development
-
-- **Xcode**: Latest version (macOS only)
-- **iOS Simulator**: Included with Xcode
-- **CocoaPods**: `sudo gem install cocoapods`
-
-#### Android Development
-
-- **Android Studio**: Latest version
-- **Android SDK**: API level 31+
-- **Java Development Kit**: OpenJDK 11
-
-## 🛠️ Project Setup
-
-### 1. Clone Repository
+### Initial Setup
 
 ```bash
-git clone [repository-url]
+# Clone the repository
+git clone <repository-url>
 cd yeser
-```
 
-### 2. Install Dependencies
-
-```bash
+# Install dependencies
 npm install
-```
 
-### 3. Environment Configuration
-
-```bash
 # Copy environment template
 cp .env.example .env
 
-# Configure required variables
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Configure environment variables (see Environment Setup)
+# Edit .env with your values
+
+# Start development server
+npm run start:dev
+```
+
+## 🔧 Environment Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```bash
+# Supabase Configuration
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Google OAuth (optional)
+EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS=your-ios-client-id
+EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID=your-android-client-id
+EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB=your-web-client-id
+
+# App Configuration
 EXPO_PUBLIC_ENV=development
+EXPO_PUBLIC_REDIRECT_URI=yeser-dev://auth/callback
+
+# Feature Flags
+EXPO_PUBLIC_ENABLE_ANALYTICS=false
+EXPO_PUBLIC_ENABLE_THROWBACK=true
 ```
 
-### 4. Platform Setup
+### Supabase Setup
 
-#### iOS Setup
+1. **Create Supabase Project**
+
+   ```bash
+   # Visit https://supabase.com/dashboard
+   # Create new project
+   # Note your project URL and anon key
+   ```
+
+2. **Database Schema**
+
+   ```sql
+   -- Run these SQL commands in Supabase SQL Editor
+
+   -- Create profiles table
+   CREATE TABLE public.profiles (
+     id UUID REFERENCES auth.users(id) PRIMARY KEY,
+     username TEXT,
+     onboarded BOOLEAN DEFAULT false,
+     reminder_enabled BOOLEAN DEFAULT false,
+     reminder_time TIME DEFAULT '09:00:00',
+     throwback_reminder_enabled BOOLEAN DEFAULT false,
+     throwback_reminder_frequency TEXT DEFAULT 'disabled',
+     throwback_reminder_time TIME DEFAULT '19:00:00',
+     daily_gratitude_goal INTEGER DEFAULT 3,
+     use_varied_prompts BOOLEAN DEFAULT false,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+
+   -- Create gratitude_entries table
+   CREATE TABLE public.gratitude_entries (
+     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+     entry_date DATE NOT NULL,
+     statements JSONB NOT NULL DEFAULT '[]'::jsonb,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW(),
+     UNIQUE(user_id, entry_date)
+   );
+
+   -- Create streaks table
+   CREATE TABLE public.streaks (
+     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+     current_streak INTEGER DEFAULT 0,
+     longest_streak INTEGER DEFAULT 0,
+     last_entry_date DATE,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+
+   -- Enable RLS
+   ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE public.gratitude_entries ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE public.streaks ENABLE ROW LEVEL SECURITY;
+
+   -- Create RLS policies
+   CREATE POLICY "Users can only access their own profile"
+   ON public.profiles FOR ALL USING (auth.uid() = id);
+
+   CREATE POLICY "Users can only access their own entries"
+   ON public.gratitude_entries FOR ALL USING (auth.uid() = user_id);
+
+   CREATE POLICY "Users can only access their own streaks"
+   ON public.streaks FOR ALL USING (auth.uid() = user_id);
+   ```
+
+3. **RPC Functions**
+   ```sql
+   -- Add the RPC functions from docs/architecture.md
+   -- Including: add_gratitude_statement, edit_gratitude_statement, etc.
+   ```
+
+### Google OAuth Setup (Optional)
+
+1. **Google Cloud Console**
+
+   ```bash
+   # Visit https://console.cloud.google.com/
+   # Create new project or select existing
+   # Enable Google+ API
+   # Create OAuth 2.0 credentials for each platform
+   ```
+
+2. **iOS Configuration**
+
+   ```javascript
+   // app.config.js
+   ios: {
+     bundleIdentifier: "com.arthlor.yeser",
+     googleServicesFile: "./google-services/GoogleService-Info.plist"
+   }
+   ```
+
+3. **Android Configuration**
+   ```javascript
+   // app.config.js
+   android: {
+     package: "com.arthlor.yeser",
+     googleServicesFile: "./google-services/google-services.json"
+   }
+   ```
+
+## 📱 Development Workflow
+
+### Available Scripts
 
 ```bash
-cd ios && pod install && cd ..
+# Development
+npm run start:dev          # Start development server
+npm run android           # Run on Android emulator
+npm run ios              # Run on iOS simulator
+npm run web              # Run on web browser
+
+# Code Quality
+npm run lint             # Run ESLint with auto-fix
+npm run lint:check       # Check linting without fixes
+npm run format           # Format code with Prettier
+npm run type-check       # TypeScript type checking
+
+# Environment-specific builds
+npm run build:dev        # Development build (local)
+npm run build:preview    # Preview build (staging)
+npm run build:production # Production build
+
+# Validation
+npm run validate:env     # Check environment configuration
+npm run validate:build   # Full validation before build
 ```
 
-#### Android Setup
-
-```bash
-# Ensure Android SDK is properly configured
-npx react-native doctor
-```
-
-### 5. Start Development Server
-
-```bash
-# Start Expo development server
-npm start
-
-# Or run on specific platform
-npm run ios
-npm run android
-```
-
-## 📐 Project Structure Deep Dive
-
-### Architecture Layers
+### File Structure Convention
 
 ```
 src/
-├── 📱 Presentation Layer
-│   ├── components/           # Shared UI components
-│   ├── features/*/screens/   # Feature-specific screens
-│   └── navigation/           # Navigation configuration
-│
-├── 🧠 Business Logic Layer
-│   ├── features/*/hooks/     # Feature-specific hooks
-│   ├── hooks/               # Global custom hooks
-│   └── features/*/services/ # Feature business logic
-│
-├── 💾 Data Layer
-│   ├── api/                 # API layer and configurations
-│   ├── store/               # Global Zustand stores
-│   ├── features/*/store/    # Feature-specific stores
-│   └── services/            # Core services
-│
-└── 🔧 Infrastructure Layer
-    ├── providers/           # React context providers
-    ├── config/              # App configuration
-    ├── themes/              # Theme system
-    ├── types/               # TypeScript definitions
-    └── utils/               # Utility functions
+├── features/           # Business logic organized by feature
+│   ├── auth/          # Authentication system
+│   │   ├── components/ # Auth-specific components
+│   │   ├── hooks/     # Auth-specific hooks
+│   │   ├── screens/   # Auth screens
+│   │   ├── services/  # Auth business logic
+│   │   ├── store/     # Auth state management
+│   │   └── types/     # Auth type definitions
+│   ├── gratitude/     # Core gratitude functionality
+│   ├── calendar/      # Calendar and timeline views
+│   ├── settings/      # App settings and preferences
+│   └── ...           # Other features
+├── shared/            # Shared utilities and components
+│   ├── components/    # Reusable UI components
+│   ├── hooks/         # Custom React hooks
+│   └── utils/         # Utility functions
+├── api/              # API layer and data fetching
+├── services/         # Business logic services
+├── store/           # Global state management
+├── themes/          # Design system and themes
+├── types/           # Global TypeScript types
+├── utils/           # Utility functions
+└── schemas/         # Zod validation schemas
 ```
 
-### Feature Organization
+## 📋 Coding Standards
 
-Each feature follows a consistent structure:
-
-```
-features/[feature-name]/
-├── index.ts                 # Public API exports
-├── components/              # Feature UI components
-├── hooks/                   # Feature business logic
-├── screens/                 # Navigation screens
-├── services/                # API and business services
-├── store/                   # State management
-├── types/                   # TypeScript types
-└── utils/                   # Feature utilities
-```
-
-## 🎯 Coding Standards
-
-### TypeScript Guidelines
-
-#### 1. Strict Type Safety
+### TypeScript Standards
 
 ```typescript
-// ✅ Required: Explicit typing
+// ✅ REQUIRED: Explicit typing (no 'any' types allowed)
 interface UserProfile {
   id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  createdAt: Date;
+  username: string | null;
+  onboarded: boolean;
 }
 
-// ✅ Required: Function signatures
-const updateProfile = async (
-  userId: string,
-  updates: Partial<UserProfile>
-): Promise<UserProfile> => {
+// ✅ REQUIRED: Function parameter and return typing
+const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
   // Implementation
 };
 
-// ❌ Forbidden: Any types
-const data: any = fetchData(); // IMMEDIATE REJECTION
+// ✅ REQUIRED: Proper error handling
+try {
+  const profile = await fetchUserProfile(userId);
+  return profile;
+} catch (error) {
+  logger.error('Failed to fetch profile:', error as Error);
+  throw error;
+}
 ```
 
-#### 2. Import Organization
+### React Component Standards
 
 ```typescript
-// 1. React and React Native imports
+// ✅ REQUIRED: Memoized functional components
+interface ProfileCardProps {
+  profile: UserProfile;
+  onEdit: (id: string) => void;
+}
+
+const ProfileCard: React.FC<ProfileCardProps> = React.memo(({
+  profile,
+  onEdit
+}) => {
+  // ✅ REQUIRED: Memoized callbacks
+  const handleEdit = useCallback(() => {
+    onEdit(profile.id);
+  }, [onEdit, profile.id]);
+
+  // ✅ REQUIRED: Memoized computed values
+  const displayName = useMemo(() => {
+    return profile.username || 'Anonymous User';
+  }, [profile.username]);
+
+  return (
+    <ThemedCard style={styles.container}>
+      <Text style={styles.name}>{displayName}</Text>
+      <ThemedButton onPress={handleEdit} title="Edit" />
+    </ThemedCard>
+  );
+});
+
+// ✅ REQUIRED: StyleSheet.create (no inline styles)
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    margin: 8,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+});
+```
+
+### Import Organization
+
+```typescript
+// ✅ REQUIRED: Import order (critical for performance)
+
+// 1. React and React Native core
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
@@ -176,462 +303,402 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { create } from 'zustand';
 
-// 3. Internal absolute imports (@/ alias)
+// 3. Internal absolute imports (@ alias)
 import { useAuthStore } from '@/store/authStore';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUserProfile } from '@/shared/hooks/useUserProfile';
+import { gratitudeApi } from '@/api/gratitudeApi';
 
 // 4. Local relative imports
 import { LocalComponent } from './LocalComponent';
-import { utility } from './utils/utility';
+import { localUtil } from './utils/localUtil';
 
-// 5. Type imports
+// 5. Type imports (separate)
 import type { AppTheme } from '@/themes/types';
 import type { Profile } from '@/types/api.types';
 ```
 
-### React Native Best Practices
-
-#### 1. Component Structure
+### Performance Requirements
 
 ```typescript
-interface ComponentProps {
-  title: string;
-  onPress: (id: string) => void;
-  data: ItemData[];
-  isLoading?: boolean;
-}
-
-const Component: React.FC<ComponentProps> = React.memo(({
-  title,
-  onPress,
-  data,
-  isLoading = false
-}) => {
-  // 1. Hooks and state
-  const theme = useThemeStore(state => state.theme);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  // 2. Memoized computations
-  const processedData = useMemo(() => {
-    return data.filter(item => item.isActive).sort((a, b) => a.order - b.order);
-  }, [data]);
-
-  // 3. Callbacks
-  const handlePress = useCallback((id: string) => {
-    setSelectedId(id);
-    onPress(id);
-  }, [onPress]);
-
-  // 4. Early returns
-  if (isLoading) return <LoadingState />;
-  if (!data.length) return <EmptyState />;
-
-  // 5. Render
-  return (
-    <View style={styles.container}>
-      <Text style={[styles.title, { color: theme.colors.primary }]}>
-        {title}
-      </Text>
-      {processedData.map(item => (
-        <ItemComponent
-          key={item.id}
-          data={item}
-          onPress={handlePress}
-          isSelected={selectedId === item.id}
-        />
-      ))}
-    </View>
-  );
-});
-```
-
-#### 2. Styling Standards
-
-```typescript
-// ✅ Required: StyleSheet.create
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
-  },
-  title: {
-    fontSize: theme.typography.headingMd.fontSize,
-    fontWeight: theme.typography.headingMd.fontWeight,
-    marginBottom: theme.spacing.sm,
-  },
-});
-
-// ✅ Required: Dynamic styles only when necessary
-const dynamicStyles = useMemo(() => ({
-  animatedView: {
-    transform: [{ scale: animationValue }],
-    opacity: isVisible ? 1 : 0
-  }
-}), [animationValue, isVisible]);
-
-// ❌ Forbidden: Inline styles
-<View style={{ backgroundColor: '#FF0000', padding: 20 }} />
-```
-
-#### 3. Hook Dependencies
-
-```typescript
-// ✅ Required: Complete dependency arrays
+// ✅ REQUIRED: Hook dependency arrays (no exceptions)
 useEffect(() => {
-  fetchData(userId, filter);
-}, [userId, filter]); // All dependencies included
+  fetchData(userId, options);
+}, [userId, options]); // All dependencies included
 
-// ✅ Required: Memoized function dependencies
-const handleSubmit = useCallback(() => {
-  submitData(formData);
-}, [formData]);
+// ✅ REQUIRED: Memoized expensive computations
+const processedData = useMemo(() => {
+  return data.filter(item => item.isActive)
+            .sort((a, b) => a.order - b.order);
+}, [data]); // Always include dependencies
 
-useEffect(() => {
-  handleSubmit();
-}, [handleSubmit]); // Memoized function dependency
-
-// ❌ Forbidden: Missing dependencies
+// ❌ FORBIDDEN: Missing dependencies
 useEffect(() => {
   fetchData(userId);
-}, []); // Missing userId dependency - IMMEDIATE REJECTION
-```
+}, []); // Missing userId - causes infinite loops
 
-## 🗃️ State Management Patterns
+// ❌ FORBIDDEN: Inline styles (15% performance cost)
+<View style={{ backgroundColor: 'red', padding: 20 }} />
 
-### Zustand Store Creation
-
-```typescript
-interface FeatureState {
-  data: FeatureData[];
-  isLoading: boolean;
-  error: string | null;
-
-  // Actions
-  fetchData: () => Promise<void>;
-  updateItem: (id: string, updates: Partial<FeatureData>) => void;
-  reset: () => void;
-}
-
-export const useFeatureStore = create<FeatureState>((set, get) => ({
-  data: [],
-  isLoading: false,
-  error: null,
-
-  fetchData: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const data = await featureApi.getData();
-      set({ data, isLoading: false });
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Unknown error',
-        isLoading: false,
-      });
-    }
+// ✅ REQUIRED: StyleSheet.create
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: theme.colors.error,
+    padding: theme.spacing.md,
   },
-
-  updateItem: (id, updates) => {
-    const { data } = get();
-    const updatedData = data.map((item) => (item.id === id ? { ...item, ...updates } : item));
-    set({ data: updatedData });
-  },
-
-  reset: () => set({ data: [], isLoading: false, error: null }),
-}));
-```
-
-### TanStack Query Hooks
-
-```typescript
-export const useFeatureData = (userId: string, options?: QueryOptions) => {
-  return useQuery({
-    queryKey: queryKeys.feature.data(userId),
-    queryFn: () => featureApi.getData(userId),
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    select: (data) =>
-      data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    ...options,
-  });
-};
-
-export const useFeatureMutations = () => {
-  const queryClient = useQueryClient();
-
-  const createItem = useMutation({
-    mutationFn: featureApi.createItem,
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.feature.data(variables.userId),
-      });
-    },
-    onError: (error) => {
-      // Error handling
-    },
-  });
-
-  return { createItem };
-};
-```
-
-## 🔧 Service Layer Patterns
-
-### API Service Structure
-
-```typescript
-interface FeatureApiService {
-  getData: (userId: string) => Promise<FeatureData[]>;
-  getItem: (itemId: string) => Promise<FeatureData>;
-  createItem: (data: CreateFeatureData) => Promise<FeatureData>;
-  updateItem: (itemId: string, updates: Partial<FeatureData>) => Promise<FeatureData>;
-  deleteItem: (itemId: string) => Promise<void>;
-}
-
-export const featureApiService: FeatureApiService = {
-  getData: async (userId) => {
-    const { data, error } = await supabase
-      .from('feature_table')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw new Error(`Failed to fetch data: ${error.message}`);
-    return data || [];
-  },
-
-  createItem: async (itemData) => {
-    const { data, error } = await supabase
-      .from('feature_table')
-      .insert([itemData])
-      .select()
-      .single();
-
-    if (error) throw new Error(`Failed to create item: ${error.message}`);
-    return data;
-  },
-
-  // ... other methods
-};
+});
 ```
 
 ## 🧪 Testing Strategy
 
-### Unit Testing
+### Test Structure
+
+```
+src/
+├── __tests__/          # Unit tests
+├── components/
+│   └── __tests__/      # Component tests
+├── hooks/
+│   └── __tests__/      # Hook tests
+├── services/
+│   └── __tests__/      # Service tests
+└── utils/
+    └── __tests__/      # Utility tests
+```
+
+### Unit Testing Example
 
 ```typescript
-// Component testing
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { Component } from './Component';
+// src/hooks/__tests__/useGratitudeEntry.test.ts
+import { renderHook, waitFor } from '@testing-library/react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useGratitudeEntry } from '../useGratitudeEntry';
 
-describe('Component', () => {
-  it('should render correctly', () => {
-    const { getByText } = render(
-      <Component title="Test Title" onPress={jest.fn()} data={[]} />
-    );
-
-    expect(getByText('Test Title')).toBeTruthy();
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   });
 
-  it('should handle press events', async () => {
-    const onPress = jest.fn();
-    const { getByText } = render(
-      <Component title="Test" onPress={onPress} data={mockData} />
-    );
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+};
 
-    fireEvent.press(getByText('Item 1'));
+describe('useGratitudeEntry', () => {
+  it('should fetch gratitude entry for given date', async () => {
+    const { result } = renderHook(
+      () => useGratitudeEntry('2024-01-01'),
+      { wrapper: createWrapper() }
+    );
 
     await waitFor(() => {
-      expect(onPress).toHaveBeenCalledWith('item-1');
-    });
-  });
-});
-
-// Hook testing
-import { renderHook, act } from '@testing-library/react-hooks';
-import { useFeatureStore } from './featureStore';
-
-describe('useFeatureStore', () => {
-  it('should update data correctly', () => {
-    const { result } = renderHook(() => useFeatureStore());
-
-    act(() => {
-      result.current.updateItem('item-1', { name: 'Updated Name' });
+      expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(result.current.data[0].name).toBe('Updated Name');
+    expect(result.current.data).toBeDefined();
   });
 });
 ```
 
-## 🚀 Build and Deployment
-
-### Development Builds
-
-```bash
-# Local development
-npm start
-
-# Development build for testing
-npm run build:dev
-
-# Preview build for internal testing
-npm run build:preview
-```
-
-### Production Builds
-
-```bash
-# Production build for app stores
-npm run build:production
-
-# Platform-specific production builds
-npm run build:production:android
-npm run build:production:ios
-```
-
-### Environment Management
-
-```bash
-# Validate environment variables
-npm run validate-env:dev
-npm run validate-env:preview
-npm run validate-env:prod
-
-# Test production configuration
-npm run test:production
-```
-
-## 🔍 Debugging and Performance
-
-### Development Tools
+### Component Testing Example
 
 ```typescript
-// Debug configuration
-import { logger } from '@/utils/debugConfig';
+// src/components/__tests__/GratitudeInputBar.test.tsx
+import React from 'react';
+import { render, fireEvent } from '@testing-library/react-native';
+import { GratitudeInputBar } from '../GratitudeInputBar';
 
-// Use logger instead of console.log
-logger.debug('Debug message', { data });
-logger.error('Error occurred', error);
-logger.warn('Warning message', { context });
-```
+describe('GratitudeInputBar', () => {
+  it('should call onSubmit when text is entered and submitted', () => {
+    const mockOnSubmit = jest.fn();
+    const { getByPlaceholderText, getByText } = render(
+      <GratitudeInputBar onSubmit={mockOnSubmit} />
+    );
 
-### Performance Monitoring
+    const input = getByPlaceholderText('Bugün neye minnettarsın?');
+    const submitButton = getByText('Ekle');
 
-```typescript
-// Performance tracking
-import { analyticsService } from '@/services/analyticsService';
+    fireEvent.changeText(input, 'Test gratitude statement');
+    fireEvent.press(submitButton);
 
-// Track screen performance
-const screenStartTime = Date.now();
-
-useEffect(() => {
-  const loadTime = Date.now() - screenStartTime;
-  analyticsService.logEvent('screen_load_time', {
-    screen: 'HomeScreen',
-    loadTime,
+    expect(mockOnSubmit).toHaveBeenCalledWith('Test gratitude statement');
   });
-}, []);
+});
 ```
 
-### Memory Management
+## 🔍 Debugging & Development Tools
+
+### Debug Configuration
 
 ```typescript
-// Proper cleanup
-useEffect(() => {
-  const subscription = eventEmitter.subscribe('event', handler);
-  const timer = setInterval(updateFunction, 1000);
-
-  return () => {
-    subscription.unsubscribe();
-    clearInterval(timer);
-  };
-}, []);
-```
-
-## 📊 Code Quality
-
-### ESLint Configuration
-
-```javascript
-module.exports = {
-  rules: {
-    // Performance enforcement
-    'react-hooks/exhaustive-deps': 'error',
-    '@typescript-eslint/no-explicit-any': 'error',
-    'react-native/no-inline-styles': 'error',
-    '@typescript-eslint/no-unused-vars': 'error',
-
-    // Code quality
-    'no-console': 'warn',
-    'prefer-const': 'error',
-    'import/order': 'error',
+// src/utils/debugConfig.ts
+export const logger = {
+  debug: (message: string, extra?: object) => {
+    if (__DEV__) {
+      console.log(`[DEBUG] ${message}`, extra);
+    }
+  },
+  error: (message: string, error?: Error) => {
+    console.error(`[ERROR] ${message}`, error);
+  },
+  warn: (message: string, extra?: object) => {
+    console.warn(`[WARN] ${message}`, extra);
   },
 };
 ```
 
-### Pre-commit Hooks
+### TanStack Query DevTools
 
-```json
+```typescript
+// App.tsx - Add in development
+import { QueryClient } from '@tanstack/react-query';
+import { TanStackQueryDevtools } from '@tanstack/react-query-devtools';
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
+      {__DEV__ && <TanStackQueryDevtools />}
+    </QueryClientProvider>
+  );
+}
+```
+
+### Flipper Integration
+
+```typescript
+// src/utils/flipperConfig.ts
+import { logger } from 'react-native-logs';
+
+const config = {
+  severity: __DEV__ ? 'debug' : 'error',
+  transport: __DEV__ ? logger.consoleTransport : logger.fileAsyncTransport,
+  transportOptions: {
+    colors: {
+      info: 'blueBright',
+      warn: 'yellowBright',
+      error: 'redBright',
+    },
+  },
+};
+
+export const log = logger.createLogger(config);
+```
+
+## 🏗 Build & Deployment
+
+### EAS Build Configuration
+
+```javascript
+// eas.json
 {
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": ["eslint --fix", "prettier --write"],
-    "*.{json,md}": ["prettier --write"]
+  "cli": {
+    "version": ">= 2.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m1-medium"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "ios": {
+        "bundleIdentifier": "com.arthlor.yeser.preview"
+      },
+      "android": {
+        "applicationId": "com.arthlor.yeser.preview"
+      }
+    },
+    "production": {
+      "channel": "production"
+    }
+  },
+  "submit": {
+    "production": {}
   }
 }
 ```
 
-## 🔄 Git Workflow
-
-### Branch Naming Convention
-
-- `feature/feature-description`
-- `bugfix/issue-description`
-- `hotfix/critical-issue`
-- `chore/maintenance-task`
-
-### Commit Message Format
-
-```
-<type>(<scope>): <description>
-
-[optional body]
-
-[optional footer]
-```
-
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
-
-### Pull Request Process
-
-1. Create feature branch from `main`
-2. Implement changes following coding standards
-3. Write/update tests
-4. Update documentation
-5. Create pull request with clear description
-6. Address review feedback
-7. Merge after approval
-
-## 📈 Performance Optimization
-
-### Bundle Analysis
+### Build Commands
 
 ```bash
-# Analyze bundle size
-npm run test:bundle
+# Development builds (local testing)
+npm run build:dev:ios       # iOS development build
+npm run build:dev:android   # Android development build
 
-# Generate quality report
-npm run quality:report
+# Preview builds (internal testing)
+npm run build:preview       # Both platforms
+eas build --platform ios --profile preview
+
+# Production builds
+npm run build:production    # Both platforms
+eas build --platform all --profile production
+
+# Submit to stores
+eas submit --platform ios --profile production
+eas submit --platform android --profile production
 ```
 
-### Performance Checklist
+### Environment-Specific Configuration
 
-- [ ] Zero `any` types
-- [ ] No inline styles
-- [ ] Complete hook dependencies
-- [ ] Memoized expensive computations
-- [ ] Optimized images and assets
-- [ ] Proper error boundaries
-- [ ] Clean component unmounting
+```javascript
+// app.config.js
+export default ({ config }) => {
+  const env = process.env.EXPO_PUBLIC_ENV || 'development';
 
-This development guide ensures consistent, high-quality code that follows the established architecture patterns and performance optimizations of the Yeser application.
+  const baseConfig = {
+    ...config,
+    name: env === 'production' ? 'Yeser' : `Yeser (${env})`,
+    slug: 'yeser',
+    scheme: env === 'development' ? 'yeser-dev' : env === 'preview' ? 'yeser-preview' : 'yeser',
+  };
+
+  if (env === 'development') {
+    baseConfig.ios.bundleIdentifier = 'com.arthlor.yeser.dev';
+    baseConfig.android.package = 'com.arthlor.yeser.dev';
+  } else if (env === 'preview') {
+    baseConfig.ios.bundleIdentifier = 'com.arthlor.yeser.preview';
+    baseConfig.android.package = 'com.arthlor.yeser.preview';
+  }
+
+  return baseConfig;
+};
+```
+
+## 🔄 State Management Patterns
+
+### TanStack Query Setup
+
+```typescript
+// src/api/queryClient.ts
+import { QueryClient } from '@tanstack/react-query';
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      retry: (failureCount, error) => {
+        // Don't retry on 4xx errors
+        if (error?.status >= 400 && error?.status < 500) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+    },
+    mutations: {
+      retry: false, // Don't retry mutations by default
+    },
+  },
+});
+```
+
+### Custom Hook Pattern
+
+```typescript
+// src/hooks/useGratitudeEntry.ts
+export const useGratitudeEntry = (date: string) => {
+  return useQuery({
+    queryKey: queryKeys.gratitude.entry(date),
+    queryFn: () => gratitudeApi.getGratitudeDailyEntryByDate(date),
+    enabled: !!date,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useGratitudeMutations = () => {
+  const queryClient = useQueryClient();
+
+  const addStatement = useMutation({
+    mutationFn: gratitudeApi.addStatement,
+    onSuccess: (data, variables) => {
+      // Optimistic update
+      queryClient.setQueryData(queryKeys.gratitude.entry(variables.entryDate), data);
+
+      // Invalidate related queries
+      queryClient.invalidateQueries(queryKeys.gratitude.entries());
+      queryClient.invalidateQueries(queryKeys.streaks.current());
+    },
+  });
+
+  return { addStatement };
+};
+```
+
+## 🚨 Common Issues & Solutions
+
+### Metro Bundle Issues
+
+```bash
+# Clear Metro cache
+npx expo start --clear
+
+# Reset package manager cache
+npm start -- --reset-cache
+
+# Clear all caches
+rm -rf node_modules/.cache
+rm -rf .expo
+npm install
+```
+
+### TypeScript Issues
+
+```bash
+# Type checking
+npm run type-check
+
+# Generate types for Supabase
+npx supabase gen types typescript --project-id YOUR_PROJECT_ID > src/types/supabase.types.ts
+```
+
+### Performance Debugging
+
+```typescript
+// Enable performance monitoring in development
+import { enableScreens } from 'react-native-screens';
+import { enableFreeze } from 'react-native-screens';
+
+if (__DEV__) {
+  enableScreens(true);
+  enableFreeze(true);
+
+  // Monitor re-renders
+  require('@welldone-software/why-did-you-render').default(React, {
+    trackAllPureComponents: true,
+  });
+}
+```
+
+## 📚 Additional Resources
+
+### Documentation Links
+
+- [React Native Performance](https://reactnative.dev/docs/performance)
+- [TanStack Query](https://tanstack.com/query/latest)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Expo Documentation](https://docs.expo.dev/)
+- [EAS Build](https://docs.expo.dev/build/introduction/)
+
+### Development Tools
+
+- **VS Code Extensions**
+
+  - ES7+ React/Redux/React-Native snippets
+  - Prettier - Code formatter
+  - ESLint
+  - TypeScript Importer
+  - Auto Rename Tag
+
+- **Debugging Tools**
+  - React Native Debugger
+  - Flipper
+  - TanStack Query DevTools
+  - Expo DevTools
+
+This development guide ensures consistent, high-quality development practices across the team while maintaining the performance standards achieved in the Yeser codebase.

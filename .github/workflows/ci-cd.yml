@@ -64,8 +64,13 @@ jobs:
           fi
           
           # Verify Supabase environment variables are used correctly
-          if ! grep -q "process\.env\.EXPO_PUBLIC_SUPABASE" app.config.js; then
-            echo "❌ ERROR: app.config.js doesn't use Supabase environment variables"
+          if ! grep -q "EXPO_PUBLIC_SUPABASE_URL" app.config.js; then
+            echo "❌ ERROR: app.config.js doesn't use EXPO_PUBLIC_SUPABASE_URL"
+            exit 1
+          fi
+          
+          if ! grep -q "EXPO_PUBLIC_SUPABASE_ANON_KEY" app.config.js; then
+            echo "❌ ERROR: app.config.js doesn't use EXPO_PUBLIC_SUPABASE_ANON_KEY"
             exit 1
           fi
           
@@ -117,10 +122,10 @@ jobs:
           # Verify app.config.js loads without errors
           if node -e "
             const config = require('./app.config.js');
-            const expo = config.default.expo;
             console.log('✅ App config loaded successfully');
-            console.log('📱 App name:', expo.name);
-            console.log('🔒 Bundle ID:', expo.ios.bundleIdentifier);
+            console.log('📱 App name:', config.name);
+            console.log('🔒 Bundle ID (iOS):', config.ios.bundleIdentifier);
+            console.log('🤖 Package (Android):', config.android.package);
           "; then
             echo "✅ EAS configuration is valid"
           else

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { logger } from '@/utils/debugConfig';
+import { logger } from '@/utils/logger';
 
 interface ErrorLog {
   timestamp: string;

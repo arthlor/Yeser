@@ -1,68 +1,68 @@
 /**
  * Debug and logging configuration for the Yeser app
  * Provides structured logging with different levels and conditional output
+ * Enhanced with production error tracking integration
  */
 
 /* eslint-disable no-console */
 
-interface LogContext {
-  component?: string;
-  action?: string;
-  userId?: string;
-  timestamp?: string;
-  extra?: Record<string, unknown>;
-  [key: string]: unknown; // Allow any other string keys
-}
+// Import from the new centralized logger to break circular dependency
+import { logger } from '@/utils/logger';
+export { logger, type LogContext, type LogEntry } from '@/utils/logger';
 
-class Logger {
-  private logLevel: number = __DEV__ ? 0 : 2; // DEBUG in dev, WARN+ in prod
+/**
+ * Emergency splash screen recovery for development
+ */
+export const emergencySplashRecovery = (): void => {
+  if (!__DEV__) {
+    return;
+  }
 
-  private formatMessage(level: string, message: string, context?: LogContext) {
-    const timestamp = new Date().toISOString();
-    const prefix = `[${timestamp}] [${level}]`;
+  logger.warn('Starting emergency splash recovery...', { component: 'splash' });
 
-    if (context) {
-      return `${prefix} ${message}`;
+  setTimeout(() => {
+    import('expo-splash-screen').then((SplashScreen) => {
+      SplashScreen.hideAsync().catch((error) => {
+        logger.error('Emergency recovery failed:', error as Error);
+      });
+    });
+  }, 15000); // Force hide after 15 seconds
+};
+
+/**
+ * Console override protection
+ * Prevents other modules from overriding console methods
+ */
+export const protectConsole = (): void => {
+  if (!__DEV__) {
+    const originalMethods = logger.getOriginalConsole();
+
+    // Restore original console methods if they've been overridden
+    if (console.error !== originalMethods.error) {
+      logger.warn('Console.error was overridden - restoring original method', {
+        component: 'logger',
+      });
+      console.error = originalMethods.error;
     }
 
-    return `${prefix} ${message}`;
-  }
-
-  debug(message: string, context?: LogContext) {
-    if (this.logLevel <= 0) {
-      console.debug(this.formatMessage('DEBUG', message, context), context);
+    if (console.warn !== originalMethods.warn) {
+      logger.warn('Console.warn was overridden - restoring original method', {
+        component: 'logger',
+      });
+      console.warn = originalMethods.warn;
     }
-  }
 
-  info(message: string, context?: LogContext) {
-    if (this.logLevel <= 1) {
-      console.info(this.formatMessage('INFO', message, context), context);
-    }
-  }
+    // Prevent future overrides
+    Object.defineProperty(console, 'error', {
+      value: originalMethods.error,
+      writable: false,
+      configurable: false,
+    });
 
-  warn(message: string, context?: LogContext) {
-    if (this.logLevel <= 2) {
-      console.warn(this.formatMessage('WARN', message, context), context);
-    }
+    Object.defineProperty(console, 'warn', {
+      value: originalMethods.warn,
+      writable: false,
+      configurable: false,
+    });
   }
-
-  error(message: string, context?: LogContext | Error) {
-    if (this.logLevel <= 3) {
-      if (context instanceof Error) {
-        // Handle Error objects separately
-        console.error(this.formatMessage('ERROR', message), context);
-      } else {
-        // Handle LogContext objects
-        console.error(this.formatMessage('ERROR', message, context), context);
-      }
-    }
-  }
-
-  // Analytics integration
-  trackEvent(event: string, properties?: Record<string, unknown>) {
-    this.debug(`Analytics Event: ${event}`, { extra: properties });
-    // Future: Send to analytics service
-  }
-}
-
-export const logger = new Logger();
+};

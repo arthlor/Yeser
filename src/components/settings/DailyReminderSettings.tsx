@@ -17,7 +17,7 @@ import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { parseTimeStringToValidDate } from '../../utils/dateUtils';
-import { notificationService } from '../../services/notificationService';
+import { notificationService } from '@/services/notificationService';
 import { analyticsService } from '../../services/analyticsService';
 import { hapticFeedback } from '../../utils/hapticFeedback';
 import { logger } from '../../utils/debugConfig';

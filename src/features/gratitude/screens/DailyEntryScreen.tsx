@@ -1,4 +1,4 @@
-import GratitudeInputBar from '../components/GratitudeInputBar';
+import GratitudeInputBar, { GratitudeInputBarRef } from '../components/GratitudeInputBar';
 
 import {
   useGratitudeEntry,
@@ -97,6 +97,9 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // **INPUT BAR REF**: Reference to control input focus from empty state button
+  const inputBarRef = useRef<GratitudeInputBarRef>(null);
 
   const { fetchNewPrompt } = usePromptMutations();
 
@@ -472,6 +475,9 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             onPress={() => setShowDatePicker(true)}
             style={styles.edgeToEdgeDateHeader}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Tarih seç: ${formatDate(effectiveDate)}`}
+            accessibilityHint="Farklı bir tarih seçmek için dokunun"
           >
             <View style={styles.dateHeaderContent}>
               <View style={styles.dateHeaderLeft}>
@@ -543,6 +549,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           {/* Gratitude Input Bar */}
           <View style={styles.inputBarContainer}>
             <GratitudeInputBar
+              ref={inputBarRef}
               promptText={profile?.useVariedPrompts ? currentPrompt : undefined}
               onSubmit={handleAddStatement}
               disabled={isAddingStatement}
@@ -615,13 +622,21 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                   <TouchableOpacity
                     style={styles.emptyStateButton}
                     onPress={() => {
-                      // Focus on the input bar - could be enhanced with ref
-                      animations.animateFade(0.7, { duration: 200 });
-                      setTimeout(() => {
-                        animations.animateFade(1, { duration: 200 });
-                      }, 400);
+                      // **FIXED**: Actually focus the input using the ref
+                      if (inputBarRef.current) {
+                        inputBarRef.current.focus();
+                        // Track the action for analytics
+                        analyticsService.logEvent('empty_state_button_pressed', {
+                          entry_date: finalDateString,
+                          is_today: isToday,
+                        });
+                      }
                     }}
                     activeOpacity={0.8}
+                    // **ACCESSIBILITY IMPROVEMENTS**
+                    accessibilityRole="button"
+                    accessibilityLabel="İlk minnettarlığını ekle"
+                    accessibilityHint="Minnet ifadesi yazmak için giriş alanına odaklan"
                   >
                     <Icon name="plus" size={18} color={theme.colors.onPrimary} />
                     <Text style={styles.emptyStateButtonText}>İlk minnettarlığını ekle</Text>

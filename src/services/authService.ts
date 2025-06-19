@@ -64,8 +64,8 @@ export const signInWithMagicLink = async (credentials: MagicLinkCredentials) => 
     // 1. Prefer EXPO_PUBLIC_REDIRECT_URI (configured via app.config + Supabase dashboard)
     // 2. Fallback to environment-based schemes for developer convenience
     const getRedirectUrl = (): string => {
-      if (config.oauth.redirectUri) {
-        return config.oauth.redirectUri;
+      if (config.google.redirectUri) {
+        return config.google.redirectUri;
       }
 
       // Fallback – maintain previous behaviour to avoid breaking dev environments

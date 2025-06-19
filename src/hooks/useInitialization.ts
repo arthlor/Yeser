@@ -2,142 +2,147 @@ import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { serviceManager } from '@/services/ServiceManager';
-import type { InitializationStage } from '@/services/ServiceManager';
+import type { InitializationPhase } from '@/services/ServiceManager';
 import { logger } from '@/utils/debugConfig';
 
 interface InitializationState {
-  stage: InitializationStage;
+  phase: InitializationPhase;
+  coreReady: boolean;
+  enhancementReady: boolean;
   isComplete: boolean;
-  isError: boolean;
   error: Error | null;
-  progress: number;
-  databaseReady: boolean;
-  asyncStorageReady: boolean;
+  performanceMetrics: {
+    totalDuration: number;
+    corePhaseTime: number | null;
+    enhancementPhaseTime: number | null;
+  };
 }
 
+// 🛡️ SAFETY TIMEOUT: Maximum time before forcing splash screen to hide
+const SPLASH_TIMEOUT_MS = 5000; // 5 seconds maximum (reduced from 10s)
+
 /**
- * Hook to manage the 4-stage cold start initialization process
+ * Hook to manage the 3-phase cold start initialization process
  *
- * Stage 1 (0ms): UI ready - Basic providers only
- * Stage 2 (500ms): Core services + database - Splash screen hides after this
- * Stage 3 (2000ms): Background services + database sync
- * Stage 4 (5000ms): Enhancements + database optimization
+ * Phase 1 - Critical (0ms): Immediate UI essentials (synchronous)
+ * Phase 2 - Core (~100-300ms): Essential services, splash hides after this
+ * Phase 3 - Enhancement (background): Non-critical services
  */
 export const useInitialization = () => {
   const [initState, setInitState] = useState<InitializationState>({
-    stage: 1,
+    phase: 'critical',
+    coreReady: false,
+    enhancementReady: false,
     isComplete: false,
-    isError: false,
     error: null,
-    progress: 0,
-    databaseReady: false,
-    asyncStorageReady: false,
+    performanceMetrics: {
+      totalDuration: 0,
+      corePhaseTime: null,
+      enhancementPhaseTime: null,
+    },
   });
 
   useEffect(() => {
     let isMounted = true;
+    let splashTimeoutId: ReturnType<typeof setTimeout>;
+
+    const forceSplashHide = async () => {
+      try {
+        logger.warn('[COLD START v2] SAFETY TIMEOUT: Forcing splash screen to hide after 5s');
+        await SplashScreen.hideAsync();
+      } catch (error) {
+        logger.error('[COLD START v2] Failed to force hide splash screen:', error as Error);
+      }
+    };
 
     const initialize = async () => {
       try {
-        logger.debug('[COLD START] Starting 4-stage initialization...');
+        logger.debug('[COLD START v2] Starting 3-phase initialization...');
 
-        // Stage 1: Immediate UI (0ms) - Already complete when hook runs
+        // 🛡️ SAFETY TIMEOUT: Force splash hide after maximum time
+        splashTimeoutId = setTimeout(forceSplashHide, SPLASH_TIMEOUT_MS);
+
+        // Phase 1: Critical (immediate, synchronous)
+        serviceManager.initializeCritical();
+
         if (isMounted) {
           setInitState((prev) => ({
             ...prev,
-            stage: 1,
-            progress: 25,
+            phase: 'core',
           }));
         }
 
-        // Stage 2: Core Services + Database Connection (500ms)
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        if (!isMounted) {
-          return;
-        }
-
-        logger.debug('[COLD START] Initializing Stage 2: Core services + database...');
-        await serviceManager.initializeStage2();
+        // Phase 2: Core (parallel async services)
+        await serviceManager.initializeCore();
 
         if (isMounted) {
-          const managerState = serviceManager.getState();
+          const metrics = serviceManager.getPerformanceMetrics();
+
           setInitState((prev) => ({
             ...prev,
-            stage: 2,
-            progress: 50,
-            databaseReady: managerState.databaseConnected,
-            asyncStorageReady: managerState.asyncStorageReady,
+            phase: 'enhancement',
+            coreReady: true,
+            performanceMetrics: metrics,
           }));
 
-          // Hide splash screen after Stage 2 - database is ready
-          logger.debug('[COLD START] Stage 2 complete - hiding splash screen');
-          await SplashScreen.hideAsync();
+          // 🚀 CRITICAL: Hide splash immediately after core services complete
+          try {
+            logger.debug('[COLD START v2] Core phase complete - hiding splash screen');
+            await SplashScreen.hideAsync();
+            clearTimeout(splashTimeoutId);
+            logger.debug('[COLD START v2] Splash screen hidden successfully');
+          } catch (splashError) {
+            logger.error('[COLD START v2] Failed to hide splash screen:', splashError as Error);
+            // Don't throw - app should continue
+          }
         }
 
-        // Stage 3: Background Services + Database Sync (2000ms)
-        await new Promise((resolve) => setTimeout(resolve, 1500)); // 2000ms - 500ms already elapsed
+        // Phase 3: Enhancement (fire-and-forget background)
+        serviceManager.initializeEnhancement().then(() => {
+          if (isMounted) {
+            const finalMetrics = serviceManager.getPerformanceMetrics();
+            setInitState((prev) => ({
+              ...prev,
+              phase: 'complete',
+              enhancementReady: true,
+              isComplete: true,
+              performanceMetrics: finalMetrics,
+            }));
 
-        if (!isMounted) {
-          return;
-        }
-
-        logger.debug('[COLD START] Initializing Stage 3: Background services + database sync...');
-        await serviceManager.initializeStage3();
-
-        if (isMounted) {
-          const managerState = serviceManager.getState();
-          setInitState((prev) => ({
-            ...prev,
-            stage: 3,
-            progress: 75,
-            databaseReady: managerState.databaseConnected,
-            asyncStorageReady: managerState.asyncStorageReady,
-          }));
-        }
-
-        // Stage 4: Enhancements + Database Optimization (5000ms)
-        await new Promise((resolve) => setTimeout(resolve, 3000)); // 5000ms - 2000ms already elapsed
-
-        if (!isMounted) {
-          return;
-        }
-
-        logger.debug('[COLD START] Initializing Stage 4: Enhancements + database optimization...');
-        await serviceManager.initializeStage4();
-
-        if (isMounted) {
-          const managerState = serviceManager.getState();
-          setInitState((prev) => ({
-            ...prev,
-            stage: 4,
-            progress: 100,
-            isComplete: true,
-            databaseReady: managerState.databaseConnected,
-            asyncStorageReady: managerState.asyncStorageReady,
-          }));
-
-          logger.debug('[COLD START] All stages complete - app fully initialized');
-        }
+            logger.debug('[COLD START v2] All phases complete - app fully initialized', {
+              totalTime: `${finalMetrics.totalDuration}ms`,
+              coreTime: finalMetrics.corePhaseTime ? `${finalMetrics.corePhaseTime}ms` : 'N/A',
+              enhancementTime: finalMetrics.enhancementPhaseTime
+                ? `${finalMetrics.enhancementPhaseTime}ms`
+                : 'N/A',
+            });
+          }
+        });
       } catch (error) {
-        logger.error('[COLD START] Initialization failed:', error as Error);
+        logger.error('[COLD START v2] Critical initialization failure:', error as Error);
 
         if (isMounted) {
           setInitState((prev) => ({
             ...prev,
-            isError: true,
             error: error as Error,
           }));
 
-          // Still hide splash to show error screen
-          await SplashScreen.hideAsync();
+          // 🛡️ CRITICAL: Always hide splash to show error screen
+          try {
+            await SplashScreen.hideAsync();
+            clearTimeout(splashTimeoutId);
+          } catch (splashError) {
+            logger.error('[COLD START v2] Failed to hide splash on error:', splashError as Error);
+          }
         }
       }
     };
 
     // Keep splash screen visible during initialization
     SplashScreen.preventAutoHideAsync().catch((error) => {
-      logger.warn('[COLD START] Could not prevent splash screen auto-hide:', error);
+      logger.warn('[COLD START v2] Could not prevent splash screen auto-hide:', {
+        error: error.message,
+      });
     });
 
     // Start initialization
@@ -146,13 +151,37 @@ export const useInitialization = () => {
     // Cleanup function
     return () => {
       isMounted = false;
+      if (splashTimeoutId) {
+        clearTimeout(splashTimeoutId);
+      }
     };
   }, []);
 
   return {
     ...initState,
     // Additional derived state for convenience
-    isStageComplete: (stage: InitializationStage) => initState.stage >= stage,
-    summary: serviceManager.getSummary(),
+    isPhaseComplete: (phase: InitializationPhase) => serviceManager.isPhaseComplete(phase),
+    serviceStatus: serviceManager.getPhaseState().serviceStatus,
+    currentPhase: serviceManager.getPhase(),
+
+    // Legacy compatibility helpers
+    isStageComplete: (stage: number) => {
+      // Map old stages to new phases for backward compatibility
+      switch (stage) {
+        case 1:
+          return initState.phase !== 'critical';
+        case 2:
+          return initState.coreReady;
+        case 3:
+        case 4:
+          return initState.enhancementReady;
+        default:
+          return false;
+      }
+    },
+
+    // Performance insights
+    getTimeToInteractive: () => initState.performanceMetrics.corePhaseTime,
+    getTotalInitTime: () => initState.performanceMetrics.totalDuration,
   };
 };

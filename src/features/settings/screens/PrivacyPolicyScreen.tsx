@@ -100,8 +100,7 @@ const PrivacyPolicyScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>8. Üçüncü Taraf Hizmetler</Text>
           <Text style={styles.sectionText}>
             Uygulamamız şu üçüncü taraf hizmetleri kullanmaktadır:{'\n\n'}• Supabase (veri depolama
-            ve kimlik doğrulama){'\n'}• Firebase (analitik - anonim){'\n'}• Google OAuth (isteğe
-            bağlı giriş)
+            ve kimlik doğrulama){'\n'}• Google OAuth (isteğe bağlı giriş)
           </Text>
         </View>
 

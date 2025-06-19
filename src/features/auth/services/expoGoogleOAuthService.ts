@@ -52,7 +52,7 @@ export class ExpoGoogleOAuthService {
           logger.debug('Starting Expo Google OAuth service initialization...');
 
           // Validate Google OAuth configuration
-          const { web: webClientId } = config.oauth.googleClientIds;
+          const webClientId = config.google.clientIdWeb;
 
           if (!webClientId) {
             const error = new Error(
@@ -104,7 +104,7 @@ export class ExpoGoogleOAuthService {
             const { data, error } = await supabase.auth.signInWithOAuth({
               provider: 'google',
               options: {
-                redirectTo: config.oauth.redirectUri || 'yeser://auth/callback',
+                redirectTo: config.google.redirectUri || 'yeser://auth/callback',
                 queryParams: {
                   access_type: 'offline',
                   prompt: 'consent',
@@ -188,7 +188,7 @@ export class ExpoGoogleOAuthService {
       // Use expo-web-browser for in-app browser experience
       const result = await WebBrowser.openAuthSessionAsync(
         url,
-        config.oauth.redirectUri || 'yeser://auth/callback'
+        config.google.redirectUri || 'yeser://auth/callback'
       );
 
       logger.debug('Expo Google OAuth: WebBrowser result', { type: result.type });

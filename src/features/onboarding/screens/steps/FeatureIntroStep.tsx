@@ -23,14 +23,7 @@ interface FeatureIntroStepProps {
 interface FeaturePreferences {
   useVariedPrompts: boolean;
   throwbackEnabled: boolean;
-  throwbackFrequency: 'daily' | 'weekly' | 'monthly';
 }
-
-const THROWBACK_FREQUENCIES = [
-  { key: 'daily', label: 'Her gün', description: 'Günlük anı hatırlatmaları' },
-  { key: 'weekly', label: 'Haftalık', description: 'Haftada bir anı hatırlatması' },
-  { key: 'monthly', label: 'Aylık', description: 'Ayda bir anı hatırlatması' },
-] as const;
 
 export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
   onNext,
@@ -43,7 +36,6 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
   const [features, setFeatures] = useState<FeaturePreferences>({
     useVariedPrompts: initialPreferences?.useVariedPrompts ?? true,
     throwbackEnabled: initialPreferences?.throwbackEnabled ?? true,
-    throwbackFrequency: initialPreferences?.throwbackFrequency ?? 'weekly',
   });
 
   // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
@@ -58,28 +50,24 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
     animations.animateEntrance({ duration: 400 });
   }, [animations]);
 
-  const handleFeatureToggle = useCallback(
-    (feature: keyof FeaturePreferences, value: boolean | string) => {
-      setFeatures((prev) => ({
-        ...prev,
-        [feature]: value,
-      }));
-      hapticFeedback.light();
+  const handleFeatureToggle = useCallback((feature: keyof FeaturePreferences, value: boolean) => {
+    setFeatures((prev) => ({
+      ...prev,
+      [feature]: value,
+    }));
+    hapticFeedback.light();
 
-      analyticsService.logEvent('onboarding_feature_toggled', {
-        feature,
-        value,
-      });
-    },
-    []
-  );
+    analyticsService.logEvent('onboarding_feature_toggled', {
+      feature,
+      value,
+    });
+  }, []);
 
   const handleContinue = useCallback(() => {
     hapticFeedback.success();
     analyticsService.logEvent('onboarding_features_configured', {
       varied_prompts: features.useVariedPrompts,
       throwback_enabled: features.throwbackEnabled,
-      throwback_frequency: features.throwbackFrequency,
     });
 
     onNext(features);
@@ -161,10 +149,10 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
                 <Ionicons name="time" size={24} color={theme.colors.primary} />
               </View>
               <View style={styles.featureTitleContainer}>
-                <Text style={styles.featureTitle}>Anı Pırıltıları</Text>
+                <Text style={styles.featureTitle}>Anı Hatırlatıcıları</Text>
                 <Text style={styles.featureDescription}>
-                  Geçmişteki güzel anılarını yeniden keşfet. Eski minnettarlıklarını hatırlatan
-                  bildirimler al.
+                  Her gün geçmişteki güzel anılarını yeniden keşfet. Eski minnettarlıklarını
+                  hatırlatan günlük bildirimler al.
                 </Text>
               </View>
               <ThemedSwitch
@@ -174,57 +162,6 @@ export const FeatureIntroStep: React.FC<FeatureIntroStepProps> = ({
                 testID="onboarding-throwback-switch"
               />
             </View>
-
-            {/* Throwback Frequency Options */}
-            {features.throwbackEnabled && (
-              <View style={styles.frequencyContainer}>
-                <Text style={styles.frequencyTitle}>Ne sıklıkla hatırlatayım?</Text>
-                <View style={styles.frequencyOptions}>
-                  {THROWBACK_FREQUENCIES.map((option) => (
-                    <TouchableOpacity
-                      key={option.key}
-                      onPress={() => handleFeatureToggle('throwbackFrequency', option.key)}
-                      style={[
-                        styles.frequencyOption,
-                        features.throwbackFrequency === option.key &&
-                          styles.frequencyOptionSelected,
-                      ]}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.frequencyOptionContent}>
-                        <View
-                          style={[
-                            styles.radioButton,
-                            features.throwbackFrequency === option.key &&
-                              styles.radioButtonSelected,
-                          ]}
-                        />
-                        <View style={styles.frequencyOptionText}>
-                          <Text
-                            style={[
-                              styles.frequencyOptionLabel,
-                              features.throwbackFrequency === option.key &&
-                                styles.frequencyOptionLabelSelected,
-                            ]}
-                          >
-                            {option.label}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.frequencyOptionDescription,
-                              features.throwbackFrequency === option.key &&
-                                styles.frequencyOptionDescriptionSelected,
-                            ]}
-                          >
-                            {option.description}
-                          </Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
           </View>
 
           {/* Info Card */}
@@ -337,70 +274,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.textSecondary,
       lineHeight: 20,
     },
-    frequencyContainer: {
-      marginTop: theme.spacing.lg,
-      paddingTop: theme.spacing.lg,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.outline + '30',
-    },
-    frequencyTitle: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.text,
-      fontWeight: '600',
-      marginBottom: theme.spacing.md,
-    },
-    frequencyOptions: {
-      gap: theme.spacing.sm,
-    },
-    frequencyOption: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.md,
-      borderWidth: 1,
-      borderColor: theme.colors.outline,
-      padding: theme.spacing.md,
-      // Removed primary shadow
-    },
-    frequencyOptionSelected: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '08',
-      // Removed primary shadow
-    },
-    frequencyOptionContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    radioButton: {
-      width: 18,
-      height: 18,
-      borderRadius: 9,
-      borderWidth: 2,
-      borderColor: theme.colors.outline,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    radioButtonSelected: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary,
-    },
-    frequencyOptionText: {
-      flex: 1,
-    },
-    frequencyOptionLabel: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.text,
-      fontWeight: '600',
-    },
-    frequencyOptionLabelSelected: {
-      color: theme.colors.primary,
-    },
-    frequencyOptionDescription: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.textSecondary,
-    },
-    frequencyOptionDescriptionSelected: {
-      color: theme.colors.primary + 'CC',
-    },
+
     infoCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,

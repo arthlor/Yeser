@@ -49,10 +49,14 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# Android
-android/*
-!android/app/
-android/app/*
+# Android build artifacts and cache
+android/.gradle/
+android/build/
+android/.kotlin/
+android/local.properties
+android/app/build/
+android/app/.cxx/
+android/app/debug.keystore
 # Firebase config files (security sensitive)
 android/app/google-services.json
 

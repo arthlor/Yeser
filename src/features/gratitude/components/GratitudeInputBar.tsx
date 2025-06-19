@@ -1,9 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
-// Create animated LinearGradient component
-const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
@@ -26,6 +23,13 @@ interface GratitudeInputBarProps {
   showPrompt?: boolean;
 }
 
+// **IMPERATIVE HANDLE**: Expose focus method for parent components
+export interface GratitudeInputBarRef {
+  focus: () => void;
+  blur: () => void;
+  clear: () => void;
+}
+
 /**
  * 📝 ENHANCED GRATITUDE INPUT BAR WITH GRADIENT ANIMATED BORDER
  *
@@ -33,305 +37,309 @@ interface GratitudeInputBarProps {
  * - Added gradient animated border for visual appeal
  * - Custom gradient rotation animation
  * - Enhanced focus state with animated border
+ * - **PERFORMANCE FIX**: Added forwardRef for imperative focus control
  */
-const GratitudeInputBar: React.FC<GratitudeInputBarProps> = ({
-  onSubmit,
-  placeholder = 'Bugün neye minnettarsın?',
-  error,
-  disabled = false,
-  autoFocus = false,
-  // New prompt functionality props
-  promptText,
-  promptLoading,
-  promptError,
-  onRefreshPrompt,
-  showPrompt = true,
-}) => {
-  const { theme } = useTheme();
-  const styles = createStyles(theme, disabled);
-  const inputRef = useRef<TextInput>(null);
+const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProps>(
+  (
+    {
+      onSubmit,
+      placeholder = 'Bugün neye minnettarsın?',
+      error,
+      disabled = false,
+      autoFocus = false,
+      // New prompt functionality props
+      promptText,
+      promptLoading,
+      promptError,
+      onRefreshPrompt,
+      showPrompt = true,
+    },
+    ref
+  ) => {
+    const { theme } = useTheme();
+    const styles = createStyles(theme, disabled);
+    const inputRef = useRef<TextInput>(null);
 
-  const [inputText, setInputText] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
-  const [fallbackPromptIndex, setFallbackPromptIndex] = useState(0);
+    const [inputText, setInputText] = useState('');
+    const [isFocused, setIsFocused] = useState(false);
+    const [fallbackPromptIndex, setFallbackPromptIndex] = useState(0);
 
-  // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
-  const animations = useCoordinatedAnimations();
+    // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
+    const animations = useCoordinatedAnimations();
 
-  // **GRADIENT BORDER ANIMATION**: Custom gradient border opacity and color flow
-  const gradientOpacity = useRef(new Animated.Value(0.8)).current;
-  const gradientFlow = useRef(new Animated.Value(0)).current;
+    // **PERFORMANCE FIX**: Simple gradient border animation using native driver
+    const gradientOpacity = useRef(new Animated.Value(0.8)).current;
 
-  // Fallback prompts for when varied prompts are disabled or unavailable
-  const fallbackPrompts = [
-    'Bugün hangi güzel anlar için minnettarsın?',
-    'Hayatındaki hangi kişiler seni mutlu ediyor?',
-    'Bugün seni gülümsetmiş olan şeyler neler?',
-    'Hangi deneyimler için minnettar hissediyorsun?',
-    'Bugün yaşadığın pozitif anları düşün...',
-  ];
+    // Fallback prompts for when varied prompts are disabled or unavailable
+    const fallbackPrompts = [
+      'Bugün hangi güzel anlar için minnettarsın?',
+      'Hayatındaki hangi kişiler seni mutlu ediyor?',
+      'Bugün seni gülümsetmiş olan şeyler neler?',
+      'Hangi deneyimler için minnettar hissediyorsun?',
+      'Bugün yaşadığın pozitif anları düşün...',
+    ];
 
-  // **GRADIENT BORDER ANIMATION SETUP**
-  useEffect(() => {
-    const opacityAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(gradientOpacity, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(gradientOpacity, {
-          toValue: 0.7,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-      ])
-    );
-
-    const flowAnimation = Animated.loop(
-      Animated.timing(gradientFlow, {
-        toValue: 1,
-        duration: 4000,
-        useNativeDriver: false,
-      })
-    );
-
-    opacityAnimation.start();
-    flowAnimation.start();
-
-    return () => {
-      opacityAnimation.stop();
-      flowAnimation.stop();
-    };
-  }, [gradientOpacity, gradientFlow]);
-
-  // **COORDINATED ENTRANCE**: Simple entrance animation
-  useEffect(() => {
-    animations.animateEntrance({ duration: 400 });
-  }, [animations]);
-
-  // Robust auto-focus without interference
-  useEffect(() => {
-    if (autoFocus && inputRef.current && !disabled) {
-      const timer = setTimeout(() => {
-        if (inputRef.current) {
-          logger.debug('GratitudeInputBar: Attempting auto-focus...');
+    // **IMPERATIVE HANDLE**: Expose methods to parent components
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        if (inputRef.current && !disabled) {
           inputRef.current.focus();
         }
-      }, 300); // Longer delay for stability
-      return () => clearTimeout(timer);
-    }
-  }, [autoFocus, disabled]);
+      },
+      blur: () => {
+        if (inputRef.current) {
+          inputRef.current.blur();
+        }
+      },
+      clear: () => {
+        setInputText('');
+      },
+    }));
 
-  // 🛡️ MEMORY LEAK FIX: Cleanup ref on unmount for better GC
-  useEffect(() => {
-    return () => {
-      // Set ref to null on unmount to help with garbage collection
-      if (inputRef.current) {
-        inputRef.current = null;
+    // **STATIC GRADIENT BORDER ANIMATION**: Simple opacity pulse animation
+    useEffect(() => {
+      const opacityAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(gradientOpacity, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true, // ✅ PERFORMANCE FIX: Use native driver
+          }),
+          Animated.timing(gradientOpacity, {
+            toValue: 0.7,
+            duration: 2000,
+            useNativeDriver: true, // ✅ PERFORMANCE FIX: Use native driver
+          }),
+        ])
+      );
+
+      opacityAnimation.start();
+
+      return () => {
+        opacityAnimation.stop();
+      };
+    }, [gradientOpacity]);
+
+    // **COORDINATED ENTRANCE**: Simple entrance animation
+    useEffect(() => {
+      animations.animateEntrance({ duration: 400 });
+    }, [animations]);
+
+    // Robust auto-focus without interference
+    useEffect(() => {
+      if (autoFocus && inputRef.current && !disabled) {
+        const timer = setTimeout(() => {
+          if (inputRef.current) {
+            logger.debug('GratitudeInputBar: Attempting auto-focus...');
+            inputRef.current.focus();
+          }
+        }, 300); // Longer delay for stability
+        return () => clearTimeout(timer);
+      }
+    }, [autoFocus, disabled]);
+
+    // 🛡️ MEMORY LEAK FIX: Cleanup ref on unmount for better GC
+    useEffect(() => {
+      return () => {
+        // Set ref to null on unmount to help with garbage collection
+        if (inputRef.current) {
+          inputRef.current = null;
+        }
+      };
+    }, []);
+
+    const handleSubmit = () => {
+      logger.debug('GratitudeInputBar: Submit button pressed', { text: inputText.trim() });
+      if (inputText.trim() && !disabled) {
+        onSubmit(inputText.trim());
+        setInputText('');
+
+        // Keep focus for continuous input - with error handling
+        setTimeout(() => {
+          if (inputRef.current) {
+            logger.debug('GratitudeInputBar: Re-focusing after submit');
+            inputRef.current.focus();
+          }
+        }, 100);
       }
     };
-  }, []);
 
-  const handleSubmit = () => {
-    logger.debug('GratitudeInputBar: Submit button pressed', { text: inputText.trim() });
-    if (inputText.trim() && !disabled) {
-      onSubmit(inputText.trim());
-      setInputText('');
+    const handleFocus = () => {
+      logger.debug('GratitudeInputBar: Input focused');
+      setIsFocused(true);
+    };
 
-      // Keep focus for continuous input - with error handling
-      setTimeout(() => {
-        if (inputRef.current) {
-          logger.debug('GratitudeInputBar: Re-focusing after submit');
-          inputRef.current.focus();
-        }
-      }, 100);
-    }
-  };
+    const handleBlur = () => {
+      logger.debug('GratitudeInputBar: Input blurred');
+      setIsFocused(false);
+    };
 
-  const handleFocus = () => {
-    logger.debug('GratitudeInputBar: Input focused');
-    setIsFocused(true);
-  };
+    const handleChangeText = (text: string) => {
+      logger.debug('GratitudeInputBar: Text changed', { text });
+      setInputText(text);
+    };
 
-  const handleBlur = () => {
-    logger.debug('GratitudeInputBar: Input blurred');
-    setIsFocused(false);
-  };
+    const handlePromptRefresh = () => {
+      if (onRefreshPrompt) {
+        onRefreshPrompt();
+      }
+      // Also cycle through fallback prompts for better UX
+      setFallbackPromptIndex((prev) => (prev + 1) % fallbackPrompts.length);
+    };
 
-  const handleChangeText = (text: string) => {
-    logger.debug('GratitudeInputBar: Text changed', { text });
-    setInputText(text);
-  };
+    const isButtonEnabled = inputText.trim().length > 0 && !disabled;
 
-  const handlePromptRefresh = () => {
-    if (onRefreshPrompt) {
-      onRefreshPrompt();
-    }
-    // Also cycle through fallback prompts for better UX
-    setFallbackPromptIndex((prev) => (prev + 1) % fallbackPrompts.length);
-  };
+    // Determine which prompt to display
+    const displayPrompt = promptText || fallbackPrompts[fallbackPromptIndex];
 
-  const isButtonEnabled = inputText.trim().length > 0 && !disabled;
-
-  // Determine which prompt to display
-  const displayPrompt = promptText || fallbackPrompts[fallbackPromptIndex];
-
-  // **GRADIENT FLOW INTERPOLATION**: Animate gradient start and end points
-  const gradientStartX = gradientFlow.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: [0, 0.3, 1, 0.7, 0],
-  });
-
-  const gradientStartY = gradientFlow.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: [0, 0.7, 1, 0.3, 0],
-  });
-
-  const gradientEndX = gradientFlow.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: [1, 0.7, 0, 0.3, 1],
-  });
-
-  const gradientEndY = gradientFlow.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: [1, 0.3, 0, 0.7, 1],
-  });
-
-  return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          opacity: animations.fadeAnim,
-          transform: animations.entranceTransform,
-        },
-      ]}
-    >
-      {/* Striking Header Section with Gradient Background */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.iconContainer}>
-            <Icon name="heart-plus" size={24} color={theme.colors.onPrimary} />
+    return (
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            opacity: animations.fadeAnim,
+            transform: animations.entranceTransform,
+          },
+        ]}
+      >
+        {/* Striking Header Section with Gradient Background */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.iconContainer}>
+              <Icon name="heart-plus" size={24} color={theme.colors.onPrimary} />
+            </View>
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle}>Minnet Ekle</Text>
+              <Text style={styles.headerSubtitle}>
+                Bugün minnettarlık hissettiğin anları paylaş
+              </Text>
+            </View>
           </View>
-          <View style={styles.titleContainer}>
-            <Text style={styles.headerTitle}>Minnet Ekle</Text>
-            <Text style={styles.headerSubtitle}>Bugün minnettarlık hissettiğin anları paylaş</Text>
+          <View style={styles.headerRight}>
+            <View style={styles.characterCountContainer}>
+              <Text style={styles.characterCount}>{inputText.length}/500</Text>
+            </View>
           </View>
         </View>
-        <View style={styles.headerRight}>
-          <View style={styles.characterCountContainer}>
-            <Text style={styles.characterCount}>{inputText.length}/500</Text>
-          </View>
-        </View>
-      </View>
 
-      {/* Enhanced Input Section with Animated Gradient Border */}
-      <View style={[styles.inputContainer, isFocused && styles.inputContainerFocused]}>
-        {/* **ANIMATED GRADIENT BORDER FOR INPUT** */}
-        <View style={styles.inputWrapper}>
-          <Animated.View
-            style={[
-              styles.inputGradientBorderContainer,
-              {
-                opacity: gradientOpacity,
-              },
-            ]}
-          >
-            <AnimatedLinearGradient
-              colors={[
-                theme.colors.primary,
-                theme.colors.secondary || theme.colors.primaryContainer,
-                theme.colors.tertiary || theme.colors.primary,
-                theme.colors.primary,
+        {/* Enhanced Input Section with Animated Gradient Border */}
+        <View style={[styles.inputContainer, isFocused && styles.inputContainerFocused]}>
+          {/* **PERFORMANCE IMPROVED GRADIENT BORDER** */}
+          <View style={styles.inputWrapper}>
+            <Animated.View
+              style={[
+                styles.inputGradientBorderContainer,
+                {
+                  opacity: gradientOpacity,
+                },
               ]}
-              style={styles.inputGradientBorder}
-              start={{ x: gradientStartX, y: gradientStartY }}
-              end={{ x: gradientEndX, y: gradientEndY }}
+            >
+              <LinearGradient
+                colors={[
+                  theme.colors.primary,
+                  theme.colors.secondary || theme.colors.primaryContainer,
+                  theme.colors.tertiary || theme.colors.primary,
+                  theme.colors.primary,
+                ]}
+                style={styles.inputGradientBorder}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              />
+            </Animated.View>
+
+            <TextInput
+              ref={inputRef}
+              style={styles.input}
+              value={inputText}
+              onChangeText={handleChangeText}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              placeholder={placeholder}
+              placeholderTextColor={theme.colors.onSurfaceVariant + '60'}
+              multiline={true}
+              textAlignVertical="top"
+              maxLength={500}
+              editable={!disabled}
+              scrollEnabled={false}
+              returnKeyType="send"
+              onSubmitEditing={handleSubmit}
+              blurOnSubmit={false}
+              autoCorrect={true}
+              autoCapitalize="sentences"
+              keyboardType="default"
+              selectionColor={theme.colors.primary}
+              autoFocus={false} // We handle this manually
+              // **ACCESSIBILITY IMPROVEMENTS**
+              accessibilityLabel={placeholder}
+              accessibilityHint="Minnettarlık ifadenizi yazın ve gönder tuşuna basın"
             />
-          </Animated.View>
+          </View>
 
-          <TextInput
-            ref={inputRef}
-            style={styles.input}
-            value={inputText}
-            onChangeText={handleChangeText}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            placeholder={placeholder}
-            placeholderTextColor={theme.colors.onSurfaceVariant + '60'}
-            multiline={true}
-            textAlignVertical="top"
-            maxLength={500}
-            editable={!disabled}
-            scrollEnabled={false}
-            returnKeyType="send"
-            onSubmitEditing={handleSubmit}
-            blurOnSubmit={false}
-            autoCorrect={true}
-            autoCapitalize="sentences"
-            keyboardType="default"
-            selectionColor={theme.colors.primary}
-            autoFocus={false} // We handle this manually
-          />
+          <TouchableOpacity
+            onPress={handleSubmit}
+            style={[styles.button, isButtonEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
+            disabled={!isButtonEnabled}
+            activeOpacity={0.8}
+            // **ACCESSIBILITY IMPROVEMENTS**
+            accessibilityRole="button"
+            accessibilityLabel={isButtonEnabled ? 'Minnet ifadesini gönder' : 'Gönderme devre dışı'}
+            accessibilityHint="Yazdığınız minnettarlık ifadesini kaydetmek için dokunun"
+          >
+            <Icon
+              name={isButtonEnabled ? 'send' : 'send-outline'}
+              size={20}
+              color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
+            />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          onPress={handleSubmit}
-          style={[styles.button, isButtonEnabled ? styles.buttonEnabled : styles.buttonDisabled]}
-          disabled={!isButtonEnabled}
-          activeOpacity={0.8}
-        >
-          <Icon
-            name={isButtonEnabled ? 'send' : 'send-outline'}
-            size={20}
-            color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
-          />
-        </TouchableOpacity>
-      </View>
+        {/* Subtle Inspirational Prompt */}
+        {!inputText && !isFocused && showPrompt && (
+          <View style={styles.promptContainer}>
+            {promptLoading ? (
+              <View style={styles.promptLoadingContainer}>
+                <Text style={styles.promptLoadingText}>💭 İlham verici soru yükleniyor...</Text>
+              </View>
+            ) : promptError ? (
+              <View style={styles.promptErrorContainer}>
+                <Text style={styles.promptText}>✨ {displayPrompt}</Text>
+                <TouchableOpacity
+                  onPress={handlePromptRefresh}
+                  style={styles.refreshButton}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Yeni soru yükle"
+                >
+                  <Icon name="refresh" size={16} color={theme.colors.primary} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.promptActiveContainer}>
+                <Text style={styles.promptText}>💡 {displayPrompt}</Text>
+                <TouchableOpacity
+                  onPress={handlePromptRefresh}
+                  style={styles.refreshButton}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Yeni soru yükle"
+                >
+                  <Icon name="refresh" size={16} color={theme.colors.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
 
-      {/* Subtle Inspirational Prompt */}
-      {!inputText && !isFocused && showPrompt && (
-        <View style={styles.promptContainer}>
-          {promptLoading ? (
-            <View style={styles.promptLoadingContainer}>
-              <Text style={styles.promptLoadingText}>💭 İlham verici soru yükleniyor...</Text>
-            </View>
-          ) : promptError ? (
-            <View style={styles.promptErrorContainer}>
-              <Text style={styles.promptText}>✨ {displayPrompt}</Text>
-              <TouchableOpacity
-                onPress={handlePromptRefresh}
-                style={styles.refreshButton}
-                activeOpacity={0.7}
-              >
-                <Icon name="refresh" size={16} color={theme.colors.primary} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.promptActiveContainer}>
-              <Text style={styles.promptText}>💡 {displayPrompt}</Text>
-              <TouchableOpacity
-                onPress={handlePromptRefresh}
-                style={styles.refreshButton}
-                activeOpacity={0.7}
-              >
-                <Icon name="refresh" size={16} color={theme.colors.primary} />
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      )}
-
-      {error && (
-        <View style={styles.errorContainer}>
-          <Icon name="alert-circle" size={16} color={theme.colors.error} />
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
-    </Animated.View>
-  );
-};
+        {error && (
+          <View style={styles.errorContainer}>
+            <Icon name="alert-circle" size={16} color={theme.colors.error} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+      </Animated.View>
+    );
+  }
+);
 
 GratitudeInputBar.displayName = 'GratitudeInputBar';
 

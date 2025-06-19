@@ -34,12 +34,18 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
 
   // Separate effect for initialization logging to avoid re-mounting providers
   useEffect(() => {
-    logger.debug('[COLD START] Initialization stage update:', {
-      stage: initialization.stage,
-      progress: initialization.progress,
-      databaseReady: initialization.databaseReady,
+    logger.debug('[COLD START] Initialization phase update:', {
+      phase: initialization.phase,
+      coreReady: initialization.coreReady,
+      enhancementReady: initialization.enhancementReady,
+      isComplete: initialization.isComplete,
     });
-  }, [initialization.stage, initialization.progress, initialization.databaseReady]);
+  }, [
+    initialization.phase,
+    initialization.coreReady,
+    initialization.enhancementReady,
+    initialization.isComplete,
+  ]);
 
   // Separate effect for AppState handling to avoid re-mounting providers
   useEffect(() => {

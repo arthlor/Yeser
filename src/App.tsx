@@ -306,10 +306,41 @@ const AppContent: React.FC = () => {
   React.useEffect(() => {
     void analyticsService.logAppOpen();
 
-    // Initialize notification service on app start
-    notificationService.initialize().then((hasPermissions) => {
-      logger.debug('Notifications initialized:', { extra: { hasPermissions } });
-    });
+    // Initialize notification service on app start (with initialization guard)
+    const initializeNotifications = async () => {
+      // 🛡️ INITIALIZATION GUARD: Check if already initialized
+      if (notificationService.isInitialized()) {
+        logger.debug('Notification service already initialized, skipping duplicate initialization');
+        return;
+      }
+
+      try {
+        const hasPermissions = await notificationService.initialize();
+        logger.debug('Notifications initialized:', { extra: { hasPermissions } });
+
+        // Only attempt to restore user settings if initialization was successful
+        if (hasPermissions) {
+          // Delay restoration to ensure authentication is complete
+          setTimeout(async () => {
+            try {
+              const restorationResult = await notificationService.restoreUserNotificationSettings();
+              logger.debug('Notification restoration completed:', {
+                success: restorationResult.success,
+                dailyRestored: restorationResult.dailyRestored,
+                throwbackRestored: restorationResult.throwbackRestored,
+                error: restorationResult.error,
+              });
+            } catch (error) {
+              logger.error('Failed to restore notification settings on startup:', error as Error);
+            }
+          }, 2000); // Wait 2 seconds to ensure auth and profile loading is complete
+        }
+      } catch (error) {
+        logger.error('Failed to initialize notification service:', error as Error);
+      }
+    };
+
+    initializeNotifications();
 
     // 🚨 OAUTH QUEUE: Monitor Supabase initialization to detect database readiness
     const checkDatabaseReadiness = () => {

@@ -101,9 +101,14 @@ export type Database = {
       };
       profiles: {
         Row: {
+          created_at: string | null;
           daily_gratitude_goal: number | null;
+          expo_push_token: string | null;
           id: string;
+          last_notification_sent: string | null;
+          notification_timezone: string | null;
           onboarded: boolean;
+          push_notifications_enabled: boolean | null;
           reminder_enabled: boolean;
           reminder_time: string;
           throwback_reminder_enabled: boolean;
@@ -114,9 +119,14 @@ export type Database = {
           username: string | null;
         };
         Insert: {
+          created_at?: string | null;
           daily_gratitude_goal?: number | null;
+          expo_push_token?: string | null;
           id: string;
+          last_notification_sent?: string | null;
+          notification_timezone?: string | null;
           onboarded?: boolean;
+          push_notifications_enabled?: boolean | null;
           reminder_enabled?: boolean;
           reminder_time?: string;
           throwback_reminder_enabled?: boolean;
@@ -127,9 +137,14 @@ export type Database = {
           username?: string | null;
         };
         Update: {
+          created_at?: string | null;
           daily_gratitude_goal?: number | null;
+          expo_push_token?: string | null;
           id?: string;
+          last_notification_sent?: string | null;
+          notification_timezone?: string | null;
           onboarded?: boolean;
+          push_notifications_enabled?: boolean | null;
           reminder_enabled?: boolean;
           reminder_time?: string;
           throwback_reminder_enabled?: boolean;
@@ -140,6 +155,100 @@ export type Database = {
           username?: string | null;
         };
         Relationships: [];
+      };
+      push_notifications: {
+        Row: {
+          body: string;
+          created_at: string | null;
+          data: Json | null;
+          error_message: string | null;
+          expo_receipt_id: string | null;
+          id: string;
+          notification_type: string | null;
+          scheduled_for: string | null;
+          sent_at: string | null;
+          status: string | null;
+          title: string;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          body: string;
+          created_at?: string | null;
+          data?: Json | null;
+          error_message?: string | null;
+          expo_receipt_id?: string | null;
+          id?: string;
+          notification_type?: string | null;
+          scheduled_for?: string | null;
+          sent_at?: string | null;
+          status?: string | null;
+          title: string;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string | null;
+          data?: Json | null;
+          error_message?: string | null;
+          expo_receipt_id?: string | null;
+          id?: string;
+          notification_type?: string | null;
+          scheduled_for?: string | null;
+          sent_at?: string | null;
+          status?: string | null;
+          title?: string;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'push_notifications_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      push_tokens: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          is_active: boolean;
+          platform: string;
+          token: string;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          is_active?: boolean;
+          platform: string;
+          token: string;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          is_active?: boolean;
+          platform?: string;
+          token?: string;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'push_tokens_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       streaks: {
         Row: {
@@ -243,6 +352,24 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      get_users_for_daily_reminders: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          id: string;
+          expo_push_token: string;
+          reminder_time: string;
+          username: string;
+        }[];
+      };
+      get_users_for_throwback_reminders: {
+        Args: { p_frequency?: string };
+        Returns: {
+          id: string;
+          expo_push_token: string;
+          throwback_reminder_time: string;
+          username: string;
+        }[];
+      };
       normalize_turkish: {
         Args: { input_text: string };
         Returns: string;
@@ -250,6 +377,39 @@ export type Database = {
       recalculate_user_streak: {
         Args: { p_user_id: string };
         Returns: undefined;
+      };
+      register_push_token: {
+        Args: { p_user_id: string; p_expo_push_token: string };
+        Returns: undefined;
+      };
+      schedule_push_notification: {
+        Args: {
+          p_user_id: string;
+          p_title: string;
+          p_body: string;
+          p_data?: Json;
+          p_notification_type?: string;
+          p_scheduled_for?: string;
+        };
+        Returns: string;
+      };
+      send_daily_reminders: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      send_push_notification_to_user: {
+        Args: {
+          p_user_id: string;
+          p_title: string;
+          p_body: string;
+          p_data?: Json;
+          p_notification_type?: string;
+        };
+        Returns: string;
+      };
+      send_throwback_reminders: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
       };
       set_daily_gratitude_statements: {
         Args: { p_entry_date: string; p_statements: Json };

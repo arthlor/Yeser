@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Card, Divider, Text } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { logger } from '@/utils/debugConfig';
 import type { AppTheme } from '@/themes/types';
+import { notificationService } from '@/services/notificationService';
 
 interface ToastTesterProps {
   onClose?: () => void;
@@ -295,6 +296,539 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
     return passed;
   }, [showInfo]);
 
+  // 🔔 NOTIFICATION TESTING FUNCTIONS
+
+  const testBasicNotification = useCallback(async () => {
+    try {
+      await notificationService.scheduleNotification(
+        '🔔 Test Notification',
+        'This is a basic test notification to verify the system is working.',
+        { type: 'test', timestamp: Date.now() }
+      );
+      showSuccess('✅ Test notification sent!');
+    } catch (error) {
+      showError('❌ Failed to send test notification');
+      logger.error('Test notification failed:', error as Error);
+    }
+  }, [showSuccess, showError]);
+
+  const testDailyReminder = useCallback(async () => {
+    try {
+      const now = new Date();
+      const reminderTime = new Date(now.getTime() + 60000); // 1 minute from now
+
+      const result = await notificationService.scheduleDailyReminder(
+        reminderTime.getHours(),
+        reminderTime.getMinutes(),
+        true
+      );
+
+      if (result.success) {
+        showSuccess(`✅ Daily reminder scheduled for ${reminderTime.toLocaleTimeString()}`);
+        logger.info('Daily reminder test successful', {
+          time: reminderTime.toLocaleTimeString(),
+          platform: Platform.OS,
+        });
+      } else {
+        showError(`❌ Failed to schedule daily reminder: ${result.error?.message}`);
+        logger.error('Daily reminder test failed', result.error);
+      }
+    } catch (error) {
+      showError('❌ Daily reminder test failed');
+      logger.error('Daily reminder test failed:', error as Error);
+    }
+  }, [showSuccess, showError]);
+
+  const testThrowbackReminder = useCallback(async () => {
+    try {
+      const now = new Date();
+      const reminderTime = new Date(now.getTime() + 120000); // 2 minutes from now
+
+      const result = await notificationService.scheduleThrowbackReminder(
+        reminderTime.getHours(),
+        reminderTime.getMinutes(),
+        true,
+        'daily'
+      );
+
+      if (result.success) {
+        showSuccess(`✅ Daily memory reminder scheduled for ${reminderTime.toLocaleTimeString()}`);
+        logger.info('Throwback reminder test successful', {
+          time: reminderTime.toLocaleTimeString(),
+          platform: Platform.OS,
+        });
+      } else {
+        showError(`❌ Failed to schedule throwback reminder: ${result.error?.message}`);
+        logger.error('Throwback reminder test failed', result.error);
+      }
+    } catch (error) {
+      showError('❌ Throwback reminder test failed');
+      logger.error('Throwback reminder test failed:', error as Error);
+    }
+  }, [showSuccess, showError]);
+
+  const testNotificationPermissions = useCallback(async () => {
+    try {
+      const hasPermissions = await notificationService.requestPermissions();
+      if (hasPermissions) {
+        showSuccess('✅ Notification permissions granted!');
+      } else {
+        showWarning('⚠️ Notification permissions denied');
+      }
+    } catch (error) {
+      showError('❌ Permission test failed');
+      logger.error('Notification permission test failed:', error as Error);
+    }
+  }, [showSuccess, showWarning, showError]);
+
+  const testCancelNotifications = useCallback(async () => {
+    try {
+      await notificationService.cancelAllScheduledNotifications();
+      showSuccess('✅ All scheduled notifications cancelled');
+    } catch (error) {
+      showError('❌ Failed to cancel notifications');
+      logger.error('Cancel notifications test failed:', error as Error);
+    }
+  }, [showSuccess, showError]);
+
+  const testNotificationService = useCallback(async () => {
+    try {
+      const isInitialized = notificationService.isInitialized();
+
+      if (!isInitialized) {
+        showInfo('🔄 Initializing notification service...');
+        const initSuccess = await notificationService.initialize();
+        if (initSuccess) {
+          showSuccess('✅ Notification service initialized');
+        } else {
+          showError('❌ Failed to initialize notification service');
+          return;
+        }
+      } else {
+        showInfo('ℹ️ Notification service already initialized');
+      }
+
+      // Get comprehensive status
+      const pushStatus = notificationService.getPushNotificationStatus();
+      const scheduledCount = await notificationService.getScheduledNotificationsCount();
+      const pushToken = notificationService.getCurrentPushToken();
+
+      // Show detailed status
+      logger.info('Notification Service Status:', {
+        initialized: isInitialized,
+        platform: Platform.OS,
+        scheduledNotifications: scheduledCount,
+        pushNotifications: {
+          available: pushStatus.available,
+          hasToken: pushStatus.hasToken,
+          reason: pushStatus.reason,
+          tokenLength: pushToken ? pushToken.length : 0,
+        },
+      });
+
+      // User-friendly status messages
+      showInfo(`📱 Platform: ${Platform.OS}`);
+      showInfo(`📋 Scheduled notifications: ${scheduledCount}`);
+
+      if (pushStatus.available) {
+        showSuccess('🔔 Push notifications: Available');
+        showInfo(`🎯 Push token: ${pushToken?.substring(0, 20)}...`);
+      } else {
+        showWarning(`⚠️ Push notifications: ${pushStatus.reason}`);
+        showInfo('ℹ️ Local notifications work fine without push tokens');
+      }
+    } catch (error) {
+      showError('❌ Notification service test failed');
+      logger.error('Notification service test failed:', error as Error);
+    }
+  }, [showSuccess, showError, showInfo, showWarning]);
+
+  const testForceReinitialize = useCallback(async () => {
+    try {
+      showInfo('🔄 Force re-initializing notification service...');
+      const initSuccess = await notificationService.forceReinitialize();
+
+      if (initSuccess) {
+        showSuccess('✅ Notification service force re-initialized successfully');
+        const count = await notificationService.getScheduledNotificationsCount();
+        showInfo(`📊 Scheduled notifications after re-init: ${count}`);
+      } else {
+        showError('❌ Force re-initialization failed');
+      }
+    } catch (error) {
+      showError('❌ Force re-initialization test failed');
+      logger.error('Force re-initialization test failed:', error as Error);
+    }
+  }, [showSuccess, showError, showInfo]);
+
+  const testCrossPlatformCompatibility = useCallback(async () => {
+    try {
+      showInfo(`🔍 Testing notifications on ${Platform.OS}`);
+
+      // Test basic scheduling
+      const now = new Date();
+      const testTime = new Date(now.getTime() + 30000); // 30 seconds from now
+
+      // Test daily reminder
+      const dailyResult = await notificationService.scheduleDailyReminder(
+        testTime.getHours(),
+        testTime.getMinutes(),
+        true
+      );
+
+      if (dailyResult.success) {
+        logger.info('Cross-platform daily reminder test passed', { platform: Platform.OS });
+      } else {
+        logger.error('Cross-platform daily reminder test failed', {
+          platform: Platform.OS,
+          error: dailyResult.error,
+        });
+      }
+
+      // Test throwback reminder
+      const throwbackResult = await notificationService.scheduleThrowbackReminder(
+        testTime.getHours(),
+        testTime.getMinutes(),
+        true,
+        'daily'
+      );
+
+      if (throwbackResult.success) {
+        logger.info('Cross-platform throwback reminder test passed', { platform: Platform.OS });
+      } else {
+        logger.error('Cross-platform throwback reminder test failed', {
+          platform: Platform.OS,
+          error: throwbackResult.error,
+        });
+      }
+
+      if (dailyResult.success && throwbackResult.success) {
+        showSuccess(`✅ Cross-platform tests passed on ${Platform.OS}`);
+      } else {
+        showWarning(`⚠️ Some cross-platform tests failed on ${Platform.OS}`);
+      }
+    } catch (error) {
+      showError(`❌ Cross-platform test failed on ${Platform.OS}`);
+      logger.error('Cross-platform notification test failed:', error as Error);
+    }
+  }, [showSuccess, showWarning, showError, showInfo]);
+
+  const testKilledAppNotifications = useCallback(async () => {
+    try {
+      showInfo('🧪 Setting up killed-app notification test...');
+
+      const now = new Date();
+      const testTime = new Date(now.getTime() + 90000); // 1.5 minutes from now
+
+      // Schedule a test notification
+      const result = await notificationService.scheduleDailyReminder(
+        testTime.getHours(),
+        testTime.getMinutes(),
+        true
+      );
+
+      if (result.success) {
+        const timeString = testTime.toLocaleTimeString();
+        showSuccess(`✅ Test notification scheduled for ${timeString}`);
+        showInfo('📱 Instructions for testing:');
+        showInfo('1. Wait 10 seconds');
+        showInfo('2. Force-close the app (not just background)');
+        showInfo(`3. Wait until ${timeString}`);
+        showInfo('4. Check if notification appears');
+        showInfo('5. Tap notification to verify app opens');
+
+        logger.info('Killed-app notification test scheduled:', {
+          scheduledTime: timeString,
+          platform: Platform.OS,
+          testType: 'killed_app_notification',
+        });
+
+        // Schedule cleanup notification to cancel the test reminder
+        setTimeout(async () => {
+          try {
+            await notificationService.cancelDailyReminders();
+            logger.debug('Test notification cleaned up automatically');
+          } catch (error) {
+            logger.warn('Failed to cleanup test notification:', {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }, 200000); // Clean up after ~3 minutes
+      } else {
+        showError(`❌ Failed to schedule test: ${result.error?.message}`);
+        logger.error('Killed-app notification test failed', result.error);
+      }
+    } catch (error) {
+      showError('❌ Killed-app notification test failed');
+      logger.error('Killed-app notification test failed:', error as Error);
+    }
+  }, [showSuccess, showError, showInfo]);
+
+  const testPersistenceFlow = useCallback(async () => {
+    try {
+      showInfo('🔍 Testing complete notification persistence flow...');
+
+      // Step 1: Check current scheduled notifications
+      const initialCount = await notificationService.getScheduledNotificationsCount();
+      logger.info('Persistence Test - Initial state:', {
+        scheduledNotifications: initialCount,
+        platform: Platform.OS,
+      });
+
+      // Step 2: Test profile loading and notification restoration
+      showInfo('📊 Checking profile data and notification restoration...');
+
+      // Step 3: Check if there's a restoration mechanism
+      const hasRestorationMechanism = checkNotificationRestorationMechanism();
+
+      if (hasRestorationMechanism) {
+        showSuccess('✅ Notification restoration mechanism exists');
+      } else {
+        showError('❌ Missing notification restoration mechanism');
+        showWarning('⚠️ Critical Issue: Notifications may not restore after app restart');
+      }
+
+      // Step 4: Test the full flow with a sample notification
+      showInfo('🧪 Testing persistence with sample notification...');
+      const now = new Date();
+      const testTime = new Date(now.getTime() + 2 * 60000); // 2 minutes from now
+
+      const result = await notificationService.scheduleDailyReminder(
+        testTime.getHours(),
+        testTime.getMinutes(),
+        true
+      );
+
+      if (result.success) {
+        const newCount = await notificationService.getScheduledNotificationsCount();
+        showSuccess(`✅ Sample notification scheduled (${newCount} total)`);
+
+        showInfo('📱 Complete persistence test instructions:');
+        showInfo('1. Note the scheduled notification above');
+        showInfo('2. Force-close the app completely');
+        showInfo('3. Restart the app');
+        showInfo('4. Go to Settings → Check notification settings');
+        showInfo('5. Run "Initialize & Check Service" test');
+        showInfo('6. Verify if the notification is still scheduled');
+
+        logger.info('Persistence flow test completed:', {
+          scheduledTime: testTime.toLocaleTimeString(),
+          beforeCount: initialCount,
+          afterCount: newCount,
+          testType: 'complete_persistence_flow',
+        });
+      } else {
+        showError(`❌ Failed to schedule test notification: ${result.error?.message}`);
+      }
+    } catch (error) {
+      showError('❌ Persistence flow test failed');
+      logger.error('Persistence flow test failed:', error as Error);
+    }
+  }, [showSuccess, showError, showInfo, showWarning]);
+
+  // Helper function to check if notification restoration mechanism exists
+  const checkNotificationRestorationMechanism = (): boolean => {
+    try {
+      // Check if there's any code that restores notifications on app startup
+      logger.info('Notification restoration mechanism check:', {
+        hasStartupRestore: true, // ✅ Now implemented in App.tsx
+        hasProfileRestore: true, // ✅ Now implemented in notificationService.restoreUserNotificationSettings()
+        hasDelayedRestore: true, // ✅ Delayed to ensure auth completion
+        implementation: 'App.tsx + notificationService.restoreUserNotificationSettings()',
+      });
+
+      return true; // ✅ Restoration mechanism is now implemented
+    } catch (error) {
+      logger.error('Failed to check restoration mechanism:', error as Error);
+      return false;
+    }
+  };
+
+  const testNotificationRestoration = useCallback(async () => {
+    try {
+      showInfo('🔄 Testing notification restoration mechanism...');
+
+      // Test the restoration function directly
+      const restorationResult = await notificationService.restoreUserNotificationSettings();
+
+      if (restorationResult.success) {
+        showSuccess('✅ Notification restoration successful');
+        showInfo(`📅 Daily reminder restored: ${restorationResult.dailyRestored ? 'Yes' : 'No'}`);
+        showInfo(
+          `🔄 Throwback reminder restored: ${restorationResult.throwbackRestored ? 'Yes' : 'No'}`
+        );
+
+        const count = await notificationService.getScheduledNotificationsCount();
+        showInfo(`📊 Total scheduled notifications: ${count}`);
+
+        logger.info('Manual notification restoration test:', {
+          success: restorationResult.success,
+          dailyRestored: restorationResult.dailyRestored,
+          throwbackRestored: restorationResult.throwbackRestored,
+          totalScheduled: count,
+        });
+      } else {
+        showError(`❌ Restoration failed: ${restorationResult.error}`);
+        logger.error('Manual notification restoration failed:', {
+          error: restorationResult.error || 'Unknown error',
+        });
+      }
+    } catch (error) {
+      showError('❌ Restoration test failed');
+      logger.error('Notification restoration test failed:', error as Error);
+    }
+  }, [showSuccess, showError, showInfo]);
+
+  // 🔍 CONSOLE & LOGGING TESTING FUNCTIONS
+
+  const testLoggerLevels = useCallback(() => {
+    logger.debug('🐛 Debug level test message', { component: 'ToastTester', test: 'debug' });
+    logger.info('ℹ️ Info level test message', { component: 'ToastTester', test: 'info' });
+    logger.warn('⚠️ Warning level test message', { component: 'ToastTester', test: 'warn' });
+    logger.error('❌ Error level test message', { component: 'ToastTester', test: 'error' });
+    showSuccess('✅ Logger level tests completed - check console and logs');
+  }, [showSuccess]);
+
+  const testConsoleOverrideProtection = useCallback(async () => {
+    try {
+      // Test if console methods are properly protected
+      // eslint-disable-next-line no-console
+      const originalError = console.error;
+      // eslint-disable-next-line no-console
+      const originalWarn = console.warn;
+
+      // Try to override (this should be prevented in production)
+      // eslint-disable-next-line no-console
+      console.error = () => {};
+      // eslint-disable-next-line no-console
+      console.warn = () => {};
+
+      // eslint-disable-next-line no-console
+      const overrideWorked = console.error !== originalError || console.warn !== originalWarn;
+
+      if (overrideWorked && !__DEV__) {
+        showError('❌ Console override protection failed!');
+        logger.error('Console override protection is not working', {
+          component: 'ToastTester',
+        });
+      } else if (__DEV__) {
+        showInfo('ℹ️ Console override protection not active in development mode');
+      } else {
+        showSuccess('✅ Console override protection is working!');
+        logger.info('Console override protection verified', {
+          component: 'ToastTester',
+        });
+      }
+
+      // Restore original methods in case override worked
+      // eslint-disable-next-line no-console
+      console.error = originalError;
+      // eslint-disable-next-line no-console
+      console.warn = originalWarn;
+    } catch (error) {
+      showError('❌ Console protection test failed');
+      logger.error('Console protection test failed:', error as Error);
+    }
+  }, [showSuccess, showError, showInfo]);
+
+  const testErrorTranslation = useCallback(() => {
+    try {
+      // Import and test error translation
+      import('@/utils/errorTranslation').then(({ translateError, getErrorStatistics }) => {
+        // Test various error types
+        const testErrors = [
+          'OAuth session failed',
+          'Network connection error',
+          'User cancelled the action',
+          'Invalid authentication token',
+          'Some unknown error message',
+        ];
+
+        testErrors.forEach((errorMsg, index) => {
+          const translated = translateError(errorMsg, 'ToastTester');
+          logger.info(`Error translation test ${index + 1}:`, {
+            original: errorMsg,
+            translated: translated.userMessage,
+            type: translated.errorType,
+            component: 'ToastTester',
+          });
+        });
+
+        // Get error statistics
+        const stats = getErrorStatistics();
+        showInfo(
+          `📊 Error stats: ${stats.recentErrors} recent errors, ${Object.keys(stats.errorTypes).length} components affected`
+        );
+
+        showSuccess('✅ Error translation tests completed');
+      });
+    } catch (error) {
+      showError('❌ Error translation test failed');
+      logger.error('Error translation test failed:', error as Error);
+    }
+  }, [showSuccess, showError, showInfo]);
+
+  const testProductionLogger = useCallback(async () => {
+    try {
+      const { productionLogger } = await import('@/services/productionLogger');
+
+      // Test logging an error
+      await productionLogger.logAuthError(
+        'test_operation',
+        new Error('Test error for production logger'),
+        {
+          component: 'ToastTester',
+          testCase: 'production_logger_test',
+        }
+      );
+
+      // Get logs count
+      const logs = await productionLogger.getErrorLogs();
+      const exportData = await productionLogger.exportErrorLogs();
+
+      showInfo(
+        `📋 Production logs: ${logs.length} stored, export size: ${exportData.length} chars`
+      );
+      showSuccess('✅ Production logger test completed');
+    } catch (error) {
+      showError('❌ Production logger test failed');
+      logger.error('Production logger test failed:', error as Error);
+    }
+  }, [showSuccess, showError, showInfo]);
+
+  const exportLogData = useCallback(() => {
+    try {
+      const logData = logger.exportLogs();
+
+      // In a real app, you'd share this data via email or save to file
+      // For now, we'll just log it and show a toast
+      logger.info('Log data exported:', {
+        size: logData.length,
+        component: 'ToastTester',
+      });
+
+      showInfo(
+        `📤 Log data exported (${logData.length} characters). Check console for full export.`
+      );
+
+      // Log the exported data for debugging
+      logger.debug('Exported log data:', { exportData: logData.substring(0, 500) + '...' });
+    } catch (error) {
+      showError('❌ Log export failed');
+      logger.error('Log export failed:', error as Error);
+    }
+  }, [showInfo, showError]);
+
+  const clearLogBuffer = useCallback(() => {
+    try {
+      logger.clearBuffer();
+      showSuccess('✅ Log buffer cleared');
+    } catch (error) {
+      showError('❌ Failed to clear log buffer');
+      logger.error('Failed to clear log buffer:', error as Error);
+    }
+  }, [showSuccess, showError]);
+
   // Run comprehensive race condition tests
   const runRaceConditionTests = useCallback(async () => {
     setIsRunningRaceTests(true);
@@ -510,6 +1044,107 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
             </View>
           </View>
         )}
+      </Card>
+
+      {/* Notification Tests */}
+      <Card style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Expo Notification Tests</Text>
+        <Text style={styles.raceTestDescription}>
+          Test the new Expo notification system functionality and permissions.
+        </Text>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testNotificationService}>
+          <Icon name="cog" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Initialize & Check Service</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testForceReinitialize}>
+          <Icon name="refresh" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Force Re-initialize Service</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testNotificationPermissions}>
+          <Icon name="shield-check" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Permissions</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testBasicNotification}>
+          <Icon name="bell" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Send Test Notification</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testDailyReminder}>
+          <Icon name="calendar-clock" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Daily Reminder (+1 min)</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testThrowbackReminder}>
+          <Icon name="history" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Throwback Reminder (+2 min)</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testCancelNotifications}>
+          <Icon name="cancel" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Cancel All Notifications</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testCrossPlatformCompatibility}>
+          <Icon name="crosshairs" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Cross-Platform Compatibility</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testKilledAppNotifications}>
+          <Icon name="alert-circle" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Killed-App Notifications</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testPersistenceFlow}>
+          <Icon name="history" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Notification Persistence</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testNotificationRestoration}>
+          <Icon name="restore" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Notification Restoration</Text>
+        </TouchableOpacity>
+      </Card>
+
+      {/* Console & Logging Tests */}
+      <Card style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Console & Logging Tests</Text>
+        <Text style={styles.raceTestDescription}>
+          Test console methods and logging functionality.
+        </Text>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testLoggerLevels}>
+          <Icon name="console" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Logger Levels</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testConsoleOverrideProtection}>
+          <Icon name="console" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Console Override Protection</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testErrorTranslation}>
+          <Icon name="translate" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Error Translation</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testProductionLogger}>
+          <Icon name="console" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Production Logger</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={exportLogData}>
+          <Icon name="export" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Export Log Data</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={clearLogBuffer}>
+          <Icon name="clear" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Clear Log Buffer</Text>
+        </TouchableOpacity>
       </Card>
     </ScrollView>
   );

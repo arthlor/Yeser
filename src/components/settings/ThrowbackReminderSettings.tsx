@@ -5,277 +5,243 @@ import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 're
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
-import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import { useTheme } from '../../providers/ThemeProvider';
+import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { analyticsService } from '../../services/analyticsService';
 import { hapticFeedback } from '../../utils/hapticFeedback';
 import { logger } from '../../utils/debugConfig';
 import { parseTimeStringToValidDate } from '../../utils/dateUtils';
+import { notificationService } from '@/services/notificationService';
 import { getPrimaryShadow } from '@/themes/utils';
 
-import type { Profile } from '../../schemas/profileSchema';
 import type { AppTheme } from '../../themes/types';
-
-const frequencyOptions: {
-  label: string;
-  value: Profile['throwback_reminder_frequency'];
-  icon: string;
-}[] = [
-  {
-    label: 'Günlük',
-    value: 'daily',
-    icon: 'calendar-today',
-  },
-  { label: 'Haftalık', value: 'weekly', icon: 'calendar-week' },
-  { label: 'Aylık', value: 'monthly', icon: 'calendar-month' },
-];
 
 interface ThrowbackReminderSettingsProps {
   throwbackEnabled: boolean;
-  throwbackFrequency: Profile['throwback_reminder_frequency'];
   throwbackReminderTime: string | null | undefined;
   onUpdateSettings: (settings: {
     throwback_reminder_enabled: boolean;
-    throwback_reminder_frequency: Profile['throwback_reminder_frequency'];
     throwback_reminder_time?: string;
   }) => void;
 }
 
 /**
- * **SIMPLIFIED THROWBACK REMINDER SETTINGS**: Minimal, elegant settings experience
+ * **SIMPLIFIED THROWBACK REMINDER SETTINGS**: Daily throwback reminders with time selection only
  *
- * **ANIMATION SIMPLIFICATION COMPLETED**:
- * - Reduced from 15+ animation instances to 1 (93% reduction)
- * - Eliminated LayoutAnimation calls (cardScale, expandAnimation, timePickerOpacity, timePickerHeight, iconRotation)
- * - Replaced with subtle layout transitions using coordinated animations
- * - Removed complex parallel animations and sequences
- * - Simplified time picker expansion with coordinated layout transitions
+ * Simplified to match Daily Reminder settings - no frequency selection, always daily.
+ * User can enable/disable and set the time for daily throwback reminders.
  */
 const EnhancedThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps> = React.memo(
-  ({ throwbackEnabled, throwbackFrequency, throwbackReminderTime, onUpdateSettings }) => {
+  ({ throwbackEnabled, throwbackReminderTime, onUpdateSettings }) => {
     const { theme } = useTheme();
+    const { showError } = useGlobalError();
     const styles = createStyles(theme);
 
-    // **SIMPLIFIED ANIMATION SYSTEM**: Single coordinated instance (15+ → 1, 93% reduction)
-    const animations = useCoordinatedAnimations();
-
-    const [selectedFrequency, setSelectedFrequency] = useState<
-      Profile['throwback_reminder_frequency']
-    >(throwbackFrequency ?? 'weekly');
-
-    const [selectedTime, setSelectedTime] = useState<Date>(new Date());
+    const [selectedTime, setSelectedTime] = useState<Date>(
+      parseTimeStringToValidDate(throwbackReminderTime)
+    );
     const [showTimePicker, setShowTimePicker] = useState(false);
+    const [isScheduling, setIsScheduling] = useState(false);
 
     useEffect(() => {
-      setSelectedFrequency(throwbackFrequency ?? 'weekly');
+      setSelectedTime(parseTimeStringToValidDate(throwbackReminderTime));
+    }, [throwbackReminderTime]);
 
-      // Initialize time from database or default to 10:00:00
-      const timeString = throwbackReminderTime || '10:00:00';
-      const timeDate = parseTimeStringToValidDate(timeString);
-      setSelectedTime(timeDate);
-    }, [throwbackFrequency, throwbackReminderTime]);
+    const handleNotificationScheduling = useCallback(
+      async (enabled: boolean, time: Date) => {
+        setIsScheduling(true);
+        try {
+          const hour = time.getHours();
+          const minute = time.getMinutes();
 
-    // **MINIMAL LAYOUT TRANSITIONS**: Replace LayoutAnimation with coordinated transitions
-    const handleLayoutTransition = useCallback(
-      (expanded: boolean) => {
-        const targetHeight = expanded ? 100 : 0;
-        animations.animateLayoutTransition(expanded, targetHeight, { duration: 300 });
+          if (enabled) {
+            // Schedule daily throwback reminder (always daily frequency)
+            const result = await notificationService.scheduleThrowbackReminder(
+              hour,
+              minute,
+              true,
+              'daily'
+            );
+
+            if (result.success) {
+              logger.debug('Daily throwback reminder scheduled successfully', {
+                hour,
+                minute,
+              });
+
+              // Provide success haptic feedback
+              hapticFeedback.success();
+            } else {
+              // Handle scheduling error
+              logger.error('Failed to schedule daily throwback reminder', result.error);
+
+              showError('Anı hatırlatıcısı ayarlanamadı. Lütfen bildirim izinlerini kontrol edin.');
+
+              // Provide error haptic feedback
+              hapticFeedback.error();
+            }
+          } else {
+            // Cancel throwback reminders
+            await notificationService.cancelThrowbackReminders();
+            logger.debug('Throwback reminders cancelled');
+          }
+        } catch (error) {
+          logger.error('Error handling throwback notification scheduling', error as Error);
+
+          showError('Anı hatırlatıcısı ayarlanırken bir hata oluştu.');
+
+          // Provide error haptic feedback
+          hapticFeedback.error();
+        } finally {
+          setIsScheduling(false);
+        }
       },
-      [animations]
+      [showError]
     );
 
-    const animateTimePicker = useCallback(
-      (show: boolean) => {
-        setShowTimePicker(show);
-        // **SIMPLIFIED TIME PICKER**: Coordinated layout transition instead of complex parallel animations
-        const targetHeight = show ? 200 : 0;
-        animations.animateLayoutTransition(show, targetHeight, { duration: 250 });
-      },
-      [animations]
-    );
-
-    const toggleThrowbackSwitch = useCallback(() => {
-      const newEnabled = !throwbackEnabled;
-      const timeString = selectedTime.toTimeString().split(' ')[0]; // Get HH:MM:SS format
-
-      // **MINIMAL PRESS FEEDBACK**: Simple coordinated press animation
-      animations.animatePressIn();
-      setTimeout(() => animations.animatePressOut(), 150);
-
-      // **COORDINATED LAYOUT TRANSITION**: Replace LayoutAnimation with coordinated transition
-      handleLayoutTransition(newEnabled);
-
-      // Provide haptic feedback for toggle interaction
-      hapticFeedback.medium();
-
-      onUpdateSettings({
-        throwback_reminder_enabled: newEnabled,
-        throwback_reminder_frequency: selectedFrequency,
-        throwback_reminder_time: timeString,
-      });
-
-      // Track analytics event
-      analyticsService.logEvent('throwback_reminder_toggled', {
-        enabled: newEnabled,
-        frequency: selectedFrequency as string,
-        time: timeString,
-      });
-
-      // Log the change for debugging
-      logger.debug('Throwback reminder toggled', {
-        enabled: newEnabled,
-        frequency: selectedFrequency,
-        time: timeString,
-      });
-    }, [
-      throwbackEnabled,
-      selectedFrequency,
-      selectedTime,
-      onUpdateSettings,
-      animations,
-      handleLayoutTransition,
-    ]);
-
-    const handleFrequencyChange = useCallback(
-      (frequency: Profile['throwback_reminder_frequency']) => {
-        setSelectedFrequency(frequency);
-        const timeString = selectedTime.toTimeString().split(' ')[0]; // Get HH:MM:SS format
-
-        // Provide haptic feedback for selection change
-        hapticFeedback.light();
-
-        onUpdateSettings({
-          throwback_reminder_enabled: throwbackEnabled,
-          throwback_reminder_frequency: frequency,
-          throwback_reminder_time: timeString,
-        });
-
-        // Track analytics event
-        analyticsService.logEvent('throwback_reminder_frequency_changed', {
-          old_frequency: throwbackFrequency as string,
-          new_frequency: frequency as string,
-          enabled: throwbackEnabled,
-        });
-
-        // Log the change for debugging
-        logger.debug('Throwback reminder frequency changed', {
-          oldFrequency: throwbackFrequency,
-          newFrequency: frequency,
-          enabled: throwbackEnabled,
-        });
-      },
-      [selectedTime, onUpdateSettings, throwbackEnabled, throwbackFrequency]
-    );
-
-    const handleTimeChange = useCallback(
-      (event: DateTimePickerEvent, selectedDate?: Date) => {
+    const onTimeChange = useCallback(
+      (event: DateTimePickerEvent, date?: Date) => {
         if (Platform.OS === 'android') {
-          animateTimePicker(false);
-        } else {
           setShowTimePicker(false);
         }
 
-        if (selectedDate && throwbackEnabled) {
-          setSelectedTime(selectedDate);
-          const timeString = selectedDate.toTimeString().split(' ')[0]; // Get HH:MM:SS format
+        if (date) {
+          setSelectedTime(date);
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          const seconds = String(date.getSeconds()).padStart(2, '0');
+          const formattedTime = `${hours}:${minutes}:${seconds}`;
 
           // Provide haptic feedback for time selection
           hapticFeedback.light();
 
           onUpdateSettings({
-            throwback_reminder_enabled: throwbackEnabled,
-            throwback_reminder_frequency: selectedFrequency,
-            throwback_reminder_time: timeString,
+            throwback_reminder_enabled: true,
+            throwback_reminder_time: formattedTime,
           });
+
+          // Schedule notifications with new time
+          handleNotificationScheduling(true, date);
 
           // Track analytics event
           analyticsService.logEvent('throwback_reminder_time_changed', {
-            time: timeString,
-            frequency: selectedFrequency as string,
-            enabled: throwbackEnabled,
+            time: formattedTime,
+            enabled: true,
           });
 
           // Log the change for debugging
           logger.debug('Throwback reminder time changed', {
-            time: timeString,
-            frequency: selectedFrequency,
-            enabled: throwbackEnabled,
+            time: formattedTime,
+            enabled: true,
           });
         }
       },
-      [throwbackEnabled, selectedFrequency, onUpdateSettings, animateTimePicker]
+      [onUpdateSettings, handleNotificationScheduling]
     );
+
+    const toggleThrowbackSwitch = useCallback(() => {
+      const newEnabled = !throwbackEnabled;
+
+      // Provide haptic feedback for toggle interaction
+      hapticFeedback.medium();
+
+      if (newEnabled) {
+        const hours = String(selectedTime.getHours()).padStart(2, '0');
+        const minutes = String(selectedTime.getMinutes()).padStart(2, '0');
+        const seconds = String(selectedTime.getSeconds()).padStart(2, '0');
+        const formattedTime = `${hours}:${minutes}:${seconds}`;
+
+        onUpdateSettings({
+          throwback_reminder_enabled: true,
+          throwback_reminder_time: formattedTime,
+        });
+
+        // Schedule notifications when enabled
+        handleNotificationScheduling(true, selectedTime);
+
+        // Track analytics event
+        analyticsService.logEvent('throwback_reminder_toggled', {
+          enabled: true,
+          time: formattedTime,
+        });
+
+        // Log the change for debugging
+        logger.debug('Throwback reminder enabled', {
+          enabled: true,
+          time: formattedTime,
+        });
+      } else {
+        onUpdateSettings({
+          throwback_reminder_enabled: false,
+        });
+
+        // Cancel notifications when disabled
+        handleNotificationScheduling(false, selectedTime);
+
+        // Track analytics event
+        analyticsService.logEvent('throwback_reminder_toggled', {
+          enabled: false,
+        });
+
+        // Log the change for debugging
+        logger.debug('Throwback reminder disabled', {
+          enabled: false,
+        });
+      }
+    }, [throwbackEnabled, selectedTime, onUpdateSettings, handleNotificationScheduling]);
 
     const handleTimePickerPress = useCallback(() => {
       if (Platform.OS === 'ios') {
         setShowTimePicker(true);
-        animateTimePicker(true);
       } else {
         setShowTimePicker(true);
       }
       hapticFeedback.light();
-    }, [animateTimePicker]);
-
-    const formatTime = useCallback((date: Date): string => {
-      return date.toLocaleTimeString('tr-TR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      });
     }, []);
 
-    const getFrequencyLabel = useCallback(() => {
-      const option = frequencyOptions.find((opt) => opt.value === selectedFrequency);
-      return option ? option.label : 'Haftalık';
-    }, [selectedFrequency]);
-
-    const getScheduleDescription = useCallback(() => {
-      if (!throwbackEnabled) {
-        return 'Kapalı';
-      }
-
-      const time = formatTime(selectedTime);
-
-      switch (selectedFrequency) {
-        case 'daily':
-          return `Her gün saat ${time}`;
-        case 'weekly':
-          return `Pazar günleri saat ${time}`;
-        case 'monthly':
-          return `Her ayın 1'inde saat ${time}`;
-        default:
-          return `${getFrequencyLabel()} hatırlatma saat ${time}`;
-      }
-    }, [throwbackEnabled, selectedTime, selectedFrequency, formatTime, getFrequencyLabel]);
-
-    // **SIMPLIFIED STYLES**: Basic memoized styles for minimal animation system
-    const cardTransform = useMemo(() => [{ scale: animations.scaleAnim }], [animations.scaleAnim]);
+    const formattedSelectedTime = useMemo(
+      () =>
+        selectedTime
+          .toLocaleTimeString('tr-TR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+          .replace(':', '.'),
+      [selectedTime]
+    );
 
     return (
-      <Animated.View style={[styles.settingCard, { transform: cardTransform }]}>
+      <Animated.View style={[styles.settingCard, { transform: [{ scale: 1 }] }]}>
         <TouchableOpacity
           style={styles.settingRow}
           onPress={toggleThrowbackSwitch}
           activeOpacity={0.8}
+          disabled={isScheduling}
         >
           <View style={styles.settingInfo}>
-            <View style={[styles.iconContainer, throwbackEnabled && styles.iconContainerActive]}>
+            <View
+              style={[
+                styles.iconContainer,
+                throwbackEnabled && styles.iconContainerActive,
+                isScheduling && styles.iconContainerLoading,
+              ]}
+            >
               <Icon
-                name="history"
+                name={isScheduling ? 'loading' : 'history'}
                 size={20}
                 color={throwbackEnabled ? theme.colors.onPrimary : theme.colors.primary}
               />
             </View>
             <View style={styles.textContainer}>
-              <Text style={styles.settingTitle}>Geçmiş Hatırlatıcı</Text>
+              <Text style={styles.settingTitle}>Anı Hatırlatıcı</Text>
               <Text
                 style={[
                   styles.settingDescription,
                   throwbackEnabled && styles.settingDescriptionActive,
                 ]}
               >
-                {getScheduleDescription()}
+                {throwbackEnabled ? `Her gün ${formattedSelectedTime}` : 'Kapalı'}
               </Text>
             </View>
           </View>
@@ -284,124 +250,70 @@ const EnhancedThrowbackReminderSettings: React.FC<ThrowbackReminderSettingsProps
             onValueChange={toggleThrowbackSwitch}
             size="medium"
             testID="throwback-reminder-switch"
+            disabled={isScheduling}
           />
         </TouchableOpacity>
 
-        <View style={[styles.expandedContent, !throwbackEnabled && styles.collapsedContent]}>
-          {throwbackEnabled && (
-            <View style={styles.frequencySection}>
-              <View style={styles.divider} />
-
-              {/* Frequency Selection */}
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionIconContainer}>
-                  <Icon name="repeat" size={16} color={theme.colors.primary} />
+        {throwbackEnabled && (
+          <View style={styles.timeSection}>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={[styles.timePickerButton, showTimePicker && styles.timePickerButtonActive]}
+              onPress={handleTimePickerPress}
+              accessibilityLabel={`Current memory reminder time: ${formattedSelectedTime}`}
+              accessibilityHint="Tap to change memory reminder time"
+              accessibilityRole="button"
+              activeOpacity={0.7}
+            >
+              <View style={styles.timePickerContent}>
+                <View style={styles.timeIconContainer}>
+                  <Icon name="clock-outline" size={16} color={theme.colors.primary} />
                 </View>
-                <Text style={styles.sectionLabel}>Sıklık</Text>
-              </View>
-
-              <View style={styles.frequencyGrid}>
-                {frequencyOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[
-                      styles.frequencyOption,
-                      selectedFrequency === option.value && styles.frequencyOptionSelected,
-                    ]}
-                    onPress={() => handleFrequencyChange(option.value)}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.frequencyIconContainer,
-                        selectedFrequency === option.value && styles.frequencyIconContainerSelected,
-                      ]}
-                    >
-                      <Icon
-                        name={option.icon}
-                        size={18}
-                        color={
-                          selectedFrequency === option.value
-                            ? theme.colors.onPrimary
-                            : theme.colors.primary
-                        }
-                      />
-                    </View>
-                    <Text
-                      style={[
-                        styles.frequencyOptionText,
-                        selectedFrequency === option.value && styles.frequencyOptionTextSelected,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* Time Picker Section */}
-              <View style={styles.timeSection}>
-                <View style={styles.divider} />
-                <View style={styles.sectionHeader}>
-                  <View style={styles.sectionIconContainer}>
-                    <Icon name="clock-outline" size={16} color={theme.colors.primary} />
-                  </View>
-                  <Text style={styles.sectionLabel}>Saat</Text>
-                </View>
-                <TouchableOpacity
-                  style={[styles.timePickerButton, showTimePicker && styles.timePickerButtonActive]}
-                  onPress={handleTimePickerPress}
-                  activeOpacity={0.7}
+                <Text style={styles.timePickerButtonText}>Saat: {formattedSelectedTime}</Text>
+                <Animated.View
+                  style={{
+                    transform: [
+                      {
+                        rotate: showTimePicker ? '90deg' : '0deg',
+                      },
+                    ],
+                  }}
                 >
-                  <View style={styles.timePickerContent}>
-                    <View style={styles.timeDisplayContainer}>
-                      <Text style={styles.timeText}>{formatTime(selectedTime)}</Text>
-                      <Text style={styles.timeLabel}>Hatırlatma saati</Text>
-                    </View>
-                    <View
-                      style={{
-                        transform: [
-                          {
-                            rotate: showTimePicker ? '90deg' : '0deg',
-                          },
-                        ],
-                      }}
-                    >
-                      <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
-                    </View>
-                  </View>
-                </TouchableOpacity>
-
-                {Platform.OS === 'ios' && showTimePicker && (
-                  <View style={styles.timePickerContainer}>
-                    <DateTimePicker
-                      value={selectedTime}
-                      mode="time"
-                      is24Hour={true}
-                      display="spinner"
-                      onChange={handleTimeChange}
-                      style={styles.timePicker}
-                      textColor={theme.colors.onSurface}
-                      accentColor={theme.colors.primary}
-                    />
-                  </View>
-                )}
-
-                {Platform.OS === 'android' && showTimePicker && (
-                  <DateTimePicker
-                    value={selectedTime}
-                    mode="time"
-                    is24Hour={true}
-                    display="default"
-                    onChange={handleTimeChange}
-                    textColor={theme.colors.onSurface}
-                    accentColor={theme.colors.primary}
-                  />
-                )}
+                  <Icon name="chevron-right" size={18} color={theme.colors.onSurfaceVariant} />
+                </Animated.View>
               </View>
-            </View>
-          )}
-        </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {Platform.OS === 'ios' && showTimePicker && (
+          <DateTimePicker
+            value={selectedTime}
+            mode="time"
+            is24Hour
+            display="spinner"
+            onChange={onTimeChange}
+            textColor={theme.colors.onSurface}
+            accentColor={theme.colors.primary}
+            accessibilityLabel="Select memory reminder time"
+            accessibilityHint="Choose the time for daily memory reminders"
+            style={styles.timePicker}
+          />
+        )}
+
+        {Platform.OS === 'android' && showTimePicker && (
+          <DateTimePicker
+            value={selectedTime}
+            mode="time"
+            is24Hour
+            display="default"
+            onChange={onTimeChange}
+            textColor={theme.colors.onSurface}
+            accentColor={theme.colors.primary}
+            accessibilityLabel="Select memory reminder time"
+            accessibilityHint="Choose the time for daily memory reminders"
+          />
+        )}
       </Animated.View>
     );
   }
@@ -471,14 +383,7 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '500',
     },
 
-    expandedContent: {
-      overflow: 'hidden',
-    },
-    collapsedContent: {
-      height: 0,
-      overflow: 'hidden',
-    },
-    frequencySection: {
+    timeSection: {
       paddingBottom: theme.spacing.md,
     },
     divider: {
@@ -487,81 +392,12 @@ const createStyles = (theme: AppTheme) =>
       marginHorizontal: theme.spacing.lg,
       marginBottom: theme.spacing.md,
     },
-    sectionHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: theme.spacing.md,
-      paddingHorizontal: theme.spacing.lg,
-    },
-    sectionIconContainer: {
-      width: 28,
-      height: 28,
-      borderRadius: theme.borderRadius.sm,
-      backgroundColor: theme.colors.primaryContainer,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: theme.spacing.sm,
-    },
-    sectionLabel: {
-      ...theme.typography.labelLarge,
-      color: theme.colors.onSurface,
-      fontWeight: '600',
-      letterSpacing: 0.2,
-    },
-
-    // Enhanced frequency selection with grid layout
-    frequencyGrid: {
-      flexDirection: 'row',
-      marginHorizontal: theme.spacing.lg,
-      marginBottom: theme.spacing.sm,
-      gap: theme.spacing.sm,
-    },
-    frequencyOption: {
-      flex: 1,
-      backgroundColor: theme.colors.surfaceVariant + '40',
-      borderRadius: theme.borderRadius.lg,
-      padding: theme.spacing.sm,
-      alignItems: 'center',
-      borderWidth: 2,
-      borderColor: theme.colors.surfaceVariant + '40',
-      minHeight: 60,
-    },
-    frequencyOptionSelected: {
-      backgroundColor: theme.colors.primaryContainer + '80',
-      borderColor: theme.colors.primary + '50',
-      ...getPrimaryShadow.small(theme),
-    },
-    frequencyIconContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: theme.borderRadius.md,
-      backgroundColor: theme.colors.primaryContainer,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: theme.spacing.xs,
-    },
-    frequencyIconContainerSelected: {
-      backgroundColor: theme.colors.primary,
-    },
-    frequencyOptionText: {
-      ...theme.typography.labelMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '600',
-      marginBottom: theme.spacing.xs / 2,
-      textAlign: 'center',
-    },
-    frequencyOptionTextSelected: {
-      color: theme.colors.primary,
-    },
-
-    timeSection: {
-      paddingBottom: theme.spacing.md,
-    },
     timePickerButton: {
       borderRadius: theme.borderRadius.lg,
       backgroundColor: theme.colors.surfaceVariant + '40',
       marginHorizontal: theme.spacing.lg,
-      borderWidth: 2,
+      // Enhanced interactive feedback
+      borderWidth: 1,
       borderColor: theme.colors.surfaceVariant + '40',
     },
     timePickerButtonActive: {
@@ -572,29 +408,24 @@ const createStyles = (theme: AppTheme) =>
     timePickerContent: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
       paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.md,
+      paddingVertical: theme.spacing.sm + 2,
     },
-    timeDisplayContainer: {
+    timeIconContainer: {
+      width: 28,
+      height: 28,
+      borderRadius: theme.borderRadius.sm,
+      backgroundColor: theme.colors.primaryContainer,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: theme.spacing.sm,
+    },
+    timePickerButtonText: {
       flex: 1,
-    },
-    timeText: {
-      ...theme.typography.headlineSmall,
+      ...theme.typography.bodyMedium,
       color: theme.colors.onSurface,
-      fontWeight: '600',
-      marginBottom: theme.spacing.xs / 2,
-    },
-    timeLabel: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
-    },
-    timePickerContainer: {
-      marginHorizontal: theme.spacing.lg,
-      marginTop: theme.spacing.md,
-      backgroundColor: theme.colors.surfaceVariant + '20',
-      borderRadius: theme.borderRadius.lg,
-      overflow: 'hidden',
+      fontWeight: '500',
+      letterSpacing: 0.1,
     },
     timePicker: {
       width: '100%',

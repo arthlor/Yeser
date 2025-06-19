@@ -2,6 +2,7 @@
  * Error Translation Utility
  * Converts technical error messages to user-friendly Turkish messages
  * Ensures users NEVER see technical English error messages
+ * Enhanced with proper logging integration
  */
 
 import { logger } from './debugConfig';
@@ -9,7 +10,7 @@ import { logger } from './debugConfig';
 export interface TranslatedError {
   userMessage: string;
   technicalMessage: string;
-  errorType: 'auth' | 'network' | 'validation' | 'server' | 'unknown';
+  errorType: 'auth' | 'network' | 'validation' | 'server' | 'unknown' | 'notification';
 }
 
 /**
@@ -20,10 +21,17 @@ export interface TranslatedError {
  */
 export const translateError = (
   error: Error | string | unknown,
-  _context?: string
+  context?: string
 ): TranslatedError => {
   const technicalMessage = error instanceof Error ? error.message : String(error);
   const lowerMessage = technicalMessage.toLowerCase();
+
+  // Log technical error for debugging (will go to production logger automatically)
+  logger.error('Error being translated:', {
+    technicalMessage,
+    context,
+    component: 'errorTranslation',
+  });
 
   // Google OAuth Specific Errors (HIGH PRIORITY - these were leaking through)
   if (
@@ -47,6 +55,11 @@ export const translateError = (
     lowerMessage.includes('cancelled') ||
     lowerMessage.includes('cancel')
   ) {
+    // Log as info since cancellation is not really an error
+    logger.info('User cancelled authentication', {
+      context,
+      component: 'errorTranslation',
+    });
     return {
       userMessage: '', // Empty message - cancellation is not an error to show users
       technicalMessage,
@@ -160,7 +173,29 @@ export const translateError = (
     };
   }
 
+  // Notification Errors (Android calendar trigger and others)
+  if (
+    lowerMessage.includes('notification') ||
+    lowerMessage.includes('calendar is not supported') ||
+    lowerMessage.includes('trigger of type') ||
+    lowerMessage.includes('failed to schedule') ||
+    lowerMessage.includes('expo notification') ||
+    lowerMessage.includes('notification service')
+  ) {
+    return {
+      userMessage: 'Bildirim ayarlanamadı. Lütfen bildirim izinlerini kontrol edin.',
+      technicalMessage,
+      errorType: 'notification',
+    };
+  }
+
   // Default fallback for any unknown error
+  logger.warn('Unknown error type encountered', {
+    technicalMessage: technicalMessage.substring(0, 200), // Limit message length
+    context,
+    component: 'errorTranslation',
+  });
+
   return {
     userMessage: 'Bir hata oluştu. Lütfen tekrar deneyin.',
     technicalMessage,
@@ -231,70 +266,45 @@ export const safeErrorDisplay = (error: Error | string | unknown): string => {
 /**
  * Global Error Prevention System
  * Prevents ANY technical error from reaching users
+ * Enhanced to work with the proper logging system
  */
 
 // Track if global error monitoring is active
 let isGlobalErrorMonitoringActive = false;
-// Store original console methods to prevent recursion
-let originalConsoleError: typeof console.error;
-let originalConsoleWarn: typeof console.warn;
 
 /**
  * Initialize global error monitoring to catch system-level errors
  * This prevents any technical errors from bypassing our translation system
+ * Enhanced to work properly with the logger system
  */
-export const initializeGlobalErrorMonitoring = () => {
+export const initializeGlobalErrorMonitoring = (): void => {
   if (isGlobalErrorMonitoringActive) {
     return; // Already initialized
   }
 
-  // Store original console methods first
-  originalConsoleError = console.error.bind(console);
-  originalConsoleWarn = console.warn.bind(console);
-
-  // Don't show console errors in production builds
+  // Initialize console protection (prevents other modules from overriding console)
   if (!__DEV__) {
-    // Override console.error in production
-    console.error = (...args: unknown[]) => {
-      // Use original method to prevent recursion
-      try {
-        // Log to original console for debugging only
-        originalConsoleError(
-          'Production error intercepted:',
-          args.length > 0 ? String(args[0]) : 'Unknown error'
-        );
-      } catch {
-        // If even this fails, fail silently
-      }
-    };
-
-    // Override console.warn in production
-    console.warn = (...args: unknown[]) => {
-      // Use original method to prevent recursion
-      try {
-        // Log to original console for debugging only
-        originalConsoleWarn(
-          'Production warning intercepted:',
-          args.length > 0 ? String(args[0]) : 'Unknown warning'
-        );
-      } catch {
-        // If even this fails, fail silently
-      }
-    };
+    import('./debugConfig')
+      .then(({ protectConsole }) => {
+        protectConsole();
+      })
+      .catch((error) => {
+        logger.warn('Failed to protect console methods', {
+          error: error instanceof Error ? error.message : String(error),
+          component: 'globalErrorHandler',
+        });
+      });
   }
 
   // Global error event handler for unhandled errors
-  const handleGlobalError = (error: Error | string, isFatal?: boolean) => {
-    // Use original console method to prevent recursion
-    try {
-      originalConsoleError('Global error intercepted:', {
-        error: error instanceof Error ? error.message : String(error),
-        isFatal: isFatal || false,
-        timestamp: new Date().toISOString(),
-      });
-    } catch {
-      // Fail silently to prevent further crashes
-    }
+  const handleGlobalError = (error: Error | string, isFatal?: boolean): void => {
+    // Use logger which will automatically handle production logging
+    logger.error('Global error intercepted', {
+      error: error instanceof Error ? error.message : String(error),
+      isFatal: isFatal || false,
+      timestamp: new Date().toISOString(),
+      component: 'globalErrorHandler',
+    });
   };
 
   // Set up global error handlers (React Native specific)
@@ -331,13 +341,15 @@ export const initializeGlobalErrorMonitoring = () => {
 
   isGlobalErrorMonitoringActive = true;
 
-  // Use original console method to log initialization in development only
+  // Log initialization in development only
   if (__DEV__) {
-    try {
-      originalConsoleError('Global error monitoring initialized safely');
-    } catch {
-      // Fail silently
-    }
+    logger.debug('Global error monitoring initialized safely', {
+      component: 'globalErrorHandler',
+    });
+  } else {
+    logger.info('Production error monitoring initialized', {
+      component: 'globalErrorHandler',
+    });
   }
 };
 
@@ -347,6 +359,12 @@ export const initializeGlobalErrorMonitoring = () => {
  */
 export const emergencyErrorSafetyNet = (error: unknown): string => {
   try {
+    // Log the emergency case
+    logger.warn('Emergency error safety net activated', {
+      error: error instanceof Error ? error.message : String(error),
+      component: 'emergencyErrorSafetyNet',
+    });
+
     // Attempt normal translation
     const result = safeErrorDisplay(error);
 
@@ -359,10 +377,44 @@ export const emergencyErrorSafetyNet = (error: unknown): string => {
     return 'Bir hata oluştu. Lütfen tekrar deneyin.';
   } catch (translationError) {
     // Even the translation failed - use hardcoded Turkish message
-    logger.error('Error translation failed:', {
+    logger.error('Error translation failed in emergency safety net', {
       error:
         translationError instanceof Error ? translationError.message : String(translationError),
+      originalError: error instanceof Error ? error.message : String(error),
+      component: 'emergencyErrorSafetyNet',
     });
     return 'Bir hata oluştu. Lütfen tekrar deneyin.';
+  }
+};
+
+/**
+ * Get error logging statistics for debugging
+ */
+export const getErrorStatistics = (): {
+  recentErrors: number;
+  errorTypes: Record<string, number>;
+  lastError?: string;
+} => {
+  try {
+    const recentLogs = logger.getRecentLogs(100);
+    const errorLogs = recentLogs.filter((log) => log.level === 'ERROR');
+
+    const errorTypes: Record<string, number> = {};
+    errorLogs.forEach((log) => {
+      const component = log.context?.component || 'unknown';
+      errorTypes[component] = (errorTypes[component] || 0) + 1;
+    });
+
+    return {
+      recentErrors: errorLogs.length,
+      errorTypes,
+      lastError: errorLogs[0]?.message,
+    };
+  } catch (error) {
+    logger.error('Failed to get error statistics', error as Error);
+    return {
+      recentErrors: 0,
+      errorTypes: {},
+    };
   }
 };

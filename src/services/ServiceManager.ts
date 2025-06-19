@@ -5,11 +5,17 @@
 import { logger } from '@/utils/debugConfig';
 import { supabaseService } from '@/utils/supabaseClient';
 import { backgroundSyncService } from './backgroundSyncService';
-import { firebaseService } from './firebaseService';
 import { networkMonitorService } from './networkMonitorService';
-import { notificationService } from './notificationService';
 
 export type InitializationStage = 1 | 2 | 3 | 4;
+
+// 🆕 NEW: Phase-based initialization (faster, simpler)
+export type InitializationPhase = 'critical' | 'core' | 'enhancement' | 'complete';
+export type ServiceName = 'asyncStorage' | 'supabase' | 'backgroundSync' | 'networkMonitor';
+export type ServiceStatus = 'pending' | 'initializing' | 'ready' | 'error' | 'skipped';
+
+// 🛡️ DEVELOPMENT MODE: Detect development environment
+const IS_DEVELOPMENT = __DEV__ || process.env.EXPO_PUBLIC_ENV === 'development';
 
 export interface InitializationState {
   stage1Complete: boolean; // UI ready
@@ -27,17 +33,28 @@ export interface InitializationState {
   services: {
     supabase: ServiceState;
     backgroundSync: ServiceState;
-    firebase: ServiceState;
     networkMonitor: ServiceState;
-    notifications: ServiceState;
   };
 
   errors: Record<string, Error>;
   currentStage: InitializationStage;
 }
 
+// 🆕 NEW: Simplified phase-based state
+export interface PhaseBasedState {
+  phase: InitializationPhase;
+  coreReady: boolean;
+  enhancementReady: boolean;
+  isComplete: boolean;
+  error: Error | null;
+  serviceStatus: Record<ServiceName, ServiceStatus>;
+  startTime: number;
+  coreCompleteTime?: number;
+  enhancementCompleteTime?: number;
+}
+
 interface ServiceState {
-  status: 'pending' | 'initializing' | 'ready' | 'error';
+  status: 'pending' | 'initializing' | 'ready' | 'error' | 'skipped';
   startTime?: number;
   endTime?: number;
   error?: Error;
@@ -56,12 +73,26 @@ class ServiceManager {
     services: {
       supabase: { status: 'pending' },
       backgroundSync: { status: 'pending' },
-      firebase: { status: 'pending' },
       networkMonitor: { status: 'pending' },
-      notifications: { status: 'pending' },
     },
     errors: {},
     currentStage: 1,
+  };
+
+  // 🆕 NEW: Phase-based state
+  private phaseState: PhaseBasedState = {
+    phase: 'critical',
+    coreReady: false,
+    enhancementReady: false,
+    isComplete: false,
+    error: null,
+    serviceStatus: {
+      asyncStorage: 'pending',
+      supabase: 'pending',
+      backgroundSync: 'pending',
+      networkMonitor: 'pending',
+    },
+    startTime: Date.now(),
   };
 
   private stageTimeouts: Record<InitializationStage, number> = {
@@ -70,6 +101,335 @@ class ServiceManager {
     3: 2000, // Background services after 2s
     4: 5000, // Enhancements after 5s
   };
+
+  // 🆕 NEW: Phase-based initialization methods
+
+  /**
+   * Phase 1: Critical - Immediate UI essentials (synchronous)
+   * Only sets up what's absolutely required for UI rendering
+   */
+  initializeCritical(): void {
+    logger.debug('[COLD START v2] Phase 1: Critical initialization starting...');
+    const startTime = Date.now();
+
+    try {
+      // Initialize console protection and error monitoring first
+      this.initializeConsoleProtection();
+      this.initializeGlobalErrorHandling();
+
+      // Phase 1 is purely synchronous setup - no async operations
+      // This includes theme providers, error boundaries, navigation setup
+      // All handled by React component mounting, so this is essentially a no-op
+
+      this.phaseState.phase = 'core';
+
+      const duration = Date.now() - startTime;
+      logger.debug('[COLD START v2] Phase 1: Critical completed', { duration: `${duration}ms` });
+    } catch (error) {
+      logger.error('[COLD START v2] Phase 1: Critical failed:', error as Error);
+      this.phaseState.error = error as Error;
+      throw error;
+    }
+  }
+
+  /**
+   * Phase 2: Core - Essential services needed before user interaction
+   * Runs services in parallel for maximum speed
+   */
+  async initializeCore(): Promise<void> {
+    logger.debug('[COLD START v2] Phase 2: Core services initialization starting...');
+    const startTime = Date.now();
+
+    try {
+      // Run all core services in parallel using Promise.allSettled
+      const coreServices = [this.initializeAsyncStorageCore(), this.initializeSupabaseCore()];
+
+      const results = await Promise.allSettled(coreServices);
+
+      // Process results - log errors but don't fail for non-critical services
+      let criticalFailure = false;
+      results.forEach((result, index) => {
+        const serviceName = ['asyncStorage', 'supabase'][index];
+        if (result.status === 'rejected') {
+          logger.error(`[COLD START v2] Core service ${serviceName} failed:`, result.reason);
+          if (serviceName === 'asyncStorage') {
+            criticalFailure = true; // AsyncStorage is critical
+          }
+        }
+      });
+
+      if (criticalFailure && !IS_DEVELOPMENT) {
+        throw new Error('Critical core service failed');
+      }
+
+      this.phaseState.phase = 'enhancement';
+      this.phaseState.coreReady = true;
+      this.phaseState.coreCompleteTime = Date.now();
+
+      const duration = Date.now() - startTime;
+      logger.debug('[COLD START v2] Phase 2: Core completed successfully', {
+        duration: `${duration}ms`,
+        services: this.getCoreServicesSummary(),
+      });
+    } catch (error) {
+      logger.error('[COLD START v2] Phase 2: Core failed:', error as Error);
+      this.phaseState.error = error as Error;
+
+      if (IS_DEVELOPMENT) {
+        logger.warn('[COLD START v2] Phase 2: Continuing in development mode with fallbacks');
+        this.phaseState.coreReady = true;
+        this.phaseState.phase = 'enhancement';
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Phase 3: Enhancement - Non-critical services (fire-and-forget)
+   * Runs completely in background after UI is visible
+   */
+  initializeEnhancement(): Promise<void> {
+    logger.debug('[COLD START v2] Phase 3: Enhancement services initialization starting...');
+
+    // Fire-and-forget background initialization
+    return this.runEnhancementServices()
+      .then(() => {
+        this.phaseState.phase = 'complete';
+        this.phaseState.enhancementReady = true;
+        this.phaseState.isComplete = true;
+        this.phaseState.enhancementCompleteTime = Date.now();
+
+        const totalDuration = Date.now() - this.phaseState.startTime;
+        logger.debug('[COLD START v2] Phase 3: Enhancement completed', {
+          totalDuration: `${totalDuration}ms`,
+          services: this.getEnhancementServicesSummary(),
+        });
+      })
+      .catch((error) => {
+        logger.error('[COLD START v2] Phase 3: Enhancement failed (non-critical):', error as Error);
+        // Don't update error state - enhancement failures are non-critical
+        this.phaseState.enhancementReady = true;
+        this.phaseState.isComplete = true;
+      });
+  }
+
+  // 🆕 NEW: Console protection and error handling initialization
+
+  private initializeConsoleProtection(): void {
+    try {
+      // Only protect console in production
+      if (!__DEV__) {
+        import('@/utils/debugConfig')
+          .then(({ protectConsole }) => {
+            protectConsole();
+            logger.debug('[COLD START v2] Console protection initialized');
+          })
+          .catch((error) => {
+            logger.warn('[COLD START v2] Failed to initialize console protection', {
+              error: error instanceof Error ? error.message : String(error),
+              component: 'ServiceManager',
+            });
+          });
+      }
+    } catch (error) {
+      logger.warn('[COLD START v2] Console protection initialization failed', {
+        error: error instanceof Error ? error.message : String(error),
+        component: 'ServiceManager',
+      });
+    }
+  }
+
+  private initializeGlobalErrorHandling(): void {
+    try {
+      import('@/utils/errorTranslation')
+        .then(({ initializeGlobalErrorMonitoring }) => {
+          initializeGlobalErrorMonitoring();
+          logger.debug('[COLD START v2] Global error monitoring initialized');
+        })
+        .catch((error) => {
+          logger.warn('[COLD START v2] Failed to initialize global error monitoring', {
+            error: error instanceof Error ? error.message : String(error),
+            component: 'ServiceManager',
+          });
+        });
+    } catch (error) {
+      logger.warn('[COLD START v2] Global error monitoring initialization failed', {
+        error: error instanceof Error ? error.message : String(error),
+        component: 'ServiceManager',
+      });
+    }
+  }
+
+  // 🆕 NEW: Core service initialization methods (parallel)
+
+  private async initializeAsyncStorageCore(): Promise<void> {
+    this.updateServiceStatus('asyncStorage', 'initializing');
+
+    try {
+      const testKey = '__service_manager_test__';
+      const testValue = Date.now().toString();
+
+      // Use Promise.race for timeout
+      const testPromise = (async () => {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        await AsyncStorage.default.setItem(testKey, testValue);
+        const retrieved = await AsyncStorage.default.getItem(testKey);
+        if (retrieved !== testValue) {
+          throw new Error('AsyncStorage test value mismatch');
+        }
+        await AsyncStorage.default.removeItem(testKey);
+      })();
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('AsyncStorage timeout')), 2000);
+      });
+
+      await Promise.race([testPromise, timeoutPromise]);
+      this.updateServiceStatus('asyncStorage', 'ready');
+    } catch (error) {
+      this.updateServiceStatus('asyncStorage', 'error');
+      throw error;
+    }
+  }
+
+  private async initializeSupabaseCore(): Promise<void> {
+    this.updateServiceStatus('supabase', 'initializing');
+
+    try {
+      await supabaseService.initializeLazy();
+      this.updateServiceStatus('supabase', 'ready');
+    } catch (error) {
+      this.updateServiceStatus('supabase', 'error');
+      if (!IS_DEVELOPMENT) {
+        throw error;
+      }
+      // In development, log error but continue
+      logger.warn('[COLD START v2] Supabase initialization failed in development mode');
+    }
+  }
+
+  // 🆕 NEW: Enhancement service initialization (background)
+
+  private async runEnhancementServices(): Promise<void> {
+    const enhancementServices = [
+      this.initializeBackgroundSyncEnhancement(),
+      this.initializeNetworkMonitoringEnhancement(),
+      this.runDatabaseOptimizations(),
+    ];
+
+    // Use Promise.allSettled for enhancement services - none are critical
+    const results = await Promise.allSettled(enhancementServices);
+
+    results.forEach((result, index) => {
+      const serviceName = ['backgroundSync', 'networkMonitor', 'optimization'][index];
+      if (result.status === 'rejected') {
+        logger.warn(
+          `[COLD START v2] Enhancement service ${serviceName} failed (non-critical): ${String(result.reason)}`
+        );
+      }
+    });
+  }
+
+  private async initializeBackgroundSyncEnhancement(): Promise<void> {
+    this.updateServiceStatus('backgroundSync', 'initializing');
+    try {
+      await backgroundSyncService.initialize();
+      this.updateServiceStatus('backgroundSync', 'ready');
+    } catch (error) {
+      this.updateServiceStatus('backgroundSync', 'error');
+      throw error;
+    }
+  }
+
+  private async initializeNetworkMonitoringEnhancement(): Promise<void> {
+    this.updateServiceStatus('networkMonitor', 'initializing');
+    try {
+      await networkMonitorService.initialize();
+      this.updateServiceStatus('networkMonitor', 'ready');
+    } catch (error) {
+      this.updateServiceStatus('networkMonitor', 'error');
+      throw error;
+    }
+  }
+
+  private async runDatabaseOptimizations(): Promise<void> {
+    try {
+      // Database sync and optimization
+      if (this.phaseState.serviceStatus.backgroundSync === 'ready') {
+        await backgroundSyncService.syncPendingMutations();
+      }
+    } catch (error) {
+      logger.warn(`[COLD START v2] Database optimization failed (non-critical): ${String(error)}`);
+    }
+  }
+
+  // 🆕 NEW: Phase-based state management
+
+  private updateServiceStatus(service: ServiceName, status: ServiceStatus): void {
+    this.phaseState.serviceStatus[service] = status;
+  }
+
+  private getCoreServicesSummary(): Record<string, string> {
+    return {
+      asyncStorage: this.phaseState.serviceStatus.asyncStorage,
+      supabase: this.phaseState.serviceStatus.supabase,
+    };
+  }
+
+  private getEnhancementServicesSummary(): Record<string, string> {
+    return {
+      backgroundSync: this.phaseState.serviceStatus.backgroundSync,
+      networkMonitor: this.phaseState.serviceStatus.networkMonitor,
+    };
+  }
+
+  // 🆕 NEW: Public phase-based getters
+
+  getPhase(): InitializationPhase {
+    return this.phaseState.phase;
+  }
+
+  isPhaseComplete(phase: InitializationPhase): boolean {
+    switch (phase) {
+      case 'critical':
+        return this.phaseState.phase !== 'critical';
+      case 'core':
+        return this.phaseState.coreReady;
+      case 'enhancement':
+        return this.phaseState.enhancementReady;
+      case 'complete':
+        return this.phaseState.isComplete;
+      default:
+        return false;
+    }
+  }
+
+  getPhaseState(): Readonly<PhaseBasedState> {
+    return { ...this.phaseState };
+  }
+
+  getServiceStatus(service: ServiceName): ServiceStatus {
+    return this.phaseState.serviceStatus[service];
+  }
+
+  // Performance metrics
+  getPerformanceMetrics() {
+    const now = Date.now();
+    return {
+      totalDuration: now - this.phaseState.startTime,
+      corePhaseTime: this.phaseState.coreCompleteTime
+        ? this.phaseState.coreCompleteTime - this.phaseState.startTime
+        : null,
+      enhancementPhaseTime: this.phaseState.enhancementCompleteTime
+        ? this.phaseState.enhancementCompleteTime -
+          (this.phaseState.coreCompleteTime || this.phaseState.startTime)
+        : null,
+      isComplete: this.phaseState.isComplete,
+    };
+  }
+
+  // 🔄 LEGACY: Keep existing methods for backward compatibility (deprecated)
 
   /**
    * Get current initialization state
@@ -136,9 +496,6 @@ class ServiceManager {
       // 2. Initialize Supabase client (lazy)
       await this.initializeSupabaseClient();
 
-      // 3. Initialize Firebase Core (lightweight)
-      await this.initializeFirebaseCore();
-
       this.state.stage2Complete = true;
       this.state.databaseConnected = true;
       this.state.currentStage = 3;
@@ -152,7 +509,18 @@ class ServiceManager {
     } catch (error) {
       logger.error('[COLD START] Stage 2 failed:', error as Error);
       this.state.errors.stage2 = error as Error;
-      throw error;
+
+      // 🛡️ DEVELOPMENT MODE: Continue with fallback in development
+      if (IS_DEVELOPMENT) {
+        logger.warn(
+          '[COLD START] Stage 2 failed but continuing in development mode with fallbacks'
+        );
+        this.state.stage2Complete = true;
+        this.state.databaseConnected = false; // Mark as not connected
+        this.state.currentStage = 3;
+      } else {
+        throw error;
+      }
     }
   }
 
@@ -161,7 +529,7 @@ class ServiceManager {
    * Goal: Non-critical features with database sync
    */
   async initializeStage3(): Promise<void> {
-    if (!this.state.databaseConnected) {
+    if (!this.state.databaseConnected && !IS_DEVELOPMENT) {
       throw new Error('Database connection required for Stage 3');
     }
 
@@ -175,26 +543,33 @@ class ServiceManager {
       // 2. Initialize network monitoring
       await this.initializeNetworkMonitoring();
 
-      // 3. Initialize notification service
-      await this.initializeNotificationService();
-
-      // 4. Restore database sync state
-      await this.restoreDatabaseSyncState();
+      // 4. Restore database sync state (skip if no database connection)
+      if (this.state.databaseConnected) {
+        await this.restoreDatabaseSyncState();
+      } else {
+        logger.warn('[COLD START] Skipping database sync - no connection available');
+      }
 
       this.state.stage3Complete = true;
-      this.state.databaseSyncComplete = true;
+      this.state.databaseSyncComplete = this.state.databaseConnected;
       this.state.currentStage = 4;
 
       const duration = Date.now() - startTime;
       logger.debug('[COLD START] Stage 3 completed successfully', {
         duration: `${duration}ms`,
         nextStage: 4,
-        databaseSyncComplete: true,
+        databaseSyncComplete: this.state.databaseSyncComplete,
       });
     } catch (error) {
       logger.error('[COLD START] Stage 3 failed:', error as Error);
       this.state.errors.stage3 = error as Error;
-      // Don't throw - app should continue with limited features
+
+      // 🛡️ GRACEFUL DEGRADATION: Don't throw - app should continue with limited features
+      this.state.stage3Complete = true;
+      this.state.currentStage = 4;
+      logger.warn(
+        '[COLD START] Stage 3 completed with errors - app will continue with limited features'
+      );
     }
   }
 
@@ -207,13 +582,10 @@ class ServiceManager {
     const startTime = Date.now();
 
     try {
-      // 1. Initialize Firebase Analytics (non-blocking)
-      await this.initializeFirebaseAnalytics();
-
-      // 2. Optimize database connections
+      // 1. Optimize database connections
       await this.optimizeDatabaseConnections();
 
-      // 3. Start performance monitoring
+      // 2. Start performance monitoring
       await this.startPerformanceMonitoring();
 
       this.state.stage4Complete = true;
@@ -294,28 +666,6 @@ class ServiceManager {
   }
 
   /**
-   * Initialize Firebase core services
-   */
-  private async initializeFirebaseCore(): Promise<void> {
-    this.updateServiceState('firebase', 'initializing');
-
-    try {
-      // Initialize core Firebase (not analytics yet)
-      await firebaseService.initializeFirebase();
-
-      this.updateServiceState('firebase', 'ready');
-      logger.debug('[COLD START] Firebase core initialized successfully');
-    } catch (error) {
-      this.updateServiceState('firebase', 'error', error as Error);
-      logger.error(
-        '[COLD START] Firebase core initialization failed (non-critical):',
-        error as Error
-      );
-      // Don't throw - Firebase is not critical for core functionality
-    }
-  }
-
-  /**
    * Initialize background sync with database coordination
    */
   private async initializeBackgroundSync(): Promise<void> {
@@ -358,27 +708,6 @@ class ServiceManager {
   }
 
   /**
-   * Initialize notification service
-   */
-  private async initializeNotificationService(): Promise<void> {
-    this.updateServiceState('notifications', 'initializing');
-
-    try {
-      await notificationService.initialize();
-
-      this.updateServiceState('notifications', 'ready');
-      logger.debug('[COLD START] Notification service initialized successfully');
-    } catch (error) {
-      this.updateServiceState('notifications', 'error', error as Error);
-      logger.error(
-        '[COLD START] Notification service initialization failed (non-critical):',
-        error as Error
-      );
-      // Don't throw - notifications are not critical
-    }
-  }
-
-  /**
    * Restore database sync state
    */
   private async restoreDatabaseSyncState(): Promise<void> {
@@ -397,28 +726,6 @@ class ServiceManager {
         error as Error
       );
       // Don't throw - this is not critical
-    }
-  }
-
-  /**
-   * Initialize Firebase Analytics (Stage 4)
-   */
-  private async initializeFirebaseAnalytics(): Promise<void> {
-    try {
-      logger.debug('[COLD START] Initializing Firebase Analytics...');
-
-      // Initialize analytics (non-blocking)
-      firebaseService.initialize().catch((error) => {
-        logger.error(
-          '[COLD START] Firebase Analytics initialization failed (non-critical):',
-          error as Error
-        );
-      });
-
-      logger.debug('[COLD START] Firebase Analytics initialization started');
-    } catch (error) {
-      logger.error('[COLD START] Firebase Analytics setup failed (non-critical):', error as Error);
-      // Don't throw - analytics are not critical
     }
   }
 
@@ -486,30 +793,30 @@ class ServiceManager {
   }
 
   /**
-   * Get initialization progress percentage
+   * Calculate overall progress percentage
    */
   getProgress(): number {
-    let completed = 0;
-    const total = 4;
+    let completedStages = 0;
+    const totalStages = 4;
 
     if (this.state.stage1Complete) {
-      completed++;
+      completedStages++;
     }
     if (this.state.stage2Complete) {
-      completed++;
+      completedStages++;
     }
     if (this.state.stage3Complete) {
-      completed++;
+      completedStages++;
     }
     if (this.state.stage4Complete) {
-      completed++;
+      completedStages++;
     }
 
-    return Math.round((completed / total) * 100);
+    return Math.round((completedStages / totalStages) * 100);
   }
 
   /**
-   * Get initialization summary
+   * Get a human-readable summary of the current state
    */
   getSummary(): {
     progress: number;
@@ -518,21 +825,22 @@ class ServiceManager {
     errors: string[];
     services: Record<string, string>;
   } {
+    const errors = Object.values(this.state.errors).map((error) => error.message);
+    const services: Record<string, string> = {};
+
+    Object.entries(this.state.services).forEach(([name, service]) => {
+      services[name] = service.status;
+    });
+
     return {
       progress: this.getProgress(),
       currentStage: this.state.currentStage,
       isComplete: this.state.isFullyInitialized,
-      errors: Object.keys(this.state.errors),
-      services: Object.entries(this.state.services).reduce(
-        (acc, [name, state]) => {
-          acc[name] = state.status;
-          return acc;
-        },
-        {} as Record<string, string>
-      ),
+      errors,
+      services,
     };
   }
 }
 
-// Create singleton instance
+// Export singleton instance
 export const serviceManager = new ServiceManager();

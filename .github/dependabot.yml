@@ -21,10 +21,9 @@ updates:
       # Security-critical core dependencies
       security-critical:
         patterns:
-          - "@react-native-firebase*"
           - "@supabase*"
           - "supabase*"
-          - "firebase*"
+
           - "expo-auth-session"
           - "expo-crypto"
           - "expo-secure-store"
@@ -134,8 +133,6 @@ updates:
       - dependency-type: "indirect"
         update-type: "security"
       # Allow automatic patch updates for security-critical packages
-      - dependency-name: "@react-native-firebase/*"
-        update-type: "patch"
       - dependency-name: "@supabase/*"
         update-type: "patch"
       - dependency-name: "expo-auth-session"
@@ -157,9 +154,8 @@ updates:
       # Ignore major Expo SDK updates (require migration guides)
       - dependency-name: "expo"
         update-types: ["version-update:semver-major"]
-      # Ignore major Firebase updates (require configuration changes)
-      - dependency-name: "@react-native-firebase/*"
-        update-types: ["version-update:semver-major"]
+
+      
 
   # Enable version updates for GitHub Actions with security focus
   - package-ecosystem: "github-actions"

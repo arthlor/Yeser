@@ -28,15 +28,8 @@ interface NotificationSettings {
   dailyReminderEnabled: boolean;
   dailyReminderTime: string; // HH:MM:SS format
   throwbackEnabled: boolean;
-  throwbackFrequency: 'daily' | 'weekly' | 'monthly';
   throwbackTime: string; // HH:MM:SS format
 }
-
-const THROWBACK_FREQUENCIES = [
-  { key: 'daily', label: 'Her gün', description: 'Günlük geçmiş hatırlatmaları' },
-  { key: 'weekly', label: 'Haftalık', description: 'Haftada bir geçmiş hatırlatması' },
-  { key: 'monthly', label: 'Aylık', description: 'Ayda bir geçmiş hatırlatması' },
-] as const;
 
 export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> = ({
   onNext,
@@ -52,7 +45,6 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
       dailyReminderEnabled: true,
       dailyReminderTime: '10:00:00',
       throwbackEnabled: true,
-      throwbackFrequency: 'weekly',
       throwbackTime: '14:00:00',
     }
   );
@@ -166,7 +158,6 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
       daily_enabled: settings.dailyReminderEnabled,
       daily_time: settings.dailyReminderTime,
       throwback_enabled: settings.throwbackEnabled,
-      throwback_frequency: settings.throwbackFrequency,
       throwback_time: settings.throwbackTime,
       permissions_requested: permissionsRequested,
     });
@@ -253,15 +244,17 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
         </ScreenSection>
 
         {/* Throwback Reminder Section */}
-        <ScreenSection title="Geçmiş Hatırlatıcıları">
+        <ScreenSection title="Anı Hatırlatıcı">
           <View style={styles.settingCard}>
             <View style={styles.settingHeader}>
               <View style={styles.settingIconWrapper}>
                 <Ionicons name="time" size={24} color={theme.colors.primary} />
               </View>
               <View style={styles.settingTitleContainer}>
-                <Text style={styles.settingTitle}>Anı Pırıltıları</Text>
-                <Text style={styles.settingDescription}>Geçmiş minnettarlıklarını hatırlat</Text>
+                <Text style={styles.settingTitle}>Anı Hatırlatıcı</Text>
+                <Text style={styles.settingDescription}>
+                  Her gün geçmiş minnettarlıklarını hatırlat
+                </Text>
               </View>
               <ThemedSwitch
                 value={settings.throwbackEnabled}
@@ -272,54 +265,18 @@ export const NotificationSettingsStep: React.FC<NotificationSettingsStepProps> =
             </View>
 
             {settings.throwbackEnabled && (
-              <>
-                {/* Frequency Selection */}
-                <View style={styles.frequencyContainer}>
-                  <Text style={styles.frequencyTitle}>Ne sıklıkla hatırlatayım?</Text>
-                  <View style={styles.frequencyOptions}>
-                    {THROWBACK_FREQUENCIES.map((option) => (
-                      <TouchableOpacity
-                        key={option.key}
-                        onPress={() => handleSettingChange('throwbackFrequency', option.key)}
-                        style={[
-                          styles.frequencyOption,
-                          settings.throwbackFrequency === option.key &&
-                            styles.frequencyOptionSelected,
-                        ]}
-                        accessibilityLabel={`${option.label}: ${option.description}`}
-                        accessibilityRole="radio"
-                        accessibilityState={{
-                          selected: settings.throwbackFrequency === option.key,
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.frequencyOptionText,
-                            settings.throwbackFrequency === option.key &&
-                              styles.frequencyOptionTextSelected,
-                          ]}
-                        >
-                          {option.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+              <TouchableOpacity
+                style={styles.timeSelector}
+                onPress={() => setShowThrowbackTimePicker(true)}
+                accessibilityLabel={`Anı hatırlatıcı saati: ${formatTime(settings.throwbackTime)}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.timeSelectorLabel}>Saat:</Text>
+                <View style={styles.timeDisplay}>
+                  <Ionicons name="time" size={18} color={theme.colors.primary} />
+                  <Text style={styles.timeText}>{formatTime(settings.throwbackTime)}</Text>
                 </View>
-
-                {/* Time Selection */}
-                <TouchableOpacity
-                  style={styles.timeSelector}
-                  onPress={() => setShowThrowbackTimePicker(true)}
-                  accessibilityLabel={`Geçmiş hatırlatıcı saati: ${formatTime(settings.throwbackTime)}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.timeSelectorLabel}>Saat:</Text>
-                  <View style={styles.timeDisplay}>
-                    <Ionicons name="time" size={18} color={theme.colors.primary} />
-                    <Text style={styles.timeText}>{formatTime(settings.throwbackTime)}</Text>
-                  </View>
-                </TouchableOpacity>
-              </>
+              </TouchableOpacity>
             )}
           </View>
         </ScreenSection>
@@ -471,42 +428,7 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '600',
       fontSize: 18,
     },
-    frequencyContainer: {
-      marginTop: theme.spacing.md,
-    },
-    frequencyTitle: {
-      ...theme.typography.body1,
-      color: theme.colors.text,
-      fontWeight: '500',
-      marginBottom: theme.spacing.md,
-    },
-    frequencyOptions: {
-      flexDirection: 'row',
-      gap: theme.spacing.sm,
-    },
-    frequencyOption: {
-      flex: 1,
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.sm,
-      backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: theme.borderRadius.md,
-      borderWidth: 2,
-      borderColor: theme.colors.surfaceVariant,
-      alignItems: 'center',
-    },
-    frequencyOptionSelected: {
-      backgroundColor: theme.colors.primaryContainer,
-      borderColor: theme.colors.primary,
-    },
-    frequencyOptionText: {
-      ...theme.typography.body2,
-      color: theme.colors.text,
-      fontWeight: '500',
-    },
-    frequencyOptionTextSelected: {
-      color: theme.colors.primary,
-      fontWeight: '600',
-    },
+
     continueButton: {
       marginHorizontal: theme.spacing.md,
       marginTop: theme.spacing.xl,

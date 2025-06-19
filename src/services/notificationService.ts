@@ -1,1181 +1,958 @@
+// src/services/notificationService.ts
+// 🔔 EXPO NOTIFICATIONS SERVICE: Complete notification functionality with Expo
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '@/utils/debugConfig';
+import type { Json } from '@/types/supabase.types';
 
-import { analyticsService } from './analyticsService';
-import { logger } from '../utils/debugConfig';
-
-// Storage keys for notification tracking
-const STORAGE_KEYS = {
-  LAST_MONTHLY_SCHEDULED: 'last_monthly_notification_scheduled',
-  MONTHLY_NOTIFICATION_CONFIG: 'monthly_notification_config',
-} as const;
-
-// Configure notification channel for Android
-const NOTIFICATION_CHANNEL = {
-  name: 'yeser-reminders',
-  importance: Notifications.AndroidImportance.HIGH,
-  vibrationPattern: [0, 250, 250, 250] as number[],
-  lightColor: '#5DB0A5',
-  sound: 'default' as const,
-} as const;
-
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
-
-interface NotificationError extends Error {
-  code?: string;
-  type?: 'permission' | 'scheduling' | 'channel' | 'system';
-}
-
-interface NotificationResult {
-  success: boolean;
-  identifier?: string;
-  error?: NotificationError;
-}
-
-// Interface for monthly notification configuration
-interface MonthlyNotificationConfig {
-  hour: number;
-  minute: number;
-  enabled: boolean;
-  lastScheduledDate: string; // ISO string
-}
-
+/**
+ * Comprehensive notification service using Expo Notifications
+ * Provides local notifications, push notifications, and scheduled reminders
+ */
 class NotificationService {
-  private isInitialized = false;
+  private initialized = false;
+  private expoPushToken: string | null = null;
   private hasPermissions = false;
 
-  // 🚨 FIX: Add debouncing and atomic operation controls
-  private schedulingInProgress = new Set<string>();
-  private lastSchedulingCall = new Map<string, number>();
-  private readonly DEBOUNCE_DELAY = 1000; // 1 second debounce
-  private readonly CLEANUP_INTERVAL = 10 * 60 * 1000; // 10 minutes
-  private readonly MAX_TIMESTAMP_AGE = 60 * 60 * 1000; // 1 hour
-
-  // Reference to cleanup interval to allow teardown
-  private cleanupIntervalId: ReturnType<typeof setInterval> | null = null;
+  constructor() {
+    // Set the notification handler for when app is in foreground
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  }
 
   /**
-   * Initialize notification service with proper channel setup and monthly notification check
+   * Initialize the notification service
+   * @returns Promise resolving to whether permissions were granted
    */
   async initialize(): Promise<boolean> {
     try {
-      logger.debug('Initializing notification service...');
+      // 🛡️ INITIALIZATION GUARD: Prevent duplicate initialization
+      if (this.initialized) {
+        logger.debug('[NOTIFICATION] Service already initialized, returning cached state');
+        return this.hasPermissions;
+      }
 
-      // Set up Android notification channel
+      logger.debug('[NOTIFICATION] Initializing Expo notification service...');
+
+      // Step 1: Request permissions
+      const permissionGranted = await this.requestPermissions();
+      if (!permissionGranted) {
+        logger.warn('[NOTIFICATION] Notification permissions not granted');
+        this.initialized = true; // Mark as initialized even if permissions denied
+        this.hasPermissions = false;
+        return false;
+      }
+
+      // Step 2: Set up notification channels for Android
       if (Platform.OS === 'android') {
-        await this.setupAndroidChannel();
+        await this.setupAndroidChannels();
       }
 
-      // Request permissions
-      const hasPermissions = await this.requestPermissions();
-      this.hasPermissions = hasPermissions;
-      this.isInitialized = true;
-
-      // 🚨 FIX: Check and re-schedule monthly notifications on app startup
-      if (hasPermissions) {
-        await this.checkAndRescheduleMonthlyNotifications();
+      // Step 3: Try to get push token (optional - don't fail if it doesn't work)
+      try {
+        await this.getPushToken();
+        logger.debug('[NOTIFICATION] Push token obtained successfully');
+      } catch (pushTokenError) {
+        // Log the push token error but don't fail initialization
+        logger.warn(
+          '[NOTIFICATION] Push token unavailable (local notifications will still work):',
+          {
+            error: (pushTokenError as Error).message,
+            note: 'This is expected if Firebase is not configured - local notifications will work fine',
+          }
+        );
       }
 
-      // 🚨 FIX: Start cleanup interval for debouncing maps (prevent duplicates)
-      if (!this.cleanupIntervalId) {
-        this.startDebounceCleanup();
-      }
+      this.initialized = true;
+      this.hasPermissions = permissionGranted;
 
-      analyticsService.logEvent('notification_service_initialized', {
-        platform: Platform.OS,
-        has_permissions: hasPermissions,
+      logger.debug('[NOTIFICATION] Expo notification service initialized successfully', {
+        pushTokenAvailable: !!this.expoPushToken,
+        localNotificationsReady: true,
       });
-
-      logger.debug('Notification service initialized successfully', {
-        hasPermissions,
-        platform: Platform.OS,
-      });
-
-      return hasPermissions;
+      return true;
     } catch (error) {
-      logger.error('Failed to initialize notification service', error as Error);
-      analyticsService.logEvent('notification_service_init_failed', {
-        error_message: (error as Error).message,
-        platform: Platform.OS,
-      });
+      logger.error('[NOTIFICATION] Failed to initialize notification service:', error as Error);
+      // Mark as initialized even on error to prevent retry loops
+      this.initialized = true;
+      this.hasPermissions = false;
       return false;
     }
   }
 
   /**
-   * Set up Android notification channel
+   * Set up Android notification channels
    */
-  private async setupAndroidChannel(): Promise<void> {
-    if (Platform.OS !== 'android') {
-      return;
-    }
-
+  private async setupAndroidChannels(): Promise<void> {
     try {
-      await Notifications.setNotificationChannelAsync(NOTIFICATION_CHANNEL.name, {
-        name: 'Günlük Hatırlatmalar',
-        importance: NOTIFICATION_CHANNEL.importance,
-        vibrationPattern: NOTIFICATION_CHANNEL.vibrationPattern,
-        lightColor: NOTIFICATION_CHANNEL.lightColor,
-        sound: NOTIFICATION_CHANNEL.sound, // Note: This should work with 'default'
-        description: 'Günlük minnettarlık girişleri için hatırlatmalar',
+      // Daily reminders channel
+      await Notifications.setNotificationChannelAsync('daily-reminders', {
+        name: 'Daily Gratitude Reminders',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#4F46E5', // Your app's primary color
+        sound: 'default',
+        enableVibrate: true,
         enableLights: true,
+        showBadge: true,
+      });
+
+      // Throwback reminders channel
+      await Notifications.setNotificationChannelAsync('throwback-reminders', {
+        name: 'Memory Throwback Reminders',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        vibrationPattern: [0, 150, 150, 150],
+        lightColor: '#10B981', // Secondary color for throwbacks
+        sound: 'default',
         enableVibrate: true,
         showBadge: true,
       });
 
-      logger.debug('Android notification channel created successfully');
+      // General notifications channel
+      await Notifications.setNotificationChannelAsync('general', {
+        name: 'General Notifications',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        sound: 'default',
+        showBadge: true,
+      });
+
+      logger.debug('[NOTIFICATION] Android notification channels configured');
     } catch (error) {
-      logger.error('Failed to set up Android notification channel', error as Error);
-      throw new Error('Android channel setup failed');
+      logger.error('[NOTIFICATION] Failed to setup Android channels:', error as Error);
     }
   }
 
   /**
-   * Request notification permissions with enhanced error handling
+   * Request notification permissions
    */
   async requestPermissions(): Promise<boolean> {
     try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      if (!Device.isDevice) {
+        logger.warn('[NOTIFICATION] Must use physical device for notifications');
+        return false;
+      }
 
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
       if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
+        const { status } = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+            allowDisplayInCarPlay: false,
+            allowCriticalAlerts: false,
+            allowProvisional: false,
+          },
+        });
         finalStatus = status;
       }
 
       const granted = finalStatus === 'granted';
-
-      analyticsService.logEvent('notification_permission_requested', {
-        existing_status: existingStatus,
-        final_status: finalStatus,
-        granted,
-        platform: Platform.OS,
-      });
-
-      if (!granted) {
-        logger.warn('Notification permissions not granted', { finalStatus });
-      }
+      logger.debug('[NOTIFICATION] Permission status:', { finalStatus, granted });
 
       return granted;
     } catch (error) {
-      logger.error('Failed to request notification permissions', error as Error);
-      analyticsService.logEvent('notification_permission_error', {
-        error_message: (error as Error).message,
-        platform: Platform.OS,
-      });
+      logger.error('[NOTIFICATION] Failed to request permissions:', error as Error);
       return false;
     }
   }
 
   /**
-   * 🚨 ENHANCED: Debounced daily reminder scheduling with atomic operations
+   * Get Expo push token for future push notification capability
+   * Note: This is optional - local notifications work without push tokens
+   */
+  private async getPushToken(): Promise<string | null> {
+    try {
+      if (!Device.isDevice) {
+        logger.debug('[NOTIFICATION] Skipping push token on simulator/emulator');
+        return null;
+      }
+
+      // Get project ID from config
+      const Constants = await import('expo-constants');
+      const projectId = Constants.default?.expoConfig?.extra?.eas?.projectId;
+
+      if (!projectId) {
+        logger.warn('[NOTIFICATION] No EAS project ID found - push tokens require EAS setup');
+        return null;
+      }
+
+      logger.debug('[NOTIFICATION] Attempting to get Expo push token...', { projectId });
+
+      // Get Expo push token
+      const pushTokenResult = await Notifications.getExpoPushTokenAsync({
+        projectId,
+      });
+
+      this.expoPushToken = pushTokenResult.data;
+      logger.debug('[NOTIFICATION] Expo push token obtained successfully');
+
+      // Register token with backend
+      await this.registerPushTokenWithBackend(this.expoPushToken);
+
+      return this.expoPushToken;
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+
+      // Check if this is the Firebase error
+      if (
+        errorMessage.includes('FirebaseApp is not initialized') ||
+        errorMessage.includes('Firebase') ||
+        errorMessage.includes('FCM')
+      ) {
+        logger.info('[NOTIFICATION] Firebase not configured - push tokens unavailable', {
+          note: 'This is expected for local-notifications-only setup',
+          solution: 'Local notifications will work fine without push tokens',
+          error: errorMessage,
+        });
+      } else {
+        logger.error('[NOTIFICATION] Failed to get push token:', error as Error);
+      }
+
+      // Don't throw - let the service continue without push tokens
+      return null;
+    }
+  }
+
+  /**
+   * Register push token with Supabase backend
+   */
+  private async registerPushTokenWithBackend(token: string): Promise<void> {
+    try {
+      const { supabaseService } = await import('@/utils/supabaseClient');
+      const { getCurrentSession } = await import('./authService');
+
+      const session = await getCurrentSession();
+      if (!session?.user) {
+        logger.warn('[NOTIFICATION] No current user - cannot register push token');
+        return;
+      }
+
+      // Call the database function to register the push token
+      const client = supabaseService.getClient();
+      const { error } = await client.rpc('register_push_token', {
+        p_user_id: session.user.id,
+        p_expo_push_token: token,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      logger.debug('[NOTIFICATION] Push token registered with backend successfully');
+    } catch (error) {
+      logger.error('[NOTIFICATION] Failed to register push token with backend:', error as Error);
+    }
+  }
+
+  /**
+   * Update push notification preferences
+   */
+  async updatePushNotificationPreferences(enabled: boolean): Promise<boolean> {
+    try {
+      const { supabaseService } = await import('@/utils/supabaseClient');
+      const { getCurrentSession } = await import('./authService');
+
+      const session = await getCurrentSession();
+      if (!session?.user) {
+        logger.warn('[NOTIFICATION] No current user - cannot update preferences');
+        return false;
+      }
+
+      const client = supabaseService.getClient();
+      const { error } = await client
+        .from('profiles')
+        .update({
+          push_notifications_enabled: enabled,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session.user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      logger.debug('[NOTIFICATION] Push notification preferences updated:', { enabled });
+      return true;
+    } catch (error) {
+      logger.error(
+        '[NOTIFICATION] Failed to update push notification preferences:',
+        error as Error
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Get current push token
+   */
+  getCurrentPushToken(): string | null {
+    return this.expoPushToken;
+  }
+
+  /**
+   * Check if push notifications are available
+   * @returns Object with availability status and reason
+   */
+  getPushNotificationStatus(): {
+    available: boolean;
+    reason?: string;
+    hasToken: boolean;
+  } {
+    if (!this.initialized) {
+      return {
+        available: false,
+        reason: 'Notification service not initialized',
+        hasToken: false,
+      };
+    }
+
+    if (!this.hasPermissions) {
+      return {
+        available: false,
+        reason: 'Notification permissions not granted',
+        hasToken: false,
+      };
+    }
+
+    if (!this.expoPushToken) {
+      return {
+        available: false,
+        reason: 'Push token not available (Firebase not configured)',
+        hasToken: false,
+      };
+    }
+
+    return {
+      available: true,
+      hasToken: true,
+    };
+  }
+
+  /**
+   * Send a server-triggered notification
+   */
+  async sendServerNotification(
+    title: string,
+    body: string,
+    data?: Record<string, unknown>,
+    notificationType: 'reminder' | 'achievement' | 'social' | 'system' | 'throwback' = 'system'
+  ): Promise<{ success: boolean; notificationId?: string; error?: string }> {
+    try {
+      const { supabaseService } = await import('@/utils/supabaseClient');
+      const { getCurrentSession } = await import('./authService');
+
+      const session = await getCurrentSession();
+      if (!session?.user) {
+        return {
+          success: false,
+          error: 'No authenticated user',
+        };
+      }
+
+      // Call the database function to send notification
+      const client = supabaseService.getClient();
+      const { data: notificationId, error } = await client.rpc('send_push_notification_to_user', {
+        p_user_id: session.user.id,
+        p_title: title,
+        p_body: body,
+        p_data: (data || null) as Json,
+        p_notification_type: notificationType,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      logger.debug('[NOTIFICATION] Server notification sent successfully:', {
+        notificationId,
+        title,
+        type: notificationType,
+      });
+
+      return {
+        success: true,
+        notificationId: notificationId as string,
+      };
+    } catch (error) {
+      logger.error('[NOTIFICATION] Failed to send server notification:', error as Error);
+      return {
+        success: false,
+        error: (error as Error).message,
+      };
+    }
+  }
+
+  /**
+   * Schedule a server-triggered notification for later
+   */
+  async scheduleServerNotification(
+    title: string,
+    body: string,
+    scheduledFor: Date,
+    data?: Record<string, unknown>,
+    notificationType: 'reminder' | 'achievement' | 'social' | 'system' | 'throwback' = 'reminder'
+  ): Promise<{ success: boolean; notificationId?: string; error?: string }> {
+    try {
+      const { supabaseService } = await import('@/utils/supabaseClient');
+      const { getCurrentSession } = await import('./authService');
+
+      const session = await getCurrentSession();
+      if (!session?.user) {
+        return {
+          success: false,
+          error: 'No authenticated user',
+        };
+      }
+
+      // Call the database function to schedule notification
+      const client = supabaseService.getClient();
+      const { data: notificationId, error } = await client.rpc('schedule_push_notification', {
+        p_user_id: session.user.id,
+        p_title: title,
+        p_body: body,
+        p_data: (data || null) as Json,
+        p_notification_type: notificationType,
+        p_scheduled_for: scheduledFor.toISOString(),
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      logger.debug('[NOTIFICATION] Server notification scheduled successfully:', {
+        notificationId,
+        title,
+        scheduledFor: scheduledFor.toISOString(),
+        type: notificationType,
+      });
+
+      return {
+        success: true,
+        notificationId: notificationId as string,
+      };
+    } catch (error) {
+      logger.error('[NOTIFICATION] Failed to schedule server notification:', error as Error);
+      return {
+        success: false,
+        error: (error as Error).message,
+      };
+    }
+  }
+
+  /**
+   * Check if the service is initialized
+   */
+  isInitialized(): boolean {
+    return this.initialized;
+  }
+
+  /**
+   * Schedule a local notification
+   */
+  async scheduleNotification(
+    title: string,
+    body: string,
+    data?: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      if (!this.hasPermissions) {
+        logger.warn('[NOTIFICATION] No permissions to schedule notification');
+        return;
+      }
+
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data: data || {},
+          sound: 'default',
+          badge: 1,
+        },
+        trigger: null, // Show immediately
+      });
+
+      logger.debug('[NOTIFICATION] Scheduled notification:', { identifier, title, body });
+    } catch (error) {
+      logger.error('[NOTIFICATION] Failed to schedule notification:', error as Error);
+    }
+  }
+
+  /**
+   * Schedule a daily reminder notification
    */
   async scheduleDailyReminder(
     hour: number,
     minute: number,
-    enabled = true
-  ): Promise<NotificationResult> {
-    const operationKey = `daily-${hour}-${minute}-${enabled}`;
-
-    // 🚨 FIX: Check debouncing FIRST to prevent unnecessary operations
-    const now = Date.now();
-    const lastCall = this.lastSchedulingCall.get(operationKey) || 0;
-
-    if (now - lastCall < this.DEBOUNCE_DELAY) {
-      logger.debug('Daily reminder scheduling debounced', {
-        operationKey,
-        timeSinceLastCall: now - lastCall,
-      });
-      return { success: true, identifier: 'debounced' };
-    }
-
-    this.lastSchedulingCall.set(operationKey, now);
-
-    // 🚨 FIX: Prevent concurrent scheduling operations
-    if (this.schedulingInProgress.has(operationKey)) {
-      logger.debug('Daily reminder scheduling already in progress', { operationKey });
-      return { success: true, identifier: 'in-progress' };
-    }
-
-    this.schedulingInProgress.add(operationKey);
-
-    // 🚨 FIX: ALWAYS cancel existing notifications first, regardless of debouncing
+    enabled: boolean
+  ): Promise<{ success: boolean; identifier?: string; error?: { message?: string } }> {
     try {
-      await this.cancelDailyRemindersAtomic();
-      logger.debug('Existing daily notifications cancelled before scheduling new ones', {
-        hour,
-        minute,
-        enabled,
-      });
-    } catch (error) {
-      logger.error('Failed to cancel existing daily notifications', error as Error);
-    }
-
-    // If disabled, just return after cancellation
-    if (!enabled) {
-      logger.debug('Daily reminder disabled by user - notifications cancelled');
-      this.schedulingInProgress.delete(operationKey);
-      return { success: true };
-    }
-
-    try {
-      if (!this.isInitialized) {
-        await this.initialize();
+      if (!enabled) {
+        await this.cancelDailyReminders();
+        return { success: true };
       }
 
       if (!this.hasPermissions) {
         return {
           success: false,
-          error: {
-            name: 'PermissionError',
-            message: 'Notification permissions not granted',
-            type: 'permission',
-          } as NotificationError,
+          error: { message: 'Notification permissions not granted' },
         };
       }
 
-      // Validate input parameters
-      if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-        throw new Error(`Invalid time: ${hour}:${minute}`);
-      }
+      // Cancel existing daily reminders first
+      await this.cancelDailyReminders();
 
-      // 🚨 FIX: Use platform-appropriate trigger types (calendar not supported on Android)
+      // Create cross-platform trigger
+      let trigger: Notifications.NotificationTriggerInput;
+
       if (Platform.OS === 'ios') {
-        // iOS: Use calendar trigger (works correctly)
-        const identifier = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '🌟 Minnettarlık Zamanı!',
-            body: 'Yeni kayıt ekle - Bugün neye minnettarsın? Dokunarak hemen yaz! ✨',
-            sound: 'default',
-            priority: Notifications.AndroidNotificationPriority.HIGH,
-            categoryIdentifier: 'DAILY_REMINDER',
-            data: {
-              type: 'daily_reminder',
-              action: 'open_daily_entry',
-              date: new Date().toISOString().split('T')[0],
-              scheduledAt: new Date().toISOString(),
-            },
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-            hour,
-            minute,
-            second: 0,
-            repeats: true,
-          },
-        });
-
-        analyticsService.logEvent('daily_reminder_scheduled', {
+        // iOS supports calendar triggers
+        trigger = {
+          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+          repeats: true,
           hour,
           minute,
-          identifier,
-          platform: Platform.OS,
-          method: 'calendar_ios',
-        });
-
-        logger.debug('Daily reminder scheduled successfully with iOS calendar trigger', {
-          hour,
-          minute,
-          identifier,
-          platform: Platform.OS,
-        });
-
-        return { success: true, identifier };
+        };
       } else {
-        // Android: Use weekly triggers for all 7 days (proper daily simulation)
-        const weekDays = [1, 2, 3, 4, 5, 6, 7]; // Sunday through Saturday
-        const identifiers: string[] = [];
+        // Android: Use daily time trigger (calculate seconds from midnight)
+        const now = new Date();
+        const targetTime = new Date();
+        targetTime.setHours(hour, minute, 0, 0);
 
-        for (const weekday of weekDays) {
-          const dayIdentifier = await Notifications.scheduleNotificationAsync({
-            content: {
-              title: '🌟 Minnettarlık Zamanı!',
-              body: 'Yeni kayıt ekle - Bugün neye minnettarsın? Dokunarak hemen yaz! ✨',
-              sound: 'default',
-              priority: Notifications.AndroidNotificationPriority.HIGH,
-              categoryIdentifier: 'DAILY_REMINDER',
-              data: {
-                type: 'daily_reminder',
-                action: 'open_daily_entry',
-                date: new Date().toISOString().split('T')[0],
-                scheduledAt: new Date().toISOString(),
-                weekday: weekday,
-              },
-            },
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-              weekday,
-              hour,
-              minute,
-            },
-          });
-          identifiers.push(dayIdentifier);
+        // If the time has passed today, schedule for tomorrow
+        if (targetTime <= now) {
+          targetTime.setDate(targetTime.getDate() + 1);
         }
 
-        analyticsService.logEvent('daily_reminder_scheduled', {
+        trigger = {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
           hour,
           minute,
-          identifier: identifiers[0], // Log first identifier
-          identifiers_count: identifiers.length,
-          platform: Platform.OS,
-          method: 'weekly_android_7days',
-        });
-
-        logger.debug('Daily reminder scheduled successfully with Android weekly triggers', {
-          hour,
-          minute,
-          identifiers,
-          identifiers_count: identifiers.length,
-          platform: Platform.OS,
-        });
-
-        return { success: true, identifier: identifiers[0] };
+        };
       }
-    } catch (error) {
-      const notificationError: NotificationError = {
-        name: 'SchedulingError',
-        message: (error as Error).message,
-        type: 'scheduling',
-      };
 
-      logger.error('Failed to schedule daily reminder', error as Error);
-      analyticsService.logEvent('daily_reminder_schedule_failed', {
-        error_message: notificationError.message,
+      // Schedule new daily reminder
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '🌟 Minnettarlık zamanı!',
+          body: 'Bugün neye minnettarlık duyuyorsun? Hemen yaz!',
+          data: { type: 'daily_reminder' },
+          sound: 'default',
+          badge: 1,
+          categoryIdentifier: 'daily-reminders',
+        },
+        trigger,
+        identifier: 'daily-reminder',
+      });
+
+      logger.debug('[NOTIFICATION] Scheduled daily reminder:', {
+        identifier,
         hour,
         minute,
         platform: Platform.OS,
       });
-
-      return { success: false, error: notificationError };
-    } finally {
-      // 🚨 FIX: Always clean up the operation lock
-      this.schedulingInProgress.delete(operationKey);
-    }
-  }
-
-  /**
-   * 🚨 ENHANCED: Atomic cancellation for daily reminders
-   */
-  private async cancelDailyRemindersAtomic(): Promise<void> {
-    try {
-      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      const dailyNotifications = scheduledNotifications.filter(
-        (notification) => notification.content.categoryIdentifier === 'DAILY_REMINDER'
-      );
-
-      if (dailyNotifications.length === 0) {
-        logger.debug('No daily reminders to cancel');
-        return;
-      }
-
-      // 🚨 FIX: Batch cancellation for better performance and atomicity
-      const cancellationPromises = dailyNotifications.map((notification) =>
-        Notifications.cancelScheduledNotificationAsync(notification.identifier)
-      );
-
-      await Promise.all(cancellationPromises);
-
-      logger.debug('Daily reminders cancelled atomically', {
-        cancelled_count: dailyNotifications.length,
-        identifiers: dailyNotifications.map((n) => n.identifier),
-      });
-
-      // Verify cancellation worked
-      const remainingNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      const remainingDaily = remainingNotifications.filter(
-        (notification) => notification.content.categoryIdentifier === 'DAILY_REMINDER'
-      );
-
-      if (remainingDaily.length > 0) {
-        logger.warn('Some daily notifications were not cancelled', {
-          remaining_count: remainingDaily.length,
-          identifiers: remainingDaily.map((n) => n.identifier),
-        });
-      }
+      return { success: true, identifier };
     } catch (error) {
-      logger.error('Failed to cancel daily reminders atomically', error as Error);
-      throw error;
+      logger.error('[NOTIFICATION] Failed to schedule daily reminder:', error as Error);
+      return {
+        success: false,
+        error: { message: (error as Error).message },
+      };
     }
   }
 
   /**
-   * 🚨 ENHANCED: Schedule throwback reminder with debouncing and atomic operations
+   * Cancel daily reminder notifications
+   */
+  async cancelDailyReminders(): Promise<void> {
+    try {
+      // Cancel by identifier
+      await Notifications.cancelScheduledNotificationAsync('daily-reminder');
+
+      // Also cancel any scheduled notifications with daily reminder data
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      const dailyReminders = scheduled.filter(
+        (notification) => notification.content.data?.type === 'daily_reminder'
+      );
+
+      for (const reminder of dailyReminders) {
+        await Notifications.cancelScheduledNotificationAsync(reminder.identifier);
+      }
+
+      logger.debug('[NOTIFICATION] Canceled all daily reminders');
+    } catch (error) {
+      logger.error('[NOTIFICATION] Failed to cancel daily reminders:', error as Error);
+    }
+  }
+
+  /**
+   * Schedule a throwback reminder notification
    */
   async scheduleThrowbackReminder(
     hour: number,
     minute: number,
-    enabled = true,
-    frequency: 'daily' | 'weekly' | 'monthly' = 'weekly'
-  ): Promise<NotificationResult> {
-    const operationKey = `throwback-${hour}-${minute}-${enabled}-${frequency}`;
-
-    // 🚨 FIX: Check debouncing FIRST to prevent unnecessary operations
-    const now = Date.now();
-    const lastCall = this.lastSchedulingCall.get(operationKey) || 0;
-
-    if (now - lastCall < this.DEBOUNCE_DELAY) {
-      logger.debug('Throwback reminder scheduling debounced', {
-        operationKey,
-        timeSinceLastCall: now - lastCall,
-      });
-      return { success: true, identifier: 'debounced' };
-    }
-
-    this.lastSchedulingCall.set(operationKey, now);
-
-    // 🚨 FIX: Prevent concurrent scheduling operations
-    if (this.schedulingInProgress.has(operationKey)) {
-      logger.debug('Throwback reminder scheduling already in progress', { operationKey });
-      return { success: true, identifier: 'in-progress' };
-    }
-
-    this.schedulingInProgress.add(operationKey);
-
-    // 🚨 FIX: ALWAYS cancel existing notifications first, regardless of debouncing
+    enabled: boolean,
+    frequency: string
+  ): Promise<{ success: boolean; error?: { message?: string } }> {
     try {
-      await this.cancelThrowbackRemindersAtomic();
-      logger.debug('Existing throwback notifications cancelled before scheduling new ones', {
-        hour,
-        minute,
-        enabled,
-        frequency,
-      });
-    } catch (error) {
-      logger.error('Failed to cancel existing throwback notifications', error as Error);
-    }
-
-    // If disabled, just return after cancellation
-    if (!enabled) {
-      logger.debug('Throwback reminder disabled by user - notifications cancelled');
-      this.schedulingInProgress.delete(operationKey);
-      return { success: true };
-    }
-
-    try {
-      if (!this.isInitialized) {
-        await this.initialize();
+      if (!enabled) {
+        await this.cancelThrowbackReminders();
+        return { success: true };
       }
 
       if (!this.hasPermissions) {
         return {
           success: false,
-          error: {
-            name: 'PermissionError',
-            message: 'Notification permissions not granted',
-            type: 'permission',
-          } as NotificationError,
+          error: { message: 'Notification permissions not granted' },
         };
       }
 
-      let identifier: string = '';
+      // Cancel existing throwback reminders first
+      await this.cancelThrowbackReminders();
 
-      if (frequency === 'daily') {
-        // 🚨 FIX: Use platform-appropriate trigger types (calendar not supported on Android)
-        if (Platform.OS === 'ios') {
-          // iOS: Use calendar trigger for daily
-          identifier = await Notifications.scheduleNotificationAsync({
-            content: {
-              title: '📚 Geçmiş Anıların Zamanı!',
-              body: 'Geçen haftalarda neler yazmıştın? Hadi bir göz at! 💭',
-              sound: 'default',
-              priority: Notifications.AndroidNotificationPriority.DEFAULT,
-              categoryIdentifier: 'THROWBACK_REMINDER',
-              data: {
-                type: 'throwback_reminder',
-                action: 'open_past_entries',
-                frequency: 'daily',
-                scheduledAt: new Date().toISOString(),
-                method: 'calendar_ios',
-              },
-            },
-            trigger: {
+      // Create cross-platform trigger based on frequency and platform
+      let trigger: Notifications.NotificationTriggerInput;
+
+      if (Platform.OS === 'ios') {
+        // iOS supports calendar triggers
+        switch (frequency) {
+          case 'daily':
+            trigger = {
               type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-              hour,
-              minute,
-              second: 0,
               repeats: true,
-            },
-          });
-        } else {
-          // Android: Use weekly triggers for all 7 days (proper daily simulation)
-          const weekDays = [1, 2, 3, 4, 5, 6, 7]; // Sunday through Saturday
-          const identifiers: string[] = [];
-
-          for (const weekday of weekDays) {
-            const dayIdentifier = await Notifications.scheduleNotificationAsync({
-              content: {
-                title: '📚 Geçmiş Anıların Zamanı!',
-                body: 'Geçen haftalarda neler yazmıştın? Hadi bir göz at! 💭',
-                sound: 'default',
-                priority: Notifications.AndroidNotificationPriority.DEFAULT,
-                categoryIdentifier: 'THROWBACK_REMINDER',
-                data: {
-                  type: 'throwback_reminder',
-                  action: 'open_past_entries',
-                  frequency: 'daily',
-                  scheduledAt: new Date().toISOString(),
-                  method: 'weekly_android_7days',
-                  weekday: weekday,
-                },
-              },
-              trigger: {
-                type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-                weekday,
-                hour,
-                minute,
-              },
-            });
-            identifiers.push(dayIdentifier);
-          }
-
-          identifier = identifiers[0]; // Return first identifier for consistency
-        }
-
-        logger.debug('Daily throwback reminders scheduled successfully', {
-          hour,
-          minute,
-          platform: Platform.OS,
-          method: Platform.OS === 'ios' ? 'calendar_ios' : 'weekly_android_7days',
-        });
-      } else if (frequency === 'weekly') {
-        // Schedule weekly throwback reminders (Sunday)
-        if (Platform.OS === 'ios') {
-          identifier = await Notifications.scheduleNotificationAsync({
-            content: {
-              title: '📚 Geçmiş Anıların Zamanı!',
-              body: 'Geçen haftalarda neler yazmıştın? Hadi bir göz at! 💭',
-              sound: 'default',
-              priority: Notifications.AndroidNotificationPriority.DEFAULT,
-              categoryIdentifier: 'THROWBACK_REMINDER',
-              data: {
-                type: 'throwback_reminder',
-                action: 'open_past_entries',
-                frequency: 'weekly',
-                scheduledAt: new Date().toISOString(),
-              },
-            },
-            trigger: {
+              hour,
+              minute,
+            };
+            break;
+          case 'weekly':
+            trigger = {
               type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-              weekday: 1, // Sunday = 1
+              repeats: true,
+              weekday: 1, // Monday
               hour,
               minute,
-            },
-          });
-        } else {
-          identifier = await Notifications.scheduleNotificationAsync({
-            content: {
-              title: '📚 Geçmiş Anıların Zamanı!',
-              body: 'Geçen haftalarda neler yazmıştın? Hadi bir göz at! 💭',
-              sound: 'default',
-              priority: Notifications.AndroidNotificationPriority.DEFAULT,
-              categoryIdentifier: 'THROWBACK_REMINDER',
-              data: {
-                type: 'throwback_reminder',
-                action: 'open_past_entries',
-                frequency: 'weekly',
-                scheduledAt: new Date().toISOString(),
-              },
-            },
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-              weekday: 1, // Sunday = 1
+            };
+            break;
+          case 'monthly':
+            trigger = {
+              type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+              repeats: true,
+              day: 1, // First of month
               hour,
               minute,
-            },
-          });
+            };
+            break;
+          default:
+            throw new Error(`Unsupported frequency: ${frequency}`);
         }
+      } else {
+        // Android: Use time-based triggers
+        switch (frequency) {
+          case 'daily':
+            trigger = {
+              type: Notifications.SchedulableTriggerInputTypes.DAILY,
+              hour,
+              minute,
+            };
+            break;
+          case 'weekly': // For weekly on Android, use time interval (7 days = 604800 seconds)
+          {
+            const weeklyTime = new Date();
+            weeklyTime.setHours(hour, minute, 0, 0);
+            if (weeklyTime <= new Date()) {
+              weeklyTime.setDate(weeklyTime.getDate() + 7); // Next week
+            }
 
-        logger.debug('Weekly throwback reminder scheduled successfully', {
-          hour,
-          minute,
-          platform: Platform.OS,
-        });
-      } else if (frequency === 'monthly') {
-        // Enhanced monthly throwback reminders with auto-rescheduling
-        const nextMonthDate = this.calculateNextMonthlyDate(hour, minute);
+            trigger = {
+              type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+              seconds: 604800, // 7 days
+              repeats: true,
+            };
+            break;
+          }
+          case 'monthly': // For monthly on Android, approximate with 30 days (2592000 seconds)
+          {
+            const monthlyTime = new Date();
+            monthlyTime.setHours(hour, minute, 0, 0);
+            if (monthlyTime <= new Date()) {
+              monthlyTime.setMonth(monthlyTime.getMonth() + 1); // Next month
+            }
 
-        // Check if we already scheduled this month to prevent duplicates
-        const config = await this.getMonthlyNotificationConfig();
-        const lastScheduled = config.lastScheduledDate ? new Date(config.lastScheduledDate) : null;
-        const isAlreadyScheduled =
-          lastScheduled &&
-          lastScheduled.getMonth() === nextMonthDate.getMonth() &&
-          lastScheduled.getFullYear() === nextMonthDate.getFullYear();
-
-        if (!isAlreadyScheduled) {
-          identifier = await Notifications.scheduleNotificationAsync({
-            content: {
-              title: '📚 Geçmiş Anıların Zamanı!',
-              body: 'Geçen haftalarda neler yazmıştın? Haydi bir göz at! 💭',
-              sound: 'default',
-              priority: Notifications.AndroidNotificationPriority.DEFAULT,
-              categoryIdentifier: 'THROWBACK_REMINDER',
-              data: {
-                type: 'throwback_reminder',
-                action: 'open_past_entries',
-                frequency: 'monthly',
-                reschedule: 'true', // Flag for auto-rescheduling
-                scheduledAt: new Date().toISOString(),
-              },
-            },
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.DATE,
-              date: nextMonthDate,
-            },
-          });
-
-          // Store configuration for re-scheduling
-          await this.updateMonthlyNotificationConfig(hour, minute, true, identifier);
-
-          logger.debug('Monthly throwback reminder scheduled successfully', {
-            identifier,
-            hour,
-            minute,
-            date: nextMonthDate,
-            platform: Platform.OS,
-            isReschedule: !!lastScheduled,
-          });
-        } else {
-          logger.debug('Monthly notification already scheduled for this month', {
-            lastScheduled: lastScheduled?.toISOString(),
-            nextScheduled: nextMonthDate.toISOString(),
-          });
-          // Return existing identifier or create a placeholder
-          identifier = config.lastScheduledDate || 'monthly-already-scheduled';
+            trigger = {
+              type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+              seconds: 2592000, // 30 days
+              repeats: true,
+            };
+            break;
+          }
+          default:
+            throw new Error(`Unsupported frequency: ${frequency}`);
         }
       }
 
-      analyticsService.logEvent('throwback_reminder_scheduled', {
-        hour,
-        minute,
-        frequency,
-        identifier,
-        platform: Platform.OS,
+      const identifier = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '💭 Minnetlerini hatırla',
+          body: 'Geçmiş minnetlerinle yeşer!',
+          data: { type: 'throwback_reminder', frequency },
+          sound: 'default',
+          badge: 1,
+          categoryIdentifier: 'throwback-reminders',
+        },
+        trigger,
+        identifier: `throwback-reminder-${frequency}`,
       });
 
-      logger.debug('Throwback reminder scheduled successfully', {
+      logger.debug('[NOTIFICATION] Scheduled throwback reminder:', {
+        identifier,
+        frequency,
         hour,
         minute,
-        frequency,
-        identifier,
         platform: Platform.OS,
       });
-
-      return { success: true, identifier };
+      return { success: true };
     } catch (error) {
-      const notificationError: NotificationError = {
-        name: 'SchedulingError',
-        message: (error as Error).message,
-        type: 'scheduling',
+      logger.error('[NOTIFICATION] Failed to schedule throwback reminder:', error as Error);
+      return {
+        success: false,
+        error: { message: (error as Error).message },
       };
-
-      logger.error('Failed to schedule throwback reminder', error as Error);
-      analyticsService.logEvent('throwback_reminder_schedule_failed', {
-        error_message: notificationError.message,
-        hour,
-        minute,
-        frequency,
-        platform: Platform.OS,
-      });
-
-      return { success: false, error: notificationError };
-    } finally {
-      // 🚨 FIX: Always clean up the operation lock
-      this.schedulingInProgress.delete(operationKey);
     }
   }
 
   /**
-   * Calculate daily trigger time (kept for future use)
+   * Cancel throwback reminder notifications
    */
-  private calculateDailyTrigger(hour: number, minute: number): Notifications.DateTriggerInput {
-    return {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: this.getNextTriggerDate(hour, minute),
-    };
-  }
+  async cancelThrowbackReminders(): Promise<void> {
+    try {
+      // Cancel by identifiers
+      const frequencies = ['daily', 'weekly', 'monthly'];
+      for (const freq of frequencies) {
+        await Notifications.cancelScheduledNotificationAsync(`throwback-reminder-${freq}`);
+      }
 
-  /**
-   * Get next trigger date for daily notifications (kept for future use)
-   */
-  private getNextTriggerDate(hour: number, minute: number): Date {
-    const now = new Date();
-    const triggerTime = new Date();
-    triggerTime.setHours(hour, minute, 0, 0);
+      // Also cancel any scheduled notifications with throwback reminder data
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      const throwbackReminders = scheduled.filter(
+        (notification) => notification.content.data?.type === 'throwback_reminder'
+      );
 
-    // If the time has passed today, schedule for tomorrow
-    if (triggerTime <= now) {
-      triggerTime.setDate(triggerTime.getDate() + 1);
+      for (const reminder of throwbackReminders) {
+        await Notifications.cancelScheduledNotificationAsync(reminder.identifier);
+      }
+
+      logger.debug('[NOTIFICATION] Canceled all throwback reminders');
+    } catch (error) {
+      logger.error('[NOTIFICATION] Failed to cancel throwback reminders:', error as Error);
     }
-
-    return triggerTime;
-  }
-
-  /**
-   * Calculate weekly trigger time (kept for future use)
-   */
-  private calculateWeeklyTrigger(
-    hour: number,
-    minute: number,
-    weekday: number
-  ): Notifications.WeeklyTriggerInput {
-    return {
-      type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-      weekday,
-      hour,
-      minute,
-    };
-  }
-
-  /**
-   * 🚨 FIX: Calculate next monthly notification date (1st of next month)
-   */
-  private calculateNextMonthlyDate(hour: number, minute: number): Date {
-    const now = new Date();
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    nextMonth.setHours(hour, minute, 0, 0);
-    return nextMonth;
   }
 
   /**
    * Cancel all scheduled notifications
    */
-  async cancelAllScheduledNotifications(): Promise<void> {
+  async cancelAllNotifications(): Promise<void> {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
-
-      analyticsService.logEvent('all_notifications_cancelled');
-      logger.debug('All scheduled notifications cancelled');
+      logger.debug('[NOTIFICATION] Canceled all scheduled notifications');
     } catch (error) {
-      logger.error('Failed to cancel all notifications', error as Error);
-      throw error;
+      logger.error('[NOTIFICATION] Failed to cancel all notifications:', error as Error);
     }
   }
 
   /**
-   * Cancel daily reminders specifically
+   * Cancel all scheduled notifications (alias for consistency)
    */
-  async cancelDailyReminders(): Promise<void> {
+  async cancelAllScheduledNotifications(): Promise<void> {
+    await this.cancelAllNotifications();
+  }
+
+  /**
+   * Send a test notification
+   */
+  async sendTestNotification(): Promise<void> {
+    await this.scheduleNotification(
+      '🔔 Test Notification',
+      'Your notifications are working perfectly!',
+      { type: 'test' }
+    );
+  }
+
+  /**
+   * Get scheduled notifications count
+   */
+  async getScheduledNotificationsCount(): Promise<number> {
     try {
-      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-
-      for (const notification of scheduledNotifications) {
-        if (notification.content.categoryIdentifier === 'DAILY_REMINDER') {
-          await Notifications.cancelScheduledNotificationAsync(notification.identifier);
-        }
-      }
-
-      logger.debug('Daily reminders cancelled');
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      return scheduled.length;
     } catch (error) {
-      logger.error('Failed to cancel daily reminders', error as Error);
-      throw error;
+      logger.error('[NOTIFICATION] Failed to get scheduled notifications count:', error as Error);
+      return 0;
     }
   }
 
   /**
-   * Cancel throwback reminders specifically
+   * Set app badge count
    */
-  async cancelThrowbackReminders(): Promise<void> {
-    await this.cancelThrowbackRemindersAtomic();
-  }
-
-  /**
-   * 🚨 ENHANCED: Atomic cancellation for throwback reminders
-   */
-  private async cancelThrowbackRemindersAtomic(): Promise<void> {
+  async setBadgeCount(count: number): Promise<void> {
     try {
-      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      const throwbackNotifications = scheduledNotifications.filter(
-        (notification) => notification.content.categoryIdentifier === 'THROWBACK_REMINDER'
-      );
-
-      if (throwbackNotifications.length === 0) {
-        logger.debug('No throwback reminders to cancel');
-        return;
-      }
-
-      // 🚨 FIX: Batch cancellation for better performance and atomicity
-      const cancellationPromises = throwbackNotifications.map((notification) =>
-        Notifications.cancelScheduledNotificationAsync(notification.identifier)
-      );
-
-      await Promise.all(cancellationPromises);
-
-      logger.debug('Throwback reminders cancelled atomically', {
-        cancelled_count: throwbackNotifications.length,
-        identifiers: throwbackNotifications.map((n) => n.identifier),
-      });
-
-      // Verify cancellation worked
-      const remainingNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      const remainingThrowback = remainingNotifications.filter(
-        (notification) => notification.content.categoryIdentifier === 'THROWBACK_REMINDER'
-      );
-
-      if (remainingThrowback.length > 0) {
-        logger.warn('Some throwback notifications were not cancelled', {
-          remaining_count: remainingThrowback.length,
-          identifiers: remainingThrowback.map((n) => n.identifier),
-        });
-      }
+      await Notifications.setBadgeCountAsync(count);
     } catch (error) {
-      logger.error('Failed to cancel throwback reminders atomically', error as Error);
-      throw error;
+      logger.error('[NOTIFICATION] Failed to set badge count:', error as Error);
     }
   }
 
   /**
-   * Get notification permission status
+   * Get current app badge count
    */
-  async getPermissionStatus(): Promise<Notifications.PermissionStatus> {
-    const { status } = await Notifications.getPermissionsAsync();
-    return status;
-  }
-
-  /**
-   * Get all scheduled notifications for debugging
-   */
-  async getScheduledNotifications(): Promise<Notifications.NotificationRequest[]> {
-    return Notifications.getAllScheduledNotificationsAsync();
-  }
-
-  /**
-   * Get detailed information about scheduled notifications for debugging
-   */
-  async getScheduledNotificationsDebugInfo(): Promise<{
-    count: number;
-    notifications: Array<{
-      identifier: string;
-      title: string;
-      body: string;
-      trigger: Notifications.NotificationTrigger | null;
-      categoryIdentifier?: string;
-    }>;
-  }> {
+  async getBadgeCount(): Promise<number> {
     try {
-      const notifications = await this.getScheduledNotifications();
-      return {
-        count: notifications.length,
-        notifications: notifications.map((n) => ({
-          identifier: n.identifier,
-          title: n.content.title || 'No title',
-          body: n.content.body || 'No body',
-          trigger: n.trigger,
-          categoryIdentifier: n.content.categoryIdentifier || undefined,
-        })),
-      };
+      return await Notifications.getBadgeCountAsync();
     } catch (error) {
-      logger.error('Failed to get scheduled notifications debug info', error as Error);
-      return { count: 0, notifications: [] };
+      logger.error('[NOTIFICATION] Failed to get badge count:', error as Error);
+      return 0;
     }
   }
 
   /**
-   * Create an immediate test notification for debugging notification navigation
-   */
-  async sendTestNotification(type: 'daily' | 'throwback' = 'daily'): Promise<NotificationResult> {
-    if (!this.isInitialized) {
-      await this.initialize();
-    }
-
-    if (!this.hasPermissions) {
-      return {
-        success: false,
-        error: {
-          name: 'PermissionError',
-          message: 'Notification permissions not granted',
-          type: 'permission',
-        } as NotificationError,
-      };
-    }
-
-    try {
-      let identifier: string;
-
-      if (type === 'daily') {
-        logger.debug('Creating daily test notification with navigation data...', {
-          categoryIdentifier: 'DAILY_REMINDER',
-          data: {
-            type: 'daily_reminder',
-            action: 'open_daily_entry',
-            date: new Date().toISOString().split('T')[0],
-            isTest: 'true',
-          },
-        });
-
-        identifier = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '🌟 Test: Minnettarlık Zamanı!',
-            body: 'Bu bir test bildirimi. Yeni kayıt ekranına yönlendirileceksiniz.',
-            sound: 'default',
-            priority: Notifications.AndroidNotificationPriority.HIGH,
-            categoryIdentifier: 'DAILY_REMINDER',
-            data: {
-              type: 'daily_reminder',
-              action: 'open_daily_entry',
-              date: new Date().toISOString().split('T')[0],
-              isTest: 'true',
-            },
-          },
-          trigger: null, // Send immediately
-        });
-      } else {
-        logger.debug('Creating throwback test notification with navigation data...', {
-          categoryIdentifier: 'THROWBACK_REMINDER',
-          data: {
-            type: 'throwback_reminder',
-            action: 'open_past_entries',
-            frequency: 'test',
-            isTest: 'true',
-          },
-        });
-
-        identifier = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '📚 Test: Geçmiş Anıların Zamanı!',
-            body: 'Bu bir test bildirimi. Geçmiş kayıtlarınıza yönlendirileceksiniz.',
-            sound: 'default',
-            priority: Notifications.AndroidNotificationPriority.DEFAULT,
-            categoryIdentifier: 'THROWBACK_REMINDER',
-            data: {
-              type: 'throwback_reminder',
-              action: 'open_past_entries',
-              frequency: 'test',
-              isTest: 'true',
-            },
-          },
-          trigger: null, // Send immediately
-        });
-      }
-
-      logger.debug('Test notification sent successfully', {
-        type,
-        identifier,
-        platform: Platform.OS,
-        message: `Test ${type} notification should appear immediately and navigate when tapped`,
-      });
-
-      return { success: true, identifier };
-    } catch (error) {
-      const notificationError: NotificationError = {
-        name: 'TestNotificationError',
-        message: (error as Error).message,
-        type: 'scheduling',
-      };
-
-      logger.error('Failed to send test notification', error as Error);
-      return { success: false, error: notificationError };
-    }
-  }
-
-  /**
-   * 🚨 FIX: Check and reschedule monthly notifications on app startup
-   * Now properly checks user profile settings instead of separate config
-   */
-  private async checkAndRescheduleMonthlyNotifications(): Promise<void> {
-    try {
-      logger.debug('Checking monthly notifications for rescheduling...');
-
-      // 🚨 FIX: Import and use actual profile data instead of separate config
-      const { supabase } = await import('../utils/supabaseClient');
-
-      // Check if user is authenticated
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session?.user) {
-        logger.debug('No authenticated user - skipping monthly notification rescheduling');
-        return;
-      }
-
-      // Get user's actual profile settings
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('throwback_reminder_enabled, throwback_reminder_frequency, throwback_reminder_time')
-        .eq('id', sessionData.session.user.id)
-        .single();
-
-      if (profileError || !profileData) {
-        logger.debug('Could not fetch user profile - skipping monthly notification rescheduling', {
-          error: profileError?.message,
-        });
-        return;
-      }
-
-      // 🚨 FIX: Only proceed if user actually has throwback reminders enabled with monthly frequency
-      if (
-        !profileData.throwback_reminder_enabled ||
-        profileData.throwback_reminder_frequency !== 'monthly'
-      ) {
-        logger.debug(
-          'User does not have monthly throwback reminders enabled - skipping rescheduling',
-          {
-            throwback_enabled: profileData.throwback_reminder_enabled,
-            frequency: profileData.throwback_reminder_frequency,
-          }
-        );
-        return;
-      }
-
-      // Parse time from user settings
-      const timeString = profileData.throwback_reminder_time || '09:00:00';
-      const [hour, minute] = timeString.split(':').map(Number);
-
-      // Check if there are existing monthly notifications
-      const scheduledNotifications = await this.getScheduledNotifications();
-      const monthlyNotifications = scheduledNotifications.filter(
-        (n) =>
-          n.content.categoryIdentifier === 'THROWBACK_REMINDER' &&
-          n.content.data?.frequency === 'monthly'
-      );
-
-      // If no monthly notifications are scheduled but user wants them, reschedule
-      if (monthlyNotifications.length === 0) {
-        logger.debug('Rescheduling missing monthly notification based on user profile', {
-          hour,
-          minute,
-          user_enabled: profileData.throwback_reminder_enabled,
-          user_frequency: profileData.throwback_reminder_frequency,
-        });
-
-        const nextDate = this.calculateNextMonthlyDate(hour, minute);
-
-        const identifier = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: '📚 Geçmiş Anıların Zamanı!',
-            body: 'Geçen haftalarda neler yazmıştın? Haydi bir göz at! 💭',
-            sound: 'default',
-            priority: Notifications.AndroidNotificationPriority.DEFAULT,
-            categoryIdentifier: 'THROWBACK_REMINDER',
-            data: {
-              type: 'throwback_reminder',
-              action: 'open_past_entries',
-              frequency: 'monthly',
-              reschedule: 'true',
-              scheduledAt: new Date().toISOString(),
-            },
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: nextDate,
-          },
-        });
-
-        // 🚨 FIX: Update the stored config to reflect actual user settings
-        await this.updateMonthlyNotificationConfig(hour, minute, true, identifier);
-
-        logger.debug('Monthly notification rescheduled successfully', {
-          nextDate: nextDate.toISOString(),
-          identifier,
-          userSettings: {
-            enabled: profileData.throwback_reminder_enabled,
-            frequency: profileData.throwback_reminder_frequency,
-            time: timeString,
-          },
-        });
-      } else {
-        logger.debug('Monthly notifications already scheduled', {
-          count: monthlyNotifications.length,
-          userSettings: {
-            enabled: profileData.throwback_reminder_enabled,
-            frequency: profileData.throwback_reminder_frequency,
-          },
-        });
-      }
-    } catch (error) {
-      logger.error('Failed to check/reschedule monthly notifications', error as Error);
-      // Don't throw - this is a background operation that shouldn't break app startup
-    }
-  }
-
-  // 🚨 FIX: Monthly notification configuration now only used for tracking/debugging
-  // Main logic uses actual user profile settings
-  private async getMonthlyNotificationConfig(): Promise<MonthlyNotificationConfig> {
-    const config = await AsyncStorage.getItem(STORAGE_KEYS.MONTHLY_NOTIFICATION_CONFIG);
-    if (config) {
-      return JSON.parse(config);
-    } else {
-      return {
-        hour: 12,
-        minute: 0,
-        enabled: false,
-        lastScheduledDate: '',
-      };
-    }
-  }
-
-  private async updateMonthlyNotificationConfig(
-    hour: number,
-    minute: number,
-    enabled: boolean,
-    identifier?: string
-  ): Promise<void> {
-    // 🚨 FIX: This is now only used for tracking/debugging purposes
-    // The actual logic uses user profile settings from database
-    const config: MonthlyNotificationConfig = {
-      hour,
-      minute,
-      enabled,
-      lastScheduledDate: new Date().toISOString(),
-    };
-    await AsyncStorage.setItem(STORAGE_KEYS.MONTHLY_NOTIFICATION_CONFIG, JSON.stringify(config));
-
-    logger.debug('Monthly notification config updated for tracking', {
-      hour,
-      minute,
-      enabled,
-      identifier,
-      note: 'This is for tracking only - actual logic uses user profile settings',
-    });
-  }
-
-  /**
-   * 🚨 FIX: Cleanup old timestamps to prevent memory leaks
-   */
-  private startDebounceCleanup(): void {
-    this.cleanupIntervalId = setInterval(() => {
-      const now = Date.now();
-      const keysToDelete: string[] = [];
-
-      for (const [key, timestamp] of this.lastSchedulingCall.entries()) {
-        if (now - timestamp > this.MAX_TIMESTAMP_AGE) {
-          keysToDelete.push(key);
-        }
-      }
-
-      keysToDelete.forEach((key) => this.lastSchedulingCall.delete(key));
-
-      if (keysToDelete.length > 0) {
-        logger.debug('Cleaned up old debouncing timestamps', {
-          cleaned_count: keysToDelete.length,
-          remaining_count: this.lastSchedulingCall.size,
-        });
-      }
-    }, this.CLEANUP_INTERVAL);
-  }
-
-  /**
-   * Shutdown the service – clears timers & resets flags
+   * Shutdown the service
    */
   shutdown(): void {
-    if (this.cleanupIntervalId) {
-      clearInterval(this.cleanupIntervalId);
-      this.cleanupIntervalId = null;
+    this.reset();
+  }
+
+  /**
+   * Reset the service
+   */
+  reset(): void {
+    this.initialized = false;
+    this.expoPushToken = null;
+    this.hasPermissions = false;
+    logger.debug('[NOTIFICATION] Notification service reset');
+  }
+
+  /**
+   * Force re-initialization (for testing purposes)
+   * This bypasses the initialization guard
+   */
+  async forceReinitialize(): Promise<boolean> {
+    logger.debug('[NOTIFICATION] Force re-initialization requested');
+    this.reset();
+    return this.initialize();
+  }
+
+  /**
+   * Restore user notification settings from profile
+   * Should be called after app startup and user authentication
+   */
+  async restoreUserNotificationSettings(): Promise<{
+    success: boolean;
+    dailyRestored: boolean;
+    throwbackRestored: boolean;
+    error?: string;
+  }> {
+    try {
+      logger.debug('[NOTIFICATION] Restoring user notification settings from profile...');
+
+      // Get current user session and profile
+      const { getCurrentSession } = await import('./authService');
+      const { getProfile } = await import('@/api/profileApi');
+
+      const session = await getCurrentSession();
+      if (!session?.user) {
+        logger.debug('[NOTIFICATION] No authenticated user - skipping notification restoration');
+        return { success: true, dailyRestored: false, throwbackRestored: false };
+      }
+
+      // Get user profile with notification settings
+      const profile = await getProfile();
+      if (!profile) {
+        logger.warn('[NOTIFICATION] No profile found - cannot restore notification settings');
+        return {
+          success: false,
+          dailyRestored: false,
+          throwbackRestored: false,
+          error: 'No profile found',
+        };
+      }
+
+      let dailyRestored = false;
+      let throwbackRestored = false;
+
+      // Restore daily reminders
+      if (profile.reminder_enabled && profile.reminder_time) {
+        try {
+          const [hours, minutes] = profile.reminder_time.split(':').map(Number);
+          const result = await this.scheduleDailyReminder(hours, minutes, true);
+
+          if (result.success) {
+            dailyRestored = true;
+            logger.debug('[NOTIFICATION] Daily reminder restored successfully', {
+              time: profile.reminder_time,
+              hours,
+              minutes,
+            });
+          } else {
+            logger.error('[NOTIFICATION] Failed to restore daily reminder', result.error);
+          }
+        } catch (error) {
+          logger.error('[NOTIFICATION] Error parsing daily reminder time:', error as Error);
+        }
+      }
+
+      // Restore throwback reminders
+      if (profile.throwback_reminder_enabled && profile.throwback_reminder_time) {
+        try {
+          const [hours, minutes] = profile.throwback_reminder_time.split(':').map(Number);
+          const frequency = profile.throwback_reminder_frequency || 'daily';
+          const result = await this.scheduleThrowbackReminder(hours, minutes, true, frequency);
+
+          if (result.success) {
+            throwbackRestored = true;
+            logger.debug('[NOTIFICATION] Throwback reminder restored successfully', {
+              time: profile.throwback_reminder_time,
+              hours,
+              minutes,
+              frequency,
+            });
+          } else {
+            logger.error('[NOTIFICATION] Failed to restore throwback reminder', result.error);
+          }
+        } catch (error) {
+          logger.error('[NOTIFICATION] Error parsing throwback reminder time:', error as Error);
+        }
+      }
+
+      const restoredCount = await this.getScheduledNotificationsCount();
+      logger.info('[NOTIFICATION] User notification settings restoration completed', {
+        dailyRestored,
+        throwbackRestored,
+        totalScheduled: restoredCount,
+        userId: session.user.id,
+      });
+
+      return {
+        success: true,
+        dailyRestored,
+        throwbackRestored,
+      };
+    } catch (error) {
+      logger.error('[NOTIFICATION] Failed to restore user notification settings:', error as Error);
+      return {
+        success: false,
+        dailyRestored: false,
+        throwbackRestored: false,
+        error: (error as Error).message,
+      };
     }
-
-    this.isInitialized = false;
-    this.schedulingInProgress.clear();
-    this.lastSchedulingCall.clear();
-
-    logger.debug('🔕 Notification Service shutdown complete');
   }
 }
 

@@ -37,7 +37,6 @@ interface OnboardingData {
   selectedTheme: string;
   useVariedPrompts: boolean;
   throwbackEnabled: boolean;
-  throwbackFrequency: 'daily' | 'weekly' | 'monthly';
   hasCompletedDemo: boolean;
   // Notification settings
   dailyReminderEnabled: boolean;
@@ -59,12 +58,11 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
     selectedTheme: 'light',
     useVariedPrompts: true,
     throwbackEnabled: true,
-    throwbackFrequency: 'weekly',
     hasCompletedDemo: false,
     // Notification defaults
     dailyReminderEnabled: true,
     dailyReminderTime: '20:00:00',
-    throwbackTime: '10:00:00',
+    throwbackTime: '14:00:00',
   });
 
   // Navigate to previous step (moved before useEffect)
@@ -131,8 +129,8 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         daily_gratitude_goal: onboardingData.dailyGoal || 3,
         use_varied_prompts: onboardingData.useVariedPrompts ?? true,
         throwback_reminder_enabled: onboardingData.throwbackEnabled ?? true,
-        throwback_reminder_frequency: onboardingData.throwbackFrequency || 'weekly',
-        throwback_reminder_time: onboardingData.throwbackTime || '10:00:00',
+        throwback_reminder_frequency: 'daily' as const, // Always daily now
+        throwback_reminder_time: onboardingData.throwbackTime || '14:00:00',
         onboarded: true,
         // Use notification settings configured during onboarding
         reminder_enabled: onboardingData.dailyReminderEnabled ?? true,
@@ -222,13 +220,11 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
               handleStepNext({
                 useVariedPrompts: features.useVariedPrompts,
                 throwbackEnabled: features.throwbackEnabled,
-                throwbackFrequency: features.throwbackFrequency,
               })
             }
             initialPreferences={{
               useVariedPrompts: onboardingData.useVariedPrompts ?? true,
               throwbackEnabled: onboardingData.throwbackEnabled ?? true,
-              throwbackFrequency: onboardingData.throwbackFrequency || 'weekly',
             }}
           />
         );
@@ -242,7 +238,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
                 dailyReminderEnabled: notificationSettings.dailyReminderEnabled,
                 dailyReminderTime: notificationSettings.dailyReminderTime,
                 throwbackEnabled: notificationSettings.throwbackEnabled,
-                throwbackFrequency: notificationSettings.throwbackFrequency,
                 throwbackTime: notificationSettings.throwbackTime,
               })
             }
@@ -250,8 +245,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
               dailyReminderEnabled: onboardingData.dailyReminderEnabled ?? true,
               dailyReminderTime: onboardingData.dailyReminderTime ?? '20:00:00',
               throwbackEnabled: onboardingData.throwbackEnabled ?? true,
-              throwbackFrequency: onboardingData.throwbackFrequency ?? 'weekly',
-              throwbackTime: onboardingData.throwbackTime ?? '10:00:00',
+              throwbackTime: onboardingData.throwbackTime ?? '14:00:00',
             }}
           />
         );

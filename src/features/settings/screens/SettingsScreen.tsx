@@ -187,47 +187,37 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleThrowbackUpdate = async (settings: {
     throwback_reminder_enabled: boolean;
-    throwback_reminder_frequency: 'daily' | 'weekly' | 'monthly' | 'disabled' | undefined;
     throwback_reminder_time?: string;
   }) => {
     try {
-      // 🚨 FIX: Implement atomic transaction pattern
-      let notificationResult: { success: boolean; error?: { message?: string } } = {
-        success: true,
-      };
-
       // First, handle notification scheduling/cancellation
-      if (
-        settings.throwback_reminder_enabled &&
-        settings.throwback_reminder_frequency !== 'disabled'
-      ) {
+      if (settings.throwback_reminder_enabled) {
         // Parse time from database format (HH:MM:SS)
-        const timeString = settings.throwback_reminder_time || '10:00:00';
+        const timeString = settings.throwback_reminder_time || '14:00:00';
         const [hours, minutes] = timeString.split(':').map(Number);
-        const frequency = settings.throwback_reminder_frequency || 'weekly';
 
-        notificationResult = await notificationService.scheduleThrowbackReminder(
+        // Always schedule as daily throwback reminder
+        const notificationResult = await notificationService.scheduleThrowbackReminder(
           hours,
           minutes,
           true,
-          frequency as 'daily' | 'weekly' | 'monthly'
+          'daily'
         );
 
         if (!notificationResult.success) {
           logger.error(
-            'Failed to schedule throwback reminder:',
+            'Failed to schedule daily throwback reminder:',
             new Error(notificationResult.error?.message || 'Bilinmeyen hata')
           );
-          // 🚨 FIX: Don't update database if notification scheduling failed
           handleMutationError(
             new Error(
-              `Geçmiş hatırlatıcısı zamanlanamadı: ${notificationResult.error?.message || 'Bilinmeyen hata'}`
+              `Anı hatırlatıcısı zamanlanamadı: ${notificationResult.error?.message || 'Bilinmeyen hata'}`
             ),
-            'geçmiş hatırlatıcısı ayarlama'
+            'anı hatırlatıcısı ayarlama'
           );
           return; // Early return - don't update database
         } else {
-          logger.debug('Throwback reminder scheduled successfully from settings');
+          logger.debug('Daily throwback reminder scheduled successfully from settings');
         }
       } else {
         // Cancel throwback notifications if disabled
@@ -238,9 +228,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           logger.error('Failed to cancel throwback reminders', error as Error);
           handleMutationError(
             new Error(
-              `Geçmiş hatırlatıcısı iptal edilemedi: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`
+              `Anı hatırlatıcısı iptal edilemedi: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`
             ),
-            'geçmiş hatırlatıcısı iptal etme'
+            'anı hatırlatıcısı iptal etme'
           );
           return; // Early return - don't update database
         }
@@ -249,22 +239,23 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
       // Only update the profile in the database if notification operation succeeded
       updateProfile({
         throwback_reminder_enabled: settings.throwback_reminder_enabled,
-        throwback_reminder_frequency: settings.throwback_reminder_frequency || 'weekly',
+        throwback_reminder_frequency: 'daily', // Always daily now
         throwback_reminder_time: settings.throwback_reminder_time,
       });
 
-      logger.debug('Throwback settings updated successfully - both notifications and database', {
-        enabled: settings.throwback_reminder_enabled,
-        frequency: settings.throwback_reminder_frequency,
-        time: settings.throwback_reminder_time,
-        notificationSuccess: notificationResult.success,
-      });
+      logger.debug(
+        'Daily throwback settings updated successfully - both notifications and database',
+        {
+          enabled: settings.throwback_reminder_enabled,
+          time: settings.throwback_reminder_time,
+        }
+      );
     } catch (error) {
       logger.error(
         'Error updating throwback reminder settings:',
         error instanceof Error ? error : new Error(String(error))
       );
-      handleMutationError(error, 'geçmiş hatırlatıcısı ayarlama');
+      handleMutationError(error, 'anı hatırlatıcısı ayarlama');
     }
   };
 
@@ -398,7 +389,6 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
           <ThrowbackReminderSettings
             throwbackEnabled={profile?.throwback_reminder_enabled ?? false}
-            throwbackFrequency={profile?.throwback_reminder_frequency ?? 'weekly'}
             throwbackReminderTime={profile?.throwback_reminder_time}
             onUpdateSettings={handleThrowbackUpdate}
           />

@@ -54,7 +54,7 @@ module.exports = {
   name,
   slug: 'yeser',
   version: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.0.0',
-  runtimeVersion: { policy: 'appVersion' },
+  runtimeVersion: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.0.0', // Static version for bare workflow
   scheme,
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',

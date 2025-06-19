@@ -16,19 +16,28 @@ updates:
       prefix: "security"
       prefix-development: "deps"
       include: "scope"
-    # Enhanced dependency grouping for React Native/Expo apps with security focus
+    # Enhanced dependency grouping for React Native/Expo apps with Supabase security focus
     groups:
-      # Security-critical core dependencies
-      security-critical:
+      # Supabase-critical core dependencies (HIGHEST PRIORITY)
+      supabase-critical:
         patterns:
           - "@supabase*"
           - "supabase*"
-
+          - "base64-arraybuffer"
+        update-types:
+          - "security"
+          - "patch"
+          - "minor"
+      # Authentication and security (HIGH PRIORITY)
+      auth-security:
+        patterns:
           - "expo-auth-session"
           - "expo-crypto"
           - "expo-secure-store"
           - "expo-build-properties"
           - "expo-constants"
+          - "zod"
+          - "react-native-get-random-values"
         update-types:
           - "security"
           - "patch"
@@ -154,8 +163,6 @@ updates:
       # Ignore major Expo SDK updates (require migration guides)
       - dependency-name: "expo"
         update-types: ["version-update:semver-major"]
-
-      
 
   # Enable version updates for GitHub Actions with security focus
   - package-ecosystem: "github-actions"

@@ -54,43 +54,34 @@ jobs:
 
       - name: 🔐 Critical Security Validation
         run: |
-          echo "🔍 Validating security configuration..."
+          echo "🔍 Validating Supabase security configuration..."
           
-          # Verify Firebase config files are NOT tracked by git
-          if git ls-files | grep -E "(google-services\.json|GoogleService-Info\.plist)" | grep -v "\.firebase-backup/"; then
-            echo "❌ CRITICAL SECURITY ERROR: Firebase config files are tracked by git!"
-            echo "📋 Files found:"
-            git ls-files | grep -E "(google-services\.json|GoogleService-Info\.plist)" | grep -v "\.firebase-backup/"
-            echo "🔧 These files contain sensitive credentials and must be removed from git"
-            echo "💡 Use: git rm --cached <file> && git commit"
-            exit 1
-          fi
-          
-          # Verify .gitignore properly excludes Firebase config files
-          if ! grep -q "google-services\.json" .gitignore; then
-            echo "❌ ERROR: .gitignore doesn't exclude google-services.json"
-            exit 1
-          fi
-          
-          if ! grep -q "GoogleService-Info\.plist" .gitignore; then
-            echo "❌ ERROR: .gitignore doesn't exclude GoogleService-Info.plist"
-            exit 1
-          fi
-          
-          # Verify app.config.js uses EAS file environment variables
-          if ! grep -q "process\.env\.GOOGLE_SERVICES_JSON" app.config.js; then
-            echo "❌ ERROR: app.config.js doesn't use EAS file environment variables"
-            exit 1
-          fi
-          
-          # Check for hardcoded secrets in app.config.js
-          if grep -E "(AIza[a-zA-Z0-9_-]{35}|https://[a-zA-Z0-9-]+\.supabase\.co)" app.config.js; then
-            echo "❌ CRITICAL: Hardcoded secrets found in app.config.js"
+          # Check for hardcoded Supabase secrets in app.config.js
+          if grep -E "(https://[a-zA-Z0-9-]+\.supabase\.co|sb-[a-zA-Z0-9-]+)" app.config.js; then
+            echo "❌ CRITICAL: Hardcoded Supabase secrets found in app.config.js"
             echo "💡 Use EAS Console environment variables instead"
             exit 1
           fi
           
-          echo "✅ Security validation passed - Firebase configs via EAS file environment variables"
+          # Verify Supabase environment variables are used correctly
+          if ! grep -q "process\.env\.EXPO_PUBLIC_SUPABASE" app.config.js; then
+            echo "❌ ERROR: app.config.js doesn't use Supabase environment variables"
+            exit 1
+          fi
+          
+          # Verify Android configuration is properly set up
+          if [ ! -d "android" ]; then
+            echo "❌ ERROR: Android native configuration missing"
+            exit 1
+          fi
+          
+          # Check for proper EAS configuration
+          if ! grep -q "expo" app.config.js; then
+            echo "❌ ERROR: app.config.js doesn't contain proper Expo configuration"
+            exit 1
+          fi
+          
+          echo "✅ Security validation passed - Supabase configs via environment variables"
 
       - name: 🎯 TypeScript Check
         run: |
@@ -141,7 +132,7 @@ jobs:
         run: |
           echo "✅ All security and quality checks passed!"
           echo "🔒 Repository follows security best practices:"
-          echo "  • Firebase config files via EAS file environment variables"
+          echo "  • Supabase configs via environment variables"
           echo "  • No hardcoded secrets in source code"
           echo "  • EAS Build secrets configured in EAS Console"
           echo "  • App config uses secure environment variable injection"
@@ -183,10 +174,10 @@ jobs:
         run: |
           echo "🔍 Validating build environment security..."
           
-          # Ensure no Firebase config files are present locally
-          if [ -f "android/app/google-services.json" ] || [ -f "ios/Yeer/GoogleService-Info.plist" ]; then
-            echo "ℹ️ Local Firebase config files found (expected for development)"
-            echo "🔒 EAS Build will use secure file environment variables instead"
+          # Validate Android native configuration
+          if [ ! -d "android" ]; then
+            echo "❌ ERROR: Android native configuration missing"
+            exit 1
           fi
           
           # Validate EAS CLI access
@@ -196,15 +187,17 @@ jobs:
           fi
           
           echo "✅ Build environment security validated"
-          echo "🔒 Using EAS Console file environment variables:"
-          echo "  • GOOGLE_SERVICES_JSON for Android"
-          echo "  • IOS_GOOGLE_SERVICE_INFO_PLIST for iOS"
+          echo "🔒 Using EAS Console environment variables:"
+          echo "  • EXPO_PUBLIC_SUPABASE_URL for Supabase connection"
+          echo "  • EXPO_PUBLIC_SUPABASE_ANON_KEY for authentication"
+          echo "  • Platform-specific build configuration via EAS profiles"
 
       - name: 🔨 EAS Build Preview
         run: |
           echo "🚀 Starting secure EAS Build for preview..."
-          echo "🔒 Firebase config files injected via EAS file environment variables"
+          echo "🔒 Supabase configuration via EAS environment variables"
           echo "📱 All secrets managed through EAS Console"
+          echo "🤖 Android native build with EAS optimization"
           
           # Run with retry logic
           for i in {1..3}; do
@@ -225,8 +218,9 @@ jobs:
       - name: 📱 Build Success
         run: |
           echo "🎉 Secure EAS Preview build completed successfully!"
-          echo "🔒 Build used EAS file environment variables - no credential exposure"
+          echo "🔒 Build used secure environment variables - no credential exposure"
           echo "📱 Builds available on EAS dashboard for testing"
+          echo "🤖 Android native integration successful"
 
   # 🌟 EAS Build Pipeline - Production
   build-production:
@@ -268,11 +262,12 @@ jobs:
         run: |
           echo "🔍 Validating production build security..."
           
-          # Verify EAS file environment variables are configured
-          echo "🔒 Production build will use secure EAS file environment variables:"
-          echo "  • GOOGLE_SERVICES_JSON for Android Firebase config"
-          echo "  • IOS_GOOGLE_SERVICE_INFO_PLIST for iOS Firebase config"
+          # Verify EAS environment variables are configured
+          echo "🔒 Production build will use secure EAS environment variables:"
+          echo "  • EXPO_PUBLIC_SUPABASE_URL for Supabase connection"
+          echo "  • EXPO_PUBLIC_SUPABASE_ANON_KEY for authentication"
           echo "  • All app secrets via EAS Console environment variables"
+          echo "  • Android native configuration included"
           
           echo "✅ Production security validation passed"
 
@@ -449,7 +444,7 @@ jobs:
         run: |
           echo "🔐 Final Security Status Report"
           echo "==============================="
-          echo "✅ Firebase configs via EAS file environment variables"
+          echo "✅ Supabase configs via environment variables"
           echo "✅ App secrets via EAS Console environment variables"
           echo "✅ Secure app.config.js with environment variable injection"
           echo "✅ No credential exposure in CI/CD logs"

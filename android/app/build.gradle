@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.arthlor.yeser.dev'
+    namespace 'com.arthlor.yeser'
     defaultConfig {
-        applicationId 'com.arthlor.yeser.dev'
+        applicationId 'com.arthlor.yeser'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

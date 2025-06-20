@@ -1,4 +1,4 @@
-package com.arthlor.yeser.dev
+package com.arthlor.yeser
 
 import android.app.Application
 import android.content.res.Configuration

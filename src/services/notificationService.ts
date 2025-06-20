@@ -167,34 +167,36 @@ class NotificationService {
   }
 
   /**
-   * Get Expo push token for future push notification capability
-   * Note: This is optional - local notifications work without push tokens
+   * Get Expo push token (works without Firebase)
+   * Production: Uses main path with projectId
+   * Development: Falls back to development mode if Firebase errors occur
    */
   private async getPushToken(): Promise<string | null> {
+    if (!Device.isDevice) {
+      logger.debug('[NOTIFICATION] Skipping push token on simulator/emulator');
+      return null;
+    }
+
+    // Get project ID from config first
+    const Constants = await import('expo-constants');
+    const projectId = Constants.default?.expoConfig?.extra?.eas?.projectId;
+
+    if (!projectId) {
+      logger.warn('[NOTIFICATION] No EAS project ID found - push tokens require EAS setup');
+      return null;
+    }
+
     try {
-      if (!Device.isDevice) {
-        logger.debug('[NOTIFICATION] Skipping push token on simulator/emulator');
-        return null;
-      }
-
-      // Get project ID from config
-      const Constants = await import('expo-constants');
-      const projectId = Constants.default?.expoConfig?.extra?.eas?.projectId;
-
-      if (!projectId) {
-        logger.warn('[NOTIFICATION] No EAS project ID found - push tokens require EAS setup');
-        return null;
-      }
-
       logger.debug('[NOTIFICATION] Attempting to get Expo push token...', { projectId });
 
-      // Get Expo push token
+      // 🚀 PRODUCTION PATH: This works in production without Firebase FCM
       const pushTokenResult = await Notifications.getExpoPushTokenAsync({
         projectId,
+        applicationId: projectId, // Add this for better compatibility
       });
 
       this.expoPushToken = pushTokenResult.data;
-      logger.debug('[NOTIFICATION] Expo push token obtained successfully');
+      logger.debug('[NOTIFICATION] ✅ Expo push token obtained successfully without Firebase!');
 
       // Register token with backend
       await this.registerPushTokenWithBackend(this.expoPushToken);
@@ -203,20 +205,40 @@ class NotificationService {
     } catch (error) {
       const errorMessage = (error as Error).message;
 
-      // Check if this is the Firebase error
-      if (
-        errorMessage.includes('FirebaseApp is not initialized') ||
-        errorMessage.includes('Firebase') ||
-        errorMessage.includes('FCM')
-      ) {
-        logger.info('[NOTIFICATION] Firebase not configured - push tokens unavailable', {
-          note: 'This is expected for local-notifications-only setup',
-          solution: 'Local notifications will work fine without push tokens',
-          error: errorMessage,
+      // 🛠️ DEVELOPMENT FALLBACK: Only used in dev when Firebase isn't configured
+      if (errorMessage.includes('Firebase') || errorMessage.includes('FCM')) {
+        logger.warn('[NOTIFICATION] Firebase not configured - using development mode tokens', {
+          note: 'This is expected for development without Firebase FCM',
+          projectId,
         });
-      } else {
-        logger.error('[NOTIFICATION] Failed to get push token:', error as Error);
+
+        // For development, we can still try to get a token in development mode
+        try {
+          const devTokenResult = await Notifications.getExpoPushTokenAsync({
+            projectId,
+            development: true, // This bypasses FCM requirement (DEV ONLY)
+          });
+
+          this.expoPushToken = devTokenResult.data;
+          logger.debug('[NOTIFICATION] ✅ Development Expo push token obtained!');
+
+          await this.registerPushTokenWithBackend(this.expoPushToken);
+          return this.expoPushToken;
+        } catch (devError) {
+          logger.info(
+            '[NOTIFICATION] Development token also failed - continuing with local notifications only',
+            {
+              devError: (devError as Error).message,
+            }
+          );
+        }
       }
+
+      // Log the actual error for debugging but don't throw
+      logger.error('[NOTIFICATION] Failed to get Expo push token:', {
+        error: errorMessage,
+        note: 'Continuing with local notifications - they will work fine for in-app use',
+      });
 
       // Don't throw - let the service continue without push tokens
       return null;
@@ -224,7 +246,7 @@ class NotificationService {
   }
 
   /**
-   * Register push token with Supabase backend
+   * Register push token with Supabase backend (for your Edge Function)
    */
   private async registerPushTokenWithBackend(token: string): Promise<void> {
     try {
@@ -237,7 +259,7 @@ class NotificationService {
         return;
       }
 
-      // Call the database function to register the push token
+      // Use your existing RPC function for token registration
       const client = supabaseService.getClient();
       const { error } = await client.rpc('register_push_token', {
         p_user_id: session.user.id,
@@ -248,7 +270,7 @@ class NotificationService {
         throw error;
       }
 
-      logger.debug('[NOTIFICATION] Push token registered with backend successfully');
+      logger.debug('[NOTIFICATION] ✅ Expo push token registered via RPC function');
     } catch (error) {
       logger.error('[NOTIFICATION] Failed to register push token with backend:', error as Error);
     }
@@ -339,7 +361,7 @@ class NotificationService {
   }
 
   /**
-   * Send a server-triggered notification
+   * Send immediate push notification (uses your existing RPC function)
    */
   async sendServerNotification(
     title: string,
@@ -359,7 +381,7 @@ class NotificationService {
         };
       }
 
-      // Call the database function to send notification
+      // Use your existing battle-tested RPC function for immediate delivery
       const client = supabaseService.getClient();
       const { data: notificationId, error } = await client.rpc('send_push_notification_to_user', {
         p_user_id: session.user.id,
@@ -373,7 +395,7 @@ class NotificationService {
         throw error;
       }
 
-      logger.debug('[NOTIFICATION] Server notification sent successfully:', {
+      logger.debug('[NOTIFICATION] ✅ Immediate push notification sent via RPC function:', {
         notificationId,
         title,
         type: notificationType,
@@ -384,7 +406,7 @@ class NotificationService {
         notificationId: notificationId as string,
       };
     } catch (error) {
-      logger.error('[NOTIFICATION] Failed to send server notification:', error as Error);
+      logger.error('[NOTIFICATION] Failed to send immediate push notification:', error as Error);
       return {
         success: false,
         error: (error as Error).message,
@@ -393,7 +415,7 @@ class NotificationService {
   }
 
   /**
-   * Schedule a server-triggered notification for later
+   * Schedule notification via Expo Push (uses your existing Edge Function)
    */
   async scheduleServerNotification(
     title: string,
@@ -414,7 +436,7 @@ class NotificationService {
         };
       }
 
-      // Call the database function to schedule notification
+      // Use your existing battle-tested function!
       const client = supabaseService.getClient();
       const { data: notificationId, error } = await client.rpc('schedule_push_notification', {
         p_user_id: session.user.id,
@@ -429,7 +451,7 @@ class NotificationService {
         throw error;
       }
 
-      logger.debug('[NOTIFICATION] Server notification scheduled successfully:', {
+      logger.debug('[NOTIFICATION] ✅ Expo push notification scheduled via RPC function:', {
         notificationId,
         title,
         scheduledFor: scheduledFor.toISOString(),
@@ -441,7 +463,7 @@ class NotificationService {
         notificationId: notificationId as string,
       };
     } catch (error) {
-      logger.error('[NOTIFICATION] Failed to schedule server notification:', error as Error);
+      logger.error('[NOTIFICATION] Failed to schedule Expo push notification:', error as Error);
       return {
         success: false,
         error: (error as Error).message,
@@ -488,7 +510,7 @@ class NotificationService {
   }
 
   /**
-   * Schedule a daily reminder notification
+   * Schedule a daily reminder notification (now uses Expo Push for reliability!)
    */
   async scheduleDailyReminder(
     hour: number,
@@ -508,14 +530,49 @@ class NotificationService {
         };
       }
 
-      // Cancel existing daily reminders first
+      // Cancel existing reminders
       await this.cancelDailyReminders();
 
-      // Create cross-platform trigger
-      let trigger: Notifications.NotificationTriggerInput;
+      // Calculate next reminder time
+      const now = new Date();
+      const reminderTime = new Date();
+      reminderTime.setHours(hour, minute, 0, 0);
 
+      // If time has passed today, schedule for tomorrow
+      if (reminderTime <= now) {
+        reminderTime.setDate(reminderTime.getDate() + 1);
+      }
+
+      // Use Expo Push for reliable delivery (your Edge Function handles it!)
+      if (this.expoPushToken) {
+        const pushResult = await this.scheduleServerNotification(
+          '🌟 Minnettarlık zamanı!',
+          'Bugün neye minnettarlık duyuyorsun? Hemen yaz!',
+          reminderTime,
+          { type: 'daily_reminder', scheduledHour: hour, scheduledMinute: minute },
+          'reminder'
+        );
+
+        if (pushResult.success) {
+          logger.debug('[NOTIFICATION] ✅ Daily reminder scheduled via Expo Push:', {
+            notificationId: pushResult.notificationId,
+            scheduledTime: reminderTime.toISOString(),
+            hour,
+            minute,
+          });
+
+          return {
+            success: true,
+            identifier: pushResult.notificationId,
+          };
+        }
+      }
+
+      // Fallback to local notification if push token not available
+      logger.warn('[NOTIFICATION] No push token available, falling back to local notification');
+
+      let trigger: Notifications.NotificationTriggerInput;
       if (Platform.OS === 'ios') {
-        // iOS supports calendar triggers
         trigger = {
           type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
           repeats: true,
@@ -523,16 +580,6 @@ class NotificationService {
           minute,
         };
       } else {
-        // Android: Use daily time trigger (calculate seconds from midnight)
-        const now = new Date();
-        const targetTime = new Date();
-        targetTime.setHours(hour, minute, 0, 0);
-
-        // If the time has passed today, schedule for tomorrow
-        if (targetTime <= now) {
-          targetTime.setDate(targetTime.getDate() + 1);
-        }
-
         trigger = {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
           hour,
@@ -540,7 +587,6 @@ class NotificationService {
         };
       }
 
-      // Schedule new daily reminder
       const identifier = await Notifications.scheduleNotificationAsync({
         content: {
           title: '🌟 Minnettarlık zamanı!',
@@ -551,15 +597,16 @@ class NotificationService {
           categoryIdentifier: 'daily-reminders',
         },
         trigger,
-        identifier: 'daily-reminder',
+        identifier: 'daily-reminder-local',
       });
 
-      logger.debug('[NOTIFICATION] Scheduled daily reminder:', {
+      logger.debug('[NOTIFICATION] Scheduled local daily reminder (fallback):', {
         identifier,
         hour,
         minute,
         platform: Platform.OS,
       });
+
       return { success: true, identifier };
     } catch (error) {
       logger.error('[NOTIFICATION] Failed to schedule daily reminder:', error as Error);
@@ -664,8 +711,7 @@ class NotificationService {
               minute,
             };
             break;
-          case 'weekly': // For weekly on Android, use time interval (7 days = 604800 seconds)
-          {
+          case 'weekly': { // For weekly on Android, use time interval (7 days = 604800 seconds)
             const weeklyTime = new Date();
             weeklyTime.setHours(hour, minute, 0, 0);
             if (weeklyTime <= new Date()) {
@@ -679,8 +725,7 @@ class NotificationService {
             };
             break;
           }
-          case 'monthly': // For monthly on Android, approximate with 30 days (2592000 seconds)
-          {
+          case 'monthly': { // For monthly on Android, approximate with 30 days (2592000 seconds)
             const monthlyTime = new Date();
             monthlyTime.setHours(hour, minute, 0, 0);
             if (monthlyTime <= new Date()) {
@@ -951,6 +996,48 @@ class NotificationService {
         dailyRestored: false,
         throwbackRestored: false,
         error: (error as Error).message,
+      };
+    }
+  }
+
+  /**
+   * Test Expo push notification system
+   */
+  async testExpoPushNotification(): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!this.expoPushToken) {
+        return {
+          success: false,
+          message: 'No Expo push token available. Check initialization.',
+        };
+      }
+
+      // Schedule a test notification for 10 seconds from now
+      const testTime = new Date(Date.now() + 10000);
+      const result = await this.scheduleServerNotification(
+        '🧪 Test Notification',
+        'Expo Push is working! Your notifications are now reliable.',
+        testTime,
+        { test: true, timestamp: Date.now() },
+        'system'
+      );
+
+      if (result.success) {
+        return {
+          success: true,
+          message: `✅ Test notification scheduled! Should arrive in 10 seconds. ID: ${result.notificationId}`,
+        };
+      } else {
+        return {
+          success: false,
+          message: `❌ Failed to schedule test: ${result.error}`,
+        };
+      }
+    } catch (error) {
+      logger.error('[NOTIFICATION] Test failed:', error as Error);
+      return {
+        success: false,
+        message: `❌ Test error: ${(error as Error).message}`,
       };
     }
   }

@@ -36,12 +36,12 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="yeser"/>
+        <data android:scheme="yeser-dev"/>
         <data android:scheme="exp+yeser"/>
       </intent-filter>
       <intent-filter android:autoVerify="true" data-generated="true">
         <action android:name="android.intent.action.VIEW"/>
-        <data android:scheme="yeser" android:host="auth" android:pathPrefix="/callback"/>
+        <data android:scheme="yeser-dev" android:host="auth" android:pathPrefix="/callback"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <category android:name="android.intent.category.DEFAULT"/>
       </intent-filter>

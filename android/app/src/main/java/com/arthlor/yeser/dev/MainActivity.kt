@@ -1,4 +1,4 @@
-package com.arthlor.yeser
+package com.arthlor.yeser.dev
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

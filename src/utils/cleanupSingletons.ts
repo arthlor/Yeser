@@ -20,7 +20,7 @@ export const cleanupSingletons = (): void => {
   }
 
   try {
-    notificationService.shutdown();
+    notificationService.reset();
   } catch {
     // ignored – service may not have been initialised
   }

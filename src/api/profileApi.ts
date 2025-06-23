@@ -71,7 +71,7 @@ export const getProfile = async (): Promise<Profile | null> => {
     const { data, error, status } = await supabase
       .from('profiles')
       .select(
-        'id, username, onboarded, reminder_enabled, reminder_time, throwback_reminder_enabled, throwback_reminder_frequency, throwback_reminder_time, created_at, updated_at, daily_gratitude_goal, use_varied_prompts'
+        'id, username, onboarded, notifications_enabled, expo_push_token, push_token_updated_at, push_notification_failures, created_at, updated_at, daily_gratitude_goal, use_varied_prompts'
       )
       .eq('id', user.id)
       .single();
@@ -122,7 +122,7 @@ export const updateProfile = async (
       });
       throw new Error(`Invalid update profile payload: ${validationResult.error.toString()}`);
     }
-    const { reminder_time, useVariedPrompts, ...otherValidatedUpdates } = validationResult.data;
+    const { useVariedPrompts, ...otherValidatedUpdates } = validationResult.data;
 
     const payloadForSupabase: TablesUpdate<'profiles'> = {
       ...otherValidatedUpdates,
@@ -131,16 +131,12 @@ export const updateProfile = async (
     if (useVariedPrompts !== undefined) {
       payloadForSupabase.use_varied_prompts = useVariedPrompts;
     }
-
-    if (reminder_time !== undefined) {
-      payloadForSupabase.reminder_time = reminder_time;
-    }
     const { data, error } = await supabase
       .from('profiles')
       .update(payloadForSupabase)
       .eq('id', user.id)
       .select(
-        'id, username, onboarded, reminder_enabled, reminder_time, throwback_reminder_enabled, throwback_reminder_frequency, throwback_reminder_time, created_at, updated_at, daily_gratitude_goal, use_varied_prompts'
+        'id, username, onboarded, notifications_enabled, expo_push_token, push_token_updated_at, push_notification_failures, created_at, updated_at, daily_gratitude_goal, use_varied_prompts'
       )
       .single();
 

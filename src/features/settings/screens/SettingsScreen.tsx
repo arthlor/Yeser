@@ -152,6 +152,8 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
       setIsUpdatingNotifications(true);
       const success = await notificationService.toggleNotifications(enabled);
       if (success) {
+        // 🔥 FIX: Refetch profile to update UI state
+        await refetchProfile();
         hapticFeedback.success();
         analyticsService.logEvent('notifications_toggled', { enabled });
       } else {
@@ -294,7 +296,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           />
 
           <NotificationToggle
-            enabled={profile?.reminder_enabled ?? false}
+            enabled={profile?.notifications_enabled ?? false}
             onToggle={handleNotificationToggle}
             isLoading={isUpdatingNotifications}
           />

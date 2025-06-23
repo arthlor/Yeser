@@ -8,7 +8,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 
 import CompletionStep from './steps/CompletionStep';
-import FeatureIntroStep from './steps/FeatureIntroStep';
 import GoalSettingStep from './steps/GoalSettingStep';
 import InteractiveDemoStep from './steps/InteractiveDemoStep';
 import PersonalizationStep from './steps/PersonalizationStep';
@@ -18,14 +17,7 @@ import { logger } from '@/utils/debugConfig';
 import { ScreenLayout } from '@/shared/components/layout';
 
 // Define onboarding steps
-const ONBOARDING_STEPS = [
-  'welcome',
-  'demo',
-  'goal',
-  'personalization',
-  'features',
-  'completion',
-] as const;
+const ONBOARDING_STEPS = ['welcome', 'demo', 'goal', 'personalization', 'completion'] as const;
 
 type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
@@ -33,8 +25,6 @@ interface OnboardingData {
   username: string;
   dailyGoal: number;
   selectedTheme: string;
-  useVariedPrompts: boolean;
-  throwbackEnabled: boolean;
   hasCompletedDemo: boolean;
 }
 
@@ -50,8 +40,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData>>({
     dailyGoal: 3,
     selectedTheme: 'light',
-    useVariedPrompts: true,
-    throwbackEnabled: true,
     hasCompletedDemo: false,
   });
 
@@ -97,8 +85,9 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   useEffect(() => {
     // Track onboarding start
     analyticsService.logEvent('enhanced_onboarding_started', {
-      flow_version: '2.0',
+      flow_version: '2.1', // Updated version - removed features step
       total_steps: ONBOARDING_STEPS.length,
+      removed_features_step: true,
     });
 
     // Handle Android back button
@@ -117,13 +106,15 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
       const finalData = {
         username: onboardingData.username || 'Kullanıcı',
         daily_gratitude_goal: onboardingData.dailyGoal || 3,
-        use_varied_prompts: onboardingData.useVariedPrompts ?? true,
-        throwback_reminder_enabled: onboardingData.throwbackEnabled ?? true,
+        // ✅ DEFAULT FEATURES: Since features step removed, use sensible defaults
+        use_varied_prompts: true, // Always enable varied prompts
+        throwback_reminder_enabled: true, // Always enable throwback (controlled by notifications_enabled)
         throwback_reminder_frequency: 'daily' as const, // Always daily now
         throwback_reminder_time: '14:00:00', // Fixed time
         onboarded: true,
-        // Notifications disabled by default during onboarding
-        reminder_enabled: false,
+        // Notifications disabled by default during onboarding - users can enable in Settings
+        notifications_enabled: false,
+        reminder_enabled: false, // Keep for backward compatibility during transition
         reminder_time: '20:00:00',
       };
 
@@ -132,7 +123,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
 
       // Track completion
       analyticsService.logEvent('enhanced_onboarding_completed', {
-        flow_version: '2.0',
+        flow_version: '2.1', // Updated version since features step removed
         username_length: finalData.username.length,
         daily_goal: finalData.daily_gratitude_goal,
         theme: onboardingData.selectedTheme || 'light',
@@ -141,6 +132,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         throwback_frequency: finalData.throwback_reminder_frequency,
         throwback_time: finalData.throwback_reminder_time,
         completed_demo: onboardingData.hasCompletedDemo || false,
+        features_step_removed: true, // Track that features step was removed
       });
 
       hapticFeedback.success();
@@ -200,23 +192,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
           />
         );
 
-      case 'features':
-        return (
-          <FeatureIntroStep
-            {...stepProps}
-            onNext={(features) =>
-              handleStepNext({
-                useVariedPrompts: features.useVariedPrompts,
-                throwbackEnabled: features.throwbackEnabled,
-              })
-            }
-            initialPreferences={{
-              useVariedPrompts: onboardingData.useVariedPrompts ?? true,
-              throwbackEnabled: onboardingData.throwbackEnabled ?? true,
-            }}
-          />
-        );
-
       case 'completion':
         return (
           <CompletionStep
@@ -226,10 +201,8 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
               username: onboardingData.username || 'Kullanıcı',
               dailyGoal: onboardingData.dailyGoal || 3,
               selectedTheme: onboardingData.selectedTheme || 'light',
-              featuresEnabled: [
-                ...(onboardingData.useVariedPrompts ? ['Çeşitli İlham Soruları'] : []),
-                ...(onboardingData.throwbackEnabled ? ['Anı Pırıltıları'] : []),
-              ],
+              // ✅ SIMPLIFIED: Default features enabled, no user selection needed
+              featuresEnabled: ['Çeşitli İlham Soruları', 'Anı Pırıltıları'],
             }}
           />
         );

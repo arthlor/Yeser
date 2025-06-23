@@ -307,7 +307,7 @@ const AppContent: React.FC = () => {
   React.useEffect(() => {
     const refreshInterval = setInterval(
       async () => {
-        if (profile?.reminder_enabled) {
+        if (profile?.notifications_enabled) {
           await notificationService.refreshTokenIfNeeded();
         }
       },
@@ -315,7 +315,7 @@ const AppContent: React.FC = () => {
     ); // Daily
 
     return () => clearInterval(refreshInterval);
-  }, [profile?.reminder_enabled]);
+  }, [profile?.notifications_enabled, profile?.expo_push_token]);
 
   React.useEffect(() => {
     void analyticsService.logAppOpen();
@@ -329,10 +329,17 @@ const AppContent: React.FC = () => {
       try {
         await notificationService.initialize();
 
-        // No need for complex restoration - server handles scheduling
-        // Just ensure token is registered if notifications are enabled
-        if (profile?.reminder_enabled) {
-          await notificationService.refreshTokenIfNeeded();
+        // 🔥 ENHANCED: Force token refresh for users without tokens
+        if (profile?.notifications_enabled) {
+          const currentToken = notificationService.getCurrentPushToken();
+
+          if (!currentToken || !profile.expo_push_token) {
+            logger.debug('User has notifications enabled but no token - forcing refresh');
+            await notificationService.forceTokenRefresh();
+          } else {
+            // Standard token refresh if needed
+            await notificationService.refreshTokenIfNeeded();
+          }
         }
       } catch (error) {
         logger.error('Notification init failed:', error as Error);
@@ -424,9 +431,15 @@ const AppContent: React.FC = () => {
           });
         }
       } else {
-        logger.warn('[NOTIFICATION FIX] Unknown notification type:', {
-          notificationType: data?.type,
-        });
+        // Only log warning for actual notification data, ignore system/browser data
+        if (data && Object.keys(data).length > 0 && !data['android.intent.extra.REFERRER']) {
+          logger.warn('[NOTIFICATION FIX] Unknown notification type:', {
+            notificationType: data?.type,
+            allData: data,
+          });
+        } else {
+          logger.debug('[NOTIFICATION FIX] Ignoring system/browser notification data');
+        }
       }
     });
 
@@ -452,7 +465,8 @@ const AppContent: React.FC = () => {
     isAuthenticated,
     profile?.onboarded,
     databaseReady,
-    profile?.reminder_enabled,
+    profile?.notifications_enabled,
+    profile?.expo_push_token,
   ]);
 
   const navigationTheme = React.useMemo(

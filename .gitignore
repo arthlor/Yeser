@@ -58,7 +58,7 @@ android/app/build/
 android/app/.cxx/
 android/app/debug.keystore
 # Firebase config files (security sensitive)
-android/app/google-services.json
+config/google-services.json
 
 # macOS
 .DS_Store
@@ -225,3 +225,10 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output/
+
+# Firebase configuration
+android/app/google-services.json
+config/google-services.json
+
+# Environment variables
+.env.local

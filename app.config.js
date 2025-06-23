@@ -95,6 +95,8 @@ module.exports = {
       backgroundColor: '#2F4F4F',
     },
     edgeToEdgeEnabled: true,
+    // 🔥 FIXED: Enable FCM for ALL environments with correct path
+    googleServicesFile: './android/app/google-services.json',
     permissions: [
       'RECEIVE_BOOT_COMPLETED',
       'VIBRATE',
@@ -104,6 +106,8 @@ module.exports = {
       'android.permission.READ_EXTERNAL_STORAGE',
       'android.permission.WRITE_EXTERNAL_STORAGE',
       'android.permission.NOTIFICATIONS',
+      // 🔥 FCM Permissions
+      'com.google.android.c2dm.permission.RECEIVE',
     ],
     intentFilters: [
       {
@@ -143,6 +147,7 @@ module.exports = {
         defaultChannel: 'default',
         enableBackgroundRemoteNotifications: true,
         sounds: [],
+        mode: ENV === 'production' ? 'production' : 'development',
       },
     ],
   ],

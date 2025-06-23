@@ -11,7 +11,6 @@ import CompletionStep from './steps/CompletionStep';
 import FeatureIntroStep from './steps/FeatureIntroStep';
 import GoalSettingStep from './steps/GoalSettingStep';
 import InteractiveDemoStep from './steps/InteractiveDemoStep';
-import NotificationSettingsStep from './steps/NotificationSettingsStep';
 import PersonalizationStep from './steps/PersonalizationStep';
 import WelcomeStep from './steps/WelcomeStep';
 import { logger } from '@/utils/debugConfig';
@@ -25,7 +24,6 @@ const ONBOARDING_STEPS = [
   'goal',
   'personalization',
   'features',
-  'notifications',
   'completion',
 ] as const;
 
@@ -38,10 +36,6 @@ interface OnboardingData {
   useVariedPrompts: boolean;
   throwbackEnabled: boolean;
   hasCompletedDemo: boolean;
-  // Notification settings
-  dailyReminderEnabled: boolean;
-  dailyReminderTime: string;
-  throwbackTime: string;
 }
 
 export const EnhancedOnboardingFlowScreen: React.FC = () => {
@@ -59,10 +53,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
     useVariedPrompts: true,
     throwbackEnabled: true,
     hasCompletedDemo: false,
-    // Notification defaults
-    dailyReminderEnabled: true,
-    dailyReminderTime: '20:00:00',
-    throwbackTime: '14:00:00',
   });
 
   // Navigate to previous step (moved before useEffect)
@@ -130,11 +120,11 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         use_varied_prompts: onboardingData.useVariedPrompts ?? true,
         throwback_reminder_enabled: onboardingData.throwbackEnabled ?? true,
         throwback_reminder_frequency: 'daily' as const, // Always daily now
-        throwback_reminder_time: onboardingData.throwbackTime || '14:00:00',
+        throwback_reminder_time: '14:00:00', // Fixed time
         onboarded: true,
-        // Use notification settings configured during onboarding
-        reminder_enabled: onboardingData.dailyReminderEnabled ?? true,
-        reminder_time: onboardingData.dailyReminderTime || '20:00:00',
+        // Notifications disabled by default during onboarding
+        reminder_enabled: false,
+        reminder_time: '20:00:00',
       };
 
       // Save to profile using TanStack Query
@@ -150,8 +140,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         throwback_enabled: finalData.throwback_reminder_enabled,
         throwback_frequency: finalData.throwback_reminder_frequency,
         throwback_time: finalData.throwback_reminder_time,
-        daily_reminder_enabled: finalData.reminder_enabled,
-        daily_reminder_time: finalData.reminder_time,
         completed_demo: onboardingData.hasCompletedDemo || false,
       });
 
@@ -225,27 +213,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
             initialPreferences={{
               useVariedPrompts: onboardingData.useVariedPrompts ?? true,
               throwbackEnabled: onboardingData.throwbackEnabled ?? true,
-            }}
-          />
-        );
-
-      case 'notifications':
-        return (
-          <NotificationSettingsStep
-            {...stepProps}
-            onNext={(notificationSettings) =>
-              handleStepNext({
-                dailyReminderEnabled: notificationSettings.dailyReminderEnabled,
-                dailyReminderTime: notificationSettings.dailyReminderTime,
-                throwbackEnabled: notificationSettings.throwbackEnabled,
-                throwbackTime: notificationSettings.throwbackTime,
-              })
-            }
-            initialSettings={{
-              dailyReminderEnabled: onboardingData.dailyReminderEnabled ?? true,
-              dailyReminderTime: onboardingData.dailyReminderTime ?? '20:00:00',
-              throwbackEnabled: onboardingData.throwbackEnabled ?? true,
-              throwbackTime: onboardingData.throwbackTime ?? '14:00:00',
             }}
           />
         );

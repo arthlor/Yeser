@@ -303,40 +303,39 @@ const AppContent: React.FC = () => {
     };
   }, [isAuthenticated, profile]);
 
+  // Periodically refresh push tokens to ensure they're valid
+  React.useEffect(() => {
+    const refreshInterval = setInterval(
+      async () => {
+        if (profile?.reminder_enabled) {
+          await notificationService.refreshTokenIfNeeded();
+        }
+      },
+      24 * 60 * 60 * 1000
+    ); // Daily
+
+    return () => clearInterval(refreshInterval);
+  }, [profile?.reminder_enabled]);
+
   React.useEffect(() => {
     void analyticsService.logAppOpen();
 
     // Initialize notification service on app start (with initialization guard)
     const initializeNotifications = async () => {
-      // 🛡️ INITIALIZATION GUARD: Check if already initialized
       if (notificationService.isInitialized()) {
-        logger.debug('Notification service already initialized, skipping duplicate initialization');
         return;
       }
 
       try {
-        const hasPermissions = await notificationService.initialize();
-        logger.debug('Notifications initialized:', { extra: { hasPermissions } });
+        await notificationService.initialize();
 
-        // Only attempt to restore user settings if initialization was successful
-        if (hasPermissions) {
-          // Delay restoration to ensure authentication is complete
-          setTimeout(async () => {
-            try {
-              const restorationResult = await notificationService.restoreUserNotificationSettings();
-              logger.debug('Notification restoration completed:', {
-                success: restorationResult.success,
-                dailyRestored: restorationResult.dailyRestored,
-                throwbackRestored: restorationResult.throwbackRestored,
-                error: restorationResult.error,
-              });
-            } catch (error) {
-              logger.error('Failed to restore notification settings on startup:', error as Error);
-            }
-          }, 2000); // Wait 2 seconds to ensure auth and profile loading is complete
+        // No need for complex restoration - server handles scheduling
+        // Just ensure token is registered if notifications are enabled
+        if (profile?.reminder_enabled) {
+          await notificationService.refreshTokenIfNeeded();
         }
       } catch (error) {
-        logger.error('Failed to initialize notification service:', error as Error);
+        logger.error('Notification init failed:', error as Error);
       }
     };
 
@@ -448,7 +447,13 @@ const AppContent: React.FC = () => {
       linkingSubscription.remove();
       cleanupReadinessCheck();
     };
-  }, [isMainAppReady, isAuthenticated, profile?.onboarded, databaseReady]);
+  }, [
+    isMainAppReady,
+    isAuthenticated,
+    profile?.onboarded,
+    databaseReady,
+    profile?.reminder_enabled,
+  ]);
 
   const navigationTheme = React.useMemo(
     () => ({

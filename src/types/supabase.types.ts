@@ -99,21 +99,93 @@ export type Database = {
         };
         Relationships: [];
       };
+      notification_logs: {
+        Row: {
+          created_at: string | null;
+          error_message: string | null;
+          expo_ticket_id: string | null;
+          id: string;
+          notification_type: string;
+          sent_at: string | null;
+          success: boolean;
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          error_message?: string | null;
+          expo_ticket_id?: string | null;
+          id?: string;
+          notification_type: string;
+          sent_at?: string | null;
+          success?: boolean;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          error_message?: string | null;
+          expo_ticket_id?: string | null;
+          id?: string;
+          notification_type?: string;
+          sent_at?: string | null;
+          success?: boolean;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notification_logs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      notification_preferences_backup: {
+        Row: {
+          created_at: string | null;
+          id: string | null;
+          reminder_enabled: boolean | null;
+          reminder_time: string | null;
+          throwback_reminder_enabled: boolean | null;
+          throwback_reminder_frequency: string | null;
+          throwback_reminder_time: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string | null;
+          reminder_enabled?: boolean | null;
+          reminder_time?: string | null;
+          throwback_reminder_enabled?: boolean | null;
+          throwback_reminder_frequency?: string | null;
+          throwback_reminder_time?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string | null;
+          reminder_enabled?: boolean | null;
+          reminder_time?: string | null;
+          throwback_reminder_enabled?: boolean | null;
+          throwback_reminder_frequency?: string | null;
+          throwback_reminder_time?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           created_at: string | null;
           daily_gratitude_goal: number | null;
           expo_push_token: string | null;
           id: string;
-          last_notification_sent: string | null;
-          notification_timezone: string | null;
+          notifications_enabled: boolean | null;
           onboarded: boolean;
+          push_notification_failures: number | null;
           push_notifications_enabled: boolean | null;
+          push_token_updated_at: string | null;
           reminder_enabled: boolean;
-          reminder_time: string;
           throwback_reminder_enabled: boolean;
-          throwback_reminder_frequency: string;
-          throwback_reminder_time: string | null;
           updated_at: string;
           use_varied_prompts: boolean;
           username: string | null;
@@ -123,15 +195,13 @@ export type Database = {
           daily_gratitude_goal?: number | null;
           expo_push_token?: string | null;
           id: string;
-          last_notification_sent?: string | null;
-          notification_timezone?: string | null;
+          notifications_enabled?: boolean | null;
           onboarded?: boolean;
+          push_notification_failures?: number | null;
           push_notifications_enabled?: boolean | null;
+          push_token_updated_at?: string | null;
           reminder_enabled?: boolean;
-          reminder_time?: string;
           throwback_reminder_enabled?: boolean;
-          throwback_reminder_frequency?: string;
-          throwback_reminder_time?: string | null;
           updated_at?: string;
           use_varied_prompts?: boolean;
           username?: string | null;
@@ -141,15 +211,13 @@ export type Database = {
           daily_gratitude_goal?: number | null;
           expo_push_token?: string | null;
           id?: string;
-          last_notification_sent?: string | null;
-          notification_timezone?: string | null;
+          notifications_enabled?: boolean | null;
           onboarded?: boolean;
+          push_notification_failures?: number | null;
           push_notifications_enabled?: boolean | null;
+          push_token_updated_at?: string | null;
           reminder_enabled?: boolean;
-          reminder_time?: string;
           throwback_reminder_enabled?: boolean;
-          throwback_reminder_frequency?: string;
-          throwback_reminder_time?: string | null;
           updated_at?: string;
           use_varied_prompts?: boolean;
           username?: string | null;
@@ -289,6 +357,10 @@ export type Database = {
         Args: { p_entry_date: string; p_statement: string };
         Returns: undefined;
       };
+      bytea_to_text: {
+        Args: { data: string };
+        Returns: string;
+      };
       calculate_streak: {
         Args: { p_user_id: string };
         Returns: number;
@@ -370,6 +442,53 @@ export type Database = {
           username: string;
         }[];
       };
+      http: {
+        Args: { request: Database['public']['CompositeTypes']['http_request'] };
+        Returns: Database['public']['CompositeTypes']['http_response'];
+      };
+      http_delete: {
+        Args: { uri: string } | { uri: string; content: string; content_type: string };
+        Returns: Database['public']['CompositeTypes']['http_response'];
+      };
+      http_get: {
+        Args: { uri: string } | { uri: string; data: Json };
+        Returns: Database['public']['CompositeTypes']['http_response'];
+      };
+      http_head: {
+        Args: { uri: string };
+        Returns: Database['public']['CompositeTypes']['http_response'];
+      };
+      http_header: {
+        Args: { field: string; value: string };
+        Returns: Database['public']['CompositeTypes']['http_header'];
+      };
+      http_list_curlopt: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          curlopt: string;
+          value: string;
+        }[];
+      };
+      http_patch: {
+        Args: { uri: string; content: string; content_type: string };
+        Returns: Database['public']['CompositeTypes']['http_response'];
+      };
+      http_post: {
+        Args: { uri: string; content: string; content_type: string } | { uri: string; data: Json };
+        Returns: Database['public']['CompositeTypes']['http_response'];
+      };
+      http_put: {
+        Args: { uri: string; content: string; content_type: string };
+        Returns: Database['public']['CompositeTypes']['http_response'];
+      };
+      http_reset_curlopt: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      http_set_curlopt: {
+        Args: { curlopt: string; value: string };
+        Returns: boolean;
+      };
       normalize_turkish: {
         Args: { input_text: string };
         Returns: string;
@@ -407,6 +526,10 @@ export type Database = {
         };
         Returns: string;
       };
+      send_push_notifications: {
+        Args: { notification_type: string; title: string; body: string };
+        Returns: number;
+      };
       send_throwback_reminders: {
         Args: Record<PropertyKey, never>;
         Returns: number;
@@ -415,12 +538,36 @@ export type Database = {
         Args: { p_entry_date: string; p_statements: Json };
         Returns: undefined;
       };
+      text_to_bytea: {
+        Args: { data: string };
+        Returns: string;
+      };
+      urlencode: {
+        Args: { data: Json } | { string: string } | { string: string };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;
     };
     CompositeTypes: {
-      [_ in never]: never;
+      http_header: {
+        field: string | null;
+        value: string | null;
+      };
+      http_request: {
+        method: unknown | null;
+        uri: string | null;
+        headers: Database['public']['CompositeTypes']['http_header'][] | null;
+        content_type: string | null;
+        content: string | null;
+      };
+      http_response: {
+        status: number | null;
+        content_type: string | null;
+        headers: Database['public']['CompositeTypes']['http_header'][] | null;
+        content: string | null;
+      };
     };
   };
 };

@@ -7,6 +7,7 @@ import { useToast } from '@/providers/ToastProvider';
 import { logger } from '@/utils/debugConfig';
 import type { AppTheme } from '@/themes/types';
 import { notificationService } from '@/services/notificationService';
+import * as Notifications from 'expo-notifications';
 
 interface ToastTesterProps {
   onClose?: () => void;
@@ -298,75 +299,6 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
 
   // 🔔 NOTIFICATION TESTING FUNCTIONS
 
-  const testBasicNotification = useCallback(async () => {
-    try {
-      await notificationService.scheduleNotification(
-        '🔔 Test Notification',
-        'This is a basic test notification to verify the system is working.',
-        { type: 'test', timestamp: Date.now() }
-      );
-      showSuccess('✅ Test notification sent!');
-    } catch (error) {
-      showError('❌ Failed to send test notification');
-      logger.error('Test notification failed:', error as Error);
-    }
-  }, [showSuccess, showError]);
-
-  const testDailyReminder = useCallback(async () => {
-    try {
-      const now = new Date();
-      const reminderTime = new Date(now.getTime() + 60000); // 1 minute from now
-
-      const result = await notificationService.scheduleDailyReminder(
-        reminderTime.getHours(),
-        reminderTime.getMinutes(),
-        true
-      );
-
-      if (result.success) {
-        showSuccess(`✅ Daily reminder scheduled for ${reminderTime.toLocaleTimeString()}`);
-        logger.info('Daily reminder test successful', {
-          time: reminderTime.toLocaleTimeString(),
-          platform: Platform.OS,
-        });
-      } else {
-        showError(`❌ Failed to schedule daily reminder: ${result.error?.message}`);
-        logger.error('Daily reminder test failed', result.error);
-      }
-    } catch (error) {
-      showError('❌ Daily reminder test failed');
-      logger.error('Daily reminder test failed:', error as Error);
-    }
-  }, [showSuccess, showError]);
-
-  const testThrowbackReminder = useCallback(async () => {
-    try {
-      const now = new Date();
-      const reminderTime = new Date(now.getTime() + 120000); // 2 minutes from now
-
-      const result = await notificationService.scheduleThrowbackReminder(
-        reminderTime.getHours(),
-        reminderTime.getMinutes(),
-        true,
-        'daily'
-      );
-
-      if (result.success) {
-        showSuccess(`✅ Daily memory reminder scheduled for ${reminderTime.toLocaleTimeString()}`);
-        logger.info('Throwback reminder test successful', {
-          time: reminderTime.toLocaleTimeString(),
-          platform: Platform.OS,
-        });
-      } else {
-        showError(`❌ Failed to schedule throwback reminder: ${result.error?.message}`);
-        logger.error('Throwback reminder test failed', result.error);
-      }
-    } catch (error) {
-      showError('❌ Throwback reminder test failed');
-      logger.error('Throwback reminder test failed:', error as Error);
-    }
-  }, [showSuccess, showError]);
-
   const testNotificationPermissions = useCallback(async () => {
     try {
       const hasPermissions = await notificationService.requestPermissions();
@@ -381,303 +313,221 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
     }
   }, [showSuccess, showWarning, showError]);
 
-  const testCancelNotifications = useCallback(async () => {
+  // ✅ SIMPLIFIED: Test the new toggle-based notification system
+  const testNotificationToggle = useCallback(async () => {
     try {
-      await notificationService.cancelAllScheduledNotifications();
-      showSuccess('✅ All scheduled notifications cancelled');
+      showInfo('🔄 Testing notification toggle...');
+
+      // Test enabling notifications
+      const enableResult = await notificationService.toggleNotifications(true);
+      if (enableResult) {
+        showSuccess('✅ Notifications enabled successfully');
+
+        // Test disabling notifications
+        const disableResult = await notificationService.toggleNotifications(false);
+        if (disableResult) {
+          showSuccess('✅ Notifications disabled successfully');
+          showInfo('🎉 Toggle test completed - notifications now work server-side!');
+        } else {
+          showError('❌ Failed to disable notifications');
+        }
+      } else {
+        showError('❌ Failed to enable notifications');
+      }
     } catch (error) {
-      showError('❌ Failed to cancel notifications');
-      logger.error('Cancel notifications test failed:', error as Error);
+      showError('❌ Notification toggle test failed');
+      logger.error('Notification toggle test failed:', error as Error);
+    }
+  }, [showSuccess, showError, showInfo]);
+
+  const testBasicNotification = useCallback(async () => {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '🧪 Test Notification',
+          body: 'This is a test notification from the debug menu',
+          data: { test: true },
+        },
+        trigger: null, // Immediate notification
+      });
+      showSuccess('✅ Test notification scheduled for 1 second!');
+    } catch (error) {
+      showError('❌ Failed to schedule test notification');
+      logger.error('Test notification failed:', error as Error);
     }
   }, [showSuccess, showError]);
 
+  // ✅ SIMPLIFIED: Service initialization test
   const testNotificationService = useCallback(async () => {
     try {
-      const isInitialized = notificationService.isInitialized();
+      showInfo('🔄 Testing notification service...');
 
-      if (!isInitialized) {
-        showInfo('🔄 Initializing notification service...');
-        const initSuccess = await notificationService.initialize();
-        if (initSuccess) {
-          showSuccess('✅ Notification service initialized');
+      const isInitialized = notificationService.isInitialized();
+      if (isInitialized) {
+        showSuccess('✅ Notification service is already initialized');
+      } else {
+        const initResult = await notificationService.initialize();
+        if (initResult) {
+          showSuccess('✅ Notification service initialized successfully');
         } else {
           showError('❌ Failed to initialize notification service');
-          return;
         }
-      } else {
-        showInfo('ℹ️ Notification service already initialized');
-      }
-
-      // Get comprehensive status
-      const pushStatus = notificationService.getPushNotificationStatus();
-      const scheduledCount = await notificationService.getScheduledNotificationsCount();
-      const pushToken = notificationService.getCurrentPushToken();
-
-      // Show detailed status
-      logger.info('Notification Service Status:', {
-        initialized: isInitialized,
-        platform: Platform.OS,
-        scheduledNotifications: scheduledCount,
-        pushNotifications: {
-          available: pushStatus.available,
-          hasToken: pushStatus.hasToken,
-          reason: pushStatus.reason,
-          tokenLength: pushToken ? pushToken.length : 0,
-        },
-      });
-
-      // User-friendly status messages
-      showInfo(`📱 Platform: ${Platform.OS}`);
-      showInfo(`📋 Scheduled notifications: ${scheduledCount}`);
-
-      if (pushStatus.available) {
-        showSuccess('🔔 Push notifications: Available');
-        showInfo(`🎯 Push token: ${pushToken?.substring(0, 20)}...`);
-      } else {
-        showWarning(`⚠️ Push notifications: ${pushStatus.reason}`);
-        showInfo('ℹ️ Local notifications work fine without push tokens');
       }
     } catch (error) {
       showError('❌ Notification service test failed');
       logger.error('Notification service test failed:', error as Error);
     }
-  }, [showSuccess, showError, showInfo, showWarning]);
+  }, [showSuccess, showError, showInfo]);
 
-  const testForceReinitialize = useCallback(async () => {
+  // 🔥 NEW: FCM Status Test
+  const testFCMStatus = useCallback(async () => {
     try {
-      showInfo('🔄 Force re-initializing notification service...');
-      const initSuccess = await notificationService.forceReinitialize();
+      const status = notificationService.getStatus();
 
-      if (initSuccess) {
-        showSuccess('✅ Notification service force re-initialized successfully');
-        const count = await notificationService.getScheduledNotificationsCount();
-        showInfo(`📊 Scheduled notifications after re-init: ${count}`);
+      showInfo('📱 FCM Status Check:');
+      showInfo(`Platform: ${status.platform}`);
+      showInfo(`Initialized: ${status.initialized ? 'Yes' : 'No'}`);
+      showInfo(`Has Token: ${status.hasToken ? 'Yes' : 'No'}`);
+      showInfo(`FCM Available: ${status.fcmAvailable ? 'Yes' : 'No'}`);
+
+      if (status.hasToken) {
+        showInfo(`Token Length: ${status.tokenLength}`);
+      }
+
+      if (Platform.OS === 'android' && !status.fcmAvailable) {
+        showWarning('⚠️ FCM not configured for Android');
+        showInfo('ℹ️ This is normal in development');
+      }
+
+      logger.info('FCM Status:', status);
+    } catch (error) {
+      showError('❌ FCM status check failed');
+      logger.error('FCM status check failed:', { error: error as Error });
+    }
+  }, [showError, showInfo, showWarning]);
+
+  // 🔥 NEW: Force Token Refresh Test
+  const testForceTokenRefresh = useCallback(async () => {
+    try {
+      showInfo('🔄 Forcing token refresh...');
+
+      const success = await notificationService.forceTokenRefresh();
+
+      if (success) {
+        showSuccess('✅ Token refreshed successfully!');
+        const token = notificationService.getCurrentPushToken();
+        if (token) {
+          showInfo(`New token length: ${token.length}`);
+        }
       } else {
-        showError('❌ Force re-initialization failed');
+        showError('❌ Failed to refresh token');
       }
     } catch (error) {
-      showError('❌ Force re-initialization test failed');
-      logger.error('Force re-initialization test failed:', error as Error);
+      showError('❌ Token refresh failed');
+      logger.error('Token refresh failed:', { error: error as Error });
     }
   }, [showSuccess, showError, showInfo]);
 
-  const testCrossPlatformCompatibility = useCallback(async () => {
+  // 🔥 NEW: Test Local Notification
+  const testLocalNotification = useCallback(async () => {
     try {
-      showInfo(`🔍 Testing notifications on ${Platform.OS}`);
+      showInfo('📱 Sending local test notification...');
 
-      // Test basic scheduling
-      const now = new Date();
-      const testTime = new Date(now.getTime() + 30000); // 30 seconds from now
-
-      // Test daily reminder
-      const dailyResult = await notificationService.scheduleDailyReminder(
-        testTime.getHours(),
-        testTime.getMinutes(),
-        true
-      );
-
-      if (dailyResult.success) {
-        logger.info('Cross-platform daily reminder test passed', { platform: Platform.OS });
-      } else {
-        logger.error('Cross-platform daily reminder test failed', {
-          platform: Platform.OS,
-          error: dailyResult.error,
-        });
-      }
-
-      // Test throwback reminder
-      const throwbackResult = await notificationService.scheduleThrowbackReminder(
-        testTime.getHours(),
-        testTime.getMinutes(),
-        true,
-        'daily'
-      );
-
-      if (throwbackResult.success) {
-        logger.info('Cross-platform throwback reminder test passed', { platform: Platform.OS });
-      } else {
-        logger.error('Cross-platform throwback reminder test failed', {
-          platform: Platform.OS,
-          error: throwbackResult.error,
-        });
-      }
-
-      if (dailyResult.success && throwbackResult.success) {
-        showSuccess(`✅ Cross-platform tests passed on ${Platform.OS}`);
-      } else {
-        showWarning(`⚠️ Some cross-platform tests failed on ${Platform.OS}`);
-      }
-    } catch (error) {
-      showError(`❌ Cross-platform test failed on ${Platform.OS}`);
-      logger.error('Cross-platform notification test failed:', error as Error);
-    }
-  }, [showSuccess, showWarning, showError, showInfo]);
-
-  const testKilledAppNotifications = useCallback(async () => {
-    try {
-      showInfo('🧪 Setting up killed-app notification test...');
-
-      const now = new Date();
-      const testTime = new Date(now.getTime() + 90000); // 1.5 minutes from now
-
-      // Schedule a test notification
-      const result = await notificationService.scheduleDailyReminder(
-        testTime.getHours(),
-        testTime.getMinutes(),
-        true
-      );
-
-      if (result.success) {
-        const timeString = testTime.toLocaleTimeString();
-        showSuccess(`✅ Test notification scheduled for ${timeString}`);
-        showInfo('📱 Instructions for testing:');
-        showInfo('1. Wait 10 seconds');
-        showInfo('2. Force-close the app (not just background)');
-        showInfo(`3. Wait until ${timeString}`);
-        showInfo('4. Check if notification appears');
-        showInfo('5. Tap notification to verify app opens');
-
-        logger.info('Killed-app notification test scheduled:', {
-          scheduledTime: timeString,
-          platform: Platform.OS,
-          testType: 'killed_app_notification',
-        });
-
-        // Schedule cleanup notification to cancel the test reminder
-        setTimeout(async () => {
-          try {
-            await notificationService.cancelDailyReminders();
-            logger.debug('Test notification cleaned up automatically');
-          } catch (error) {
-            logger.warn('Failed to cleanup test notification:', {
-              error: error instanceof Error ? error.message : String(error),
-            });
-          }
-        }, 200000); // Clean up after ~3 minutes
-      } else {
-        showError(`❌ Failed to schedule test: ${result.error?.message}`);
-        logger.error('Killed-app notification test failed', result.error);
-      }
-    } catch (error) {
-      showError('❌ Killed-app notification test failed');
-      logger.error('Killed-app notification test failed:', error as Error);
-    }
-  }, [showSuccess, showError, showInfo]);
-
-  const testPersistenceFlow = useCallback(async () => {
-    try {
-      showInfo('🔍 Testing complete notification persistence flow...');
-
-      // Step 1: Check current scheduled notifications
-      const initialCount = await notificationService.getScheduledNotificationsCount();
-      logger.info('Persistence Test - Initial state:', {
-        scheduledNotifications: initialCount,
-        platform: Platform.OS,
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '🧪 Test Notification',
+          body: 'This is a local test notification to verify the system works!',
+          data: { type: 'test_local' },
+        },
+        trigger: null,
       });
 
-      // Step 2: Test profile loading and notification restoration
-      showInfo('📊 Checking profile data and notification restoration...');
-
-      // Step 3: Check if there's a restoration mechanism
-      const hasRestorationMechanism = checkNotificationRestorationMechanism();
-
-      if (hasRestorationMechanism) {
-        showSuccess('✅ Notification restoration mechanism exists');
-      } else {
-        showError('❌ Missing notification restoration mechanism');
-        showWarning('⚠️ Critical Issue: Notifications may not restore after app restart');
-      }
-
-      // Step 4: Test the full flow with a sample notification
-      showInfo('🧪 Testing persistence with sample notification...');
-      const now = new Date();
-      const testTime = new Date(now.getTime() + 2 * 60000); // 2 minutes from now
-
-      const result = await notificationService.scheduleDailyReminder(
-        testTime.getHours(),
-        testTime.getMinutes(),
-        true
-      );
-
-      if (result.success) {
-        const newCount = await notificationService.getScheduledNotificationsCount();
-        showSuccess(`✅ Sample notification scheduled (${newCount} total)`);
-
-        showInfo('📱 Complete persistence test instructions:');
-        showInfo('1. Note the scheduled notification above');
-        showInfo('2. Force-close the app completely');
-        showInfo('3. Restart the app');
-        showInfo('4. Go to Settings → Check notification settings');
-        showInfo('5. Run "Initialize & Check Service" test');
-        showInfo('6. Verify if the notification is still scheduled');
-
-        logger.info('Persistence flow test completed:', {
-          scheduledTime: testTime.toLocaleTimeString(),
-          beforeCount: initialCount,
-          afterCount: newCount,
-          testType: 'complete_persistence_flow',
-        });
-      } else {
-        showError(`❌ Failed to schedule test notification: ${result.error?.message}`);
-      }
+      showSuccess('✅ Local notification scheduled for 2 seconds');
     } catch (error) {
-      showError('❌ Persistence flow test failed');
-      logger.error('Persistence flow test failed:', error as Error);
-    }
-  }, [showSuccess, showError, showInfo, showWarning]);
-
-  // Helper function to check if notification restoration mechanism exists
-  const checkNotificationRestorationMechanism = (): boolean => {
-    try {
-      // Check if there's any code that restores notifications on app startup
-      logger.info('Notification restoration mechanism check:', {
-        hasStartupRestore: true, // ✅ Now implemented in App.tsx
-        hasProfileRestore: true, // ✅ Now implemented in notificationService.restoreUserNotificationSettings()
-        hasDelayedRestore: true, // ✅ Delayed to ensure auth completion
-        implementation: 'App.tsx + notificationService.restoreUserNotificationSettings()',
-      });
-
-      return true; // ✅ Restoration mechanism is now implemented
-    } catch (error) {
-      logger.error('Failed to check restoration mechanism:', error as Error);
-      return false;
-    }
-  };
-
-  const testNotificationRestoration = useCallback(async () => {
-    try {
-      showInfo('🔄 Testing notification restoration mechanism...');
-
-      // Test the restoration function directly
-      const restorationResult = await notificationService.restoreUserNotificationSettings();
-
-      if (restorationResult.success) {
-        showSuccess('✅ Notification restoration successful');
-        showInfo(`📅 Daily reminder restored: ${restorationResult.dailyRestored ? 'Yes' : 'No'}`);
-        showInfo(
-          `🔄 Throwback reminder restored: ${restorationResult.throwbackRestored ? 'Yes' : 'No'}`
-        );
-
-        const count = await notificationService.getScheduledNotificationsCount();
-        showInfo(`📊 Total scheduled notifications: ${count}`);
-
-        logger.info('Manual notification restoration test:', {
-          success: restorationResult.success,
-          dailyRestored: restorationResult.dailyRestored,
-          throwbackRestored: restorationResult.throwbackRestored,
-          totalScheduled: count,
-        });
-      } else {
-        showError(`❌ Restoration failed: ${restorationResult.error}`);
-        logger.error('Manual notification restoration failed:', {
-          error: restorationResult.error || 'Unknown error',
-        });
-      }
-    } catch (error) {
-      showError('❌ Restoration test failed');
-      logger.error('Notification restoration test failed:', error as Error);
+      showError('❌ Local notification failed');
+      logger.error('Local notification failed:', { error: error as Error });
     }
   }, [showSuccess, showError, showInfo]);
+
+  // 🔥 NEW: Test Database Function Call
+  const testDatabaseNotification = useCallback(async () => {
+    try {
+      showInfo('📡 Testing database notification function...');
+
+      const { supabaseService } = await import('@/utils/supabaseClient');
+      const { data, error } = await supabaseService.getClient().rpc('send_push_notifications', {
+        notification_type: 'test_debug_app',
+        title: '🧪 App Test',
+        body: 'Testing notification from app debug menu',
+      });
+
+      if (error) {
+        throw new Error(`Database function error: ${error.message}`);
+      }
+
+      showSuccess(`✅ Database function executed successfully`);
+      showInfo(`Result: ${data || 'No data returned'}`);
+      logger.debug('Database notification test result:', { data, error });
+    } catch (error) {
+      showError('❌ Database notification test failed');
+      logger.error('Database notification test failed:', { error: error as Error });
+    }
+  }, [showSuccess, showError, showInfo]);
+
+  // 🔥 NEW: Complete Notification Pipeline Test
+  const testFullNotificationPipeline = useCallback(async () => {
+    try {
+      showInfo('🔬 Running complete notification pipeline test...');
+
+      // Step 1: Check service status
+      const status = notificationService.getStatus();
+      showInfo(`Step 1: Service Status - ${JSON.stringify(status)}`);
+
+      // Step 2: Ensure token exists
+      if (!status.hasToken) {
+        showInfo('Step 2: No token found, forcing refresh...');
+        const success = await notificationService.forceTokenRefresh();
+        if (!success) {
+          throw new Error('Failed to get push token');
+        }
+        showInfo('Step 2: ✅ Token obtained');
+      } else {
+        showInfo('Step 2: ✅ Token already exists');
+      }
+
+      // Step 3: Test local notification
+      showInfo('Step 3: Testing local notification...');
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '🧪 Pipeline Test - Local',
+          body: 'Local notification working!',
+          data: { type: 'test_pipeline_local' },
+        },
+        trigger: null,
+      });
+
+      // Step 4: Test database function
+      showInfo('Step 4: Testing database function...');
+      const { supabaseService } = await import('@/utils/supabaseClient');
+      const { data, error } = await supabaseService.getClient().rpc('send_push_notifications', {
+        notification_type: 'test_pipeline_remote',
+        title: '🧪 Pipeline Test - Remote',
+        body: 'Testing complete notification pipeline',
+      });
+
+      if (error) {
+        showWarning(`Database function warning: ${error.message}`);
+      } else {
+        showInfo(`Step 4: ✅ Database function completed (sent to ${data || 0} users)`);
+      }
+
+      showSuccess('🎉 Complete pipeline test finished!');
+      showInfo('📝 Check for notifications in the next few seconds');
+    } catch (error) {
+      showError('❌ Pipeline test failed');
+      logger.error('Full pipeline test failed:', { error: error as Error });
+    }
+  }, [showSuccess, showError, showInfo, showWarning]);
 
   // 🔍 CONSOLE & LOGGING TESTING FUNCTIONS
 
@@ -1058,14 +908,14 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
           <Text style={styles.featureButtonText}>Initialize & Check Service</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.featureButton} onPress={testForceReinitialize}>
-          <Icon name="refresh" size={18} color={theme.colors.primary} />
-          <Text style={styles.featureButtonText}>Force Re-initialize Service</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity style={styles.featureButton} onPress={testNotificationPermissions}>
           <Icon name="shield-check" size={18} color={theme.colors.primary} />
           <Text style={styles.featureButtonText}>Test Permissions</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testNotificationToggle}>
+          <Icon name="toggle" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Notification Toggle</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.featureButton} onPress={testBasicNotification}>
@@ -1073,39 +923,29 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
           <Text style={styles.featureButtonText}>Send Test Notification</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.featureButton} onPress={testDailyReminder}>
-          <Icon name="calendar-clock" size={18} color={theme.colors.primary} />
-          <Text style={styles.featureButtonText}>Test Daily Reminder (+1 min)</Text>
+        <TouchableOpacity style={styles.featureButton} onPress={testFCMStatus}>
+          <Icon name="firebase" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Check FCM Status</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.featureButton} onPress={testThrowbackReminder}>
-          <Icon name="history" size={18} color={theme.colors.primary} />
-          <Text style={styles.featureButtonText}>Test Throwback Reminder (+2 min)</Text>
+        <TouchableOpacity style={styles.featureButton} onPress={testForceTokenRefresh}>
+          <Icon name="refresh" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Force Token Refresh</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.featureButton} onPress={testCancelNotifications}>
-          <Icon name="cancel" size={18} color={theme.colors.primary} />
-          <Text style={styles.featureButtonText}>Cancel All Notifications</Text>
+        <TouchableOpacity style={styles.featureButton} onPress={testLocalNotification}>
+          <Icon name="bell" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Send Local Notification</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.featureButton} onPress={testCrossPlatformCompatibility}>
-          <Icon name="crosshairs" size={18} color={theme.colors.primary} />
-          <Text style={styles.featureButtonText}>Test Cross-Platform Compatibility</Text>
+        <TouchableOpacity style={styles.featureButton} onPress={testDatabaseNotification}>
+          <Icon name="database" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Database Notification</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.featureButton} onPress={testKilledAppNotifications}>
-          <Icon name="alert-circle" size={18} color={theme.colors.primary} />
-          <Text style={styles.featureButtonText}>Test Killed-App Notifications</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.featureButton} onPress={testPersistenceFlow}>
-          <Icon name="history" size={18} color={theme.colors.primary} />
-          <Text style={styles.featureButtonText}>Test Notification Persistence</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.featureButton} onPress={testNotificationRestoration}>
-          <Icon name="restore" size={18} color={theme.colors.primary} />
-          <Text style={styles.featureButtonText}>Test Notification Restoration</Text>
+        <TouchableOpacity style={styles.featureButton} onPress={testFullNotificationPipeline}>
+          <Icon name="pipeline" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Full Notification Pipeline</Text>
         </TouchableOpacity>
       </Card>
 

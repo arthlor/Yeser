@@ -23,7 +23,7 @@ const SCREEN_NAME_MAPPING: Record<string, string> = {
   splash_screen: 'splash_screen',
   terms_of_service: 'terms_of_service_screen',
   PastEntriesScreen: 'past_entries_screen',
-  EnhancedReminderSettingsScreen: 'reminder_settings_screen',
+  // EnhancedReminderSettingsScreen: 'reminder_settings_screen', // ✅ REMOVED: Screen deleted during notification refactor
   help_screen: 'help_screen',
   settings: 'settings_screen',
   privacy_policy: 'privacy_policy_screen',

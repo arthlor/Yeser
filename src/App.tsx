@@ -303,40 +303,46 @@ const AppContent: React.FC = () => {
     };
   }, [isAuthenticated, profile]);
 
+  // Periodically refresh push tokens to ensure they're valid
+  React.useEffect(() => {
+    const refreshInterval = setInterval(
+      async () => {
+        if (profile?.notifications_enabled) {
+          await notificationService.refreshTokenIfNeeded();
+        }
+      },
+      24 * 60 * 60 * 1000
+    ); // Daily
+
+    return () => clearInterval(refreshInterval);
+  }, [profile?.notifications_enabled, profile?.expo_push_token]);
+
   React.useEffect(() => {
     void analyticsService.logAppOpen();
 
     // Initialize notification service on app start (with initialization guard)
     const initializeNotifications = async () => {
-      // 🛡️ INITIALIZATION GUARD: Check if already initialized
       if (notificationService.isInitialized()) {
-        logger.debug('Notification service already initialized, skipping duplicate initialization');
         return;
       }
 
       try {
-        const hasPermissions = await notificationService.initialize();
-        logger.debug('Notifications initialized:', { extra: { hasPermissions } });
+        await notificationService.initialize();
 
-        // Only attempt to restore user settings if initialization was successful
-        if (hasPermissions) {
-          // Delay restoration to ensure authentication is complete
-          setTimeout(async () => {
-            try {
-              const restorationResult = await notificationService.restoreUserNotificationSettings();
-              logger.debug('Notification restoration completed:', {
-                success: restorationResult.success,
-                dailyRestored: restorationResult.dailyRestored,
-                throwbackRestored: restorationResult.throwbackRestored,
-                error: restorationResult.error,
-              });
-            } catch (error) {
-              logger.error('Failed to restore notification settings on startup:', error as Error);
-            }
-          }, 2000); // Wait 2 seconds to ensure auth and profile loading is complete
+        // 🔥 ENHANCED: Force token refresh for users without tokens
+        if (profile?.notifications_enabled) {
+          const currentToken = notificationService.getCurrentPushToken();
+
+          if (!currentToken || !profile.expo_push_token) {
+            logger.debug('User has notifications enabled but no token - forcing refresh');
+            await notificationService.forceTokenRefresh();
+          } else {
+            // Standard token refresh if needed
+            await notificationService.refreshTokenIfNeeded();
+          }
         }
       } catch (error) {
-        logger.error('Failed to initialize notification service:', error as Error);
+        logger.error('Notification init failed:', error as Error);
       }
     };
 
@@ -425,9 +431,15 @@ const AppContent: React.FC = () => {
           });
         }
       } else {
-        logger.warn('[NOTIFICATION FIX] Unknown notification type:', {
-          notificationType: data?.type,
-        });
+        // Only log warning for actual notification data, ignore system/browser data
+        if (data && Object.keys(data).length > 0 && !data['android.intent.extra.REFERRER']) {
+          logger.warn('[NOTIFICATION FIX] Unknown notification type:', {
+            notificationType: data?.type,
+            allData: data,
+          });
+        } else {
+          logger.debug('[NOTIFICATION FIX] Ignoring system/browser notification data');
+        }
       }
     });
 
@@ -448,7 +460,14 @@ const AppContent: React.FC = () => {
       linkingSubscription.remove();
       cleanupReadinessCheck();
     };
-  }, [isMainAppReady, isAuthenticated, profile?.onboarded, databaseReady]);
+  }, [
+    isMainAppReady,
+    isAuthenticated,
+    profile?.onboarded,
+    databaseReady,
+    profile?.notifications_enabled,
+    profile?.expo_push_token,
+  ]);
 
   const navigationTheme = React.useMemo(
     () => ({

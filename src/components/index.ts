@@ -4,3 +4,6 @@ export * from '../features/gratitude/components';
 export * from '../features/streak/components';
 export * from '../features/home/components';
 export * from '../features/throwback/components';
+
+// Settings components
+export { default as NotificationToggle } from './settings/NotificationToggle';

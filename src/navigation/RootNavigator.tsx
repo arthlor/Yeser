@@ -20,7 +20,6 @@ import HelpScreen from '../features/settings/screens/HelpScreen';
 import HomeScreen from '../features/home/screens/HomeScreen';
 import PastEntriesScreen from '../features/calendar/screens/PastEntriesScreen';
 import PrivacyPolicyScreen from '../features/settings/screens/PrivacyPolicyScreen';
-import ReminderSettingsScreen from '../features/settings/screens/ReminderSettingsScreen';
 import SettingsScreen from '../features/settings/screens/SettingsScreen';
 import SplashScreen from '../features/auth/screens/SplashScreen';
 import TermsOfServiceScreen from '../features/settings/screens/TermsOfServiceScreen';
@@ -459,32 +458,6 @@ const RootNavigator: React.FC = () => {
       )}
 
       {/* Modal screens with enhanced edge-to-edge styling */}
-      <Root.Screen
-        name="ReminderSettings"
-        component={ReminderSettingsScreen}
-        options={{
-          headerShown: true,
-          title: 'Hatırlatıcı Ayarları',
-          presentation: 'modal',
-          headerTitleAlign: 'center',
-          gestureEnabled: true,
-          headerBackTitle: '', // Remove back title text on iOS
-          cardStyleInterpolator: ({ current }: StackCardInterpolationProps) => {
-            return {
-              cardStyle: {
-                transform: [
-                  {
-                    translateY: current.progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [600, 0],
-                    }),
-                  },
-                ],
-              },
-            };
-          },
-        }}
-      />
       <Root.Screen
         name="EntryDetail"
         component={EntryDetailScreen}

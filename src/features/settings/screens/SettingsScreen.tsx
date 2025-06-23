@@ -11,8 +11,7 @@ import { cleanupTemporaryFile, prepareUserExportFile, shareExportedFile } from '
 import AboutSettings from '@/components/settings/AboutSettings';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
 import DailyGoalSettings from '@/components/settings/DailyGoalSettings';
-import DailyReminderSettings from '@/components/settings/DailyReminderSettings';
-import ThrowbackReminderSettings from '@/components/settings/ThrowbackReminderSettings';
+import { NotificationToggle } from '@/components';
 import { ScreenContent, ScreenLayout } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import { useUserProfile } from '@/shared/hooks';
@@ -27,6 +26,7 @@ import { logger } from '@/utils/debugConfig';
 import { AppTheme, ThemeName } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import { notificationService } from '@/services/notificationService';
+import { hapticFeedback } from '@/utils/hapticFeedback';
 
 // Fix navigation types by extending the base interfaces
 interface MainAppTabParamListFixed extends Record<string, object | undefined> {
@@ -65,6 +65,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const animations = useCoordinatedAnimations();
 
   const [isExporting, setIsExporting] = useState(false);
+  const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
 
   // TanStack Query - Replace Zustand profile store
   const {
@@ -146,116 +147,29 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   // TanStack Query - Helper functions for profile updates
-  const handleDailyReminderUpdate = async (settings: {
-    reminder_enabled: boolean;
-    reminder_time?: string;
-  }) => {
+  const handleNotificationToggle = async (enabled: boolean) => {
     try {
-      // Update the profile in the database
-      updateProfile(settings);
-
-      // Also update the notification scheduling
-      if (settings.reminder_enabled && settings.reminder_time) {
-        const [hours, minutes] = settings.reminder_time.split(':').map(Number);
-        const result = await notificationService.scheduleDailyReminder(hours, minutes, true);
-
-        if (!result.success) {
-          logger.error(
-            'Failed to schedule daily reminder:',
-            new Error(result.error?.message || 'Bilinmeyen hata')
-          );
-          handleMutationError(
-            new Error(`Hatırlatıcı zamanlanamadı: ${result.error?.message || 'Bilinmeyen hata'}`),
-            'hatırlatıcı ayarlama'
-          );
-        } else {
-          logger.debug('Daily reminder scheduled successfully from settings');
-        }
+      setIsUpdatingNotifications(true);
+      const success = await notificationService.toggleNotifications(enabled);
+      if (success) {
+        // 🔥 FIX: Refetch profile to update UI state
+        await refetchProfile();
+        hapticFeedback.success();
+        analyticsService.logEvent('notifications_toggled', { enabled });
       } else {
-        // Cancel notifications if reminder is disabled
-        await notificationService.cancelDailyReminders();
-        logger.debug('Daily reminders cancelled from settings');
-      }
-    } catch (error) {
-      logger.error(
-        'Error updating daily reminder settings:',
-        error instanceof Error ? error : new Error(String(error))
-      );
-      handleMutationError(error, 'günlük hatırlatıcı ayarlama');
-    }
-  };
-
-  const handleThrowbackUpdate = async (settings: {
-    throwback_reminder_enabled: boolean;
-    throwback_reminder_time?: string;
-  }) => {
-    try {
-      // First, handle notification scheduling/cancellation
-      if (settings.throwback_reminder_enabled) {
-        // Parse time from database format (HH:MM:SS)
-        const timeString = settings.throwback_reminder_time || '14:00:00';
-        const [hours, minutes] = timeString.split(':').map(Number);
-
-        // Always schedule as daily throwback reminder
-        const notificationResult = await notificationService.scheduleThrowbackReminder(
-          hours,
-          minutes,
-          true,
-          'daily'
+        handleMutationError(
+          new Error('Bildirimler güncellenirken bir hata oluştu'),
+          'bildirim güncelleme'
         );
-
-        if (!notificationResult.success) {
-          logger.error(
-            'Failed to schedule daily throwback reminder:',
-            new Error(notificationResult.error?.message || 'Bilinmeyen hata')
-          );
-          handleMutationError(
-            new Error(
-              `Anı hatırlatıcısı zamanlanamadı: ${notificationResult.error?.message || 'Bilinmeyen hata'}`
-            ),
-            'anı hatırlatıcısı ayarlama'
-          );
-          return; // Early return - don't update database
-        } else {
-          logger.debug('Daily throwback reminder scheduled successfully from settings');
-        }
-      } else {
-        // Cancel throwback notifications if disabled
-        try {
-          await notificationService.cancelThrowbackReminders();
-          logger.debug('Throwback reminders cancelled from settings');
-        } catch (error) {
-          logger.error('Failed to cancel throwback reminders', error as Error);
-          handleMutationError(
-            new Error(
-              `Anı hatırlatıcısı iptal edilemedi: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`
-            ),
-            'anı hatırlatıcısı iptal etme'
-          );
-          return; // Early return - don't update database
-        }
       }
-
-      // Only update the profile in the database if notification operation succeeded
-      updateProfile({
-        throwback_reminder_enabled: settings.throwback_reminder_enabled,
-        throwback_reminder_frequency: 'daily', // Always daily now
-        throwback_reminder_time: settings.throwback_reminder_time,
-      });
-
-      logger.debug(
-        'Daily throwback settings updated successfully - both notifications and database',
-        {
-          enabled: settings.throwback_reminder_enabled,
-          time: settings.throwback_reminder_time,
-        }
-      );
     } catch (error) {
       logger.error(
-        'Error updating throwback reminder settings:',
+        'Error toggling notifications:',
         error instanceof Error ? error : new Error(String(error))
       );
-      handleMutationError(error, 'anı hatırlatıcısı ayarlama');
+      handleMutationError(error, 'bildirim güncelleme');
+    } finally {
+      setIsUpdatingNotifications(false);
     }
   };
 
@@ -381,16 +295,10 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             onUpdateGoal={handleDailyGoalUpdate}
           />
 
-          <DailyReminderSettings
-            reminderEnabled={profile?.reminder_enabled ?? false}
-            reminderTime={profile?.reminder_time}
-            onUpdateSettings={handleDailyReminderUpdate}
-          />
-
-          <ThrowbackReminderSettings
-            throwbackEnabled={profile?.throwback_reminder_enabled ?? false}
-            throwbackReminderTime={profile?.throwback_reminder_time}
-            onUpdateSettings={handleThrowbackUpdate}
+          <NotificationToggle
+            enabled={profile?.notifications_enabled ?? false}
+            onToggle={handleNotificationToggle}
+            isLoading={isUpdatingNotifications}
           />
 
           <AppearanceSettings

@@ -95,8 +95,7 @@ module.exports = {
       backgroundColor: '#2F4F4F',
     },
     edgeToEdgeEnabled: true,
-    // 🔥 FIXED: Enable FCM for ALL environments with correct path
-    googleServicesFile: './android/app/google-services.json',
+    // 🔥 Note: google-services.json is handled via EAS Build environment
     permissions: [
       'RECEIVE_BOOT_COMPLETED',
       'VIBRATE',

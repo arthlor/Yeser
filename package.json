@@ -31,6 +31,7 @@
     "update:preview": "eas update --branch preview --message",
     "update:production": "eas update --branch production --message",
     "validate:env": "node -e \"require('./src/utils/config.ts').logConfigurationStatus()\"",
+    "validate:google-services": "node scripts/verify-google-services.js",
     "validate:build": "node scripts/validate-build.js && npm run type-check && npm run lint:check",
     "prebuild:preview": "npm run validate:build",
     "prebuild:production": "npm run validate:build",

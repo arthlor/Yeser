@@ -34,11 +34,11 @@ This repository features a **production-ready secure CI/CD pipeline** for the Ye
 **Triggers**: All pushes and PRs
 
 - ✅ Firebase config security validation
-- ✅ EAS file environment variable verification
+- ✅ Google Services plugin verification
 - ✅ TypeScript compilation check
 - ✅ ESLint analysis with security rules
 - ✅ Dependency security audit
-- ✅ App configuration validation
+- ✅ Expo managed workflow validation
 
 ### 2. 📱 EAS Preview Builds
 

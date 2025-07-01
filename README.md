@@ -1,61 +1,78 @@
-# Yeser - Gratitude Journaling App 🙏
+# Yeşer - Minnettarlık Günlüğü 🙏
 
 > **Minnettarlık günlüğü ile hayatının güzel anlarını keşfet**  
-> _Discover life's beautiful moments with your gratitude journal_
+> _Hayatın güzel anlarını minnettarlık günlüğünle keşfet_
 
-## 📱 App Overview
+## 📱 Günlük Zihniyetini Minnettarlıkla Dönüştür
 
-**Yeser** is a beautifully designed, Turkish-language gratitude journaling application built with React Native and Expo. The app helps users cultivate mindfulness and positivity by encouraging daily gratitude practice through an intuitive, performance-optimized interface.
+**Yeşer**, sürdürülebilir bir farkındalık pratiği geliştirmene yardımcı olan, özenle tasarlanmış Türkçe minnettarlık günlüğü uygulamasıdır. Günde sadece birkaç dakika ayırarak pozitiflik ve iyi oluş yolculuğuna başla.
 
-### ✨ Key Features
+### ✨ Yeşer'i Özel Kılan Nedir
 
-- **📝 Daily Gratitude Entries** - Write multiple gratitude statements each day
-- **🎯 Goal Tracking** - Set and track daily gratitude goals with progress visualization
-- **🔥 Streak System** - Maintain streaks and track your longest gratitude journey
-- **📅 Calendar View** - Visual calendar showing your gratitude journey over time
-- **🔍 Past Entries** - Browse and reflect on previous gratitude entries
-- **💡 Smart Prompts** - AI-powered prompts to inspire gratitude (optional)
-- **🔔 Gentle Reminders** - Customizable daily and throwback notifications
-- **🎨 Beautiful UI** - Modern, accessible design with light/dark themes
-- **🚀 Performance Optimized** - Following React Native best practices for smooth experience
+- **🎯 Basit Günlük Pratik** - Minnettarlık ifadelerini saniyeler içinde yaz
+- **🏆 Motivasyon Verici Hedef Sistemi** - Günlük minnettarlık hedefleri koy ve gelişimini izle
+- **🔥 Seri Takibi** - Görsel seri sayaçları ve kilometre taşı kutlamalarıyla momentum oluştur
+- **📅 Takvim** - Tüm minnettarlık yolculuğunu bir bakışta gör
+- **💭 Anı Şeridi** - Geçmiş girişleri ziyaret ederek unutulan minnettarlıklarını yeniden keşfet
+- **💡 İlham Verici İpuçları** - İlhama ihtiyacın olduğunda öneriler al
+- **🔔 Nazik Hatırlatıcılar** - 12:00, 14:00, 19:00 ve 21:00'da isteğe bağlı günlük bildirimler
+- **🌙 Karanlık & Aydınlık Temalar** - Düşünce zamanın için mükemmel ruh halini seç
+- **🚀 Şimşek Hızında** - Akıcı, duyarlı performans için optimize edildi
 
-### 🛠 Technical Stack
+### 🌟 Günlük Minnettarlık Neden Önemli
 
-- **Frontend**: React Native 0.79.4 with Expo 53
-- **Backend**: Supabase (PostgreSQL + Authentication + Real-time)
-- **State Management**: TanStack Query + Zustand
-- **Navigation**: React Navigation v7
-- **Language**: TypeScript with strict type safety
-- **Validation**: Zod schemas for runtime type checking
-- **Styling**: StyleSheet.create with theme system
-- **Notifications**: Expo Notifications
-- **Authentication**: Supabase Auth (Magic Links + Google OAuth)
+**Bilimsel Faydalar:**
 
-## 🎯 Key Business Logic
+- Gelişmiş zihinsel refah ve yaşam memnuniyeti
+- Daha iyi uyku kalitesi ve azalmış stres
+- Güçlendirilmiş ilişkiler ve sosyal bağlantılar
+- Artmış dayanıklılık ve duygusal düzenleme
 
-### Core Gratitude Flow
+**Yeşer ile Yolculuğun:**
 
-1. **Daily Entry Creation** - Users select a date and add gratitude statements
-2. **Statement Management** - Add, edit, delete individual statements via RPC functions
-3. **Progress Tracking** - Visual progress toward daily goals with streak calculation
-4. **Data Persistence** - All data stored in Supabase with real-time sync
+1. **1-2. Hafta**: Nazik hatırlatıcılarla alışkanlığı oluştur
+2. **1. Ay**: Gelişmiş ruh hali ve bakış açısını fark et
+3. **3+ Ay**: Kalıcı pozitif zihniyet değişimlerini deneyimle
 
-### User Journey
+### 🎯 Şunlar İçin Mükemmel
 
-1. **Authentication** - Magic link or Google OAuth via Supabase
-2. **Onboarding** - Multi-step flow for goal setting and preference configuration
-3. **Daily Practice** - Main gratitude entry interface with optional prompts
-4. **Reflection** - Calendar view and past entries for reviewing gratitude journey
-5. **Engagement** - Notifications and streak tracking for habit formation
+- **Farkındalık Başlangıç Seviyesi** - Basit, korkutucu olmayan arayüz
+- **Yoğun Profesyoneller** - Hızlı 2 dakikalık günlük pratik
+- **Öğrenciler & Gençler** - Erken yaşta pozitif düşünce alışkanlıkları oluştur
+- **Denge Arayanlar** - Hareketli günlerde sakin anlar bul
 
-## 🔒 Data Model
+### 🛡️ Gizliliğin & Verin
 
-### Core Entities
+- **Güvenli Kimlik Doğrulama** - Sihirli bağlantı ve Google giriş seçenekleri
+- **Tasarımda Gizli** - Girişlerin tamamen özel ve güvenli
+- **Yerel & Bulut Senkronizasyonu** - Verilerine güvenli tutarken her yerden eriş
+- **KVKV Uyumlu** - Tam veri gizliliği ve silme hakları
 
-- **Users** - Authentication and profile information
-- **Gratitude Entries** - Daily entries with multiple statements
-- **Streaks** - Current and longest streak tracking
-- **Daily Prompts** - Optional prompts for inspiration
-- **User Preferences** - Settings, goals, and notification preferences
+### 🚀 Başlangıç
 
-> **"Gratitude turns what we have into enough."** - Anonymous
+1. **Kaydol** e-posta veya Google hesabınla
+2. **Günlük hedefini belirle** (sadece 1-3 minnettarlık ifadesiyle başla)
+3. **İlk girişini yaz** - bugün neye minnettarsın?
+4. **İlerlemeini takip et** ve minnettarlık serini oluştur
+5. **Düşün ve büyü** takvim ve geçmiş girişleri kullanarak
+
+### 💝 Minnettarlık Hareketine Katıl
+
+Yeşer ile dönüşümüne bugün başla. Günlük minnettarlık pratiğinin gücünü keşfetmiş binlerce kullanıcıya katıl.
+
+**Şimdi indir ve daha pozitif, farkında bir yaşama yolculuğuna başla.**
+
+---
+
+### 📞 Destek & Geri Bildirim
+
+- **E-posta**: anilkaraca140@gmail.com
+- **Gizlilik Politikası**: Uygulama içinde mevcut
+- **Hizmet Şartları**: Uygulama içinde mevcut
+
+---
+
+> **"Şükretmek, sahip olduklarımızı yeterli hale getirir."**  
+> _"Minnettarlık sahip olduklarımızı yeterli hale getirir."_
+
+**Yeşer** - Hayatın güzel anlarını keşfet 🙏

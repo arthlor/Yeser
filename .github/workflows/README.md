@@ -6,7 +6,7 @@ This repository features a **production-ready secure CI/CD pipeline** for the Ye
 
 ## 🔐 Security-First Architecture
 
-- ✅ **EAS File Environment Variables** for Firebase configs
+- ✅ **Custom Google Services Plugin** for Firebase configs
 - ✅ **EAS Console Secrets** for all sensitive data
 - ✅ **Zero hardcoded credentials** in repository
 - ✅ **Enterprise-grade security compliance**
@@ -45,8 +45,8 @@ This repository features a **production-ready secure CI/CD pipeline** for the Ye
 **Duration**: ~45-60 minutes
 **Triggers**: develop, feature branches
 
-- 🔨 **Secure EAS Build** with file environment variables
-- 🔒 Firebase configs injected via `GOOGLE_SERVICES_JSON` and `IOS_GOOGLE_SERVICE_INFO_PLIST`
+- 🔨 **Secure EAS Build** with custom Google Services plugin
+- 🔒 Firebase configs injected via `GOOGLE_SERVICES_JSON` environment variable
 - 📦 Internal distribution ready
 - 🔗 Available on EAS dashboard
 
@@ -107,14 +107,15 @@ git push origin main
 
 ## 🔐 Security Configuration
 
-### EAS File Environment Variables (Required)
+### EAS Environment Variables (Required)
 
 These must be configured in the EAS Console:
 
-| Variable Name                   | Purpose                          | Visibility |
-| ------------------------------- | -------------------------------- | ---------- |
-| `GOOGLE_SERVICES_JSON`          | Android Firebase config          | Sensitive  |
-| `IOS_GOOGLE_SERVICE_INFO_PLIST` | iOS Firebase config (Production) | Sensitive  |
+| Variable Name          | Purpose                 | Visibility |
+| ---------------------- | ----------------------- | ---------- |
+| `GOOGLE_SERVICES_JSON` | Android Firebase config | Sensitive  |
+
+**Note**: Our custom plugin (`plugins/withGoogleServices.js`) automatically creates the `google-services.json` file from the `GOOGLE_SERVICES_JSON` environment variable during EAS builds.
 
 ### EAS Console Environment Variables
 
@@ -144,8 +145,8 @@ All app secrets are managed via EAS Console:
 
 ### Build Security
 
-- ✅ **EAS file environment variables** for sensitive configs
-- ✅ **Secure credential injection** during build
+- ✅ **Custom Google Services plugin** for Firebase config injection
+- ✅ **Secure credential handling** via EAS environment variables
 - ✅ **Zero credential exposure** in logs
 - ✅ **Enterprise-grade encryption** for secrets
 
@@ -158,12 +159,13 @@ All app secrets are managed via EAS Console:
 
 ## 🔧 Configuration Files
 
-| File                          | Purpose                              | Security Level      |
-| ----------------------------- | ------------------------------------ | ------------------- |
-| `eas.json`                    | EAS Build configuration              | Public (no secrets) |
-| `app.config.js`               | App configuration with env injection | Public (no secrets) |
-| `.github/workflows/ci-cd.yml` | GitHub Actions workflow              | Public (no secrets) |
-| `.firebase-backup/`           | Development Firebase configs         | Gitignored          |
+| File                            | Purpose                              | Security Level      |
+| ------------------------------- | ------------------------------------ | ------------------- |
+| `eas.json`                      | EAS Build configuration              | Public (no secrets) |
+| `app.config.js`                 | App configuration with env injection | Public (no secrets) |
+| `plugins/withGoogleServices.js` | Custom Google Services plugin        | Public (no secrets) |
+| `.github/workflows/ci-cd.yml`   | GitHub Actions workflow              | Public (no secrets) |
+| `.firebase-backup/`             | Development Firebase configs         | Gitignored          |
 
 ## 🎯 Build Artifacts
 
@@ -214,10 +216,11 @@ All app secrets are managed via EAS Console:
 
 ### Common Security Issues
 
-1. **Missing EAS file environment variables**
+1. **Google Services plugin failures**
 
-   - Ensure `GOOGLE_SERVICES_JSON` is configured in EAS Console
-   - Verify `IOS_GOOGLE_SERVICE_INFO_PLIST` is set for iOS builds
+   - Ensure `GOOGLE_SERVICES_JSON` is configured in EAS Console (raw JSON, not base64)
+   - Verify `plugins/withGoogleServices.js` exists and is properly configured
+   - Check that the plugin is referenced in `app.config.js`
 
 2. **Build authentication failures**
 
@@ -225,8 +228,8 @@ All app secrets are managed via EAS Console:
    - Verify EAS CLI authentication
 
 3. **Firebase configuration errors**
-   - Validate base64 encoding of config files
-   - Ensure correct file paths in EAS Console
+   - Ensure `GOOGLE_SERVICES_JSON` contains valid JSON format
+   - Verify the custom plugin can parse the JSON during build
 
 ### Security Validation Failures
 

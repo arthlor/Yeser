@@ -85,9 +85,9 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   useEffect(() => {
     // Track onboarding start
     analyticsService.logEvent('enhanced_onboarding_started', {
-      flow_version: '2.1', // Updated version - removed features step
+      flow_version: '2.2', // Updated version - simplified notification system
       total_steps: ONBOARDING_STEPS.length,
-      removed_features_step: true,
+      notification_system: 'simplified',
     });
 
     // Handle Android back button
@@ -106,16 +106,12 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
       const finalData = {
         username: onboardingData.username || 'Kullanıcı',
         daily_gratitude_goal: onboardingData.dailyGoal || 3,
-        // ✅ DEFAULT FEATURES: Since features step removed, use sensible defaults
+        // ✅ SIMPLIFIED: Only essential fields for simplified notification system
         use_varied_prompts: true, // Always enable varied prompts
-        throwback_reminder_enabled: true, // Always enable throwback (controlled by notifications_enabled)
-        throwback_reminder_frequency: 'daily' as const, // Always daily now
-        throwback_reminder_time: '14:00:00', // Fixed time
         onboarded: true,
-        // Notifications disabled by default during onboarding - users can enable in Settings
-        notifications_enabled: false,
-        reminder_enabled: false, // Keep for backward compatibility during transition
-        reminder_time: '20:00:00',
+        // 🚀 SIMPLIFIED: Only notifications_enabled controls everything
+        // Fixed schedule: ["12:00", "14:00", "19:00", "21:00"] - no user configuration needed
+        notifications_enabled: false, // Disabled by default - users can enable in Settings
       };
 
       // Save to profile using TanStack Query
@@ -123,16 +119,15 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
 
       // Track completion
       analyticsService.logEvent('enhanced_onboarding_completed', {
-        flow_version: '2.1', // Updated version since features step removed
+        flow_version: '2.2', // Updated version for simplified notification system
         username_length: finalData.username.length,
         daily_goal: finalData.daily_gratitude_goal,
         theme: onboardingData.selectedTheme || 'light',
         varied_prompts: finalData.use_varied_prompts,
-        throwback_enabled: finalData.throwback_reminder_enabled,
-        throwback_frequency: finalData.throwback_reminder_frequency,
-        throwback_time: finalData.throwback_reminder_time,
+        notifications_enabled: finalData.notifications_enabled,
         completed_demo: onboardingData.hasCompletedDemo || false,
-        features_step_removed: true, // Track that features step was removed
+        notification_system: 'simplified', // Track simplified notification system
+        fixed_schedule: '12:00,14:00,19:00,21:00', // Track hardcoded schedule
       });
 
       hapticFeedback.success();

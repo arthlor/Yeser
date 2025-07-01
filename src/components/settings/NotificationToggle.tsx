@@ -30,7 +30,7 @@ const NotificationToggle: React.FC<NotificationToggleProps> = ({
           <View style={styles.textContainer}>
             <Text style={styles.settingTitle}>Bildirimler</Text>
             <Text style={styles.settingDescription}>
-              Günde 4 hatırlatıcı (12:00, 14:00, 19:00, 21:00)
+              Günde 4 hatırlatıcı: (12:00, 14:00, 19:00, 21:00)
             </Text>
           </View>
         </View>

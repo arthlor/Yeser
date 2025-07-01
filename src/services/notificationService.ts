@@ -26,35 +26,75 @@ class NotificationService {
       }),
     });
 
-    // 🔥 NEW: Check FCM availability
-    this.checkFCMAvailability();
+    // 🔥 NEW: Check FCM availability (async but don't await in constructor)
+    this.checkFCMAvailability().catch((error) => {
+      logger.error('FCM availability check failed in constructor:', error);
+      this.fcmAvailable = false;
+    });
   }
 
   /**
-   * 🔥 NEW: Check if FCM is properly configured
+   * 🔥 ENHANCED: Check if FCM is properly configured AND initialized
    */
   private async checkFCMAvailability(): Promise<void> {
     try {
       if (Platform.OS === 'android') {
-        // Check if we're running on a physical device
         const isDevice = Device.isDevice;
-
-        // 🔥 UPDATED: Simplified FCM availability check
         const fcmExplicitlyEnabled = process.env.EXPO_PUBLIC_FCM_ENABLED === 'true';
+        const isEASBuild =
+          process.env.EXPO_PUBLIC_ENV === 'production' || process.env.EXPO_PUBLIC_ENV === 'preview';
 
-        // Always allow FCM on physical devices if enabled
-        this.fcmAvailable = isDevice && fcmExplicitlyEnabled;
-
-        logger.debug('FCM Availability Check:', {
-          platform: Platform.OS,
-          isDevice,
+        // 🔍 DEBUG: Log environment variables
+        logger.debug('Environment Variables Check:', {
+          EXPO_PUBLIC_FCM_ENABLED: process.env.EXPO_PUBLIC_FCM_ENABLED,
+          EXPO_PUBLIC_ENV: process.env.EXPO_PUBLIC_ENV,
           fcmExplicitlyEnabled,
-          fcmAvailable: this.fcmAvailable,
-          env: process.env.EXPO_PUBLIC_ENV || 'development',
+          isEASBuild,
+          isDevice,
+          note: 'If EXPO_PUBLIC_ENV is not set, app.config.js defaults to production!',
         });
+
+        // 🎯 DETECT ACTUAL RUNTIME ENVIRONMENT: Check if we're in local dev regardless of ENV setting
+        const isActuallyLocalDev = !Constants.appOwnership || Constants.appOwnership === 'expo';
+        const isRealEASBuild = !isActuallyLocalDev && isEASBuild;
+
+        // 🎯 EAS BUILD LOGIC: In EAS builds, Firebase is only available after full build
+        if (isRealEASBuild) {
+          // For EAS builds, we'll rely on Expo's push notification service
+          // Firebase will be available in the actual built app, but not in local runs
+          this.fcmAvailable = isDevice && fcmExplicitlyEnabled;
+          logger.debug('FCM Availability Check (Real EAS Build):', {
+            platform: Platform.OS,
+            isDevice,
+            fcmExplicitlyEnabled,
+            fcmAvailable: this.fcmAvailable,
+            env: process.env.EXPO_PUBLIC_ENV,
+            appOwnership: Constants.appOwnership,
+            note: 'Firebase config handled by EAS - will work in built app',
+          });
+        } else {
+          // For local development (including npx expo run:android), disable FCM
+          this.fcmAvailable = false;
+          logger.debug('FCM Availability Check (Local Development):', {
+            platform: Platform.OS,
+            isDevice,
+            fcmExplicitlyEnabled,
+            fcmAvailable: this.fcmAvailable,
+            env: process.env.EXPO_PUBLIC_ENV,
+            appOwnership: Constants.appOwnership,
+            isActuallyLocalDev,
+            isRealEASBuild,
+            note: 'FCM disabled for local development - will work in EAS builds',
+          });
+        }
       } else {
-        // iOS doesn't need FCM configuration
+        // iOS uses APNs through Expo - always available
         this.fcmAvailable = true;
+        logger.debug('FCM Availability Check (iOS):', {
+          platform: Platform.OS,
+          fcmAvailable: this.fcmAvailable,
+          note: 'iOS uses APNs through Expo',
+        });
       }
     } catch (error) {
       logger.warn('FCM availability check failed:', { error: error as Error });
@@ -73,6 +113,9 @@ class NotificationService {
 
     try {
       logger.debug('Initializing notification service...');
+
+      // 🔥 ENSURE: FCM availability is checked before proceeding
+      await this.checkFCMAvailability();
 
       // Request permissions first
       const permitted = await this.requestPermissions();
@@ -179,11 +222,22 @@ class NotificationService {
         return;
       }
 
+      // 🔥 ENHANCED: Re-check FCM availability before proceeding
+      await this.checkFCMAvailability();
+
       logger.debug('Attempting to register push token...', {
         projectId,
         platform: Platform.OS,
         fcmAvailable: this.fcmAvailable,
+        env: process.env.EXPO_PUBLIC_ENV,
       });
+
+      // 🎯 CRITICAL: Skip FCM-dependent calls in local development
+      if (Platform.OS === 'android' && !this.fcmAvailable) {
+        logger.info('Skipping push token registration - FCM not available in local development');
+        logger.info('This is normal for npx expo run:android - notifications work in EAS builds');
+        return;
+      }
 
       // 🔥 ENHANCED: Get Expo push token with better error handling
       const tokenData = await Notifications.getExpoPushTokenAsync({

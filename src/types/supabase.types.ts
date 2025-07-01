@@ -140,39 +140,6 @@ export type Database = {
           },
         ];
       };
-      notification_preferences_backup: {
-        Row: {
-          created_at: string | null;
-          id: string | null;
-          reminder_enabled: boolean | null;
-          reminder_time: string | null;
-          throwback_reminder_enabled: boolean | null;
-          throwback_reminder_frequency: string | null;
-          throwback_reminder_time: string | null;
-          updated_at: string | null;
-        };
-        Insert: {
-          created_at?: string | null;
-          id?: string | null;
-          reminder_enabled?: boolean | null;
-          reminder_time?: string | null;
-          throwback_reminder_enabled?: boolean | null;
-          throwback_reminder_frequency?: string | null;
-          throwback_reminder_time?: string | null;
-          updated_at?: string | null;
-        };
-        Update: {
-          created_at?: string | null;
-          id?: string | null;
-          reminder_enabled?: boolean | null;
-          reminder_time?: string | null;
-          throwback_reminder_enabled?: boolean | null;
-          throwback_reminder_frequency?: string | null;
-          throwback_reminder_time?: string | null;
-          updated_at?: string | null;
-        };
-        Relationships: [];
-      };
       profiles: {
         Row: {
           created_at: string | null;
@@ -365,9 +332,26 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: number;
       };
+      check_expo_ticket_status: {
+        Args: { ticket_id: string };
+        Returns: Json;
+      };
       check_username_availability: {
         Args: { p_username: string };
         Returns: boolean;
+      };
+      debug_expo_push: {
+        Args: { test_token: string; title: string; body: string };
+        Returns: Json;
+      };
+      debug_send_push_notifications: {
+        Args: { notification_type: string; title: string; body: string };
+        Returns: {
+          user_id: string;
+          username: string;
+          token_preview: string;
+          status: string;
+        }[];
       };
       delete_gratitude_entry_by_date: {
         Args: { p_entry_date: string };

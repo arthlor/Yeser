@@ -149,6 +149,8 @@ module.exports = {
         mode: ENV === 'production' ? 'production' : 'development',
       },
     ],
+    // 🔥 CRITICAL: Custom plugin to handle google-services.json from environment
+    './plugins/withGoogleServices',
   ],
 
   extra: {

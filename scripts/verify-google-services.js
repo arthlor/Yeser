@@ -29,20 +29,44 @@ try {
   const parsed = JSON.parse(googleServicesEnv);
 
   console.log('✅ Successfully parsed as JSON');
-  console.log(`📱 Project ID: ${parsed.project_id || 'MISSING'}`);
-  console.log(`🔢 Project Number: ${parsed.project_number || 'MISSING'}`);
+
+  // Debug: Show structure
+  console.log('🔍 JSON Structure Analysis:');
+  console.log(`   📋 Top-level fields: ${Object.keys(parsed).join(', ')}`);
+
+  if (parsed.project_info) {
+    console.log(`   📋 project_info fields: ${Object.keys(parsed.project_info).join(', ')}`);
+    console.log(`📱 Project ID: ${parsed.project_info.project_id || 'MISSING'}`);
+    console.log(`🔢 Project Number: ${parsed.project_info.project_number || 'MISSING'}`);
+  } else {
+    console.log(`📱 Project ID: MISSING (no project_info object)`);
+    console.log(`🔢 Project Number: MISSING (no project_info object)`);
+  }
+
   console.log(
     `📦 Package Name: ${parsed.client?.[0]?.android_client_info?.package_name || 'MISSING'}`
   );
 
-  // Validate required fields
-  const requiredFields = ['project_id', 'project_number', 'client'];
+  // Validate required fields - correct structure
+  const requiredFields = ['project_info', 'client'];
+  const requiredProjectInfoFields = ['project_id', 'project_number'];
   let isValid = true;
 
+  // Check top-level fields
   for (const field of requiredFields) {
     if (!parsed[field]) {
-      console.error(`❌ Missing required field: ${field}`);
+      console.error(`❌ Missing required top-level field: ${field}`);
       isValid = false;
+    }
+  }
+
+  // Check project_info fields
+  if (parsed.project_info) {
+    for (const field of requiredProjectInfoFields) {
+      if (!parsed.project_info[field]) {
+        console.error(`❌ Missing project_info.${field}`);
+        isValid = false;
+      }
     }
   }
 

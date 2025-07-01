@@ -121,16 +121,47 @@ function withGoogleServices(config) {
         config.modRequest.projectRoot
       );
 
-      // Validate required fields
-      const requiredFields = ['project_id', 'project_number', 'client'];
+      // Debug: Show what fields are actually present
+      console.log('🔍 [Google Services] Analyzing parsed JSON structure:');
+      console.log(
+        `   📋 Available top-level fields: ${Object.keys(googleServicesContent).join(', ')}`
+      );
+
+      if (googleServicesContent.project_info) {
+        console.log(
+          `   📋 project_info fields: ${Object.keys(googleServicesContent.project_info).join(', ')}`
+        );
+      }
+
+      // Validate required fields with detailed info
+      const requiredFields = ['project_info', 'client'];
+      const requiredProjectInfoFields = ['project_id', 'project_number'];
+
+      // Check top-level fields
       for (const field of requiredFields) {
         if (!googleServicesContent[field]) {
-          throw new Error(`Missing required field: ${field}`);
+          console.error(`❌ [Google Services] Missing top-level field: ${field}`);
+          throw new Error(`Missing required top-level field: ${field}`);
         }
       }
 
+      // Check project_info fields
+      for (const field of requiredProjectInfoFields) {
+        if (!googleServicesContent.project_info?.[field]) {
+          console.error(`❌ [Google Services] Missing project_info.${field}`);
+          console.log(
+            `💡 [Google Services] Your JSON should have: {"project_info":{"${field}":"value"}}`
+          );
+          throw new Error(`Missing required field: project_info.${field}`);
+        }
+      }
+
+      // Extract project info for logging
+      const projectId = googleServicesContent.project_info.project_id;
+      const projectNumber = googleServicesContent.project_info.project_number;
+
       console.log(
-        `✅ [Google Services] Validated content for project: ${googleServicesContent.project_id}`
+        `✅ [Google Services] Validated content for project: ${projectId} (${projectNumber})`
       );
 
       // Create the android directory structure

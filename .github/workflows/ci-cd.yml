@@ -232,21 +232,7 @@ jobs:
           echo "📱 All secrets managed through EAS Console"
           echo "🤖 Android native build with EAS optimization"
           
-          # Run with retry logic
-          for i in {1..3}; do
-            if eas build --platform all --profile preview --non-interactive; then
-              echo "✅ Secure build succeeded on attempt $i"
-              break
-            else
-              echo "❌ Build failed on attempt $i"
-              if [ $i -eq 3 ]; then
-                echo "❌ All build attempts failed"
-                exit 1
-              fi
-              echo "⏳ Retrying in 30 seconds..."
-              sleep 30
-            fi
-          done
+          eas build --platform all --profile preview --non-interactive
 
       - name: 📱 Build Success
         run: |
@@ -311,21 +297,7 @@ jobs:
           echo "🏭 Production build with enterprise security standards"
           echo "🔒 All secrets injected securely via EAS Console"
           
-          # Run with retry logic for production
-          for i in {1..3}; do
-            if eas build --platform android --profile production --non-interactive; then
-              echo "✅ Secure production APK build succeeded on attempt $i"
-              break
-            else
-              echo "❌ Production APK build failed on attempt $i"
-              if [ $i -eq 3 ]; then
-                echo "❌ All production APK build attempts failed"
-                exit 1
-              fi
-              echo "⏳ Retrying in 60 seconds..."
-              sleep 60
-            fi
-          done
+          eas build --platform android --profile production --non-interactive
 
       - name: 🔨 EAS Build Production (AAB for Play Store)
         if: github.event.inputs.build_type != 'apk'
@@ -335,42 +307,14 @@ jobs:
           echo "📱 Trigger: ${{ github.event_name }}"
           echo "🔧 Build Type: ${{ github.event.inputs.build_type || 'default' }}"
           
-          # Run with retry logic for production AAB
-          for i in {1..3}; do
-            if eas build --platform android --profile production-aab --non-interactive; then
-              echo "✅ Secure production AAB build succeeded on attempt $i"
-              break
-            else
-              echo "❌ Production AAB build failed on attempt $i"
-              if [ $i -eq 3 ]; then
-                echo "❌ All production AAB build attempts failed"
-                exit 1
-              fi
-              echo "⏳ Retrying in 60 seconds..."
-              sleep 60
-            fi
-          done
+          eas build --platform android --profile production-aab --non-interactive
 
       - name: 🔨 EAS Build Production (iOS)
         run: |
           echo "🚀 Starting secure EAS Build for production (iOS)..."
           echo "🍎 App Store optimized build"
           
-          # Run with retry logic for production iOS
-          for i in {1..3}; do
-            if eas build --platform ios --profile production --non-interactive; then
-              echo "✅ Secure production iOS build succeeded on attempt $i"
-              break
-            else
-              echo "❌ Production iOS build failed on attempt $i"
-              if [ $i -eq 3 ]; then
-                echo "❌ All production iOS build attempts failed"
-                exit 1
-              fi
-              echo "⏳ Retrying in 60 seconds..."
-              sleep 60
-            fi
-          done
+          eas build --platform ios --profile production --non-interactive
 
       - name: 🎯 Check Deploy Conditions
         id: check-deploy
@@ -423,21 +367,7 @@ jobs:
           echo "🍎 iOS: Submitting via EAS Console credentials"
           echo "🤖 Android: Submitting via EAS Console credentials"
           
-          # Run with retry logic
-          for i in {1..2}; do
-            if eas submit --platform all --profile production --non-interactive; then
-              echo "✅ Secure submission succeeded on attempt $i"
-              break
-            else
-              echo "❌ Submission failed on attempt $i"
-              if [ $i -eq 2 ]; then
-                echo "❌ All submission attempts failed"
-                exit 1
-              fi
-              echo "⏳ Retrying in 60 seconds..."
-              sleep 60
-            fi
-          done
+          eas submit --platform all --profile production --non-interactive
 
       - name: 🎯 Deployment Success
         run: |

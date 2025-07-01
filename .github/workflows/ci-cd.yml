@@ -107,11 +107,8 @@ jobs:
           
           echo "✅ Google Services plugin configuration validated"
           
-          # Verify Android configuration is properly set up
-          if [ ! -d "android" ]; then
-            echo "❌ ERROR: Android native configuration missing"
-            exit 1
-          fi
+          # Verify Expo managed workflow configuration (no native android directory needed)
+          echo "✅ Using Expo managed workflow - native directories handled by EAS"
           
           # Check for proper EAS configuration
           if ! grep -q "expo" app.config.js; then
@@ -213,11 +210,8 @@ jobs:
         run: |
           echo "🔍 Validating build environment security..."
           
-          # Validate Android native configuration
-          if [ ! -d "android" ]; then
-            echo "❌ ERROR: Android native configuration missing"
-            exit 1
-          fi
+          # Validate Expo managed workflow (native config handled by EAS)
+          echo "✅ Expo managed workflow - native configuration via EAS"
           
           # Validate EAS CLI access
           if ! eas whoami; then

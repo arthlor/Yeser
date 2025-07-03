@@ -113,11 +113,6 @@ const EnhancedHelpScreen: React.FC = () => {
         'Yeşer, günlük minnettarlıklarınızı kaydederek pozitif düşünce alışkanlığı geliştirmenize yardımcı olan bir mobil uygulamadır.',
     },
     {
-      question: 'Hatırlatıcıları nasıl ayarlarım?',
-      answer:
-        'Ana ekrandaki "Hatırlatıcı Ayarları" bölümünden veya Ayarlar menüsünden günlük hatırlatıcı saatini ve durumunu ayarlayabilirsiniz.',
-    },
-    {
       question: 'Verilerim güvende mi?',
       answer:
         'Evet, verileriniz güvenli bir şekilde saklanır. Detaylı bilgi için Gizlilik Politikamızı inceleyebilirsiniz.',

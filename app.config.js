@@ -26,20 +26,26 @@ const ENV_MAP = {
     name: 'Yeşer (Dev)',
     appId: makeId('dev'),
     scheme: 'yeser-dev',
+    iosClientId: '<PASTE_YOUR_DEVELOPMENT_IOS_CLIENT_ID_HERE>',
+    reversedIosClientId: '<PASTE_YOUR_DEVELOPMENT_REVERSED_IOS_CLIENT_ID_HERE>',
   },
   preview: {
     name: 'Yeşer (Preview)',
     appId: makeId('preview'),
     scheme: 'yeser-preview',
+    iosClientId: '<PASTE_YOUR_PREVIEW_IOS_CLIENT_ID_HERE>',
+    reversedIosClientId: '<PASTE_YOUR_PREVIEW_REVERSED_IOS_CLIENT_ID_HERE>',
   },
   production: {
     name: 'Yeşer',
     appId: makeId(''),
     scheme: 'yeser',
+    iosClientId: '<PASTE_YOUR_PRODUCTION_IOS_CLIENT_ID_HERE>',
+    reversedIosClientId: '<PASTE_YOUR_PRODUCTION_REVERSED_IOS_CLIENT_ID_HERE>',
   },
 };
 
-const { name, appId, scheme } = ENV_MAP[ENV];
+const { name, appId, scheme, iosClientId, reversedIosClientId } = ENV_MAP[ENV];
 
 console.log(`📦 App Name: ${name}`);
 console.log(`📦 Bundle ID: ${appId}`);
@@ -71,6 +77,9 @@ module.exports = {
     supportsTablet: true,
     config: {
       usesNonExemptEncryption: false,
+      googleSignIn: {
+        reservedClientId: reversedIosClientId,
+      },
     },
     infoPlist: {
       UIBackgroundModes: ['remote-notification', 'background-fetch'],
@@ -83,6 +92,9 @@ module.exports = {
         {
           CFBundleURLName: 'yeser.auth',
           CFBundleURLSchemes: [scheme],
+        },
+        {
+          CFBundleURLSchemes: [reversedIosClientId],
         },
       ],
     },
@@ -160,6 +172,7 @@ module.exports = {
     },
 
     environment: ENV, // always know where we are
+    iosClientId, // Pass iOS client ID to runtime
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
 

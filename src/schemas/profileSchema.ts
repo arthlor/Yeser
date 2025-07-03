@@ -11,12 +11,6 @@ export const rawProfileDataSchema = z.object({
   onboarded: z.boolean(),
   // ✅ SIMPLIFIED: Single notification toggle (replaces 5 complex fields)
   notifications_enabled: z.boolean().default(false),
-  expo_push_token: z.string().nullable(),
-  push_token_updated_at: z
-    .string()
-    .datetime({ offset: true, message: 'Invalid datetime format for push_token_updated_at' })
-    .nullable(),
-  push_notification_failures: z.number().int().min(0).default(0),
   created_at: z
     .string()
     .datetime({ offset: true, message: 'Invalid datetime format for created_at' }),
@@ -41,9 +35,6 @@ export const profileSchema = rawProfileDataSchema.transform((data) => ({
   onboarded: data.onboarded ?? false,
   // ✅ SIMPLIFIED: Only the new notification fields (old complex fields removed)
   notifications_enabled: data.notifications_enabled ?? false,
-  expo_push_token: data.expo_push_token ?? undefined,
-  push_token_updated_at: data.push_token_updated_at ?? undefined,
-  push_notification_failures: data.push_notification_failures ?? 0,
   daily_gratitude_goal: data.daily_gratitude_goal ?? undefined,
 }));
 
@@ -60,13 +51,6 @@ export const updateProfileSchema = z.object({
   onboarded: z.boolean().optional(),
   // ✅ SIMPLIFIED: Only the new notification fields (old complex fields removed)
   notifications_enabled: z.boolean().optional(),
-  expo_push_token: z.string().optional().nullable(),
-  push_token_updated_at: z
-    .string()
-    .datetime({ offset: true, message: 'Invalid datetime format for push_token_updated_at' })
-    .optional()
-    .nullable(),
-  push_notification_failures: z.number().int().min(0).optional(),
   daily_gratitude_goal: z.number().int().positive().optional().nullable(),
   useVariedPrompts: z.boolean().optional(),
 });

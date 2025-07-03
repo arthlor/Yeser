@@ -183,17 +183,42 @@ class NotificationService {
    */
   async toggleNotifications(enabled: boolean): Promise<boolean> {
     try {
-      // Simply update the database field
+      logger.debug('🔄 Toggling notifications:', { enabled });
+
+      // First, update the profile to reflect the user's choice immediately.
       const { updateProfile } = await import('@/api/profileApi');
       await updateProfile({ notifications_enabled: enabled });
+      logger.debug('✅ Database updated with notifications_enabled:', { enabled });
 
-      // 🔥 ENHANCED: Always try to get a token when enabling notifications
+      // If enabling, ensure we have a valid push token registered.
       if (enabled) {
-        logger.debug('Notifications enabled - ensuring push token is registered');
-        await this.registerPushToken();
+        logger.debug('🎯 Notifications enabled - ensuring push token is registered');
+        try {
+          await this.registerPushToken();
+          logger.debug('✅ Push token registration check completed successfully');
+        } catch (tokenError) {
+          const error = tokenError instanceof Error ? tokenError : new Error(String(tokenError));
+          logger.error('💥 Token registration failed:', {
+            error: error.message,
+            enabled,
+            platform: Platform.OS,
+          });
+
+          // Revert the setting since token registration failed.
+          try {
+            await updateProfile({ notifications_enabled: false });
+            logger.debug('🔄 Reverted notifications_enabled to false due to token failure');
+          } catch (revertError) {
+            const revertErr =
+              revertError instanceof Error ? revertError : new Error(String(revertError));
+            logger.error('❌ Failed to revert notification setting:', revertErr);
+          }
+
+          throw new Error(`Bildirim kaydı başarısız: ${error.message}`);
+        }
       }
 
-      logger.debug('Notifications toggled successfully', {
+      logger.debug('🎉 Notifications toggled successfully', {
         enabled,
         hasToken: !!this.expoPushToken,
         fcmAvailable: this.fcmAvailable,
@@ -201,133 +226,197 @@ class NotificationService {
 
       return true;
     } catch (error) {
-      logger.error('Failed to toggle notifications:', error as Error);
-      return false;
+      const finalError = error instanceof Error ? error : new Error(String(error));
+      logger.error('❌ Failed to toggle notifications:', {
+        error: finalError.message,
+        enabled,
+        platform: Platform.OS,
+      });
+
+      throw finalError;
     }
   }
 
   /**
-   * 🔥 ENHANCED: Register push token with FCM handling
+   * 🔥 ENHANCED: Register push token with comprehensive validation and debugging
    */
   private async registerPushToken(): Promise<void> {
+    logger.debug('🚀 Starting push token registration process...');
+
     try {
+      // ✅ Step 1: Device validation
       if (!Device.isDevice) {
-        logger.debug('Not a physical device, skipping push token registration');
+        logger.warn('❌ Not a physical device, skipping push token registration');
         return;
       }
+      logger.debug('✅ Step 1: Physical device confirmed');
 
+      // ✅ Step 2: Check notification permissions FIRST
+      const permissionStatus = await Notifications.getPermissionsAsync();
+      logger.debug('📋 Step 2: Permission status:', {
+        status: permissionStatus.status,
+        canAskAgain: permissionStatus.canAskAgain,
+        granted: permissionStatus.granted,
+      });
+
+      if (permissionStatus.status !== 'granted') {
+        logger.warn('❌ Notification permissions not granted, requesting...');
+        const requestResult = await this.requestPermissions();
+        if (!requestResult) {
+          throw new Error('Notification permissions denied - cannot register push token');
+        }
+        logger.debug('✅ Permissions granted after request');
+      } else {
+        logger.debug('✅ Step 2: Permissions already granted');
+      }
+
+      // ✅ Step 3: EAS Project ID validation
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
       if (!projectId) {
-        logger.warn('No EAS project ID found');
-        return;
+        logger.error('❌ No EAS project ID found in app config');
+        logger.debug('App config debug:', {
+          expoConfig: Constants.expoConfig?.extra,
+          projectId,
+          appName: Constants.expoConfig?.name,
+          slug: Constants.expoConfig?.slug,
+        });
+        throw new Error('EAS project ID missing - check app.config.js');
       }
+      logger.debug('✅ Step 3: EAS project ID found:', { projectId });
 
-      // 🔥 ENHANCED: Re-check FCM availability before proceeding
+      // ✅ Step 4: FCM availability check (but don't block on it)
       await this.checkFCMAvailability();
-
-      logger.debug('Attempting to register push token...', {
-        projectId,
+      logger.debug('📱 Step 4: Platform info:', {
         platform: Platform.OS,
         fcmAvailable: this.fcmAvailable,
         env: process.env.EXPO_PUBLIC_ENV,
+        appOwnership: Constants.appOwnership,
       });
 
-      // 🎯 CRITICAL: Skip FCM-dependent calls in local development
-      if (Platform.OS === 'android' && !this.fcmAvailable) {
-        logger.info('Skipping push token registration - FCM not available in local development');
-        logger.info('This is normal for npx expo run:android - notifications work in EAS builds');
+      // ✅ Step 5: FCM blocking logic (only for local dev)
+      const isLocalDev = !Constants.appOwnership || Constants.appOwnership === 'expo';
+      if (Platform.OS === 'android' && !this.fcmAvailable && isLocalDev) {
+        logger.info('⚠️ Skipping push token registration - FCM not available in local development');
+        logger.info(
+          'ℹ️ This is normal for npx expo run:android - notifications work in EAS builds'
+        );
         return;
       }
+      logger.debug('✅ Step 5: FCM check passed');
 
-      // 🔥 ENHANCED: Get Expo push token with better error handling
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId,
-      });
+      // ✅ Step 6: Generate Expo push token (THE CRITICAL STEP)
+      logger.debug('🎯 Step 6: Attempting to generate Expo push token...');
 
-      if (!tokenData || !tokenData.data) {
-        throw new Error('Failed to get push token - no data returned');
+      let tokenData;
+      try {
+        tokenData = await Notifications.getExpoPushTokenAsync({
+          projectId,
+        });
+        logger.debug('📊 Token generation response:', {
+          hasData: !!tokenData,
+          hasTokenData: !!tokenData?.data,
+          type: tokenData?.type,
+          tokenLength: tokenData?.data?.length || 0,
+        });
+      } catch (tokenError) {
+        const error = tokenError instanceof Error ? tokenError : new Error(String(tokenError));
+        logger.error('❌ Expo token generation failed:', {
+          error: error.message,
+          projectId,
+          platform: Platform.OS,
+          permissionStatus: permissionStatus.status,
+        });
+        throw new Error(`Expo token generation failed: ${error.message}`);
       }
 
-      this.expoPushToken = tokenData.data;
-      logger.debug('Push token obtained successfully', {
+      // ✅ Step 7: Validate token data
+      if (!tokenData || !tokenData.data || tokenData.data.trim() === '') {
+        logger.error('❌ Invalid token data received:', {
+          hasTokenData: !!tokenData,
+          tokenDataValue: tokenData?.data,
+          tokenType: tokenData?.type,
+          projectId,
+        });
+        throw new Error('Failed to get valid push token - empty or null data returned');
+      }
+
+      this.expoPushToken = tokenData.data.trim();
+      logger.debug('✅ Step 7: Valid token obtained:', {
         tokenLength: this.expoPushToken.length,
-        tokenPreview: this.expoPushToken.substring(0, 20) + '...',
+        tokenPreview: this.expoPushToken.substring(0, 25) + '...',
+        tokenType: tokenData.type,
       });
 
-      // Update token in database with timestamp
+      // ✅ Step 8: Database registration with session validation
       const { supabaseService } = await import('@/utils/supabaseClient');
       const { getCurrentSession } = await import('./authService');
 
       const session = await getCurrentSession();
-      if (session?.user) {
-        const { error } = await supabaseService
-          .getClient()
-          .from('profiles')
-          .update({
-            expo_push_token: this.expoPushToken,
-            push_token_updated_at: new Date().toISOString(),
-            push_notification_failures: 0, // Reset failures on new token
-          })
-          .eq('id', session.user.id);
+      if (!session?.user?.id) {
+        logger.error('❌ No valid session found');
+        throw new Error('No authenticated session - cannot save token to database');
+      }
+      logger.debug('✅ Step 8: Valid session found for user:', { userId: session.user.id });
 
-        if (error) {
-          throw new Error(`Database update failed: ${error.message}`);
-        }
+      // ✅ Step 9: Call Supabase function with validation
+      logger.debug('🗄️ Step 9: Calling register_push_token Supabase function...');
 
-        logger.debug('Push token registered successfully', {
+      const { error } = await supabaseService.getClient().rpc('register_push_token', {
+        p_user_id: session.user.id,
+        p_expo_push_token: this.expoPushToken,
+        p_platform: Platform.OS,
+      });
+
+      if (error) {
+        logger.error('❌ Supabase function call failed:', {
+          error: error.message,
           userId: session.user.id,
           tokenLength: this.expoPushToken.length,
-          fcmAvailable: this.fcmAvailable,
-          platform: Platform.OS,
         });
-      } else {
-        logger.warn('No session found, cannot save token to database');
+        throw new Error(`Failed to register push token in database: ${error.message}`);
       }
+
+      // ✅ SUCCESS!
+      logger.debug('🎉 Push token registered successfully!', {
+        userId: session.user.id,
+        tokenLength: this.expoPushToken.length,
+        tokenPreview: this.expoPushToken.substring(0, 25) + '...',
+        fcmAvailable: this.fcmAvailable,
+        platform: Platform.OS,
+      });
     } catch (error) {
-      logger.error('Failed to register push token:', {
+      // 🔥 ENHANCED: Comprehensive error logging and handling
+      const errorDetails = {
         error: error as Error,
         platform: Platform.OS,
         fcmAvailable: this.fcmAvailable,
-      });
+        hasToken: !!this.expoPushToken,
+        appOwnership: Constants.appOwnership,
+        env: process.env.EXPO_PUBLIC_ENV,
+      };
 
-      // 🔥 ENHANCED: Better error reporting
+      logger.error('💥 Push token registration failed:', errorDetails);
+
+      // Platform-specific error guidance
       if (Platform.OS === 'android') {
         if (!this.fcmAvailable) {
           logger.info(
-            'Android FCM not available - check EXPO_PUBLIC_FCM_ENABLED and google-services.json'
+            '💡 Android FCM troubleshooting: Check EXPO_PUBLIC_FCM_ENABLED and google-services.json'
           );
-        } else {
-          logger.error('Android FCM failed despite being configured - this needs investigation');
         }
+        logger.info(
+          '💡 For Android production: Ensure APK is built with EAS and FCM is properly configured'
+        );
+      } else if (Platform.OS === 'ios') {
+        logger.info('💡 For iOS: Ensure APNs certificates are uploaded to Expo project');
       }
 
-      // Don't throw - let the app continue working
-    }
-  }
+      // Clear any partial token data
+      this.expoPushToken = null;
 
-  /**
-   * Refresh token if needed (called periodically)
-   */
-  async refreshTokenIfNeeded(): Promise<void> {
-    try {
-      // Get current profile to check token age
-      const { getProfile } = await import('@/api/profileApi');
-      const profile = await getProfile();
-
-      if (profile?.push_token_updated_at) {
-        const lastUpdate = new Date(profile.push_token_updated_at);
-        const daysSinceUpdate = (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24);
-
-        // Refresh if older than 30 days
-        if (daysSinceUpdate > 30) {
-          await this.registerPushToken();
-        }
-      } else {
-        // No token update timestamp, refresh to be safe
-        await this.registerPushToken();
-      }
-    } catch (error) {
-      logger.error('Failed to refresh token:', error as Error);
+      // 🚨 IMPORTANT: Don't save null tokens to database!
+      // Previous code would continue and save null token - now we properly fail
+      throw error; // Re-throw to surface the error to the UI
     }
   }
 

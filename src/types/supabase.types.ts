@@ -144,15 +144,9 @@ export type Database = {
         Row: {
           created_at: string | null;
           daily_gratitude_goal: number | null;
-          expo_push_token: string | null;
           id: string;
           notifications_enabled: boolean | null;
           onboarded: boolean;
-          push_notification_failures: number | null;
-          push_notifications_enabled: boolean | null;
-          push_token_updated_at: string | null;
-          reminder_enabled: boolean;
-          throwback_reminder_enabled: boolean;
           updated_at: string;
           use_varied_prompts: boolean;
           username: string | null;
@@ -160,15 +154,9 @@ export type Database = {
         Insert: {
           created_at?: string | null;
           daily_gratitude_goal?: number | null;
-          expo_push_token?: string | null;
           id: string;
           notifications_enabled?: boolean | null;
           onboarded?: boolean;
-          push_notification_failures?: number | null;
-          push_notifications_enabled?: boolean | null;
-          push_token_updated_at?: string | null;
-          reminder_enabled?: boolean;
-          throwback_reminder_enabled?: boolean;
           updated_at?: string;
           use_varied_prompts?: boolean;
           username?: string | null;
@@ -176,15 +164,9 @@ export type Database = {
         Update: {
           created_at?: string | null;
           daily_gratitude_goal?: number | null;
-          expo_push_token?: string | null;
           id?: string;
           notifications_enabled?: boolean | null;
           onboarded?: boolean;
-          push_notification_failures?: number | null;
-          push_notifications_enabled?: boolean | null;
-          push_token_updated_at?: string | null;
-          reminder_enabled?: boolean;
-          throwback_reminder_enabled?: boolean;
           updated_at?: string;
           use_varied_prompts?: boolean;
           username?: string | null;
@@ -413,7 +395,6 @@ export type Database = {
         Returns: {
           id: string;
           expo_push_token: string;
-          reminder_time: string;
           username: string;
         }[];
       };
@@ -422,7 +403,6 @@ export type Database = {
         Returns: {
           id: string;
           expo_push_token: string;
-          throwback_reminder_time: string;
           username: string;
         }[];
       };
@@ -482,7 +462,7 @@ export type Database = {
         Returns: undefined;
       };
       register_push_token: {
-        Args: { p_user_id: string; p_expo_push_token: string };
+        Args: { p_user_id: string; p_expo_push_token: string; p_platform: string };
         Returns: undefined;
       };
       schedule_push_notification: {

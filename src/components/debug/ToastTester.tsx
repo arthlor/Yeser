@@ -529,6 +529,202 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
     }
   }, [showSuccess, showError, showInfo, showWarning]);
 
+  // ✅ COMPREHENSIVE: Test the complete notification flow with fixes
+  const testCompleteNotificationFlow = useCallback(async () => {
+    try {
+      showInfo('🔄 Testing complete notification flow...');
+
+      // Step 1: Check current status
+      const status = notificationService.getStatus();
+      showInfo(`📊 Current status: FCM=${status.fcmAvailable}, Token=${status.hasToken}`);
+
+      // Step 2: Test permissions
+      const hasPermissions = await notificationService.checkPermissions();
+      if (!hasPermissions) {
+        showWarning('⚠️ No notification permissions - requesting...');
+        const permitted = await notificationService.requestPermissions();
+        if (!permitted) {
+          showError('❌ Permissions denied - cannot test notifications');
+          return;
+        }
+        showSuccess('✅ Permissions granted');
+      } else {
+        showSuccess('✅ Already has permissions');
+      }
+
+      // Step 3: Force token refresh to test the fixed registerPushToken method
+      showInfo('🔄 Testing token registration (with Supabase function fix)...');
+      const tokenResult = await notificationService.forceTokenRefresh();
+      if (tokenResult) {
+        showSuccess('✅ Token registered successfully via Supabase function');
+
+        // Step 4: Test enabling notifications
+        const enableResult = await notificationService.toggleNotifications(true);
+        if (enableResult) {
+          showSuccess('✅ Notifications enabled - token should be in database');
+
+          // Step 5: Verify token is actually in database
+          const currentToken = notificationService.getCurrentPushToken();
+          if (currentToken) {
+            showSuccess(`✅ Token confirmed: ${currentToken.substring(0, 25)}...`);
+            showInfo('🎉 Complete notification flow test PASSED!');
+          } else {
+            showError('❌ No token found after registration');
+          }
+        } else {
+          showError('❌ Failed to enable notifications');
+        }
+      } else {
+        showError('❌ Token registration failed');
+      }
+    } catch (error) {
+      showError('❌ Complete notification flow test failed');
+      logger.error('Complete notification flow test failed:', error as Error);
+    }
+  }, [showSuccess, showError, showInfo, showWarning]);
+
+  // 🔍 DEEP DIVE: Step-by-step token registration debugging
+  const debugTokenRegistrationSteps = useCallback(async () => {
+    try {
+      showInfo('🔍 Starting step-by-step token registration debug...');
+
+      const results: string[] = [];
+
+      // Step 1: Device check
+      const isDevice = await import('expo-device').then((Device) => Device.default.isDevice);
+      if (isDevice) {
+        results.push('✅ Step 1: Physical device confirmed');
+        showSuccess('✅ Step 1: Physical device confirmed');
+      } else {
+        results.push('❌ Step 1: Not a physical device');
+        showError('❌ Step 1: Not a physical device - notifications only work on real devices');
+        return;
+      }
+
+      // Step 2: Permission check
+      const permissionStatus = await Notifications.getPermissionsAsync();
+      if (permissionStatus.status === 'granted') {
+        results.push('✅ Step 2: Permissions already granted');
+        showSuccess('✅ Step 2: Permissions already granted');
+      } else {
+        results.push(`⚠️ Step 2: Permissions ${permissionStatus.status} - requesting...`);
+        showWarning(`⚠️ Step 2: Permissions ${permissionStatus.status} - requesting...`);
+
+        const permitted = await notificationService.requestPermissions();
+        if (permitted) {
+          results.push('✅ Step 2b: Permissions granted after request');
+          showSuccess('✅ Step 2b: Permissions granted after request');
+        } else {
+          results.push('❌ Step 2b: Permission request denied');
+          showError('❌ Step 2b: Permission request denied - cannot proceed');
+          return;
+        }
+      }
+
+      // Step 3: EAS Project ID check
+      const Constants = await import('expo-constants').then((c) => c.default);
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      if (projectId) {
+        results.push(`✅ Step 3: EAS project ID found: ${projectId}`);
+        showSuccess(`✅ Step 3: EAS project ID found: ${projectId}`);
+      } else {
+        results.push('❌ Step 3: EAS project ID missing');
+        showError('❌ Step 3: EAS project ID missing - check app.config.js');
+        showInfo(
+          `📊 Debug info: ${JSON.stringify({
+            expoConfig: Constants.expoConfig?.extra,
+            appName: Constants.expoConfig?.name,
+            slug: Constants.expoConfig?.slug,
+          })}`
+        );
+        return;
+      }
+
+      // Step 4: Platform and FCM info
+      const status = notificationService.getStatus();
+      results.push(`📱 Step 4: Platform=${status.platform}, FCM=${status.fcmAvailable}`);
+      showInfo(`📱 Step 4: Platform=${status.platform}, FCM=${status.fcmAvailable}`);
+
+      // Step 5: Attempt token generation (THE CRITICAL TEST)
+      showInfo('🎯 Step 5: Attempting Expo token generation (critical step)...');
+
+      try {
+        const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+
+        if (tokenData && tokenData.data && tokenData.data.trim() !== '') {
+          results.push(`✅ Step 5: Token generated successfully! Length: ${tokenData.data.length}`);
+          showSuccess(`✅ Step 5: Token generated successfully! Length: ${tokenData.data.length}`);
+          showInfo(`🎟️ Token preview: ${tokenData.data.substring(0, 30)}...`);
+
+          // Step 6: Test Supabase function call
+          showInfo('🗄️ Step 6: Testing Supabase function call...');
+
+          try {
+            const { supabaseService } = await import('@/utils/supabaseClient');
+            const { getCurrentSession } = await import('@/services/authService');
+
+            const session = await getCurrentSession();
+            if (session?.user?.id) {
+              const { error } = await supabaseService.getClient().rpc('register_push_token', {
+                p_user_id: session.user.id,
+                p_expo_push_token: tokenData.data,
+                p_platform: Platform.OS,
+              });
+
+              if (!error) {
+                results.push('✅ Step 6: Supabase function call successful');
+                showSuccess('✅ Step 6: Supabase function call successful');
+                showSuccess('🎉 ALL STEPS PASSED! Token registration should work now.');
+              } else {
+                results.push(`❌ Step 6: Supabase error: ${error.message}`);
+                showError(`❌ Step 6: Supabase error: ${error.message}`);
+              }
+            } else {
+              results.push('❌ Step 6: No authenticated session');
+              showError('❌ Step 6: No authenticated session');
+            }
+          } catch (dbError) {
+            const error = dbError instanceof Error ? dbError : new Error(String(dbError));
+            results.push(`❌ Step 6: Database error: ${error.message}`);
+            showError(`❌ Step 6: Database error: ${error.message}`);
+          }
+        } else {
+          results.push(
+            `❌ Step 5: Invalid token data - hasData: ${!!tokenData}, hasToken: ${!!tokenData?.data}`
+          );
+          showError(`❌ Step 5: Invalid token data received`);
+          showInfo(
+            `🔍 Token debug: ${JSON.stringify({
+              hasData: !!tokenData,
+              tokenData: tokenData?.data,
+              tokenType: tokenData?.type,
+            })}`
+          );
+        }
+      } catch (tokenError) {
+        const error = tokenError instanceof Error ? tokenError : new Error(String(tokenError));
+        results.push(`❌ Step 5: Token generation failed: ${error.message}`);
+        showError(`❌ Step 5: Token generation failed: ${error.message}`);
+
+        // Additional debug info for token generation failure
+        showInfo('🔍 Token generation failure debug info:');
+        showInfo(`- Project ID: ${projectId}`);
+        showInfo(`- Platform: ${status.platform}`);
+        showInfo(`- FCM Available: ${status.fcmAvailable}`);
+        showInfo(`- Environment: ${process.env.EXPO_PUBLIC_ENV || 'not set'}`);
+        showInfo(`- App Ownership: ${Constants.appOwnership || 'not set'}`);
+      }
+
+      // Summary
+      showInfo('📋 STEP-BY-STEP DEBUG SUMMARY:');
+      results.forEach((result) => showInfo(result));
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      showError('❌ Debug process failed');
+      logger.error('Debug token registration steps failed:', err);
+    }
+  }, [showSuccess, showError, showInfo, showWarning]);
+
   // 🔍 CONSOLE & LOGGING TESTING FUNCTIONS
 
   const testLoggerLevels = useCallback(() => {
@@ -946,6 +1142,16 @@ export const ToastTester: React.FC<ToastTesterProps> = ({ onClose }) => {
         <TouchableOpacity style={styles.featureButton} onPress={testFullNotificationPipeline}>
           <Icon name="pipeline" size={18} color={theme.colors.primary} />
           <Text style={styles.featureButtonText}>Test Full Notification Pipeline</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={testCompleteNotificationFlow}>
+          <Icon name="check-circle" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>Test Complete Notification Flow</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.featureButton} onPress={debugTokenRegistrationSteps}>
+          <Icon name="bug" size={18} color={theme.colors.primary} />
+          <Text style={styles.featureButtonText}>🔍 Debug Token Registration Steps</Text>
         </TouchableOpacity>
       </Card>
 

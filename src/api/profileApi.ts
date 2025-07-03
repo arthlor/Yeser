@@ -71,7 +71,7 @@ export const getProfile = async (): Promise<Profile | null> => {
     const { data, error, status } = await supabase
       .from('profiles')
       .select(
-        'id, username, onboarded, notifications_enabled, expo_push_token, push_token_updated_at, push_notification_failures, created_at, updated_at, daily_gratitude_goal, use_varied_prompts'
+        'id, username, onboarded, notifications_enabled, created_at, updated_at, daily_gratitude_goal, use_varied_prompts'
       )
       .eq('id', user.id)
       .single();
@@ -136,7 +136,7 @@ export const updateProfile = async (
       .update(payloadForSupabase)
       .eq('id', user.id)
       .select(
-        'id, username, onboarded, notifications_enabled, expo_push_token, push_token_updated_at, push_notification_failures, created_at, updated_at, daily_gratitude_goal, use_varied_prompts'
+        'id, username, onboarded, notifications_enabled, created_at, updated_at, daily_gratitude_goal, use_varied_prompts'
       )
       .single();
 

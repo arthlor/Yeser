@@ -306,31 +306,76 @@ const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
                 color={theme.colors.primary + '60'}
               />
               <View style={styles.sparkleContainer}>
-                <MaterialCommunityIcons
-                  name="star-outline"
-                  size={16}
-                  color={theme.colors.primary + '40'}
-                  style={styles.sparkle1}
-                />
-                <MaterialCommunityIcons
-                  name="star-outline"
-                  size={12}
-                  color={theme.colors.primary + '40'}
-                  style={styles.sparkle2}
-                />
-                <MaterialCommunityIcons
-                  name="star-outline"
-                  size={14}
-                  color={theme.colors.primary + '40'}
-                  style={styles.sparkle3}
-                />
+                <Animated.View
+                  style={[
+                    styles.sparkle1,
+                    {
+                      opacity: animations.opacityAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.3, 1],
+                      }),
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="star-outline"
+                    size={16}
+                    color={theme.colors.primary + '40'}
+                  />
+                </Animated.View>
+                <Animated.View
+                  style={[
+                    styles.sparkle2,
+                    {
+                      opacity: animations.opacityAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.3, 1],
+                      }),
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="star-outline"
+                    size={12}
+                    color={theme.colors.primary + '40'}
+                  />
+                </Animated.View>
+                <Animated.View
+                  style={[
+                    styles.sparkle3,
+                    {
+                      opacity: animations.opacityAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.3, 1],
+                      }),
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="star-outline"
+                    size={14}
+                    color={theme.colors.primary + '40'}
+                  />
+                </Animated.View>
               </View>
             </View>
             <Text style={styles.emptyTitle}>Bu günün hikayesi henüz yazılmamış</Text>
             <Text style={styles.emptySubtitle}>
               Bu özel güne ait minnet kayıtları henüz yok.{'\n'}
-              Geri dönüp o günün güzel anılarını paylaşabilirsin!
+              {isToday
+                ? 'Bugün yaşadığın güzel anları kaydedebilirsin!'
+                : 'Geri dönüp o günün güzel anılarını paylaşabilirsin!'}
             </Text>
+            {isToday && (
+              <TouchableOpacity
+                style={styles.emptyActionButton}
+                onPress={() => navigation.navigate('DailyEntry')}
+                activeOpacity={0.8}
+              >
+                <MaterialCommunityIcons name="plus" size={20} color={theme.colors.onPrimary} />
+                <Text style={styles.emptyActionText}>Minnet Ekle</Text>
+              </TouchableOpacity>
+            )}
             <View style={styles.emptyQuote}>
               <MaterialCommunityIcons
                 name="format-quote-open"
@@ -406,11 +451,12 @@ const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
                   onPress={handleRefresh}
                   style={styles.headerActionButton}
                   activeOpacity={0.7}
+                  disabled={isRefetching}
                 >
                   <MaterialCommunityIcons
                     name="refresh"
                     size={20}
-                    color={theme.colors.onSurfaceVariant}
+                    color={isRefetching ? theme.colors.primary : theme.colors.onSurfaceVariant}
                   />
                 </TouchableOpacity>
               </View>
@@ -450,7 +496,7 @@ const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
                     <Text style={styles.dateText}>{formattedDate}</Text>
                     <View style={styles.relativeDateContainer}>
                       <MaterialCommunityIcons
-                        name="calendar-heart"
+                        name={isToday ? 'calendar-today' : 'calendar-heart'}
                         size={16}
                         color={theme.colors.primary}
                       />
@@ -482,7 +528,12 @@ const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
                         gratitudeItems.length >= 3 ? theme.colors.success : theme.colors.primary
                       }
                     />
-                    <Text style={styles.progressTitle}>
+                    <Text
+                      style={[
+                        styles.progressTitle,
+                        gratitudeItems.length >= 3 && styles.progressTitleComplete,
+                      ]}
+                    >
                       {gratitudeItems.length >= 3
                         ? isToday
                           ? '🎉 Bugün hedef tamamlandı!'
@@ -758,9 +809,10 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       gap: theme.spacing.sm,
       backgroundColor: theme.colors.primaryContainer + '20',
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm + 4,
+      paddingVertical: theme.spacing.xs + 2,
       borderRadius: theme.borderRadius.full,
+      alignSelf: 'flex-start',
     },
     relativeDateText: {
       ...theme.typography.bodyMedium,
@@ -799,12 +851,13 @@ const createStyles = (theme: AppTheme) =>
 
     // Enhanced Progress Section
     progressSection: {
-      borderTopWidth: 2,
+      borderTopWidth: 1,
       borderTopColor: theme.colors.outline + '10',
       paddingTop: theme.spacing.lg,
-      backgroundColor: theme.colors.surface + 'F8',
+      backgroundColor: theme.colors.primaryContainer + '08',
       marginHorizontal: -theme.spacing.lg,
       paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.md,
       borderRadius: theme.borderRadius.lg,
     },
     progressHeader: {
@@ -820,6 +873,9 @@ const createStyles = (theme: AppTheme) =>
       letterSpacing: -0.3,
       flex: 1,
     },
+    progressTitleComplete: {
+      color: theme.colors.success,
+    },
     progressLineContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -827,7 +883,7 @@ const createStyles = (theme: AppTheme) =>
     },
     progressLine: {
       flex: 1,
-      height: 6,
+      height: 8,
       backgroundColor: theme.colors.primaryContainer + '30',
       borderRadius: theme.borderRadius.full,
       overflow: 'hidden',
@@ -908,16 +964,17 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '900',
     },
     statementsContainer: {
-      gap: 0,
+      gap: theme.spacing.xs,
       paddingHorizontal: theme.spacing.md,
       paddingBottom: theme.spacing.lg,
       paddingTop: theme.spacing.sm,
     },
     statementWrapper: {
       // Container for individual statements
+      marginBottom: theme.spacing.xs,
     },
     enhancedStatementCard: {
-      marginVertical: theme.spacing.sm,
+      marginVertical: theme.spacing.xs,
       borderRadius: theme.borderRadius.lg,
       overflow: 'hidden',
     },
@@ -1000,6 +1057,23 @@ const createStyles = (theme: AppTheme) =>
       lineHeight: 24,
       marginTop: theme.spacing.sm,
       fontWeight: '500',
+    },
+    emptyActionButton: {
+      backgroundColor: theme.colors.primary,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      borderRadius: theme.borderRadius.full,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.xl,
+      ...getPrimaryShadow.floating(theme),
+    },
+    emptyActionText: {
+      ...theme.typography.labelLarge,
+      color: theme.colors.onPrimary,
+      fontWeight: '600',
     },
   });
 

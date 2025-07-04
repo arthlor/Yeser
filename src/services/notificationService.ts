@@ -293,14 +293,14 @@ class NotificationService {
         appOwnership: Constants.appOwnership,
       });
 
-      // ✅ Step 5: FCM blocking logic (only for local dev)
+      // ✅ Step 5: FCM availability check (warn but don't block)
       const isLocalDev = !Constants.appOwnership || Constants.appOwnership === 'expo';
       if (Platform.OS === 'android' && !this.fcmAvailable && isLocalDev) {
-        logger.info('⚠️ Skipping push token registration - FCM not available in local development');
-        logger.info(
-          'ℹ️ This is normal for npx expo run:android - notifications work in EAS builds'
+        logger.warn('⚠️ FCM not available in local development - proceeding anyway');
+        logger.warn(
+          'ℹ️ Token will be registered for Expo push service - notifications work in EAS builds'
         );
-        return;
+        // Continue with token registration instead of returning
       }
       logger.debug('✅ Step 5: FCM check passed');
 
@@ -370,8 +370,15 @@ class NotificationService {
       if (error) {
         logger.error('❌ Supabase function call failed:', {
           error: error.message,
+          errorCode: error.code,
+          errorDetails: error.details,
+          errorHint: error.hint,
           userId: session.user.id,
           tokenLength: this.expoPushToken.length,
+          tokenPreview: this.expoPushToken.substring(0, 25) + '...',
+          platform: Platform.OS,
+          fcmAvailable: this.fcmAvailable,
+          isLocalDev: !Constants.appOwnership || Constants.appOwnership === 'expo',
         });
         throw new Error(`Failed to register push token in database: ${error.message}`);
       }

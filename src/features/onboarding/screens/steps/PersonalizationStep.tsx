@@ -186,7 +186,10 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
         <ScreenSection title="Adın Ne?">
           <View style={styles.usernameInputContainer}>
             <TextInput
-              style={[styles.usernameInput, validationError && styles.usernameInputError]}
+              style={[
+                styles.usernameInput,
+                validationError ? styles.usernameInputError : undefined,
+              ]}
               value={username}
               onChangeText={handleUsernameChange}
               placeholder="Örneğin: Ayşe"

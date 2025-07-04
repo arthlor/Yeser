@@ -303,20 +303,6 @@ const AppContent: React.FC = () => {
     };
   }, [isAuthenticated, profile]);
 
-  // Periodically refresh push tokens to ensure they're valid
-  React.useEffect(() => {
-    const refreshInterval = setInterval(
-      async () => {
-        if (profile?.notifications_enabled) {
-          await notificationService.refreshTokenIfNeeded();
-        }
-      },
-      24 * 60 * 60 * 1000
-    ); // Daily
-
-    return () => clearInterval(refreshInterval);
-  }, [profile?.notifications_enabled, profile?.expo_push_token]);
-
   React.useEffect(() => {
     void analyticsService.logAppOpen();
 
@@ -328,19 +314,6 @@ const AppContent: React.FC = () => {
 
       try {
         await notificationService.initialize();
-
-        // 🔥 ENHANCED: Force token refresh for users without tokens
-        if (profile?.notifications_enabled) {
-          const currentToken = notificationService.getCurrentPushToken();
-
-          if (!currentToken || !profile.expo_push_token) {
-            logger.debug('User has notifications enabled but no token - forcing refresh');
-            await notificationService.forceTokenRefresh();
-          } else {
-            // Standard token refresh if needed
-            await notificationService.refreshTokenIfNeeded();
-          }
-        }
       } catch (error) {
         logger.error('Notification init failed:', error as Error);
       }
@@ -466,7 +439,6 @@ const AppContent: React.FC = () => {
     profile?.onboarded,
     databaseReady,
     profile?.notifications_enabled,
-    profile?.expo_push_token,
   ]);
 
   const navigationTheme = React.useMemo(

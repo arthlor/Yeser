@@ -166,15 +166,15 @@ const DailyInspiration: React.FC<DailyInspirationProps> = React.memo(
 
     // 🛡️ MEMORY LEAK PREVENTION: Enhanced cleanup
     useEffect(() => {
+      const scrollTimeout = scrollTimeoutRef.current;
+      const scrollView = scrollViewRef.current;
       return () => {
         // Clear timeout on unmount
-        if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current);
-          scrollTimeoutRef.current = null;
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
         }
-        // Clear ref for better garbage collection
-        if (scrollViewRef.current) {
-          scrollViewRef.current = null;
+        if (scrollView) {
+          // No explicit cleanup needed for the ref itself
         }
       };
     }, []);

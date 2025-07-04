@@ -95,7 +95,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
     // Custom goal validation
     const customGoalValidation = useMemo(() => {
       if (!customGoalInput) {
-        return { isValid: false, message: '' };
+        return { isValid: false, message: null };
       }
 
       const numValue = parseInt(customGoalInput, 10);
@@ -358,10 +358,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                     <TextInput
                       style={[
                         styles.customInput,
-                        customGoalValidation.isValid && styles.customInputValid,
-                        customGoalValidation.message &&
-                          !customGoalValidation.isValid &&
-                          styles.customInputError,
+                        customGoalValidation.message ? styles.customInputError : undefined,
                       ]}
                       value={customGoalInput}
                       onChangeText={setCustomGoalInput}

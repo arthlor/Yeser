@@ -77,9 +77,10 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
 
   // Cleanup ref on unmount
   useEffect(() => {
+    const textInput = textInputRef.current;
     return () => {
-      if (textInputRef.current) {
-        textInputRef.current = null;
+      if (textInput) {
+        // No explicit cleanup needed for the ref itself
       }
     };
   }, []);

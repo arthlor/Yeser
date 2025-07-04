@@ -286,7 +286,7 @@ const getVariantStyles = (
   theme: AppTheme,
   variant: ButtonVariant,
   shadows: ReturnType<typeof unifiedShadows>
-) => {
+): { container: ViewStyle; text: TextStyle } => {
   switch (variant) {
     case 'primary':
       return {

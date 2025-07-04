@@ -278,9 +278,9 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
             <Text
               style={[
                 styles.helperText,
-                (errorText || isOverLimit) && styles.errorText,
-                effectiveValidationState === 'success' && styles.successText,
-                effectiveValidationState === 'warning' && styles.warningText,
+                errorText || isOverLimit ? styles.errorText : undefined,
+                effectiveValidationState === 'success' ? styles.successText : undefined,
+                effectiveValidationState === 'warning' ? styles.warningText : undefined,
               ]}
               accessibilityRole="text"
               accessibilityLiveRegion={errorText || isOverLimit ? 'polite' : 'none'}

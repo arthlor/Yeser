@@ -138,12 +138,12 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       }
     }, [autoFocus, disabled]);
 
-    // 🛡️ MEMORY LEAK FIX: Cleanup ref on unmount for better GC
+    // 🛡️ MEMORY LEAK FIX: Cleanup refs on unmount
     useEffect(() => {
+      const input = inputRef.current;
       return () => {
-        // Set ref to null on unmount to help with garbage collection
-        if (inputRef.current) {
-          inputRef.current = null;
+        if (input) {
+          // No explicit cleanup needed for the ref itself
         }
       };
     }, []);

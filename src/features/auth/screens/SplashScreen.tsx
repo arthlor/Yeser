@@ -70,9 +70,11 @@ const EnhancedSplashScreen: React.FC = () => {
 
   // 🛡️ MEMORY LEAK FIX: Cleanup refs on unmount
   React.useEffect(() => {
+    const lottie = lottieRef.current;
     return () => {
-      if (lottieRef.current) {
-        lottieRef.current = null;
+      if (lottie) {
+        // No explicit cleanup needed for the ref itself,
+        // React handles unmounting.
       }
     };
   }, []);

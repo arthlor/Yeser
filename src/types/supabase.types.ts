@@ -1,6 +1,11 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '12.2.3 (519615d)';
+  };
   public: {
     Tables: {
       daily_prompts: {
@@ -99,167 +104,64 @@ export type Database = {
         };
         Relationships: [];
       };
-      notification_logs: {
-        Row: {
-          created_at: string | null;
-          error_message: string | null;
-          expo_ticket_id: string | null;
-          id: string;
-          notification_type: string;
-          sent_at: string | null;
-          success: boolean;
-          user_id: string | null;
-        };
-        Insert: {
-          created_at?: string | null;
-          error_message?: string | null;
-          expo_ticket_id?: string | null;
-          id?: string;
-          notification_type: string;
-          sent_at?: string | null;
-          success?: boolean;
-          user_id?: string | null;
-        };
-        Update: {
-          created_at?: string | null;
-          error_message?: string | null;
-          expo_ticket_id?: string | null;
-          id?: string;
-          notification_type?: string;
-          sent_at?: string | null;
-          success?: boolean;
-          user_id?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'notification_logs_user_id_fkey';
-            columns: ['user_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       profiles: {
         Row: {
           created_at: string | null;
           daily_gratitude_goal: number | null;
           id: string;
-          notifications_enabled: boolean | null;
           onboarded: boolean;
           updated_at: string;
           use_varied_prompts: boolean;
           username: string | null;
+          enable_reminders: boolean;
         };
         Insert: {
           created_at?: string | null;
           daily_gratitude_goal?: number | null;
           id: string;
-          notifications_enabled?: boolean | null;
           onboarded?: boolean;
           updated_at?: string;
           use_varied_prompts?: boolean;
           username?: string | null;
+          enable_reminders?: boolean;
         };
         Update: {
           created_at?: string | null;
           daily_gratitude_goal?: number | null;
           id?: string;
-          notifications_enabled?: boolean | null;
           onboarded?: boolean;
           updated_at?: string;
           use_varied_prompts?: boolean;
           username?: string | null;
+          enable_reminders?: boolean;
         };
         Relationships: [];
       };
       push_notifications: {
         Row: {
-          body: string;
-          created_at: string | null;
-          data: Json | null;
-          error_message: string | null;
-          expo_receipt_id: string | null;
-          id: string;
-          notification_type: string | null;
-          scheduled_for: string | null;
-          sent_at: string | null;
-          status: string | null;
-          title: string;
-          updated_at: string | null;
+          created_at: string;
+          device_info: Json | null;
+          id: number;
+          push_token: string;
           user_id: string;
         };
         Insert: {
-          body: string;
-          created_at?: string | null;
-          data?: Json | null;
-          error_message?: string | null;
-          expo_receipt_id?: string | null;
-          id?: string;
-          notification_type?: string | null;
-          scheduled_for?: string | null;
-          sent_at?: string | null;
-          status?: string | null;
-          title: string;
-          updated_at?: string | null;
+          created_at?: string;
+          device_info?: Json | null;
+          id?: number;
+          push_token: string;
           user_id: string;
         };
         Update: {
-          body?: string;
-          created_at?: string | null;
-          data?: Json | null;
-          error_message?: string | null;
-          expo_receipt_id?: string | null;
-          id?: string;
-          notification_type?: string | null;
-          scheduled_for?: string | null;
-          sent_at?: string | null;
-          status?: string | null;
-          title?: string;
-          updated_at?: string | null;
+          created_at?: string;
+          device_info?: Json | null;
+          id?: number;
+          push_token?: string;
           user_id?: string;
         };
         Relationships: [
           {
             foreignKeyName: 'push_notifications_user_id_fkey';
-            columns: ['user_id'];
-            isOneToOne: false;
-            referencedRelation: 'profiles';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      push_tokens: {
-        Row: {
-          created_at: string | null;
-          id: string;
-          is_active: boolean;
-          platform: string;
-          token: string;
-          updated_at: string | null;
-          user_id: string;
-        };
-        Insert: {
-          created_at?: string | null;
-          id?: string;
-          is_active?: boolean;
-          platform: string;
-          token: string;
-          updated_at?: string | null;
-          user_id: string;
-        };
-        Update: {
-          created_at?: string | null;
-          id?: string;
-          is_active?: boolean;
-          platform?: string;
-          token?: string;
-          updated_at?: string | null;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'push_tokens_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
@@ -314,26 +216,9 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: number;
       };
-      check_expo_ticket_status: {
-        Args: { ticket_id: string };
-        Returns: Json;
-      };
       check_username_availability: {
         Args: { p_username: string };
         Returns: boolean;
-      };
-      debug_expo_push: {
-        Args: { test_token: string; title: string; body: string };
-        Returns: Json;
-      };
-      debug_send_push_notifications: {
-        Args: { notification_type: string; title: string; body: string };
-        Returns: {
-          user_id: string;
-          username: string;
-          token_preview: string;
-          status: string;
-        }[];
       };
       delete_gratitude_entry_by_date: {
         Args: { p_entry_date: string };
@@ -390,22 +275,6 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
-      get_users_for_daily_reminders: {
-        Args: Record<PropertyKey, never>;
-        Returns: {
-          id: string;
-          expo_push_token: string;
-          username: string;
-        }[];
-      };
-      get_users_for_throwback_reminders: {
-        Args: { p_frequency?: string };
-        Returns: {
-          id: string;
-          expo_push_token: string;
-          username: string;
-        }[];
-      };
       http: {
         Args: { request: Database['public']['CompositeTypes']['http_request'] };
         Returns: Database['public']['CompositeTypes']['http_response'];
@@ -461,43 +330,6 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: undefined;
       };
-      register_push_token: {
-        Args: { p_user_id: string; p_expo_push_token: string; p_platform: string };
-        Returns: undefined;
-      };
-      schedule_push_notification: {
-        Args: {
-          p_user_id: string;
-          p_title: string;
-          p_body: string;
-          p_data?: Json;
-          p_notification_type?: string;
-          p_scheduled_for?: string;
-        };
-        Returns: string;
-      };
-      send_daily_reminders: {
-        Args: Record<PropertyKey, never>;
-        Returns: number;
-      };
-      send_push_notification_to_user: {
-        Args: {
-          p_user_id: string;
-          p_title: string;
-          p_body: string;
-          p_data?: Json;
-          p_notification_type?: string;
-        };
-        Returns: string;
-      };
-      send_push_notifications: {
-        Args: { notification_type: string; title: string; body: string };
-        Returns: number;
-      };
-      send_throwback_reminders: {
-        Args: Record<PropertyKey, never>;
-        Returns: number;
-      };
       set_daily_gratitude_statements: {
         Args: { p_entry_date: string; p_statements: Json };
         Returns: undefined;
@@ -536,21 +368,25 @@ export type Database = {
   };
 };
 
-type DefaultSchema = Database[Extract<keyof Database, 'public'>];
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R;
     }
     ? R
@@ -566,14 +402,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema['Tables']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I;
     }
     ? I
@@ -589,14 +427,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema['Tables']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U;
     }
     ? U
@@ -610,14 +450,18 @@ export type TablesUpdate<
     : never;
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums'] | { schema: keyof Database },
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema['Enums']
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
     ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never;
@@ -625,14 +469,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema['CompositeTypes']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never;

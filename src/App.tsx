@@ -13,7 +13,6 @@ import {
 } from '@react-navigation/native';
 
 import * as Linking from 'expo-linking';
-import * as Notifications from 'expo-notifications';
 import { StatusBar, type StatusBarStyle } from 'expo-status-bar';
 import React from 'react';
 import { AppState, AppStateStatus, InteractionManager, StyleSheet, View } from 'react-native';
@@ -22,7 +21,6 @@ import RootNavigator from './navigation/RootNavigator';
 import { useTheme } from './providers/ThemeProvider';
 import EnhancedSplashScreen from './features/auth/screens/SplashScreen';
 import { analyticsService } from './services/analyticsService';
-import { notificationService } from './services/notificationService';
 import useAuthStore from './store/authStore';
 import { useUserProfile } from './shared/hooks/useUserProfile';
 import { logger } from '@/utils/debugConfig';
@@ -32,6 +30,7 @@ import { AppProviders } from './providers/AppProviders';
 import SplashOverlayProvider from './providers/SplashOverlayProvider';
 import { authCoordinator } from './features/auth/services/authCoordinator';
 import { supabaseService } from './utils/supabaseClient';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 // Helper function to get the active route name
 const getActiveRouteName = (state: NavigationState | undefined): string | undefined => {
@@ -235,8 +234,6 @@ const linking: LinkingOptions<RootStackParamList> = {
         },
       },
       Onboarding: 'onboarding',
-      OnboardingReminderSetup: 'onboarding/reminder',
-      ReminderSettings: 'settings/reminders',
       EntryDetail: 'entry/:entryId',
       PrivacyPolicy: 'privacy',
       TermsOfService: 'terms',
@@ -246,6 +243,7 @@ const linking: LinkingOptions<RootStackParamList> = {
 };
 
 const AppContent: React.FC = () => {
+  usePushNotifications();
   const { theme, colorMode } = useTheme();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { profile } = useUserProfile();
@@ -253,7 +251,7 @@ const AppContent: React.FC = () => {
   const navigationRef = React.useRef<NavigationContainerRef<RootStackParamList> | null>(null);
 
   // Check if user is fully ready for MainApp navigation
-  const isMainAppReady = isAuthenticated && profile?.onboarded;
+  const isMainAppReady = isAuthenticated;
 
   // 🚨 OAUTH QUEUE: Track database readiness for token processing
   const [databaseReady, setDatabaseReady] = React.useState(false);
@@ -279,7 +277,7 @@ const AppContent: React.FC = () => {
           from: previousState,
           to: nextAppState,
           timeSinceStart,
-          isAuthenticated,
+          isAuthenticated: isAuthenticated,
           hasProfile: !!profile,
         },
       });
@@ -288,7 +286,7 @@ const AppContent: React.FC = () => {
         logger.debug('[COLD START DEBUG] ⭐ App became ACTIVE - this could fix hanging promises', {
           extra: {
             timeSinceStart,
-            isAuthenticated,
+            isAuthenticated: isAuthenticated,
             hasProfile: !!profile,
           },
         });
@@ -305,21 +303,6 @@ const AppContent: React.FC = () => {
 
   React.useEffect(() => {
     void analyticsService.logAppOpen();
-
-    // Initialize notification service on app start (with initialization guard)
-    const initializeNotifications = async () => {
-      if (notificationService.isInitialized()) {
-        return;
-      }
-
-      try {
-        await notificationService.initialize();
-      } catch (error) {
-        logger.error('Notification init failed:', error as Error);
-      }
-    };
-
-    initializeNotifications();
 
     // 🚨 OAUTH QUEUE: Monitor Supabase initialization to detect database readiness
     const checkDatabaseReadiness = () => {
@@ -352,70 +335,6 @@ const AppContent: React.FC = () => {
       clearInterval(readinessInterval);
     };
 
-    // 🚨 NOTIFICATION FIX: Enhanced notification response handler with comprehensive navigation
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data;
-      logger.debug('[NOTIFICATION FIX] Notification response received:', {
-        data,
-        isMainAppReady,
-        navigationReady: !!navigationRef.current,
-      });
-
-      // Navigate based on notification type with proper error handling
-      if (data?.type === 'daily_reminder') {
-        // 🚨 NAVIGATION FIX: Navigate to MainApp -> DailyEntryTab (Daily Entry Screen)
-        if (isMainAppReady && navigationRef.current) {
-          try {
-            navigationRef.current.navigate('MainApp', {
-              screen: 'DailyEntryTab', // ✅ FIXED: Proper nested navigation to DailyEntryTab
-            });
-            logger.debug(
-              '[NOTIFICATION FIX] ✅ Successfully navigated to DailyEntryTab from daily reminder'
-            );
-          } catch (error) {
-            logger.error('[NOTIFICATION FIX] Failed to navigate to DailyEntryTab:', error as Error);
-          }
-        } else {
-          logger.warn('[NOTIFICATION FIX] Cannot navigate to DailyEntryTab - app not ready', {
-            isMainAppReady,
-            hasNavigation: !!navigationRef.current,
-          });
-        }
-      } else if (data?.type === 'throwback_reminder') {
-        // 🚨 NAVIGATION FIX: Navigate to MainApp -> PastEntriesTab (Past Entries Screen)
-        if (isMainAppReady && navigationRef.current) {
-          try {
-            navigationRef.current.navigate('MainApp', {
-              screen: 'PastEntriesTab', // ✅ FIXED: Proper nested navigation to PastEntriesTab
-            });
-            logger.debug(
-              '[NOTIFICATION FIX] ✅ Successfully navigated to PastEntriesTab from throwback reminder'
-            );
-          } catch (error) {
-            logger.error(
-              '[NOTIFICATION FIX] Failed to navigate to PastEntriesTab:',
-              error as Error
-            );
-          }
-        } else {
-          logger.warn('[NOTIFICATION FIX] Cannot navigate to PastEntriesTab - app not ready', {
-            isMainAppReady,
-            hasNavigation: !!navigationRef.current,
-          });
-        }
-      } else {
-        // Only log warning for actual notification data, ignore system/browser data
-        if (data && Object.keys(data).length > 0 && !data['android.intent.extra.REFERRER']) {
-          logger.warn('[NOTIFICATION FIX] Unknown notification type:', {
-            notificationType: data?.type,
-            allData: data,
-          });
-        } else {
-          logger.debug('[NOTIFICATION FIX] Ignoring system/browser notification data');
-        }
-      }
-    });
-
     // Handle deep links when app is already running
     const linkingSubscription = Linking.addEventListener('url', (event) => {
       void handleDeepLink(event.url, databaseReady);
@@ -429,17 +348,10 @@ const AppContent: React.FC = () => {
     });
 
     return () => {
-      subscription.remove();
       linkingSubscription.remove();
       cleanupReadinessCheck();
     };
-  }, [
-    isMainAppReady,
-    isAuthenticated,
-    profile?.onboarded,
-    databaseReady,
-    profile?.notifications_enabled,
-  ]);
+  }, [isMainAppReady, isAuthenticated, profile?.onboarded, databaseReady]);
 
   const navigationTheme = React.useMemo(
     () => ({

@@ -12,7 +12,6 @@ const SCREEN_NAME_MAPPING: Record<string, string> = {
   Login: 'login_screen',
   Onboarding: 'onboarding_screen',
   EntryDetail: 'entry_detail_screen',
-  ReminderSettings: 'reminder_settings_screen',
   PrivacyPolicy: 'privacy_policy_screen',
   TermsOfService: 'terms_of_service_screen',
   Help: 'help_screen',
@@ -183,19 +182,6 @@ const trackGamification = async (
 };
 
 /**
- * NO-OP: Track notification effectiveness (disabled).
- */
-const trackNotificationAnalytics = async (
-  notificationType: 'daily_reminder' | 'throwback_reminder' | 'milestone_notification',
-  action: 'sent' | 'delivered' | 'opened' | 'dismissed' | 'action_taken',
-  context?: Record<string, string | number | boolean>
-): Promise<void> => {
-  if (__DEV__) {
-    logger.debug('[NO-OP] Analytics: Notification', { notificationType, action, ...context });
-  }
-};
-
-/**
  * NO-OP: Track content creation and consumption (disabled).
  */
 const trackContentAnalytics = async (
@@ -244,7 +230,6 @@ export const analyticsService = {
   trackPerformance,
   trackEngagement,
   trackGamification,
-  trackNotificationAnalytics,
   trackContentAnalytics,
   trackDetailedError,
 };

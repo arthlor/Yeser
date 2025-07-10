@@ -61,7 +61,7 @@ android/app/build/
 android/app/.cxx/
 android/app/debug.keystore
 # Firebase config files (security sensitive)
-config/google-services.json
+google-services.json
 
 # macOS
 .DS_Store

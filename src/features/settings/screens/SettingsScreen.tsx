@@ -11,7 +11,7 @@ import { cleanupTemporaryFile, prepareUserExportFile, shareExportedFile } from '
 import AboutSettings from '@/components/settings/AboutSettings';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
 import DailyGoalSettings from '@/components/settings/DailyGoalSettings';
-import { NotificationToggle } from '@/components';
+import NotificationSettings from '@/components/settings/NotificationSettings';
 import { ScreenContent, ScreenLayout } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import { useUserProfile } from '@/shared/hooks';
@@ -25,8 +25,6 @@ import useAuthStore from '@/store/authStore';
 import { logger } from '@/utils/debugConfig';
 import { AppTheme, ThemeName } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
-import { notificationService } from '@/services/notificationService';
-import { hapticFeedback } from '@/utils/hapticFeedback';
 
 // Fix navigation types by extending the base interfaces
 interface MainAppTabParamListFixed extends Record<string, object | undefined> {
@@ -65,7 +63,6 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const animations = useCoordinatedAnimations();
 
   const [isExporting, setIsExporting] = useState(false);
-  const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
 
   // TanStack Query - Replace Zustand profile store
   const {
@@ -147,32 +144,6 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   // TanStack Query - Helper functions for profile updates
-  const handleNotificationToggle = async (enabled: boolean) => {
-    try {
-      setIsUpdatingNotifications(true);
-      const success = await notificationService.toggleNotifications(enabled);
-      if (success) {
-        // 🔥 FIX: Refetch profile to update UI state
-        await refetchProfile();
-        hapticFeedback.success();
-        analyticsService.logEvent('notifications_toggled', { enabled });
-      } else {
-        handleMutationError(
-          new Error('Bildirimler güncellenirken bir hata oluştu'),
-          'bildirim güncelleme'
-        );
-      }
-    } catch (error) {
-      logger.error(
-        'Error toggling notifications:',
-        error instanceof Error ? error : new Error(String(error))
-      );
-      handleMutationError(error, 'bildirim güncelleme');
-    } finally {
-      setIsUpdatingNotifications(false);
-    }
-  };
-
   const handleVariedPromptsToggle = useCallback(
     (useVariedPrompts: boolean) => {
       updateProfile({ useVariedPrompts });
@@ -288,19 +259,20 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tercihler</Text>
-
+          <Text style={styles.sectionTitle}>Hesap</Text>
           <DailyGoalSettings
             currentGoal={profile?.daily_gratitude_goal ?? 3}
             onUpdateGoal={handleDailyGoalUpdate}
           />
+        </View>
 
-          <NotificationToggle
-            enabled={profile?.notifications_enabled ?? false}
-            onToggle={handleNotificationToggle}
-            isLoading={isUpdatingNotifications}
-          />
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Bildirimler</Text>
+          <NotificationSettings />
+        </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Görünüm</Text>
           <AppearanceSettings
             activeThemeName={colorMode as ThemeName}
             onToggleTheme={toggleColorMode}
@@ -322,7 +294,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
               </View>
               <View style={styles.actionContainer}>
                 <ThemedSwitch
-                  value={profile?.useVariedPrompts ?? true}
+                  value={profile?.use_varied_prompts ?? true}
                   onValueChange={handleVariedPromptsToggle}
                 />
               </View>
@@ -538,6 +510,22 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.errorContainer + '20',
       borderWidth: 1,
       borderColor: theme.colors.error + '30',
+    },
+    divider: {
+      height: 1,
+      backgroundColor: theme.colors.outlineVariant,
+      marginVertical: theme.spacing.sm,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+    },
+    switchLabel: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '500',
     },
   });
 

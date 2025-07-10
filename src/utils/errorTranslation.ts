@@ -10,7 +10,7 @@ import { logger } from './debugConfig';
 export interface TranslatedError {
   userMessage: string;
   technicalMessage: string;
-  errorType: 'auth' | 'network' | 'validation' | 'server' | 'unknown' | 'notification';
+  errorType: 'auth' | 'network' | 'validation' | 'server' | 'unknown';
 }
 
 /**
@@ -170,22 +170,6 @@ export const translateError = (
       userMessage: 'Bu işlem için yetkiniz bulunmuyor.',
       technicalMessage,
       errorType: 'auth',
-    };
-  }
-
-  // Notification Errors (Android calendar trigger and others)
-  if (
-    lowerMessage.includes('notification') ||
-    lowerMessage.includes('calendar is not supported') ||
-    lowerMessage.includes('trigger of type') ||
-    lowerMessage.includes('failed to schedule') ||
-    lowerMessage.includes('expo notification') ||
-    lowerMessage.includes('notification service')
-  ) {
-    return {
-      userMessage: 'Bildirim ayarlanamadı. Lütfen bildirim izinlerini kontrol edin.',
-      technicalMessage,
-      errorType: 'notification',
     };
   }
 

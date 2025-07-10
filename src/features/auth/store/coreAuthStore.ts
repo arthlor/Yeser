@@ -5,6 +5,8 @@ import { logger } from '@/utils/debugConfig';
 import { queryClient } from '@/api/queryClient';
 import { atomicOperationManager } from '../utils/atomicOperations';
 import * as authService from '@/services/authService';
+import usePushNotificationStore from '@/store/pushNotificationStore';
+import { removePushToken } from '@/api/profileApi';
 
 /**
  * Core Authentication State Interface
@@ -168,6 +170,21 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
         set({ isLoading: true });
 
         try {
+          // ** LOGOUT FLOW STEP 1: Unregister push token **
+          const { expoPushToken, setExpoPushToken } = usePushNotificationStore.getState();
+          if (expoPushToken) {
+            try {
+              logger.debug('Unregistering push token on logout...', { token: expoPushToken });
+              await removePushToken(expoPushToken);
+              setExpoPushToken(null); // Clear token from local store
+            } catch (error) {
+              // Do not block logout if this fails. Log it for debugging.
+              logger.error('Failed to unregister push token on logout. Proceeding with logout.', {
+                error,
+              });
+            }
+          }
+
           // Cancel queries before logout
           await cancelQueriesForAuthTransition();
 

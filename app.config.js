@@ -128,6 +128,7 @@ module.exports = {
         category: ['BROWSABLE', 'DEFAULT'],
       },
     ],
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON || './google-services.json',
   },
 
   web: {
@@ -143,10 +144,12 @@ module.exports = {
           compileSdkVersion: 35,
           targetSdkVersion: 34,
           buildToolsVersion: '35.0.0',
+          enableProguardInReleaseBuilds: true,
         },
         ios: {
           deploymentTarget: '15.1',
           useFrameworks: 'static',
+          googleServicesFile: process.env.GOOGLE_SERVICES_PLIST,
         },
       },
     ],
@@ -162,7 +165,7 @@ module.exports = {
       },
     ],
     // 🔥 CRITICAL: Custom plugin to handle google-services.json from environment
-    './plugins/withGoogleServices',
+    './plugins/withGoogleServices.js',
   ],
 
   extra: {

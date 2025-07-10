@@ -1,5 +1,4 @@
 import { networkMonitorService } from '@/services/networkMonitorService';
-import { notificationService } from '@/services/notificationService';
 import { RobustFetch } from './robustFetch';
 
 /**
@@ -17,11 +16,5 @@ export const cleanupSingletons = (): void => {
     RobustFetch.dispose();
   } catch {
     // ignored – listener may already be disposed
-  }
-
-  try {
-    notificationService.reset();
-  } catch {
-    // ignored – service may not have been initialised
   }
 };

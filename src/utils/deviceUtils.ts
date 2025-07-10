@@ -6,24 +6,6 @@ import { logger } from './debugConfig';
  */
 
 /**
- * Opens the device's notification settings
- * iOS: Opens app-specific settings
- * Android: Opens general notification settings
- */
-export const openNotificationSettings = async (): Promise<void> => {
-  try {
-    if (Platform.OS === 'ios') {
-      await Linking.openURL('app-settings:');
-    } else {
-      await Linking.openSettings();
-    }
-  } catch (error) {
-    logger.error('Failed to open notification settings:', error as Error);
-    throw new Error('Ayarlar açılırken bir hata oluştu');
-  }
-};
-
-/**
  * Checks if the device can open settings
  */
 export const canOpenSettings = async (): Promise<boolean> => {

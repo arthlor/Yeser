@@ -109,9 +109,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         // ✅ SIMPLIFIED: Only essential fields for simplified notification system
         use_varied_prompts: true, // Always enable varied prompts
         onboarded: true,
-        // 🚀 SIMPLIFIED: Only notifications_enabled controls everything
-        // Fixed schedule: ["12:00", "14:00", "19:00", "21:00"] - no user configuration needed
-        notifications_enabled: false, // Disabled by default - users can enable in Settings
       };
 
       // Save to profile using TanStack Query
@@ -124,10 +121,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         daily_goal: finalData.daily_gratitude_goal,
         theme: onboardingData.selectedTheme || 'light',
         varied_prompts: finalData.use_varied_prompts,
-        notifications_enabled: finalData.notifications_enabled,
         completed_demo: onboardingData.hasCompletedDemo || false,
-        notification_system: 'simplified', // Track simplified notification system
-        fixed_schedule: '12:00,14:00,19:00,21:00', // Track hardcoded schedule
       });
 
       hapticFeedback.success();

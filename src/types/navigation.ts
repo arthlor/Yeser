@@ -9,27 +9,33 @@ export interface AuthStackParamList extends Record<string, object | undefined> {
   Login: undefined; // Magic link login screen (email-only + Google OAuth)
 }
 
-// Main app navigator
+// Main app tab navigator
 export interface MainTabParamList extends Record<string, object | undefined> {
   HomeTab: undefined;
-  DailyEntryTab: { initialDate?: string } | undefined;
+  DailyEntryTab: { initialDate?: string; initialPrompt?: string } | undefined;
   PastEntriesTab: undefined;
   CalendarTab: undefined;
   SettingsTab: undefined;
 }
 
-// Root stack that includes auth, main app, and modal screens
-export interface RootStackParamList extends Record<string, object | undefined> {
-  Auth: NavigatorScreenParams<AuthStackParamList>;
-  MainApp: NavigatorScreenParams<MainTabParamList>;
-  Onboarding: undefined;
-  OnboardingReminderSetup: undefined;
-  ReminderSettings: undefined;
+// App stack (post-authentication) that contains the main tabs and modal screens
+export interface AppStackParamList extends Record<string, object | undefined> {
+  MainAppTabs: NavigatorScreenParams<MainTabParamList>;
   EntryDetail: { entryId: string; entryDate?: string };
   PastEntryCreation: { date: string };
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
   Help: undefined;
+  WhyGratitude: undefined;
+}
+
+// Root stack that switches between auth, onboarding, and the main app
+export interface RootStackParamList extends Record<string, object | undefined> {
+  Splash: undefined;
+  Auth: undefined;
+  Onboarding: undefined;
+  MainApp: NavigatorScreenParams<AppStackParamList>;
+  NotFound: undefined;
 }
 
 // Additional utility types

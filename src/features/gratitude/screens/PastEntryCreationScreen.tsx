@@ -6,7 +6,7 @@ import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
 import StatementEditCard from '@/shared/components/ui/StatementEditCard';
 import { AppTheme } from '@/themes/types';
-import { RootStackParamList } from '@/types/navigation';
+import { AppStackParamList, RootStackParamList } from '@/types/navigation';
 import { analyticsService } from '@/services/analyticsService';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { ScreenLayout } from '@/shared/components/layout';
@@ -27,11 +27,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-type PastEntryCreationScreenRouteProp = RouteProp<RootStackParamList, 'PastEntryCreation'>;
-
-interface Props {
-  route: PastEntryCreationScreenRouteProp;
-}
+type PastEntryCreationScreenRouteProp = RouteProp<AppStackParamList, 'PastEntryCreation'>;
 
 /**
  * **SIMPLIFIED PAST ENTRY CREATION SCREEN**: Minimal, elegant past entry experience
@@ -43,7 +39,9 @@ interface Props {
  * - Replaced complex layout animations with coordinated transitions
  * - Maintained all functionality with cleaner, minimal animations
  */
-const PastEntryCreationScreen: React.FC<Props> = ({ route }) => {
+const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRouteProp }> = ({
+  route,
+}) => {
   const { theme } = useTheme();
   const { showSuccess, handleMutationError, showError } = useGlobalError();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();

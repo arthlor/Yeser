@@ -14,7 +14,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { AppTheme } from '@/themes/types';
-import { RootStackParamList } from '@/types/navigation';
+import { AppStackParamList, RootStackParamList } from '@/types/navigation';
 import { ScreenLayout } from '@/shared/components/layout';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -26,18 +26,13 @@ import { analyticsService } from '@/services/analyticsService';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 // Define the type for the route params
-type EntryDetailScreenRouteProp = RouteProp<RootStackParamList, 'EntryDetail'>;
+type EntryDetailScreenRouteProp = RouteProp<AppStackParamList, 'EntryDetail'>;
 
 // Define navigation prop type for navigating back or to an edit screen
 type EntryDetailScreenNavigationProp = CompositeNavigationProp<
-  NativeStackNavigationProp<RootStackParamList, 'EntryDetail'>,
+  NativeStackNavigationProp<AppStackParamList, 'EntryDetail'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
-
-interface EntryDetailScreenProps {
-  route: EntryDetailScreenRouteProp;
-  navigation: EntryDetailScreenNavigationProp;
-}
 
 /**
  * **PERFORMANCE OPTIMIZED ENTRY DETAIL SCREEN**: Eliminated all performance violations
@@ -56,606 +51,605 @@ interface EntryDetailScreenProps {
  * EnhancedEntryDetailScreen displays a single gratitude entry with beautiful journal-like design
  * Features: Individual statement cards, enhanced animations, gorgeous visual hierarchy
  */
-const EnhancedEntryDetailScreen: React.FC<EntryDetailScreenProps> = React.memo(
-  ({ route, navigation }) => {
-    const { theme } = useTheme();
-    const { showSuccess, showError } = useToast();
-    const { handleMutationError } = useGlobalError();
-    const { entryDate: routeEntryDate } = route.params;
+const EnhancedEntryDetailScreen: React.FC<{
+  route: EntryDetailScreenRouteProp;
+  navigation: EntryDetailScreenNavigationProp;
+}> = React.memo(({ route, navigation }) => {
+  const { theme } = useTheme();
+  const { showSuccess, showError } = useToast();
+  const { handleMutationError } = useGlobalError();
+  const { entryDate: routeEntryDate } = route.params;
 
-    // Provide fallback for entryDate if not provided
-    const entryDate = routeEntryDate || new Date().toISOString().split('T')[0];
+  // Provide fallback for entryDate if not provided
+  const entryDate = routeEntryDate || new Date().toISOString().split('T')[0];
 
-    // Live data fetching for real-time updates
-    const {
-      data: currentEntry,
-      isLoading: isLoadingEntry,
-      refetch: refetchEntry,
-      isRefetching,
-      error: entryError,
-    } = useGratitudeEntry(entryDate);
+  // Live data fetching for real-time updates
+  const {
+    data: currentEntry,
+    isLoading: isLoadingEntry,
+    refetch: refetchEntry,
+    isRefetching,
+    error: entryError,
+  } = useGratitudeEntry(entryDate);
 
-    // Mutation hooks for editing and deleting operations
-    const {
-      editStatement,
-      editStatementError,
-      deleteStatement,
-      isDeletingStatement,
-      deleteStatementError,
-    } = useGratitudeMutations();
+  // Mutation hooks for editing and deleting operations
+  const {
+    editStatement,
+    editStatementError,
+    deleteStatement,
+    isDeletingStatement,
+    deleteStatementError,
+  } = useGratitudeMutations();
 
-    // Local state for editing
-    const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
+  // Local state for editing
+  const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
 
-    // Animation values for enhanced entrance effects
-    const animations = useCoordinatedAnimations();
-    const [animationsReady, setAnimationsReady] = useState(false);
+  // Animation values for enhanced entrance effects
+  const animations = useCoordinatedAnimations();
+  const [animationsReady, setAnimationsReady] = useState(false);
 
-    // Use live data or fallback to route params
-    const gratitudeItems = currentEntry?.statements || [];
+  // Use live data or fallback to route params
+  const gratitudeItems = currentEntry?.statements || [];
 
-    // ✅ PERFORMANCE FIX: Memoized expensive date computation
-    const dateInfo = useMemo(() => {
-      if (!entryDate) {
-        return { formattedDate: 'Tarih bilgisi yok', relativeTime: '', isToday: false };
+  // ✅ PERFORMANCE FIX: Memoized expensive date computation
+  const dateInfo = useMemo(() => {
+    if (!entryDate) {
+      return { formattedDate: 'Tarih bilgisi yok', relativeTime: '', isToday: false };
+    }
+
+    const entryDateObj = new Date(entryDate);
+    const today = new Date();
+    const diffTime = today.getTime() - entryDateObj.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    const formattedDate = entryDateObj.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    });
+
+    let relativeTime = '';
+    const isToday = diffDays === 0;
+
+    if (isToday) {
+      relativeTime = 'Bugün';
+    } else if (diffDays === 1) {
+      relativeTime = 'Dün';
+    } else if (diffDays < 7) {
+      relativeTime = `${diffDays} gün önce`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      relativeTime = `${weeks} hafta önce`;
+    } else {
+      const months = Math.floor(diffDays / 30);
+      relativeTime = `${months} ay önce`;
+    }
+
+    return { formattedDate, relativeTime, isToday };
+  }, [entryDate]);
+
+  const { formattedDate, relativeTime, isToday } = dateInfo;
+
+  // ✅ PERFORMANCE FIX: Memoized styles
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
+  // 🎯 TOAST INTEGRATION: Refresh handler with toast feedback
+  const handleRefresh = useCallback(async () => {
+    try {
+      await refetchEntry();
+      // Success feedback for refresh
+      showSuccess('Minnet kayıtları yenilendi');
+    } catch (error) {
+      // Error feedback for refresh failure
+      showError('Kayıtlar yenilenemedi. Lütfen tekrar deneyin.');
+      logger.error('Refresh error:', error instanceof Error ? error : new Error(String(error)));
+    }
+  }, [refetchEntry, showSuccess, showError]);
+
+  // ✅ PERFORMANCE FIX: Memoized edit handler
+  const handleEditStatement = useCallback((index: number) => {
+    setEditingStatementIndex(index);
+  }, []);
+
+  // ✅ PERFORMANCE FIX: Memoized save handler with proper dependencies
+  const handleSaveEditedStatement = useCallback(
+    async (index: number, updatedText: string) => {
+      if (!updatedText.trim()) {
+        return;
       }
 
-      const entryDateObj = new Date(entryDate);
-      const today = new Date();
-      const diffTime = today.getTime() - entryDateObj.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      const formattedDate = entryDateObj.toLocaleDateString('tr-TR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        weekday: 'long',
-      });
-
-      let relativeTime = '';
-      const isToday = diffDays === 0;
-
-      if (isToday) {
-        relativeTime = 'Bugün';
-      } else if (diffDays === 1) {
-        relativeTime = 'Dün';
-      } else if (diffDays < 7) {
-        relativeTime = `${diffDays} gün önce`;
-      } else if (diffDays < 30) {
-        const weeks = Math.floor(diffDays / 7);
-        relativeTime = `${weeks} hafta önce`;
-      } else {
-        const months = Math.floor(diffDays / 30);
-        relativeTime = `${months} ay önce`;
-      }
-
-      return { formattedDate, relativeTime, isToday };
-    }, [entryDate]);
-
-    const { formattedDate, relativeTime, isToday } = dateInfo;
-
-    // ✅ PERFORMANCE FIX: Memoized styles
-    const styles = useMemo(() => createStyles(theme), [theme]);
-
-    // 🎯 TOAST INTEGRATION: Refresh handler with toast feedback
-    const handleRefresh = useCallback(async () => {
       try {
-        await refetchEntry();
-        // Success feedback for refresh
-        showSuccess('Minnet kayıtları yenilendi');
+        gratitudeStatementSchema.parse(updatedText.trim());
+
+        await editStatement({
+          entryDate: entryDate,
+          statementIndex: index,
+          updatedStatement: updatedText.trim(),
+        });
+
+        setEditingStatementIndex(null);
+
+        // 🎯 TOAST INTEGRATION: Success feedback for statement updates
+        showSuccess('Minnet kaydın başarıyla güncellendi');
       } catch (error) {
-        // Error feedback for refresh failure
-        showError('Kayıtlar yenilenemedi. Lütfen tekrar deneyin.');
-        logger.error('Refresh error:', error instanceof Error ? error : new Error(String(error)));
-      }
-    }, [refetchEntry, showSuccess, showError]);
-
-    // ✅ PERFORMANCE FIX: Memoized edit handler
-    const handleEditStatement = useCallback((index: number) => {
-      setEditingStatementIndex(index);
-    }, []);
-
-    // ✅ PERFORMANCE FIX: Memoized save handler with proper dependencies
-    const handleSaveEditedStatement = useCallback(
-      async (index: number, updatedText: string) => {
-        if (!updatedText.trim()) {
-          return;
-        }
-
-        try {
-          gratitudeStatementSchema.parse(updatedText.trim());
-
-          await editStatement({
-            entryDate: entryDate,
-            statementIndex: index,
-            updatedStatement: updatedText.trim(),
-          });
-
-          setEditingStatementIndex(null);
-
-          // 🎯 TOAST INTEGRATION: Success feedback for statement updates
-          showSuccess('Minnet kaydın başarıyla güncellendi');
-        } catch (error) {
-          if (error instanceof ZodError) {
-            // 🎯 TOAST INTEGRATION: Use toast for validation errors with user-friendly messages
-            showError('Lütfen geçerli bir minnet ifadesi girin');
-          } else {
-            // 🎯 TOAST INTEGRATION: Use toast for general errors
-            showError('Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.');
-            handleMutationError(error, 'saveEditedStatement');
-            logger.error(
-              'Edit statement error:',
-              error instanceof Error ? error : new Error(String(error))
-            );
-          }
-        }
-      },
-      [entryDate, editStatement, showSuccess, showError, handleMutationError]
-    );
-
-    // ✅ PERFORMANCE FIX: Memoized cancel handler
-    const handleCancelEditingStatement = useCallback(() => {
-      setEditingStatementIndex(null);
-    }, []);
-
-    // ✅ PERFORMANCE FIX: Memoized delete handler
-    const handleDeleteStatement = useCallback(
-      async (index: number) => {
-        try {
-          await deleteStatement({
-            entryDate: entryDate,
-            statementIndex: index,
-          });
-
-          // 🎯 TOAST INTEGRATION: Success feedback for statement deletion
-          showSuccess('Minnet ifadesi başarıyla silindi');
-        } catch (error) {
+        if (error instanceof ZodError) {
+          // 🎯 TOAST INTEGRATION: Use toast for validation errors with user-friendly messages
+          showError('Lütfen geçerli bir minnet ifadesi girin');
+        } else {
           // 🎯 TOAST INTEGRATION: Use toast for general errors
-          showError('Silme işlemi başarısız oldu. Lütfen tekrar deneyin.');
-          handleMutationError(error, 'deleteStatement');
+          showError('Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.');
+          handleMutationError(error, 'saveEditedStatement');
           logger.error(
-            'Delete statement error:',
+            'Edit statement error:',
             error instanceof Error ? error : new Error(String(error))
           );
         }
-      },
-      [entryDate, deleteStatement, showSuccess, showError, handleMutationError]
-    );
-
-    // Analytics tracking
-    useEffect(() => {
-      analyticsService.logScreenView('entry_detail_screen');
-
-      // Track detailed entry context
-      analyticsService.logEvent('entry_detail_viewed', {
-        entry_date: entryDate,
-        statements_count: gratitudeItems.length,
-        is_today: entryDate === new Date().toISOString().split('T')[0],
-        is_loading: isLoadingEntry,
-        has_error: !!entryError,
-      });
-    }, [entryDate, gratitudeItems.length, isLoadingEntry, entryError]);
-
-    // 🎯 TOAST INTEGRATION: Handle mutations errors with toast notifications
-    useEffect(() => {
-      if (editStatementError) {
-        handleMutationError(editStatementError, 'editStatement');
-        showError('Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.');
       }
-    }, [editStatementError, handleMutationError, showError]);
+    },
+    [entryDate, editStatement, showSuccess, showError, handleMutationError]
+  );
 
-    useEffect(() => {
-      if (deleteStatementError) {
-        handleMutationError(deleteStatementError, 'deleteStatement');
+  // ✅ PERFORMANCE FIX: Memoized cancel handler
+  const handleCancelEditingStatement = useCallback(() => {
+    setEditingStatementIndex(null);
+  }, []);
+
+  // ✅ PERFORMANCE FIX: Memoized delete handler
+  const handleDeleteStatement = useCallback(
+    async (index: number) => {
+      try {
+        await deleteStatement({
+          entryDate: entryDate,
+          statementIndex: index,
+        });
+
+        // 🎯 TOAST INTEGRATION: Success feedback for statement deletion
+        showSuccess('Minnet ifadesi başarıyla silindi');
+      } catch (error) {
+        // 🎯 TOAST INTEGRATION: Use toast for general errors
         showError('Silme işlemi başarısız oldu. Lütfen tekrar deneyin.');
+        handleMutationError(error, 'deleteStatement');
+        logger.error(
+          'Delete statement error:',
+          error instanceof Error ? error : new Error(String(error))
+        );
       }
-    }, [deleteStatementError, handleMutationError, showError]);
+    },
+    [entryDate, deleteStatement, showSuccess, showError, handleMutationError]
+  );
 
-    // **COORDINATED ENTRANCE**: Simple entrance animation
-    useEffect(() => {
-      setAnimationsReady(true);
-      animations.animateEntrance({ duration: 400 });
-    }, [animations, gratitudeItems.length]);
+  // Analytics tracking
+  useEffect(() => {
+    analyticsService.logScreenView('entry_detail_screen');
 
-    // Handle initial loading state
-    if (isLoadingEntry) {
-      return <LoadingState fullScreen={true} message="Minnet kayıtları yükleniyor..." />;
+    // Track detailed entry context
+    analyticsService.logEvent('entry_detail_viewed', {
+      entry_date: entryDate,
+      statements_count: gratitudeItems.length,
+      is_today: entryDate === new Date().toISOString().split('T')[0],
+      is_loading: isLoadingEntry,
+      has_error: !!entryError,
+    });
+  }, [entryDate, gratitudeItems.length, isLoadingEntry, entryError]);
+
+  // 🎯 TOAST INTEGRATION: Handle mutations errors with toast notifications
+  useEffect(() => {
+    if (editStatementError) {
+      handleMutationError(editStatementError, 'editStatement');
+      showError('Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.');
     }
+  }, [editStatementError, handleMutationError, showError]);
 
-    // Handle error state
-    if (entryError) {
-      return (
-        <ScreenLayout
-          scrollable={false}
-          showsVerticalScrollIndicator={false}
-          edges={['top']}
-          edgeToEdge={true}
+  useEffect(() => {
+    if (deleteStatementError) {
+      handleMutationError(deleteStatementError, 'deleteStatement');
+      showError('Silme işlemi başarısız oldu. Lütfen tekrar deneyin.');
+    }
+  }, [deleteStatementError, handleMutationError, showError]);
+
+  // **COORDINATED ENTRANCE**: Simple entrance animation
+  useEffect(() => {
+    setAnimationsReady(true);
+    animations.animateEntrance({ duration: 400 });
+  }, [animations, gratitudeItems.length]);
+
+  // Handle initial loading state
+  if (isLoadingEntry) {
+    return <LoadingState fullScreen={true} message="Minnet kayıtları yükleniyor..." />;
+  }
+
+  // Handle error state
+  if (entryError) {
+    return (
+      <ScreenLayout
+        scrollable={false}
+        showsVerticalScrollIndicator={false}
+        edges={['top']}
+        edgeToEdge={true}
+      >
+        <ErrorState
+          title="Yüklenemedi"
+          error={entryError}
+          icon="calendar-alert"
+          onRetry={() => refetchEntry()}
+          retryText="Tekrar Dene"
+        />
+      </ScreenLayout>
+    );
+  }
+
+  // Enhanced Empty State Component
+  const EmptyStateEnhanced = () => (
+    <Animated.View
+      style={[
+        styles.emptyStateContainer,
+        {
+          opacity: animations.fadeAnim,
+        },
+      ]}
+    >
+      <ThemedCard
+        variant="outlined"
+        density="comfortable"
+        elevation="card"
+        style={styles.emptyStateCard}
+      >
+        <View style={styles.emptyState}>
+          <View style={styles.emptyIconContainer}>
+            <MaterialCommunityIcons
+              name="heart-outline"
+              size={72}
+              color={theme.colors.primary + '60'}
+            />
+            <View style={styles.sparkleContainer}>
+              <Animated.View
+                style={[
+                  styles.sparkle1,
+                  {
+                    opacity: animations.opacityAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 1],
+                    }),
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="star-outline"
+                  size={16}
+                  color={theme.colors.primary + '40'}
+                />
+              </Animated.View>
+              <Animated.View
+                style={[
+                  styles.sparkle2,
+                  {
+                    opacity: animations.opacityAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 1],
+                    }),
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="star-outline"
+                  size={12}
+                  color={theme.colors.primary + '40'}
+                />
+              </Animated.View>
+              <Animated.View
+                style={[
+                  styles.sparkle3,
+                  {
+                    opacity: animations.opacityAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 1],
+                    }),
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="star-outline"
+                  size={14}
+                  color={theme.colors.primary + '40'}
+                />
+              </Animated.View>
+            </View>
+          </View>
+          <Text style={styles.emptyTitle}>Bu günün hikayesi henüz yazılmamış</Text>
+          <Text style={styles.emptySubtitle}>
+            Bu özel güne ait minnet kayıtları henüz yok.{'\n'}
+            {isToday
+              ? 'Bugün yaşadığın güzel anları kaydedebilirsin!'
+              : 'Geri dönüp o günün güzel anılarını paylaşabilirsin!'}
+          </Text>
+          {isToday && (
+            <TouchableOpacity
+              style={styles.emptyActionButton}
+              onPress={() => navigation.navigate('DailyEntry')}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons name="plus" size={20} color={theme.colors.onPrimary} />
+              <Text style={styles.emptyActionText}>Minnet Ekle</Text>
+            </TouchableOpacity>
+          )}
+          <View style={styles.emptyQuote}>
+            <MaterialCommunityIcons
+              name="format-quote-open"
+              size={20}
+              color={theme.colors.primary + '60'}
+            />
+            <Text style={styles.emptyQuoteText}>
+              "Her gün, minnettarlık için{'\n'}yeni fırsatlar sunar."
+            </Text>
+          </View>
+        </View>
+      </ThemedCard>
+    </Animated.View>
+  );
+
+  return (
+    <ScreenLayout
+      scrollable={true}
+      showsVerticalScrollIndicator={false}
+      density="compact"
+      edges={['top']}
+      edgeToEdge={true}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={handleRefresh}
+          colors={[theme.colors.primary]}
+          tintColor={theme.colors.primary}
+          progressBackgroundColor={theme.colors.surface}
+        />
+      }
+    >
+      {/* 🎨 CUSTOM EDGE-TO-EDGE HEADER */}
+      <View style={styles.headerContainer}>
+        <LinearGradient
+          colors={[
+            theme.colors.primary + '15',
+            theme.colors.primaryContainer + '10',
+            theme.colors.surface + 'F0',
+            theme.colors.surface,
+          ]}
+          style={styles.headerGradient}
         >
-          <ErrorState
-            title="Yüklenemedi"
-            error={entryError}
-            icon="calendar-alert"
-            onRetry={() => refetchEntry()}
-            retryText="Tekrar Dene"
-          />
-        </ScreenLayout>
-      );
-    }
+          <View style={styles.headerContent}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+              activeOpacity={0.7}
+            >
+              <View style={styles.backButtonInner}>
+                <Ionicons name="chevron-back" size={24} color={theme.colors.onSurface} />
+              </View>
+            </TouchableOpacity>
 
-    // Enhanced Empty State Component
-    const EmptyStateEnhanced = () => (
+            <View style={styles.headerTitleSection}>
+              <View style={styles.headerIconContainer}>
+                <MaterialCommunityIcons
+                  name="book-open-page-variant"
+                  size={24}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.headerTitle}>Kayıt Detayı</Text>
+                <Text style={styles.headerSubtitle}>
+                  {gratitudeItems.length} minnet • {relativeTime}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                onPress={handleRefresh}
+                style={styles.headerActionButton}
+                activeOpacity={0.7}
+                disabled={isRefetching}
+              >
+                <MaterialCommunityIcons
+                  name="refresh"
+                  size={20}
+                  color={isRefetching ? theme.colors.primary : theme.colors.onSurfaceVariant}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </LinearGradient>
+      </View>
+
+      {/* 🎯 ENHANCED HERO ZONE: Complete edge-to-edge */}
       <Animated.View
         style={[
-          styles.emptyStateContainer,
+          styles.heroZone,
           {
             opacity: animations.fadeAnim,
           },
         ]}
       >
         <ThemedCard
-          variant="outlined"
+          variant="elevated"
           density="comfortable"
-          elevation="card"
-          style={styles.emptyStateCard}
+          elevation="floating"
+          style={styles.heroCard}
         >
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconContainer}>
-              <MaterialCommunityIcons
-                name="heart-outline"
-                size={72}
-                color={theme.colors.primary + '60'}
-              />
-              <View style={styles.sparkleContainer}>
-                <Animated.View
-                  style={[
-                    styles.sparkle1,
-                    {
-                      opacity: animations.opacityAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.3, 1],
-                      }),
-                    },
-                  ]}
-                >
+          <View style={styles.heroContent}>
+            <View style={styles.dateSection}>
+              <View style={styles.dateDisplayContainer}>
+                <View style={styles.dateDisplayBadge}>
+                  <Text style={styles.dayNumber}>
+                    {new Date(entryDate || new Date()).getDate()}
+                  </Text>
+                  <Text style={styles.monthText}>
+                    {new Date(entryDate || new Date())
+                      .toLocaleDateString('tr-TR', { month: 'short' })
+                      .toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.dateInfo}>
+                  <Text style={styles.dateText}>{formattedDate}</Text>
+                  <View style={styles.relativeDateContainer}>
+                    <MaterialCommunityIcons
+                      name={isToday ? 'calendar-today' : 'calendar-heart'}
+                      size={16}
+                      color={theme.colors.primary}
+                    />
+                    <Text style={styles.relativeDateText}>{relativeTime}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.statsSection}>
+                <View style={styles.countBadge}>
                   <MaterialCommunityIcons
-                    name="star-outline"
-                    size={16}
-                    color={theme.colors.primary + '40'}
+                    name="cards-heart"
+                    size={18}
+                    color={theme.colors.primary}
                   />
-                </Animated.View>
-                <Animated.View
-                  style={[
-                    styles.sparkle2,
-                    {
-                      opacity: animations.opacityAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.3, 1],
-                      }),
-                    },
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name="star-outline"
-                    size={12}
-                    color={theme.colors.primary + '40'}
-                  />
-                </Animated.View>
-                <Animated.View
-                  style={[
-                    styles.sparkle3,
-                    {
-                      opacity: animations.opacityAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.3, 1],
-                      }),
-                    },
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name="star-outline"
-                    size={14}
-                    color={theme.colors.primary + '40'}
-                  />
-                </Animated.View>
+                  <Text style={styles.countText}>{gratitudeItems.length}</Text>
+                </View>
+                <Text style={styles.countLabel}>minnet</Text>
               </View>
             </View>
-            <Text style={styles.emptyTitle}>Bu günün hikayesi henüz yazılmamış</Text>
-            <Text style={styles.emptySubtitle}>
-              Bu özel güne ait minnet kayıtları henüz yok.{'\n'}
-              {isToday
-                ? 'Bugün yaşadığın güzel anları kaydedebilirsin!'
-                : 'Geri dönüp o günün güzel anılarını paylaşabilirsin!'}
-            </Text>
-            {isToday && (
-              <TouchableOpacity
-                style={styles.emptyActionButton}
-                onPress={() => navigation.navigate('DailyEntry')}
-                activeOpacity={0.8}
-              >
-                <MaterialCommunityIcons name="plus" size={20} color={theme.colors.onPrimary} />
-                <Text style={styles.emptyActionText}>Minnet Ekle</Text>
-              </TouchableOpacity>
+
+            {gratitudeItems.length > 0 && (
+              <View style={styles.progressSection}>
+                <View style={styles.progressHeader}>
+                  <MaterialCommunityIcons
+                    name={gratitudeItems.length >= 3 ? 'trophy' : 'target'}
+                    size={16}
+                    color={gratitudeItems.length >= 3 ? theme.colors.success : theme.colors.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.progressTitle,
+                      gratitudeItems.length >= 3 && styles.progressTitleComplete,
+                    ]}
+                  >
+                    {gratitudeItems.length >= 3
+                      ? isToday
+                        ? '🎉 Bugün hedef tamamlandı!'
+                        : '🎉 O gün hedef tamamlanmıştı!'
+                      : isToday
+                        ? `Hedefe ${3 - gratitudeItems.length} kaldı`
+                        : `O gün hedefe ${3 - gratitudeItems.length} kalmıştı`}
+                  </Text>
+                </View>
+                <View style={styles.progressLineContainer}>
+                  <View style={styles.progressLine}>
+                    <View
+                      style={[
+                        styles.progressLineFill,
+                        {
+                          width: `${Math.min((gratitudeItems.length / 3) * 100, 100)}%`,
+                          backgroundColor:
+                            gratitudeItems.length >= 3
+                              ? theme.colors.success
+                              : theme.colors.primary,
+                        },
+                      ]}
+                    />
+                  </View>
+                  {gratitudeItems.length >= 3 && (
+                    <View style={styles.goalCompleteIndicator}>
+                      <MaterialCommunityIcons
+                        name="check-circle"
+                        size={18}
+                        color={theme.colors.success}
+                      />
+                    </View>
+                  )}
+                </View>
+              </View>
             )}
-            <View style={styles.emptyQuote}>
-              <MaterialCommunityIcons
-                name="format-quote-open"
-                size={20}
-                color={theme.colors.primary + '60'}
-              />
-              <Text style={styles.emptyQuoteText}>
-                "Her gün, minnettarlık için{'\n'}yeni fırsatlar sunar."
-              </Text>
-            </View>
           </View>
         </ThemedCard>
       </Animated.View>
-    );
 
-    return (
-      <ScreenLayout
-        scrollable={true}
-        showsVerticalScrollIndicator={false}
-        density="compact"
-        edges={['top']}
-        edgeToEdge={true}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
-            progressBackgroundColor={theme.colors.surface}
-          />
-        }
-      >
-        {/* 🎨 CUSTOM EDGE-TO-EDGE HEADER */}
-        <View style={styles.headerContainer}>
-          <LinearGradient
-            colors={[
-              theme.colors.primary + '15',
-              theme.colors.primaryContainer + '10',
-              theme.colors.surface + 'F0',
-              theme.colors.surface,
-            ]}
-            style={styles.headerGradient}
+      {/* 🎯 ENHANCED CONTENT ZONE: Complete edge-to-edge */}
+      {gratitudeItems.length > 0 ? (
+        <View style={styles.contentZone}>
+          <ThemedCard
+            variant="elevated"
+            density="standard"
+            elevation="card"
+            style={styles.statementsCard}
           >
-            <View style={styles.headerContent}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-                activeOpacity={0.7}
-              >
-                <View style={styles.backButtonInner}>
-                  <Ionicons name="chevron-back" size={24} color={theme.colors.onSurface} />
-                </View>
-              </TouchableOpacity>
-
-              <View style={styles.headerTitleSection}>
-                <View style={styles.headerIconContainer}>
+            <View style={styles.statementsHeader}>
+              <View style={styles.statementsHeaderLeft}>
+                <View style={styles.statementsIconContainer}>
                   <MaterialCommunityIcons
-                    name="book-open-page-variant"
-                    size={24}
+                    name="heart-multiple"
+                    size={20}
                     color={theme.colors.primary}
                   />
                 </View>
-                <View style={styles.headerTextContainer}>
-                  <Text style={styles.headerTitle}>Kayıt Detayı</Text>
-                  <Text style={styles.headerSubtitle}>
-                    {gratitudeItems.length} minnet • {relativeTime}
-                  </Text>
-                </View>
+                <Text style={styles.statementsTitle}>
+                  {isToday ? 'Bugünkü minnetleriniz' : 'O günkü minnetleriniz'}
+                </Text>
               </View>
-
-              <View style={styles.headerActions}>
-                <TouchableOpacity
-                  onPress={handleRefresh}
-                  style={styles.headerActionButton}
-                  activeOpacity={0.7}
-                  disabled={isRefetching}
-                >
-                  <MaterialCommunityIcons
-                    name="refresh"
-                    size={20}
-                    color={isRefetching ? theme.colors.primary : theme.colors.onSurfaceVariant}
-                  />
-                </TouchableOpacity>
+              <View style={styles.statementsCounter}>
+                <Text style={styles.statementsCountText}>{gratitudeItems.length}</Text>
               </View>
             </View>
-          </LinearGradient>
-        </View>
 
-        {/* 🎯 ENHANCED HERO ZONE: Complete edge-to-edge */}
-        <Animated.View
-          style={[
-            styles.heroZone,
-            {
-              opacity: animations.fadeAnim,
-            },
-          ]}
-        >
-          <ThemedCard
-            variant="elevated"
-            density="comfortable"
-            elevation="floating"
-            style={styles.heroCard}
-          >
-            <View style={styles.heroContent}>
-              <View style={styles.dateSection}>
-                <View style={styles.dateDisplayContainer}>
-                  <View style={styles.dateDisplayBadge}>
-                    <Text style={styles.dayNumber}>
-                      {new Date(entryDate || new Date()).getDate()}
-                    </Text>
-                    <Text style={styles.monthText}>
-                      {new Date(entryDate || new Date())
-                        .toLocaleDateString('tr-TR', { month: 'short' })
-                        .toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.dateInfo}>
-                    <Text style={styles.dateText}>{formattedDate}</Text>
-                    <View style={styles.relativeDateContainer}>
-                      <MaterialCommunityIcons
-                        name={isToday ? 'calendar-today' : 'calendar-heart'}
-                        size={16}
-                        color={theme.colors.primary}
-                      />
-                      <Text style={styles.relativeDateText}>{relativeTime}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.statsSection}>
-                  <View style={styles.countBadge}>
-                    <MaterialCommunityIcons
-                      name="cards-heart"
-                      size={18}
-                      color={theme.colors.primary}
-                    />
-                    <Text style={styles.countText}>{gratitudeItems.length}</Text>
-                  </View>
-                  <Text style={styles.countLabel}>minnet</Text>
-                </View>
-              </View>
-
-              {gratitudeItems.length > 0 && (
-                <View style={styles.progressSection}>
-                  <View style={styles.progressHeader}>
-                    <MaterialCommunityIcons
-                      name={gratitudeItems.length >= 3 ? 'trophy' : 'target'}
-                      size={16}
-                      color={
-                        gratitudeItems.length >= 3 ? theme.colors.success : theme.colors.primary
-                      }
-                    />
-                    <Text
-                      style={[
-                        styles.progressTitle,
-                        gratitudeItems.length >= 3 && styles.progressTitleComplete,
-                      ]}
-                    >
-                      {gratitudeItems.length >= 3
-                        ? isToday
-                          ? '🎉 Bugün hedef tamamlandı!'
-                          : '🎉 O gün hedef tamamlanmıştı!'
-                        : isToday
-                          ? `Hedefe ${3 - gratitudeItems.length} kaldı`
-                          : `O gün hedefe ${3 - gratitudeItems.length} kalmıştı`}
-                    </Text>
-                  </View>
-                  <View style={styles.progressLineContainer}>
-                    <View style={styles.progressLine}>
-                      <View
-                        style={[
-                          styles.progressLineFill,
-                          {
-                            width: `${Math.min((gratitudeItems.length / 3) * 100, 100)}%`,
-                            backgroundColor:
-                              gratitudeItems.length >= 3
-                                ? theme.colors.success
-                                : theme.colors.primary,
-                          },
-                        ]}
-                      />
-                    </View>
-                    {gratitudeItems.length >= 3 && (
-                      <View style={styles.goalCompleteIndicator}>
-                        <MaterialCommunityIcons
-                          name="check-circle"
-                          size={18}
-                          color={theme.colors.success}
-                        />
-                      </View>
-                    )}
-                  </View>
-                </View>
-              )}
+            <View style={styles.statementsContainer}>
+              {gratitudeItems.map((item, index) => (
+                <Animated.View
+                  key={index}
+                  style={[
+                    styles.statementWrapper,
+                    animationsReady && {
+                      opacity: animations.fadeAnim,
+                      transform: [
+                        {
+                          translateY: animations.fadeAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [20, 0],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <StatementDetailCard
+                    statement={item}
+                    date={entryDate}
+                    index={index}
+                    totalCount={gratitudeItems.length}
+                    variant="elegant"
+                    showQuotes={true}
+                    showSequence={true}
+                    numberOfLines={undefined}
+                    animateEntrance={animationsReady}
+                    isEditing={editingStatementIndex === index}
+                    isLoading={isDeletingStatement}
+                    onEdit={() => handleEditStatement(index)}
+                    onDelete={() => handleDeleteStatement(index)}
+                    onSave={(newStatement: string) =>
+                      handleSaveEditedStatement(index, newStatement)
+                    }
+                    onCancel={handleCancelEditingStatement}
+                    enableInlineEdit={true}
+                    confirmDelete={true}
+                    maxLength={500}
+                    edgeToEdge={true}
+                    style={styles.enhancedStatementCard}
+                  />
+                </Animated.View>
+              ))}
             </View>
           </ThemedCard>
-        </Animated.View>
-
-        {/* 🎯 ENHANCED CONTENT ZONE: Complete edge-to-edge */}
-        {gratitudeItems.length > 0 ? (
-          <View style={styles.contentZone}>
-            <ThemedCard
-              variant="elevated"
-              density="standard"
-              elevation="card"
-              style={styles.statementsCard}
-            >
-              <View style={styles.statementsHeader}>
-                <View style={styles.statementsHeaderLeft}>
-                  <View style={styles.statementsIconContainer}>
-                    <MaterialCommunityIcons
-                      name="heart-multiple"
-                      size={20}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                  <Text style={styles.statementsTitle}>
-                    {isToday ? 'Bugünkü minnetleriniz' : 'O günkü minnetleriniz'}
-                  </Text>
-                </View>
-                <View style={styles.statementsCounter}>
-                  <Text style={styles.statementsCountText}>{gratitudeItems.length}</Text>
-                </View>
-              </View>
-
-              <View style={styles.statementsContainer}>
-                {gratitudeItems.map((item, index) => (
-                  <Animated.View
-                    key={index}
-                    style={[
-                      styles.statementWrapper,
-                      animationsReady && {
-                        opacity: animations.fadeAnim,
-                        transform: [
-                          {
-                            translateY: animations.fadeAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [20, 0],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
-                  >
-                    <StatementDetailCard
-                      statement={item}
-                      date={entryDate}
-                      index={index}
-                      totalCount={gratitudeItems.length}
-                      variant="elegant"
-                      showQuotes={true}
-                      showSequence={true}
-                      numberOfLines={undefined}
-                      animateEntrance={animationsReady}
-                      isEditing={editingStatementIndex === index}
-                      isLoading={isDeletingStatement}
-                      onEdit={() => handleEditStatement(index)}
-                      onDelete={() => handleDeleteStatement(index)}
-                      onSave={(newStatement: string) =>
-                        handleSaveEditedStatement(index, newStatement)
-                      }
-                      onCancel={handleCancelEditingStatement}
-                      enableInlineEdit={true}
-                      confirmDelete={true}
-                      maxLength={500}
-                      edgeToEdge={true}
-                      style={styles.enhancedStatementCard}
-                    />
-                  </Animated.View>
-                ))}
-              </View>
-            </ThemedCard>
-          </View>
-        ) : (
-          <EmptyStateEnhanced />
-        )}
-      </ScreenLayout>
-    );
-  }
-);
+        </View>
+      ) : (
+        <EmptyStateEnhanced />
+      )}
+    </ScreenLayout>
+  );
+});
 
 // ✅ PERFORMANCE FIX: Add display name for React.memo component
 EnhancedEntryDetailScreen.displayName = 'EnhancedEntryDetailScreen';

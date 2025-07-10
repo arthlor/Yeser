@@ -246,6 +246,7 @@ const AppNavigator: React.FC = () => {
         name="EntryDetail"
         component={EntryDetailScreen}
         options={{ headerShown: false }}
+        initialParams={{ entryId: '' }}
       />
       <AppStack.Screen
         name="PastEntryCreation"
@@ -254,6 +255,7 @@ const AppNavigator: React.FC = () => {
           title: 'Geçmiş Tarihe Ekle',
           presentation: 'modal',
         }}
+        initialParams={{ date: new Date().toISOString() }}
       />
       <AppStack.Screen
         name="PrivacyPolicy"

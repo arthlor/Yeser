@@ -71,12 +71,26 @@ export const NotificationSettings: React.FC = () => {
       setPushToken(token);
     }
 
-    await notificationService.saveTokenToBackend(token);
+    // Save token and check for errors
+    const saveResult = await notificationService.saveTokenToBackend(token);
+    if (saveResult.error) {
+      logger.error('Failed to save push token:', saveResult.error);
+      showToastError('Bildirim kaydedilemedi. Lütfen tekrar deneyin.');
+      throw saveResult.error;
+    }
+
+    // Update notification time and check for errors
     const timeString = `${selectedTime.getHours().toString().padStart(2, '0')}:${selectedTime
       .getMinutes()
       .toString()
       .padStart(2, '0')}`;
-    await notificationService.updateNotificationTime(timeString);
+    const updateResult = await notificationService.updateNotificationTime(timeString);
+    if (updateResult.error) {
+      logger.error('Failed to update notification time:', updateResult.error);
+      showToastError('Bildirim saati güncellenemedi. Lütfen tekrar deneyin.');
+      throw updateResult.error;
+    }
+
     showToastSuccess('Günlük hatırlatıcılar etkinleştirildi.');
   }, [pushToken, selectedTime, showToastError, showToastSuccess]);
 
@@ -84,9 +98,16 @@ export const NotificationSettings: React.FC = () => {
     if (pushToken) {
       await notificationService.removeTokenFromBackend(pushToken);
     }
-    await notificationService.updateNotificationTime(null);
+
+    const updateResult = await notificationService.updateNotificationTime(null);
+    if (updateResult.error) {
+      logger.error('Failed to disable notification time:', updateResult.error);
+      showToastError('Bildirimler devre dışı bırakılamadı. Lütfen tekrar deneyin.');
+      throw updateResult.error;
+    }
+
     showToastSuccess('Günlük hatırlatıcılar devre dışı bırakıldı.');
-  }, [pushToken, showToastSuccess]);
+  }, [pushToken, showToastSuccess, showToastError]);
 
   const handleToggleSwitch = async (isOn: boolean) => {
     setIsEnabled(isOn); // Optimistic UI update

@@ -162,6 +162,15 @@ module.exports = {
         },
       },
     ],
+    // Enable push notifications
+    [
+      'expo-notifications',
+      {
+        icon: './src/assets/assets/adaptive-icon.png',
+        color: '#2F4F4F',
+        sounds: [],
+      },
+    ],
     // 🔥 CRITICAL: Custom plugin to handle google-services.json from environment
     './plugins/withGoogleServices.js',
   ],

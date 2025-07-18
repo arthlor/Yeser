@@ -67,7 +67,51 @@ async function saveTokenToBackend(token: string) {
 
   const timezone = Localization.getCalendars()[0].timeZone ?? 'UTC';
 
-  // Upsert the token to prevent duplicates for the same device
+  // First, check if profile exists
+  const { data: existingProfile, error: profileCheckError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .single();
+
+  if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+    // PGRST116 means no rows returned, which is expected if profile doesn't exist
+    logger.error('Error checking profile existence:', profileCheckError);
+    return { error: profileCheckError };
+  }
+
+  // Update or create profile with timezone
+  if (existingProfile) {
+    // Profile exists, just update timezone
+    const { error: profileUpdateError } = await supabase
+      .from('profiles')
+      .update({
+        timezone,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id);
+
+    if (profileUpdateError) {
+      logger.error('Error updating profile timezone:', profileUpdateError);
+      return { error: profileUpdateError };
+    }
+  } else {
+    // Profile doesn't exist, create it
+    const { error: profileCreateError } = await supabase.from('profiles').insert({
+      id: user.id,
+      timezone,
+      onboarded: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    if (profileCreateError) {
+      logger.error('Error creating profile:', profileCreateError);
+      return { error: profileCreateError };
+    }
+  }
+
+  // Now save the push token
   const { error: tokenError } = await supabase
     .from('push_tokens')
     .upsert({ user_id: user.id, token }, { onConflict: 'token' });
@@ -77,17 +121,7 @@ async function saveTokenToBackend(token: string) {
     return { error: tokenError };
   }
 
-  // Update the user's profile with their timezone
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({ timezone })
-    .eq('id', user.id);
-
-  if (profileError) {
-    logger.error('Error saving timezone:', profileError);
-    return { error: profileError };
-  }
-
+  logger.debug('Successfully saved push token and timezone', { userId: user.id, timezone });
   return { success: true };
 }
 

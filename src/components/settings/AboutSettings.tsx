@@ -28,7 +28,7 @@ const AboutSettings: React.FC<AboutSettingsProps> = ({
       label: 'Minnetin Gücü',
       icon: 'heart-outline',
       action: onNavigateToWhyGratitude,
-      description: 'Minnettarlığın bilimsel faydalarını keşfedin',
+      description: 'Minnettarlığın faydalarını keşfedin',
     },
     {
       label: 'Gizlilik Politikası',

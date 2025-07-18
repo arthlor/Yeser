@@ -85,9 +85,8 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   useEffect(() => {
     // Track onboarding start
     analyticsService.logEvent('enhanced_onboarding_started', {
-      flow_version: '2.2', // Updated version - simplified notification system
+      flow_version: '2.2', // Updated version
       total_steps: ONBOARDING_STEPS.length,
-      notification_system: 'simplified',
     });
 
     // Handle Android back button
@@ -106,7 +105,6 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
       const finalData = {
         username: onboardingData.username || 'Kullanıcı',
         daily_gratitude_goal: onboardingData.dailyGoal || 3,
-        // ✅ SIMPLIFIED: Only essential fields for simplified notification system
         use_varied_prompts: true, // Always enable varied prompts
         onboarded: true,
       };
@@ -116,7 +114,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
 
       // Track completion
       analyticsService.logEvent('enhanced_onboarding_completed', {
-        flow_version: '2.2', // Updated version for simplified notification system
+        flow_version: '2.2', // Updated version
         username_length: finalData.username.length,
         daily_goal: finalData.daily_gratitude_goal,
         theme: onboardingData.selectedTheme || 'light',

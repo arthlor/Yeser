@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Appbar, Button, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -86,7 +86,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
       // Add safety guard for navigation
       setTimeout(() => {
         try {
-          navigation.navigate('MainApp', {
+          navigation.navigate('MainAppTabs', {
             screen: 'DailyEntryTab',
             params: { initialPrompt: prompt || undefined },
           });
@@ -208,121 +208,113 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
           </Appbar.Header>
         </Animated.View>
 
-        {/* Content Container */}
-        <View style={styles.contentWrapper}>
-          <ScrollView
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={false}
-            accessible={true}
-            accessibilityLabel="Minnetin gücü içeriği"
-          >
-            {/* Hero Section */}
-            <Animated.View
-              entering={FadeInDown.delay(200).duration(800)}
-              style={styles.heroSection}
-            >
-              <View style={styles.heroIconContainer}>
-                <View style={styles.heroIconBackground}>
+        <Animated.ScrollView
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          accessible={true}
+          accessibilityLabel="Minnetin gücü içeriği"
+        >
+          {/* Hero Section */}
+          <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.heroSection}>
+            <View style={styles.heroIconContainer}>
+              <View style={styles.heroIconBackground}>
+                <MaterialCommunityIcons
+                  name="heart-multiple-outline"
+                  size={48}
+                  color={activeTheme.colors.primary}
+                />
+              </View>
+            </View>
+
+            <Text style={styles.title}>
+              {userName
+                ? `${userName}, Zihnin İçin Bir Adım At`
+                : 'Zihinsel Sağlığınız İçin Bir Adım Atın'}
+            </Text>
+
+            <Text style={styles.intro}>
+              Yeşer ile her gün minnettar olduğunuz şeyleri düşünmek, zihinsel sağlığınız üzerinde
+              kanıtlanmış güçlü etkilere sahiptir.
+            </Text>
+
+            {/* Enhanced Streak Display */}
+            {streak && streak.current_streak > 0 && (
+              <Animated.View
+                entering={FadeInUp.delay(600).duration(600)}
+                style={styles.streakContainer}
+              >
+                <View style={styles.streakBackground}>
                   <MaterialCommunityIcons
-                    name="heart-multiple-outline"
-                    size={48}
-                    color={activeTheme.colors.primary}
+                    name="fire"
+                    size={24}
+                    color={activeTheme.colors.success}
+                    style={styles.streakIcon}
                   />
+                  <Text style={styles.streakText}>
+                    <Text style={styles.streakTextBold}>Harika gidiyorsun!</Text>
+                    {'\n'}
+                    <Text style={styles.streakNumber}>{streak.current_streak} günlük</Text> serinle
+                    bu faydaların kilidini açmaya başladın bile.
+                  </Text>
                 </View>
-              </View>
+              </Animated.View>
+            )}
+          </Animated.View>
 
-              <Text style={styles.title}>
-                {userName
-                  ? `${userName}, Zihnin İçin Bir Adım At`
-                  : 'Zihinsel Sağlığınız İçin Bir Adım Atın'}
+          {/* Benefits Section */}
+          <Animated.View
+            entering={FadeInUp.delay(400).duration(800)}
+            style={styles.benefitsSection}
+          >
+            <View style={styles.benefitsSectionHeader}>
+              <Text style={styles.benefitsTitle}>Neden minnet duymalıyız?</Text>
+              <Text style={styles.benefitsSubtitle}>
+                Araştırmalarla desteklenen minnetin gücü...
               </Text>
+            </View>
 
-              <Text style={styles.intro}>
-                Yeşer ile her gün minnettar olduğunuz şeyleri düşünmek, zihinsel sağlığınız üzerinde
-                kanıtlanmış güçlü etkilere sahiptir.
-              </Text>
-
-              {/* Enhanced Streak Display */}
-              {streak && streak.current_streak > 0 && (
-                <Animated.View
-                  entering={FadeInUp.delay(600).duration(600)}
-                  style={styles.streakContainer}
-                >
-                  <View style={styles.streakBackground}>
-                    <MaterialCommunityIcons
-                      name="fire"
-                      size={24}
-                      color={activeTheme.colors.success}
-                      style={styles.streakIcon}
-                    />
-                    <Text style={styles.streakText}>
-                      <Text style={styles.streakTextBold}>Harika gidiyorsun!</Text>
-                      {'\n'}
-                      <Text style={styles.streakNumber}>{streak.current_streak} günlük</Text>{' '}
-                      serinle bu faydaların kilidini açmaya başladın bile.
-                    </Text>
-                  </View>
-                </Animated.View>
-              )}
-            </Animated.View>
-
-            {/* Benefits Section */}
-            <Animated.View
-              entering={FadeInUp.delay(400).duration(800)}
-              style={styles.benefitsSection}
-            >
-              <View style={styles.benefitsSectionHeader}>
-                <Text style={styles.benefitsTitle}>Neden minnet duymalıyız?</Text>
-                <Text style={styles.benefitsSubtitle}>
-                  Araştırmalarla desteklenen minnetin gücü...
-                </Text>
+            {benefits?.map((benefit, index) => (
+              <View key={benefit.id} style={styles.benefitCardWrapper}>
+                <BenefitCard
+                  index={index}
+                  icon={benefit.icon}
+                  title={benefit.title_tr}
+                  description={benefit.description_tr}
+                  stat={benefit.stat_tr}
+                  ctaPrompt={benefit.cta_prompt_tr}
+                  initialExpanded={index === 0}
+                  testID={`benefit-card-${benefit.id}`}
+                  onCtaPress={(prompt) =>
+                    handleBenefitCtaPress(prompt, benefit.id, benefit.title_tr, index)
+                  }
+                />
               </View>
+            ))}
+          </Animated.View>
 
-              {benefits?.map((benefit, index) => (
-                <View key={benefit.id} style={styles.benefitCardWrapper}>
-                  <BenefitCard
-                    index={index}
-                    icon={benefit.icon}
-                    title={benefit.title_tr}
-                    description={benefit.description_tr}
-                    stat={benefit.stat_tr}
-                    ctaPrompt={benefit.cta_prompt_tr}
-                    initialExpanded={index === 0}
-                    testID={`benefit-card-${benefit.id}`}
-                    onCtaPress={(prompt) =>
-                      handleBenefitCtaPress(prompt, benefit.id, benefit.title_tr, index)
-                    }
-                  />
-                </View>
-              ))}
-            </Animated.View>
+          {/* Enhanced CTA Section */}
+          <Animated.View entering={FadeInUp.delay(800).duration(800)} style={styles.ctaSection}>
+            <View style={styles.ctaContent}>
+              <Text style={styles.ctaTitle}>Bugün Hemen Başla</Text>
+              <Text style={styles.ctaSubtitle}>Bu faydaları deneyimlemek için ilk adımını at.</Text>
 
-            {/* Enhanced CTA Section */}
-            <Animated.View entering={FadeInUp.delay(800).duration(800)} style={styles.ctaSection}>
-              <View style={styles.ctaContent}>
-                <Text style={styles.ctaTitle}>Bugün Hemen Başla</Text>
-                <Text style={styles.ctaSubtitle}>
-                  Bu faydaları deneyimlemek için günlüğüne ilk adımını at
-                </Text>
-
-                <Button
-                  mode="contained"
-                  onPress={() => handleStartJournaling(primaryPrompt)}
-                  style={styles.ctaButton}
-                  labelStyle={styles.ctaButtonLabel}
-                  contentStyle={styles.ctaButtonContent}
-                  icon="pencil-plus-outline"
-                  buttonColor={activeTheme.colors.primary}
-                  textColor={activeTheme.colors.onPrimary}
-                  accessibilityLabel="Hemen günlüğüne başla"
-                  accessibilityHint="Günlük yazma ekranına gider"
-                >
-                  Hemen Günlüğüne Başla
-                </Button>
-              </View>
-            </Animated.View>
-          </ScrollView>
-        </View>
+              <Button
+                mode="contained"
+                onPress={() => handleStartJournaling(primaryPrompt)}
+                style={styles.ctaButton}
+                labelStyle={styles.ctaButtonLabel}
+                contentStyle={styles.ctaButtonContent}
+                icon="pencil-plus-outline"
+                buttonColor={activeTheme.colors.primary}
+                textColor={activeTheme.colors.onPrimary}
+                accessibilityLabel="Hemen başla"
+                accessibilityHint="Günlük minnet ekranına gider"
+              >
+                Hemen Başla
+              </Button>
+            </View>
+          </Animated.View>
+        </Animated.ScrollView>
       </SafeAreaView>
     </ErrorBoundary>
   );

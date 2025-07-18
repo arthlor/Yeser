@@ -6,13 +6,10 @@ import {
   UpdateProfilePayload,
   updateProfileSchema,
 } from '../schemas/profileSchema';
-import { Database, TablesUpdate } from '../types/supabase.types';
+import { TablesUpdate } from '../types/supabase.types';
 import { supabase } from '../utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { handleAPIError } from '@/utils/apiHelpers';
-
-type PushNotificationInsert = Database['public']['Tables']['push_notifications']['Insert'];
-type Json = Database['public']['Tables']['push_notifications']['Row']['device_info'];
 
 // Removed local RawProfileData interface, will use inferred type from Zod schema
 
@@ -74,7 +71,7 @@ export const getProfile = async (): Promise<Profile | null> => {
     const { data, error, status } = await supabase
       .from('profiles')
       .select(
-        'id, username, onboarded, created_at, updated_at, daily_gratitude_goal, use_varied_prompts, enable_reminders'
+        'id, username, onboarded, created_at, updated_at, daily_gratitude_goal, use_varied_prompts, notification_time, timezone'
       )
       .eq('id', user.id)
       .single();
@@ -125,7 +122,7 @@ export const updateProfile = async (
       });
       throw new Error(`Invalid update profile payload: ${validationResult.error.toString()}`);
     }
-    const { useVariedPrompts, enableReminders, ...otherValidatedUpdates } = validationResult.data;
+    const { useVariedPrompts, ...otherValidatedUpdates } = validationResult.data;
 
     const payloadForSupabase: TablesUpdate<'profiles'> = {
       ...otherValidatedUpdates,
@@ -134,15 +131,20 @@ export const updateProfile = async (
     if (useVariedPrompts !== undefined) {
       payloadForSupabase.use_varied_prompts = useVariedPrompts;
     }
-    if (enableReminders !== undefined) {
-      payloadForSupabase.enable_reminders = enableReminders;
+
+    // Guard: Prevent empty update
+    if (!Object.keys(payloadForSupabase).length) {
+      throw new Error(
+        'updateProfile called with empty payload. At least one field must be updated.'
+      );
     }
+
     const { data, error } = await supabase
       .from('profiles')
       .update(payloadForSupabase)
       .eq('id', user.id)
       .select(
-        'id, username, onboarded, created_at, updated_at, daily_gratitude_goal, use_varied_prompts, enable_reminders'
+        'id, username, onboarded, created_at, updated_at, daily_gratitude_goal, use_varied_prompts, notification_time, timezone'
       )
       .single();
 
@@ -172,54 +174,6 @@ export const updateProfile = async (
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     throw handleAPIError(error, 'update profile');
-  }
-};
-
-/**
- * Saves a push notification token for the given user.
- * @param token The ExpoPushToken to save.
- * @param userId The user's ID.
- * @param deviceInfo An object containing device information.
- */
-export const savePushToken = async (
-  token: string,
-  userId: string,
-  deviceInfo?: Json
-): Promise<void> => {
-  try {
-    const upsertData: PushNotificationInsert = {
-      user_id: userId,
-      push_token: token,
-      device_info: deviceInfo,
-    };
-    const { error } = await supabase
-      .from('push_notifications')
-      .upsert(upsertData, { onConflict: 'push_token' });
-
-    if (error) {
-      throw handleAPIError(new Error(error.message), 'save push token');
-    }
-    logger.info('Push token saved successfully.');
-  } catch (err) {
-    const error = err instanceof Error ? err : new Error(String(err));
-    throw handleAPIError(error, 'save push token');
-  }
-};
-
-/**
- * Removes a push notification token from the database.
- * @param token The ExpoPushToken to remove.
- */
-export const removePushToken = async (token: string): Promise<void> => {
-  try {
-    const { error } = await supabase.from('push_notifications').delete().eq('push_token', token);
-    if (error) {
-      throw handleAPIError(new Error(error.message), 'remove push token');
-    }
-    logger.info('Push token removed successfully.');
-  } catch (err) {
-    const error = err instanceof Error ? err : new Error(String(err));
-    throw handleAPIError(error, 'remove push token');
   }
 };
 

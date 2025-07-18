@@ -1,7 +1,5 @@
 // src/navigation/RootNavigator.tsx
-import { LinkingOptions, NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import * as Linking from 'expo-linking';
 import React, { useEffect } from 'react';
 
 import AppNavigator from './AppNavigator';
@@ -14,16 +12,6 @@ import { RootStackParamList } from '../types/navigation';
 import { logger } from '@/utils/debugConfig';
 
 const Root = createStackNavigator<RootStackParamList>();
-
-const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: [Linking.createURL('/')],
-  config: {
-    screens: {
-      MainApp: 'app',
-      NotFound: '*',
-    },
-  },
-};
 
 const RootNavigator: React.FC = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -58,19 +46,17 @@ const RootNavigator: React.FC = () => {
   ]);
 
   return (
-    <NavigationContainer linking={linking} fallback={<SplashScreen />}>
-      <Root.Navigator screenOptions={{ headerShown: false }}>
-        {authIsLoading ? (
-          <Root.Screen name="Splash" component={SplashScreen} />
-        ) : !isAuthenticated ? (
-          <Root.Screen name="Auth" component={AuthNavigator} />
-        ) : !onboarded || isProfileError ? (
-          <Root.Screen name="Onboarding" component={OnboardingFlowScreen} />
-        ) : (
-          <Root.Screen name="MainApp" component={AppNavigator} />
-        )}
-      </Root.Navigator>
-    </NavigationContainer>
+    <Root.Navigator screenOptions={{ headerShown: false }}>
+      {authIsLoading ? (
+        <Root.Screen name="Splash" component={SplashScreen} />
+      ) : !isAuthenticated ? (
+        <Root.Screen name="Auth" component={AuthNavigator} />
+      ) : !onboarded || isProfileError ? (
+        <Root.Screen name="Onboarding" component={OnboardingFlowScreen} />
+      ) : (
+        <Root.Screen name="MainApp" component={AppNavigator} />
+      )}
+    </Root.Navigator>
   );
 };
 

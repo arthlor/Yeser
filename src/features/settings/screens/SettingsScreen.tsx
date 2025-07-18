@@ -5,15 +5,17 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getVersion } from 'react-native-device-info';
 
-import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
+import { getPrimaryShadow } from '@/themes/utils';
+import { AppTheme, ThemeName } from '@/themes/types';
 
 import { cleanupTemporaryFile, prepareUserExportFile, shareExportedFile } from '@/api/userDataApi';
 import AboutSettings from '@/components/settings/AboutSettings';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
 import DailyGoalSettings from '@/components/settings/DailyGoalSettings';
-import NotificationSettings from '@/components/settings/NotificationSettings';
+import { NotificationSettings } from '../components/NotificationSettings';
 import { ScreenContent, ScreenLayout } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
+import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
 import { useUserProfile } from '@/shared/hooks';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -23,8 +25,6 @@ import { analyticsService } from '@/services/analyticsService';
 import useAuthStore from '@/store/authStore';
 
 import { logger } from '@/utils/debugConfig';
-import { AppTheme, ThemeName } from '@/themes/types';
-import { getPrimaryShadow } from '@/themes/utils';
 
 // Fix navigation types by extending the base interfaces
 interface MainAppTabParamListFixed extends Record<string, object | undefined> {
@@ -54,7 +54,7 @@ interface Props {
  * Uses TanStack Query for server state management and layout components for consistency
  */
 const SettingsScreen: React.FC<Props> = ({ navigation }) => {
-  const { theme } = useTheme();
+  const { theme, colorMode, toggleColorMode } = useTheme();
   const { handleMutationError } = useGlobalError();
   const { showError: showToastError } = useToast();
   const styles = createStyles(theme);
@@ -76,7 +76,6 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   } = useUserProfile();
 
   const { logout } = useAuthStore();
-  const { colorMode, toggleColorMode } = useTheme();
 
   // **MINIMAL ENTRANCE**: Simple screen entrance animation
   useEffect(() => {
@@ -144,13 +143,6 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   // TanStack Query - Helper functions for profile updates
-  const handleVariedPromptsToggle = useCallback(
-    (useVariedPrompts: boolean) => {
-      updateProfile({ useVariedPrompts });
-    },
-    [updateProfile]
-  );
-
   const handleDailyGoalUpdate = useCallback(
     (dailyGoal: number) => {
       updateProfile({ daily_gratitude_goal: dailyGoal });
@@ -161,6 +153,16 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
       });
     },
     [updateProfile, profile?.daily_gratitude_goal]
+  );
+
+  const handleVariedPromptsToggle = useCallback(
+    (useVariedPrompts: boolean) => {
+      updateProfile({ useVariedPrompts: useVariedPrompts });
+      analyticsService.logEvent('varied_prompts_toggled', {
+        enabled: useVariedPrompts,
+      });
+    },
+    [updateProfile]
   );
 
   const navigateToPrivacyPolicy = () => {
@@ -266,27 +268,29 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           />
         </View>
 
+        {/* Notification Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Bildirimler</Text>
-          <NotificationSettings />
+          <View style={styles.settingCard}>
+            <NotificationSettings />
+          </View>
         </View>
 
+        {/* Appearance Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Görünüm</Text>
           <AppearanceSettings
             activeThemeName={colorMode as ThemeName}
             onToggleTheme={toggleColorMode}
           />
-
-          {/* Varied Prompts Setting */}
           <View style={styles.settingCard}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <View style={styles.iconContainer}>
-                  <Icon name="lightbulb-outline" size={20} color={theme.colors.primary} />
+                  <Icon name="lightbulb-on-outline" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={styles.textContainer}>
-                  <Text style={styles.settingTitle}>Çeşitli Öneriler</Text>
+                  <Text style={styles.settingTitle}>İlham al</Text>
                   <Text style={styles.settingDescription}>
                     "Minnet Ekle" sayfasında çeşitli ilhamlar göster.
                   </Text>

@@ -56,6 +56,22 @@ console.log(`📦 URL Scheme: ${scheme}`);
  * through `import Constants from 'expo-constants';`
  *             `Constants.expoConfig.extra`
  */
+const extra = {
+  // Required for EAS project linking - THIS IS CRITICAL
+  eas: {
+    projectId: '7465061f-a28e-47f5-a4ac-dbbdd4abe243',
+  },
+  environment: ENV, // always know where we are
+  iosClientId, // Pass iOS client ID to runtime
+  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  /* ALL other EXPO_PUBLIC_* vars are copied blindly so you
+     never have to touch this file again when you add one.   */
+  ...Object.keys(process.env)
+    .filter((k) => k.startsWith('EXPO_PUBLIC_'))
+    .reduce((acc, k) => ({ ...acc, [k]: process.env[k] }), {}),
+};
+
 module.exports = {
   name,
   slug: 'yeser',
@@ -65,13 +81,11 @@ module.exports = {
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
   icon: 'src/assets/assets/icon.png',
-
   splash: {
     image: 'src/assets/assets/splash-icon.png',
     resizeMode: 'contain',
     backgroundColor: '#2F4F4F',
   },
-
   ios: {
     bundleIdentifier: appId,
     supportsTablet: true,
@@ -82,7 +96,6 @@ module.exports = {
       },
     },
     infoPlist: {
-      UIBackgroundModes: ['remote-notification', 'background-fetch'],
       NSUserTrackingUsageDescription:
         'This allows us to provide personalized gratitude insights and improve your experience.',
       NSCameraUsageDescription: 'Camera access is needed to add photos to your gratitude entries.',
@@ -99,7 +112,6 @@ module.exports = {
       ],
     },
   },
-
   android: {
     package: appId, // ← this is what EAS looks for
     adaptiveIcon: {
@@ -116,7 +128,6 @@ module.exports = {
       'android.permission.CAMERA',
       'android.permission.READ_EXTERNAL_STORAGE',
       'android.permission.WRITE_EXTERNAL_STORAGE',
-      'android.permission.NOTIFICATIONS',
       // 🔥 FCM Permissions
       'com.google.android.c2dm.permission.RECEIVE',
     ],
@@ -130,12 +141,10 @@ module.exports = {
     ],
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON || './google-services.json',
   },
-
   web: {
     favicon: 'src/assets/assets/favicon.png',
     bundler: 'metro',
   },
-
   plugins: [
     [
       'expo-build-properties',
@@ -153,43 +162,13 @@ module.exports = {
         },
       },
     ],
-    [
-      'expo-notifications',
-      {
-        icon: 'src/assets/assets/adaptive-icon.png',
-        color: '#4F46E5',
-        defaultChannel: 'default',
-        enableBackgroundRemoteNotifications: true,
-        sounds: [],
-        mode: ENV === 'production' ? 'production' : 'development',
-      },
-    ],
     // 🔥 CRITICAL: Custom plugin to handle google-services.json from environment
     './plugins/withGoogleServices.js',
   ],
-
-  extra: {
-    // Required for EAS project linking - THIS IS CRITICAL
-    eas: {
-      projectId: '7465061f-a28e-47f5-a4ac-dbbdd4abe243',
-    },
-
-    environment: ENV, // always know where we are
-    iosClientId, // Pass iOS client ID to runtime
-    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-    supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-
-    /* ALL other EXPO_PUBLIC_* vars are copied blindly so you
-       never have to touch this file again when you add one.   */
-    ...Object.keys(process.env)
-      .filter((k) => k.startsWith('EXPO_PUBLIC_'))
-      .reduce((acc, k) => ({ ...acc, [k]: process.env[k] }), {}),
-  },
-
+  extra,
   updates: {
     url: 'https://u.expo.dev/7465061f-a28e-47f5-a4ac-dbbdd4abe243',
   },
-
   assetBundlePatterns: ['**/*'],
   platforms: ['ios', 'android'],
 };

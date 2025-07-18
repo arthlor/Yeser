@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// ✅ SIMPLIFIED: Base schema for new database structure (post-notification refactor)
 export const rawProfileDataSchema = z.object({
   id: z.string().uuid('Invalid UUID format for id'),
   username: z
@@ -18,11 +17,12 @@ export const rawProfileDataSchema = z.object({
   daily_gratitude_goal: z.number().int().positive().nullable(),
   use_varied_prompts: z.boolean().default(false),
   enable_reminders: z.boolean().default(true),
+  notification_time: z.string().nullable().optional(),
+  timezone: z.string().nullable().optional(),
 });
 
 export type RawProfileData = z.infer<typeof rawProfileDataSchema>;
 
-// ✅ SIMPLIFIED: Application schema for new structure (post-notification refactor)
 export const profileSchema = rawProfileDataSchema.transform((data) => ({
   ...data,
   // Handle snake_case to camelCase conversion
@@ -35,11 +35,12 @@ export const profileSchema = rawProfileDataSchema.transform((data) => ({
   username: data.username ?? undefined,
   onboarded: data.onboarded ?? false,
   daily_gratitude_goal: data.daily_gratitude_goal ?? undefined,
+  notification_time: data.notification_time ?? undefined,
+  timezone: data.timezone ?? undefined,
 }));
 
 export type Profile = z.infer<typeof profileSchema>;
 
-// ✅ SIMPLIFIED: Update schema for new structure (post-notification refactor)
 export const updateProfileSchema = z.object({
   username: z
     .string()
@@ -51,6 +52,8 @@ export const updateProfileSchema = z.object({
   daily_gratitude_goal: z.number().int().positive().optional().nullable(),
   useVariedPrompts: z.boolean().optional(),
   enableReminders: z.boolean().optional(),
+  notification_time: z.string().nullable().optional(),
+  timezone: z.string().nullable().optional(),
 });
 
 export type UpdateProfilePayload = z.infer<typeof updateProfileSchema>;

@@ -21,7 +21,7 @@
 
 ### 🌟 Günlük Minnettarlık Neden Önemli
 
-**Bilimsel Faydalar:**
+**Minnettarlığın Faydaları:**
 
 - Gelişmiş zihinsel refah ve yaşam memnuniyeti
 - Daha iyi uyku kalitesi ve azalmış stres
@@ -36,7 +36,7 @@
 
 ### 🎯 Şunlar İçin Mükemmel
 
-- **Farkındalık Başlangıç Seviyesi** - Basit, korkutucu olmayan arayüz
+- **Farkındalık Başlangıç Seviyesi** - Basit arayüz
 - **Yoğun Profesyoneller** - Hızlı 2 dakikalık günlük pratik
 - **Öğrenciler & Gençler** - Erken yaşta pozitif düşünce alışkanlıkları oluştur
 - **Denge Arayanlar** - Hareketli günlerde sakin anlar bul
@@ -53,7 +53,7 @@
 1. **Kaydol** e-posta veya Google hesabınla
 2. **Günlük hedefini belirle** (sadece 1-3 minnettarlık ifadesiyle başla)
 3. **İlk girişini yaz** - bugün neye minnettarsın?
-4. **İlerlemeini takip et** ve minnettarlık serini oluştur
+4. **İlerlemeni takip et** ve minnettarlık serini oluştur
 5. **Düşün ve büyü** takvim ve geçmiş girişleri kullanarak
 
 ### 💝 Minnettarlık Hareketine Katıl

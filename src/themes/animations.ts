@@ -139,7 +139,6 @@ export const ANIMATION_PRESETS = {
     easing: ANIMATION_EASING.accelerate,
   },
 
-  // Notification/toast animations
   toastSlideIn: {
     duration: ANIMATION_DURATIONS.normal,
     easing: ANIMATION_EASING.bounceOut,

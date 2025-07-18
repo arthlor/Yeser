@@ -109,59 +109,62 @@ export type Database = {
           created_at: string | null;
           daily_gratitude_goal: number | null;
           id: string;
+          notification_time: string | null;
           onboarded: boolean;
+          timezone: string | null;
           updated_at: string;
           use_varied_prompts: boolean;
           username: string | null;
-          enable_reminders: boolean;
         };
         Insert: {
           created_at?: string | null;
           daily_gratitude_goal?: number | null;
           id: string;
+          notification_time?: string | null;
           onboarded?: boolean;
+          timezone?: string | null;
           updated_at?: string;
           use_varied_prompts?: boolean;
           username?: string | null;
-          enable_reminders?: boolean;
         };
         Update: {
           created_at?: string | null;
           daily_gratitude_goal?: number | null;
           id?: string;
+          notification_time?: string | null;
           onboarded?: boolean;
+          timezone?: string | null;
           updated_at?: string;
           use_varied_prompts?: boolean;
           username?: string | null;
-          enable_reminders?: boolean;
         };
         Relationships: [];
       };
-      push_notifications: {
+      push_tokens: {
         Row: {
-          created_at: string;
-          device_info: Json | null;
+          created_at: string | null;
           id: number;
-          push_token: string;
+          token: string;
+          token_type: string | null;
           user_id: string;
         };
         Insert: {
-          created_at?: string;
-          device_info?: Json | null;
-          id?: number;
-          push_token: string;
+          created_at?: string | null;
+          id?: never;
+          token: string;
+          token_type?: string | null;
           user_id: string;
         };
         Update: {
-          created_at?: string;
-          device_info?: Json | null;
-          id?: number;
-          push_token?: string;
+          created_at?: string | null;
+          id?: never;
+          token?: string;
+          token_type?: string | null;
           user_id?: string;
         };
         Relationships: [
           {
-            foreignKeyName: 'push_notifications_user_id_fkey';
+            foreignKeyName: 'push_tokens_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
@@ -337,6 +340,10 @@ export type Database = {
       text_to_bytea: {
         Args: { data: string };
         Returns: string;
+      };
+      trigger_daily_reminders: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
       };
       urlencode: {
         Args: { data: Json } | { string: string } | { string: string };

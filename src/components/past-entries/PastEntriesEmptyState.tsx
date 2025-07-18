@@ -178,9 +178,9 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
             <Icon name="lightbulb-on" size={18} color={theme.colors.warning} />
           </View>
           <View style={styles.tipContent}>
-            <Text style={styles.tipTitle}>💡 Bilimsel Gerçek</Text>
+            <Text style={styles.tipTitle}>💡 Minnetin faydası</Text>
             <Text style={styles.tipText}>
-              Günde 3 minnet kaydı tutmak, 8 hafta sonunda %25 mutluluk artışı sağlar!
+              Günde 3 minnet kaydı tutmak, ilerleyen süreçte mutluluk artışı sağlar!
             </Text>
           </View>
         </View>

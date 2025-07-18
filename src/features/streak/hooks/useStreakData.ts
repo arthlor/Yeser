@@ -74,7 +74,7 @@ export const useStreakStatus = (): StreakStatus => {
       status = 'grace_period';
       const hours = Math.floor(timeUntilMidnight / (1000 * 60 * 60));
       const minutes = Math.floor((timeUntilMidnight % (1000 * 60 * 60)) / (1000 * 60));
-      statusMessage = `Serin devam etmesi için bugün bir giriş yapman gerek! (${hours}s ${minutes}dk kaldı)`;
+      statusMessage = `Serinin devam etmesi için bugün bir giriş yapman gerek! (${hours}s ${minutes}dk kaldı)`;
       daysUntilRisk = 0; // At risk now
       canExtendToday = true;
     } else if (currentStreak === 0) {

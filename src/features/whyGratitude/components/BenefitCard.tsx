@@ -1,12 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Card, List, Text, useTheme } from 'react-native-paper';
-import Animated, {
-  FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -30,33 +25,19 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
     const paperTheme = useTheme();
     const [expanded, setExpanded] = React.useState(initialExpanded);
 
-    // ✅ PERFORMANCE FIX: Reduce animation complexity - use simpler scale animation
-    const scale = useSharedValue(1);
-
-    // 🛡️ MEMORY LEAK FIX: Cleanup SharedValue on unmount for better GC
-    React.useEffect(() => {
-      return () => {
-        // Reset SharedValue to initial state on unmount to help with garbage collection
-        scale.value = 1;
-      };
-    }, [scale]);
-
-    // ✅ PERFORMANCE FIX: Memoize all theme-dependent calculations
     const styles = useMemo(() => createStyles(activeTheme), [activeTheme]);
-    const animationDelay = useMemo(() => index * 150, [index]);
+    const animationDelay = useMemo(() => index * 100, [index]);
 
-    // ✅ PERFORMANCE FIX: Memoize theme objects to prevent recreation
     const memoizedTheme = useMemo(
       () => ({ ...paperTheme, colors: { background: 'transparent' } }),
       [paperTheme]
     );
 
     const rippleColor = useMemo(
-      () => `${activeTheme.colors.primary}15`,
+      () => `${activeTheme.colors.primary}20`,
       [activeTheme.colors.primary]
     );
 
-    // ✅ PERFORMANCE FIX: Memoize gradient arrays
     const gradients = useMemo(
       () => ({
         icon: [activeTheme.colors.primary, activeTheme.colors.primaryVariant] as const,
@@ -65,23 +46,9 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
       [activeTheme.colors.primary, activeTheme.colors.primaryVariant]
     );
 
-    // ✅ PERFORMANCE FIX: Simplified animation style
-    const animatedCardStyle = useAnimatedStyle(
-      () => ({
-        transform: [{ scale: scale.value }],
-      }),
-      []
-    );
-
-    // ✅ PERFORMANCE FIX: Optimized event handlers
     const handlePress = useCallback(() => {
       setExpanded((prev) => !prev);
-
-      // Simplified spring animation
-      scale.value = withSpring(0.98, { duration: 100 }, () => {
-        scale.value = withSpring(1, { duration: 150 });
-      });
-    }, [scale]);
+    }, []);
 
     const handleCtaPress = useCallback(() => {
       if (ctaPrompt && onCtaPress) {
@@ -89,7 +56,6 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
       }
     }, [ctaPrompt, onCtaPress]);
 
-    // ✅ PERFORMANCE FIX: Memoize icon component to prevent recreation
     const leftIconRenderer = useCallback(
       (_props: Record<string, unknown>) => (
         <View style={styles.iconContainer}>
@@ -102,105 +68,77 @@ export const BenefitCard: React.FC<BenefitCardProps> = React.memo(
           </LinearGradient>
         </View>
       ),
-      [
-        icon,
-        activeTheme.colors.onPrimary,
-        gradients.icon,
-        styles.iconContainer,
-        styles.iconBackground,
-      ]
+      [icon, activeTheme.colors.onPrimary, gradients.icon, styles]
     );
 
     return (
-      <View testID={testID}>
-        {/* Outer wrapper for layout/entering animations */}
-        <Animated.View entering={FadeInUp.delay(animationDelay).duration(700)}>
-          {/* Inner wrapper for transform animations */}
-          <Animated.View style={animatedCardStyle}>
-            <View style={styles.cardShadowWrapper}>
-              <Card
-                style={styles.card}
-                accessible={true}
-                accessibilityLabel={`${title} kartı`}
-                accessibilityHint={expanded ? 'Daraltmak için dokunun' : 'Genişletmek için dokunun'}
-              >
-                <View style={styles.cardContentWrapper}>
-                  <List.Accordion
-                    title={title}
-                    titleStyle={styles.title}
-                    titleNumberOfLines={2}
-                    left={leftIconRenderer}
-                    expanded={expanded}
-                    onPress={handlePress}
-                    style={styles.accordion}
-                    theme={memoizedTheme}
-                    rippleColor={rippleColor}
-                  >
-                    <Card.Content style={styles.content}>
-                      <Text
-                        style={styles.description}
-                        accessibilityLabel={`Açıklama: ${description}`}
-                      >
-                        {description}
-                      </Text>
-                      {stat && (
-                        <View
-                          style={styles.statContainer}
-                          accessible={true}
-                          accessibilityLabel={`İstatistik: ${stat}`}
+      <Animated.View
+        entering={FadeInUp.delay(animationDelay).duration(500)}
+        style={styles.cardShadowWrapper}
+        testID={testID}
+      >
+        <Card style={styles.card}>
+          <View style={styles.cardContentWrapper}>
+            <List.Accordion
+              title={title}
+              titleStyle={styles.title}
+              titleNumberOfLines={2}
+              left={leftIconRenderer}
+              expanded={expanded}
+              onPress={handlePress}
+              style={styles.accordion}
+              theme={memoizedTheme}
+              rippleColor={rippleColor}
+            >
+              <Card.Content style={styles.content}>
+                <Text style={styles.description}>{description}</Text>
+                {stat && (
+                  <View style={styles.statContainer}>
+                    <View style={styles.statBackground}>
+                      <MaterialCommunityIcons
+                        name="chart-line-variant"
+                        size={20}
+                        color={activeTheme.colors.accent}
+                        style={styles.statIcon}
+                      />
+                      <Text style={styles.statText}>{stat}</Text>
+                    </View>
+                  </View>
+                )}
+                {ctaPrompt && (
+                  <View style={styles.ctaContainer}>
+                    <Text style={styles.ctaPromptText}>💭 "{ctaPrompt}"</Text>
+                    <TouchableOpacity onPress={handleCtaPress}>
+                      <LinearGradient colors={gradients.cta} style={styles.ctaButtonGradient}>
+                        <Button
+                          mode="contained"
+                          style={styles.ctaButton}
+                          labelStyle={styles.ctaButtonLabel}
+                          contentStyle={styles.ctaButtonContent}
+                          buttonColor="transparent"
+                          textColor={activeTheme.colors.onPrimary}
+                          icon="pencil-outline"
                         >
-                          <View style={styles.statBackground}>
-                            <MaterialCommunityIcons
-                              name="chart-line-variant"
-                              size={20}
-                              color={activeTheme.colors.accent}
-                              style={styles.statIcon}
-                            />
-                            <Text style={styles.statText}>{stat}</Text>
-                          </View>
-                        </View>
-                      )}
-
-                      {ctaPrompt && (
-                        <View style={styles.ctaContainer}>
-                          <Text style={styles.ctaPromptText}>💭 "{ctaPrompt}"</Text>
-                          <LinearGradient colors={gradients.cta} style={styles.ctaButtonGradient}>
-                            <Button
-                              mode="contained"
-                              onPress={handleCtaPress}
-                              style={styles.ctaButton}
-                              labelStyle={styles.ctaButtonLabel}
-                              contentStyle={styles.ctaButtonContent}
-                              buttonColor="transparent"
-                              textColor={activeTheme.colors.onPrimary}
-                              icon="pencil-outline"
-                              accessibilityLabel={`Bu konu hakkında yaz: ${ctaPrompt}`}
-                              accessibilityHint="Günlük yazma ekranına gider"
-                            >
-                              Bu Konu Hakkında Yaz
-                            </Button>
-                          </LinearGradient>
-                        </View>
-                      )}
-                    </Card.Content>
-                  </List.Accordion>
-                </View>
-              </Card>
-            </View>
-          </Animated.View>
-        </Animated.View>
-      </View>
+                          Bu Konu Hakkında Yaz
+                        </Button>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </Card.Content>
+            </List.Accordion>
+          </View>
+        </Card>
+      </Animated.View>
     );
   }
 );
 
 BenefitCard.displayName = 'BenefitCard';
 
-// ✅ PERFORMANCE FIX: Pure StyleSheet.create with no dynamic values
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     cardShadowWrapper: {
-      // Shadow wrapper - handles shadows without overflow issues
       borderRadius: theme.borderRadius.xl,
       ...theme.elevation.sm,
     },
@@ -209,17 +147,15 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.xl,
       borderWidth: 1,
       borderColor: theme.colors.outline,
-      // No overflow or shadow here to avoid conflicts
     },
     cardContentWrapper: {
-      // Content wrapper - handles overflow clipping
       overflow: 'hidden',
       borderRadius: theme.borderRadius.xl,
     },
     accordion: {
       paddingVertical: theme.spacing.xs,
       paddingHorizontal: theme.spacing.md,
-      minHeight: 64, // Enhanced accessibility touch target
+      minHeight: 64,
       backgroundColor: theme.colors.surface,
     },
     iconContainer: {
@@ -262,7 +198,7 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing.lg,
       borderRadius: theme.borderRadius.large,
       backgroundColor: `${theme.colors.accent}15`,
-      minHeight: 52, // Enhanced accessibility touch target
+      minHeight: 52,
     },
     statIcon: {
       marginRight: theme.spacing.md,

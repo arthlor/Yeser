@@ -30,7 +30,6 @@ import { AppProviders } from './providers/AppProviders';
 import SplashOverlayProvider from './providers/SplashOverlayProvider';
 import { authCoordinator } from './features/auth/services/authCoordinator';
 import { supabaseService } from './utils/supabaseClient';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 // Helper function to get the active route name
 const getActiveRouteName = (state: NavigationState | undefined): string | undefined => {
@@ -243,7 +242,6 @@ const linking: LinkingOptions<RootStackParamList> = {
 };
 
 const AppContent: React.FC = () => {
-  usePushNotifications();
   const { theme, colorMode } = useTheme();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { profile } = useUserProfile();
@@ -363,7 +361,6 @@ const AppContent: React.FC = () => {
         card: theme.colors.surface,
         text: theme.colors.text,
         border: theme.colors.border,
-        notification: theme.colors.primary,
       },
     }),
     [colorMode, theme]

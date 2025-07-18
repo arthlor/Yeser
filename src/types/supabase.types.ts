@@ -278,6 +278,14 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      get_users_to_notify: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          id: string;
+          notification_time: string;
+          timezone: string;
+        }[];
+      };
       http: {
         Args: { request: Database['public']['CompositeTypes']['http_request'] };
         Returns: Database['public']['CompositeTypes']['http_response'];

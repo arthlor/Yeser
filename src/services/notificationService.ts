@@ -114,7 +114,7 @@ async function saveTokenToBackend(token: string) {
   // Now save the push token
   const { error: tokenError } = await supabase
     .from('push_tokens')
-    .upsert({ user_id: user.id, token }, { onConflict: 'token' });
+    .upsert({ user_id: user.id, token, token_type: 'expo' }, { onConflict: 'token' });
 
   if (tokenError) {
     logger.error('Error saving push token:', tokenError);

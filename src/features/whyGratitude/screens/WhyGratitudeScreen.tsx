@@ -1,34 +1,40 @@
 import React, { useCallback, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Appbar, Button, Text } from 'react-native-paper';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInUp } from 'react-native-reanimated';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import { useThemeStore } from '@/store/themeStore';
+import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useGratitudeBenefits } from '../hooks/useGratitudeBenefits';
 import { useUserProfile } from '@/shared/hooks/useUserProfile';
 import { useStreakData } from '@/features/streak/hooks/useStreakData';
-import { BenefitCard } from '../components/BenefitCard';
 import ErrorBoundary from '@/shared/components/layout/ErrorBoundary';
 import { analyticsService } from '@/services/analyticsService';
 import { logger } from '@/utils/debugConfig';
 import type { AppTheme } from '@/themes/types';
-import type { RootStackParamList } from '@/types/navigation';
+import type { AppStackParamList } from '@/types/navigation';
 
 // Screen dimensions available if needed
 // const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 type WhyGratitudeScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
+  AppStackParamList,
   'WhyGratitude'
 >;
 
 export const WhyGratitudeScreen: React.FC = React.memo(() => {
-  const { activeTheme } = useThemeStore();
+  const { theme } = useTheme();
   const { showError, showSuccess } = useGlobalError();
   const navigation = useNavigation<WhyGratitudeScreenNavigationProp>();
 
@@ -45,9 +51,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
   }, [error, showError]);
 
   // ✅ PERFORMANCE FIX: Separate static styles from dynamic values
-  const styles = useMemo(() => createStyles(activeTheme), [activeTheme]);
-
-  const userName = useMemo(() => profile?.username, [profile?.username]);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // ✅ PERFORMANCE FIX: Consolidate analytics tracking
   React.useEffect(() => {
@@ -83,7 +87,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
         user_id: profile?.id || 'anonymous',
       });
 
-      // Add safety guard for navigation
+      // Navigate to DailyEntryTab through MainAppTabs
       setTimeout(() => {
         try {
           navigation.navigate('MainAppTabs', {
@@ -93,7 +97,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
         } catch (error) {
           logger.warn('Navigation failed in WhyGratitudeScreen:', { error });
           // Fallback: just navigate to the tab without params
-          navigation.navigate('MainApp', {
+          navigation.navigate('MainAppTabs', {
             screen: 'DailyEntryTab',
           });
         }
@@ -145,7 +149,7 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
           <Animated.View entering={FadeIn.duration(600)} style={styles.loadingContent}>
             <ActivityIndicator
               animating={true}
-              color={activeTheme.colors.primary}
+              color={theme.colors.primary}
               size="large"
               accessibilityLabel="İçerik yükleniyor"
             />
@@ -163,26 +167,19 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.errorContainer}>
           <Animated.View entering={FadeInUp.duration(600)} style={styles.errorContent}>
-            <MaterialCommunityIcons
+            <Icon
               name="alert-circle-outline"
               size={64}
-              color={activeTheme.colors.error}
+              color={theme.colors.error}
               style={styles.errorIcon}
             />
             <Text style={styles.errorTitle}>İçerik yüklenirken bir hata oluştu</Text>
             <Text style={styles.errorMessage}>
               Lütfen internet bağlantınızı kontrol edip tekrar deneyin.
             </Text>
-            <Button
-              mode="contained"
-              onPress={handleRetry}
-              style={styles.retryButton}
-              labelStyle={styles.retryButtonLabel}
-              icon="refresh"
-              accessibilityLabel="Tekrar dene"
-            >
-              Tekrar Dene
-            </Button>
+            <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
+              <Text style={styles.retryButtonLabel}>Tekrar Dene</Text>
+            </TouchableOpacity>
           </Animated.View>
         </View>
       </SafeAreaView>
@@ -192,129 +189,99 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
   return (
     <ErrorBoundary>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        {/* Enhanced Header */}
-        <Animated.View entering={SlideInUp.duration(600)}>
-          <Appbar.Header elevated style={styles.appBar}>
-            <Appbar.BackAction
-              onPress={handleGoBack}
-              accessibilityLabel="Geri dön"
-              iconColor={activeTheme.colors.onBackground}
-            />
-            <Appbar.Content
-              title="Minnetin Gücü"
-              titleStyle={styles.appBarTitle}
-              color={activeTheme.colors.onBackground}
-            />
-          </Appbar.Header>
-        </Animated.View>
+        {/* Simple Header */}
+        <View style={styles.appBar}>
+          <TouchableOpacity
+            onPress={handleGoBack}
+            accessibilityLabel="Geri dön"
+            style={styles.appBarBackAction}
+          >
+            <Icon name="arrow-left" size={24} color={theme.colors.onBackground} />
+          </TouchableOpacity>
+          <Text style={styles.appBarTitle}>Minnetin Gücü</Text>
+        </View>
 
-        <Animated.ScrollView
+        <ScrollView
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
-          accessible={true}
-          accessibilityLabel="Minnetin gücü içeriği"
         >
-          {/* Hero Section */}
-          <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.heroSection}>
-            <View style={styles.heroIconContainer}>
-              <View style={styles.heroIconBackground}>
-                <MaterialCommunityIcons
-                  name="heart-multiple-outline"
-                  size={48}
-                  color={activeTheme.colors.primary}
-                />
-              </View>
-            </View>
-
-            <Text style={styles.title}>
-              {userName
-                ? `${userName}, Zihnin İçin Bir Adım At`
-                : 'Zihinsel Sağlığınız İçin Bir Adım Atın'}
-            </Text>
-
+          {/* Simple Hero Section */}
+          <View style={styles.heroSection}>
+            <Text style={styles.title}>Zihinsel Sağlığınız İçin Bir Adım Atın</Text>
             <Text style={styles.intro}>
               Yeşer ile her gün minnettar olduğunuz şeyleri düşünmek, zihinsel sağlığınız üzerinde
               kanıtlanmış güçlü etkilere sahiptir.
             </Text>
-
-            {/* Enhanced Streak Display */}
-            {streak && streak.current_streak > 0 && (
-              <Animated.View
-                entering={FadeInUp.delay(600).duration(600)}
-                style={styles.streakContainer}
-              >
-                <View style={styles.streakBackground}>
-                  <MaterialCommunityIcons
-                    name="fire"
-                    size={24}
-                    color={activeTheme.colors.success}
-                    style={styles.streakIcon}
-                  />
-                  <Text style={styles.streakText}>
-                    <Text style={styles.streakTextBold}>Harika gidiyorsun!</Text>
-                    {'\n'}
-                    <Text style={styles.streakNumber}>{streak.current_streak} günlük</Text> serinle
-                    bu faydaların kilidini açmaya başladın bile.
-                  </Text>
-                </View>
-              </Animated.View>
-            )}
-          </Animated.View>
+          </View>
 
           {/* Benefits Section */}
-          <Animated.View
-            entering={FadeInUp.delay(400).duration(800)}
-            style={styles.benefitsSection}
-          >
-            <View style={styles.benefitsSectionHeader}>
-              <Text style={styles.benefitsTitle}>Neden minnet duymalıyız?</Text>
-              <Text style={styles.benefitsSubtitle}>
-                Araştırmalarla desteklenen minnetin gücü...
-              </Text>
-            </View>
+          <View style={styles.benefitsSection}>
+            <Text style={styles.benefitsTitle}>Neden minnet duymalıyız?</Text>
+            <Text style={styles.benefitsSubtitle}>Araştırmalarla desteklenen minnetin gücü...</Text>
 
             {benefits?.map((benefit, index) => (
-              <View key={benefit.id} style={styles.benefitCardWrapper}>
-                <BenefitCard
-                  index={index}
-                  icon={benefit.icon}
-                  title={benefit.title_tr}
-                  description={benefit.description_tr}
-                  stat={benefit.stat_tr}
-                  ctaPrompt={benefit.cta_prompt_tr}
-                  initialExpanded={index === 0}
-                  testID={`benefit-card-${benefit.id}`}
-                  onCtaPress={(prompt) =>
-                    handleBenefitCtaPress(prompt, benefit.id, benefit.title_tr, index)
-                  }
-                />
-              </View>
-            ))}
-          </Animated.View>
-
-          {/* Enhanced CTA Section */}
-          <Animated.View entering={FadeInUp.delay(800).duration(800)} style={styles.ctaSection}>
-            <View style={styles.ctaContent}>
-              <Text style={styles.ctaTitle}>Bugün Hemen Başla</Text>
-              <Text style={styles.ctaSubtitle}>Bu faydaları deneyimlemek için ilk adımını at.</Text>
-
-              <Button
-                mode="contained"
-                onPress={() => handleStartJournaling(primaryPrompt)}
-                style={styles.ctaButton}
-                labelStyle={styles.ctaButtonLabel}
-                contentStyle={styles.ctaButtonContent}
-                icon="pencil-plus-outline"
-                buttonColor={activeTheme.colors.primary}
-                textColor={activeTheme.colors.onPrimary}
-                accessibilityLabel="Hemen başla"
-                accessibilityHint="Günlük minnet ekranına gider"
+              <TouchableOpacity
+                key={benefit.id}
+                style={styles.benefitCard}
+                onPress={() =>
+                  handleBenefitCtaPress(
+                    benefit.cta_prompt_tr || '',
+                    benefit.id,
+                    benefit.title_tr,
+                    index
+                  )
+                }
+                activeOpacity={0.8}
               >
-                Hemen Başla
-              </Button>
-            </View>
-          </Animated.View>
-        </Animated.ScrollView>
+                {/* Gradient Border Container */}
+                <View style={styles.benefitGradientBorderContainer}>
+                  <LinearGradient
+                    colors={[
+                      theme.colors.primary,
+                      theme.colors.secondary || theme.colors.primaryContainer,
+                      theme.colors.tertiary || theme.colors.primary,
+                    ]}
+                    style={styles.benefitGradientBorder}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  />
+                </View>
+
+                <View style={styles.benefitContent}>
+                  {/* Icon */}
+                  <View style={styles.benefitIconContainer}>
+                    <Icon name={benefit.icon} size={24} color={theme.colors.primary} />
+                  </View>
+
+                  {/* Content */}
+                  <View style={styles.benefitTextContainer}>
+                    <Text style={styles.benefitTitle}>{benefit.title_tr}</Text>
+                    <Text style={styles.benefitDescription}>{benefit.description_tr}</Text>
+                    {benefit.stat_tr && <Text style={styles.benefitStat}>{benefit.stat_tr}</Text>}
+                  </View>
+
+                  {/* Arrow */}
+                  <View style={styles.benefitArrow}>
+                    <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Simple CTA Section */}
+          <View style={styles.ctaSection}>
+            <Text style={styles.ctaTitle}>Bugün Hemen Başla</Text>
+            <Text style={styles.ctaSubtitle}>Bu faydaları deneyimlemek için ilk adımını at.</Text>
+
+            <TouchableOpacity
+              onPress={() => handleStartJournaling(primaryPrompt)}
+              style={styles.ctaButton}
+            >
+              <Text style={styles.ctaButtonLabel}>Hemen Başla</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     </ErrorBoundary>
   );
@@ -333,15 +300,26 @@ const createStyles = (theme: AppTheme) =>
     // Header styles
     appBar: {
       backgroundColor: theme.colors.surface,
-      elevation: 2,
-      shadowOpacity: 0.1,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.outline,
+      shadowOpacity: 0.05,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outline + '15',
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+    },
+    appBarBackAction: {
+      padding: theme.spacing.sm,
+      borderRadius: theme.borderRadius.sm,
+      backgroundColor: `${theme.colors.primary}06`,
     },
     appBarTitle: {
-      fontWeight: 'bold',
+      fontWeight: '700',
       fontSize: 20,
-      color: theme.colors.onBackground,
+      color: theme.colors.onSurface,
+      flex: 1,
+      textAlign: 'center',
+      marginRight: 44, // Balance the back button
     },
 
     // Layout containers
@@ -358,7 +336,8 @@ const createStyles = (theme: AppTheme) =>
     heroSection: {
       alignItems: 'center',
       paddingTop: theme.spacing.xl,
-      paddingBottom: theme.spacing.lg,
+      paddingBottom: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.sm,
     },
     heroIconContainer: {
       marginBottom: theme.spacing.lg,
@@ -374,10 +353,9 @@ const createStyles = (theme: AppTheme) =>
     },
     title: {
       ...theme.typography.headlineMedium,
-      color: theme.colors.onBackground,
+      color: theme.colors.onSurface,
       textAlign: 'center',
-      marginBottom: theme.spacing.md,
-      paddingHorizontal: theme.spacing.sm,
+      marginBottom: theme.spacing.lg,
       lineHeight: 32,
       fontWeight: '700',
     },
@@ -386,8 +364,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 26,
-      paddingHorizontal: theme.spacing.md,
-      opacity: 0.9,
+      opacity: 0.85,
     },
 
     // Streak section
@@ -424,40 +401,110 @@ const createStyles = (theme: AppTheme) =>
 
     // Benefits section
     benefitsSection: {
-      marginTop: theme.spacing.xl,
-    },
-    benefitsSectionHeader: {
-      alignItems: 'center',
-      marginBottom: theme.spacing.lg,
+      marginTop: theme.spacing.lg,
     },
     benefitsTitle: {
       ...theme.typography.titleLarge,
-      color: theme.colors.onBackground,
+      color: theme.colors.onSurface,
       textAlign: 'center',
       fontWeight: '700',
-      marginBottom: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
     },
     benefitsSubtitle: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       opacity: 0.8,
-    },
-    benefitCardWrapper: {
       marginBottom: theme.spacing.xl,
+    },
+
+    // Benefit cards
+    benefitCard: {
+      position: 'relative',
+      marginBottom: theme.spacing.lg,
+      borderRadius: theme.borderRadius.lg,
+      overflow: 'hidden',
+    },
+    benefitGradientBorderContainer: {
+      position: 'absolute',
+      top: -0.5,
+      left: -0.3,
+      right: -0.3,
+      bottom: -0.5,
+      borderRadius: theme.borderRadius.lg + 0.5,
+      zIndex: 0,
+    },
+    benefitGradientBorder: {
+      flex: 1,
+      borderRadius: theme.borderRadius.lg + 0.5,
+    },
+    benefitContent: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.lg,
+      borderRadius: theme.borderRadius.lg,
+      position: 'relative',
+      zIndex: 1,
+    },
+    benefitIconContainer: {
+      marginRight: theme.spacing.lg,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: `${theme.colors.primary}08`,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: `${theme.colors.primary}15`,
+    },
+    benefitTextContainer: {
+      flex: 1,
+      paddingRight: theme.spacing.sm,
+    },
+    benefitTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
+      marginBottom: theme.spacing.xs,
+      lineHeight: 22,
+    },
+    benefitDescription: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: theme.spacing.xs,
+      lineHeight: 20,
+      opacity: 0.9,
+    },
+    benefitStat: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.primary,
+      fontWeight: '600',
+      fontSize: 13,
+    },
+    benefitArrow: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: `${theme.colors.primary}06`,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
 
     // CTA section
     ctaSection: {
       marginTop: theme.spacing.xl,
-      paddingTop: theme.spacing.lg,
+      paddingTop: theme.spacing.xl,
+      alignItems: 'center',
     },
     ctaContent: {
       alignItems: 'center',
     },
     ctaTitle: {
       ...theme.typography.titleLarge,
-      color: theme.colors.onBackground,
+      color: theme.colors.onSurface,
       textAlign: 'center',
       fontWeight: '700',
       marginBottom: theme.spacing.sm,
@@ -470,24 +517,26 @@ const createStyles = (theme: AppTheme) =>
       opacity: 0.8,
       lineHeight: 20,
     },
-    ctaButtonContainer: {
-      borderRadius: theme.borderRadius.full,
-      width: '100%',
-      maxWidth: 280,
-      ...theme.elevation.md,
-    },
     ctaButton: {
       borderRadius: theme.borderRadius.full,
       minHeight: 56,
-    },
-    ctaButtonContent: {
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.lg,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.xl,
+      minWidth: 200,
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 4,
     },
     ctaButtonLabel: {
-      fontSize: 16,
+      fontSize: 17,
       fontWeight: '700',
       letterSpacing: 0.5,
+      color: theme.colors.onPrimary,
     },
 
     // Loading states
@@ -502,7 +551,7 @@ const createStyles = (theme: AppTheme) =>
     },
     loadingText: {
       ...theme.typography.titleMedium,
-      color: theme.colors.onBackground,
+      color: theme.colors.onSurface,
       marginTop: theme.spacing.lg,
       textAlign: 'center',
       fontWeight: '600',
@@ -546,8 +595,15 @@ const createStyles = (theme: AppTheme) =>
     retryButton: {
       minHeight: 48,
       borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
     },
     retryButtonLabel: {
       fontWeight: '600',
+      color: theme.colors.onPrimary,
+      fontSize: 16,
     },
   });

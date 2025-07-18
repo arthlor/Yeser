@@ -133,7 +133,8 @@ export const getSurfaceColor = (
 ): string => {
   switch (level) {
     case 'elevated':
-      return theme.colors.surfaceElevated ?? lighten(theme.colors.surface, 0.02);
+      // Use predefined surfaceElevated instead of lightening to avoid bright whites
+      return theme.colors.surfaceElevated ?? theme.colors.surface;
     case 'container':
       return theme.colors.surfaceContainer ?? theme.colors.surfaceVariant;
     default:

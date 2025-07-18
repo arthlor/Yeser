@@ -128,7 +128,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
   const handleWhyGratitudePress = useCallback(() => {
     analyticsService.logEvent('navigate_to_why_gratitude', { source: 'home_action_cards' });
-    navigation.navigate('WhyGratitude');
+    navigation.getParent()?.navigate('WhyGratitude');
   }, [navigation]);
 
   // Memoize throwback entry prop to prevent unnecessary re-renders

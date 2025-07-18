@@ -1,4 +1,22 @@
-import GratitudeInputBar, { GratitudeInputBarRef } from '../components/GratitudeInputBar';
+import { RouteProp } from '@react-navigation/native';
+import { ScreenLayout } from '@/shared/components/layout';
+import { getPrimaryShadow } from '@/themes/utils';
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  RefreshControl,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ZodError } from 'zod';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import ErrorState from '@/shared/components/ui/ErrorState';
 
 import {
   useGratitudeEntry,
@@ -14,29 +32,10 @@ import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
 import StatementEditCard from '@/shared/components/ui/StatementEditCard';
 import { AppTheme } from '@/themes/types';
 import { MainTabParamList } from '@/types/navigation';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { analyticsService } from '@/services/analyticsService';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-import { RouteProp } from '@react-navigation/native';
-import { ScreenLayout } from '@/shared/components/layout';
-import { getPrimaryShadow } from '@/themes/utils';
-
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated,
-  Platform,
-  RefreshControl,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { ZodError } from 'zod';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import ErrorState from '@/shared/components/ui/ErrorState';
+import GratitudeInputBar, { GratitudeInputBarRef } from '../components/GratitudeInputBar';
 
 type DailyEntryScreenRouteProp = RouteProp<MainTabParamList, 'DailyEntryTab'>;
 
@@ -61,17 +60,10 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const { showSuccess } = useToast();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const [manualDate, setManualDate] = useState<Date | null>(null);
-
   const initialDate = route?.params?.initialDate ? new Date(route.params.initialDate) : new Date();
 
-  const effectiveDate = manualDate || initialDate;
+  const effectiveDate = initialDate;
   const finalDateString = effectiveDate.toISOString().split('T')[0];
-
-  // Create a setter function for when user manually changes date
-  const setEntryDate = useCallback((newDate: Date) => {
-    setManualDate(newDate);
-  }, []);
 
   const {
     data: currentEntry,
@@ -96,7 +88,6 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const { profile } = useUserProfile();
 
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // **INPUT BAR REF**: Reference to control input focus from empty state button
   const inputBarRef = useRef<GratitudeInputBarRef>(null);
@@ -375,13 +366,6 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     [finalDateString, deleteStatement, showSuccess, animations]
   );
 
-  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (event.type === 'set' && selectedDate) {
-      setEntryDate(selectedDate);
-    }
-  };
-
   const handleRefresh = async () => {
     await refetchEntry();
   };
@@ -394,16 +378,6 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     }
     // Note: For static prompts, refresh is handled within GratitudeInputBar component
   }, [fetchNewPrompt, profile?.useVariedPrompts]);
-
-  // Date formatting
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('tr-TR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
 
   // 🛡️ ERROR PROTECTION: Render a full-screen error state if the main query fails
   if (entryError) {
@@ -424,7 +398,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       <StatusBar barStyle="default" backgroundColor="transparent" translucent />
 
       <ScreenLayout
-        edges={['top', 'bottom']}
+        edges={['top']}
         scrollable={true}
         density="compact"
         edgeToEdge={true}
@@ -458,7 +432,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             <View style={styles.enhancedNavigationContent}>
               <View style={styles.titleContainer}>
                 <View style={styles.titleIconContainer}>
-                  <Icon name="book-open-page-variant" size={28} color={theme.colors.primary} />
+                  <Icon name="book-open-page-variant" size={22} color={theme.colors.primary} />
                 </View>
                 <View style={styles.titleTextContainer}>
                   <Text style={styles.enhancedNavigationTitle}>Minnettarlık Günlüğü</Text>
@@ -469,29 +443,6 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               </View>
             </View>
           </View>
-
-          {/* Date Selection Header - Edge-to-edge */}
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={styles.edgeToEdgeDateHeader}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={`Tarih seç: ${formatDate(effectiveDate)}`}
-            accessibilityHint="Farklı bir tarih seçmek için dokunun"
-          >
-            <View style={styles.dateHeaderContent}>
-              <View style={styles.dateHeaderLeft}>
-                <Icon name="calendar-today" size={24} color={theme.colors.primary} />
-                <View style={styles.dateTextContainer}>
-                  <Text style={styles.dateText}>{formatDate(effectiveDate)}</Text>
-                  <Text style={styles.dateSubtext}>{isToday ? 'Bugün' : 'Geçmiş tarih'}</Text>
-                </View>
-              </View>
-              <View style={styles.dateHeaderRight}>
-                <Icon name="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
-              </View>
-            </View>
-          </TouchableOpacity>
 
           {/* Progress Section - Edge-to-edge */}
           <View style={styles.edgeToEdgeProgressSection}>
@@ -561,47 +512,58 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             />
           </View>
 
-          {/* Statement Cards Section - Enhanced Edge-to-edge layout */}
+          {/* Statement Cards Section - Unified design */}
           {statements.length > 0 ? (
-            <View style={styles.statementsSection}>
-              {/* Enhanced section header with modern design */}
-              <View style={styles.modernSectionHeader}>
-                <View style={styles.sectionHeaderContent}>
-                  <View style={styles.sectionHeaderLeft}>
-                    <View style={styles.sectionIconContainer}>
-                      <Icon name="heart-multiple" size={20} color={theme.colors.primary} />
-                    </View>
-                    <Text style={styles.modernSectionTitle}>Bugünün Minnettarlıkları</Text>
+            <View style={styles.unifiedStatementsSection}>
+              {/* Integrated header within the same container */}
+              <View style={styles.unifiedSectionHeader}>
+                <View style={styles.sectionHeaderLeft}>
+                  <View style={styles.sectionIconContainer}>
+                    <Icon name="heart-multiple" size={20} color={theme.colors.primary} />
                   </View>
-                  <View style={styles.sectionCounterContainer}>
-                    <Text style={styles.sectionCounterText}>{statements.length}</Text>
-                  </View>
+                  <Text style={styles.modernSectionTitle}>Bugünün Minnettarlıkları</Text>
+                </View>
+                <View style={styles.sectionCounterContainer}>
+                  <Text style={styles.sectionCounterText}>{statements.length}</Text>
                 </View>
               </View>
 
-              {/* Modern statements container - Full edge-to-edge */}
-              <View style={styles.modernStatementsContainer}>
-                {statements.map((statement, index) => (
-                  <View key={`${finalDateString}-${index}`} style={styles.modernStatementWrapper}>
-                    <StatementEditCard
-                      statement={statement}
-                      date={effectiveDate.toISOString()}
-                      isEditing={editingStatementIndex === index}
-                      onEdit={() => handleEditStatement(index)}
-                      onSave={(updatedStatement) =>
-                        handleSaveEditedStatement(index, updatedStatement)
-                      }
-                      onCancel={handleCancelEditing}
-                      onDelete={() => handleDeleteStatement(index)}
-                      isLoading={isEditingStatement || isDeletingStatement}
-                      edgeToEdge={true}
-                      variant="primary"
-                      showQuotes={true}
-                      animateEntrance={true}
+              {/* Statements directly in the same container */}
+              {statements.map((statement, index) => (
+                <View key={`${finalDateString}-${index}`} style={styles.modernStatementWrapper}>
+                  {/* Gradient Border Container */}
+                  <View style={styles.statementGradientBorderContainer}>
+                    <LinearGradient
+                      colors={[
+                        theme.colors.primary,
+                        theme.colors.secondary || theme.colors.primaryContainer,
+                        theme.colors.tertiary || theme.colors.primary,
+                        theme.colors.primary,
+                      ]}
+                      style={styles.statementGradientBorder}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
                     />
                   </View>
-                ))}
-              </View>
+
+                  <StatementEditCard
+                    statement={statement}
+                    date={effectiveDate.toISOString()}
+                    isEditing={editingStatementIndex === index}
+                    onEdit={() => handleEditStatement(index)}
+                    onSave={(updatedStatement) =>
+                      handleSaveEditedStatement(index, updatedStatement)
+                    }
+                    onCancel={handleCancelEditing}
+                    onDelete={() => handleDeleteStatement(index)}
+                    isLoading={isEditingStatement || isDeletingStatement}
+                    edgeToEdge={true}
+                    variant="primary"
+                    showQuotes={true}
+                    animateEntrance={true}
+                  />
+                </View>
+              ))}
             </View>
           ) : (
             /* Enhanced Empty State - Modern design */
@@ -655,17 +617,6 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           )}
         </Animated.View>
       </ScreenLayout>
-
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={effectiveDate}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={onDateChange}
-          maximumDate={new Date()}
-        />
-      )}
     </>
   );
 };
@@ -756,42 +707,8 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onBackground,
       fontWeight: '600',
     },
-    edgeToEdgeDateHeader: {
-      backgroundColor: theme.colors.surface,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.outline + '15',
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-    },
-    dateHeaderContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    dateHeaderLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.md,
-      flex: 1,
-    },
-    dateHeaderRight: {
-      paddingLeft: theme.spacing.md,
-    },
-    dateTextContainer: {
-      flex: 1,
-    },
-    dateText: {
-      ...theme.typography.titleLarge,
-      color: theme.colors.onSurface,
-      fontWeight: '700',
-    },
-    dateSubtext: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurfaceVariant,
-      marginTop: 2,
-    },
 
-    // **EDGE-TO-EDGE PROGRESS SECTION**: Full-width progress with gradient background
+    // **EDGE-TO-EDGE PROGRESS SECTION**: More compact progress section
     edgeToEdgeProgressSection: {
       backgroundColor: theme.colors.primaryContainer + '20',
       borderBottomWidth: 1,
@@ -799,52 +716,55 @@ const createStyles = (theme: AppTheme) =>
     },
     progressContent: {
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm, // Reduced from lg
     },
     progressHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.sm, // Reduced from md
     },
     progressTitle: {
       ...theme.typography.titleMedium,
       color: theme.colors.onSurface,
       fontWeight: '600',
+      fontSize: 16, // Reduced
     },
     progressBadge: {
       backgroundColor: theme.colors.primaryContainer,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.xs, // Reduced from sm
+      paddingVertical: 2, // Reduced from xs
       borderRadius: theme.borderRadius.full,
-      minWidth: 32,
+      minWidth: 28, // Reduced from 32
       alignItems: 'center',
     },
     progressBadgeText: {
       ...theme.typography.labelMedium,
       color: theme.colors.onPrimaryContainer,
       fontWeight: '800',
+      fontSize: 12, // Reduced
     },
     progressBarContainer: {
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs, // Reduced from sm
     },
     progressTrack: {
-      height: 8,
-      borderRadius: 4,
+      height: 6, // Reduced from 8
+      borderRadius: 3, // Reduced from 4
       backgroundColor: theme.colors.outline + '20',
       overflow: 'hidden',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs, // Reduced from sm
     },
     progressFill: {
       height: '100%',
-      borderRadius: 4,
-      minWidth: 8,
+      borderRadius: 3, // Reduced from 4
+      minWidth: 6, // Reduced from 8
     },
     progressPercentageText: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       fontWeight: '500',
+      fontSize: 12, // Reduced
     },
     goalCompleteBadge: {
       flexDirection: 'row',
@@ -868,10 +788,29 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
     },
     inputBarContainer: {
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
     },
     statementsSection: {
       flex: 1,
+    },
+    unifiedStatementsSection: {
+      flex: 1,
+      backgroundColor: theme.colors.surface + 'F5', // Very subtle transparency
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      // Subtle inner shadow for depth
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.outline + '15',
+    },
+    unifiedSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: theme.spacing.md,
+      paddingBottom: theme.spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outline + '10',
     },
     modernSectionHeader: {
       backgroundColor: theme.colors.surface,
@@ -915,17 +854,21 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '800',
     },
     modernStatementsContainer: {
-      paddingVertical: theme.spacing.sm,
-      paddingBottom: theme.spacing.xl, // Extra space from bottom navigator
+      paddingVertical: theme.spacing.xs, // Reduced from sm
     },
     modernStatementWrapper: {
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.sm, // Reduced from lg
+      // Wrapper for gradient border - relative positioning
+      position: 'relative',
+      borderRadius: theme.borderRadius.md,
+      // Slight overlap prevention
+      overflow: 'hidden',
     },
     modernEmptyState: {
       flex: 1,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.xxxl,
-      paddingBottom: theme.spacing.xxxl + theme.spacing.xl, // Extra space from bottom navigator
+      backgroundColor: theme.colors.surface,
       justifyContent: 'center',
     },
     emptyStateContent: {
@@ -1139,6 +1082,19 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.lg,
       margin: theme.spacing.md,
       ...getPrimaryShadow.card(theme),
+    },
+    statementGradientBorderContainer: {
+      position: 'absolute',
+      top: -1,
+      left: -0.5,
+      right: -0.5,
+      bottom: -1,
+      borderRadius: theme.borderRadius.md + 1,
+      zIndex: 0,
+    },
+    statementGradientBorder: {
+      flex: 1,
+      borderRadius: theme.borderRadius.md + 1,
     },
   });
 

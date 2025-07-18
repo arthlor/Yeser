@@ -266,7 +266,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                       <Icon name={option.icon} size={24} color={optionColor} />
                       {isSelected && (
                         <View style={[styles.selectedBadge, { backgroundColor: optionColor }]}>
-                          <Icon name="check" size={12} color="white" />
+                          <Icon name="check" size={12} color={theme.colors.onPrimary} />
                         </View>
                       )}
                       {option.value === 3 && !isSelected && (

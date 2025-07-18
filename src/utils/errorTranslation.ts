@@ -33,6 +33,77 @@ export const translateError = (
     component: 'errorTranslation',
   });
 
+  // 🔥 CRITICAL FIX: Handle Supabase/PostgreSQL error objects properly
+  if (error && typeof error === 'object' && 'code' in error) {
+    const dbError = error as { code: string; message: string; details?: string; hint?: string };
+
+    // PostgreSQL RLS Policy Violations (42501)
+    if (dbError.code === '42501') {
+      return {
+        userMessage: 'Bu işlem için yetkiniz bulunmuyor. Lütfen çıkış yapıp tekrar giriş yapın.',
+        technicalMessage: dbError.message,
+        errorType: 'auth',
+      };
+    }
+
+    // PostgreSQL Foreign Key Violations (23503)
+    if (dbError.code === '23503') {
+      return {
+        userMessage: 'Veri bütünlüğü hatası oluştu. Lütfen tekrar deneyin.',
+        technicalMessage: dbError.message,
+        errorType: 'validation',
+      };
+    }
+
+    // PostgreSQL Unique Constraint Violations (23505)
+    if (dbError.code === '23505') {
+      return {
+        userMessage: 'Bu kayıt zaten mevcut. Lütfen farklı bilgiler kullanın.',
+        technicalMessage: dbError.message,
+        errorType: 'validation',
+      };
+    }
+
+    // PostgREST errors (PGRST prefix)
+    if (dbError.code?.startsWith('PGRST')) {
+      if (dbError.code === 'PGRST116') {
+        return {
+          userMessage: 'Kayıt bulunamadı.',
+          technicalMessage: dbError.message,
+          errorType: 'validation',
+        };
+      }
+      return {
+        userMessage: 'Veritabanı erişim hatası. Lütfen tekrar deneyin.',
+        technicalMessage: dbError.message,
+        errorType: 'server',
+      };
+    }
+
+    // General database error fallback
+    if (dbError.message) {
+      const dbErrorMessage = dbError.message.toLowerCase();
+
+      // Check for specific database error patterns
+      if (dbErrorMessage.includes('row level security') || dbErrorMessage.includes('policy')) {
+        return {
+          userMessage:
+            'Güvenlik kısıtlaması nedeniyle işlem gerçekleştirilemedi. Lütfen çıkış yapıp tekrar giriş yapın.',
+          technicalMessage: dbError.message,
+          errorType: 'auth',
+        };
+      }
+
+      if (dbErrorMessage.includes('foreign key') || dbErrorMessage.includes('constraint')) {
+        return {
+          userMessage: 'Veri bütünlüğü hatası. Lütfen tekrar deneyin.',
+          technicalMessage: dbError.message,
+          errorType: 'validation',
+        };
+      }
+    }
+  }
+
   // Google OAuth Specific Errors (HIGH PRIORITY - these were leaking through)
   if (
     lowerMessage.includes('oauth session failed') ||

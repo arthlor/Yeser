@@ -535,7 +535,7 @@ const EnhancedEntryDetailScreen: React.FC<{
                         : '🎉 O gün hedef tamamlanmıştı!'
                       : isToday
                         ? `Hedefe ${3 - gratitudeItems.length} kaldı`
-                        : `O gün hedefe ${3 - gratitudeItems.length} kalmıştı`}
+                        : `O gün hedefe ${3 - gratitudeItems.length} minnet kalmıştı`}
                   </Text>
                 </View>
                 <View style={styles.progressLineContainer}>

@@ -1,10 +1,21 @@
 import * as Notifications from 'expo-notifications';
 import * as Localization from 'expo-localization';
-import { Platform } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import { supabase } from '@/utils/supabaseClient'; // Assuming this is your Supabase client path
 import { logger } from '@/utils/logger';
 
 const ANDROID_CHANNEL_ID = 'daily-reminder-channel';
+
+// Configure notification handling for different app states
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true, // Show notification even in foreground
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 /**
  * Sets up the notification channel for Android.
@@ -24,31 +35,49 @@ async function setupAndroidChannel() {
 /**
  * Registers the device for push notifications, requests permissions,
  * and returns the Expo Push Token.
- * @returns The Expo Push Token if permission is granted, otherwise null.
+ * @returns Object with token and permission status details
  */
-async function registerForPushNotificationsAsync(): Promise<string | null> {
+async function registerForPushNotificationsAsync(): Promise<{
+  token: string | null;
+  status: 'granted' | 'denied' | 'undetermined' | 'provisional';
+  canAskAgain?: boolean;
+}> {
   await setupAndroidChannel();
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  const { status: existingStatus, canAskAgain } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
+  let finalCanAskAgain = canAskAgain;
 
   if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status, canAskAgain: newCanAskAgain } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
+    finalCanAskAgain = newCanAskAgain;
   }
 
   if (finalStatus !== 'granted') {
-    // Consider alerting the user that they will not receive notifications.
-    logger.warn('Push notification permission denied.');
-    return null;
+    logger.warn('Push notification permission denied.', {
+      status: finalStatus,
+      canAskAgain: finalCanAskAgain,
+    });
+    return {
+      token: null,
+      status: finalStatus,
+      canAskAgain: finalCanAskAgain,
+    };
   }
 
   try {
     const token = (await Notifications.getExpoPushTokenAsync()).data;
-    return token;
+    return {
+      token,
+      status: 'granted',
+    };
   } catch (error) {
     logger.error('Failed to get push token:', error as Error);
-    return null;
+    return {
+      token: null,
+      status: 'granted', // Permission was granted but token failed
+    };
   }
 }
 
@@ -164,9 +193,55 @@ async function removeTokenFromBackend(token: string) {
   }
 }
 
+/**
+ * Shows an educational dialog about notifications and guides user to settings
+ * @param canAskAgain Whether the system allows asking for permissions again
+ * @param onPermissionResult Callback when permission flow completes
+ */
+function showNotificationPermissionGuidance(
+  canAskAgain: boolean = true,
+  onPermissionResult?: (granted: boolean) => void
+) {
+  const title = 'Günlük Hatırlatıcılar İçin İzin Gerekli';
+  const message = canAskAgain
+    ? '🌱 Günlük minnet alışkanlığınızı desteklemek için bildirim izni gerekiyor.\n\n• Her gün aynı saatte nazik hatırlatıcılar\n• Minnet yazmayı unutmanıza engel olur\n• İstediğiniz zaman kapatabilirsiniz'
+    : '⚠️ Bildirimler için izin verilmedi.\n\nHatırlatıcıları etkinleştirmek için:\n1. Ayarlara git\n2. Bildirimler bölümünü bul\n3. Bu uygulamayı etkinleştir';
+
+  const buttons = canAskAgain
+    ? [
+        { text: 'Şimdi Değil', style: 'cancel' as const },
+        {
+          text: 'İzin Ver',
+          onPress: async () => {
+            const result = await Notifications.requestPermissionsAsync();
+            onPermissionResult?.(result.status === 'granted');
+          },
+        },
+      ]
+    : [
+        { text: 'Tamam', style: 'cancel' as const },
+        { text: 'Ayarlara Git', onPress: openNotificationSettings },
+      ];
+
+  Alert.alert(title, message, buttons);
+}
+
+/**
+ * Opens the device notification settings for this app
+ */
+function openNotificationSettings() {
+  if (Platform.OS === 'ios') {
+    Linking.openURL('app-settings:');
+  } else {
+    Linking.openSettings();
+  }
+}
+
 export const notificationService = {
   registerForPushNotificationsAsync,
   saveTokenToBackend,
   updateNotificationTime,
   removeTokenFromBackend,
+  showNotificationPermissionGuidance,
+  openNotificationSettings,
 };

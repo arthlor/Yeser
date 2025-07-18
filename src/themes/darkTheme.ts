@@ -62,9 +62,9 @@ const enhancedDarkColors: ThemeColors = {
   borderStrong: '#7C8B9E', // Enhanced from #64748B - strong definition
 
   // State colors - Natural harmonies optimized for dark mode
-  success: '#10B981', // Brighter emerald for dark mode visibility
-  onSuccess: '#FFFFFF', // White text on success
-  successContainer: '#065F46', // Dark green container
+  success: '#10B981', // Emerald green for success states
+  onSuccess: '#F0FDF9', // Warm off-white instead of bright white
+  successContainer: '#064E3B', // Dark emerald container
   onSuccessContainer: '#A7F3D0', // Light green on dark container
 
   warning: '#FBBF24', // Same as secondary - bright amber for consistency

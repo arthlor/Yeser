@@ -7,13 +7,13 @@ import {
   ThemeTypography,
 } from './types';
 
-// Verdant Serenity Light Theme - Natural & Uplifting
+// Verdant Serenity Light Theme - Natural & Uplifting with Eggshell Tones
 const enhancedLightColors: ThemeColors = {
   // Brand colors - Deep, calming Teal-Green (The "Growth")
   primary: '#0F766E', // Deep, muted teal - sophisticated and balanced
-  onPrimary: '#F0FDFA', // Soft mint instead of pure white
+  onPrimary: '#F5F3F0', // Warm eggshell instead of mint
   primaryVariant: '#0D9488', // Slightly brighter teal variant
-  primaryContainer: '#F0FDFA', // Very soft mint container
+  primaryContainer: '#F5F3F0', // Warm eggshell container
   onPrimaryContainer: '#042F2E', // Deep teal text on container
 
   // Warm, muted Gold/Amber Secondary (The "Gratitude")
@@ -24,7 +24,7 @@ const enhancedLightColors: ThemeColors = {
 
   // Tertiary & Calm - Harmonious with the palette
   tertiary: '#0369A1', // Calming blue that harmonizes with teal
-  onTertiary: '#E0F2FE', // Soft blue tint
+  onTertiary: '#F2F6FA', // Warm off-white with subtle blue tint
   tertiaryContainer: '#E0F2FE', // Light blue container
   onTertiaryContainer: '#0C4A6E', // Deep blue text
 
@@ -34,36 +34,36 @@ const enhancedLightColors: ThemeColors = {
   accentContainer: '#FEF3C7', // Light amber container
   onAccentContainer: '#713F12',
 
-  // Surfaces - Soft, warm Off-White/Linen (The "Calm")
-  background: '#F8FAFC', // Soft, warm off-white (not pure white)
+  // Surfaces - Soft, warm Eggshell/Linen (The "Calm")
+  background: '#F7F5F3', // Warm eggshell background (not bright white)
   onBackground: '#1E293B', // Softer dark text for comfort
-  surface: '#FEFEFE', // Very slightly off-white for cards with subtle lift
+  surface: '#FDFBF9', // Warm eggshell for cards with subtle lift
   onSurface: '#1E293B', // Consistent with background text
-  surfaceVariant: '#F1F5F9', // Warm gray-blue variant
+  surfaceVariant: '#F0EDE9', // Warm beige-gray variant
   onSurfaceVariant: '#475569', // Softer contrast for secondary text
   surfaceTint: '#0F766E', // Primary teal tint
   inverseSurface: '#334155', // Warm dark slate
-  inverseOnSurface: '#F8FAFC', // Light on inverse
+  inverseOnSurface: '#F7F5F3', // Warm eggshell on inverse
 
-  // Enhanced surface levels for natural hierarchy
-  surfaceElevated: '#FFFFFF', // Pure white for elevated cards
-  surfaceContainer: '#F8FAFC', // Same as background for continuity
-  surfaceBright: '#FFFFFF', // Brightest surface for emphasis
-  surfaceDim: '#F1F5F9', // Dimmed surface for subtle backgrounds
+  // Enhanced surface levels for natural hierarchy - all eggshell tones
+  surfaceElevated: '#FEFCFA', // Warm eggshell for elevated cards (no pure white)
+  surfaceContainer: '#F7F5F3', // Same as background for continuity
+  surfaceBright: '#FEFCFA', // Warmest eggshell for emphasis (no pure white)
+  surfaceDim: '#F0EDE9', // Dimmed warm surface for subtle backgrounds
 
   // Content colors - Strengthened for better visibility while staying natural
   outline: '#94A3B8', // Strengthened from #CBD5E1 for clear UI element definition
-  outlineVariant: '#CBD2DC', // Strengthened from #E2E8F0 for subtle but visible separation
+  outlineVariant: '#D2CFC8', // Warm outline variant matching our eggshell palette
   scrim: 'rgba(15, 23, 42, 0.5)', // Warm scrim
 
-  // Enhanced border system for better visual hierarchy
-  borderLight: '#E1E7ED', // Strengthened from #F1F5F9 - subtle but visible
-  borderMedium: '#CBD2DC', // Strengthened from #E2E8F0 - clear separation
+  // Enhanced border system for better visual hierarchy with eggshell tones
+  borderLight: '#E8E5E1', // Warm light border instead of bright
+  borderMedium: '#D2CFC8', // Warm medium border
   borderStrong: '#94A3B8', // Strengthened from #CBD5E1 - strong definition
 
   // State colors - Natural, harmonious with the palette
   success: '#059669', // Deeper green that harmonizes with teal
-  onSuccess: '#F0FDF4', // Soft green tint
+  onSuccess: '#F4F7F5', // Warm eggshell with green tint
   successContainer: '#ECFDF5', // Light green container
   onSuccessContainer: '#064E3B',
 
@@ -73,12 +73,12 @@ const enhancedLightColors: ThemeColors = {
   onWarningContainer: '#92400E',
 
   error: '#DC2626', // Warm red that doesn't clash with palette
-  onError: '#FEF2F2', // Soft pink tint
+  onError: '#F9F5F5', // Warm eggshell with pink tint
   errorContainer: '#FEF2F2', // Light red container
   onErrorContainer: '#7F1D1D',
 
   info: '#0284C7', // Blue that harmonizes with tertiary
-  onInfo: '#E0F2FE', // Soft blue tint
+  onInfo: '#F2F6FA', // Warm off-white with blue tint
   infoContainer: '#E0F2FE', // Light blue container
   onInfoContainer: '#0369A1',
 
@@ -101,16 +101,16 @@ const enhancedLightColors: ThemeColors = {
   gradientStart: '#0F766E', // Deep teal start
   gradientEnd: '#059669', // Harmonious green end
 
-  // Legacy support - updated for improved hierarchy
+  // Legacy support - updated for improved hierarchy with eggshell tones
   text: '#1E293B', // Softer dark text for comfortable reading
   textSecondary: '#64748B', // Warmer secondary text
-  border: '#CBD2DC', // Strengthened from #E2E8F0 for better definition
-  inputBackground: '#FEFEFE', // Very slightly off-white for inputs
+  border: '#D2CFC8', // Warm border matching our eggshell palette
+  inputBackground: '#FDFBF9', // Warm eggshell for inputs (no bright white)
   inputText: '#1E293B',
   danger: '#DC2626', // Consistent with error
-  onDanger: '#FEF2F2',
+  onDanger: '#F9F5F5', // Warm eggshell with pink tint
   shadow: 'rgba(15, 23, 42, 0.08)', // Softer shadow for gentle elevation
-  surfaceDisabled: '#F1F5F9', // Light disabled surface
+  surfaceDisabled: '#F0EDE9', // Warm disabled surface
 };
 
 const enhancedTypography: ThemeTypography = {

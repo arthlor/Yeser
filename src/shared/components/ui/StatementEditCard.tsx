@@ -66,7 +66,7 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const styles = useMemo(() => createStyles(theme, isEditing), [theme, isEditing]);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const animations = useStatementCardAnimations();
   const { triggerHaptic } = useHapticFeedback(hapticFeedback);
@@ -156,159 +156,162 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
   // Main card content with new edge-to-edge design
   const CardContent = (
     <View style={[styles.edgeToEdgeContainer, style]}>
-      {/* MODERN CARD HEADER - Edge-to-edge with enhanced visual hierarchy */}
-      <View style={styles.cardHeader}>
-        <View style={styles.headerContent}>
-          {/* Statement number or icon */}
-          <View style={styles.headerLeft}>
-            {showQuotes && !isEditing && (
-              <View style={styles.quoteIconContainer}>
-                <Icon name="format-quote-open" size={20} color={theme.colors.primary + '60'} />
-              </View>
-            )}
-            {isEditing && (
-              <View style={styles.editingIconContainer}>
-                <Icon name="pencil" size={18} color={theme.colors.primary} />
-              </View>
-            )}
-          </View>
+      {/* Inner glow container for sophisticated border effect */}
+      <View style={styles.innerGlowContainer}>
+        {/* MODERN CARD HEADER - Edge-to-edge with enhanced visual hierarchy */}
+        <View style={styles.cardHeader}>
+          <View style={styles.headerContent}>
+            {/* Statement number or icon */}
+            <View style={styles.headerLeft}>
+              {showQuotes && !isEditing && (
+                <View style={styles.quoteIconContainer}>
+                  <Icon name="format-quote-open" size={16} color={theme.colors.primary + '60'} />
+                </View>
+              )}
+              {isEditing && (
+                <View style={styles.editingIconContainer}>
+                  <Icon name="pencil" size={14} color={theme.colors.primary} />
+                </View>
+              )}
+            </View>
 
-          {/* Three dots menu with enhanced positioning */}
-          <View style={styles.headerRight}>
-            <ThreeDotsMenu
-              onEdit={onEdit}
-              onDelete={onDelete}
-              isVisible={!isEditing}
-              hapticFeedback={hapticFeedback}
-            />
+            {/* Three dots menu with enhanced positioning */}
+            <View style={styles.headerRight}>
+              <ThreeDotsMenu
+                onEdit={onEdit}
+                onDelete={onDelete}
+                isVisible={!isEditing}
+                hapticFeedback={hapticFeedback}
+              />
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* MODERN CONTENT SECTION - Enhanced padding and layout */}
-      <View style={styles.contentSection}>
-        {isEditing && enableInlineEdit ? (
-          /* ENHANCED EDITING INTERFACE */
-          <View style={styles.editingInterface}>
-            <View style={styles.inputContainer}>
-              <TextInput
-                ref={textInputRef}
-                style={[
-                  styles.modernTextInput,
-                  hasError && styles.errorInput,
-                  isOverLimit && styles.overLimitInput,
-                ]}
-                value={localStatement}
-                onChangeText={handleStatementChange}
-                multiline
-                maxLength={maxLength}
-                placeholder={placeholderText}
-                placeholderTextColor={theme.colors.onSurfaceVariant + '50'}
-                autoFocus
-                selectionColor={theme.colors.primary}
-                textAlignVertical="top"
-                scrollEnabled={true}
-                accessibilityLabel={accessibilityLabel || 'Minnet girişi'}
-                accessibilityHint="Bugünkü minnettarlığınızı yazın"
-              />
-
-              {/* Floating character counter */}
-              <View style={styles.floatingCounter}>
-                <Text
+        {/* MODERN CONTENT SECTION - Enhanced padding and layout */}
+        <View style={styles.contentSection}>
+          {isEditing && enableInlineEdit ? (
+            /* ENHANCED EDITING INTERFACE */
+            <View style={styles.editingInterface}>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  ref={textInputRef}
                   style={[
-                    styles.characterCountText,
-                    isNearLimit && !isOverLimit && styles.warningCountText,
-                    isOverLimit && styles.errorCountText,
+                    styles.modernTextInput,
+                    hasError && styles.errorInput,
+                    isOverLimit && styles.overLimitInput,
                   ]}
+                  value={localStatement}
+                  onChangeText={handleStatementChange}
+                  multiline
+                  maxLength={maxLength}
+                  placeholder={placeholderText}
+                  placeholderTextColor={theme.colors.onSurfaceVariant + '50'}
+                  autoFocus
+                  selectionColor={theme.colors.primary}
+                  textAlignVertical="top"
+                  scrollEnabled={true}
+                  accessibilityLabel={accessibilityLabel || 'Minnet girişi'}
+                  accessibilityHint="Bugünkü minnettarlığınızı yazın"
+                />
+
+                {/* Floating character counter */}
+                <View style={styles.floatingCounter}>
+                  <Text
+                    style={[
+                      styles.characterCountText,
+                      isNearLimit && !isOverLimit && styles.warningCountText,
+                      isOverLimit && styles.errorCountText,
+                    ]}
+                  >
+                    {characterCount}/{maxLength}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Input status indicators */}
+              {(isNearLimit || isOverLimit) && (
+                <View style={styles.inputStatusContainer}>
+                  <Icon
+                    name={isOverLimit ? 'alert-circle' : 'alert-outline'}
+                    size={16}
+                    color={isOverLimit ? theme.colors.error : theme.colors.tertiary}
+                  />
+                  <Text style={[styles.statusText, isOverLimit && styles.errorStatusText]}>
+                    {isOverLimit
+                      ? `${characterCount - maxLength} karakter fazla`
+                      : `${maxLength - characterCount} karakter kaldı`}
+                  </Text>
+                </View>
+              )}
+
+              {/* Modern action buttons */}
+              <View style={styles.modernActionButtons}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={handleCancel}
+                  activeOpacity={0.7}
+                  accessibilityLabel="İptal"
                 >
-                  {characterCount}/{maxLength}
-                </Text>
+                  <Icon name="close" size={14} color={theme.colors.onSurfaceVariant} />
+                  <Text style={styles.cancelButtonText}>İptal</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton,
+                    (!localStatement.trim() || isOverLimit) && styles.disabledSaveButton,
+                  ]}
+                  onPress={handleSave}
+                  activeOpacity={0.7}
+                  disabled={!localStatement.trim() || isOverLimit}
+                  accessibilityLabel="Kaydet"
+                >
+                  <Icon name="check" size={14} color={theme.colors.onPrimary} />
+                  <Text style={styles.saveButtonText}>Kaydet</Text>
+                </TouchableOpacity>
               </View>
             </View>
+          ) : (
+            /* ENHANCED READING INTERFACE */
+            <View style={styles.readingInterface}>
+              <Text style={styles.modernStatementText} numberOfLines={numberOfLines}>
+                {localStatement}
+              </Text>
+            </View>
+          )}
+        </View>
 
-            {/* Input status indicators */}
-            {(isNearLimit || isOverLimit) && (
-              <View style={styles.inputStatusContainer}>
+        {/* MODERN FOOTER SECTION - Date and metadata */}
+        {date && !isEditing && (
+          <View style={styles.cardFooter}>
+            <View style={styles.footerContent}>
+              <View style={styles.dateSection}>
                 <Icon
-                  name={isOverLimit ? 'alert-circle' : 'alert-outline'}
-                  size={16}
-                  color={isOverLimit ? theme.colors.error : theme.colors.tertiary}
+                  name={isRecent ? 'clock-outline' : 'calendar'}
+                  size={14}
+                  color={theme.colors.onSurfaceVariant + (isRecent ? '90' : '60')}
                 />
-                <Text style={[styles.statusText, isOverLimit && styles.errorStatusText]}>
-                  {isOverLimit
-                    ? `${characterCount - maxLength} karakter fazla`
-                    : `${maxLength - characterCount} karakter kaldı`}
+                <Text style={[styles.dateText, isRecent && styles.recentDateText]}>
+                  {relativeTime}
                 </Text>
               </View>
-            )}
 
-            {/* Modern action buttons */}
-            <View style={styles.modernActionButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancel}
-                activeOpacity={0.7}
-                accessibilityLabel="İptal"
-              >
-                <Icon name="close" size={18} color={theme.colors.onSurfaceVariant} />
-                <Text style={styles.cancelButtonText}>İptal</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.saveButton,
-                  (!localStatement.trim() || isOverLimit) && styles.disabledSaveButton,
-                ]}
-                onPress={handleSave}
-                activeOpacity={0.7}
-                disabled={!localStatement.trim() || isOverLimit}
-                accessibilityLabel="Kaydet"
-              >
-                <Icon name="check" size={18} color={theme.colors.onPrimary} />
-                <Text style={styles.saveButtonText}>Kaydet</Text>
-              </TouchableOpacity>
+              {isRecent && (
+                <View style={styles.recentBadge}>
+                  <Text style={styles.recentBadgeText}>YENİ</Text>
+                </View>
+              )}
             </View>
           </View>
-        ) : (
-          /* ENHANCED READING INTERFACE */
-          <View style={styles.readingInterface}>
-            <Text style={styles.modernStatementText} numberOfLines={numberOfLines}>
-              {localStatement}
-            </Text>
+        )}
+
+        {/* Loading indicator */}
+        {isLoading && (
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingIndicator} />
           </View>
         )}
       </View>
-
-      {/* MODERN FOOTER SECTION - Date and metadata */}
-      {date && !isEditing && (
-        <View style={styles.cardFooter}>
-          <View style={styles.footerContent}>
-            <View style={styles.dateSection}>
-              <Icon
-                name={isRecent ? 'clock-outline' : 'calendar'}
-                size={14}
-                color={theme.colors.onSurfaceVariant + (isRecent ? '90' : '60')}
-              />
-              <Text style={[styles.dateText, isRecent && styles.recentDateText]}>
-                {relativeTime}
-              </Text>
-            </View>
-
-            {isRecent && (
-              <View style={styles.recentBadge}>
-                <Text style={styles.recentBadgeText}>YENİ</Text>
-              </View>
-            )}
-          </View>
-        </View>
-      )}
-
-      {/* Loading indicator */}
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <View style={styles.loadingIndicator} />
-        </View>
-      )}
     </View>
   );
 
@@ -336,36 +339,55 @@ const StatementEditCard = React.memo(StatementEditCardComponent);
 StatementEditCard.displayName = 'StatementEditCard';
 
 // 🎨 MODERN EDGE-TO-EDGE STYLES
-const createStyles = (theme: AppTheme, isEditing: boolean) =>
+const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    // MAIN CONTAINER - True edge-to-edge design
+    // MAIN CONTAINER - Enhanced edge-to-edge design
     touchableContainer: {
-      marginBottom: 1, // Minimal separation between cards
+      marginBottom: 2, // Better visual separation between cards
     } as ViewStyle,
 
     edgeToEdgeContainer: {
+      // Clean background to sit on top of gradient border
       backgroundColor: theme.colors.surface,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.outline + '15',
-      overflow: 'visible',
-      minHeight: 80,
+      // Position on top of gradient border
+      position: 'relative',
+      zIndex: 1,
+      // Remove border to let gradient show through
+      borderRadius: theme.borderRadius.md, // Reduced from lg
+      overflow: 'hidden',
+      minHeight: 70, // Reduced from 90
+      // Small margin for breathing room
+      marginHorizontal: 2,
+      marginVertical: 1,
     } as ViewStyle,
 
-    // MODERN CARD HEADER - Enhanced visual hierarchy
+    // Inner glow container - creates subtle depth without complexity
+    innerGlowContainer: {
+      flex: 1,
+      // Reduced alpha to avoid bright surfaces
+      backgroundColor: alpha(theme.colors.surface, 0.85),
+      // No additional borders to avoid overlap
+      borderRadius: theme.borderRadius.md - 1, // Reduced
+      overflow: 'hidden',
+    } as ViewStyle,
+
+    // MODERN CARD HEADER - Clean and minimal
     cardHeader: {
-      backgroundColor: theme.colors.surface,
-      paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.sm,
-      borderBottomWidth: isEditing ? StyleSheet.hairlineWidth : 0,
-      borderBottomColor: theme.colors.outline + '10',
+      // Reduced alpha for less brightness
+      backgroundColor: alpha(theme.colors.surface, 0.9),
+      paddingHorizontal: theme.spacing.md, // Reduced from lg
+      paddingTop: theme.spacing.sm, // Reduced from md
+      paddingBottom: theme.spacing.xs, // Reduced from sm
+      // Single clean divider
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: alpha(theme.colors.outline, 0.08),
     } as ViewStyle,
 
     headerContent: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      minHeight: 32,
+      minHeight: 24, // Reduced from 32
     } as ViewStyle,
 
     headerLeft: {
@@ -380,28 +402,32 @@ const createStyles = (theme: AppTheme, isEditing: boolean) =>
     } as ViewStyle,
 
     quoteIconContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: theme.colors.primaryContainer + '30',
+      width: 32, // Reduced from 36
+      height: 32, // Reduced from 36
+      borderRadius: 16, // Reduced from 18
+      // Subtle container with theme color
+      backgroundColor: alpha(theme.colors.primaryContainer, 0.5),
       alignItems: 'center',
       justifyContent: 'center',
     } as ViewStyle,
 
     editingIconContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: theme.colors.primary + '15',
+      width: 28, // Reduced from 32
+      height: 28, // Reduced from 32
+      borderRadius: 14, // Reduced from 16
+      backgroundColor: alpha(theme.colors.primary, 0.1),
       alignItems: 'center',
       justifyContent: 'center',
     } as ViewStyle,
 
-    // CONTENT SECTION - Enhanced padding and layout
+    // CONTENT SECTION - Clean and spacious
     contentSection: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      minHeight: 60,
+      // Consistent background
+      backgroundColor: alpha(theme.colors.surface, 0),
+      paddingHorizontal: theme.spacing.md, // Reduced from lg
+      paddingTop: theme.spacing.sm, // Reduced from md
+      paddingBottom: theme.spacing.md, // Reduced from lg
+      minHeight: 50, // Reduced from 60
     } as ViewStyle,
 
     // ENHANCED EDITING INTERFACE
@@ -415,62 +441,58 @@ const createStyles = (theme: AppTheme, isEditing: boolean) =>
 
     modernTextInput: {
       fontFamily: 'Lora-Regular',
-      fontSize: 17,
-      lineHeight: 26,
+      fontSize: 16, // Reduced from 18
+      lineHeight: 24, // Reduced from 28
       color: theme.colors.onSurface,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 2,
-      borderColor: theme.colors.outline + '30',
-      borderRadius: theme.borderRadius.xl,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      paddingBottom: theme.spacing.lg + 8, // Extra space for counter
-      minHeight: 120,
-      maxHeight: 200,
+      // Clean single border
+      backgroundColor: alpha(theme.colors.surface, 0.5),
+      borderWidth: 1.5,
+      borderColor: alpha(theme.colors.outline, 0.2),
+      borderRadius: theme.borderRadius.md,
+      paddingHorizontal: theme.spacing.md, // Reduced from lg
+      paddingVertical: theme.spacing.sm, // Reduced from md
+      paddingBottom: theme.spacing.md + 8, // Extra space for counter
+      minHeight: 100, // Reduced from 120
+      maxHeight: 180, // Reduced from 200
       textAlignVertical: 'top',
-      // Enhanced shadow
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 8,
-      elevation: 2,
     } as ViewStyle,
 
     errorInput: {
       borderColor: theme.colors.error,
-      backgroundColor: alpha(theme.colors.error, 0.03),
+      backgroundColor: alpha(theme.colors.error, 0.04),
     } as ViewStyle,
 
     overLimitInput: {
       borderColor: theme.colors.error,
       borderWidth: 2,
-      backgroundColor: alpha(theme.colors.error, 0.06),
+      backgroundColor: alpha(theme.colors.error, 0.08),
     } as ViewStyle,
 
     floatingCounter: {
       position: 'absolute',
       bottom: theme.spacing.sm,
       right: theme.spacing.md,
-      backgroundColor: alpha(theme.colors.surface, 0.9),
+      backgroundColor: alpha(theme.colors.surface, 0.8), // Reduced from 0.9
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: 4,
       borderRadius: theme.borderRadius.sm,
     } as ViewStyle,
 
     characterCountText: {
-      fontSize: 12,
-      fontWeight: '500',
+      fontSize: 13,
+      fontWeight: '600',
       color: theme.colors.onSurfaceVariant,
+      letterSpacing: 0.2,
     } as ViewStyle,
 
     warningCountText: {
       color: theme.colors.tertiary,
-      fontWeight: '600',
+      fontWeight: '700',
     } as ViewStyle,
 
     errorCountText: {
       color: theme.colors.error,
-      fontWeight: '700',
+      fontWeight: '800',
     } as ViewStyle,
 
     inputStatusContainer: {
@@ -491,11 +513,14 @@ const createStyles = (theme: AppTheme, isEditing: boolean) =>
       fontWeight: '600',
     } as ViewStyle,
 
-    // MODERN ACTION BUTTONS
+    // MODERN ACTION BUTTONS - More compact design
     modernActionButtons: {
       flexDirection: 'row',
-      gap: theme.spacing.md,
-      paddingTop: theme.spacing.sm,
+      gap: theme.spacing.sm, // Reduced from lg
+      paddingTop: theme.spacing.sm, // Reduced from lg
+      marginTop: theme.spacing.sm, // Reduced from md
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: alpha(theme.colors.outline, 0.08),
     } as ViewStyle,
 
     cancelButton: {
@@ -503,19 +528,21 @@ const createStyles = (theme: AppTheme, isEditing: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: theme.spacing.sm,
-      paddingVertical: theme.spacing.md,
-      backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: theme.borderRadius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '40',
+      gap: theme.spacing.xs, // Reduced from sm
+      paddingVertical: theme.spacing.sm, // Reduced from lg
+      paddingHorizontal: theme.spacing.md,
+      backgroundColor: alpha(theme.colors.surfaceVariant, 0.5),
+      borderRadius: theme.borderRadius.sm, // Reduced from md
+      borderWidth: 1,
+      borderColor: alpha(theme.colors.outline, 0.15),
     } as ViewStyle,
 
     cancelButtonText: {
-      fontSize: 16,
+      fontSize: 14, // Reduced from 17
       fontWeight: '600',
       color: theme.colors.onSurfaceVariant,
       fontFamily: 'Lora-SemiBold',
+      letterSpacing: 0.3,
     } as ViewStyle,
 
     saveButton: {
@@ -523,53 +550,51 @@ const createStyles = (theme: AppTheme, isEditing: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: theme.spacing.sm,
-      paddingVertical: theme.spacing.md,
+      gap: theme.spacing.xs, // Reduced from sm
+      paddingVertical: theme.spacing.sm, // Reduced from lg
+      paddingHorizontal: theme.spacing.md,
       backgroundColor: theme.colors.primary,
-      borderRadius: theme.borderRadius.lg,
-      // Enhanced shadow for primary action
-      shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 8,
-      elevation: 4,
+      borderRadius: theme.borderRadius.sm, // Reduced from md
     } as ViewStyle,
 
     disabledSaveButton: {
-      backgroundColor: theme.colors.outline + '40',
+      backgroundColor: alpha(theme.colors.outline, 0.3),
       shadowOpacity: 0,
       elevation: 0,
     } as ViewStyle,
 
     saveButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: 14, // Reduced from 17
+      fontWeight: '700',
       color: theme.colors.onPrimary,
       fontFamily: 'Lora-SemiBold',
+      letterSpacing: 0.3,
     } as ViewStyle,
 
     // ENHANCED READING INTERFACE
     readingInterface: {
-      paddingVertical: theme.spacing.sm,
+      paddingVertical: theme.spacing.md,
     } as ViewStyle,
 
     modernStatementText: {
       fontFamily: 'Lora-Medium',
-      fontSize: 18,
-      lineHeight: 28,
+      fontSize: 17, // Reduced from 19
+      lineHeight: 26, // Reduced from 30
       color: theme.colors.onSurface,
-      fontStyle: 'italic',
-      letterSpacing: 0.3,
+      fontWeight: '500',
+      letterSpacing: 0.2,
       textAlign: 'left',
+      marginHorizontal: 2, // Subtle indent for better readability
     } as ViewStyle,
 
     // MODERN FOOTER SECTION
     cardFooter: {
-      backgroundColor: alpha(theme.colors.surfaceVariant, 0.3),
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.sm,
+      // Very subtle background
+      backgroundColor: alpha(theme.colors.surfaceVariant, 0.2),
+      paddingHorizontal: theme.spacing.md, // Reduced from lg
+      paddingVertical: theme.spacing.xs, // Reduced from sm
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline + '10',
+      borderTopColor: alpha(theme.colors.outline, 0.06),
     } as ViewStyle,
 
     footerContent: {
@@ -585,28 +610,31 @@ const createStyles = (theme: AppTheme, isEditing: boolean) =>
     } as ViewStyle,
 
     dateText: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: '500',
       color: theme.colors.onSurfaceVariant,
       fontFamily: 'Lora-Medium',
+      letterSpacing: 0.2,
     } as ViewStyle,
 
     recentDateText: {
       color: theme.colors.primary,
-      fontWeight: '600',
+      fontWeight: '700',
     } as ViewStyle,
 
     recentBadge: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: alpha(theme.colors.primary, 0.1),
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: 2,
       borderRadius: theme.borderRadius.xs,
+      borderWidth: 1,
+      borderColor: alpha(theme.colors.primary, 0.2),
     } as ViewStyle,
 
     recentBadgeText: {
       fontSize: 10,
       fontWeight: '800',
-      color: theme.colors.onPrimary,
+      color: theme.colors.primary,
       letterSpacing: 0.5,
     } as ViewStyle,
 
@@ -617,7 +645,7 @@ const createStyles = (theme: AppTheme, isEditing: boolean) =>
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: alpha(theme.colors.surface, 0.8),
+      backgroundColor: alpha(theme.colors.surface, 0.7), // Reduced from 0.8
       alignItems: 'center',
       justifyContent: 'center',
     } as ViewStyle,
@@ -626,7 +654,7 @@ const createStyles = (theme: AppTheme, isEditing: boolean) =>
       width: 32,
       height: 32,
       borderRadius: 16,
-      backgroundColor: theme.colors.primary + '40',
+      backgroundColor: alpha(theme.colors.primary, 0.3),
     } as ViewStyle,
   });
 

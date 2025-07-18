@@ -39,10 +39,28 @@ export const NotificationSettings: React.FC = () => {
     getToken();
   }, []);
 
-  // Effect to sync component state with user profile
+  // Effect to sync component state with user profile and check permissions
   useEffect(() => {
     if (profile) {
-      setIsEnabled(!!profile.notification_time);
+      const hasNotificationTime = !!profile.notification_time;
+
+      // If profile says notifications are enabled, verify device permissions
+      if (hasNotificationTime) {
+        Notifications.getPermissionsAsync().then((permissions) => {
+          if (permissions.status !== 'granted') {
+            // Profile says enabled but permissions not granted - sync state
+            setIsEnabled(false);
+            logger.warn(
+              'Notification settings out of sync - profile enabled but no device permission'
+            );
+          } else {
+            setIsEnabled(true);
+          }
+        });
+      } else {
+        setIsEnabled(false);
+      }
+
       if (profile.notification_time) {
         const [hour, minute] = profile.notification_time.split(':').map(Number);
         const date = new Date();
@@ -62,12 +80,26 @@ export const NotificationSettings: React.FC = () => {
   const enableNotifications = useCallback(async () => {
     let token = pushToken;
     if (!token) {
-      const registeredToken = await notificationService.registerForPushNotificationsAsync();
-      if (!registeredToken) {
-        showToastError('Bildirim izni alınamadı. Lütfen uygulama ayarlarını kontrol edin.');
+      const result = await notificationService.registerForPushNotificationsAsync();
+
+      if (!result.token) {
+        // Handle different permission scenarios with helpful guidance
+        if (result.status === 'denied' && result.canAskAgain === false) {
+          // User permanently denied - guide to settings
+          showToastError('Bildirimler için sistem ayarlarından izin vermeniz gerekiyor.');
+          notificationService.showNotificationPermissionGuidance(false);
+        } else if (result.status === 'denied') {
+          // User denied but can ask again - show explanation
+          showToastError('Günlük hatırlatıcılar için bildirim izni gerekli.');
+          notificationService.showNotificationPermissionGuidance(true);
+        } else {
+          // Other error (token generation failed)
+          showToastError('Bildirim kaydedilemedi. Lütfen tekrar deneyin.');
+        }
         throw new Error('Permission not granted');
       }
-      token = registeredToken;
+
+      token = result.token;
       setPushToken(token);
     }
 
@@ -110,6 +142,29 @@ export const NotificationSettings: React.FC = () => {
   }, [pushToken, showToastSuccess, showToastError]);
 
   const handleToggleSwitch = async (isOn: boolean) => {
+    if (isOn) {
+      // Before enabling, check if we should show educational guidance
+      const permissions = await Notifications.getPermissionsAsync();
+
+      if (permissions.status === 'undetermined') {
+        // First time - show educational dialog
+        notificationService.showNotificationPermissionGuidance(true, (granted) => {
+          if (granted) {
+            // Permission granted - proceed with enabling notifications
+            setIsEnabled(true);
+            enableNotifications().catch((error) => {
+              setIsEnabled(false);
+              if ((error as Error).message !== 'Permission not granted') {
+                handleMutationError(error, 'bildirim ayarları');
+              }
+            });
+          }
+          // If denied, do nothing - user can try again later
+        });
+        return;
+      }
+    }
+
     setIsEnabled(isOn); // Optimistic UI update
 
     try {

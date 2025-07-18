@@ -261,7 +261,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hesap</Text>
+          <Text style={styles.sectionTitle}>Hedef</Text>
           <DailyGoalSettings
             currentGoal={profile?.daily_gratitude_goal ?? 3}
             onUpdateGoal={handleDailyGoalUpdate}

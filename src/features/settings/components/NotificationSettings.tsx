@@ -147,7 +147,7 @@ export const NotificationSettings: React.FC = () => {
       const permissions = await Notifications.getPermissionsAsync();
 
       if (permissions.status === 'undetermined') {
-        // First time - show educational dialog
+        // First time - show educational dialog with enhanced messaging
         notificationService.showNotificationPermissionGuidance(true, (granted) => {
           if (granted) {
             // Permission granted - proceed with enabling notifications
@@ -161,6 +161,11 @@ export const NotificationSettings: React.FC = () => {
           }
           // If denied, do nothing - user can try again later
         });
+        return;
+      } else if (permissions.status === 'denied') {
+        // Already denied - show more helpful guidance
+        showToastError('Bildirimleri sistem ayarlarından etkinleştirmeniz gerekiyor.');
+        notificationService.showNotificationPermissionGuidance(false);
         return;
       }
     }
@@ -202,7 +207,7 @@ export const NotificationSettings: React.FC = () => {
     return date.toLocaleTimeString('tr-TR', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true,
+      hour12: false,
     });
   };
 
@@ -259,7 +264,7 @@ export const NotificationSettings: React.FC = () => {
               onChange={onTimeChange}
               textColor={theme.colors.onBackground}
               locale="tr-TR"
-              is24Hour={false}
+              is24Hour={true}
             />
           )}
         </TouchableOpacity>

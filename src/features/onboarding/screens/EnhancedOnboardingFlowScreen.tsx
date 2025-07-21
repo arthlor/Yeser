@@ -10,6 +10,7 @@ import { BackHandler, StyleSheet, View } from 'react-native';
 import CompletionStep from './steps/CompletionStep';
 import GoalSettingStep from './steps/GoalSettingStep';
 import InteractiveDemoStep from './steps/InteractiveDemoStep';
+import NotificationPermissionStep from './steps/NotificationPermissionStep';
 import PersonalizationStep from './steps/PersonalizationStep';
 import WelcomeStep from './steps/WelcomeStep';
 import { logger } from '@/utils/debugConfig';
@@ -17,7 +18,14 @@ import { logger } from '@/utils/debugConfig';
 import { ScreenLayout } from '@/shared/components/layout';
 
 // Define onboarding steps
-const ONBOARDING_STEPS = ['welcome', 'demo', 'goal', 'personalization', 'completion'] as const;
+const ONBOARDING_STEPS = [
+  'welcome',
+  'demo',
+  'goal',
+  'personalization',
+  'notifications',
+  'completion',
+] as const;
 
 type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
@@ -178,6 +186,9 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
             }}
           />
         );
+
+      case 'notifications':
+        return <NotificationPermissionStep {...stepProps} />;
 
       case 'completion':
         return (

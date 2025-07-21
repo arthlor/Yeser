@@ -202,16 +202,17 @@ function showNotificationPermissionGuidance(
   canAskAgain: boolean = true,
   onPermissionResult?: (granted: boolean) => void
 ) {
-  const title = 'Günlük Hatırlatıcılar İçin İzin Gerekli';
+  const title = canAskAgain ? 'Günlük Minnettarlık Hatırlatıcıları 🌱' : 'Bildirim İzni Gerekli';
+
   const message = canAskAgain
-    ? '🌱 Günlük minnet alışkanlığınızı desteklemek için bildirim izni gerekiyor.\n\n• Her gün aynı saatte nazik hatırlatıcılar\n• Minnet yazmayı unutmanıza engel olur\n• İstediğiniz zaman kapatabilirsiniz'
-    : '⚠️ Bildirimler için izin verilmedi.\n\nHatırlatıcıları etkinleştirmek için:\n1. Ayarlara git\n2. Bildirimler bölümünü bul\n3. Bu uygulamayı etkinleştir';
+    ? 'Minnettarlık alışkanlığını sürdürmek için günlük hatırlatıcılar göndermek istiyoruz.\n\n✨ Faydaları:\n• Her gün aynı saatte nazik hatırlatıcı\n• Minnettarlık pratiğini unutmazsın\n• İstediğin zaman ayarlarından kapatabilirsin\n• Daha pozitif ve mutlu bir yaşam\n\nİzin vermek ister misin?'
+    : 'Günlük hatırlatıcıları etkinleştirmek için bildirim izni gerekiyor.\n\n📱 Nasıl etkinleştirilir:\n1. "Ayarlara Git" butonuna dokunun\n2. "Bildirimler" bölümünü bulun\n3. Yeşer uygulamasını etkinleştirin\n4. Bu sayfaya geri dönün\n\nHatırlatıcılar sizi daha mutlu hissettirecek! 😊';
 
   const buttons = canAskAgain
     ? [
         { text: 'Şimdi Değil', style: 'cancel' as const },
         {
-          text: 'İzin Ver',
+          text: 'Evet, Etkinleştir',
           onPress: async () => {
             const result = await Notifications.requestPermissionsAsync();
             onPermissionResult?.(result.status === 'granted');
@@ -219,7 +220,7 @@ function showNotificationPermissionGuidance(
         },
       ]
     : [
-        { text: 'Tamam', style: 'cancel' as const },
+        { text: 'Belki Sonra', style: 'cancel' as const },
         { text: 'Ayarlara Git', onPress: openNotificationSettings },
       ];
 

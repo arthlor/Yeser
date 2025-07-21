@@ -130,6 +130,8 @@ module.exports = {
       'android.permission.WRITE_EXTERNAL_STORAGE',
       // 🔥 FCM Permissions
       'com.google.android.c2dm.permission.RECEIVE',
+      // 🔥 Android 13+ Notification Permission
+      'android.permission.POST_NOTIFICATIONS',
     ],
     intentFilters: [
       {

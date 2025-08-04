@@ -203,7 +203,7 @@ const TermsOfServiceScreen: React.FC = () => {
               accessibilityLabel="E-posta ile iletişime geç"
               accessibilityHint="Kullanım koşulları hakkında soru sormak için e-posta gönder"
             >
-              <Text style={styles.contactLink}>E-posta: anilkaraca140@gmail.com</Text>
+              <Text style={styles.contactLink}>E-posta: yeserapp@gmail.com</Text>
             </TouchableOpacity>
             <Text style={styles.paragraph}>
               Sorularınızı en geç 5 iş günü içinde yanıtlamaya çalışırız.

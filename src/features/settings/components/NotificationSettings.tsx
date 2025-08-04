@@ -90,23 +90,25 @@ export const NotificationSettings: React.FC = () => {
           setIsEnabled(false);
         }
 
-        // Set selected time with validation
+        // Set selected time with validation (hour-only format for Turkish time)
         if (!isCancelled && isMountedRef.current) {
           if (profile.notification_time) {
             const [hour] = profile.notification_time.split(':').map(Number);
             if (hour >= 0 && hour <= 23) {
               const date = new Date();
               date.setHours(hour);
-              date.setMinutes(0); // 🔧 FIX: Always use :00 minutes
+              date.setMinutes(0); // Always use :00 minutes for hour-only notifications
               date.setSeconds(0);
+              date.setMilliseconds(0);
               setSelectedTime(date);
             }
           } else {
-            // Default time if none is set (9:00 AM)
+            // Default time if none is set (09:00 - 24-hour format)
             const date = new Date();
             date.setHours(9);
             date.setMinutes(0);
             date.setSeconds(0);
+            date.setMilliseconds(0);
             setSelectedTime(date);
           }
         }
@@ -174,7 +176,7 @@ export const NotificationSettings: React.FC = () => {
       }
 
       // Update notification time and check for errors
-      // 🔧 FIX: Store as HH:00 format (hours only) to match backend logic
+      // Store as 24-hour HH:00 format (Turkish time, hours only) to match backend logic
       const timeString = `${selectedTime.getHours().toString().padStart(2, '0')}:00`;
       const updateResult = await notificationService.updateNotificationTime(timeString);
       if (updateResult.error) {
@@ -305,22 +307,23 @@ export const NotificationSettings: React.FC = () => {
       setIsLoading(true);
 
       try {
-        // 🔧 FIX: Always set minutes to :00 for hourly notifications
+        // Always normalize to hour-only (XX:00) for consistent Turkish hour-based notifications
         const adjustedTime = new Date(newTime);
         adjustedTime.setMinutes(0);
         adjustedTime.setSeconds(0);
+        adjustedTime.setMilliseconds(0);
 
         // Store previous time for rollback
         const previousTime = selectedTime;
         setSelectedTime(adjustedTime); // Optimistic update
 
         try {
-          // Store as HH:00 format (hours only)
+          // Store as 24-hour format (HH:00) for Turkish time
           const timeString = `${adjustedTime.getHours().toString().padStart(2, '0')}:00`;
           await notificationService.updateNotificationTime(timeString);
 
           if (isMountedRef.current) {
-            showToastSuccess('Bildirim saati güncellendi.');
+            showToastSuccess(`Hatırlatıcı saati ${timeString} olarak güncellendi.`);
           }
         } catch (error) {
           if (isMountedRef.current) {
@@ -339,8 +342,9 @@ export const NotificationSettings: React.FC = () => {
   );
 
   const formatTime = useCallback((date: Date) => {
-    // 🔧 FIX: Only show hours, always display as HH:00
-    return `${date.getHours().toString().padStart(2, '0')}:00`;
+    // Format for Turkish 24-hour time display (hour only, minutes always :00)
+    const hour = date.getHours().toString().padStart(2, '0');
+    return `${hour}:00`;
   }, []);
 
   // Computed styles for loading states
@@ -406,9 +410,9 @@ export const NotificationSettings: React.FC = () => {
           activeOpacity={0.8}
         >
           <View style={styles.timePickerLabelContainer}>
-            <Text style={styles.timePickerLabel}>Hatırlatıcı Saati</Text>
+            <Text style={styles.timePickerLabel}>Hatırlatıcı Saati (24 Saat)</Text>
             <Text style={styles.timePickerDescription}>
-              Bildirim almak istediğiniz saati seçin.
+              Günlük hatırlatıcı için sadece saat seçin (dakika otomatik olarak :00).
             </Text>
           </View>
           <ThemedButton
@@ -428,7 +432,7 @@ export const NotificationSettings: React.FC = () => {
               textColor={theme.colors.onBackground}
               locale="tr-TR"
               is24Hour={true}
-              // 🔧 Note: Minutes will be automatically set to :00
+              // Turkish 24-hour format with hour-only selection (minutes forced to :00 in onChange)
             />
           )}
         </TouchableOpacity>

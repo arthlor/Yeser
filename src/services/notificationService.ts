@@ -156,7 +156,7 @@ async function saveTokenToBackend(token: string) {
 
 /**
  * Updates the user's preferred notification time in their profile.
- * @param time A string in 'HH:mm' format (e.g., '14:30').
+ * @param time A string in 'HH:00' format (e.g., '14:00') - only hour precision is used.
  * @returns An object indicating success or failure.
  */
 async function updateNotificationTime(time: string | null) {

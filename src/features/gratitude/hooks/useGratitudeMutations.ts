@@ -4,12 +4,16 @@ import {
   deleteStatement,
   editStatement,
 } from '@/api/gratitudeApi';
+// 🔧 FIX: Import streak recalculation function
+import { recalculateUserStreak } from '@/api/streakApi';
 import { queryKeys } from '@/api/queryKeys';
 import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 import { cacheService } from '@/services/cacheService';
 import useAuthStore from '@/store/authStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
+// 🔧 FIX: Import logger for streak error logging
+import { logger } from '@/utils/debugConfig';
 
 // **RACE CONDITION FIX**: Add mutation coordination
 interface MutationLock {
@@ -207,6 +211,20 @@ export const useGratitudeMutations = () => {
 
       handleMutationError(err, 'add gratitude statement');
     },
+    onSuccess: async (_data, _variables, _context) => {
+      if (user?.id) {
+        try {
+          // 🔧 FIX: Recalculate streak BEFORE cache invalidation
+          await recalculateUserStreak();
+        } catch (error) {
+          // Non-blocking: Log streak error but don't fail the gratitude operation
+          logger.error(
+            'Streak recalculation failed after adding statement:',
+            error instanceof Error ? error : new Error(String(error))
+          );
+        }
+      }
+    },
     onSettled: (data, error, variables, context) => {
       if (user?.id && context) {
         // **RACE CONDITION FIX**: Serialize cache invalidation
@@ -237,8 +255,19 @@ export const useGratitudeMutations = () => {
     onError: (err, _variables, _context) => {
       handleMutationError(err, 'edit gratitude statement');
     },
-    onSuccess: (_, { entryDate }) => {
+    onSuccess: async (_, { entryDate }) => {
       if (user?.id) {
+        try {
+          // 🔧 FIX: Recalculate streak BEFORE cache invalidation
+          await recalculateUserStreak();
+        } catch (error) {
+          // Non-blocking: Log streak error but don't fail the gratitude operation
+          logger.error(
+            'Streak recalculation failed after editing statement:',
+            error instanceof Error ? error : new Error(String(error))
+          );
+        }
+
         // **RACE CONDITION FIX**: Serialize cache invalidation
         setTimeout(() => {
           cacheService.invalidateAfterMutation('edit_statement', user.id, { entryDate });
@@ -265,8 +294,19 @@ export const useGratitudeMutations = () => {
     onError: (err, _variables, _context) => {
       handleMutationError(err, 'delete gratitude statement');
     },
-    onSuccess: (_, { entryDate }) => {
+    onSuccess: async (_, { entryDate }) => {
       if (user?.id) {
+        try {
+          // 🔧 FIX: Recalculate streak BEFORE cache invalidation
+          await recalculateUserStreak();
+        } catch (error) {
+          // Non-blocking: Log streak error but don't fail the gratitude operation
+          logger.error(
+            'Streak recalculation failed after deleting statement:',
+            error instanceof Error ? error : new Error(String(error))
+          );
+        }
+
         // **RACE CONDITION FIX**: Serialize cache invalidation
         setTimeout(() => {
           cacheService.invalidateAfterMutation('delete_statement', user.id, { entryDate });
@@ -299,8 +339,19 @@ export const useGratitudeMutations = () => {
     onError: (err, _variables, _context) => {
       handleMutationError(err, 'delete entire gratitude entry');
     },
-    onSuccess: (_, { entryDate }) => {
+    onSuccess: async (_, { entryDate }) => {
       if (user?.id) {
+        try {
+          // 🔧 FIX: Recalculate streak BEFORE cache invalidation
+          await recalculateUserStreak();
+        } catch (error) {
+          // Non-blocking: Log streak error but don't fail the gratitude operation
+          logger.error(
+            'Streak recalculation failed after deleting entire entry:',
+            error instanceof Error ? error : new Error(String(error))
+          );
+        }
+
         // **RACE CONDITION FIX**: Serialize cache invalidation
         setTimeout(() => {
           cacheService.invalidateAfterMutation('delete_entry', user.id, { entryDate });

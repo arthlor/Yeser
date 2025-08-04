@@ -5,7 +5,7 @@
 
 ## 📱 Günlük Zihniyetini Minnettarlıkla Dönüştür
 
-**Yeşer**, sürdürülebilir bir farkındalık pratiği geliştirmene yardımcı olan, özenle tasarlanmış Türkçe minnettarlık günlüğü uygulamasıdır. Günde sadece birkaç dakika ayırarak pozitiflik ve iyi oluş yolculuğuna başla.
+**Yeşer**, sürdürülebilir bir farkındalık pratiği geliştirmene yardımcı olan, özenle tasarlanmış bir minnettarlık günlüğü uygulamasıdır. Günde sadece birkaç dakika ayırarak pozitiflik ve iyi oluş yolculuğuna başla.
 
 ### ✨ Yeşer'i Özel Kılan Nedir
 
@@ -15,7 +15,7 @@
 - **📅 Takvim** - Tüm minnettarlık yolculuğunu bir bakışta gör
 - **💭 Anı Şeridi** - Geçmiş girişleri ziyaret ederek unutulan minnettarlıklarını yeniden keşfet
 - **💡 İlham Verici İpuçları** - İlhama ihtiyacın olduğunda öneriler al
-- **🔔 Nazik Hatırlatıcılar** - 12:00, 14:00, 19:00 ve 21:00'da isteğe bağlı günlük bildirimler
+- **🔔 Nazik Hatırlatıcılar** - İsteğe bağlı günlük bildirimler
 - **🌙 Karanlık & Aydınlık Temalar** - Düşünce zamanın için mükemmel ruh halini seç
 - **🚀 Şimşek Hızında** - Akıcı, duyarlı performans için optimize edildi
 
@@ -46,7 +46,7 @@
 - **Güvenli Kimlik Doğrulama** - Sihirli bağlantı ve Google giriş seçenekleri
 - **Tasarımda Gizli** - Girişlerin tamamen özel ve güvenli
 - **Yerel & Bulut Senkronizasyonu** - Verilerine güvenli tutarken her yerden eriş
-- **KVKV Uyumlu** - Tam veri gizliliği ve silme hakları
+- **KVKK Uyumlu** - Tam veri gizliliği ve silme hakları
 
 ### 🚀 Başlangıç
 
@@ -58,9 +58,9 @@
 
 ### 💝 Minnettarlık Hareketine Katıl
 
-Yeşer ile dönüşümüne bugün başla. Günlük minnettarlık pratiğinin gücünü keşfetmiş binlerce kullanıcıya katıl.
+Yeşer ile dönüşümüne bugün başla. Günlük minnettarlık pratiğinin gücünü keşfet.
 
-**Şimdi indir ve daha pozitif, farkında bir yaşama yolculuğuna başla.**
+**Şimdi indir ve daha pozitif, farkındalıkla dolu bir yaşam yolculuğuna başla.**
 
 ---
 

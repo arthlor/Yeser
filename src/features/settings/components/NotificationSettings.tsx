@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ToggleSwitch from 'toggle-switch-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -12,6 +12,7 @@ import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { notificationService } from '@/services/notificationService';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
+import LoadingState from '@/components/states/LoadingState';
 import { logger } from '@/utils/logger';
 
 export const NotificationSettings: React.FC = () => {
@@ -25,191 +26,351 @@ export const NotificationSettings: React.FC = () => {
   const [pushToken, setPushToken] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  // Effect to get the current push token on mount
+  // Refs for cleanup and race condition prevention
+  const isMountedRef = useRef(true);
+  const operationInProgressRef = useRef(false);
+
+  // Effect to get the current push token on mount with proper cleanup
   useEffect(() => {
+    let isCancelled = false;
+
     const getToken = async () => {
       try {
         const token = await Notifications.getExpoPushTokenAsync();
-        setPushToken(token.data);
+        if (!isCancelled && isMountedRef.current) {
+          setPushToken(token.data);
+        }
       } catch (error) {
-        logger.warn('Could not get push token on initial load.', { error });
+        if (!isCancelled && isMountedRef.current) {
+          logger.warn('Could not get push token on initial load.', { error });
+        }
       }
     };
+
     getToken();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   // Effect to sync component state with user profile and check permissions
   useEffect(() => {
-    if (profile) {
-      const hasNotificationTime = !!profile.notification_time;
+    let isCancelled = false;
 
-      // If profile says notifications are enabled, verify device permissions
-      if (hasNotificationTime) {
-        Notifications.getPermissionsAsync().then((permissions) => {
-          if (permissions.status !== 'granted') {
-            // Profile says enabled but permissions not granted - sync state
-            setIsEnabled(false);
-            logger.warn(
-              'Notification settings out of sync - profile enabled but no device permission'
-            );
-          } else {
-            setIsEnabled(true);
+    const syncProfileState = async () => {
+      if (!profile || !isMountedRef.current) {
+        return;
+      }
+
+      setIsInitializing(true);
+
+      try {
+        const hasNotificationTime = !!profile.notification_time;
+
+        // If profile says notifications are enabled, verify device permissions
+        if (hasNotificationTime) {
+          const permissions = await Notifications.getPermissionsAsync();
+
+          if (!isCancelled && isMountedRef.current) {
+            if (permissions.status !== 'granted') {
+              // Profile says enabled but permissions not granted - sync state
+              setIsEnabled(false);
+              logger.warn(
+                'Notification settings out of sync - profile enabled but no device permission'
+              );
+            } else {
+              setIsEnabled(true);
+            }
           }
-        });
-      } else {
-        setIsEnabled(false);
-      }
+        } else if (!isCancelled && isMountedRef.current) {
+          setIsEnabled(false);
+        }
 
-      if (profile.notification_time) {
-        const [hour, minute] = profile.notification_time.split(':').map(Number);
-        const date = new Date();
-        date.setHours(hour);
-        date.setMinutes(minute);
-        setSelectedTime(date);
-      } else {
-        // Default time if none is set
-        const date = new Date();
-        date.setHours(9);
-        date.setMinutes(0);
-        setSelectedTime(date);
+        // Set selected time with validation
+        if (!isCancelled && isMountedRef.current) {
+          if (profile.notification_time) {
+            const [hour] = profile.notification_time.split(':').map(Number);
+            if (hour >= 0 && hour <= 23) {
+              const date = new Date();
+              date.setHours(hour);
+              date.setMinutes(0); // 🔧 FIX: Always use :00 minutes
+              date.setSeconds(0);
+              setSelectedTime(date);
+            }
+          } else {
+            // Default time if none is set (9:00 AM)
+            const date = new Date();
+            date.setHours(9);
+            date.setMinutes(0);
+            date.setSeconds(0);
+            setSelectedTime(date);
+          }
+        }
+      } catch (error) {
+        if (!isCancelled && isMountedRef.current) {
+          logger.error('Error syncing profile state:', error as Error);
+        }
+      } finally {
+        if (!isCancelled && isMountedRef.current) {
+          setIsInitializing(false);
+        }
       }
-    }
+    };
+
+    syncProfileState();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [profile]);
 
   const enableNotifications = useCallback(async () => {
-    let token = pushToken;
-    if (!token) {
-      const result = await notificationService.registerForPushNotificationsAsync();
+    // Prevent concurrent operations
+    if (operationInProgressRef.current || !isMountedRef.current) {
+      return;
+    }
 
-      if (!result.token) {
-        // Handle different permission scenarios with helpful guidance
-        if (result.status === 'denied' && result.canAskAgain === false) {
-          // User permanently denied - guide to settings
-          showToastError('Bildirimler için sistem ayarlarından izin vermeniz gerekiyor.');
-          notificationService.showNotificationPermissionGuidance(false);
-        } else if (result.status === 'denied') {
-          // User denied but can ask again - show explanation
-          showToastError('Günlük hatırlatıcılar için bildirim izni gerekli.');
-          notificationService.showNotificationPermissionGuidance(true);
-        } else {
-          // Other error (token generation failed)
-          showToastError('Bildirim kaydedilemedi. Lütfen tekrar deneyin.');
+    operationInProgressRef.current = true;
+    setIsLoading(true);
+
+    try {
+      let token = pushToken;
+      if (!token) {
+        const result = await notificationService.registerForPushNotificationsAsync();
+
+        if (!result.token) {
+          // Handle different permission scenarios with helpful guidance
+          if (result.status === 'denied' && result.canAskAgain === false) {
+            // User permanently denied - guide to settings
+            showToastError('Bildirimler için sistem ayarlarından izin vermeniz gerekiyor.');
+            notificationService.showNotificationPermissionGuidance(false);
+          } else if (result.status === 'denied') {
+            // User denied but can ask again - show explanation
+            showToastError('Günlük hatırlatıcılar için bildirim izni gerekli.');
+            notificationService.showNotificationPermissionGuidance(true);
+          } else {
+            // Other error (token generation failed)
+            showToastError('Bildirim kaydedilemedi. Lütfen tekrar deneyin.');
+          }
+          throw new Error('Permission not granted');
         }
-        throw new Error('Permission not granted');
+
+        token = result.token;
+        if (isMountedRef.current) {
+          setPushToken(token);
+        }
       }
 
-      token = result.token;
-      setPushToken(token);
-    }
+      // Save token and check for errors
+      const saveResult = await notificationService.saveTokenToBackend(token);
+      if (saveResult.error) {
+        logger.error('Failed to save push token:', saveResult.error);
+        showToastError('Bildirim kaydedilemedi. Lütfen tekrar deneyin.');
+        throw saveResult.error;
+      }
 
-    // Save token and check for errors
-    const saveResult = await notificationService.saveTokenToBackend(token);
-    if (saveResult.error) {
-      logger.error('Failed to save push token:', saveResult.error);
-      showToastError('Bildirim kaydedilemedi. Lütfen tekrar deneyin.');
-      throw saveResult.error;
-    }
+      // Update notification time and check for errors
+      // 🔧 FIX: Store as HH:00 format (hours only) to match backend logic
+      const timeString = `${selectedTime.getHours().toString().padStart(2, '0')}:00`;
+      const updateResult = await notificationService.updateNotificationTime(timeString);
+      if (updateResult.error) {
+        logger.error('Failed to update notification time:', updateResult.error);
+        showToastError('Bildirim saati güncellenemedi. Lütfen tekrar deneyin.');
+        throw updateResult.error;
+      }
 
-    // Update notification time and check for errors
-    const timeString = `${selectedTime.getHours().toString().padStart(2, '0')}:${selectedTime
-      .getMinutes()
-      .toString()
-      .padStart(2, '0')}`;
-    const updateResult = await notificationService.updateNotificationTime(timeString);
-    if (updateResult.error) {
-      logger.error('Failed to update notification time:', updateResult.error);
-      showToastError('Bildirim saati güncellenemedi. Lütfen tekrar deneyin.');
-      throw updateResult.error;
+      if (isMountedRef.current) {
+        showToastSuccess('Günlük hatırlatıcılar etkinleştirildi.');
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
+      operationInProgressRef.current = false;
     }
-
-    showToastSuccess('Günlük hatırlatıcılar etkinleştirildi.');
   }, [pushToken, selectedTime, showToastError, showToastSuccess]);
 
   const disableNotifications = useCallback(async () => {
-    if (pushToken) {
-      await notificationService.removeTokenFromBackend(pushToken);
+    // Prevent concurrent operations
+    if (operationInProgressRef.current || !isMountedRef.current) {
+      return;
     }
 
-    const updateResult = await notificationService.updateNotificationTime(null);
-    if (updateResult.error) {
-      logger.error('Failed to disable notification time:', updateResult.error);
-      showToastError('Bildirimler devre dışı bırakılamadı. Lütfen tekrar deneyin.');
-      throw updateResult.error;
-    }
-
-    showToastSuccess('Günlük hatırlatıcılar devre dışı bırakıldı.');
-  }, [pushToken, showToastSuccess, showToastError]);
-
-  const handleToggleSwitch = async (isOn: boolean) => {
-    if (isOn) {
-      // Before enabling, check if we should show educational guidance
-      const permissions = await Notifications.getPermissionsAsync();
-
-      if (permissions.status === 'undetermined') {
-        // First time - show educational dialog with enhanced messaging
-        notificationService.showNotificationPermissionGuidance(true, (granted) => {
-          if (granted) {
-            // Permission granted - proceed with enabling notifications
-            setIsEnabled(true);
-            enableNotifications().catch((error) => {
-              setIsEnabled(false);
-              if ((error as Error).message !== 'Permission not granted') {
-                handleMutationError(error, 'bildirim ayarları');
-              }
-            });
-          }
-          // If denied, do nothing - user can try again later
-        });
-        return;
-      } else if (permissions.status === 'denied') {
-        // Already denied - show more helpful guidance
-        showToastError('Bildirimleri sistem ayarlarından etkinleştirmeniz gerekiyor.');
-        notificationService.showNotificationPermissionGuidance(false);
-        return;
-      }
-    }
-
-    setIsEnabled(isOn); // Optimistic UI update
+    operationInProgressRef.current = true;
+    setIsLoading(true);
 
     try {
+      if (pushToken) {
+        await notificationService.removeTokenFromBackend(pushToken);
+      }
+
+      const updateResult = await notificationService.updateNotificationTime(null);
+      if (updateResult.error) {
+        logger.error('Failed to disable notification time:', updateResult.error);
+        showToastError('Bildirimler devre dışı bırakılamadı. Lütfen tekrar deneyin.');
+        throw updateResult.error;
+      }
+
+      if (isMountedRef.current) {
+        showToastSuccess('Günlük hatırlatıcılar devre dışı bırakıldı.');
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
+      operationInProgressRef.current = false;
+    }
+  }, [pushToken, showToastSuccess, showToastError]);
+
+  const handleToggleSwitch = useCallback(
+    async (isOn: boolean) => {
+      // Prevent toggling during operations or initialization
+      if (operationInProgressRef.current || isLoading || isInitializing || !isMountedRef.current) {
+        return;
+      }
+
       if (isOn) {
-        await enableNotifications();
-      } else {
-        await disableNotifications();
-      }
-    } catch (error) {
-      setIsEnabled(!isOn); // Revert on error
-      if ((error as Error).message !== 'Permission not granted') {
-        handleMutationError(error, 'bildirim ayarları');
-      }
-    }
-  };
+        // Before enabling, check if we should show educational guidance
+        const permissions = await Notifications.getPermissionsAsync();
 
-  const onTimeChange = async (_event: unknown, newTime?: Date) => {
-    setShowTimePicker(Platform.OS === 'ios');
-    if (newTime && profile) {
-      setSelectedTime(newTime);
+        if (permissions.status === 'undetermined') {
+          // First time - show educational dialog with enhanced messaging
+          notificationService.showNotificationPermissionGuidance(true, (granted) => {
+            if (granted && isMountedRef.current) {
+              // Permission granted - proceed with enabling notifications
+              setIsEnabled(true);
+              enableNotifications().catch((error) => {
+                if (isMountedRef.current) {
+                  setIsEnabled(false);
+                  if ((error as Error).message !== 'Permission not granted') {
+                    handleMutationError(error, 'bildirim ayarları');
+                  }
+                }
+              });
+            }
+            // If denied, do nothing - user can try again later
+          });
+          return;
+        } else if (permissions.status === 'denied') {
+          // Already denied - show more helpful guidance
+          showToastError('Bildirimleri sistem ayarlarından etkinleştirmeniz gerekiyor.');
+          notificationService.showNotificationPermissionGuidance(false);
+          return;
+        }
+      }
+
+      // Store previous state for rollback
+      const previousState = isEnabled;
+      setIsEnabled(isOn); // Optimistic UI update
+
       try {
-        const timeString = `${newTime.getHours().toString().padStart(2, '0')}:${newTime
-          .getMinutes()
-          .toString()
-          .padStart(2, '0')}`;
-        await notificationService.updateNotificationTime(timeString);
-        showToastSuccess('Bildirim saati güncellendi.');
+        if (isOn) {
+          await enableNotifications();
+        } else {
+          await disableNotifications();
+        }
       } catch (error) {
-        handleMutationError(error, 'bildirim saati güncelleme');
+        if (isMountedRef.current) {
+          setIsEnabled(previousState); // Revert to previous state on error
+          if ((error as Error).message !== 'Permission not granted') {
+            handleMutationError(error, 'bildirim ayarları');
+          }
+        }
       }
-    }
-  };
+    },
+    [
+      isEnabled,
+      isLoading,
+      isInitializing,
+      enableNotifications,
+      disableNotifications,
+      showToastError,
+      handleMutationError,
+    ]
+  );
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('tr-TR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
-  };
+  const onTimeChange = useCallback(
+    async (_event: unknown, newTime?: Date) => {
+      setShowTimePicker(Platform.OS === 'ios');
+
+      if (!newTime || !profile || !isMountedRef.current || operationInProgressRef.current) {
+        return;
+      }
+
+      operationInProgressRef.current = true;
+      setIsLoading(true);
+
+      try {
+        // 🔧 FIX: Always set minutes to :00 for hourly notifications
+        const adjustedTime = new Date(newTime);
+        adjustedTime.setMinutes(0);
+        adjustedTime.setSeconds(0);
+
+        // Store previous time for rollback
+        const previousTime = selectedTime;
+        setSelectedTime(adjustedTime); // Optimistic update
+
+        try {
+          // Store as HH:00 format (hours only)
+          const timeString = `${adjustedTime.getHours().toString().padStart(2, '0')}:00`;
+          await notificationService.updateNotificationTime(timeString);
+
+          if (isMountedRef.current) {
+            showToastSuccess('Bildirim saati güncellendi.');
+          }
+        } catch (error) {
+          if (isMountedRef.current) {
+            setSelectedTime(previousTime); // Revert on error
+            handleMutationError(error, 'bildirim saati güncelleme');
+          }
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
+        operationInProgressRef.current = false;
+      }
+    },
+    [profile, selectedTime, showToastSuccess, handleMutationError]
+  );
+
+  const formatTime = useCallback((date: Date) => {
+    // 🔧 FIX: Only show hours, always display as HH:00
+    return `${date.getHours().toString().padStart(2, '0')}:00`;
+  }, []);
+
+  // Computed styles for loading states
+  const timeButtonStyle = useMemo(() => {
+    return StyleSheet.flatten([styles.timeButton, isLoading ? styles.timeButtonDisabled : {}]);
+  }, [isLoading, styles.timeButton, styles.timeButtonDisabled]);
+
+  const timeButtonTextStyle = useMemo(() => {
+    return StyleSheet.flatten([
+      styles.timeButtonText,
+      isLoading ? styles.timeButtonTextDisabled : {},
+    ]);
+  }, [isLoading, styles.timeButtonText, styles.timeButtonTextDisabled]);
+
+  // Cleanup effect for component unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Show loading state during initialization
+  if (isInitializing) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LoadingState size="small" />
+        <Text style={styles.loadingText}>Bildirim ayarları yükleniyor...</Text>
+      </View>
+    );
+  }
 
   return (
     <View>
@@ -233,6 +394,7 @@ export const NotificationSettings: React.FC = () => {
           size="medium"
           onToggle={handleToggleSwitch}
           animationSpeed={200}
+          disabled={isLoading || isInitializing}
         />
       </View>
 
@@ -250,11 +412,12 @@ export const NotificationSettings: React.FC = () => {
             </Text>
           </View>
           <ThemedButton
-            title={formatTime(selectedTime)}
-            onPress={() => setShowTimePicker(true)}
+            title={isLoading ? 'Güncelleniyor...' : formatTime(selectedTime)}
+            onPress={() => !isLoading && setShowTimePicker(true)}
             variant="outline"
-            style={styles.timeButton}
-            textStyle={styles.timeButtonText}
+            style={timeButtonStyle}
+            textStyle={timeButtonTextStyle}
+            disabled={isLoading}
           />
           {showTimePicker && (
             <DateTimePicker
@@ -265,6 +428,7 @@ export const NotificationSettings: React.FC = () => {
               textColor={theme.colors.onBackground}
               locale="tr-TR"
               is24Hour={true}
+              // 🔧 Note: Minutes will be automatically set to :00
             />
           )}
         </TouchableOpacity>
@@ -343,5 +507,22 @@ const createStyles = (theme: AppTheme) =>
     timeButtonText: {
       ...theme.typography.bodyMedium,
       fontWeight: '600',
+    },
+    timeButtonDisabled: {
+      opacity: 0.6,
+    },
+    timeButtonTextDisabled: {
+      color: theme.colors.onSurfaceVariant,
+    },
+    loadingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.lg,
+    },
+    loadingText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      marginLeft: theme.spacing.sm,
     },
   });

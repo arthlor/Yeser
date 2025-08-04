@@ -330,6 +330,19 @@ class BackgroundSyncService implements InitializableService {
       case 'add_statement': {
         const { addStatement } = await import('@/api/gratitudeApi');
         await addStatement(mutation.data.entryDate as string, mutation.data.statement as string);
+
+        // 🔧 FIX: Recalculate streak after offline gratitude operations
+        try {
+          const { recalculateUserStreak } = await import('@/api/streakApi');
+          await recalculateUserStreak();
+        } catch (error) {
+          // Non-blocking: Log streak error but don't fail the sync operation
+          const { logger } = await import('@/utils/debugConfig');
+          logger.error(
+            'Streak recalculation failed during background sync (add_statement):',
+            error instanceof Error ? error : new Error(String(error))
+          );
+        }
         break;
       }
 
@@ -340,6 +353,19 @@ class BackgroundSyncService implements InitializableService {
           mutation.data.statementIndex as number,
           mutation.data.updatedStatement as string
         );
+
+        // 🔧 FIX: Recalculate streak after offline gratitude operations
+        try {
+          const { recalculateUserStreak } = await import('@/api/streakApi');
+          await recalculateUserStreak();
+        } catch (error) {
+          // Non-blocking: Log streak error but don't fail the sync operation
+          const { logger } = await import('@/utils/debugConfig');
+          logger.error(
+            'Streak recalculation failed during background sync (edit_statement):',
+            error instanceof Error ? error : new Error(String(error))
+          );
+        }
         break;
       }
 
@@ -349,6 +375,19 @@ class BackgroundSyncService implements InitializableService {
           mutation.data.entryDate as string,
           mutation.data.statementIndex as number
         );
+
+        // 🔧 FIX: Recalculate streak after offline gratitude operations
+        try {
+          const { recalculateUserStreak } = await import('@/api/streakApi');
+          await recalculateUserStreak();
+        } catch (error) {
+          // Non-blocking: Log streak error but don't fail the sync operation
+          const { logger } = await import('@/utils/debugConfig');
+          logger.error(
+            'Streak recalculation failed during background sync (delete_statement):',
+            error instanceof Error ? error : new Error(String(error))
+          );
+        }
         break;
       }
 

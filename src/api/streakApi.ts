@@ -60,3 +60,70 @@ export const getStreakData = async (): Promise<Streak | null> => {
     throw handleAPIError(error, 'fetch streak data');
   }
 };
+
+/**
+ * 🔧 FIX: Recalculate user's streak data based on their gratitude entries
+ * Calls the `recalculate_user_streak` RPC function to update streak in database
+ */
+export const recalculateUserStreak = async (): Promise<void> => {
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      throw new Error('No active session');
+    }
+
+    const { user } = sessionData.session;
+    if (!user) {
+      throw new Error('No user found in session for streak recalculation');
+    }
+
+    logger.debug('Recalculating streak for user:', { userId: user.id });
+
+    const { error } = await supabase.rpc('recalculate_user_streak', {
+      p_user_id: user.id,
+    });
+
+    if (error) {
+      throw handleAPIError(new Error(error.message), 'recalculate user streak');
+    }
+
+    logger.debug('Streak recalculation completed successfully');
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    // ⚠️ Important: Don't throw here to avoid blocking gratitude operations
+    // Log the error but allow gratitude operations to continue
+    logger.error('Streak recalculation failed (non-blocking):', error);
+    throw handleAPIError(error, 'recalculate user streak');
+  }
+};
+
+/**
+ * 🔧 FIX: Calculate current streak value for a user
+ * Calls the `calculate_streak` RPC function to get current streak count
+ */
+export const calculateStreakValue = async (): Promise<number> => {
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      throw new Error('No active session');
+    }
+
+    const { user } = sessionData.session;
+    if (!user) {
+      throw new Error('No user found in session for streak calculation');
+    }
+
+    const { data, error } = await supabase.rpc('calculate_streak', {
+      p_user_id: user.id,
+    });
+
+    if (error) {
+      throw handleAPIError(new Error(error.message), 'calculate streak value');
+    }
+
+    return data || 0;
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'calculate streak value');
+  }
+};

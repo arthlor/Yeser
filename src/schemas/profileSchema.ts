@@ -52,7 +52,11 @@ export const updateProfileSchema = z.object({
   daily_gratitude_goal: z.number().int().positive().optional().nullable(),
   useVariedPrompts: z.boolean().optional(),
   enableReminders: z.boolean().optional(),
-  notification_time: z.string().nullable().optional(),
+  notification_time: z
+    .string()
+    .regex(/^\d{2}:00(:\d{2})?$/, 'Notification time must be in HH:00 or HH:00:SS format')
+    .nullable()
+    .optional(),
   timezone: z.string().nullable().optional(),
 });
 

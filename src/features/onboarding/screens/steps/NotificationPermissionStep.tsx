@@ -79,7 +79,7 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
         }
 
         // Set default notification time (9:00 AM) so settings toggle shows as enabled
-        const defaultTime = '09:00';
+        const defaultTime = '09:00'; // 🔧 FIX: Hour-only format
         const timeUpdateResult = await notificationService.updateNotificationTime(defaultTime);
 
         if (timeUpdateResult.error) {

@@ -66,7 +66,7 @@ Yeşer ile dönüşümüne bugün başla. Günlük minnettarlık pratiğinin gü
 
 ### 📞 Destek & Geri Bildirim
 
-- **E-posta**: anilkaraca140@gmail.com
+- **E-posta**: yeserapp@gmail.com
 - **Gizlilik Politikası**: Uygulama içinde mevcut
 - **Hizmet Şartları**: Uygulama içinde mevcut
 

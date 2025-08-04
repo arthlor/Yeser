@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ToggleSwitch from 'toggle-switch-react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Notifications from 'expo-notifications';
 
@@ -25,7 +24,7 @@ export const NotificationSettings: React.FC = () => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [pushToken, setPushToken] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState(new Date());
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showHourPicker, setShowHourPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -90,25 +89,23 @@ export const NotificationSettings: React.FC = () => {
           setIsEnabled(false);
         }
 
-        // Set selected time with validation (hour-only format for Turkish time)
+        // Set selected time with validation
         if (!isCancelled && isMountedRef.current) {
           if (profile.notification_time) {
             const [hour] = profile.notification_time.split(':').map(Number);
             if (hour >= 0 && hour <= 23) {
               const date = new Date();
               date.setHours(hour);
-              date.setMinutes(0); // Always use :00 minutes for hour-only notifications
+              date.setMinutes(0); // 🔧 FIX: Always use :00 minutes
               date.setSeconds(0);
-              date.setMilliseconds(0);
               setSelectedTime(date);
             }
           } else {
-            // Default time if none is set (09:00 - 24-hour format)
+            // Default time if none is set (9:00 AM)
             const date = new Date();
             date.setHours(9);
             date.setMinutes(0);
             date.setSeconds(0);
-            date.setMilliseconds(0);
             setSelectedTime(date);
           }
         }
@@ -176,7 +173,7 @@ export const NotificationSettings: React.FC = () => {
       }
 
       // Update notification time and check for errors
-      // Store as 24-hour HH:00 format (Turkish time, hours only) to match backend logic
+      // 🔧 FIX: Store as HH:00 format (hours only) to match backend logic
       const timeString = `${selectedTime.getHours().toString().padStart(2, '0')}:00`;
       const updateResult = await notificationService.updateNotificationTime(timeString);
       if (updateResult.error) {
@@ -295,11 +292,11 @@ export const NotificationSettings: React.FC = () => {
     ]
   );
 
-  const onTimeChange = useCallback(
-    async (_event: unknown, newTime?: Date) => {
-      setShowTimePicker(Platform.OS === 'ios');
+  const onHourSelect = useCallback(
+    async (hour: number) => {
+      setShowHourPicker(false);
 
-      if (!newTime || !profile || !isMountedRef.current || operationInProgressRef.current) {
+      if (!profile || !isMountedRef.current || operationInProgressRef.current) {
         return;
       }
 
@@ -307,8 +304,9 @@ export const NotificationSettings: React.FC = () => {
       setIsLoading(true);
 
       try {
-        // Always normalize to hour-only (XX:00) for consistent Turkish hour-based notifications
-        const adjustedTime = new Date(newTime);
+        // Create new date with selected hour in Turkish timezone
+        const adjustedTime = new Date();
+        adjustedTime.setHours(hour);
         adjustedTime.setMinutes(0);
         adjustedTime.setSeconds(0);
         adjustedTime.setMilliseconds(0);
@@ -318,12 +316,12 @@ export const NotificationSettings: React.FC = () => {
         setSelectedTime(adjustedTime); // Optimistic update
 
         try {
-          // Store as 24-hour format (HH:00) for Turkish time
-          const timeString = `${adjustedTime.getHours().toString().padStart(2, '0')}:00`;
+          // Store as HH:00 format (hours only) for Turkish time
+          const timeString = `${hour.toString().padStart(2, '0')}:00`;
           await notificationService.updateNotificationTime(timeString);
 
           if (isMountedRef.current) {
-            showToastSuccess(`Hatırlatıcı saati ${timeString} olarak güncellendi.`);
+            showToastSuccess('Bildirim saati güncellendi.');
           }
         } catch (error) {
           if (isMountedRef.current) {
@@ -342,9 +340,16 @@ export const NotificationSettings: React.FC = () => {
   );
 
   const formatTime = useCallback((date: Date) => {
-    // Format for Turkish 24-hour time display (hour only, minutes always :00)
-    const hour = date.getHours().toString().padStart(2, '0');
-    return `${hour}:00`;
+    // 🔧 FIX: Only show hours, always display as HH:00 in Turkish time
+    return `${date.getHours().toString().padStart(2, '0')}:00`;
+  }, []);
+
+  // Generate 24-hour options for Turkish time (00:00 to 23:00)
+  const hourOptions = useMemo(() => {
+    return Array.from({ length: 24 }, (_, i) => ({
+      value: i,
+      label: `${i.toString().padStart(2, '0')}:00`,
+    }));
   }, []);
 
   // Computed styles for loading states
@@ -406,37 +411,81 @@ export const NotificationSettings: React.FC = () => {
       {isEnabled && (
         <TouchableOpacity
           style={styles.timePickerRow}
-          onPress={() => setShowTimePicker(true)}
+          onPress={() => setShowHourPicker(true)}
           activeOpacity={0.8}
         >
           <View style={styles.timePickerLabelContainer}>
-            <Text style={styles.timePickerLabel}>Hatırlatıcı Saati (24 Saat)</Text>
+            <Text style={styles.timePickerLabel}>Hatırlatıcı Saati</Text>
             <Text style={styles.timePickerDescription}>
-              Günlük hatırlatıcı için sadece saat seçin (dakika otomatik olarak :00).
+              Bildirim almak istediğiniz saati seçin.
             </Text>
           </View>
           <ThemedButton
             title={isLoading ? 'Güncelleniyor...' : formatTime(selectedTime)}
-            onPress={() => !isLoading && setShowTimePicker(true)}
+            onPress={() => !isLoading && setShowHourPicker(true)}
             variant="outline"
             style={timeButtonStyle}
             textStyle={timeButtonTextStyle}
             disabled={isLoading}
           />
-          {showTimePicker && (
-            <DateTimePicker
-              value={selectedTime}
-              mode="time"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={onTimeChange}
-              textColor={theme.colors.onBackground}
-              locale="tr-TR"
-              is24Hour={true}
-              // Turkish 24-hour format with hour-only selection (minutes forced to :00 in onChange)
-            />
-          )}
         </TouchableOpacity>
       )}
+
+      {/* Custom Hour Picker Modal for Turkish time (24-hour format, hours only) */}
+      <Modal
+        visible={showHourPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowHourPicker(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowHourPicker(false)}
+        >
+          <View style={styles.modalContainer}>
+            <TouchableOpacity activeOpacity={1} style={styles.pickerContainer}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Bildirim Saati Seçin</Text>
+                <Text style={styles.pickerSubtitle}>
+                  Sadece saat seçin (dakikalar otomatik olarak :00 olacak)
+                </Text>
+              </View>
+
+              <ScrollView style={styles.hourScrollView} showsVerticalScrollIndicator={false}>
+                {hourOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.hourOption,
+                      selectedTime.getHours() === option.value && styles.selectedHourOption,
+                    ]}
+                    onPress={() => onHourSelect(option.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.hourOptionText,
+                        selectedTime.getHours() === option.value && styles.selectedHourOptionText,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <View style={styles.pickerActions}>
+                <ThemedButton
+                  title="İptal"
+                  onPress={() => setShowHourPicker(false)}
+                  variant="outline"
+                  style={styles.cancelButton}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -528,5 +577,78 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
       marginLeft: theme.spacing.sm,
+    },
+    // Custom hour picker modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: theme.colors.scrim,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContainer: {
+      width: '85%',
+      maxWidth: 400,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      elevation: 8,
+      shadowColor: theme.colors.onSurface,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+    },
+    pickerContainer: {
+      maxHeight: '70%',
+    },
+    pickerHeader: {
+      padding: theme.spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outlineVariant,
+    },
+    pickerTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
+      textAlign: 'center',
+      marginBottom: theme.spacing.xs,
+    },
+    pickerSubtitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    hourScrollView: {
+      maxHeight: 300,
+      padding: theme.spacing.sm,
+    },
+    hourOption: {
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      borderRadius: theme.borderRadius.md,
+      marginVertical: theme.spacing.xs / 2,
+    },
+    selectedHourOption: {
+      backgroundColor: theme.colors.primaryContainer,
+    },
+    hourOptionText: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurface,
+      textAlign: 'center',
+      fontWeight: '500',
+      fontSize: 18,
+    },
+    selectedHourOptionText: {
+      color: theme.colors.onPrimaryContainer,
+      fontWeight: '600',
+    },
+    pickerActions: {
+      padding: theme.spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.outlineVariant,
+      flexDirection: 'row',
+      justifyContent: 'center',
+    },
+    cancelButton: {
+      minWidth: 120,
     },
   });

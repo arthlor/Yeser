@@ -49,7 +49,7 @@
       "ios": {
         "buildConfiguration": "Release",
         "credentialsSource": "remote",
-        "distribution": "internal"
+        "distribution": "store"
       }
     },
     "production-aab": {

@@ -40,8 +40,8 @@ const ENV_MAP = {
     name: 'Yeşer',
     appId: makeId(''),
     scheme: 'yeser',
-    iosClientId: '<PASTE_YOUR_PRODUCTION_IOS_CLIENT_ID_HERE>',
-    reversedIosClientId: '<PASTE_YOUR_PRODUCTION_REVERSED_IOS_CLIENT_ID_HERE>',
+    iosClientId: '384355046895-d6l39k419j64r0ur9l5jp7qr0dk28o3n.apps.googleusercontent.com',
+    reversedIosClientId: 'com.googleusercontent.apps.384355046895-d6l39k419j64r0ur9l5jp7qr0dk28o3n',
   },
 };
 

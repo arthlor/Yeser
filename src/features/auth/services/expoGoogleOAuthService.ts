@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import { type DiscoveryDocument, makeRedirectUri } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { encode as encodeBase64 } from 'base64-arraybuffer';
+import * as Crypto from 'expo-crypto';
 import { logger } from '@/utils/debugConfig';
 import { analyticsService } from '@/services/analyticsService';
 import { atomicOperationManager } from '../utils/atomicOperations';
@@ -138,20 +139,27 @@ export class ExpoGoogleOAuthService {
 
             const clientIdSuffix = clientId.replace('.apps.googleusercontent.com', '');
             const nativeGoogleScheme = `com.googleusercontent.apps.${clientIdSuffix}`;
+            const nativePath =
+              Platform.OS === 'android' ? '/oauth2redirect/google' : '/oauthredirect';
             const redirectUri = makeRedirectUri({
-              // Use installed-app redirect for Google on mobile
-              native: `${nativeGoogleScheme}:/oauthredirect`,
+              // Use installed-app redirect for Google on mobile (Android path differs)
+              native: `${nativeGoogleScheme}:${nativePath}`,
             });
 
             const nonce = this.generateNonce();
 
             // Build the authorization URL manually to ensure no PKCE params are included
+            // PKCE for Authorization Code flow (recommended for native apps)
+            const codeVerifier = this.generateCodeVerifier();
+            const codeChallenge = await this.sha256ToBase64Url(codeVerifier);
+
             const params = new URLSearchParams({
               client_id: clientId,
               redirect_uri: redirectUri,
-              response_type: 'id_token',
+              response_type: 'code',
               scope: 'openid email profile',
-              nonce,
+              code_challenge: codeChallenge,
+              code_challenge_method: 'S256',
               prompt: 'consent',
             });
 
@@ -184,15 +192,43 @@ export class ExpoGoogleOAuthService {
               return { success: false, error: 'Google kimlik doğrulama başarısız.' };
             }
 
-            // Google returns id_token in URL fragment after '#'
-            const url = new URL(finalUrl.replace('#', '?'));
-            const idTokenFromUrl = url.searchParams.get('id_token');
+            // Google returns authorization code as query param
+            const url = new URL(finalUrl);
+            const authCode = url.searchParams.get('code');
 
-            if (!idTokenFromUrl) {
-              return { success: false, error: 'Google ID token alınamadı.' };
+            if (!authCode) {
+              return { success: false, error: 'Google yetkilendirme kodu alınamadı.' };
             }
 
-            const idToken = String(idTokenFromUrl);
+            // Exchange code for tokens
+            const tokenParams = new URLSearchParams({
+              client_id: clientId,
+              code: authCode,
+              redirect_uri: redirectUri,
+              grant_type: 'authorization_code',
+              code_verifier: codeVerifier,
+            });
+
+            const tokenResponse = await fetch(discovery.tokenEndpoint as string, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: tokenParams.toString(),
+            });
+
+            if (!tokenResponse.ok) {
+              return { success: false, error: 'Google token değişimi başarısız.' };
+            }
+
+            const tokenJson = (await tokenResponse.json()) as {
+              id_token?: string;
+              access_token?: string;
+              refresh_token?: string;
+            };
+
+            const idToken = tokenJson.id_token;
+            if (!idToken) {
+              return { success: false, error: 'Google ID token alınamadı.' };
+            }
 
             // 2) Exchange with Supabase
             const { data, error } = await supabase.auth.signInWithIdToken({
@@ -304,6 +340,23 @@ export class ExpoGoogleOAuthService {
     }
     const base64 = encodeBase64(bytes.buffer);
     return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+
+  private generateCodeVerifier(): string {
+    // 43-128 chars URL-safe
+    const bytes = new Uint8Array(32);
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+    const base64 = encodeBase64(bytes.buffer);
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+
+  private async sha256ToBase64Url(input: string): Promise<string> {
+    const digest = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, input, {
+      encoding: Crypto.CryptoEncoding.BASE64,
+    });
+    return digest.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
   }
 }
 

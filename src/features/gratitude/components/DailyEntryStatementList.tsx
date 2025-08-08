@@ -35,7 +35,7 @@ const StatementItemWrapper: React.FC<{
   index: number;
   styles: ReturnType<typeof createStyles>;
   theme: AppTheme;
-}> = React.memo(({ item, index, styles, theme }) => {
+}> = React.memo(({ item, index, styles, theme: _theme }) => {
   // Create individual coordinated animations for each item
   const itemAnimations = useCoordinatedAnimations();
 
@@ -74,9 +74,7 @@ const StatementItemWrapper: React.FC<{
         // Accessibility
         accessibilityLabel={`Minnet: ${item}`}
         hapticFeedback={false}
-        style={{
-          marginBottom: theme.spacing.sm,
-        }}
+        style={styles.statementCardMargin}
         // 🚫 REMOVED: Edit/delete functionality to prevent conflicts
         // isEditing, onEdit, onDelete, onCancel, onSave removed
         // All editing is handled by the parent DailyEntryScreen
@@ -211,6 +209,9 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
+    statementCardMargin: {
+      marginBottom: theme.spacing.sm,
+    },
     container: {
       flex: 1,
     },

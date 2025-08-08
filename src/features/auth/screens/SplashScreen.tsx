@@ -1,5 +1,5 @@
 // src/screens/EnhancedSplashScreen.tsx
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
 import LottieView from 'lottie-react-native';
 
@@ -131,17 +131,16 @@ const EnhancedSplashScreen: React.FC = () => {
 
   const currentTip = GRATITUDE_TIPS[currentTipIndex];
 
+  // Memoized animated style to avoid inline objects and satisfy hook deps
+  const tipContainerAnimatedStyle = useMemo(() => ({ opacity: tipOpacity }), [tipOpacity]);
+  const contentAnimatedStyle = useMemo(
+    () => ({ opacity: animations.fadeAnim, transform: animations.entranceTransform }),
+    [animations.fadeAnim, animations.entranceTransform]
+  );
+
   return (
     <ScreenLayout scrollable={false} edges={['top']} edgeToEdge={true} style={styles.container}>
-      <Animated.View
-        style={[
-          styles.content,
-          {
-            opacity: animations.fadeAnim,
-            transform: animations.entranceTransform,
-          },
-        ]}
-      >
+      <Animated.View style={[styles.content, contentAnimatedStyle]}>
         {/* Background Gradient Overlay */}
         <View style={styles.backgroundOverlay} />
 
@@ -176,7 +175,7 @@ const EnhancedSplashScreen: React.FC = () => {
           </View>
 
           {/* **NEW**: Rotating Gratitude Tips Section */}
-          <Animated.View style={[styles.tipContainer, { opacity: tipOpacity }]}>
+          <Animated.View style={[styles.tipContainer, tipContainerAnimatedStyle]}>
             <Text style={styles.tipTitle}>{currentTip.title}</Text>
             <Text style={styles.tipDescription}>{currentTip.description}</Text>
           </Animated.View>

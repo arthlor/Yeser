@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Animated,
   Dimensions,
   Platform,
@@ -507,6 +508,7 @@ export const createSharedStyles = (
 export const useStatementCardAnimations = () => {
   // **ANIMATION COORDINATION COMPLETED**: Use centralized coordinated system
   const coordinatedAnimations = useCoordinatedAnimations();
+  const { reducedMotion } = useReducedMotion();
 
   /**
    * **ANIMATION SIMPLIFICATION COMPLETED**:
@@ -519,6 +521,30 @@ export const useStatementCardAnimations = () => {
    */
 
   // STABLE OBJECT - COORDINATED API
+  useEffect(() => {
+    if (reducedMotion) {
+      const scale: Animated.Value | undefined = (
+        coordinatedAnimations as unknown as {
+          scaleAnim?: Animated.Value;
+        }
+      ).scaleAnim;
+      const fade: Animated.Value | undefined = (
+        coordinatedAnimations as unknown as {
+          fadeAnim?: Animated.Value;
+        }
+      ).fadeAnim;
+      const opacity: Animated.Value | undefined = (
+        coordinatedAnimations as unknown as {
+          opacityAnim?: Animated.Value;
+        }
+      ).opacityAnim;
+
+      scale?.setValue(1);
+      fade?.setValue(1);
+      opacity?.setValue(1);
+    }
+  }, [reducedMotion, coordinatedAnimations]);
+
   return useMemo(
     () => ({
       // Use coordinated animation values
@@ -526,21 +552,22 @@ export const useStatementCardAnimations = () => {
       fadeAnim: coordinatedAnimations.fadeAnim,
       opacityAnim: coordinatedAnimations.opacityAnim,
 
-      // Use coordinated animation methods
-      animatePressIn: coordinatedAnimations.animatePressIn,
-      animatePressOut: coordinatedAnimations.animatePressOut,
-      animateEntrance: coordinatedAnimations.animateEntrance,
+      // Use coordinated animation methods (no-op when reduced motion is enabled)
+      animatePressIn: reducedMotion ? () => {} : coordinatedAnimations.animatePressIn,
+      animatePressOut: reducedMotion ? () => {} : coordinatedAnimations.animatePressOut,
+      animateEntrance: reducedMotion ? () => {} : coordinatedAnimations.animateEntrance,
     }),
-    [coordinatedAnimations]
+    [coordinatedAnimations, reducedMotion]
   );
 };
 
 // 🎵 ENHANCED HAPTIC FEEDBACK SYSTEM
 export const useHapticFeedback = (enabled = true) => {
+  const { reducedMotion } = useReducedMotion();
   const triggerHaptic = (
     type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' | 'selection' = 'light'
   ) => {
-    if (!enabled || Platform.OS === 'web') {
+    if (!enabled || Platform.OS === 'web' || reducedMotion) {
       return;
     }
 
@@ -570,6 +597,32 @@ export const useHapticFeedback = (enabled = true) => {
   };
 
   return { triggerHaptic };
+};
+
+// ♿ REDUCED MOTION SUPPORT
+export const useReducedMotion = () => {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((value) => {
+      if (isMounted) {
+        setReducedMotion(Boolean(value));
+      }
+    });
+
+    // Listener compatibility across RN versions
+    const handler = (value: boolean) => setReducedMotion(Boolean(value));
+    const subscription: { remove?: () => void } | undefined = // @ts-ignore - older RN types
+    AccessibilityInfo.addEventListener?.('reduceMotionChanged', handler);
+
+    return () => {
+      isMounted = false;
+      subscription?.remove?.();
+    };
+  }, []);
+
+  return { reducedMotion };
 };
 
 // 🛠️ ENHANCED UTILITY FUNCTIONS

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -40,6 +40,8 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
 
   // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
   const animations = useCoordinatedAnimations();
+
+  // hero card style will be computed after currentMilestone is available
 
   const getCurrentMilestone = useCallback((): AdvancedMilestone => {
     return (
@@ -116,6 +118,18 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
   const progressPercentage = getProgressPercentage();
   const unlockedMilestones = ADVANCED_MILESTONES.filter((m) => currentStreak >= m.minDays);
 
+  const heroCardStyle = useMemo(
+    () => ({
+      borderRadius: 0,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderTopColor: theme.colors.outline + '10',
+      borderBottomColor: theme.colors.outline + '10',
+      backgroundColor: currentMilestone.colorPrimary + '08',
+    }),
+    [theme.colors.outline, currentMilestone.colorPrimary]
+  );
+
   return (
     <ScreenLayout
       scrollable={true}
@@ -154,10 +168,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
             variant="elevated"
             density="comfortable"
             elevation="floating"
-            style={{
-              ...styles.heroCard,
-              backgroundColor: currentMilestone.colorPrimary + '08',
-            }}
+            style={heroCardStyle}
           >
             <View style={styles.heroContent}>
               <View style={styles.heroDisplay}>

@@ -1,5 +1,15 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { FlatList, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  RefreshControl,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -188,8 +198,35 @@ const PastEntriesScreen: React.FC = () => {
         ListHeaderComponent={
           <PastEntriesHeader title="Minnet Kayıtlarınız" entryCount={entries.length} />
         }
+        ListFooterComponent={
+          <View style={styles.footerContainer}>
+            <View style={styles.paginationPill}>
+              <Text style={styles.paginationText}>Sayfa {data?.pages?.length || 1}</Text>
+            </View>
+            {isFetchingNextPage ? (
+              <View style={styles.loadingMoreContainer}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+                <Text style={styles.loadingMoreText}>Daha fazla yükleniyor...</Text>
+              </View>
+            ) : hasNextPage ? (
+              <TouchableOpacity
+                style={styles.loadMoreButton}
+                onPress={() => fetchNextPage()}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Daha fazla kayıt yükle"
+              >
+                <Text style={styles.loadMoreText}>Daha fazla</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        }
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        // Ensure iOS adjusts content around keyboard properly
+        contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : undefined}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -240,6 +277,47 @@ const createStyles = (
     list: {
       flex: 1,
       backgroundColor: theme.colors.background,
+    },
+    footerContainer: {
+      paddingTop: theme.spacing.md,
+      paddingBottom: insets.bottom + theme.spacing.lg,
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    paginationPill: {
+      backgroundColor: theme.colors.primaryContainer,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.full,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.primary + '25',
+    },
+    paginationText: {
+      color: theme.colors.onPrimaryContainer,
+      fontWeight: '700',
+      ...theme.typography.labelSmall,
+    },
+    loadingMoreContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    loadingMoreText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+    },
+    loadMoreButton: {
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.full,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '25',
+    },
+    loadMoreText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '700',
     },
   });
 

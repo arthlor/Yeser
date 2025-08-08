@@ -53,9 +53,9 @@ const SkeletonItem: React.FC<SkeletonItemProps> = ({ isRecent }) => {
 
         {/* Content skeleton */}
         <View style={styles.contentSection}>
-          <TextSkeleton height={16} style={{ marginBottom: theme.spacing.xs }} />
-          <TextSkeleton height={16} width="90%" style={{ marginBottom: theme.spacing.xs }} />
-          <TextSkeleton height={16} width="70%" style={{ marginBottom: theme.spacing.xs }} />
+          <TextSkeleton height={16} style={styles.textSkeletonMargin} />
+          <TextSkeleton height={16} width="90%" style={styles.textSkeletonMargin} />
+          <TextSkeleton height={16} width="70%" style={styles.textSkeletonMargin} />
 
           {/* Content meta skeleton */}
           <View style={styles.contentMeta}>
@@ -152,6 +152,9 @@ const createStyles = (theme: AppTheme) =>
     },
     contentSection: {
       marginBottom: theme.spacing.lg,
+    },
+    textSkeletonMargin: {
+      marginBottom: theme.spacing.xs,
     },
     contentMeta: {
       flexDirection: 'row',

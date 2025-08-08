@@ -145,8 +145,13 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
 
   const displayText = isLoading && loadingText ? loadingText : title;
 
+  const pressTransformStyle = React.useMemo(
+    () => ({ transform: animations.pressTransform }),
+    [animations.pressTransform]
+  );
+
   return (
-    <Animated.View style={[{ transform: animations.pressTransform }]}>
+    <Animated.View style={pressTransformStyle}>
       <Pressable
         style={[styles.button, style]}
         onPress={handlePress}

@@ -318,17 +318,24 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     ] as const;
   }, [theme]);
 
+  // Animated styles
+  const headerAnimatedStyle = useMemo(
+    () => ({ opacity: animations.fadeAnim, transform: animations.entranceTransform }),
+    [animations.fadeAnim, animations.entranceTransform]
+  );
+  const mainFadeStyle = useMemo(() => ({ opacity: animations.fadeAnim }), [animations.fadeAnim]);
+  const pressTransformStyle = useMemo(
+    () => ({ transform: animations.pressTransform }),
+    [animations.pressTransform]
+  );
+  const helpSectionAnimatedStyle = useMemo(
+    () => ({ height: animations.heightAnim, opacity: animations.opacityAnim }),
+    [animations.heightAnim, animations.opacityAnim]
+  );
+
   // **SIMPLIFIED HEADER**: Using minimal fade and scale only
   const renderHeader = () => (
-    <Animated.View
-      style={[
-        styles.headerSection,
-        {
-          opacity: animations.fadeAnim,
-          transform: animations.entranceTransform,
-        },
-      ]}
-    >
+    <Animated.View style={[styles.headerSection, headerAnimatedStyle]}>
       <View style={styles.brandContainer}>
         <View style={styles.brandIcon}>
           <Ionicons name="leaf" size={24} color={theme.colors.primary} />
@@ -350,17 +357,9 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   const renderMainContent = () => (
     <View style={styles.mainContent}>
       {/* Outer wrapper for layout animations */}
-      <Animated.View
-        style={{
-          opacity: animations.fadeAnim,
-        }}
-      >
+      <Animated.View style={mainFadeStyle}>
         {/* Inner wrapper for transform animations */}
-        <Animated.View
-          style={{
-            transform: animations.pressTransform,
-          }}
-        >
+        <Animated.View style={pressTransformStyle}>
           <ThemedCard style={styles.contentCard}>
             <View style={styles.cardInner}>
               {!magicLinkSent && (
@@ -459,15 +458,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                   />
 
                   {/* **SIMPLIFIED HELP SECTION**: Using layout transition animation */}
-                  <Animated.View
-                    style={[
-                      styles.helpSection,
-                      {
-                        height: animations.heightAnim,
-                        opacity: animations.opacityAnim,
-                      },
-                    ]}
-                  >
+                  <Animated.View style={[styles.helpSection, helpSectionAnimatedStyle]}>
                     <View style={styles.helpContent}>
                       <Text style={styles.helpTitle}>🔒 Güvenli ve Kolay</Text>
                       <Text style={styles.helpText}>

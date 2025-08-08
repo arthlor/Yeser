@@ -78,7 +78,12 @@ const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
         />
 
         {/* **COORDINATED BUTTON ANIMATION**: Use coordinated press transform */}
-        <Animated.View style={{ transform: animations.pressTransform }}>
+        <Animated.View
+          style={React.useMemo(
+            () => ({ transform: animations.pressTransform }),
+            [animations.pressTransform]
+          )}
+        >
           <TouchableOpacity
             onPress={handleSubmit}
             onPressIn={animations.animatePressIn}

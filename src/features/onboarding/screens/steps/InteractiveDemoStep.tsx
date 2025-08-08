@@ -7,18 +7,12 @@ import { getPrimaryShadow } from '@/themes/utils';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
 import { logger } from '@/utils/debugConfig';
 
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { ScreenSection } from '@/shared/components/layout';
+import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
 import OnboardingGratitudeInput from '@/components/onboarding/OnboardingGratitudeInput';
 import { useGratitudeMutations } from '@/features/gratitude/hooks';
 import { useCurrentPrompt } from '@/features/gratitude/hooks';
@@ -132,35 +126,21 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
           },
         ]}
       >
-        {/* Enhanced Navigation Header with Better Back Button */}
+        {/* Standardized compact header */}
         <ScreenSection>
-          <View style={styles.navigationHeader}>
-            <TouchableOpacity
-              onPress={() => {
-                hapticFeedback.light();
-                onBack();
-              }}
-              style={styles.backButtonContainer}
-              activeOpacity={0.7}
-              accessibilityLabel="Geri dön"
-              accessibilityRole="button"
-              accessibilityHint="Önceki adıma geri dön"
-            >
-              <View style={styles.backButtonInner}>
-                <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
-                <Text style={styles.backButtonText}>Geri</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          <OnboardingNavHeader
+            onBack={() => {
+              hapticFeedback.light();
+              onBack();
+            }}
+          />
         </ScreenSection>
 
         {/* Content Header */}
         <ScreenSection>
           <View style={styles.header}>
             <Text style={styles.title}>Hadi Deneyelim! ✨</Text>
-            <Text style={styles.subtitle}>
-              İlk minnettarlık ifadeni yazarak başlayalım. Küçük bir şey bile olabilir!
-            </Text>
+            <Text style={styles.subtitle}>Küçük bir ifade ile başlayalım.</Text>
           </View>
         </ScreenSection>
 
@@ -176,7 +156,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
               {promptLoading ? (
                 <View style={styles.promptLoading}>
                   <ActivityIndicator size="small" color={theme.colors.primary} />
-                  <Text style={styles.promptText}>İlham yükleniyor...</Text>
+                  <Text style={styles.promptText}>Yükleniyor...</Text>
                 </View>
               ) : (
                 <Text style={styles.promptText}>{getPromptText()}</Text>
@@ -204,10 +184,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
                 <View style={styles.successCard}>
                   <View style={styles.successContent}>
                     <Text style={styles.successTitle}>Harika! 🎉</Text>
-                    <Text style={styles.successText}>
-                      İlk minnettarlık ifadeni yazdın ve kaydettik! Bu senin günlüğündeki ilk gerçek
-                      kayıt. Şimdi uygulamayı nasıl kişiselleştireceğini görelim.
-                    </Text>
+                    <Text style={styles.successText}>İlk minnettarlığın kaydedildi.</Text>
                   </View>
                 </View>
               </Animated.View>
@@ -221,15 +198,13 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             {isAddingStatement && (
               <View style={styles.savingContainer}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={styles.savingText}>İlk minnettarlığın kaydediliyor... ✨</Text>
+                <Text style={styles.savingText}>Kaydediliyor...</Text>
               </View>
             )}
 
             {!hasWrittenStatement && !isAddingStatement && (
               <>
-                <Text style={styles.encouragement}>
-                  💡 İpucu: Küçük şeyler de büyük fark yaratır
-                </Text>
+                <Text style={styles.encouragement}>💡 Küçük şeyler büyük fark yaratır</Text>
               </>
             )}
           </View>
@@ -244,32 +219,7 @@ const createStyles = (theme: AppTheme) =>
     container: {
       flex: 1,
     },
-    navigationHeader: {
-      alignItems: 'flex-start',
-      paddingBottom: theme.spacing.md,
-    },
-    backButtonContainer: {
-      padding: theme.spacing.sm,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.surface + 'CC',
-      borderWidth: 1,
-      borderColor: theme.colors.outline + '20',
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    backButtonInner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    backButtonText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '600',
-    },
+    // Navigation header moved to shared component
     header: {
       alignItems: 'center',
       paddingTop: 0,

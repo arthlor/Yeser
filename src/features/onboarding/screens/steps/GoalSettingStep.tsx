@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
 import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
 import { ScreenSection } from '@/shared/components/layout';
 
@@ -149,32 +150,19 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
   return (
     <OnboardingLayout edgeToEdge={true}>
       <Animated.View style={[styles.container, containerStyle]}>
-        {/* Enhanced Navigation Header with Better Back Button */}
         <ScreenSection>
-          <View style={styles.navigationHeader}>
-            <TouchableOpacity
-              onPress={() => {
-                hapticFeedback.light();
-                onBack();
-              }}
-              style={styles.backButtonContainer}
-              activeOpacity={0.7}
-              accessibilityLabel="Geri dön"
-              accessibilityRole="button"
-              accessibilityHint="Önceki adıma geri dön"
-            >
-              <View style={styles.backButtonInner}>
-                <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
-                <Text style={styles.backButtonText}>Geri</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          <OnboardingNavHeader
+            onBack={() => {
+              hapticFeedback.light();
+              onBack();
+            }}
+          />
         </ScreenSection>
 
         {/* Content Header */}
         <ScreenSection>
           <View style={styles.header}>
-            <Text style={styles.title}>Günlük Hedefin Nedir? 🎯</Text>
+            <Text style={styles.title}>Günlük Hedefin? 🎯</Text>
             <Text style={styles.subtitle}>
               Her gün kaç minnettarlık ifadesi yazmak istiyorsun? Başlangıçta küçük hedefler büyük
               başarıları getirir.
@@ -225,63 +213,36 @@ const createStyles = (theme: AppTheme) =>
     container: {
       flex: 1,
     },
-    navigationHeader: {
-      alignItems: 'flex-start',
-      paddingBottom: theme.spacing.md,
-    },
-    backButtonContainer: {
-      padding: theme.spacing.sm,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.surface + 'CC',
-      borderWidth: 1,
-      borderColor: theme.colors.outline + '20',
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    backButtonInner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    backButtonText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '600',
-    },
-    header: {
-      alignItems: 'center',
-      paddingTop: 0,
-    },
+    // Navigation header moved to shared component
+    header: { alignItems: 'center', paddingTop: 0 },
     title: {
       ...theme.typography.headlineLarge,
       color: theme.colors.text,
       textAlign: 'center',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
     },
     subtitle: {
       ...theme.typography.bodyLarge,
       color: theme.colors.textSecondary,
       textAlign: 'center',
-      lineHeight: 24,
+      lineHeight: 20,
     },
     optionsContainer: {
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.lg,
+      gap: theme.spacing.xs,
+      marginBottom: theme.spacing.md,
     },
     optionCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
-      padding: theme.spacing.lg,
-      borderWidth: 2,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      borderWidth: 1,
       borderColor: theme.colors.outline,
       // Removed shadows for cleaner appearance
     },
     optionCardSelected: {
       borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '08',
+      backgroundColor: theme.colors.primary + '0D',
       // Removed shadows for cleaner appearance
     },
     optionContent: {
@@ -295,9 +256,9 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
     },
     radioButton: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
       borderWidth: 2,
       borderColor: theme.colors.outline,
       marginRight: theme.spacing.md,

@@ -1,5 +1,5 @@
 // src/screens/EnhancedHelpScreen.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -40,6 +40,16 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) =>
     }
   }, [isOpen, animations]);
 
+  const chevronStyle = useMemo(
+    () => ({ transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }),
+    [isOpen]
+  );
+
+  const answerAnimatedStyle = useMemo(
+    () => ({ opacity: animations.opacityAnim }),
+    [animations.opacityAnim]
+  );
+
   const toggleFAQ = () => {
     setIsOpen(!isOpen);
     hapticFeedback.light(); // Provide subtle feedback when toggling
@@ -78,17 +88,13 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) =>
       >
         <Text style={styles.faqQuestion}>{question}</Text>
         {/* **SIMPLIFIED CHEVRON ROTATION**: State-based rotation instead of complex animation */}
-        <View style={{ transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }}>
+        <View style={chevronStyle}>
           <Icon name="chevron-down" size={24} color={theme.colors.primary} />
         </View>
       </TouchableOpacity>
 
       {isOpen && (
-        <Animated.View
-          style={{
-            opacity: animations.opacityAnim,
-          }}
-        >
+        <Animated.View style={answerAnimatedStyle}>
           <Text style={styles.faqAnswer} accessibilityRole="text">
             {answer}
           </Text>
@@ -108,24 +114,24 @@ const EnhancedHelpScreen: React.FC = () => {
 
   const faqs = [
     {
-      question: 'Yeşer uygulaması nedir?',
+      question: 'Yeşer nedir?',
       answer:
-        'Yeşer, günlük minnettarlıklarınızı kaydederek pozitif düşünce alışkanlığı geliştirmenize yardımcı olan bir mobil uygulamadır.',
+        'Yeşer; günlük minnettarlıklarınızı kaydederek olumlu düşünme alışkanlığı geliştirmenize yardımcı olan bir mobil uygulamadır.',
     },
     {
       question: 'Verilerim güvende mi?',
       answer:
-        'Evet, verileriniz güvenli bir şekilde saklanır. Detaylı bilgi için Gizlilik Politikamızı inceleyebilirsiniz.',
+        'Evet. Verileriniz güvenli bir şekilde saklanır. Ayrıntılı bilgi için Gizlilik Politikamızı inceleyebilirsiniz.',
     },
     {
-      question: 'Geri bildirimde nasıl bulunabilirim?',
+      question: 'Geri bildirimi nasıl iletebilirim?',
       answer:
-        'Uygulama hakkındaki düşüncelerinizi ve önerilerinizi yeserapp@gmail.com adresine e-posta göndererek bizimle paylaşabilirsiniz.',
+        'Uygulama hakkındaki düşünce ve önerilerinizi yeserapp@gmail.com adresine e-posta göndererek paylaşabilirsiniz.',
     },
     {
       question: 'Minnettarlık günlüğü tutmanın faydaları nelerdir?',
       answer:
-        'Minnettarlık günlüğü tutmak, ruh halinizi iyileştirebilir, stres seviyenizi düşürebilir, uyku kalitenizi artırabilir ve genel olarak yaşam memnuniyetinizi yükseltebilir. Düzenli olarak minnettarlıklarınızı kaydetmek, olumlu düşünce alışkanlığı geliştirmenize yardımcı olur.',
+        'Minnettarlık günlüğü tutmak; ruh hâlinizi iyileştirebilir, stres seviyenizi azaltabilir, uyku kalitenizi artırabilir ve genel yaşam memnuniyetinizi yükseltebilir. Düzenli kayıt, olumlu düşünme alışkanlığı geliştirmenize yardımcı olur.',
     },
   ];
 
@@ -182,7 +188,7 @@ const EnhancedHelpScreen: React.FC = () => {
             color={theme.colors.onPrimary}
             style={styles.contactButtonIcon}
           />
-          <Text style={styles.contactButtonText}>Destekle İletişime Geç</Text>
+          <Text style={styles.contactButtonText}>Destek ile İletişime Geç</Text>
         </TouchableOpacity>
 
         <Text style={styles.versionText}>Yeşer v1.0.0</Text>

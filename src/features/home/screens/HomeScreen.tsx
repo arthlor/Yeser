@@ -23,7 +23,7 @@ import { safeErrorDisplay } from '@/utils/errorTranslation';
 import { logger } from '@/utils/debugConfig';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Animated, Modal, RefreshControl } from 'react-native';
+import { Animated, Modal, RefreshControl, StyleSheet, View } from 'react-native';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabScreenProps<MainTabParamList, 'HomeTab'>['navigation'],
@@ -146,6 +146,8 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     return throwbackError ? safeErrorDisplay(throwbackError) : null;
   }, [throwbackError]);
 
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <>
       <ScreenLayout
@@ -164,48 +166,52 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
           />
         }
       >
-        <Animated.View
-          style={{
-            opacity: animations.fadeAnim,
-            // **REMOVED TRANSFORM**: Prevents iOS blurriness on streak section
-            // transform: animations.entranceTransform,
-          }}
-        >
-          {/* 1. Hero Section with Streak Info */}
-          <HeroSection
-            greeting={getGreeting()}
-            username={username}
-            currentCount={todaysGratitudeCount}
-            dailyGoal={dailyGoal}
-            currentStreak={streak?.current_streak ?? 0}
-            longestStreak={streak?.longest_streak}
-            onStreakPress={handleStreakPress}
-          />
+        <Animated.View style={StyleSheet.create({ fade: { opacity: animations.fadeAnim } }).fade}>
+          <View style={styles.stack}>
+            {/* 1. Hero Section with Streak Info */}
+            <View style={styles.section}>
+              <HeroSection
+                greeting={getGreeting()}
+                username={username}
+                currentCount={todaysGratitudeCount}
+                dailyGoal={dailyGoal}
+                currentStreak={streak?.current_streak ?? 0}
+                longestStreak={streak?.longest_streak}
+                onStreakPress={handleStreakPress}
+              />
+            </View>
 
-          {/* 2. Daily Inspiration - Replaces Quick Add */}
-          <DailyInspiration currentCount={todaysGratitudeCount} dailyGoal={dailyGoal} />
+            {/* 2. Daily Inspiration - Replaces Quick Add */}
+            <View style={styles.section}>
+              <DailyInspiration currentCount={todaysGratitudeCount} dailyGoal={dailyGoal} />
+            </View>
 
-          {/* 3. Enhanced Action Cards */}
-          <ActionCards
-            currentCount={todaysGratitudeCount}
-            dailyGoal={dailyGoal}
-            onNavigateToEntry={handleNewEntryPress}
-            onNavigateToPastEntries={() => {
-              navigation.navigate('PastEntriesTab');
-            }}
-            onNavigateToCalendar={() => {
-              navigation.navigate('CalendarTab');
-            }}
-            onNavigateToWhyGratitude={handleWhyGratitudePress}
-          />
+            {/* 3. Enhanced Action Cards */}
+            <View style={styles.section}>
+              <ActionCards
+                currentCount={todaysGratitudeCount}
+                dailyGoal={dailyGoal}
+                onNavigateToEntry={handleNewEntryPress}
+                onNavigateToPastEntries={() => {
+                  navigation.navigate('PastEntriesTab');
+                }}
+                onNavigateToCalendar={() => {
+                  navigation.navigate('CalendarTab');
+                }}
+                onNavigateToWhyGratitude={handleWhyGratitudePress}
+              />
+            </View>
 
-          {/* 4. Geçmişten Anılar (Throwback Memories) */}
-          <ThrowbackTeaser
-            throwbackEntry={memoizedThrowbackEntry}
-            isLoading={throwbackLoading}
-            error={translatedThrowbackError}
-            onRefresh={handleThrowbackRefresh}
-          />
+            {/* 4. Geçmişten Anılar (Throwback Memories) */}
+            <View style={styles.section}>
+              <ThrowbackTeaser
+                throwbackEntry={memoizedThrowbackEntry}
+                isLoading={throwbackLoading}
+                error={translatedThrowbackError}
+                onRefresh={handleThrowbackRefresh}
+              />
+            </View>
+          </View>
         </Animated.View>
       </ScreenLayout>
 
@@ -229,3 +235,13 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 EnhancedHomeScreen.displayName = 'EnhancedHomeScreen';
 
 export default EnhancedHomeScreen;
+
+const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
+  StyleSheet.create({
+    stack: {
+      gap: theme.spacing.sm,
+    },
+    section: {
+      marginBottom: theme.spacing.sm,
+    },
+  });

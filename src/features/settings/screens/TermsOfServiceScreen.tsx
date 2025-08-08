@@ -54,7 +54,7 @@ const TermsOfServiceScreen: React.FC = () => {
           <Text
             style={styles.title}
             accessibilityRole="header"
-            accessibilityLabel="Kullanım Koşulları"
+            accessibilityLabel="Kullanım koşulları"
           >
             Kullanım Koşulları
           </Text>
@@ -69,9 +69,9 @@ const TermsOfServiceScreen: React.FC = () => {
         <ThemedCard density="comfortable" elevation="card" style={styles.card}>
           <TermsSection number="1" title="Giriş ve Kabul">
             <Text style={styles.paragraph}>
-              Yeşer mobil uygulamasına hoş geldiniz. Bu Kullanım Koşulları, Uygulamaya erişiminizi
-              ve Uygulamayı kullanımınızı yönetir. Uygulamayı indirerek, yükleyerek veya kullanarak
-              bu Koşullara bağlı kalmayı kabul edersiniz. Bu koşulları kabul etmiyorsanız, lütfen
+              Yeşer mobil uygulamasına hoş geldiniz. Bu Kullanım Koşulları, uygulamaya erişiminizi
+              ve uygulamayı kullanımınızı düzenler. Uygulamayı indirerek, yükleyerek veya kullanarak
+              bu koşullara bağlı kalmayı kabul edersiniz. Koşulları kabul etmiyorsanız lütfen
               uygulamayı kullanmayın.
             </Text>
           </TermsSection>
@@ -95,7 +95,7 @@ const TermsOfServiceScreen: React.FC = () => {
 
           <TermsSection number="3" title="Uygulamanın Kullanımı ve Yaş Sınırı">
             <Text style={styles.paragraph}>
-              Uygulamayı yalnızca yasal amaçlarla ve bu Koşullara uygun olarak kullanmayı kabul
+              Uygulamayı yalnızca yasal amaçlarla ve bu koşullara uygun olarak kullanmayı kabul
               edersiniz. Uygulama 13 yaş ve üzeri kullanıcılar için tasarlanmıştır. 13 yaş altındaki
               kullanıcılar ebeveyn izni olmadan uygulamayı kullanamaz.
             </Text>
@@ -128,10 +128,10 @@ const TermsOfServiceScreen: React.FC = () => {
 
           <TermsSection number="5" title="Fikri Mülkiyet">
             <Text style={styles.paragraph}>
-              Uygulama ve içeriği, özellikleri ve işlevselliği (tüm bilgiler, yazılımlar, metinler,
-              ekranlar, resimler, video ve ses ile bunların tasarımı, seçimi ve düzenlenmesi dahil
-              ancak bunlarla sınırlı olmamak üzere) Yeşer'e aittir ve uluslararası telif hakkı,
-              ticari marka, patent, ticari sır ve diğer fikri mülkiyet yasalarıyla korunmaktadır.
+              Uygulama ve içeriği; bilgileri, yazılımları, metinleri, ekranları, görselleri,
+              videoları, sesleri ve bunların tasarımını, seçimini ve düzenlenmesini kapsar. Tüm bu
+              unsurlar Yeşer’e aittir ve uluslararası telif hakkı, ticari marka, patent, ticari sır
+              ve diğer fikri mülkiyet yasalarıyla korunur.
             </Text>
           </TermsSection>
 
@@ -162,10 +162,10 @@ const TermsOfServiceScreen: React.FC = () => {
 
           <TermsSection number="8" title="Sorumluluğun Sınırlandırılması">
             <Text style={styles.paragraph}>
-              Yasaların izin verdiği azami ölçüde, Yeşer Uygulamayı kullanımınızdan veya
-              kullanamamanızdan kaynaklanan herhangi bir dolaylı, arızi, özel, sonuç olarak ortaya
-              çıkan veya cezai zarardan (kar kaybı, veri kaybı veya itibar kaybı dahil ancak
-              bunlarla sınırlı olmamak üzere) sorumlu olmayacaktır.
+              Yasaların izin verdiği azami ölçüde, Yeşer; uygulamayı kullanımınızdan veya
+              kullanamamanızdan doğan herhangi bir dolaylı, arızi, özel, netice itibarıyla ortaya
+              çıkan ya da cezai zarardan (kâr, veri veya itibar kaybı dahil ancak bunlarla sınırlı
+              olmamak üzere) sorumlu değildir.
             </Text>
           </TermsSection>
 
@@ -187,8 +187,8 @@ const TermsOfServiceScreen: React.FC = () => {
 
           <TermsSection number="11" title="Bu Koşullardaki Değişiklikler">
             <Text style={styles.paragraph}>
-              Bu Koşulları zaman zaman güncelleyebiliriz. Önemli değişiklikler için uygulama içi
-              bildirim göndereceğiz. Revize edilmiş Koşulların yayınlanmasından sonra Uygulamayı
+              Bu koşulları zaman zaman güncelleyebiliriz. Önemli değişiklikler için uygulama içi
+              bildirim göndeririz. Revize edilmiş koşullar yayımlandıktan sonra uygulamayı
               kullanmaya devam etmeniz, değişiklikleri kabul ettiğiniz anlamına gelir.
             </Text>
           </TermsSection>

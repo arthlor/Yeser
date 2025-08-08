@@ -7,13 +7,13 @@ import {
   ActivityIndicator,
   Animated,
   RefreshControl,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ZodError } from 'zod';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ErrorState from '@/shared/components/ui/ErrorState';
@@ -36,6 +36,7 @@ import { analyticsService } from '@/services/analyticsService';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import GratitudeInputBar, { GratitudeInputBarRef } from '../components/GratitudeInputBar';
+import { hapticFeedback } from '@/utils/hapticFeedback';
 
 type DailyEntryScreenRouteProp = RouteProp<MainTabParamList, 'DailyEntryTab'>;
 
@@ -108,12 +109,14 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   } = usePromptText();
 
   // Computed values (after profile data is available)
-  const statements = currentEntry?.statements || [];
+  const statements = useMemo(() => currentEntry?.statements || [], [currentEntry?.statements]);
   const dailyGoal = daily_gratitude_goal || 3;
   const isToday = finalDateString === new Date().toISOString().split('T')[0];
   const progressPercentage = Math.min((statements.length / dailyGoal) * 100, 100);
   const isGoalComplete = statements.length >= dailyGoal;
   const wasGoalJustCompleted = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const cardPositionsRef = useRef<Record<number, number>>({});
 
   // 🛡️ MEMORY LEAK FIX: Add timer refs for cleanup
   const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -153,6 +156,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       wasGoalJustCompleted.current = true;
       // 🚀 TOAST INTEGRATION: Replace visual celebration with success toast
       showSuccess('Tebrikler! Günlük hedefinizi tamamladınız! 🎉');
+      hapticFeedback.success();
 
       // 📊 ANALYTICS TRACKING: Log goal completion achievement
       analyticsService.logEvent('daily_goal_completed', {
@@ -245,6 +249,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           {
             onSuccess: () => {
               // 🚀 ENHANCED TOAST INTEGRATION: Contextual success feedback
+              hapticFeedback.medium();
               if (isFirstStatement) {
                 showSuccess(
                   `${isToday ? 'Günün' : 'Bu tarihin'} ilk minnettarlığı! Harika bir başlangıç ✨`
@@ -285,6 +290,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         if (error instanceof ZodError) {
           // 🚀 TOAST INTEGRATION: Use toast error instead of inline error state
           showError(error.issues[0]?.message || 'Geçersiz minnet ifadesi');
+          hapticFeedback.warning();
           // Simple fade feedback for errors instead of shake
           animations.animateFade(0.7, { duration: 150 });
           fadeTimerRef.current = setTimeout(() => {
@@ -310,6 +316,11 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       setEditingStatementIndex(index);
       // **MINIMAL EDITING STATE**: Simple layout transition
       animations.animateLayoutTransition(true, 100, { duration: 200 });
+      // Ensure the edited card is visible above the keyboard
+      const y = cardPositionsRef.current[index] ?? 0;
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: Math.max(y - 100, 0), animated: true });
+      }, 150);
     },
     [animations]
   );
@@ -352,18 +363,29 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   const handleDeleteStatement = useCallback(
     (index: number) => {
+      const deleted = statements[index];
       deleteStatement(
         { entryDate: finalDateString, statementIndex: index },
         {
           onSuccess: () => {
             // **MINIMAL DELETION FEEDBACK**: Simple layout transition
             animations.animateLayoutTransition(false, 0, { duration: 200 });
-            showSuccess('Minnet ifadesi silindi');
+            showSuccess('Minnet ifadesi silindi', {
+              action: {
+                label: 'Geri Al',
+                onPress: () => {
+                  addStatement(
+                    { entryDate: finalDateString, statement: deleted },
+                    { onSuccess: () => showSuccess('Geri alındı') }
+                  );
+                },
+              },
+            });
           },
         }
       );
     },
-    [finalDateString, deleteStatement, showSuccess, animations]
+    [finalDateString, deleteStatement, showSuccess, animations, addStatement, statements]
   );
 
   const handleRefresh = async () => {
@@ -400,10 +422,12 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       <ScreenLayout
         edges={['top']}
         scrollable={true}
+        scrollRef={scrollRef}
         density="compact"
         edgeToEdge={true}
         showsVerticalScrollIndicator={false}
         keyboardAware={true}
+        keyboardVerticalOffset={0}
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
         refreshControl={
@@ -509,6 +533,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               promptLoading={profile?.useVariedPrompts ? promptLoading || isLoadingEntry : false}
               promptError={profile?.useVariedPrompts ? promptError?.message || null : null}
               showPrompt={profile?.useVariedPrompts ?? false}
+              currentCount={statements.length}
+              goal={dailyGoal}
             />
           </View>
 
@@ -530,22 +556,13 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
               {/* Statements directly in the same container */}
               {statements.map((statement, index) => (
-                <View key={`${finalDateString}-${index}`} style={styles.modernStatementWrapper}>
-                  {/* Gradient Border Container */}
-                  <View style={styles.statementGradientBorderContainer}>
-                    <LinearGradient
-                      colors={[
-                        theme.colors.primary,
-                        theme.colors.secondary || theme.colors.primaryContainer,
-                        theme.colors.tertiary || theme.colors.primary,
-                        theme.colors.primary,
-                      ]}
-                      style={styles.statementGradientBorder}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    />
-                  </View>
-
+                <View
+                  key={`${finalDateString}-${index}`}
+                  style={styles.modernStatementWrapper}
+                  onLayout={(event) => {
+                    cardPositionsRef.current[index] = event.nativeEvent.layout.y;
+                  }}
+                >
                   <StatementEditCard
                     statement={statement}
                     date={effectiveDate.toISOString()}
@@ -1083,19 +1100,7 @@ const createStyles = (theme: AppTheme) =>
       margin: theme.spacing.md,
       ...getPrimaryShadow.card(theme),
     },
-    statementGradientBorderContainer: {
-      position: 'absolute',
-      top: -1,
-      left: -0.5,
-      right: -0.5,
-      bottom: -1,
-      borderRadius: theme.borderRadius.md + 1,
-      zIndex: 0,
-    },
-    statementGradientBorder: {
-      flex: 1,
-      borderRadius: theme.borderRadius.md + 1,
-    },
+    // removed: gradient border now built into StatementEditCard
   });
 
 export default EnhancedDailyEntryScreen;

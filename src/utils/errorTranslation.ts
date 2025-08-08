@@ -362,35 +362,32 @@ export const initializeGlobalErrorMonitoring = (): void => {
     });
   };
 
-  // Set up global error handlers (React Native specific)
-  if (typeof global !== 'undefined') {
-    // Handle unhandled promise rejections
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (global as any).onunhandledrejection = (event: {
-      reason: unknown;
-      preventDefault?: () => void;
-    }) => {
+  // Set up global error handlers (React Native specific) with proper typing
+  if (typeof globalThis !== 'undefined') {
+    // Extend globalThis with minimal handler typings without using any
+    const g = globalThis as unknown as {
+      onunhandledrejection?: (event: { reason: unknown; preventDefault?: () => void }) => void;
+      onerror?: (
+        message: string | unknown,
+        source?: string,
+        lineno?: number,
+        colno?: number,
+        error?: Error
+      ) => boolean | void;
+    };
+
+    g.onunhandledrejection = (event) => {
       handleGlobalError(new Error(`Unhandled promise rejection: ${String(event.reason)}`));
-      // Prevent default behavior that shows error to users
       if (event.preventDefault) {
         event.preventDefault();
       }
     };
 
-    // Handle uncaught exceptions
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (global as any).onerror = (
-      message: string | unknown,
-      source?: string,
-      lineno?: number,
-      colno?: number,
-      error?: Error
-    ) => {
+    g.onerror = (message, _source, _lineno, _colno, error) => {
       const errorMessage =
         error?.message || (typeof message === 'string' ? message : 'Unknown error');
       handleGlobalError(new Error(errorMessage));
-      // Return true to prevent default error handling
-      return true;
+      return true; // prevent default error handling
     };
   }
 

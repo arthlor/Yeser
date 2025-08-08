@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Share, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -67,6 +67,7 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
     () => truncateStatement(statement, 200),
     [statement]
   );
+  const [expanded, setExpanded] = useState(false);
 
   // **SIMPLIFIED ENTRANCE**: Remove complex entrance animation
   // Following minimal animation philosophy - cards appear naturally
@@ -82,8 +83,21 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
     if (onPress) {
       triggerHaptic('selection');
       onPress();
+    } else if (isTruncated) {
+      // Expand in place if there is no external onPress handler
+      triggerHaptic('light');
+      setExpanded(true);
     }
-  }, [onPress, triggerHaptic]);
+  }, [onPress, triggerHaptic, isTruncated]);
+
+  const handleLongPress = useCallback(async () => {
+    try {
+      await Share.share({ message: statement });
+      triggerHaptic('success');
+    } catch {
+      // no-op; keep quiet on cancel
+    }
+  }, [statement, triggerHaptic]);
 
   // Get variant-specific styles with enhanced typography - MEMOIZED
   const variantStyles = useMemo(() => {
@@ -136,14 +150,15 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
         <View style={styles.statementSection}>
           <Text
             style={variantStyles.statement}
-            numberOfLines={numberOfLines}
+            numberOfLines={expanded ? undefined : numberOfLines}
             accessibilityLabel={accessibilityLabel || `Minnet: ${statement}`}
+            selectable={!onPress}
           >
-            {displayText}
+            {expanded ? statement : displayText}
           </Text>
 
           {/* Enhanced truncation indicator */}
-          {isTruncated && (
+          {isTruncated && !expanded && (
             <View style={styles.truncationIndicator}>
               <Icon name="dots-horizontal" size={18} color={theme.colors.onSurfaceVariant + '60'} />
               <Text style={styles.truncationText}>devamını oku</Text>
@@ -177,18 +192,27 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
       <TouchableOpacity
         activeOpacity={0.92}
         onPress={handlePress}
+        onLongPress={handleLongPress}
         onPressIn={animations.animatePressIn}
         onPressOut={animations.animatePressOut}
         accessibilityLabel={accessibilityLabel || `Minnet anısı: ${statement}`}
         accessibilityRole="button"
-        accessibilityHint="Detayları görüntülemek için dokunun"
+        accessibilityHint={
+          isTruncated
+            ? 'Detayları görüntülemek veya genişletmek için dokunun'
+            : 'Detayları görüntülemek için dokunun'
+        }
       >
         {CardContent}
       </TouchableOpacity>
     );
   }
 
-  return CardContent;
+  return (
+    <TouchableOpacity activeOpacity={1} onLongPress={handleLongPress}>
+      {CardContent}
+    </TouchableOpacity>
+  );
 };
 
 const StatementDisplayCard = React.memo(StatementDisplayCardComponent);

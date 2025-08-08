@@ -7,6 +7,7 @@ import { AppTheme } from '@/themes/types';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
+import { useUserProfile } from '@/shared/hooks';
 import { StatementCard } from '@/shared/components/ui';
 
 interface PastEntryItemProps {
@@ -38,7 +39,9 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
   const entryDate = entry.entry_date ? new Date(entry.entry_date) : new Date();
   const isRecent = index < 3;
   const statementCount = entry.statements?.length || 0;
-  const isGoalComplete = statementCount >= 3;
+  const { profile } = useUserProfile();
+  const dailyGoal = profile?.daily_gratitude_goal ?? 3;
+  const isGoalComplete = statementCount >= dailyGoal;
 
   const formatDate = (date: Date) =>
     date.toLocaleDateString('tr-TR', {
@@ -187,14 +190,16 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
                   style={[
                     styles.progressFill,
                     {
-                      width: `${Math.min((statementCount / 3) * 100, 100)}%`,
+                      width: `${Math.min((statementCount / Math.max(dailyGoal, 1)) * 100, 100)}%`,
                       backgroundColor: isGoalComplete ? theme.colors.success : theme.colors.primary,
                     },
                   ]}
                 />
               </View>
               <Text style={styles.progressText}>
-                {isGoalComplete ? '🎉 Günlük hedef tamamlandı' : `${3 - statementCount} daha gerek`}
+                {isGoalComplete
+                  ? '🎉 Günlük hedef tamamlandı'
+                  : `Hedef için ${Math.max(dailyGoal - statementCount, 0)} minnet daha gerekli`}
               </Text>
             </View>
 

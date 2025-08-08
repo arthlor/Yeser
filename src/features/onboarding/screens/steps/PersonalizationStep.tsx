@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 
 import { ScreenSection } from '@/shared/components/layout';
+import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
 
 type ThemeKey = 'light' | 'dark' | 'auto';
 
@@ -150,26 +151,13 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   return (
     <OnboardingLayout edgeToEdge={true}>
       <Animated.View style={[styles.container, containerStyle]}>
-        {/* Enhanced Navigation Header with Better Back Button */}
         <ScreenSection>
-          <View style={styles.navigationHeader}>
-            <TouchableOpacity
-              onPress={() => {
-                hapticFeedback.light();
-                onBack();
-              }}
-              style={styles.backButtonContainer}
-              activeOpacity={0.7}
-              accessibilityLabel="Geri dön"
-              accessibilityRole="button"
-              accessibilityHint="Önceki adıma geri dön"
-            >
-              <View style={styles.backButtonInner}>
-                <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
-                <Text style={styles.backButtonText}>Geri</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          <OnboardingNavHeader
+            onBack={() => {
+              hapticFeedback.light();
+              onBack();
+            }}
+          />
         </ScreenSection>
 
         {/* Content Header */}
@@ -246,7 +234,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
                 <View style={styles.themeOptionContent}>
                   <Ionicons
                     name={themeOption.icon}
-                    size={24}
+                    size={22}
                     color={
                       selectedTheme === themeOption.key
                         ? theme.colors.primary
@@ -272,7 +260,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
                     </Text>
                   </View>
                   {selectedTheme === themeOption.key && (
-                    <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+                    <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} />
                   )}
                 </View>
               </TouchableOpacity>
@@ -301,32 +289,7 @@ const createStyles = (theme: AppTheme) =>
     container: {
       flex: 1,
     },
-    navigationHeader: {
-      alignItems: 'flex-start',
-      paddingBottom: theme.spacing.md,
-    },
-    backButtonContainer: {
-      padding: theme.spacing.sm,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.surface + 'CC',
-      borderWidth: 1,
-      borderColor: theme.colors.outline + '20',
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    backButtonInner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    backButtonText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '600',
-    },
+    // Navigation header moved to shared component
     header: {
       alignItems: 'center',
       paddingTop: 0,
@@ -335,13 +298,13 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.headlineLarge,
       color: theme.colors.text,
       textAlign: 'center',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
     },
     subtitle: {
       ...theme.typography.bodyLarge,
       color: theme.colors.textSecondary,
       textAlign: 'center',
-      lineHeight: 24,
+      lineHeight: 20,
     },
     usernameInputContainer: {
       position: 'relative',
@@ -349,15 +312,15 @@ const createStyles = (theme: AppTheme) =>
     usernameInput: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
-      borderWidth: 2,
+      borderWidth: 1,
       borderColor: theme.colors.outline,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: Platform.OS === 'ios' ? theme.spacing.xs : 0, // Minimal vertical padding
       paddingRight: 50, // Make room for validation indicator
       fontSize: 16,
       color: theme.colors.text,
-      minHeight: 56,
-      height: 56, // Fixed height for consistent appearance
+      minHeight: 48,
+      height: 48, // Fixed height for consistent appearance
       textAlignVertical: 'center', // Center text vertically on Android
       includeFontPadding: false, // Remove extra font padding on Android
       // 🌟 Beautiful neutral shadow for username input
@@ -392,24 +355,23 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.textSecondary,
       lineHeight: 18,
     },
-    themeOptions: {
-      gap: theme.spacing.sm,
-    },
+    themeOptions: { gap: theme.spacing.xs },
     themeOption: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
-      borderWidth: 2,
+      borderWidth: 1,
       borderColor: theme.colors.outline,
-      padding: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
     },
     themeOptionSelected: {
       borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '08',
+      backgroundColor: theme.colors.primary + '0D',
     },
     themeOptionContent: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
     themeOptionText: {
       flex: 1,

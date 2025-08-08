@@ -202,6 +202,9 @@ const AppNavigator: React.FC = () => {
           ...getPrimaryShadow.small(theme),
         },
         headerTintColor: theme.colors.onSurface,
+        // Hide iOS back button text
+        headerBackTitleStyle: { color: 'transparent' },
+        headerBackTitle: ' ',
         headerTitleStyle: {
           fontFamily: theme.typography.titleLarge.fontFamily,
           fontSize: theme.typography.titleLarge.fontSize,

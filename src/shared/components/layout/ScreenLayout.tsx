@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,9 +16,11 @@ import { AppTheme } from '@/themes/types';
 interface ScreenLayoutProps {
   children: React.ReactNode;
   scrollable?: boolean;
+  scrollRef?: React.Ref<ScrollView>;
   keyboardAware?: boolean;
   keyboardDismissMode?: 'none' | 'on-drag' | 'interactive';
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
+  keyboardVerticalOffset?: number; // iOS header/safe-area offset for KAV
   showStatusBar?: boolean;
   statusBarStyle?: 'light-content' | 'dark-content';
   backgroundColor?: string;
@@ -44,9 +46,11 @@ interface ScreenLayoutProps {
 const ScreenLayout: React.FC<ScreenLayoutProps> = ({
   children,
   scrollable = true,
+  scrollRef,
   keyboardAware = false,
   keyboardDismissMode = 'interactive',
   keyboardShouldPersistTaps = 'handled',
+  keyboardVerticalOffset,
   showStatusBar = true,
   statusBarStyle,
   backgroundColor,
@@ -60,14 +64,21 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
 }) => {
   const { theme, colorMode } = useTheme();
   const insets = useSafeAreaInsets();
-  const styles = createStyles(theme, insets, edges, density, edgeToEdge);
+  const styles = useMemo(
+    () => createStyles(theme, insets, edges, density, edgeToEdge),
+    [theme, insets, edges, density, edgeToEdge]
+  );
 
   const defaultStatusBarStyle =
     statusBarStyle || (colorMode === 'dark' ? 'light-content' : 'dark-content');
   const screenBackgroundColor = backgroundColor || theme.colors.background;
+  const containerBackgroundStyle = useMemo(
+    () => ({ backgroundColor: screenBackgroundColor }),
+    [screenBackgroundColor]
+  );
 
   const content = (
-    <View style={[styles.container, { backgroundColor: screenBackgroundColor }, style]}>
+    <View style={[styles.container, containerBackgroundStyle, style]}>
       {showStatusBar && (
         <StatusBar
           backgroundColor={screenBackgroundColor}
@@ -78,12 +89,14 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
 
       {scrollable ? (
         <ScrollView
+          ref={scrollRef}
           style={styles.scrollView}
           contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
           showsVerticalScrollIndicator={showsVerticalScrollIndicator}
           refreshControl={refreshControl}
           keyboardShouldPersistTaps={keyboardShouldPersistTaps}
           keyboardDismissMode={keyboardDismissMode}
+          contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : undefined}
         >
           {children}
         </ScrollView>
@@ -98,6 +111,14 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
+        keyboardVerticalOffset={
+          Platform.OS === 'ios'
+            ? // Prefer explicit prop; otherwise use top inset as a sane default
+              typeof keyboardVerticalOffset === 'number'
+              ? keyboardVerticalOffset
+              : insets.top
+            : 0
+        }
       >
         {content}
       </KeyboardAvoidingView>

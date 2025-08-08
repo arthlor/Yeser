@@ -1,5 +1,6 @@
 import { analyticsService } from '@/services/analyticsService';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
 import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
@@ -62,12 +63,11 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
           },
         ]}
       >
-        {/* **SIMPLIFIED HEADER**: No separate animations, unified entrance */}
+        {/* Compact standardized header */}
+        <OnboardingNavHeader />
         <View style={styles.headerSection}>
-          <Text style={styles.welcomeTitle}>Yeşer'e Hoş Geldin! 🌱</Text>
-          <Text style={styles.welcomeSubtitle}>
-            Minnettarlık yolculuğuna başlamaya hazır mısın?
-          </Text>
+          <Text style={styles.welcomeTitle}>Hoş Geldin! 🌱</Text>
+          <Text style={styles.welcomeSubtitle}>Minnettarlığa başlayalım.</Text>
         </View>
 
         {/* **ENHANCED FEATURES**: Modern icon design with consistent visuals */}
@@ -78,13 +78,13 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
             </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Günlük Minnetler</Text>
-              <Text style={styles.featureDescription}>Her gün küçük şeyler için minnettar ol</Text>
+              <Text style={styles.featureDescription}>Her gün küçük şeyler için minnet</Text>
             </View>
           </View>
 
           <View style={styles.featureItem}>
             <View style={styles.featureIconContainer}>
-              <Ionicons name="flame-outline" size={28} color="#FF6B35" />
+              <Ionicons name="flame-outline" size={28} color={theme.colors.primary} />
             </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Seri Takibi</Text>
@@ -96,13 +96,11 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
 
           <View style={styles.featureItem}>
             <View style={styles.featureIconContainer}>
-              <Ionicons name="leaf-outline" size={28} color="#4ECDC4" />
+              <Ionicons name="leaf-outline" size={28} color={theme.colors.primary} />
             </View>
             <View style={styles.featureContent}>
               <Text style={styles.featureTitle}>Kişisel Gelişim</Text>
-              <Text style={styles.featureDescription}>
-                Minnettarlık ile daha pozitif ve mutlu bir yaşam sür
-              </Text>
+              <Text style={styles.featureDescription}>Daha pozitif bir yaşam</Text>
             </View>
           </View>
         </View>
@@ -152,14 +150,14 @@ const createStyles = (theme: AppTheme) =>
       fontSize: 16,
       color: theme.colors.textSecondary,
       textAlign: 'center',
-      lineHeight: 24,
+      lineHeight: 20,
       paddingHorizontal: theme.spacing.md,
     },
     featuresSection: {
       flex: 1,
       justifyContent: 'center',
-      gap: theme.spacing.md,
-      paddingVertical: theme.spacing.lg,
+      gap: theme.spacing.sm,
+      paddingVertical: theme.spacing.md,
     },
     featureItem: {
       flexDirection: 'row',
@@ -172,9 +170,9 @@ const createStyles = (theme: AppTheme) =>
       ...getPrimaryShadow.small(theme),
     },
     featureIconContainer: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       backgroundColor: theme.colors.primaryContainer + '40',
       justifyContent: 'center',
       alignItems: 'center',

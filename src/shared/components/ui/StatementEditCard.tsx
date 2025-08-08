@@ -1,5 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, ViewStyle } from 'react-native';
+import {
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -10,6 +19,7 @@ import {
   InteractiveStatementCardProps,
   ThreeDotsMenu,
   useHapticFeedback,
+  useReducedMotion,
   useStatementCardAnimations,
 } from './StatementCardBase';
 
@@ -70,6 +80,7 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
 
   const animations = useStatementCardAnimations();
   const { triggerHaptic } = useHapticFeedback(hapticFeedback);
+  const { reducedMotion } = useReducedMotion();
 
   // Local state for editing
   const [localStatement, setLocalStatement] = useState(statement);
@@ -99,10 +110,10 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
 
   // Simple entrance feedback
   useEffect(() => {
-    if (animateEntrance) {
+    if (animateEntrance && !reducedMotion) {
       triggerHaptic('light');
     }
-  }, [animateEntrance, triggerHaptic]);
+  }, [animateEntrance, triggerHaptic, reducedMotion]);
 
   // Enhanced date formatting
   const { relativeTime, isRecent } = formatStatementDate(date);
@@ -150,12 +161,37 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
     }
   }, [onPress, isEditing, triggerHaptic]);
 
+  const isDirty = useMemo(
+    () => localStatement.trim() !== (statement ?? '').trim(),
+    [localStatement, statement]
+  );
+
+  const handleLongPress = useCallback(async () => {
+    try {
+      await Share.share({ message: localStatement });
+      triggerHaptic('success');
+    } catch {
+      // ignore
+    }
+  }, [localStatement, triggerHaptic]);
+
   // Enhanced placeholder text
   const placeholderText = useMemo(() => 'Bugün hangi güzellik için minnettarsın? 🌟', []);
 
   // Main card content with new edge-to-edge design
   const CardContent = (
     <View style={[styles.edgeToEdgeContainer, style]}>
+      <LinearGradient
+        colors={[
+          theme.colors.primary,
+          theme.colors.secondary || theme.colors.primaryContainer,
+          theme.colors.tertiary || theme.colors.primary,
+          theme.colors.primary,
+        ]}
+        style={styles.edgeToEdgeGradientBorder}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
       {/* Inner glow container for sophisticated border effect */}
       <View style={styles.innerGlowContainer}>
         {/* MODERN CARD HEADER - Edge-to-edge with enhanced visual hierarchy */}
@@ -259,11 +295,12 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.saveButton,
-                    (!localStatement.trim() || isOverLimit) && styles.disabledSaveButton,
+                    (!localStatement.trim() || isOverLimit || !isDirty) &&
+                      styles.disabledSaveButton,
                   ]}
                   onPress={handleSave}
                   activeOpacity={0.7}
-                  disabled={!localStatement.trim() || isOverLimit}
+                  disabled={!localStatement.trim() || isOverLimit || !isDirty}
                   accessibilityLabel="Kaydet"
                 >
                   <Icon name="check" size={14} color={theme.colors.onPrimary} />
@@ -321,6 +358,7 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
       <TouchableOpacity
         activeOpacity={0.95}
         onPress={handlePress}
+        onLongPress={handleLongPress}
         onPressIn={animations.animatePressIn}
         onPressOut={animations.animatePressOut}
         accessibilityLabel={accessibilityLabel || `Minnet: ${statement}`}
@@ -332,7 +370,15 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
     );
   }
 
-  return CardContent;
+  return (
+    <TouchableOpacity
+      activeOpacity={1}
+      onLongPress={handleLongPress}
+      style={styles.touchableContainer}
+    >
+      {CardContent}
+    </TouchableOpacity>
+  );
 };
 
 const StatementEditCard = React.memo(StatementEditCardComponent);
@@ -369,6 +415,18 @@ const createStyles = (theme: AppTheme) =>
       // No additional borders to avoid overlap
       borderRadius: theme.borderRadius.md - 1, // Reduced
       overflow: 'hidden',
+    } as ViewStyle,
+
+    // Built-in subtle gradient border for the entire card
+    // This lets DailyEntryScreen remove its external gradient wrapper
+    edgeToEdgeGradientBorder: {
+      position: 'absolute',
+      top: -1,
+      left: -1,
+      right: -1,
+      bottom: -1,
+      borderRadius: theme.borderRadius.md + 1,
+      opacity: 0.6,
     } as ViewStyle,
 
     // MODERN CARD HEADER - Clean and minimal

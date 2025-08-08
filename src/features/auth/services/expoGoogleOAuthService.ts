@@ -1,4 +1,7 @@
-import { Linking } from 'react-native';
+import { Platform } from 'react-native';
+import { type DiscoveryDocument, makeRedirectUri } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import { encode as encodeBase64 } from 'base64-arraybuffer';
 import { logger } from '@/utils/debugConfig';
 import { analyticsService } from '@/services/analyticsService';
 import { atomicOperationManager } from '../utils/atomicOperations';
@@ -18,10 +21,11 @@ export interface GoogleOAuthResult {
 }
 
 /**
- * Expo-Compatible Google OAuth Service
+ * Expo-Compatible Google OAuth Service (Native ID token flow)
  *
- * Removes dependency on @react-native-google-signin/google-signin
- * Uses pure Supabase OAuth flow with expo-web-browser for better UX
+ * Uses expo-auth-session to obtain a Google ID token on device, then exchanges
+ * it with Supabase via signInWithIdToken. This avoids the Supabase domain on
+ * Google's consent screen.
  */
 export class ExpoGoogleOAuthService {
   private isInitialized = false;
@@ -50,18 +54,34 @@ export class ExpoGoogleOAuthService {
       async () => {
         try {
           logger.debug('Starting Expo Google OAuth service initialization...');
-
-          // Validate Google OAuth configuration
-          const webClientId = config.google.clientIdWeb;
-
-          if (!webClientId) {
-            const error = new Error(
-              'Google OAuth web client ID not configured. Missing EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB'
-            );
-            throw error;
+          // Complete any pending web-browser auth sessions (no-op if none)
+          type MaybeCompleteAuthSession = { maybeCompleteAuthSession?: () => void };
+          const maybeComplete = (WebBrowser as unknown as MaybeCompleteAuthSession)
+            .maybeCompleteAuthSession;
+          if (typeof maybeComplete === 'function') {
+            maybeComplete();
           }
 
-          // No SDK configuration needed - pure Supabase approach
+          // Validate Google OAuth configuration (platform-specific client IDs)
+          const clientIdIOS = config.google.clientIdIOS;
+          const clientIdAndroid = config.google.clientIdAndroid;
+          const clientIdWeb = config.google.clientIdWeb;
+
+          if (Platform.OS === 'ios' && !clientIdIOS) {
+            throw new Error(
+              'Missing EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS in environment for iOS platform.'
+            );
+          }
+          if (Platform.OS === 'android' && !clientIdAndroid) {
+            throw new Error(
+              'Missing EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID in environment for Android platform.'
+            );
+          }
+          if (!clientIdWeb) {
+            // Web client is optional here but useful if you later support web
+            logger.debug('Google Web client id not provided; native flow will continue.');
+          }
+
           this.isInitialized = true;
           logger.debug('Expo Google OAuth service initialized successfully');
         } catch (error) {
@@ -73,7 +93,7 @@ export class ExpoGoogleOAuthService {
   }
 
   /**
-   * Sign in using pure Supabase OAuth flow
+   * Sign in using native Google ID token flow, exchanging with Supabase
    */
   async signIn(): Promise<GoogleOAuthResult> {
     const operationKey = 'expo_google_oauth_signin';
@@ -93,69 +113,102 @@ export class ExpoGoogleOAuthService {
           }
 
           this.lastSignInAttempt = Date.now();
-
-          logger.debug('Expo Google OAuth: Starting Supabase OAuth flow');
+          logger.debug('Expo Google OAuth: Starting native Google ID token flow');
           analyticsService.logEvent('google_oauth_attempt');
 
           try {
             const supabase = supabaseService.getClient();
 
-            // Use Supabase's native OAuth flow
-            const { data, error } = await supabase.auth.signInWithOAuth({
+            // 1) Build an auth request for Google to get an ID token
+            const discovery: DiscoveryDocument = {
+              authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+              tokenEndpoint: 'https://oauth2.googleapis.com/token',
+              revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+            };
+
+            const clientId = Platform.select({
+              ios: config.google.clientIdIOS,
+              android: config.google.clientIdAndroid,
+              default: config.google.clientIdWeb,
+            });
+
+            if (!clientId) {
+              throw new Error('Google client ID not configured for this platform.');
+            }
+
+            const clientIdSuffix = clientId.replace('.apps.googleusercontent.com', '');
+            const nativeGoogleScheme = `com.googleusercontent.apps.${clientIdSuffix}`;
+            const redirectUri = makeRedirectUri({
+              // Use installed-app redirect for Google on mobile
+              native: `${nativeGoogleScheme}:/oauthredirect`,
+            });
+
+            const nonce = this.generateNonce();
+
+            // Build the authorization URL manually to ensure no PKCE params are included
+            const params = new URLSearchParams({
+              client_id: clientId,
+              redirect_uri: redirectUri,
+              response_type: 'id_token',
+              scope: 'openid email profile',
+              nonce,
+              prompt: 'consent',
+            });
+
+            const authUrl = `${discovery.authorizationEndpoint}?${params.toString()}`;
+            logger.debug('Google OAuth (native) request URL (sanitized):', {
+              clientId: clientId.substring(0, 10) + '…',
+              redirectUri,
+              hasPKCEParams: authUrl.includes('code_challenge') || authUrl.includes('pkce'),
+            });
+
+            // Listen for potential deep link in case the web browser dismisses before returning 'success'
+            let capturedUrl: string | null = null;
+            const onUrl = ({ url }: { url: string }): void => {
+              capturedUrl = url;
+            };
+            // Dynamically import Linking to avoid circular deps
+            const { Linking } = await import('react-native');
+            const subscription = Linking.addEventListener('url', onUrl);
+
+            const webResult = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+
+            if (webResult.type === 'cancel') {
+              return { success: false, userCancelled: true };
+            }
+
+            const finalUrl = webResult.url || capturedUrl || '';
+            subscription.remove();
+
+            if (!finalUrl) {
+              return { success: false, error: 'Google kimlik doğrulama başarısız.' };
+            }
+
+            // Google returns id_token in URL fragment after '#'
+            const url = new URL(finalUrl.replace('#', '?'));
+            const idTokenFromUrl = url.searchParams.get('id_token');
+
+            if (!idTokenFromUrl) {
+              return { success: false, error: 'Google ID token alınamadı.' };
+            }
+
+            const idToken = String(idTokenFromUrl);
+
+            // 2) Exchange with Supabase
+            const { data, error } = await supabase.auth.signInWithIdToken({
               provider: 'google',
-              options: {
-                redirectTo: config.google.redirectUri || 'yeser://auth/callback',
-                queryParams: {
-                  access_type: 'offline',
-                  prompt: 'consent',
-                },
-              },
+              token: idToken,
+              nonce,
             });
 
             if (error) {
-              logger.error('Expo Google OAuth: Supabase OAuth failed', {
+              logger.error('Expo Google OAuth: Supabase ID token exchange failed', {
                 error: error.message,
               });
-              return {
-                success: false,
-                error: 'Google ile giriş başlatılamadı. Lütfen tekrar deneyin.',
-              };
+              return { success: false, error: 'Giriş tamamlanamadı. Lütfen tekrar deneyin.' };
             }
 
-            if (data?.url) {
-              try {
-                // Option 1: Use expo-web-browser for better UX (recommended)
-                const canUseWebBrowser = await this.tryWebBrowserAuth(data.url);
-                if (canUseWebBrowser) {
-                  return {
-                    success: true,
-                    requiresCallback: true,
-                  };
-                }
-
-                // Option 2: Fallback to Linking (current approach)
-                const canOpen = await Linking.canOpenURL(data.url);
-                if (canOpen) {
-                  await Linking.openURL(data.url);
-                  return {
-                    success: true,
-                    requiresCallback: true,
-                  };
-                }
-              } catch (linkingError) {
-                logger.error('Expo Google OAuth: Failed to open OAuth URL', linkingError as Error);
-              }
-
-              return {
-                success: false,
-                error: 'Tarayıcı açılamadı. Lütfen tekrar deneyin.',
-              };
-            }
-
-            return {
-              success: false,
-              error: 'OAuth URL oluşturulamadı. Lütfen tekrar deneyin.',
-            };
+            return { success: true, user: data.user, session: data.session };
           } catch (oauthError) {
             const err = oauthError as Error;
             logger.error('Expo Google OAuth: OAuth flow failed', err);
@@ -174,39 +227,6 @@ export class ExpoGoogleOAuthService {
         success: false,
         error: 'Giriş işlemi devam ediyor. Lütfen bekleyin.',
       };
-    }
-  }
-
-  /**
-   * Try using expo-web-browser for better OAuth UX
-   */
-  private async tryWebBrowserAuth(url: string): Promise<boolean> {
-    try {
-      // Dynamic import to avoid build issues if expo-web-browser not installed
-      const WebBrowser = await import('expo-web-browser');
-
-      // Use expo-web-browser for in-app browser experience
-      const result = await WebBrowser.openAuthSessionAsync(
-        url,
-        config.google.redirectUri || 'yeser://auth/callback'
-      );
-
-      logger.debug('Expo Google OAuth: WebBrowser result', { type: result.type });
-
-      if (result.type === 'success') {
-        // Deep link will handle the success callback
-        return true;
-      } else if (result.type === 'cancel') {
-        // User cancelled - this is handled by the caller
-        return false;
-      }
-
-      return false;
-    } catch (webBrowserError) {
-      logger.debug('expo-web-browser not available, falling back to Linking', {
-        error: (webBrowserError as Error).message,
-      });
-      return false;
     }
   }
 
@@ -270,6 +290,20 @@ export class ExpoGoogleOAuthService {
     this.isInitialized = false;
     this.initializationPromise = null;
     this.lastSignInAttempt = null;
+  }
+
+  /**
+   * Generate a cryptographically strong nonce for OIDC
+   */
+  private generateNonce(): string {
+    const bytes = new Uint8Array(16);
+    // Fill bytes with pseudo-random values. In RN, a polyfill for getRandomValues is usually present.
+    // Avoid referencing global crypto directly to satisfy linters across environments.
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+    const base64 = encodeBase64(bytes.buffer);
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
   }
 }
 

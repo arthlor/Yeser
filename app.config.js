@@ -46,6 +46,12 @@ const ENV_MAP = {
 };
 
 const { name, appId, scheme, iosClientId, reversedIosClientId } = ENV_MAP[ENV];
+// Derive Android reversed client ID scheme from env if present
+const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID || '';
+const androidClientIdSuffix = androidClientId.replace('.apps.googleusercontent.com', '');
+const reversedAndroidClientId = androidClientIdSuffix
+  ? `com.googleusercontent.apps.${androidClientIdSuffix}`
+  : null;
 
 console.log(`📦 App Name: ${name}`);
 console.log(`📦 Bundle ID: ${appId}`);
@@ -141,6 +147,17 @@ module.exports = {
         data: [{ scheme, host: 'auth', pathPrefix: '/callback' }],
         category: ['BROWSABLE', 'DEFAULT'],
       },
+      // Support Google native redirect scheme used by AuthSession (Android)
+      ...(reversedAndroidClientId
+        ? [
+            {
+              action: 'VIEW',
+              autoVerify: false,
+              data: [{ scheme: reversedAndroidClientId }],
+              category: ['BROWSABLE', 'DEFAULT'],
+            },
+          ]
+        : []),
     ],
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON || './google-services.json',
   },

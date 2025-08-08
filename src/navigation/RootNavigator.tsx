@@ -48,12 +48,19 @@ const RootNavigator: React.FC = () => {
   return (
     <Root.Navigator screenOptions={{ headerShown: false }}>
       {authIsLoading ? (
+        // Still determining auth state → show splash
         <Root.Screen name="Splash" component={SplashScreen} />
       ) : !isAuthenticated ? (
+        // Not authenticated → go to auth flow
         <Root.Screen name="Auth" component={AuthNavigator} />
+      ) : isLoadingProfile ? (
+        // Authenticated but profile not loaded yet → keep splash to avoid onboarding flash
+        <Root.Screen name="Splash" component={SplashScreen} />
       ) : !onboarded || isProfileError ? (
+        // Profile loaded and user not onboarded (or profile errored) → onboarding
         <Root.Screen name="Onboarding" component={OnboardingFlowScreen} />
       ) : (
+        // Fully ready → main app
         <Root.Screen name="MainApp" component={AppNavigator} />
       )}
     </Root.Navigator>

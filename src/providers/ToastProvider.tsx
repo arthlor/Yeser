@@ -231,19 +231,16 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
   const styles = createStyles(theme, insets, toastConfig);
 
+  const toastAnimatedStyle = useMemo(
+    () => ({ transform: animations.entranceTransform, opacity: animations.fadeAnim }),
+    [animations.entranceTransform, animations.fadeAnim]
+  );
+
   return (
     <ToastContext.Provider value={contextValue}>
       {children}
       {toastState.visible && (
-        <Animated.View
-          style={[
-            styles.container,
-            {
-              transform: animations.entranceTransform,
-              opacity: animations.fadeAnim,
-            },
-          ]}
-        >
+        <Animated.View style={[styles.container, toastAnimatedStyle]}>
           <TouchableOpacity activeOpacity={0.98} onPress={hideToast} style={styles.toast}>
             {/* Accent line for visual hierarchy */}
             <View style={[styles.accentLine, { backgroundColor: toastConfig.accentColor }]} />

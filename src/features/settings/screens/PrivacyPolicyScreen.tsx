@@ -40,8 +40,8 @@ const PrivacyPolicyScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>2. Toplanan Veriler</Text>
           <Text style={styles.sectionText}>
             Uygulamamızda şu kişisel veriler toplanmaktadır:{'\n\n'}• E-posta adresiniz (giriş için)
-            {'\n'}• Kullanıcı adınız (isteğe bağlı){'\n'}• Minnet günlüğü girişleriniz{'\n'}•
-            Bildirim tercihleri{'\n'}• Uygulama kullanım istatistikleri (anonim)
+            {'\n'}• Kullanıcı adınız (isteğe bağlı){'\n'}• Minnettarlık günlüğü girişleriniz{'\n'}•
+            Bildirim tercihleri{'\n'}• Uygulama kullanım istatistikleri (anonimleştirilmiş)
           </Text>
         </View>
 
@@ -49,16 +49,16 @@ const PrivacyPolicyScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>3. Veri İşleme Amaçları</Text>
           <Text style={styles.sectionText}>
             Kişisel verileriniz şu amaçlarla işlenmektedir:{'\n\n'}• Hizmet sunumu ve kullanıcı
-            deneyimi{'\n'}• Kimlik doğrulama ve hesap güvenliği{'\n'}• Bildirim gönderimi (izniniz
-            dahilinde){'\n'}• Uygulama performansını iyileştirme{'\n'}• Yasal yükümlülüklerin yerine
-            getirilmesi
+            deneyiminin iyileştirilmesi{'\n'}• Kimlik doğrulama ve hesap güvenliği{'\n'}• Bildirim
+            gönderimi (izniniz dahilinde){'\n'}• Uygulama performansının iyileştirilmesi{'\n'}•
+            Yasal yükümlülüklerin yerine getirilmesi
           </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>4. Veri Güvenliği</Text>
           <Text style={styles.sectionText}>
-            Verilerinizin güvenliği için endüstri standardında güvenlik önlemleri almaktayız:
+            Verilerinizin güvenliği için endüstri standartlarında güvenlik önlemleri almaktayız:
             {'\n\n'}• Şifreli veri iletimi (SSL/TLS){'\n'}• Güvenli veri depolama (Supabase){'\n'}•
             Erişim kontrolü ve yetkilendirme{'\n'}• Düzenli güvenlik güncellemeleri
           </Text>
@@ -68,14 +68,14 @@ const PrivacyPolicyScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>5. KVKK Haklarınız</Text>
           <Text style={styles.sectionText}>
             KVKK kapsamında sahip olduğunuz haklar:{'\n\n'}• Kişisel verilerinizin işlenip
-            işlenmediğini öğrenme{'\n'}• İşlenen verileriniz hakkında bilgi talep etme{'\n'}• İşleme
-            amacını ve bunların amacına uygun kullanılıp kullanılmadığını öğrenme{'\n'}• Yurt içinde
-            veya yurt dışında üçüncü kişileri öğrenme{'\n'}• Eksik veya yanlış işlenmiş verilerin
-            düzeltilmesini isteme{'\n'}• Silme veya yok edilmesini isteme{'\n'}• Düzeltme, silme ve
-            yok etme işlemlerinin üçüncü kişilere bildirilmesini isteme{'\n'}• İşlenen verilerin
-            münhasıran otomatik sistemler ile analiz edilmesi suretiyle kişinin aleyhine bir sonucun
-            ortaya çıkmasına itiraz etme{'\n'}• Kanunen uygun olan hallerde, verilerin aktarıldığı
-            üçüncü kişilerden de silinmesini isteme
+            işlenmediğini öğrenme{'\n'}• İşlenen verileriniz hakkında bilgi talep etme{'\n'}•
+            Verilerinizin işlendiği amaçları ve bu amaçlara uygun kullanılıp kullanılmadığını
+            öğrenme{'\n'}• Yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri öğrenme{'\n'}•
+            Eksik veya yanlış işlenmiş verilerin düzeltilmesini isteme{'\n'}• Silinmesini veya yok
+            edilmesini isteme{'\n'}• Düzeltme, silme ve yok etme işlemlerinin üçüncü kişilere
+            bildirilmesini isteme{'\n'}• İşlenen verilerin münhasıran otomatik sistemlerle analiz
+            edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme{'\n'}• Kanunen
+            uygun olan hallerde, verilerin aktarıldığı üçüncü kişilerden de silinmesini isteme
           </Text>
         </View>
 
@@ -91,7 +91,7 @@ const PrivacyPolicyScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>7. Çerezler ve Analitik</Text>
           <Text style={styles.sectionText}>
-            Uygulamamızda kullanıcı deneyimini iyileştirmek için anonim analitik veriler
+            Uygulamamızda kullanıcı deneyimini iyileştirmek için anonimleştirilmiş analitik veriler
             toplamaktayız. Bu veriler kişisel kimliğinizi ortaya çıkarmayacak şekilde işlenmektedir.
           </Text>
         </View>
@@ -109,12 +109,12 @@ const PrivacyPolicyScreen: React.FC = () => {
           <Text style={styles.sectionText}>
             KVKK kapsamında "unutulma hakkınız" bulunmaktadır. Hesabınızı silme konusunda:{'\n\n'}•
             Hesap Silme Süreci: Ayarlar {'>'} Hesap {'>'} Hesabımı Sil menüsünden
-            gerçekleştirebilirsiniz{'\n'}• Kalıcı Silme: Bu işlem GERİ ALINAMAZ ve tüm verileriniz
-            kalıcı olarak silinir{'\n'}• Silinen Veriler: Minnet günlüğü girişleriniz, hesap
+            gerçekleştirebilirsiniz{'\n'}• Kalıcı Silme: Bu işlem geri alınamaz ve tüm verileriniz
+            kalıcı olarak silinir{'\n'}• Silinen Veriler: Minnettarlık günlüğü girişleriniz, hesap
             bilgileri, istatistikleriniz, bildirim ayarlarınız{'\n'}• Silme Süresi: Hesap silme
-            işlemi ANINDA gerçekleşir{'\n'}• Yedekleme Önerisi: Silmeden önce verilerinizi dışa
+            işlemi anında gerçekleşir{'\n'}• Yedekleme Önerisi: Silmeden önce verilerinizi dışa
             aktarmanızı önemle tavsiye ederiz{'\n'}• Tekrar Kayıt: Aynı e-posta ile tekrar kayıt
-            olabilirsiniz, ancak geçmiş verileriniz geri gelmez
+            olabilirsiniz, ancak geçmiş verileriniz geri gelmez.
           </Text>
         </View>
 
@@ -122,19 +122,21 @@ const PrivacyPolicyScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>10. Diğer Haklarınızı Kullanma</Text>
           <Text style={styles.sectionText}>
             KVKK kapsamındaki diğer haklarınızı kullanmak için:{'\n\n'}• Veri Dışa Aktarma: Ayarlar{' '}
-            {'>'} Veri Dışa Aktarma menüsünden JSON formatında{'\n'}• Bildirim Ayarları: Uygulama
-            içinden dilediğiniz zaman değiştirebilirsiniz{'\n'}• Veri Düzeltme: Profil bilgilerinizi
-            ve Minnet girişlerinizi düzenleyebilirsiniz{'\n'}• Destek Talebi: Uygulama içindeki
-            destek kanalları üzerinden bizimle iletişime geçebilirsiniz{'\n'}• Şikayet Hakkı: Veri
-            İşleme Değerlendirme Kurulu'na başvuru hakkınız bulunmaktadır
+            {'>'}
+            Veri Dışa Aktarma menüsünden verilerinizi PDF formatında dışa aktarabilirsiniz{'\n'}•
+            Bildirim Ayarları: Uygulama içinden dilediğiniz zaman değiştirebilirsiniz{'\n'}• Veri
+            Düzeltme: Profil bilgilerinizi ve minnettarlık girişlerinizi düzenleyebilirsiniz{'\n'}•
+            Destek Talebi: Uygulama içindeki destek kanalları üzerinden bizimle iletişime
+            geçebilirsiniz{'\n'}• Şikayet Hakkı: Kişisel Verileri Koruma Kurulu’na başvuru hakkınız
+            bulunmaktadır
           </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>11. İletişim</Text>
           <Text style={styles.sectionText}>
-            Gizlilik politikamız veya KVKV haklarınız hakkında sorularınız için uygulama içindeki
-            destek kanalları üzerinden bizimle iletişime geçebilirsiniz. Hesap silme işlemi ile
+            Gizlilik politikamız veya KVKK haklarınız hakkında sorularınız için uygulama içindeki
+            destek kanalları üzerinden bizimle iletişime geçebilirsiniz. Hesap silme işlemiyle
             ilgili herhangi bir sorunuz varsa, işlemi gerçekleştirmeden önce bizimle iletişime
             geçmenizi öneririz.
           </Text>

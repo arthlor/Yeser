@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
 import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
@@ -92,24 +93,13 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
 
   return (
     <OnboardingLayout edgeToEdge={true}>
-      {/* Enhanced Navigation Header with Better Back Button */}
-      <View style={styles.navigationHeader}>
-        <TouchableOpacity
-          onPress={() => {
+      <View style={styles.navWrapper}>
+        <OnboardingNavHeader
+          onBack={() => {
             hapticFeedback.light();
             onBack();
           }}
-          style={styles.backButtonContainer}
-          activeOpacity={0.7}
-          accessibilityLabel="Geri dön"
-          accessibilityRole="button"
-          accessibilityHint="Önceki adıma geri dön"
-        >
-          <View style={styles.backButtonInner}>
-            <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
-            <Text style={styles.backButtonText}>Geri</Text>
-          </View>
-        </TouchableOpacity>
+        />
       </View>
 
       {/* **UNIFIED ENTRANCE**: Single animation for all content */}
@@ -125,10 +115,7 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
         {/* **SIMPLIFIED CELEBRATION**: Static celebration with minimal animation */}
         <View style={styles.celebrationContainer}>
           <Text style={styles.congratsTitle}>Tebrikler {userSummary.username}! 🎉</Text>
-          <Text style={styles.congratsSubtitle}>
-            Minnettarlık yolculuğuna başlamaya hazırsın! Senin için özel olarak hazırlanmış
-            deneyimin burada.
-          </Text>
+          <Text style={styles.congratsSubtitle}>Hazırsın. Hadi başlayalım.</Text>
         </View>
 
         {/* **SIMPLIFIED SUMMARY**: No complex slide animations */}
@@ -174,10 +161,7 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
         <View style={styles.encouragementContainer}>
           <View style={styles.encouragementContent}>
             <Text style={styles.encouragementTitle}>Hazırsın! ✨</Text>
-            <Text style={styles.encouragementText}>
-              Her gün küçük minnettarlık ifadeleri büyük değişimler yaratır. Yolculuğun boyunca
-              seninle olacağız.
-            </Text>
+            <Text style={styles.encouragementText}>Küçük adımlar, büyük değişimler.</Text>
 
             {/* **STATIC CELEBRATION ICONS**: No rotating sparkles */}
             <View style={styles.staticCelebrationIcons}>
@@ -189,7 +173,12 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
         </View>
 
         {/* **STANDARDIZED BUTTON**: Using OnboardingButton for consistency */}
-        <Animated.View style={{ transform: animations.pressTransform }}>
+        <Animated.View
+          style={useMemo(
+            () => ({ transform: animations.pressTransform }),
+            [animations.pressTransform]
+          )}
+        >
           <OnboardingButton
             onPress={handleStartJourney}
             title="Yolculuğa Başla"
@@ -214,33 +203,9 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    navigationHeader: {
-      alignItems: 'flex-start',
+    navWrapper: {
       paddingHorizontal: theme.spacing.lg,
-      paddingTop: 0,
       paddingBottom: theme.spacing.md,
-    },
-    backButtonContainer: {
-      padding: theme.spacing.sm,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.surface + 'CC',
-      borderWidth: 1,
-      borderColor: theme.colors.outline + '20',
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    backButtonInner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    backButtonText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '600',
     },
     scrollContent: {
       flexGrow: 1,

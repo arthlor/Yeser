@@ -1,5 +1,20 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -8,6 +23,7 @@ import { getPrimaryShadow } from '@/themes/utils';
 import { logger } from '@/utils/debugConfig';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { hapticFeedback } from '@/utils/hapticFeedback';
 
 interface GratitudeInputBarProps {
   onSubmit: (text: string) => void;
@@ -21,6 +37,8 @@ interface GratitudeInputBarProps {
   promptError?: string | null;
   onRefreshPrompt?: () => void;
   showPrompt?: boolean;
+  currentCount?: number;
+  goal?: number;
 }
 
 // **IMPERATIVE HANDLE**: Expose focus method for parent components
@@ -53,11 +71,13 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       promptError,
       onRefreshPrompt,
       showPrompt = true,
+      currentCount,
+      goal,
     },
     ref
   ) => {
     const { theme } = useTheme();
-    const styles = createStyles(theme, disabled);
+    const styles = useMemo(() => createStyles(theme, disabled), [theme, disabled]);
     const inputRef = useRef<TextInput>(null);
 
     const [inputText, setInputText] = useState('');
@@ -69,6 +89,9 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
 
     // **PERFORMANCE FIX**: Simple gradient border animation using native driver
     const gradientOpacity = useRef(new Animated.Value(0.8)).current;
+    const buttonScale = useRef(new Animated.Value(1)).current;
+    const wasDisabledRef = useRef<boolean>(disabled ?? false);
+    const submittedWhileDisabledRef = useRef<boolean>(false);
 
     // Fallback prompts for when varied prompts are disabled or unavailable
     const fallbackPrompts = [
@@ -96,29 +119,34 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       },
     }));
 
-    // **STATIC GRADIENT BORDER ANIMATION**: Simple opacity pulse animation
+    // Gradient border animation only while focused
     useEffect(() => {
-      const opacityAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(gradientOpacity, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: true, // ✅ PERFORMANCE FIX: Use native driver
-          }),
-          Animated.timing(gradientOpacity, {
-            toValue: 0.7,
-            duration: 2000,
-            useNativeDriver: true, // ✅ PERFORMANCE FIX: Use native driver
-          }),
-        ])
-      );
-
-      opacityAnimation.start();
-
+      let opacityAnimation: Animated.CompositeAnimation | null = null;
+      if (isFocused) {
+        opacityAnimation = Animated.loop(
+          Animated.sequence([
+            Animated.timing(gradientOpacity, {
+              toValue: 1,
+              duration: 1400,
+              useNativeDriver: true,
+            }),
+            Animated.timing(gradientOpacity, {
+              toValue: 0.7,
+              duration: 1400,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+        opacityAnimation.start();
+      } else {
+        gradientOpacity.setValue(0.8);
+      }
       return () => {
-        opacityAnimation.stop();
+        if (opacityAnimation) {
+          opacityAnimation.stop();
+        }
       };
-    }, [gradientOpacity]);
+    }, [gradientOpacity, isFocused]);
 
     // **COORDINATED ENTRANCE**: Simple entrance animation
     useEffect(() => {
@@ -151,6 +179,8 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
     const handleSubmit = () => {
       logger.debug('GratitudeInputBar: Submit button pressed', { text: inputText.trim() });
       if (inputText.trim() && !disabled) {
+        hapticFeedback.light();
+        submittedWhileDisabledRef.current = true;
         onSubmit(inputText.trim());
         setInputText('');
 
@@ -187,7 +217,32 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       setFallbackPromptIndex((prev) => (prev + 1) % fallbackPrompts.length);
     };
 
+    // Detect end of submitting state to play a subtle button success pulse
+    useEffect(() => {
+      if (wasDisabledRef.current && !disabled && submittedWhileDisabledRef.current) {
+        Animated.sequence([
+          Animated.timing(buttonScale, { toValue: 1.08, duration: 100, useNativeDriver: true }),
+          Animated.timing(buttonScale, { toValue: 1, duration: 120, useNativeDriver: true }),
+        ]).start(() => {
+          submittedWhileDisabledRef.current = false;
+        });
+      }
+      wasDisabledRef.current = !!disabled;
+    }, [disabled, buttonScale]);
+
     const isButtonEnabled = inputText.trim().length > 0 && !disabled;
+
+    // Character counter visibility and threshold coloring
+    const showCounter = inputText.length >= 350;
+    const counterColor = useMemo(() => {
+      if (inputText.length >= 490) {
+        return theme.colors.error;
+      }
+      if (inputText.length >= 450) {
+        return theme.colors.warning;
+      }
+      return theme.colors.onSurfaceVariant;
+    }, [inputText.length, theme.colors.error, theme.colors.onSurfaceVariant, theme.colors.warning]);
 
     // Determine which prompt to display
     const displayPrompt = promptText || fallbackPrompts[fallbackPromptIndex];
@@ -202,23 +257,28 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
           },
         ]}
       >
-        {/* Striking Header Section with Gradient Background */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.iconContainer}>
               <Icon name="heart-plus" size={24} color={theme.colors.onPrimary} />
             </View>
-            <View style={styles.titleContainer}>
-              <Text style={styles.headerTitle}>Minnet Ekle</Text>
-              <Text style={styles.headerSubtitle}>
-                Bugün minnettarlık hissettiğin anları paylaş
-              </Text>
-            </View>
+            <Text style={styles.mottoText}>Minnetle yeşer</Text>
           </View>
           <View style={styles.headerRight}>
-            <View style={styles.characterCountContainer}>
-              <Text style={styles.characterCount}>{inputText.length}/500</Text>
-            </View>
+            {typeof currentCount === 'number' && typeof goal === 'number' && (
+              <View style={styles.progressPill}>
+                <Text style={styles.progressPillText}>
+                  {currentCount}/{goal} bugün
+                </Text>
+              </View>
+            )}
+            {showCounter && (
+              <View style={styles.characterCountContainer}>
+                <Text style={[styles.characterCount, { color: counterColor }]}>
+                  {inputText.length}/500
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -285,11 +345,17 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
             accessibilityLabel={isButtonEnabled ? 'Minnet ifadesini gönder' : 'Gönderme devre dışı'}
             accessibilityHint="Yazdığınız minnettarlık ifadesini kaydetmek için dokunun"
           >
-            <Icon
-              name={isButtonEnabled ? 'send' : 'send-outline'}
-              size={20}
-              color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
-            />
+            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+              {disabled ? (
+                <ActivityIndicator size="small" color={theme.colors.onSurfaceVariant} />
+              ) : (
+                <Icon
+                  name={isButtonEnabled ? 'send' : 'send-outline'}
+                  size={20}
+                  color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
+                />
+              )}
+            </Animated.View>
           </TouchableOpacity>
         </View>
 
@@ -327,6 +393,7 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
                 </TouchableOpacity>
               </View>
             )}
+            {/* Prompt suggestion chips removed as requested */}
           </View>
         )}
 
@@ -358,7 +425,7 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       ...getPrimaryShadow.card(theme),
     },
 
-    // **ENHANCED HEADER**: Edge-to-edge header with better visual separation
+    // **COMPACT HEADER**: Edge-to-edge header with compact layout
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -376,6 +443,12 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       gap: theme.spacing.md,
       flex: 1,
     },
+    mottoText: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '800',
+      letterSpacing: -0.3,
+    },
     iconContainer: {
       width: 42,
       height: 42,
@@ -392,18 +465,7 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       flexDirection: 'row',
       alignItems: 'center',
     },
-    headerTitle: {
-      ...theme.typography.titleLarge,
-      color: theme.colors.onSurface,
-      fontWeight: '700',
-      marginBottom: 2,
-    },
-    headerSubtitle: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
-      fontWeight: '400',
-      opacity: 0.8,
-    },
+    // Title removed for compactness
     characterCountContainer: {
       backgroundColor: theme.colors.primary + '12',
       borderRadius: theme.borderRadius.md,
@@ -414,8 +476,20 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
     },
     characterCount: {
       ...theme.typography.labelSmall,
-      color: theme.colors.primary,
+      color: theme.colors.onSurfaceVariant,
       fontWeight: '600',
+    },
+    progressPill: {
+      backgroundColor: theme.colors.primaryContainer,
+      borderRadius: theme.borderRadius.full,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 6,
+      marginRight: theme.spacing.sm,
+    },
+    progressPillText: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onPrimaryContainer,
+      fontWeight: '700',
     },
 
     // **EDGE-TO-EDGE INPUT SECTION**: Full-width input with enhanced design
@@ -536,6 +610,7 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       minWidth: 36,
       minHeight: 36,
     },
+    // Chips styles removed
 
     // **EDGE-TO-EDGE ERROR SECTION**: Full-width error display
     errorContainer: {

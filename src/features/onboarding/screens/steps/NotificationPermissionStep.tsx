@@ -13,6 +13,7 @@ import { getPrimaryShadow } from '@/themes/utils';
 import type { AppTheme } from '@/themes/types';
 import { logger } from '@/utils/debugConfig';
 import { ScreenSection } from '@/shared/components/layout';
+import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
 
 interface NotificationPermissionStepProps {
   onNext: () => void;
@@ -75,7 +76,7 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
           logger.warn('Token saved but backend save failed:', {
             error: saveResult.error.message || 'Unknown error',
           });
-          // Still consider this success for UX
+          // Treat RLS/duplicate cases as soft success
         }
 
         // Set default notification time (9:00 AM) so settings toggle shows as enabled
@@ -147,34 +148,18 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
   return (
     <OnboardingLayout edgeToEdge={true}>
       <Animated.View style={[styles.container, containerStyle]}>
-        {/* Enhanced Navigation Header */}
         <ScreenSection>
-          <View style={styles.navigationHeader}>
-            <TouchableOpacity
-              onPress={handleBack}
-              style={styles.backButtonContainer}
-              activeOpacity={0.7}
-              accessibilityLabel="Geri dön"
-              accessibilityRole="button"
-            >
-              <View style={styles.backButtonInner}>
-                <Ionicons name="arrow-back" size={20} color={theme.colors.onSurface} />
-                <Text style={styles.backButtonText}>Geri</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          <OnboardingNavHeader onBack={handleBack} />
         </ScreenSection>
 
         {/* Content Header */}
         <ScreenSection>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Ionicons name="notifications-outline" size={48} color={theme.colors.primary} />
+              <Ionicons name="notifications-outline" size={40} color={theme.colors.primary} />
             </View>
-            <Text style={styles.title}>Günlük Hatırlatıcılar 🔔</Text>
-            <Text style={styles.subtitle}>
-              Minnettarlık alışkanlığını sürdürmen için nazik hatırlatıcılar gönderelim mi?
-            </Text>
+            <Text style={styles.title}>Hatırlatıcılar 🔔</Text>
+            <Text style={styles.subtitle}>Günlük nazik hatırlatıcılar gönderelim mi?</Text>
           </View>
         </ScreenSection>
 
@@ -183,19 +168,17 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
           <View style={styles.benefitsContainer}>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIconContainer}>
-                <Ionicons name="time-outline" size={24} color={theme.colors.primary} />
+                <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.benefitContent}>
                 <Text style={styles.benefitTitle}>Düzenli Hatırlatma</Text>
-                <Text style={styles.benefitDescription}>
-                  Her gün aynı saatte nazik bir hatırlatıcı
-                </Text>
+                <Text style={styles.benefitDescription}>Her gün aynı saatte nazik bir uyarı</Text>
               </View>
             </View>
 
             <View style={styles.benefitItem}>
               <View style={styles.benefitIconContainer}>
-                <Ionicons name="leaf-outline" size={24} color="#4ECDC4" />
+                <Ionicons name="leaf-outline" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.benefitContent}>
                 <Text style={styles.benefitTitle}>Alışkanlık Oluşturma</Text>
@@ -207,7 +190,7 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
 
             <View style={styles.benefitItem}>
               <View style={styles.benefitIconContainer}>
-                <Ionicons name="settings-outline" size={24} color="#FF6B35" />
+                <Ionicons name="settings-outline" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.benefitContent}>
                 <Text style={styles.benefitTitle}>Tam Kontrol</Text>
@@ -298,27 +281,7 @@ const createStyles = (theme: AppTheme) =>
     container: {
       flex: 1,
     },
-    navigationHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingBottom: theme.spacing.md,
-    },
-    backButtonContainer: {
-      padding: theme.spacing.sm,
-      borderRadius: theme.borderRadius.md,
-      backgroundColor: theme.colors.surface,
-      ...getPrimaryShadow.small(theme),
-    },
-    backButtonInner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-    },
-    backButtonText: {
-      fontSize: theme.typography.body1.fontSize,
-      fontWeight: theme.typography.body1.fontWeight,
-      color: theme.colors.onSurface,
-    },
+    // Navigation header moved to shared component
     header: {
       alignItems: 'center',
       paddingVertical: theme.spacing.xl,

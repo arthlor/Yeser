@@ -1,8 +1,17 @@
 import { CompositeNavigationProp, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Animated, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  RefreshControl,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import ErrorState from '@/shared/components/ui/ErrorState';
@@ -24,6 +33,8 @@ import { getPrimaryShadow } from '@/themes/utils';
 import { logger } from '@/utils/debugConfig';
 import { analyticsService } from '@/services/analyticsService';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
+import { hapticFeedback } from '@/utils/hapticFeedback';
+import { useUserProfile } from '@/shared/hooks';
 
 // Define the type for the route params
 type EntryDetailScreenRouteProp = RouteProp<AppStackParamList, 'EntryDetail'>;
@@ -74,6 +85,7 @@ const EnhancedEntryDetailScreen: React.FC<{
 
   // Mutation hooks for editing and deleting operations
   const {
+    addStatement,
     editStatement,
     editStatementError,
     deleteStatement,
@@ -89,7 +101,13 @@ const EnhancedEntryDetailScreen: React.FC<{
   const [animationsReady, setAnimationsReady] = useState(false);
 
   // Use live data or fallback to route params
-  const gratitudeItems = currentEntry?.statements || [];
+  const gratitudeItems = useMemo(() => currentEntry?.statements || [], [currentEntry?.statements]);
+
+  // Scroll to edited card to keep it visible above the keyboard
+  const scrollRef = useRef<ScrollView>(null);
+  const cardPositionsRef = useRef<Record<number, number>>({});
+
+  // Removed filters per request
 
   // ✅ PERFORMANCE FIX: Memoized expensive date computation
   const dateInfo = useMemo(() => {
@@ -134,6 +152,10 @@ const EnhancedEntryDetailScreen: React.FC<{
   // ✅ PERFORMANCE FIX: Memoized styles
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  // Current user goal (applies retroactively to all days)
+  const { profile } = useUserProfile();
+  const dailyGoal = profile?.daily_gratitude_goal ?? 3;
+
   // 🎯 TOAST INTEGRATION: Refresh handler with toast feedback
   const handleRefresh = useCallback(async () => {
     try {
@@ -147,9 +169,26 @@ const EnhancedEntryDetailScreen: React.FC<{
     }
   }, [refetchEntry, showSuccess, showError]);
 
+  // Share all statements with nice formatting
+  const handleShare = useCallback(async () => {
+    try {
+      const title = `Minnet Kayıtları • ${formattedDate}`;
+      const body = gratitudeItems.map((s, i) => `${i + 1}. ${s}`).join('\n');
+      await Share.share({ message: `${title}\n\n${body}` });
+    } catch (error) {
+      logger.warn('Share failed', { error });
+      showError('Paylaşma başarısız. Lütfen tekrar deneyin.');
+    }
+  }, [formattedDate, gratitudeItems, showError]);
+
   // ✅ PERFORMANCE FIX: Memoized edit handler
   const handleEditStatement = useCallback((index: number) => {
     setEditingStatementIndex(index);
+    // Scroll into view after layout settles
+    const y = cardPositionsRef.current[index] ?? 0;
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(y - 100, 0), animated: true });
+    }, 150);
   }, []);
 
   // ✅ PERFORMANCE FIX: Memoized save handler with proper dependencies
@@ -172,6 +211,7 @@ const EnhancedEntryDetailScreen: React.FC<{
 
         // 🎯 TOAST INTEGRATION: Success feedback for statement updates
         showSuccess('Minnet kaydın başarıyla güncellendi');
+        hapticFeedback.success();
       } catch (error) {
         if (error instanceof ZodError) {
           // 🎯 TOAST INTEGRATION: Use toast for validation errors with user-friendly messages
@@ -204,8 +244,17 @@ const EnhancedEntryDetailScreen: React.FC<{
           statementIndex: index,
         });
 
-        // 🎯 TOAST INTEGRATION: Success feedback for statement deletion
-        showSuccess('Minnet ifadesi başarıyla silindi');
+        // 🎯 TOAST INTEGRATION: Success feedback for statement deletion with Undo
+        const deleted = gratitudeItems[index];
+        showSuccess('Minnet ifadesi silindi', {
+          action: {
+            label: 'Geri Al',
+            onPress: () => {
+              addStatement({ entryDate, statement: deleted });
+            },
+          },
+        });
+        hapticFeedback.medium();
       } catch (error) {
         // 🎯 TOAST INTEGRATION: Use toast for general errors
         showError('Silme işlemi başarısız oldu. Lütfen tekrar deneyin.');
@@ -216,7 +265,15 @@ const EnhancedEntryDetailScreen: React.FC<{
         );
       }
     },
-    [entryDate, deleteStatement, showSuccess, showError, handleMutationError]
+    [
+      entryDate,
+      deleteStatement,
+      showSuccess,
+      showError,
+      handleMutationError,
+      addStatement,
+      gratitudeItems,
+    ]
   );
 
   // Analytics tracking
@@ -391,6 +448,9 @@ const EnhancedEntryDetailScreen: React.FC<{
   return (
     <ScreenLayout
       scrollable={true}
+      scrollRef={scrollRef}
+      keyboardAware={true}
+      keyboardVerticalOffset={0}
       showsVerticalScrollIndicator={false}
       density="compact"
       edges={['top']}
@@ -409,9 +469,9 @@ const EnhancedEntryDetailScreen: React.FC<{
       <View style={styles.headerContainer}>
         <LinearGradient
           colors={[
-            theme.colors.primary + '15',
-            theme.colors.primaryContainer + '10',
-            theme.colors.surface + 'F0',
+            theme.colors.primary + '10',
+            theme.colors.primaryContainer + '08',
+            theme.colors.surface + 'FA',
             theme.colors.surface,
           ]}
           style={styles.headerGradient}
@@ -431,7 +491,7 @@ const EnhancedEntryDetailScreen: React.FC<{
               <View style={styles.headerIconContainer}>
                 <MaterialCommunityIcons
                   name="book-open-page-variant"
-                  size={24}
+                  size={20}
                   color={theme.colors.primary}
                 />
               </View>
@@ -456,6 +516,40 @@ const EnhancedEntryDetailScreen: React.FC<{
                   color={isRefetching ? theme.colors.primary : theme.colors.onSurfaceVariant}
                 />
               </TouchableOpacity>
+
+              {/* Share all statements */}
+              <TouchableOpacity
+                onPress={handleShare}
+                style={styles.headerActionButton}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons
+                  name="share-variant"
+                  size={20}
+                  color={theme.colors.onSurfaceVariant}
+                />
+              </TouchableOpacity>
+
+              {/* Quick add action: go to add screen for this date */}
+              <TouchableOpacity
+                onPress={() => {
+                  if (isToday) {
+                    navigation.navigate('MainAppTabs', {
+                      screen: 'DailyEntryTab' as never,
+                    } as never);
+                  } else {
+                    navigation.navigate('PastEntryCreation', { date: entryDate });
+                  }
+                }}
+                style={styles.headerActionButton}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons
+                  name="plus"
+                  size={20}
+                  color={theme.colors.onSurfaceVariant}
+                />
+              </TouchableOpacity>
             </View>
           </View>
         </LinearGradient>
@@ -470,12 +564,7 @@ const EnhancedEntryDetailScreen: React.FC<{
           },
         ]}
       >
-        <ThemedCard
-          variant="elevated"
-          density="comfortable"
-          elevation="floating"
-          style={styles.heroCard}
-        >
+        <ThemedCard variant="elevated" density="compact" elevation="card" style={styles.heroCard}>
           <View style={styles.heroContent}>
             <View style={styles.dateSection}>
               <View style={styles.dateDisplayContainer}>
@@ -519,23 +608,27 @@ const EnhancedEntryDetailScreen: React.FC<{
               <View style={styles.progressSection}>
                 <View style={styles.progressHeader}>
                   <MaterialCommunityIcons
-                    name={gratitudeItems.length >= 3 ? 'trophy' : 'target'}
+                    name={gratitudeItems.length >= dailyGoal ? 'trophy' : 'target'}
                     size={16}
-                    color={gratitudeItems.length >= 3 ? theme.colors.success : theme.colors.primary}
+                    color={
+                      gratitudeItems.length >= dailyGoal
+                        ? theme.colors.success
+                        : theme.colors.primary
+                    }
                   />
                   <Text
                     style={[
                       styles.progressTitle,
-                      gratitudeItems.length >= 3 && styles.progressTitleComplete,
+                      gratitudeItems.length >= dailyGoal && styles.progressTitleComplete,
                     ]}
                   >
-                    {gratitudeItems.length >= 3
+                    {gratitudeItems.length >= dailyGoal
                       ? isToday
                         ? '🎉 Bugün hedef tamamlandı!'
                         : '🎉 O gün hedef tamamlanmıştı!'
                       : isToday
-                        ? `Hedefe ${3 - gratitudeItems.length} kaldı`
-                        : `O gün hedefe ${3 - gratitudeItems.length} minnet kalmıştı`}
+                        ? `Hedefe ${Math.max(dailyGoal - gratitudeItems.length, 0)} kaldı`
+                        : `O gün hedefe ${Math.max(dailyGoal - gratitudeItems.length, 0)} minnet kalmıştı`}
                   </Text>
                 </View>
                 <View style={styles.progressLineContainer}>
@@ -544,16 +637,16 @@ const EnhancedEntryDetailScreen: React.FC<{
                       style={[
                         styles.progressLineFill,
                         {
-                          width: `${Math.min((gratitudeItems.length / 3) * 100, 100)}%`,
+                          width: `${Math.min((gratitudeItems.length / Math.max(dailyGoal, 1)) * 100, 100)}%`,
                           backgroundColor:
-                            gratitudeItems.length >= 3
+                            gratitudeItems.length >= dailyGoal
                               ? theme.colors.success
                               : theme.colors.primary,
                         },
                       ]}
                     />
                   </View>
-                  {gratitudeItems.length >= 3 && (
+                  {gratitudeItems.length >= dailyGoal && (
                     <View style={styles.goalCompleteIndicator}>
                       <MaterialCommunityIcons
                         name="check-circle"
@@ -569,13 +662,15 @@ const EnhancedEntryDetailScreen: React.FC<{
         </ThemedCard>
       </Animated.View>
 
+      {/* Filters removed */}
+
       {/* 🎯 ENHANCED CONTENT ZONE: Complete edge-to-edge */}
       {gratitudeItems.length > 0 ? (
         <View style={styles.contentZone}>
           <ThemedCard
             variant="elevated"
-            density="standard"
-            elevation="card"
+            density="compact"
+            elevation="xs"
             style={styles.statementsCard}
           >
             <View style={styles.statementsHeader}>
@@ -599,7 +694,7 @@ const EnhancedEntryDetailScreen: React.FC<{
             <View style={styles.statementsContainer}>
               {gratitudeItems.map((item, index) => (
                 <Animated.View
-                  key={index}
+                  key={`${item}-${index}`}
                   style={[
                     styles.statementWrapper,
                     animationsReady && {
@@ -614,6 +709,9 @@ const EnhancedEntryDetailScreen: React.FC<{
                       ],
                     },
                   ]}
+                  onLayout={(event) => {
+                    cardPositionsRef.current[index] = event.nativeEvent.layout.y;
+                  }}
                 >
                   <StatementDetailCard
                     statement={item}
@@ -647,6 +745,8 @@ const EnhancedEntryDetailScreen: React.FC<{
       ) : (
         <EmptyStateEnhanced />
       )}
+
+      {/* FAB removed */}
     </ScreenLayout>
   );
 });
@@ -661,22 +761,22 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.surface,
     },
     headerGradient: {
-      paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.lg,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.md,
     },
     headerContent: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.md,
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
     backButton: {
       padding: theme.spacing.xs,
     },
     backButtonInner: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       backgroundColor: theme.colors.surface + 'E0',
       justifyContent: 'center',
       alignItems: 'center',
@@ -688,42 +788,42 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.xs,
     },
     headerIconContainer: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       backgroundColor: theme.colors.primaryContainer + '40',
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 2,
+      borderWidth: 1,
       borderColor: theme.colors.primary + '20',
     },
     headerTextContainer: {
       flex: 1,
     },
     headerTitle: {
-      ...theme.typography.headlineSmall,
+      ...theme.typography.titleLarge,
       color: theme.colors.onSurface,
-      fontWeight: '800',
-      letterSpacing: -0.5,
-      lineHeight: 28,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+      lineHeight: 24,
     },
     headerSubtitle: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
       fontWeight: '500',
-      marginTop: 2,
+      marginTop: 1,
     },
     headerActions: {
       flexDirection: 'row',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.xs,
     },
     headerActionButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       backgroundColor: theme.colors.surface + 'E0',
       justifyContent: 'center',
       alignItems: 'center',
@@ -733,10 +833,7 @@ const createStyles = (theme: AppTheme) =>
     },
 
     // 🎯 ENHANCED HERO ZONE: Complete edge-to-edge layout
-    heroZone: {
-      marginTop: theme.spacing.sm,
-      // Removed marginHorizontal for complete edge-to-edge
-    },
+    heroZone: { marginTop: theme.spacing.xs },
     heroCard: {
       borderRadius: 0, // Sharp edges for true edge-to-edge
       backgroundColor: theme.colors.surface,
@@ -747,69 +844,69 @@ const createStyles = (theme: AppTheme) =>
       ...getPrimaryShadow.floating(theme),
     },
     heroContent: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.lg,
     },
     dateSection: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
     },
     dateDisplayContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.lg,
+      gap: theme.spacing.md,
       flex: 1,
     },
     dateDisplayBadge: {
-      width: 60,
-      height: 60,
-      borderRadius: theme.borderRadius.xl,
+      width: 52,
+      height: 52,
+      borderRadius: theme.borderRadius.lg,
       backgroundColor: theme.colors.primaryContainer,
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 3,
+      borderWidth: 2,
       borderColor: theme.colors.primary + '30',
       ...getPrimaryShadow.medium(theme),
     },
     dayNumber: {
-      ...theme.typography.titleLarge,
+      ...theme.typography.titleMedium,
       color: theme.colors.onPrimaryContainer,
       fontWeight: '900',
-      fontSize: 22,
-      lineHeight: 24,
+      fontSize: 18,
+      lineHeight: 20,
     },
     monthText: {
       ...theme.typography.labelSmall,
       color: theme.colors.onPrimaryContainer,
       fontWeight: '800',
-      fontSize: 9,
-      letterSpacing: 1.2,
+      fontSize: 8,
+      letterSpacing: 1,
     },
     dateInfo: {
       flex: 1,
     },
     dateText: {
-      ...theme.typography.headlineSmall,
+      ...theme.typography.titleLarge,
       color: theme.colors.onSurface,
-      fontWeight: '800',
-      letterSpacing: -0.7,
-      marginBottom: theme.spacing.sm,
-      lineHeight: 30,
+      fontWeight: '700',
+      letterSpacing: -0.4,
+      marginBottom: theme.spacing.xs,
+      lineHeight: 24,
     },
     relativeDateContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.xs,
       backgroundColor: theme.colors.primaryContainer + '20',
-      paddingHorizontal: theme.spacing.sm + 4,
-      paddingVertical: theme.spacing.xs + 2,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
       borderRadius: theme.borderRadius.full,
       alignSelf: 'flex-start',
     },
     relativeDateText: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodySmall,
       color: theme.colors.primary,
       fontWeight: '600',
     },
@@ -847,24 +944,24 @@ const createStyles = (theme: AppTheme) =>
     progressSection: {
       borderTopWidth: 1,
       borderTopColor: theme.colors.outline + '10',
-      paddingTop: theme.spacing.lg,
+      paddingTop: theme.spacing.md,
       backgroundColor: theme.colors.primaryContainer + '08',
-      marginHorizontal: -theme.spacing.lg,
-      paddingHorizontal: theme.spacing.lg,
-      paddingBottom: theme.spacing.md,
+      marginHorizontal: -theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.sm,
       borderRadius: theme.borderRadius.lg,
     },
     progressHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.md,
-      marginBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
+      marginBottom: theme.spacing.sm,
     },
     progressTitle: {
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
       color: theme.colors.onSurface,
       fontWeight: '700',
-      letterSpacing: -0.3,
+      letterSpacing: -0.2,
       flex: 1,
     },
     progressTitleComplete: {
@@ -873,11 +970,11 @@ const createStyles = (theme: AppTheme) =>
     progressLineContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
     progressLine: {
       flex: 1,
-      height: 8,
+      height: 6,
       backgroundColor: theme.colors.primaryContainer + '30',
       borderRadius: theme.borderRadius.full,
       overflow: 'hidden',
@@ -894,11 +991,7 @@ const createStyles = (theme: AppTheme) =>
     },
 
     // 🎯 ENHANCED CONTENT ZONE: Complete edge-to-edge layout
-    contentZone: {
-      marginTop: theme.spacing.md,
-      marginBottom: theme.spacing.xl,
-      // Removed marginHorizontal for complete edge-to-edge
-    },
+    contentZone: { marginTop: theme.spacing.sm, marginBottom: theme.spacing.lg },
     statementsCard: {
       borderRadius: 0, // Sharp edges for true edge-to-edge
       backgroundColor: theme.colors.surface,
@@ -912,9 +1005,9 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.lg,
-      marginBottom: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+      marginBottom: theme.spacing.xs,
       backgroundColor: theme.colors.surface,
       borderBottomWidth: 2,
       borderBottomColor: theme.colors.outline + '10',
@@ -922,46 +1015,46 @@ const createStyles = (theme: AppTheme) =>
     statementsHeaderLeft: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
       flex: 1,
     },
     statementsIconContainer: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       backgroundColor: theme.colors.primaryContainer + '40',
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 2,
+      borderWidth: 1,
       borderColor: theme.colors.primary + '20',
     },
     statementsTitle: {
-      ...theme.typography.titleLarge,
+      ...theme.typography.titleMedium,
       color: theme.colors.onSurface,
-      fontWeight: '800',
-      letterSpacing: -0.5,
+      fontWeight: '700',
+      letterSpacing: -0.2,
     },
     statementsCounter: {
       backgroundColor: theme.colors.primaryContainer,
       borderRadius: theme.borderRadius.full,
-      width: 36,
-      height: 36,
+      width: 28,
+      height: 28,
       justifyContent: 'center',
       alignItems: 'center',
       ...getPrimaryShadow.small(theme),
-      borderWidth: 2,
+      borderWidth: 1,
       borderColor: theme.colors.primary + '20',
     },
     statementsCountText: {
-      ...theme.typography.labelLarge,
+      ...theme.typography.labelMedium,
       color: theme.colors.onPrimaryContainer,
-      fontWeight: '900',
+      fontWeight: '800',
     },
     statementsContainer: {
       gap: theme.spacing.xs,
       paddingHorizontal: theme.spacing.md,
-      paddingBottom: theme.spacing.lg,
-      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.md,
+      paddingTop: theme.spacing.xs,
     },
     statementWrapper: {
       // Container for individual statements
@@ -972,6 +1065,7 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.lg,
       overflow: 'hidden',
     },
+    // FAB styles removed
 
     // 🎯 ENHANCED EMPTY STATE: Complete Edge-to-Edge
     emptyStateContainer: {

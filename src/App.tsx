@@ -15,7 +15,14 @@ import {
 import * as Linking from 'expo-linking';
 import { StatusBar, type StatusBarStyle } from 'expo-status-bar';
 import React from 'react';
-import { AppState, AppStateStatus, InteractionManager, StyleSheet, View } from 'react-native';
+import {
+  AppState,
+  AppStateStatus,
+  InteractionManager,
+  LogBox,
+  StyleSheet,
+  View,
+} from 'react-native';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import RootNavigator from './navigation/RootNavigator';
 import { useTheme } from './providers/ThemeProvider';
@@ -30,6 +37,15 @@ import { AppProviders } from './providers/AppProviders';
 import SplashOverlayProvider from './providers/SplashOverlayProvider';
 import { authCoordinator } from './features/auth/services/authCoordinator';
 import { supabaseService } from './utils/supabaseClient';
+
+// Silence known upstream deprecation warnings from dependencies during development
+if (__DEV__) {
+  LogBox.ignoreLogs([
+    'ProgressBarAndroid has been extracted from react-native core',
+    'Clipboard has been extracted from react-native core',
+    'PushNotificationIOS has been extracted from react-native core',
+  ]);
+}
 
 // Helper function to get the active route name
 const getActiveRouteName = (state: NavigationState | undefined): string | undefined => {
@@ -123,67 +139,9 @@ const handleDeepLink = async (url: string, databaseReady: boolean = false) => {
     if (!atomicUrlProcessingCheck(url)) {
       return;
     }
-    // Parse the URL with error protection
-    const parsedUrl = new URL(url);
 
-    // Check if it's a magic link confirmation - FIXED to match actual Supabase redirect URL
-    if (
-      parsedUrl.pathname === '/auth/callback' ||
-      parsedUrl.pathname === '/auth/confirm' ||
-      parsedUrl.pathname === '/confirm' ||
-      parsedUrl.pathname === '/callback'
-    ) {
-      logger.debug('Magic link path detected');
-
-      // Extract tokens from URL fragment or query parameters
-      const fragment = parsedUrl.hash.substring(1); // Remove the # character
-      const fragmentParams = new URLSearchParams(fragment);
-      const queryParams = parsedUrl.searchParams;
-
-      // Check for OAuth-style tokens (access_token + refresh_token)
-      const accessToken = fragmentParams.get('access_token') || queryParams.get('access_token');
-      const refreshToken = fragmentParams.get('refresh_token') || queryParams.get('refresh_token');
-
-      if (accessToken && refreshToken) {
-        // Handle OAuth-style tokens (Google OAuth callback)
-        if (databaseReady) {
-          logger.debug('OAuth tokens found, processing immediately');
-          try {
-            const authStore = useAuthStore.getState();
-            await authStore.setSessionFromTokens(accessToken, refreshToken);
-            logger.debug('OAuth token authentication completed successfully');
-            analyticsService.logEvent('oauth_tokens_processed');
-          } catch (error) {
-            logger.error('OAuth token authentication failed:', {
-              error: (error as Error).message,
-            });
-            analyticsService.logEvent('oauth_tokens_error', { error: (error as Error).message });
-          }
-        } else {
-          // Database not ready, delegate to authCoordinator for queuing
-          logger.debug('OAuth tokens found but database not ready, delegating to authCoordinator');
-          await authCoordinator.handleAuthCallback(url, databaseReady);
-        }
-      } else {
-        // Handle OTP-style tokens (fallback for traditional magic links)
-        const tokenHash =
-          fragmentParams.get('token_hash') ||
-          fragmentParams.get('token') ||
-          queryParams.get('token_hash') ||
-          queryParams.get('token');
-        if (tokenHash) {
-          logger.debug('OTP token found, delegating to authCoordinator...');
-
-          // Delegate to the new auth coordinator
-          await authCoordinator.handleAuthCallback(url, databaseReady);
-        } else {
-          logger.error('No valid tokens found in magic link URL');
-          analyticsService.logEvent('magic_link_invalid');
-        }
-      }
-    } else {
-      logger.debug('Not a magic link path:', { pathname: parsedUrl.pathname });
-    }
+    // Delegate unified parsing and handling to the centralized auth coordinator
+    await authCoordinator.handleAuthCallback(url, databaseReady);
   } catch (error) {
     logger.error('Error parsing deep link:', { error: (error as Error).message, url });
     analyticsService.logEvent('deep_link_error', { error: (error as Error).message });

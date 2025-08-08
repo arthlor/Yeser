@@ -32,7 +32,8 @@ export const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
     <ScreenLayout
       edges={['top']} // Handle top safe area only
       edgeToEdge={true} // Always enable fullscreen layout
-      scrollable={true}
+      scrollable={false} // Compact onboarding: avoid scroll
+      density="compact"
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContainer}
       style={styles.screenContainer}
@@ -54,9 +55,8 @@ const createStyles = (theme: AppTheme, insets: { bottom: number }, edgeToEdge: b
     },
     scrollContainer: {
       flexGrow: 1,
-      paddingHorizontal: edgeToEdge ? 0 : theme.spacing.lg, // Consistent horizontal padding
-      // Ensure content never touches edges
-      paddingTop: theme.spacing.md,
+      paddingHorizontal: edgeToEdge ? 0 : theme.spacing.md,
+      paddingTop: theme.spacing.sm,
     },
     contentContainer: {
       flex: 1,
@@ -65,7 +65,7 @@ const createStyles = (theme: AppTheme, insets: { bottom: number }, edgeToEdge: b
     androidBottomSpacer: {
       // Extra bottom padding for Android to prevent overlap with navigation bar
       paddingBottom:
-        Platform.OS === 'android' ? Math.max(insets.bottom, theme.spacing.xl) : insets.bottom,
+        Platform.OS === 'android' ? Math.max(insets.bottom, theme.spacing.lg) : insets.bottom,
       backgroundColor: theme.colors.background,
     },
   });

@@ -10,6 +10,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { Share } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -26,7 +27,7 @@ import {
   textColors,
   unifiedShadows,
 } from '@/themes/utils';
-import { ThreeDotsMenu } from './StatementCardBase';
+import { ThreeDotsMenu, useReducedMotion } from './StatementCardBase';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 // Simplified props interface focusing on core functionality
@@ -103,6 +104,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
 
   // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
   const animations = useCoordinatedAnimations();
+  const { reducedMotion } = useReducedMotion();
 
   // Sync local statement with prop changes
   useEffect(() => {
@@ -144,12 +146,14 @@ const StatementCard: React.FC<StatementCardProps> = ({
   useEffect(() => {
     if (isEditing) {
       // Provide gentle haptic feedback for editing state
-      triggerHaptic('light');
+      if (!reducedMotion) {
+        triggerHaptic('light');
+      }
       animations.animateLayoutTransition(true, 1, { duration: 300 });
     } else {
       animations.animateLayoutTransition(false, 0, { duration: 300 });
     }
-  }, [isEditing, animations, triggerHaptic]);
+  }, [isEditing, animations, triggerHaptic, reducedMotion]);
 
   // 🚀 TOAST INTEGRATION: Enhanced action handlers with toast confirmation system
   const handleDelete = () => {
@@ -248,6 +252,15 @@ const StatementCard: React.FC<StatementCardProps> = ({
   };
 
   const variantStyles = getVariantStyles();
+
+  const handleLongPress = useCallback(async () => {
+    try {
+      await Share.share({ message: localStatement });
+      triggerHaptic('success');
+    } catch {
+      // ignore
+    }
+  }, [localStatement, triggerHaptic]);
 
   // Render editing action buttons
   const renderEditingActions = () => {
@@ -362,15 +375,21 @@ const StatementCard: React.FC<StatementCardProps> = ({
       <TouchableOpacity
         activeOpacity={1}
         onPress={onPress}
+        onLongPress={handleLongPress}
         accessibilityLabel={accessibilityLabel || `Minnet: ${statement}`}
         accessibilityRole="button"
+        accessibilityHint="Detayları görüntülemek için dokunun"
       >
         {CardContent}
       </TouchableOpacity>
     );
   }
 
-  return CardContent;
+  return (
+    <TouchableOpacity activeOpacity={1} onLongPress={handleLongPress} disabled={!!onPress}>
+      {CardContent}
+    </TouchableOpacity>
+  );
 };
 
 // Enhanced styles with elevated design system

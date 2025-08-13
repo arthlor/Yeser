@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
+import { alpha, blend, darken, lighten } from '@/themes/utils';
 import {
   BaseStatementCardProps,
   createSharedStyles,
@@ -14,6 +15,7 @@ import {
   useResponsiveLayout,
   useStatementCardAnimations,
 } from './StatementCardBase';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // 🏠 HOME/THROWBACK SPECIFIC PROPS
 interface StatementDisplayCardProps extends BaseStatementCardProps {
@@ -57,6 +59,48 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
   // OPTIMIZED: Memoize shared styles to prevent recreation on every render
   const sharedStyles = useMemo(() => createSharedStyles(theme, layout), [theme, layout]);
   const styles = useMemo(() => createStyles(theme, sharedStyles), [theme, sharedStyles]);
+
+  // Premium border gradient (Apple-like polish) for all variants
+  const borderGradientColors = useMemo(() => {
+    const isLight = theme.name === 'light';
+    const primaryEdge = alpha(theme.colors.primary, isLight ? 0.6 : 0.5);
+    const midBlend1 = blend(
+      theme.colors.primary,
+      theme.colors.secondary || theme.colors.primary,
+      0.5
+    );
+    const midBlend2 = blend(
+      theme.colors.primary,
+      theme.colors.tertiary || theme.colors.primary,
+      0.5
+    );
+    const mid1 = alpha(midBlend1, isLight ? 0.38 : 0.32);
+    const mid2 = alpha(midBlend2, isLight ? 0.28 : 0.24);
+    return [primaryEdge, mid1, mid2, primaryEdge] as const;
+  }, [theme]);
+  const borderGradientLocations = useMemo(() => [0, 0.33, 0.67, 1] as const, []);
+  const borderGradientStart = useMemo(() => ({ x: 0.08, y: 0 }) as const, []);
+  const borderGradientEnd = useMemo(() => ({ x: 0.92, y: 1 }) as const, []);
+
+  // Subtle surface sheen overlay
+  const surfaceGradientColors = useMemo(() => {
+    const isLight = theme.name === 'light';
+    const topSheen = alpha(
+      lighten(theme.colors.surface, isLight ? 0.06 : 0.03),
+      isLight ? 0.9 : 0.85
+    );
+    const bottomTint = alpha(
+      blend(
+        darken(theme.colors.surface, isLight ? 0.02 : 0.04),
+        theme.colors.primary,
+        isLight ? 0.06 : 0.04
+      ),
+      isLight ? 0.9 : 0.85
+    );
+    return [topSheen, bottomTint] as const;
+  }, [theme]);
+  const surfaceGradientStart = useMemo(() => ({ x: 0, y: 0 }) as const, []);
+  const surfaceGradientEnd = useMemo(() => ({ x: 0, y: 1 }) as const, []);
 
   const animations = useStatementCardAnimations();
   const { triggerHaptic } = useHapticFeedback(hapticFeedback);
@@ -133,6 +177,21 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
       style={style ? [variantStyles.container, style] : variantStyles.container}
       edgeToEdge={edgeToEdge}
     >
+      {/* Premium gradient border and sheen overlay */}
+      <LinearGradient
+        colors={borderGradientColors}
+        locations={borderGradientLocations}
+        style={styles.gradientBorder}
+        start={borderGradientStart}
+        end={borderGradientEnd}
+      />
+      <LinearGradient
+        colors={surfaceGradientColors}
+        style={styles.surfaceGradientOverlay}
+        start={surfaceGradientStart}
+        end={surfaceGradientEnd}
+      />
+
       <View style={variantStyles.content}>
         {/* Enhanced Quote Icon with better positioning */}
         {showQuotes && (
@@ -221,12 +280,28 @@ StatementDisplayCard.displayName = 'StatementDisplayCard';
 // 🎨 ENHANCED STYLES FOR DISPLAY CARD
 const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSharedStyles>) =>
   StyleSheet.create({
+    gradientBorder: {
+      position: 'absolute',
+      top: -1,
+      left: -1,
+      right: -1,
+      bottom: -1,
+      borderRadius: theme.borderRadius.md + 1,
+      opacity: 1,
+    } as ViewStyle,
+    surfaceGradientOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: theme.borderRadius.md,
+      opacity: 0.9,
+    } as ViewStyle,
     // Memory Variant - Enhanced nostalgic and warm feeling
     memoryContainer: {
       ...sharedStyles.getContainerStyle('elevated'),
       backgroundColor: theme.colors.surface,
-      borderLeftWidth: sharedStyles.layout.isCompact ? 3 : 4,
-      borderLeftColor: theme.colors.primary + '70',
     } as ViewStyle,
 
     memoryContent: {
@@ -253,6 +328,9 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
     // Inspiration Variant - Enhanced uplifting and prominent
     inspirationContainer: {
       ...sharedStyles.getContainerStyle('highlighted'),
+      // Remove thick left accent for a cleaner look on Home throwbacks
+      borderLeftWidth: 0,
+      borderLeftColor: 'transparent',
     } as ViewStyle,
 
     inspirationContent: {

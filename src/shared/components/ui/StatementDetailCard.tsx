@@ -15,6 +15,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { AppTheme } from '@/themes/types';
+import { alpha, blend, darken, lighten } from '@/themes/utils';
 import {
   createSharedStyles,
   formatStatementDate,
@@ -91,6 +92,48 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
     const layout = useResponsiveLayout();
     const sharedStyles = createSharedStyles(theme, layout);
     const styles = useMemo(() => createStyles(theme, sharedStyles), [theme, sharedStyles]);
+
+    const gradientColors = useMemo(() => {
+      const isLight = theme.name === 'light';
+      const primaryEdge = alpha(theme.colors.primary, isLight ? 0.6 : 0.5);
+      const midBlend1 = blend(
+        theme.colors.primary,
+        theme.colors.secondary || theme.colors.primary,
+        0.5
+      );
+      const midBlend2 = blend(
+        theme.colors.primary,
+        theme.colors.tertiary || theme.colors.primary,
+        0.5
+      );
+      const mid1 = alpha(midBlend1, isLight ? 0.38 : 0.32);
+      const mid2 = alpha(midBlend2, isLight ? 0.28 : 0.24);
+
+      return [primaryEdge, mid1, mid2, primaryEdge] as const;
+    }, [theme]);
+    const gradientLocations = useMemo(() => [0, 0.33, 0.67, 1] as const, []);
+    const gradientStart = useMemo(() => ({ x: 0.08, y: 0 }) as const, []);
+    const gradientEnd = useMemo(() => ({ x: 0.92, y: 1 }) as const, []);
+
+    // Subtle surface sheen overlay to achieve an Apple-like polished feel
+    const surfaceGradientColors = useMemo(() => {
+      const isLight = theme.name === 'light';
+      const topSheen = alpha(
+        lighten(theme.colors.surface, isLight ? 0.06 : 0.03),
+        isLight ? 0.9 : 0.85
+      );
+      const bottomTint = alpha(
+        blend(
+          darken(theme.colors.surface, isLight ? 0.02 : 0.04),
+          theme.colors.primary,
+          isLight ? 0.06 : 0.04
+        ),
+        isLight ? 0.9 : 0.85
+      );
+      return [topSheen, bottomTint] as const;
+    }, [theme]);
+    const surfaceGradientStart = useMemo(() => ({ x: 0, y: 0 }) as const, []);
+    const surfaceGradientEnd = useMemo(() => ({ x: 0, y: 1 }) as const, []);
 
     const animations = useStatementCardAnimations();
     const { triggerHaptic } = useHapticFeedback(hapticFeedback);
@@ -309,15 +352,19 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
       >
         {/* Built-in subtle gradient border for elegance */}
         <LinearGradient
-          colors={[
-            theme.colors.primary,
-            theme.colors.secondary || theme.colors.primaryContainer,
-            theme.colors.tertiary || theme.colors.primary,
-            theme.colors.primary,
-          ]}
+          colors={gradientColors}
+          locations={gradientLocations}
           style={styles.gradientBorder}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          start={gradientStart}
+          end={gradientEnd}
+          pointerEvents="none"
+        />
+        {/* Subtle surface sheen for polished depth */}
+        <LinearGradient
+          colors={surfaceGradientColors}
+          style={styles.surfaceGradientOverlay}
+          start={surfaceGradientStart}
+          end={surfaceGradientEnd}
           pointerEvents="none"
         />
         <View style={variantStyles.content}>
@@ -469,7 +516,16 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       right: -1,
       bottom: -1,
       borderRadius: theme.borderRadius.md + 1,
-      opacity: 0.32,
+      opacity: 1,
+    } as ViewStyle,
+    surfaceGradientOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: theme.borderRadius.md,
+      opacity: 0.9,
     } as ViewStyle,
     // Detailed Variant - Enhanced readability and context
     detailedContainer: {

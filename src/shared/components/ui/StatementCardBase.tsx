@@ -473,8 +473,9 @@ export const createSharedStyles = (
             ...baseStyle,
             backgroundColor: alpha(theme.colors.primaryContainer, 0.08),
             borderWidth: 0,
-            borderLeftWidth: layout.isCompact ? 3 : 4,
-            borderLeftColor: theme.colors.primary,
+            // Remove thick left accent; rely on new premium gradients for emphasis
+            borderLeftWidth: 0,
+            borderLeftColor: 'transparent',
             ...enhancedShadows.floating,
           };
         case 'minimal':
@@ -614,7 +615,7 @@ export const useReducedMotion = () => {
     // Listener compatibility across RN versions
     const handler = (value: boolean) => setReducedMotion(Boolean(value));
     const subscription: { remove?: () => void } | undefined = // @ts-ignore - older RN types
-    AccessibilityInfo.addEventListener?.('reduceMotionChanged', handler);
+      AccessibilityInfo.addEventListener?.('reduceMotionChanged', handler);
 
     return () => {
       isMounted = false;

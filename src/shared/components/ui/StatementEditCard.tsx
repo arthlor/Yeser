@@ -13,7 +13,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
-import { alpha } from '@/themes/utils';
+import { alpha, blend, darken, lighten } from '@/themes/utils';
 import {
   formatStatementDate,
   InteractiveStatementCardProps,
@@ -77,6 +77,48 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
   const { theme } = useTheme();
 
   const styles = useMemo(() => createStyles(theme), [theme]);
+
+  // Premium border gradient (Apple-like polish)
+  const borderGradientColors = useMemo(() => {
+    const isLight = theme.name === 'light';
+    const primaryEdge = alpha(theme.colors.primary, isLight ? 0.6 : 0.5);
+    const midBlend1 = blend(
+      theme.colors.primary,
+      theme.colors.secondary || theme.colors.primary,
+      0.5
+    );
+    const midBlend2 = blend(
+      theme.colors.primary,
+      theme.colors.tertiary || theme.colors.primary,
+      0.5
+    );
+    const mid1 = alpha(midBlend1, isLight ? 0.38 : 0.32);
+    const mid2 = alpha(midBlend2, isLight ? 0.28 : 0.24);
+    return [primaryEdge, mid1, mid2, primaryEdge] as const;
+  }, [theme]);
+  const borderGradientLocations = useMemo(() => [0, 0.33, 0.67, 1] as const, []);
+  const borderGradientStart = useMemo(() => ({ x: 0.08, y: 0 }) as const, []);
+  const borderGradientEnd = useMemo(() => ({ x: 0.92, y: 1 }) as const, []);
+
+  // Subtle surface sheen overlay
+  const surfaceGradientColors = useMemo(() => {
+    const isLight = theme.name === 'light';
+    const topSheen = alpha(
+      lighten(theme.colors.surface, isLight ? 0.06 : 0.03),
+      isLight ? 0.9 : 0.85
+    );
+    const bottomTint = alpha(
+      blend(
+        darken(theme.colors.surface, isLight ? 0.02 : 0.04),
+        theme.colors.primary,
+        isLight ? 0.06 : 0.04
+      ),
+      isLight ? 0.9 : 0.85
+    );
+    return [topSheen, bottomTint] as const;
+  }, [theme]);
+  const surfaceGradientStart = useMemo(() => ({ x: 0, y: 0 }) as const, []);
+  const surfaceGradientEnd = useMemo(() => ({ x: 0, y: 1 }) as const, []);
 
   const animations = useStatementCardAnimations();
   const { triggerHaptic } = useHapticFeedback(hapticFeedback);
@@ -182,15 +224,17 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
   const CardContent = (
     <View style={[styles.edgeToEdgeContainer, style]}>
       <LinearGradient
-        colors={[
-          theme.colors.primary,
-          theme.colors.secondary || theme.colors.primaryContainer,
-          theme.colors.tertiary || theme.colors.primary,
-          theme.colors.primary,
-        ]}
+        colors={borderGradientColors}
+        locations={borderGradientLocations}
         style={styles.edgeToEdgeGradientBorder}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        start={borderGradientStart}
+        end={borderGradientEnd}
+      />
+      <LinearGradient
+        colors={surfaceGradientColors}
+        style={styles.surfaceGradientOverlay}
+        start={surfaceGradientStart}
+        end={surfaceGradientEnd}
       />
       {/* Inner glow container for sophisticated border effect */}
       <View style={styles.innerGlowContainer}>
@@ -427,6 +471,15 @@ const createStyles = (theme: AppTheme) =>
       bottom: -1,
       borderRadius: theme.borderRadius.md + 1,
       opacity: 0.6,
+    } as ViewStyle,
+    surfaceGradientOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: theme.borderRadius.md,
+      opacity: 0.9,
     } as ViewStyle,
 
     // MODERN CARD HEADER - Clean and minimal

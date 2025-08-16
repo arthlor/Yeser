@@ -20,7 +20,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
-import { logger } from '@/utils/debugConfig';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { hapticFeedback } from '@/utils/hapticFeedback';
@@ -158,7 +157,6 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       if (autoFocus && inputRef.current && !disabled) {
         const timer = setTimeout(() => {
           if (inputRef.current) {
-            logger.debug('GratitudeInputBar: Attempting auto-focus...');
             inputRef.current.focus();
           }
         }, 300); // Longer delay for stability
@@ -177,7 +175,6 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
     }, []);
 
     const handleSubmit = () => {
-      logger.debug('GratitudeInputBar: Submit button pressed', { text: inputText.trim() });
       if (inputText.trim() && !disabled) {
         hapticFeedback.light();
         submittedWhileDisabledRef.current = true;
@@ -187,7 +184,6 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
         // Keep focus for continuous input - with error handling
         setTimeout(() => {
           if (inputRef.current) {
-            logger.debug('GratitudeInputBar: Re-focusing after submit');
             inputRef.current.focus();
           }
         }, 100);
@@ -195,17 +191,14 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
     };
 
     const handleFocus = () => {
-      logger.debug('GratitudeInputBar: Input focused');
       setIsFocused(true);
     };
 
     const handleBlur = () => {
-      logger.debug('GratitudeInputBar: Input blurred');
       setIsFocused(false);
     };
 
     const handleChangeText = (text: string) => {
-      logger.debug('GratitudeInputBar: Text changed', { text });
       setInputText(text);
     };
 

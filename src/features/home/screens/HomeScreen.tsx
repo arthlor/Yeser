@@ -3,11 +3,7 @@ import DailyInspiration from '../components/DailyInspiration';
 import HeroSection from '../components/HeroSection';
 import ThrowbackTeaser from '@/features/throwback/components/ThrowbackTeaser';
 import StreakDetailsScreen from '@/features/streak/screens/StreakDetailsScreen';
-import {
-  useGratitudeEntry,
-  useGratitudeTotalCount,
-  useRandomGratitudeEntry,
-} from '@/features/gratitude/hooks';
+import { useGratitudeEntry, useRandomGratitudeEntry } from '@/features/gratitude/hooks';
 import { useStreakData } from '@/features/streak/hooks';
 import { useUserProfile } from '@/shared/hooks';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
@@ -20,7 +16,7 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ScreenLayout } from '@/shared/components/layout';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
-import { logger } from '@/utils/debugConfig';
+// debug logger removed (noisy)
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, Modal, RefreshControl, StyleSheet, View } from 'react-native';
@@ -55,15 +51,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     refetch: refetchThrowback,
   } = useRandomGratitudeEntry();
 
-  // Debug: Check total gratitude entries count
-  const { data: totalEntriesCount } = useGratitudeTotalCount();
-
-  React.useEffect(() => {
-    logger.debug('HomeScreen Debug - Total gratitude entries:', {
-      totalEntriesCount,
-      component: 'HomeScreen',
-    });
-  }, [totalEntriesCount]);
+  // Removed noisy total count debug logs
 
   // Extract data from TanStack Query responses
   const username = profile?.username;
@@ -99,7 +87,6 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
       // TanStack Query handles refetching automatically
       await Promise.all([refetchEntry(), refetchStreak(), refetchThrowback()]);
     } catch (error) {
-      logger.error('Refresh error:', error as Error);
       handleMutationError(error, 'sayfa yenileme');
     } finally {
       setRefreshing(false);

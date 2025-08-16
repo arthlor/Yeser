@@ -15,14 +15,7 @@ import {
 import * as Linking from 'expo-linking';
 import { StatusBar, type StatusBarStyle } from 'expo-status-bar';
 import React from 'react';
-import {
-  AppState,
-  AppStateStatus,
-  InteractionManager,
-  LogBox,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { InteractionManager, LogBox, StyleSheet, View } from 'react-native';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import RootNavigator from './navigation/RootNavigator';
 import { useTheme } from './providers/ThemeProvider';
@@ -212,50 +205,7 @@ const AppContent: React.FC = () => {
   // 🚨 OAUTH QUEUE: Track database readiness for token processing
   const [databaseReady, setDatabaseReady] = React.useState(false);
 
-  // 🚨 COLD START DEBUG: Add AppState logging to confirm the theory
-  const appStateRef = React.useRef(AppState.currentState);
-  const appStartTimeRef = React.useRef(Date.now());
-
-  React.useEffect(() => {
-    logger.debug('[COLD START DEBUG] Initial AppState:', {
-      extra: {
-        initialState: appStateRef.current,
-        appStartTime: appStartTimeRef.current,
-      },
-    });
-
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      const timeSinceStart = Date.now() - appStartTimeRef.current;
-      const previousState = appStateRef.current;
-
-      logger.debug('[COLD START DEBUG] AppState changed:', {
-        extra: {
-          from: previousState,
-          to: nextAppState,
-          timeSinceStart,
-          isAuthenticated: isAuthenticated,
-          hasProfile: !!profile,
-        },
-      });
-
-      if (nextAppState === 'active' && previousState !== 'active') {
-        logger.debug('[COLD START DEBUG] ⭐ App became ACTIVE - this could fix hanging promises', {
-          extra: {
-            timeSinceStart,
-            isAuthenticated: isAuthenticated,
-            hasProfile: !!profile,
-          },
-        });
-      }
-      appStateRef.current = nextAppState;
-    };
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      subscription.remove();
-    };
-  }, [isAuthenticated, profile]);
+  // Removed verbose AppState debug tracing
 
   React.useEffect(() => {
     void analyticsService.logAppOpen();
@@ -395,7 +345,6 @@ const App: React.FC = () => {
     if (appIsReady) {
       try {
         await ExpoSplashScreen.hideAsync();
-        logger.debug('[COLD START FIX] Splash screen hidden, app UI ready');
       } catch {
         // Intentionally swallow errors – splash will auto-hide eventually
       }

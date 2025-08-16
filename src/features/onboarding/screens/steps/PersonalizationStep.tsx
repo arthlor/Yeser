@@ -4,7 +4,6 @@ import { getNeutralShadow } from '@/themes/utils';
 import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { useUsernameValidation } from '@/shared/hooks';
-import { logger } from '@/utils/debugConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
@@ -136,17 +135,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   const canContinue =
     username.trim().length >= 3 && !validationError && !isChecking && isAvailable === true;
 
-  // Debug logging
-  useEffect(() => {
-    logger.debug('PersonalizationStep validation state:', {
-      username: username.trim(),
-      usernameLength: username.trim().length,
-      validationError,
-      isChecking,
-      isAvailable,
-      canContinue,
-    });
-  }, [username, validationError, isChecking, isAvailable, canContinue]); // canContinue needed as it's used inside
+  // Removed debug logging
 
   return (
     <OnboardingLayout edgeToEdge={true}>

@@ -13,21 +13,7 @@ import type { Database } from '../types/supabase.types.ts';
 const supabaseUrl = config.supabase.url || '';
 const supabaseAnonKey = config.supabase.anonKey || '';
 
-// 🚨 DEBUG: Log environment variables for debugging
-logger.debug('Supabase Configuration Check:', {
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseAnonKey,
-  urlDomain: supabaseUrl
-    ? (() => {
-        try {
-          return new URL(supabaseUrl).hostname;
-        } catch {
-          return 'invalid-url';
-        }
-      })()
-    : 'missing',
-  env: __DEV__ ? 'development' : 'production',
-});
+// Quiet prod build by avoiding environment spam; validation below will throw if missing
 
 // Validate required configuration
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -59,15 +45,10 @@ class SupabaseService {
    */
   private async createClient(): Promise<void> {
     try {
-      logger.debug(
-        '[COLD START] Testing AsyncStorage readiness before Supabase client creation...'
-      );
+      // Verify AsyncStorage readiness before Supabase client creation
 
       // Test AsyncStorage readiness with timeout
       await this.testAsyncStorage();
-
-      logger.debug('[COLD START] AsyncStorage ready, creating Supabase client...');
-
       // Create the Supabase client
       this.client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
         auth: {
@@ -77,8 +58,6 @@ class SupabaseService {
           detectSessionInUrl: false,
         },
       });
-
-      logger.debug('[COLD START] Supabase client created successfully');
     } catch (error) {
       logger.error('[COLD START] Failed to create Supabase client:', error as Error);
       throw error;

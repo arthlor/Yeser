@@ -10,8 +10,9 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 
-import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { ScreenHeader, ScreenLayout, ScreenSection } from '@/shared/components/layout';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTheme } from '@/providers/ThemeProvider';
 import { analyticsService } from '@/services/analyticsService';
@@ -106,6 +107,7 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) =>
 
 const EnhancedHelpScreen: React.FC = () => {
   const { theme } = useTheme();
+  const navigation = useNavigation();
 
   // Log screen view for analytics
   useEffect(() => {
@@ -153,6 +155,12 @@ const EnhancedHelpScreen: React.FC = () => {
       edges={['top']}
       edgeToEdge={true}
     >
+      <ScreenHeader
+        showBackButton
+        title="Yardım & Destek"
+        onBackPress={() => navigation.goBack()}
+        variant="default"
+      />
       <ScreenSection title="Yardım & SSS">
         <View />
       </ScreenSection>

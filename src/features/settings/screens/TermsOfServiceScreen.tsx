@@ -4,11 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { ScreenHeader, ScreenLayout, ScreenSection } from '@/shared/components/layout';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { useTheme } from '@/providers/ThemeProvider';
 import { analyticsService } from '@/services/analyticsService';
 import { AppTheme } from '@/themes/types';
+import { useNavigation } from '@react-navigation/native';
 
 interface TermsSectionProps {
   number: string;
@@ -34,6 +35,7 @@ const TermsSection: React.FC<TermsSectionProps> = ({ number, title, children }) 
 const TermsOfServiceScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const navigation = useNavigation();
 
   // Log screen view for analytics
   useEffect(() => {
@@ -42,6 +44,12 @@ const TermsOfServiceScreen: React.FC = () => {
 
   return (
     <ScreenLayout edges={['top']} edgeToEdge={true}>
+      <ScreenHeader
+        showBackButton
+        title="Kullanım Koşulları"
+        onBackPress={() => navigation.goBack()}
+        variant="default"
+      />
       {/* Header Section */}
       <ScreenSection spacing="large">
         <View style={styles.headerContainer}>

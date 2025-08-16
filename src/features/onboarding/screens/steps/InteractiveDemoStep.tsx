@@ -8,7 +8,6 @@ import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimation
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
-import { logger } from '@/utils/debugConfig';
 
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { ScreenSection } from '@/shared/components/layout';
@@ -83,8 +82,6 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             }, 2500);
           },
           onError: (error: Error) => {
-            logger.error('Error saving demo gratitude statement:', error);
-
             // Still show success for UX, but track the error
             setHasWrittenStatement(true);
             setShowSuccess(true);

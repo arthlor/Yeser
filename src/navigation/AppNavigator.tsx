@@ -263,17 +263,17 @@ const AppNavigator: React.FC = () => {
       <AppStack.Screen
         name="PrivacyPolicy"
         component={PrivacyPolicyScreen}
-        options={{ title: 'Gizlilik Politikası', presentation: 'modal' }}
+        options={{ title: 'Gizlilik Politikası', presentation: 'modal', headerShown: false }}
       />
       <AppStack.Screen
         name="TermsOfService"
         component={TermsOfServiceScreen}
-        options={{ title: 'Kullanım Koşulları', presentation: 'modal' }}
+        options={{ title: 'Kullanım Koşulları', presentation: 'modal', headerShown: false }}
       />
       <AppStack.Screen
         name="Help"
         component={HelpScreen}
-        options={{ title: 'Yardım ve SSS', presentation: 'modal' }}
+        options={{ title: 'Yardım ve SSS', presentation: 'modal', headerShown: false }}
       />
       <AppStack.Screen
         name="WhyGratitude"

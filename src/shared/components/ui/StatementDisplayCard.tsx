@@ -330,7 +330,6 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       ...sharedStyles.getContainerStyle('highlighted'),
       // Remove thick left accent for a cleaner look on Home throwbacks
       borderLeftWidth: 0,
-      borderLeftColor: 'transparent',
     } as ViewStyle,
 
     inspirationContent: {

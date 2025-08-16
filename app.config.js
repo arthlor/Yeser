@@ -105,9 +105,6 @@ module.exports = {
     infoPlist: {
       NSUserTrackingUsageDescription:
         'This allows us to provide personalized gratitude insights and improve your experience.',
-      NSCameraUsageDescription: 'Camera access is needed to add photos to your gratitude entries.',
-      NSPhotoLibraryUsageDescription:
-        'Photo library access is needed to select photos for your gratitude entries.',
       CFBundleURLTypes: [
         {
           CFBundleURLName: 'yeser.auth',

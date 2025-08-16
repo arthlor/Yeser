@@ -2,9 +2,10 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 
 import { useTheme } from '../../../providers/ThemeProvider';
-import { ScreenLayout } from '../../../shared/components/layout';
+import { ScreenHeader, ScreenLayout } from '../../../shared/components/layout';
 import { getPrimaryShadow } from '@/themes/utils';
 
 import type { AppTheme } from '../../../themes/types';
@@ -13,9 +14,16 @@ const PrivacyPolicyScreen: React.FC = () => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme);
+  const navigation = useNavigation();
 
   return (
     <ScreenLayout edges={['bottom']} showsVerticalScrollIndicator={false} style={styles.container}>
+      <ScreenHeader
+        showBackButton
+        title="Gizlilik Politikası"
+        onBackPress={() => navigation.goBack()}
+        variant="default"
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 20 }]}

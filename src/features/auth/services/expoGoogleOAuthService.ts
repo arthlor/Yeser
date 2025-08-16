@@ -5,6 +5,7 @@ import { analyticsService } from '@/services/analyticsService';
 import { atomicOperationManager } from '../utils/atomicOperations';
 import { config } from '@/utils/config';
 import { supabaseService } from '@/utils/supabaseClient';
+import { deepLinkService } from './deepLinkService';
 
 /**
  * Google OAuth Result Interface (same as existing)
@@ -50,7 +51,7 @@ export class ExpoGoogleOAuthService {
       'google_oauth',
       async () => {
         try {
-          logger.debug('Starting Expo Google OAuth service initialization...');
+          // Minimize initialization noise
           // Complete any pending web-browser auth sessions (no-op if none)
           type MaybeCompleteAuthSession = { maybeCompleteAuthSession?: () => void };
           const maybeComplete = (WebBrowser as unknown as MaybeCompleteAuthSession)
@@ -62,7 +63,6 @@ export class ExpoGoogleOAuthService {
           // Validate Google OAuth configuration (platform-specific client IDs)
           const clientIdIOS = config.google.clientIdIOS;
           const clientIdAndroid = config.google.clientIdAndroid;
-          const clientIdWeb = config.google.clientIdWeb;
 
           if (Platform.OS === 'ios' && !clientIdIOS) {
             throw new Error(
@@ -74,13 +74,10 @@ export class ExpoGoogleOAuthService {
               'Missing EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID in environment for Android platform.'
             );
           }
-          if (!clientIdWeb) {
-            // Web client is optional here but useful if you later support web
-            logger.debug('Google Web client id not provided; native flow will continue.');
-          }
+          // Web client is optional here; no debug spam if missing
 
           this.isInitialized = true;
-          logger.debug('Expo Google OAuth service initialized successfully');
+          // Initialized
         } catch (error) {
           logger.error('Failed to initialize Expo Google OAuth service:', { error });
           throw error;
@@ -110,7 +107,7 @@ export class ExpoGoogleOAuthService {
           }
 
           this.lastSignInAttempt = Date.now();
-          logger.debug('Expo Google OAuth: Starting Supabase-hosted OAuth flow');
+          // Starting Supabase-hosted OAuth flow
           analyticsService.logEvent('google_oauth_attempt');
 
           try {
@@ -147,7 +144,15 @@ export class ExpoGoogleOAuthService {
               return { success: false, userCancelled: true };
             }
 
-            // Tokens will be delivered to redirectUri and processed by deepLinkService
+            // iOS often returns the callback URL directly via AuthSession result instead of
+            // emitting a Linking event. Process it immediately if present for reliability.
+            if (webResult.type === 'success' && 'url' in webResult && webResult.url) {
+              // Received success URL from AuthSession, process via deep link handler
+              // Database is initialized at this point (we already created the client above)
+              await deepLinkService.handleAuthCallback(webResult.url, true);
+            }
+
+            // Also signal that a callback may occur via Linking for Android/other cases
             return { success: true, requiresCallback: true };
           } catch (oauthError) {
             const err = oauthError as Error;
@@ -159,10 +164,8 @@ export class ExpoGoogleOAuthService {
           }
         }
       );
-    } catch (atomicError) {
-      logger.debug('Expo Google OAuth: Operation already in progress', {
-        error: (atomicError as Error).message,
-      });
+    } catch {
+      // Operation already in progress
       return {
         success: false,
         error: 'Giriş işlemi devam ediyor. Lütfen bekleyin.',

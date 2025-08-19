@@ -1,15 +1,14 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
+
 import { logger } from '@/utils/debugConfig';
-import { atomicOperationManager } from '../utils/atomicOperations';
 import { config } from '@/utils/config';
 import { supabaseService } from '@/utils/supabaseClient';
+
+import { atomicOperationManager } from '../utils/atomicOperations';
 import { deepLinkService } from './deepLinkService';
 
-/**
- * Google OAuth Result Interface (same as existing)
- */
-export interface GoogleOAuthResult {
+export interface AppleOAuthResult {
   success: boolean;
   error?: string;
   user?: unknown;
@@ -19,20 +18,16 @@ export interface GoogleOAuthResult {
 }
 
 /**
- * Google OAuth Service (Supabase-hosted OAuth flow)
+ * Apple OAuth Service (Supabase-hosted OAuth flow)
  *
- * Uses Supabase's hosted OAuth for Google and deep link handling. This approach
- * avoids Android custom scheme fragility and works reliably across builds.
+ * Uses Supabase's hosted OAuth for Apple and deep link handling, mirroring the Google flow.
  */
-export class ExpoGoogleOAuthService {
+export class ExpoAppleOAuthService {
   private isInitialized = false;
   private initializationPromise: Promise<void> | null = null;
   private lastSignInAttempt: number | null = null;
   private readonly RATE_LIMIT_MS = 3000;
 
-  /**
-   * Initialize service - no more Google Sign-In SDK dependency
-   */
   async initialize(): Promise<void> {
     if (this.initializationPromise) {
       return this.initializationPromise;
@@ -43,15 +38,13 @@ export class ExpoGoogleOAuthService {
   }
 
   private async performInitialization(): Promise<void> {
-    const operationKey = 'expo_google_oauth_init';
+    const operationKey = 'expo_apple_oauth_init';
 
     return await atomicOperationManager.ensureAtomicOperation(
       operationKey,
       'google_oauth',
       async () => {
         try {
-          // Minimize initialization noise
-          // Complete any pending web-browser auth sessions (no-op if none)
           type MaybeCompleteAuthSession = { maybeCompleteAuthSession?: () => void };
           const maybeComplete = (WebBrowser as unknown as MaybeCompleteAuthSession)
             .maybeCompleteAuthSession;
@@ -59,44 +52,33 @@ export class ExpoGoogleOAuthService {
             maybeComplete();
           }
 
-          // Validate Google OAuth configuration (platform-specific client IDs)
-          const clientIdIOS = config.google.clientIdIOS;
-          const clientIdAndroid = config.google.clientIdAndroid;
+          const redirectUri = config.google.redirectUri; // Reuse unified redirect URI
+          if (!redirectUri) {
+            throw new Error('Redirect URI is not configured.');
+          }
 
-          if (Platform.OS === 'ios' && !clientIdIOS) {
-            throw new Error(
-              'Missing EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS in environment for iOS platform.'
-            );
+          // Basic platform hint – Apple Sign in primarily targets iOS
+          if (Platform.OS !== 'ios') {
+            logger.debug('Apple OAuth: Non-iOS platform detected, proceeding with web flow');
           }
-          if (Platform.OS === 'android' && !clientIdAndroid) {
-            throw new Error(
-              'Missing EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID in environment for Android platform.'
-            );
-          }
-          // Web client is optional here; no debug spam if missing
 
           this.isInitialized = true;
-          // Initialized
         } catch (error) {
-          logger.error('Failed to initialize Expo Google OAuth service:', { error });
+          logger.error('Failed to initialize Expo Apple OAuth service:', { error });
           throw error;
         }
       }
     );
   }
 
-  /**
-   * Sign in using Supabase-hosted OAuth; tokens return via deep link
-   */
-  async signIn(): Promise<GoogleOAuthResult> {
-    const operationKey = 'expo_google_oauth_signin';
+  async signIn(): Promise<AppleOAuthResult> {
+    const operationKey = 'expo_apple_oauth_signin';
 
     try {
       return await atomicOperationManager.ensureAtomicOperation(
         operationKey,
         'google_oauth',
         async () => {
-          // Rate limiting check
           if (!this.canAttemptSignIn()) {
             const remainingTime = this.getRemainingCooldown();
             return {
@@ -106,7 +88,6 @@ export class ExpoGoogleOAuthService {
           }
 
           this.lastSignInAttempt = Date.now();
-          // Starting Supabase-hosted OAuth flow
           // Analytics disabled
 
           try {
@@ -117,24 +98,24 @@ export class ExpoGoogleOAuthService {
             }
 
             const { data, error } = await supabase.auth.signInWithOAuth({
-              provider: 'google',
+              provider: 'apple',
               options: {
                 redirectTo: redirectUri,
                 skipBrowserRedirect: true,
-                scopes: 'openid email profile',
+                scopes: 'name email',
               },
             });
 
             if (error) {
-              logger.error('Expo Google OAuth: signInWithOAuth failed', { error: error.message });
-              return { success: false, error: 'Google ile giriş başlatılamadı.' };
+              logger.error('Expo Apple OAuth: signInWithOAuth failed', { error: error.message });
+              return { success: false, error: 'Apple ile giriş başlatılamadı.' };
             }
 
             const authUrl = data?.url;
             if (!authUrl) {
               return {
                 success: false,
-                error: 'Google ile giriş için yönlendirme adresi alınamadı.',
+                error: 'Apple ile giriş için yönlendirme adresi alınamadı.',
               };
             }
 
@@ -143,19 +124,14 @@ export class ExpoGoogleOAuthService {
               return { success: false, userCancelled: true };
             }
 
-            // iOS often returns the callback URL directly via AuthSession result instead of
-            // emitting a Linking event. Process it immediately if present for reliability.
             if (webResult.type === 'success' && 'url' in webResult && webResult.url) {
-              // Received success URL from AuthSession, process via deep link handler
-              // Database is initialized at this point (we already created the client above)
               await deepLinkService.handleAuthCallback(webResult.url, true);
             }
 
-            // Also signal that a callback may occur via Linking for Android/other cases
             return { success: true, requiresCallback: true };
           } catch (oauthError) {
             const err = oauthError as Error;
-            logger.error('Expo Google OAuth: OAuth flow failed', err);
+            logger.error('Expo Apple OAuth: OAuth flow failed', err);
             return {
               success: false,
               error: this.formatError(err),
@@ -164,7 +140,6 @@ export class ExpoGoogleOAuthService {
         }
       );
     } catch {
-      // Operation already in progress
       return {
         success: false,
         error: 'Giriş işlemi devam ediyor. Lütfen bekleyin.',
@@ -172,9 +147,6 @@ export class ExpoGoogleOAuthService {
     }
   }
 
-  /**
-   * Format error messages for user display
-   */
   private formatError(error: Error): string {
     const message = error.message.toLowerCase();
 
@@ -182,12 +154,9 @@ export class ExpoGoogleOAuthService {
       return 'İnternet bağlantısı sorunu. Lütfen tekrar deneyin.';
     }
 
-    return 'Google ile giriş yapılamadı. Lütfen tekrar deneyin.';
+    return 'Apple ile giriş yapılamadı. Lütfen tekrar deneyin.';
   }
 
-  /**
-   * Rate limiting helpers (same as existing)
-   */
   private canAttemptSignIn(): boolean {
     if (!this.lastSignInAttempt) {
       return true;
@@ -203,16 +172,10 @@ export class ExpoGoogleOAuthService {
     return Math.max(0, this.RATE_LIMIT_MS - elapsed);
   }
 
-  /**
-   * Check if service is ready
-   */
   isReady(): boolean {
     return this.isInitialized;
   }
 
-  /**
-   * Get current status
-   */
   getStatus(): {
     isInitialized: boolean;
     canSignIn: boolean;
@@ -225,17 +188,11 @@ export class ExpoGoogleOAuthService {
     };
   }
 
-  /**
-   * Cleanup method
-   */
   async cleanup(): Promise<void> {
     this.isInitialized = false;
     this.initializationPromise = null;
     this.lastSignInAttempt = null;
   }
-
-  // PKCE helpers removed in hosted OAuth approach
 }
 
-// Export singleton instance
-export const expoGoogleOAuthService = new ExpoGoogleOAuthService();
+export const expoAppleOAuthService = new ExpoAppleOAuthService();

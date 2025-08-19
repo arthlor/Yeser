@@ -16,6 +16,7 @@ const RuntimeConfigSchema = z.object({
   EXPO_PUBLIC_REDIRECT_URI: z.string().optional(),
   EXPO_PUBLIC_ENABLE_ANALYTICS: z.string().optional(),
   EXPO_PUBLIC_ENABLE_THROWBACK: z.string().optional(),
+  EXPO_PUBLIC_APPLE_SERVICES_ID: z.string().optional(),
 });
 
 type RuntimeConfig = z.infer<typeof RuntimeConfigSchema>;
@@ -73,6 +74,14 @@ export const config = {
       `${Constants.expoConfig?.scheme || 'yeser'}://auth/callback`,
   },
 
+  // Apple OAuth configuration (Services ID primarily used in dashboard)
+  apple: {
+    servicesId: runtimeConfig.EXPO_PUBLIC_APPLE_SERVICES_ID,
+    redirectUri:
+      runtimeConfig.EXPO_PUBLIC_REDIRECT_URI ||
+      `${Constants.expoConfig?.scheme || 'yeser'}://auth/callback`,
+  },
+
   // EAS configuration
   eas: {
     projectId: runtimeConfig.eas.projectId,
@@ -107,6 +116,10 @@ export const logConfigurationStatus = (): void => {
     iOS: config.google.clientIdIOS ? '✅ Set' : '❌ Missing',
     Android: config.google.clientIdAndroid ? '✅ Set' : '❌ Missing',
     Web: config.google.clientIdWeb ? '✅ Set' : '❌ Missing',
+  });
+
+  logger.debug('Apple OAuth:', {
+    servicesId: config.apple.servicesId ? '✅ Set' : '❌ Missing',
   });
 
   logger.debug('Feature Flags:', {

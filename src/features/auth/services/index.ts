@@ -12,3 +12,8 @@ export {
   expoGoogleOAuthService as googleOAuthService,
 } from './expoGoogleOAuthService';
 export type { GoogleOAuthResult } from './expoGoogleOAuthService';
+export {
+  ExpoAppleOAuthService as AppleOAuthService,
+  expoAppleOAuthService as appleOAuthService,
+} from './expoAppleOAuthService';
+export type { AppleOAuthResult } from './expoAppleOAuthService';

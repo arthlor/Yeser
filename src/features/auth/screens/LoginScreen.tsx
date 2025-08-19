@@ -15,9 +15,11 @@ import { useToast } from '@/providers/ToastProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { getPrimaryShadow } from '@/themes/utils';
 import { magicLinkSchema } from '@/schemas/authSchemas';
-import { analyticsService } from '@/services/analyticsService';
+// Analytics disabled
 import { logger } from '@/utils/debugConfig';
 import {
+  useAppleAuthState,
+  useAppleOAuth,
   useAuthActions,
   useCoreAuth,
   useGoogleAuthState,
@@ -63,15 +65,21 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     isInitialized: googleOAuthReady,
     canAttemptSignIn: canAttemptGoogleSignIn,
   } = useGoogleAuthState();
+  const {
+    isLoading: appleOAuthLoading,
+    isInitialized: appleOAuthReady,
+    canAttemptSignIn: canAttemptAppleSignIn,
+  } = useAppleAuthState();
 
   // Modern unified auth actions
-  const { sendMagicLink, signInWithGoogle, resetMagicLink } = useAuthActions();
+  const { sendMagicLink, signInWithGoogle, signInWithApple, resetMagicLink } = useAuthActions();
 
   // Magic link specific state and actions
   const { lastSentEmail, lastSentAt, canSendMagicLink } = useMagicLink();
 
   // Google OAuth specific state and actions
   const { initialize: initializeGoogle } = useGoogleOAuth();
+  const { initialize: initializeApple } = useAppleOAuth();
 
   // Derive magic link sent state (matches legacy behavior)
   const magicLinkSent = !!(lastSentEmail && lastSentAt);
@@ -97,10 +105,10 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     if (isAuthenticated && isWaitingForOAuthCallback) {
       setIsWaitingForOAuthCallback(false);
       logger.debug('OAuth callback successful - resetting state');
-      // Show success message for OAuth completion
+      // Show success message for OAuth completion (provider-agnostic)
       setTimeout(() => {
-        showSuccess?.('Google ile başarıyla giriş yaptınız!');
-      }, 100); // Small delay to ensure UI is ready
+        showSuccess?.('Başarıyla giriş yaptınız!');
+      }, 100);
     }
   }, [isAuthenticated, isWaitingForOAuthCallback, showSuccess]);
 
@@ -213,6 +221,36 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     initGoogle();
   }, [initializeGoogle]);
 
+  // Initialize Apple OAuth after database is ready (iOS only)
+  useEffect(() => {
+    if (Platform.OS !== 'ios') {
+      return;
+    }
+    const initApple = async () => {
+      try {
+        if (supabaseService.isInitialized()) {
+          await initializeApple();
+          logger.debug('Apple OAuth initialized after database ready');
+        } else {
+          const checkReady = setInterval(async () => {
+            if (supabaseService.isInitialized()) {
+              clearInterval(checkReady);
+              await initializeApple();
+              logger.debug('Apple OAuth initialized after database became ready');
+            }
+          }, 500);
+          setTimeout(() => clearInterval(checkReady), 10000);
+        }
+      } catch (error) {
+        logger.debug('Apple OAuth initialization failed (non-critical):', {
+          message: (error as Error).message,
+        });
+      }
+    };
+
+    initApple();
+  }, [initializeApple]);
+
   // Real-time email validation
   const handleEmailChange = useCallback(
     (text: string) => {
@@ -235,7 +273,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
 
   // Log screen view
   useEffect(() => {
-    analyticsService.logScreenView('login');
+    // Analytics disabled
   }, []);
 
   // 🚀 TOAST INTEGRATION: Enhanced magic link login with complementary toast notifications
@@ -283,7 +321,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     }
 
     try {
-      analyticsService.logEvent('google_oauth_attempt');
+      // Analytics disabled
       setIsWaitingForOAuthCallback(true);
 
       // Use the unified auth actions
@@ -299,6 +337,30 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       }
     }
   }, [canAttemptGoogleSignIn, signInWithGoogle, showWarning]);
+
+  const handleAppleLogin = useCallback(async (): Promise<void> => {
+    if (Platform.OS !== 'ios') {
+      showWarning('Apple ile giriş sadece iOS üzerinde desteklenir.');
+      return;
+    }
+
+    if (!canAttemptAppleSignIn) {
+      showWarning('Apple servisleri henüz hazır değil. Lütfen bekleyin.');
+      return;
+    }
+
+    try {
+      // Analytics disabled
+      setIsWaitingForOAuthCallback(true);
+      await signInWithApple();
+      setIsWaitingForOAuthCallback(false);
+    } catch (error) {
+      setIsWaitingForOAuthCallback(false);
+      if (error instanceof Error && error.message !== 'OAUTH_CALLBACK_REQUIRED') {
+        logger.error('Apple OAuth error in UI:', error as Error);
+      }
+    }
+  }, [canAttemptAppleSignIn, signInWithApple, showWarning]);
 
   // **ENHANCED GRADIENT COLORS**: More visible and properly structured
   const gradientColors = useMemo(() => {
@@ -406,7 +468,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                     fullWidth
                   />
 
-                  {/* Google OAuth Section */}
+                  {/* Social OAuth Section */}
                   <View style={styles.divider}>
                     <View style={styles.dividerLine} />
                     <Text style={styles.dividerText}>veya</Text>
@@ -437,12 +499,38 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                     fullWidth
                   />
 
+                  {Platform.OS === 'ios' && (
+                    <ThemedButton
+                      title={
+                        !appleOAuthReady
+                          ? 'Apple servisleri hazırlanıyor...'
+                          : isWaitingForOAuthCallback
+                            ? 'Tarayıcıda giriş yapın...'
+                            : appleOAuthLoading
+                              ? 'Apple ile giriş yapılıyor...'
+                              : 'Apple ile Devam Et'
+                      }
+                      onPress={handleAppleLogin}
+                      variant="secondary"
+                      iconLeft="apple"
+                      disabled={
+                        isLoading ||
+                        appleOAuthLoading ||
+                        !appleOAuthReady ||
+                        !canAttemptAppleSignIn ||
+                        isWaitingForOAuthCallback
+                      }
+                      style={styles.googleButton}
+                      fullWidth
+                    />
+                  )}
+
                   {/* OAuth Callback Waiting Indicator */}
                   {isWaitingForOAuthCallback && (
                     <View style={styles.oauthCallbackIndicator}>
                       <Ionicons name="open-outline" size={16} color={theme.colors.primary} />
                       <Text style={styles.oauthCallbackText}>
-                        Tarayıcıda Google ile giriş yapın ve bu uygulamaya geri dönün
+                        Tarayıcıda giriş yapın ve bu uygulamaya geri dönün
                       </Text>
                     </View>
                   )}

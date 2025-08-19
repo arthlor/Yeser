@@ -9,6 +9,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
@@ -31,6 +32,9 @@ interface ScreenLayoutProps {
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
   density?: 'comfortable' | 'standard' | 'compact';
   edgeToEdge?: boolean;
+
+  // Optional maximum content width for large screens (iPad/tablet)
+  maxContentWidth?: number;
 }
 
 /**
@@ -61,12 +65,14 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
   edges = ['top', 'bottom'],
   density = 'standard',
   edgeToEdge = false,
+  maxContentWidth = 900,
 }) => {
   const { theme, colorMode } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const styles = useMemo(
-    () => createStyles(theme, insets, edges, density, edgeToEdge),
-    [theme, insets, edges, density, edgeToEdge]
+    () => createStyles(theme, insets, edges, density, edgeToEdge, width, maxContentWidth),
+    [theme, insets, edges, density, edgeToEdge, width, maxContentWidth]
   );
 
   const defaultStatusBarStyle =
@@ -98,10 +104,12 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
           keyboardDismissMode={keyboardDismissMode}
           contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : undefined}
         >
-          {children}
+          <View style={styles.contentInner}>{children}</View>
         </ScrollView>
       ) : (
-        <View style={[styles.content, contentContainerStyle]}>{children}</View>
+        <View style={[styles.content, contentContainerStyle]}>
+          <View style={styles.contentInner}>{children}</View>
+        </View>
       )}
     </View>
   );
@@ -133,7 +141,9 @@ const createStyles = (
   insets: { top: number; bottom: number; left: number; right: number },
   edges: ('top' | 'bottom' | 'left' | 'right')[],
   density: 'comfortable' | 'standard' | 'compact',
-  edgeToEdge: boolean
+  edgeToEdge: boolean,
+  screenWidth: number,
+  maxContentWidth: number
 ) => {
   // Modern spacing based on density and edge-to-edge preference
   const getHorizontalSpacing = () => {
@@ -168,6 +178,8 @@ const createStyles = (
     }
   };
 
+  const constrainedWidth = Math.min(screenWidth, maxContentWidth);
+
   return StyleSheet.create({
     keyboardView: {
       flex: 1,
@@ -190,6 +202,10 @@ const createStyles = (
     content: {
       flex: 1,
       paddingHorizontal: getHorizontalSpacing(),
+    },
+    contentInner: {
+      width: constrainedWidth,
+      alignSelf: 'center',
     },
   });
 };

@@ -1,5 +1,5 @@
 import { logger } from '@/utils/debugConfig';
-import { analyticsService } from '@/services/analyticsService';
+// Analytics disabled
 import { AUTH_CONSTANTS, QueuedOTPToken, UrlProcessingState } from '../utils/authConstants';
 
 // Add OAuth token interface with security improvements
@@ -172,7 +172,6 @@ export class DeepLinkService {
       }
     } catch (error) {
       logger.error('Error processing auth callback:', error as Error);
-      analyticsService.logEvent('deep_link_error', { error: (error as Error).message });
     } finally {
       this.markUrlProcessingCompleted(url);
     }
@@ -219,11 +218,9 @@ export class DeepLinkService {
           const magicLinkStore = useMagicLinkStore.getState();
           await magicLinkStore.confirmMagicLink(token.tokenHash, token.type);
           logger.debug('[OTP QUEUE] OTP token processed successfully');
-          analyticsService.logEvent('otp_queue_success');
           break; // Only process one token at a time
         } catch (error) {
           logger.error('[OTP QUEUE] Failed to process OTP token:', error as Error);
-          analyticsService.logEvent('otp_queue_error', { error: (error as Error).message });
         }
       }
 
@@ -252,14 +249,12 @@ export class DeepLinkService {
             .getState()
             .setSessionFromTokens(token.accessToken, token.refreshToken);
           logger.debug('[OAUTH QUEUE] OAuth token processed successfully');
-          analyticsService.logEvent('oauth_queue_success');
 
           // SECURITY: Immediately clear token after successful use
           this.clearOAuthTokens([token]);
           break; // Only process one token at a time
         } catch (error) {
           logger.error('[OAUTH QUEUE] Failed to process OAuth token:', error as Error);
-          analyticsService.logEvent('oauth_queue_error', { error: (error as Error).message });
           // Clear failed token for security
           this.clearOAuthTokens([token]);
         }
@@ -329,7 +324,6 @@ export class DeepLinkService {
           const coreAuthStore = useCoreAuthStore.getState();
           await coreAuthStore.setSessionFromTokens(accessToken, refreshToken);
           logger.debug('OAuth token authentication completed successfully');
-          analyticsService.logEvent('oauth_tokens_processed');
 
           // SECURITY: Clear tokens from URL parameters after successful processing
           // Note: We can't modify the original URL, but we avoid storing it longer than necessary
@@ -337,7 +331,6 @@ export class DeepLinkService {
           logger.error('OAuth token authentication failed:', {
             error: (error as Error).message,
           });
-          analyticsService.logEvent('oauth_tokens_error', { error: (error as Error).message });
         }
       } else {
         // Database not ready - queue OAuth tokens (consistent with OTP handling)
@@ -359,7 +352,6 @@ export class DeepLinkService {
         }
 
         this.oAuthTokenQueue.push(queuedToken);
-        analyticsService.logEvent('oauth_token_queued');
 
         logger.debug('[OAUTH QUEUE] OAuth tokens queued for processing when database ready');
       }
@@ -385,12 +377,10 @@ export class DeepLinkService {
 
           await magicLinkStore.confirmMagicLink(tokenHash, type);
           logger.debug('OTP magic link authentication completed successfully via modern store');
-          analyticsService.logEvent('magic_link_clicked', { type });
         } catch (error) {
           logger.error('OTP magic link authentication failed:', {
             error: (error as Error).message,
           });
-          analyticsService.logEvent('magic_link_otp_error', { error: (error as Error).message });
         }
       } else {
         // Database not ready, queue the token
@@ -401,13 +391,11 @@ export class DeepLinkService {
           timestamp: Date.now(),
           url: originalUrl,
         });
-        analyticsService.logEvent('otp_token_queued');
 
         logger.debug('[OTP QUEUE] OTP token queued for processing when database ready');
       }
     } else {
       logger.error('No valid tokens found in magic link URL');
-      analyticsService.logEvent('magic_link_invalid');
     }
   }
 

@@ -16,6 +16,7 @@ import { safeErrorDisplay } from '@/utils/errorTranslation';
 // Import the new modular stores
 import {
   shouldEnableQueries as newShouldEnableQueries,
+  useAppleOAuthStore,
   useCoreAuthStore,
   useGoogleOAuthStore,
   useMagicLinkStore,
@@ -166,6 +167,20 @@ const useAuthStoreImpl = create<AuthState>()(
           }
 
           handleStoreError(error, 'Google login failed');
+          throw error;
+        }
+      },
+
+      loginWithApple: async () => {
+        try {
+          await useAppleOAuthStore.getState().signIn();
+          handleStoreSuccess('Apple ile başarıyla giriş yaptınız!');
+        } catch (error) {
+          if (error instanceof Error && error.message === 'OAUTH_CALLBACK_REQUIRED') {
+            logger.debug('OAuth callback required - waiting for deep link');
+            return;
+          }
+          handleStoreError(error, 'Apple login failed');
           throw error;
         }
       },

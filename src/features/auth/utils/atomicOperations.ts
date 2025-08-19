@@ -9,7 +9,8 @@ export interface AtomicOperation {
     | 'confirm_magic_link'
     | 'magic_link_send'
     | 'magic_link_confirm'
-    | 'google_oauth';
+    | 'google_oauth'
+    | 'apple_oauth';
   timestamp: number;
   promise: Promise<unknown>;
 }

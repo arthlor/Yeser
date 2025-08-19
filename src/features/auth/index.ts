@@ -20,18 +20,21 @@
 export {
   useCoreAuthStore,
   useGoogleOAuthStore,
+  useAppleOAuthStore,
   useMagicLinkStore,
   useSessionStore,
   useAuthState,
   useAuthActions,
   useAuthStatus,
   useGoogleOAuth,
+  useAppleOAuth,
   useMagicLink,
   shouldEnableQueries,
   // Performance optimized selective hooks
   useCoreAuth,
   useMagicLinkState,
   useGoogleAuthState,
+  useAppleAuthState,
 } from './store';
 
 // Re-export store types

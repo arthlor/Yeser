@@ -20,7 +20,7 @@ import * as ExpoSplashScreen from 'expo-splash-screen';
 import RootNavigator from './navigation/RootNavigator';
 import { useTheme } from './providers/ThemeProvider';
 import EnhancedSplashScreen from './features/auth/screens/SplashScreen';
-import { analyticsService } from './services/analyticsService';
+// Analytics disabled
 import useAuthStore from './store/authStore';
 import { useUserProfile } from './shared/hooks/useUserProfile';
 import { logger } from '@/utils/debugConfig';
@@ -137,7 +137,6 @@ const handleDeepLink = async (url: string, databaseReady: boolean = false) => {
     await authCoordinator.handleAuthCallback(url, databaseReady);
   } catch (error) {
     logger.error('Error parsing deep link:', { error: (error as Error).message, url });
-    analyticsService.logEvent('deep_link_error', { error: (error as Error).message });
   } finally {
     // **RACE CONDITION FIX**: Mark URL processing as completed
     markUrlProcessingCompleted(url);
@@ -208,8 +207,6 @@ const AppContent: React.FC = () => {
   // Removed verbose AppState debug tracing
 
   React.useEffect(() => {
-    void analyticsService.logAppOpen();
-
     // 🚨 OAUTH QUEUE: Monitor Supabase initialization to detect database readiness
     const checkDatabaseReadiness = () => {
       // Database is ready when Supabase client is actually initialized
@@ -287,7 +284,7 @@ const AppContent: React.FC = () => {
         const currentRouteName = getActiveRouteName(state);
 
         if (previousRouteName !== currentRouteName && currentRouteName) {
-          void analyticsService.logScreenView(currentRouteName);
+          // Analytics disabled
         }
         routeNameRef.current = currentRouteName;
       }}

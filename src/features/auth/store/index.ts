@@ -11,12 +11,14 @@
 export { useCoreAuthStore, shouldEnableQueries } from './coreAuthStore';
 export { useMagicLinkStore } from './magicLinkStore';
 export { useGoogleOAuthStore } from './googleOAuthStore';
+export { useAppleOAuthStore } from './appleOAuthStore';
 export { useSessionStore, sessionUtils } from './sessionStore';
 
 // Export types
 export type { CoreAuthState } from './coreAuthStore';
 export type { MagicLinkState } from './magicLinkStore';
 export type { GoogleOAuthState } from './googleOAuthStore';
+export type { AppleOAuthState } from './appleOAuthStore';
 export type { SessionState } from './sessionStore';
 
 // Re-export for backward compatibility
@@ -63,6 +65,18 @@ export const useGoogleAuthState = () => {
 };
 
 /**
+ * Apple OAuth state only
+ */
+export const useAppleAuthState = () => {
+  const isLoading = useAppleOAuthStore((state) => state.isLoading);
+  const error = useAppleOAuthStore((state) => state.error);
+  const isInitialized = useAppleOAuthStore((state) => state.isInitialized);
+  const canAttemptSignIn = useAppleOAuthStore((state) => state.canAttemptSignIn);
+
+  return { isLoading, error, isInitialized, canAttemptSignIn };
+};
+
+/**
  * Combined auth state hook
  * ⚠️ WARNING: This subscribes to ALL auth stores and may cause unnecessary re-renders
  * Consider using selective hooks (useCoreAuth, useMagicLinkState, useGoogleAuthState) instead
@@ -71,6 +85,7 @@ export const useAuthState = () => {
   const coreAuth = useCoreAuthStore();
   const magicLink = useMagicLinkStore();
   const googleOAuth = useGoogleOAuthStore();
+  const appleOAuth = useAppleOAuthStore();
   const session = useSessionStore();
 
   return {
@@ -92,6 +107,13 @@ export const useAuthState = () => {
     canAttemptGoogleSignIn: googleOAuth.canAttemptSignIn,
     googleOAuthReady: googleOAuth.isReady,
 
+    // Apple OAuth
+    appleOAuthLoading: appleOAuth.isLoading,
+    appleOAuthError: appleOAuth.error,
+    appleOAuthInitialized: appleOAuth.isInitialized,
+    canAttemptAppleSignIn: appleOAuth.canAttemptSignIn,
+    appleOAuthReady: appleOAuth.isReady,
+
     // Session
     hasPersistedSession: session.hasPersistedSession,
     sessionRestored: session.sessionRestored,
@@ -107,6 +129,7 @@ export const useAuthActions = () => {
   const coreAuth = useCoreAuthStore();
   const magicLink = useMagicLinkStore();
   const googleOAuth = useGoogleOAuthStore();
+  const appleOAuth = useAppleOAuthStore();
   const session = useSessionStore();
 
   return {
@@ -126,6 +149,12 @@ export const useAuthActions = () => {
     signInWithGoogle: googleOAuth.signIn,
     clearGoogleOAuthError: googleOAuth.clearError,
     resetGoogleOAuth: googleOAuth.reset,
+
+    // Apple OAuth Actions
+    initializeAppleOAuth: appleOAuth.initialize,
+    signInWithApple: appleOAuth.signIn,
+    clearAppleOAuthError: appleOAuth.clearError,
+    resetAppleOAuth: appleOAuth.reset,
 
     // Session Actions
     markSessionRestored: session.markSessionRestored,
@@ -194,6 +223,27 @@ export const useGoogleOAuth = () => {
 };
 
 /**
+ * Apple OAuth specific hook
+ */
+export const useAppleOAuth = () => {
+  const appleOAuth = useAppleOAuthStore();
+
+  return {
+    isLoading: appleOAuth.isLoading,
+    isInitialized: appleOAuth.isInitialized,
+    error: appleOAuth.error,
+    lastAttemptAt: appleOAuth.lastAttemptAt,
+    initialize: appleOAuth.initialize,
+    signIn: appleOAuth.signIn,
+    clearError: appleOAuth.clearError,
+    reset: appleOAuth.reset,
+    getRemainingCooldown: appleOAuth.getRemainingCooldown,
+    canAttemptSignIn: appleOAuth.canAttemptSignIn,
+    isReady: appleOAuth.isReady,
+  };
+};
+
+/**
  * Unified Auth Hooks
  *
  * Convenience hooks that combine multiple stores for common use cases
@@ -202,4 +252,5 @@ export const useGoogleOAuth = () => {
 import { useCoreAuthStore } from './coreAuthStore';
 import { useMagicLinkStore } from './magicLinkStore';
 import { useGoogleOAuthStore } from './googleOAuthStore';
+import { useAppleOAuthStore } from './appleOAuthStore';
 import { useSessionStore } from './sessionStore';

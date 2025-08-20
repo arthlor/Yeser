@@ -9,7 +9,7 @@ import { ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
-import { analyticsService } from '@/services/analyticsService';
+// Analytics disabled
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme } from '@/themes/types';
 
@@ -116,12 +116,7 @@ const EnhancedSplashScreen: React.FC = () => {
 
   // Analytics and initialization
   useEffect(() => {
-    try {
-      analyticsService.logScreenView('splash_screen');
-    } catch {
-      // 🛡️ ERROR PROTECTION: Handle analytics errors silently
-      showError('Uygulama başlatılırken bir hata oluştu.');
-    }
+    // Analytics disabled
   }, [showError]);
 
   // Start entrance animations
@@ -139,7 +134,13 @@ const EnhancedSplashScreen: React.FC = () => {
   );
 
   return (
-    <ScreenLayout scrollable={false} edges={['top']} edgeToEdge={true} style={styles.container}>
+    <ScreenLayout
+      scrollable={false}
+      edges={['top']}
+      edgeToEdge={true}
+      constrainContentWidth={false}
+      style={styles.container}
+    >
       <Animated.View style={[styles.content, contentAnimatedStyle]}>
         {/* Background Gradient Overlay */}
         <View style={styles.backgroundOverlay} />

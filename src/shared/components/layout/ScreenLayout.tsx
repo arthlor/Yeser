@@ -35,6 +35,9 @@ interface ScreenLayoutProps {
 
   // Optional maximum content width for large screens (iPad/tablet)
   maxContentWidth?: number;
+
+  // Whether to constrain content width on large screens (default: true)
+  constrainContentWidth?: boolean;
 }
 
 /**
@@ -66,13 +69,24 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
   density = 'standard',
   edgeToEdge = false,
   maxContentWidth = 900,
+  constrainContentWidth = true,
 }) => {
   const { theme, colorMode } = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const styles = useMemo(
-    () => createStyles(theme, insets, edges, density, edgeToEdge, width, maxContentWidth),
-    [theme, insets, edges, density, edgeToEdge, width, maxContentWidth]
+    () =>
+      createStyles(
+        theme,
+        insets,
+        edges,
+        density,
+        edgeToEdge,
+        width,
+        maxContentWidth,
+        constrainContentWidth
+      ),
+    [theme, insets, edges, density, edgeToEdge, width, maxContentWidth, constrainContentWidth]
   );
 
   const defaultStatusBarStyle =
@@ -104,11 +118,11 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
           keyboardDismissMode={keyboardDismissMode}
           contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : undefined}
         >
-          <View style={styles.contentInner}>{children}</View>
+          {children}
         </ScrollView>
       ) : (
         <View style={[styles.content, contentContainerStyle]}>
-          <View style={styles.contentInner}>{children}</View>
+          <View style={styles.contentInnerFull}>{children}</View>
         </View>
       )}
     </View>
@@ -143,7 +157,8 @@ const createStyles = (
   density: 'comfortable' | 'standard' | 'compact',
   edgeToEdge: boolean,
   screenWidth: number,
-  maxContentWidth: number
+  maxContentWidth: number,
+  constrainContentWidth: boolean
 ) => {
   // Modern spacing based on density and edge-to-edge preference
   const getHorizontalSpacing = () => {
@@ -178,7 +193,9 @@ const createStyles = (
     }
   };
 
-  const constrainedWidth = Math.min(screenWidth, maxContentWidth);
+  const constrainedWidth = constrainContentWidth
+    ? Math.min(screenWidth, maxContentWidth)
+    : screenWidth;
 
   return StyleSheet.create({
     keyboardView: {
@@ -206,6 +223,11 @@ const createStyles = (
     contentInner: {
       width: constrainedWidth,
       alignSelf: 'center',
+    },
+    contentInnerFull: {
+      width: '100%',
+      alignSelf: 'stretch',
+      flex: 1,
     },
   });
 };

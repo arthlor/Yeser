@@ -30,6 +30,7 @@ import { AppProviders } from './providers/AppProviders';
 import SplashOverlayProvider from './providers/SplashOverlayProvider';
 import { authCoordinator } from './features/auth/services/authCoordinator';
 import { supabaseService } from './utils/supabaseClient';
+import { useAppTrackingTransparency } from './shared/hooks/useAppTrackingTransparency';
 
 // Silence known upstream deprecation warnings from dependencies during development
 if (__DEV__) {
@@ -205,6 +206,8 @@ const AppContent: React.FC = () => {
   const [databaseReady, setDatabaseReady] = React.useState(false);
 
   // Removed verbose AppState debug tracing
+  // Request App Tracking Transparency on iOS when appropriate
+  useAppTrackingTransparency({ shouldRequest: true });
 
   React.useEffect(() => {
     // 🚨 OAUTH QUEUE: Monitor Supabase initialization to detect database readiness

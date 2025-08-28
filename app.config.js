@@ -103,6 +103,8 @@ module.exports = {
     },
 
     infoPlist: {
+      NSUserTrackingUsageDescription:
+        'This allows us to provide personalized gratitude insights and improve your experience.',
       CFBundleURLTypes: [
         {
           CFBundleURLName: 'yeser.auth',

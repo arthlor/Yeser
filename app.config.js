@@ -188,6 +188,8 @@ module.exports = {
         sounds: [],
       },
     ],
+    // Enable App Tracking Transparency
+    'expo-tracking-transparency',
     // 🔥 CRITICAL: Custom plugin to handle google-services.json from environment
     './plugins/withGoogleServices.js',
   ],

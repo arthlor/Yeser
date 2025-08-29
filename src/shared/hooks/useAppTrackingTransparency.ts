@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
-import {
-  getTrackingPermissionsAsync,
-  requestTrackingPermissionsAsync,
-} from 'expo-tracking-transparency';
 
 import { logger } from '@/utils/debugConfig';
 
@@ -41,14 +37,17 @@ export const useAppTrackingTransparency = (
     }
 
     try {
-      const permissions: TrackingPermissionResponse = await getTrackingPermissionsAsync();
+      // Dynamic import to avoid loading on Android
+      const trackingTransparency = await import('expo-tracking-transparency');
+      const permissions: TrackingPermissionResponse =
+        await trackingTransparency.getTrackingPermissionsAsync();
 
       if (permissions.status === 'undetermined') {
         // Slight delay to avoid overlapping with other system prompts
         setTimeout(async () => {
           try {
             hasRequestedRef.current = true;
-            await requestTrackingPermissionsAsync();
+            await trackingTransparency.requestTrackingPermissionsAsync();
           } catch (error) {
             logger.error('[ATT] Failed to request tracking permission', error as Error);
           }
@@ -72,15 +71,19 @@ export const useAppTrackingTransparency = (
       }
     };
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    try {
+      const subscription = AppState.addEventListener('change', handleAppStateChange);
 
-    // In case the app is already active when this hook mounts
-    if (AppState.currentState === 'active') {
-      void maybeRequestATT();
+      // In case the app is already active when this hook mounts
+      if (AppState.currentState === 'active') {
+        void maybeRequestATT();
+      }
+
+      return () => {
+        subscription.remove();
+      };
+    } catch (error) {
+      logger.error('[ATT] Failed to set up AppState listener', error as Error);
     }
-
-    return () => {
-      subscription.remove();
-    };
   }, [maybeRequestATT]);
 };

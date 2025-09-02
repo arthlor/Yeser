@@ -189,7 +189,10 @@ module.exports = {
       },
     ],
     // Enable App Tracking Transparency
+    // Enable App Tracking Transparency
     'expo-tracking-transparency',
+    // Enable custom fonts
+    'expo-font',
     // 🔥 CRITICAL: Custom plugin to handle google-services.json from environment
     './plugins/withGoogleServices.js',
   ],

@@ -247,7 +247,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: security-quality-check
     if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
-    timeout-minutes: 90
+    timeout-minutes: 3600
     
     outputs:
       should-deploy: ${{ steps.check-deploy.outputs.should-deploy }}

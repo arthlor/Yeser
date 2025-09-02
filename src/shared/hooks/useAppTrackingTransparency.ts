@@ -42,8 +42,7 @@ export const useAppTrackingTransparency = (
       const isSimulator = Device.isDevice === false;
       if (isSimulator) {
         logger.debug('[ATT] Running in iOS simulator - ATT module may not be available');
-        hasRequestedRef.current = true; // Skip ATT in simulator
-        return;
+        // Don't skip in simulator, still try to request
       }
       logger.debug('[ATT] Development mode - ATT module may not be available in simulator');
     }
@@ -54,10 +53,10 @@ export const useAppTrackingTransparency = (
       try {
         trackingTransparency = await import('expo-tracking-transparency');
       } catch (importError) {
-        logger.warn('[ATT] Failed to import tracking transparency module, skipping ATT request', {
+        logger.warn('[ATT] Failed to import tracking transparency module, retrying...', {
           error: importError as Error,
         });
-        hasRequestedRef.current = true; // Mark as requested to avoid retries
+        // Don't mark as requested, allow retry on next app state change
         return;
       }
 
@@ -66,8 +65,8 @@ export const useAppTrackingTransparency = (
         !trackingTransparency ||
         typeof trackingTransparency.getTrackingPermissionsAsync !== 'function'
       ) {
-        logger.warn('[ATT] Tracking transparency module not properly loaded, skipping ATT request');
-        hasRequestedRef.current = true; // Mark as requested to avoid retries
+        logger.warn('[ATT] Tracking transparency module not properly loaded, retrying...');
+        // Don't mark as requested, allow retry on next app state change
         return;
       }
 
@@ -80,17 +79,22 @@ export const useAppTrackingTransparency = (
           try {
             hasRequestedRef.current = true;
             await trackingTransparency.requestTrackingPermissionsAsync();
+            logger.debug('[ATT] Successfully requested tracking permission');
           } catch (error) {
             logger.error('[ATT] Failed to request tracking permission', error as Error);
+            // Reset the flag to allow retry on next app state change
+            hasRequestedRef.current = false;
           }
         }, 400);
       } else {
         hasRequestedRef.current = true; // Already determined, avoid re-request
+        logger.debug('[ATT] Tracking permission already determined', {
+          status: permissions.status,
+        });
       }
     } catch (error) {
-      logger.error('[ATT] Failed to read tracking permission', error as Error);
-      // Mark as requested to avoid infinite retries
-      hasRequestedRef.current = true;
+      logger.error('[ATT] Failed to read tracking permission, will retry', error as Error);
+      // Don't mark as requested to allow retry on next app state change
     }
   }, [shouldRequest]);
 

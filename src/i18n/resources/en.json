@@ -1,0 +1,37 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "notifications": {
+    "dailyRemindersTitle": "Daily Gratitude Reminders 🌱",
+    "permissionRequiredTitle": "Notification Permission Required",
+    "dailyRemindersMessage": "We'd like to send gentle daily reminders to sustain your gratitude habit.\n\n✨ Benefits:\n• A friendly reminder at the same time every day\n• Keep your practice consistent\n• You can turn it off anytime\n• A happier, more positive life\n\nWould you like to enable it?",
+    "permissionRequiredMessage": "To enable daily reminders, notification permission is required.\n\n📱 How to enable:\n1. Tap 'Open Settings'\n2. Find the 'Notifications' section\n3. Enable the Yeer app\n4. Return to this page\n\nReminders will help you feel happier! 😊",
+    "notNow": "Not Now",
+    "enable": "Enable",
+    "maybeLater": "Maybe Later",
+    "openSettings": "Open Settings"
+  },
+  "errors": {
+    "auth": {
+      "noPermission": "You don't have permission for this operation. Please sign out and sign in again.",
+      "googleSigninFailed": "Google sign-in couldn't be completed. Please try again.",
+      "sessionExpired": "Your sign-in link has expired. Please request a new one.",
+      "rateLimited": "Too many attempts. Please wait a bit and try again."
+    },
+    "db": {
+      "integrity": "A data integrity error occurred. Please try again.",
+      "recordNotFound": "Record not found.",
+      "access": "Database access error. Please try again.",
+      "security": "Due to a security restriction, the operation couldn't be completed. Please sign out and sign in again."
+    },
+    "network": { "generic": "Check your internet connection." },
+    "server": { "generic": "A server error occurred. Please try again later." },
+    "validation": { "generic": "Please check the information you entered." },
+    "permission": { "generic": "You don't have permission for this operation." },
+    "unknown": { "generic": "Something went wrong. Please try again." }
+  }
+}

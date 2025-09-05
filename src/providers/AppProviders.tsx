@@ -1,4 +1,5 @@
 import React, { ReactNode, useEffect } from 'react';
+import '@/i18n';
 import { AppState, StyleSheet } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';

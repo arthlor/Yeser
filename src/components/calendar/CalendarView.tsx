@@ -1,16 +1,22 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { useTranslation } from 'react-i18next';
 
 import CalendarDay from './CalendarDay';
 import CalendarHeader from './CalendarHeader';
 import { CalendarThemeConfig, CalendarViewProps } from './types';
-import { getNextMonth, getPreviousMonth, TURKISH_LOCALIZATION } from './utils';
+import {
+  ENGLISH_LOCALIZATION,
+  getNextMonth,
+  getPreviousMonth,
+  TURKISH_LOCALIZATION,
+} from './utils';
 import { useTheme } from '../../providers/ThemeProvider';
 import { getPrimaryShadow } from '../../themes/utils';
 import type { AppTheme } from '../../themes/types';
 
-// Configure Turkish locale for react-native-calendars
+// Configure locales for react-native-calendars (TR and EN)
 LocaleConfig.locales.tr = {
   monthNames: TURKISH_LOCALIZATION.months,
   monthNamesShort: [
@@ -30,7 +36,25 @@ LocaleConfig.locales.tr = {
   dayNames: TURKISH_LOCALIZATION.days,
   dayNamesShort: TURKISH_LOCALIZATION.daysShort,
 };
-LocaleConfig.defaultLocale = 'tr';
+LocaleConfig.locales.en = {
+  monthNames: ENGLISH_LOCALIZATION.months,
+  monthNamesShort: [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ],
+  dayNames: ENGLISH_LOCALIZATION.days,
+  dayNamesShort: ENGLISH_LOCALIZATION.daysShort,
+};
 
 const CalendarView: React.FC<CalendarViewProps> = ({
   markedDates,
@@ -40,7 +64,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   isLoading = false,
   isFutureMonth = false,
 }) => {
+  const { i18n } = useTranslation();
   const { theme } = useTheme();
+
+  // Update default locale when language changes
+  useEffect(() => {
+    const lang = i18n.language === 'en' ? 'en' : 'tr';
+    LocaleConfig.defaultLocale = lang;
+  }, [i18n.language]);
 
   // Calendar theme configuration
   const calendarTheme: CalendarThemeConfig = useMemo(
@@ -63,11 +94,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       textDayFontSize: 16,
       textMonthFontSize: 18,
       textDayHeaderFontSize: 14,
-      monthNames: TURKISH_LOCALIZATION.months,
-      dayNames: TURKISH_LOCALIZATION.days,
-      dayNamesShort: TURKISH_LOCALIZATION.daysShort,
+      monthNames:
+        i18n.language === 'en' ? ENGLISH_LOCALIZATION.months : TURKISH_LOCALIZATION.months,
+      dayNames: i18n.language === 'en' ? ENGLISH_LOCALIZATION.days : TURKISH_LOCALIZATION.days,
+      dayNamesShort:
+        i18n.language === 'en' ? ENGLISH_LOCALIZATION.daysShort : TURKISH_LOCALIZATION.daysShort,
     }),
-    [theme]
+    [theme, i18n.language]
   );
 
   const handlePreviousMonth = () => {
@@ -107,7 +140,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       />
 
       <Calendar
-        key={currentMonth.toISOString()}
+        key={`${currentMonth.toISOString()}-${i18n.language}`}
         current={currentMonth.toISOString().split('T')[0]}
         onMonthChange={onMonthChange}
         onDayPress={onDayPress}

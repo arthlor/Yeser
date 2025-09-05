@@ -1,0 +1,37 @@
+{
+  "common": {
+    "ok": "Tamam",
+    "cancel": "İptal",
+    "yes": "Evet",
+    "no": "Hayır"
+  },
+  "notifications": {
+    "dailyRemindersTitle": "Günlük Minnettarlık Hatırlatıcıları 🌱",
+    "permissionRequiredTitle": "Bildirim İzni Gerekli",
+    "dailyRemindersMessage": "Minnettarlık alışkanlığını sürdürmek için günlük hatırlatıcılar göndermek istiyoruz.\n\n✨ Faydaları:\n• Her gün aynı saatte nazik hatırlatıcı\n• Minnettarlık pratiğini unutmazsın\n• İstediğin zaman kapatabilirsin\n• Daha pozitif ve mutlu bir yaşam\n\nİzin vermek ister misin?",
+    "permissionRequiredMessage": "Günlük hatırlatıcıları etkinleştirmek için bildirim izni gerekiyor.\n\n📱 Nasıl etkinleştirilir:\n1. 'Ayarlara Git' butonuna dokunun\n2. 'Bildirimler' bölümünü bulun\n3. Yeer uygulamasını etkinleştirin\n4. Bu sayfaya geri dönün\n\nHatırlatıcılar sizi daha mutlu hissettirecek! 😊",
+    "notNow": "Şimdi Değil",
+    "enable": "Evet, Etkinleştir",
+    "maybeLater": "Belki Sonra",
+    "openSettings": "Ayarlara Git"
+  },
+  "errors": {
+    "auth": {
+      "noPermission": "Bu işlem için yetkiniz bulunmuyor. Lütfen çıkış yapıp tekrar giriş yapın.",
+      "googleSigninFailed": "Google ile giriş işlemi tamamlanamadı. Lütfen tekrar deneyin.",
+      "sessionExpired": "Giriş bağlantınızın süresi dolmuş. Lütfen yeni bir bağlantı talep edin.",
+      "rateLimited": "Çok fazla deneme yapıldı. Lütfen bir süre bekleyip tekrar deneyin."
+    },
+    "db": {
+      "integrity": "Veri bütünlüğü hatası oluştu. Lütfen tekrar deneyin.",
+      "recordNotFound": "Kayıt bulunamadı.",
+      "access": "Veritabanı erişim hatası. Lütfen tekrar deneyin.",
+      "security": "Güvenlik kısıtlaması nedeniyle işlem gerçekleştirilemedi. Lütfen çıkış yapıp tekrar giriş yapın."
+    },
+    "network": { "generic": "İnternet bağlantınızı kontrol edin." },
+    "server": { "generic": "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin." },
+    "validation": { "generic": "Girdiğiniz bilgileri kontrol edin." },
+    "permission": { "generic": "Bu işlem için yetkiniz bulunmuyor." },
+    "unknown": { "generic": "Bir hata oluştu. Lütfen tekrar deneyin." }
+  }
+}

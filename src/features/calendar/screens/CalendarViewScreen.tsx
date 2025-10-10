@@ -23,6 +23,7 @@ import { analyticsService } from '@/services/analyticsService';
 import { AppTheme } from '@/themes/types';
 import { MainTabParamList, RootStackParamList } from '@/types/navigation';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
+import { useTranslation } from 'react-i18next';
 
 type CalendarViewScreenNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<MainTabParamList, 'PastEntriesTab'>,
@@ -32,6 +33,7 @@ type CalendarViewScreenNavigationProp = CompositeNavigationProp<
 const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
   const navigation = useNavigation<CalendarViewScreenNavigationProp>();
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -217,7 +219,11 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
   if (datesError) {
     return (
       <ScreenLayout>
-        <ErrorState error={datesError} title="Takvim Verileri Yüklenemedi" onRetry={refetchDates} />
+        <ErrorState
+          error={datesError}
+          title={t('calendar.errors.dataLoadFailed')}
+          onRetry={refetchDates}
+        />
       </ScreenLayout>
     );
   }
@@ -232,7 +238,7 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
       keyboardAware={false}
       keyboardDismissMode="none"
       keyboardShouldPersistTaps="always"
-      backgroundColor={theme.colors.background}
+      backgroundColor={theme.colors.surface}
     >
       <Animated.View
         style={[
@@ -271,7 +277,7 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
           <View style={styles.guideContent}>
             <Icon name="lightbulb-outline" size={20} color={theme.colors.secondary} />
             <Text style={styles.guideText}>
-              Noktalı günler minnet notları içerir • Aylar arası geçiş için kaydırın
+              {t('calendar.guide.dottedDays')} • {t('calendar.guide.swipeToNavigate')}
             </Text>
           </View>
         </View>

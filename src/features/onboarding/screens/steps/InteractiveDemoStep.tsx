@@ -3,11 +3,13 @@ import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { getPrimaryShadow } from '@/themes/utils';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
+import type { MoodEmoji } from '@/types/mood.types';
 
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { ScreenSection } from '@/shared/components/layout';
@@ -33,6 +35,7 @@ interface InteractiveDemoStepProps {
 export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext, onBack }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   // Use real app hooks for authentic experience
   const { data: currentPrompt, isLoading: promptLoading } = useCurrentPrompt();
@@ -57,12 +60,12 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
   }, [showSuccess, animations]);
 
   const handleStatementSubmit = useCallback(
-    (statement: string) => {
+    (statement: string, mood: MoodEmoji | null) => {
       // Save as real gratitude entry for today's date
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
       addStatement(
-        { entryDate: today, statement },
+        { entryDate: today, statement, moodEmoji: mood },
         {
           onSuccess: () => {
             setHasWrittenStatement(true);
@@ -74,6 +77,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
               statement_length: statement.length,
               used_prompt: !!currentPrompt,
               entry_date: today,
+              mood,
             });
 
             // Auto-advance after celebration
@@ -90,6 +94,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             analyticsService.logEvent('onboarding_demo_statement_error', {
               statement_length: statement.length,
               error: error.message,
+              mood,
             });
 
             // Continue with onboarding even if save failed
@@ -105,12 +110,12 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
 
   const getPromptText = () => {
     if (promptLoading) {
-      return 'Loading inspiration...';
+      return t('onboarding.demo.promptLoading');
     }
     if (currentPrompt) {
-      return currentPrompt.prompt_text_tr;
+      return currentPrompt.prompt_text;
     }
-    return 'Bugün neye minnettarsın?'; // Default fallback
+    return t('onboarding.demo.promptFallback');
   };
 
   return (
@@ -136,8 +141,8 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
         {/* Content Header */}
         <ScreenSection>
           <View style={styles.header}>
-            <Text style={styles.title}>Hadi Deneyelim! ✨</Text>
-            <Text style={styles.subtitle}>Küçük bir ifade ile başlayalım.</Text>
+            <Text style={styles.title}>{t('onboarding.demo.title')}</Text>
+            <Text style={styles.subtitle}>{t('onboarding.demo.subtitle')}</Text>
           </View>
         </ScreenSection>
 
@@ -148,12 +153,12 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             <View style={styles.promptCard}>
               <View style={styles.promptHeader}>
                 <Ionicons name="bulb-outline" size={20} color={theme.colors.primary} />
-                <Text style={styles.promptLabel}>Bugünün İlhamı</Text>
+                <Text style={styles.promptLabel}>{t('onboarding.demo.promptLabel')}</Text>
               </View>
               {promptLoading ? (
                 <View style={styles.promptLoading}>
                   <ActivityIndicator size="small" color={theme.colors.primary} />
-                  <Text style={styles.promptText}>Yükleniyor...</Text>
+                  <Text style={styles.promptText}>{t('onboarding.demo.promptLoading')}</Text>
                 </View>
               ) : (
                 <Text style={styles.promptText}>{getPromptText()}</Text>
@@ -162,9 +167,13 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
 
             {/* Gratitude Input - Using Specialized Onboarding Component */}
             <OnboardingGratitudeInput
-              onSubmit={handleStatementSubmit}
-              placeholder="Örneğin: Kahvemin sıcaklığı, arkadaşımın gülümsemesi..."
-              buttonText={isAddingStatement ? 'Kaydediliyor...' : 'Dene'}
+              onSubmitWithMood={handleStatementSubmit}
+              placeholder={t('onboarding.demo.placeholder')}
+              buttonText={
+                isAddingStatement
+                  ? t('onboarding.demo.buttonSaving')
+                  : t('onboarding.demo.buttonTry')
+              }
               disabled={isAddingStatement || hasWrittenStatement}
             />
 
@@ -180,8 +189,8 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
               >
                 <View style={styles.successCard}>
                   <View style={styles.successContent}>
-                    <Text style={styles.successTitle}>Harika! 🎉</Text>
-                    <Text style={styles.successText}>İlk minnettarlığın kaydedildi.</Text>
+                    <Text style={styles.successTitle}>{t('onboarding.demo.successTitle')}</Text>
+                    <Text style={styles.successText}>{t('onboarding.demo.successText')}</Text>
                   </View>
                 </View>
               </Animated.View>
@@ -195,13 +204,13 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             {isAddingStatement && (
               <View style={styles.savingContainer}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={styles.savingText}>Kaydediliyor...</Text>
+                <Text style={styles.savingText}>{t('onboarding.demo.savingText')}</Text>
               </View>
             )}
 
             {!hasWrittenStatement && !isAddingStatement && (
               <>
-                <Text style={styles.encouragement}>💡 Küçük şeyler büyük fark yaratır</Text>
+                <Text style={styles.encouragement}>{t('onboarding.demo.encouragement')}</Text>
               </>
             )}
           </View>

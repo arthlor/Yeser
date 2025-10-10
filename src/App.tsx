@@ -31,6 +31,8 @@ import SplashOverlayProvider from './providers/SplashOverlayProvider';
 import { authCoordinator } from './features/auth/services/authCoordinator';
 import { supabaseService } from './utils/supabaseClient';
 import { useAppTrackingTransparency } from './shared/hooks/useAppTrackingTransparency';
+import { updateTimezone } from './api/profileApi';
+import * as Localization from 'expo-localization';
 
 // Silence known upstream deprecation warnings from dependencies during development
 if (__DEV__) {
@@ -210,6 +212,19 @@ const AppContent: React.FC = () => {
   useAppTrackingTransparency({ shouldRequest: true });
 
   React.useEffect(() => {
+    // Sync timezone on app load if user is logged in
+    if (profile) {
+      const deviceTimezone = Localization.getCalendars()[0].timeZone;
+      if (deviceTimezone && profile.timezone !== deviceTimezone) {
+        logger.debug('Timezone mismatch detected. Syncing profile.', {
+          profileTimezone: profile.timezone,
+          deviceTimezone,
+        });
+        // Fire-and-forget, error handled silently within the function
+        updateTimezone(deviceTimezone);
+      }
+    }
+
     // 🚨 OAUTH QUEUE: Monitor Supabase initialization to detect database readiness
     const checkDatabaseReadiness = () => {
       // Database is ready when Supabase client is actually initialized
@@ -257,7 +272,7 @@ const AppContent: React.FC = () => {
       linkingSubscription.remove();
       cleanupReadinessCheck();
     };
-  }, [isMainAppReady, isAuthenticated, profile?.onboarded, databaseReady]);
+  }, [isMainAppReady, isAuthenticated, profile, databaseReady]);
 
   const navigationTheme = React.useMemo(
     () => ({

@@ -25,12 +25,14 @@ export type GratitudeEntryRow = Database['public']['Tables']['gratitude_entries'
  */
 export const addStatement = async (
   entryDate: string,
-  statementText: string
+  statementText: string,
+  moodEmoji?: string | null
 ): Promise<GratitudeEntry | null> => {
   // Validate inputs for the RPC call (client-side)
   const validationResult = addStatementPayloadSchema.safeParse({
     entry_date: entryDate,
     statement: statementText,
+    mood: moodEmoji ?? null,
   });
 
   if (!validationResult.success) {
@@ -44,10 +46,25 @@ export const addStatement = async (
   }
 
   try {
-    const { error } = await supabase.rpc('add_gratitude_statement', {
+    // Build the RPC parameters object, only including p_mood if it has a value
+    const rpcParams: {
+      p_entry_date: string;
+      p_statement: string;
+      p_mood?: string;
+    } = {
       p_entry_date: entryDate,
       p_statement: statementText,
-    });
+    };
+
+    // Only add p_mood if moodEmoji has a valid value
+    if (moodEmoji && moodEmoji.trim() !== '') {
+      rpcParams.p_mood = moodEmoji;
+    }
+
+    // Log the parameters being sent for debugging
+    logger.debug('Calling add_gratitude_statement with params:', { extra: rpcParams });
+
+    const { error } = await supabase.rpc('add_gratitude_statement', rpcParams);
 
     if (error) {
       throw handleAPIError(new Error(error.message), 'add gratitude statement');
@@ -67,13 +84,15 @@ export const addStatement = async (
 export const editStatement = async (
   entryDate: string,
   statementIndex: number,
-  updatedStatementText: string
+  updatedStatementText: string,
+  moodEmoji?: string | null
 ): Promise<void> => {
   try {
     const validationResult = editStatementPayloadSchema.safeParse({
       entry_date: entryDate,
       statement_index: statementIndex,
       updated_statement: updatedStatementText,
+      mood: moodEmoji ?? null,
     });
 
     if (!validationResult.success) {
@@ -83,11 +102,24 @@ export const editStatement = async (
       throw new Error('Invalid input for editing statement.');
     }
 
-    const { error } = await supabase.rpc('edit_gratitude_statement', {
+    // Build the RPC parameters object, only including p_mood if it has a value
+    const rpcParams: {
+      p_entry_date: string;
+      p_statement_index: number;
+      p_updated_statement: string;
+      p_mood?: string;
+    } = {
       p_entry_date: entryDate,
       p_statement_index: statementIndex,
       p_updated_statement: updatedStatementText,
-    });
+    };
+
+    // Only add p_mood if moodEmoji has a valid value
+    if (moodEmoji && moodEmoji.trim() !== '') {
+      rpcParams.p_mood = moodEmoji;
+    }
+
+    const { error } = await supabase.rpc('edit_gratitude_statement', rpcParams);
 
     if (error) {
       throw handleAPIError(new Error(error.message), 'edit gratitude statement');
@@ -128,6 +160,31 @@ export const deleteStatement = async (entryDate: string, statementIndex: number)
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     throw handleAPIError(error, 'delete gratitude statement');
+  }
+};
+
+/**
+ * Sets or clears mood for a statement index.
+ * Calls the `set_statement_mood` RPC.
+ */
+export const setStatementMood = async (
+  entryDate: string,
+  statementIndex: number,
+  moodEmoji: string | null
+): Promise<void> => {
+  try {
+    const { error } = await supabase.rpc('set_statement_mood', {
+      p_entry_date: entryDate,
+      p_statement_index: statementIndex,
+      p_mood: moodEmoji ?? '',
+    });
+
+    if (error) {
+      throw handleAPIError(new Error(error.message), 'set statement mood');
+    }
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'set statement mood');
   }
 };
 
@@ -211,7 +268,7 @@ export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
     }
     const { data, error } = await supabase
       .from('gratitude_entries')
-      .select('id, user_id, entry_date, statements, created_at, updated_at')
+      .select('id, user_id, entry_date, statements, moods, created_at, updated_at')
       .eq('user_id', user.id)
       .order('entry_date', { ascending: false });
 
@@ -263,7 +320,7 @@ export const getGratitudeDailyEntriesPaginated = async (
     // Get paginated entries
     const { data, error } = await supabase
       .from('gratitude_entries')
-      .select('id, user_id, entry_date, statements, created_at, updated_at')
+      .select('id, user_id, entry_date, statements, moods, created_at, updated_at')
       .eq('user_id', user.id)
       .order('entry_date', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -304,7 +361,7 @@ export const getGratitudeDailyEntryByDate = async (
     }
     const { data, error } = await supabase
       .from('gratitude_entries')
-      .select('id, user_id, entry_date, statements, created_at, updated_at')
+      .select('id, user_id, entry_date, statements, moods, created_at, updated_at')
       .eq('user_id', user.id)
       .eq('entry_date', entryDate)
       .single();

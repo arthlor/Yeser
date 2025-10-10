@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { CalendarDayProps } from './types';
 import { isToday } from './utils';
@@ -7,6 +8,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 
 const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress, maxDate }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   // Calculate values for styling
   const dayNumber = date ? new Date(date.timestamp).getDate() : 0;
@@ -70,7 +72,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({ date, state, marking, onPress
       style={[styles.dayContainer, containerStyle]}
       onPress={handlePress}
       disabled={isDisabled}
-      accessibilityLabel={`${dayNumber} ${hasEntry ? 'minnet notu var' : 'minnet notu yok'}`}
+      accessibilityLabel={`${dayNumber} ${hasEntry ? t('calendar.day.hasEntry') : t('calendar.day.noEntry')}`}
       accessibilityRole="button"
       accessibilityState={{
         selected: isSelectedDay,

@@ -7,6 +7,7 @@ import React, { useEffect } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 interface DailyEntryHeroProps {
   isToday: boolean;
@@ -29,6 +30,7 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
   dailyGoal = 3,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
 
   // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
@@ -56,12 +58,12 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
 
     const hour = new Date().getHours();
     if (hour < 12) {
-      return 'Günaydın! ☀️';
+      return t('gratitude.hero.greeting.morning');
     }
     if (hour < 18) {
-      return 'İyi günler! 🌤️';
+      return t('gratitude.hero.greeting.afternoon');
     }
-    return 'İyi akşamlar! 🌙';
+    return t('gratitude.hero.greeting.evening');
   };
 
   const getMainMessage = () => {
@@ -69,23 +71,23 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
 
     if (statementCount === 0) {
       return isToday
-        ? 'Bugün hangi şeyler için minnettarsın?'
-        : 'O gün hangi anlar için minnet duydun?';
+        ? t('gratitude.hero.message.todayStart')
+        : t('gratitude.hero.message.pastStart');
     }
 
     if (progress >= 1) {
-      return '🎉 Harika! Günlük hedefini tamamladın!';
+      return t('gratitude.hero.message.completed');
     }
 
     if (progress >= 0.66) {
-      return '✨ Çok güzel! Hedefe yaklaştın!';
+      return t('gratitude.hero.message.nearCompletion');
     }
 
     if (progress >= 0.33) {
-      return '💚 İyi gidiyor! Devam et!';
+      return t('gratitude.hero.message.goodProgress');
     }
 
-    return '🌱 Güzel bir başlangıç!';
+    return t('gratitude.hero.message.goodStart');
   };
 
   const isCompleted = statementCount >= dailyGoal;
@@ -118,7 +120,11 @@ const DailyEntryHero: React.FC<DailyEntryHeroProps> = ({
               <Text style={styles.countLabel}>/ {dailyGoal}</Text>
             </View>
 
-            <Text style={styles.progressLabel}>{Math.round(progressPercentage)}% tamamlandı</Text>
+            <Text style={styles.progressLabel}>
+              {t('gratitude.goal.progressCompleted', {
+                percentage: Math.round(progressPercentage),
+              })}
+            </Text>
           </View>
 
           {/* Progress bar - simplified static display */}

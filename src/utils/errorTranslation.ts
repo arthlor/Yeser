@@ -1,11 +1,12 @@
 /**
  * Error Translation Utility
- * Converts technical error messages to user-friendly Turkish messages
- * Ensures users NEVER see technical English error messages
+ * Converts technical error messages to user-friendly localized messages
+ * Ensures users NEVER see raw technical error messages
  * Enhanced with proper logging integration
  */
 
 import { logger } from './debugConfig';
+import i18n from '@/i18n';
 
 export interface TranslatedError {
   userMessage: string;
@@ -14,7 +15,7 @@ export interface TranslatedError {
 }
 
 /**
- * Translates technical errors to user-friendly Turkish messages
+ * Translates technical errors to user-friendly localized messages
  * @param error - The error object or message
  * @param context - Additional context about where the error occurred
  * @returns Translated error with user-friendly Turkish message
@@ -40,7 +41,7 @@ export const translateError = (
     // PostgreSQL RLS Policy Violations (42501)
     if (dbError.code === '42501') {
       return {
-        userMessage: 'Bu işlem için yetkiniz bulunmuyor. Lütfen çıkış yapıp tekrar giriş yapın.',
+        userMessage: i18n.isInitialized ? i18n.t('errors.auth.noPermission') : 'Permission denied',
         technicalMessage: dbError.message,
         errorType: 'auth',
       };
@@ -49,7 +50,9 @@ export const translateError = (
     // PostgreSQL Foreign Key Violations (23503)
     if (dbError.code === '23503') {
       return {
-        userMessage: 'Veri bütünlüğü hatası oluştu. Lütfen tekrar deneyin.',
+        userMessage: i18n.isInitialized
+          ? i18n.t('errors.db.integrity')
+          : 'Database integrity error',
         technicalMessage: dbError.message,
         errorType: 'validation',
       };
@@ -58,7 +61,7 @@ export const translateError = (
     // PostgreSQL Unique Constraint Violations (23505)
     if (dbError.code === '23505') {
       return {
-        userMessage: 'Bu kayıt zaten mevcut. Lütfen farklı bilgiler kullanın.',
+        userMessage: i18n.isInitialized ? i18n.t('errors.validation.generic') : 'Validation error',
         technicalMessage: dbError.message,
         errorType: 'validation',
       };
@@ -68,13 +71,13 @@ export const translateError = (
     if (dbError.code?.startsWith('PGRST')) {
       if (dbError.code === 'PGRST116') {
         return {
-          userMessage: 'Kayıt bulunamadı.',
+          userMessage: i18n.isInitialized ? i18n.t('errors.db.recordNotFound') : 'Record not found',
           technicalMessage: dbError.message,
           errorType: 'validation',
         };
       }
       return {
-        userMessage: 'Veritabanı erişim hatası. Lütfen tekrar deneyin.',
+        userMessage: i18n.isInitialized ? i18n.t('errors.db.access') : 'Database access error',
         technicalMessage: dbError.message,
         errorType: 'server',
       };
@@ -87,8 +90,9 @@ export const translateError = (
       // Check for specific database error patterns
       if (dbErrorMessage.includes('row level security') || dbErrorMessage.includes('policy')) {
         return {
-          userMessage:
-            'Güvenlik kısıtlaması nedeniyle işlem gerçekleştirilemedi. Lütfen çıkış yapıp tekrar giriş yapın.',
+          userMessage: i18n.isInitialized
+            ? i18n.t('errors.db.security')
+            : 'Security policy violation',
           technicalMessage: dbError.message,
           errorType: 'auth',
         };
@@ -96,7 +100,9 @@ export const translateError = (
 
       if (dbErrorMessage.includes('foreign key') || dbErrorMessage.includes('constraint')) {
         return {
-          userMessage: 'Veri bütünlüğü hatası. Lütfen tekrar deneyin.',
+          userMessage: i18n.isInitialized
+            ? i18n.t('errors.db.integrity')
+            : 'Database integrity error',
           technicalMessage: dbError.message,
           errorType: 'validation',
         };
@@ -113,7 +119,9 @@ export const translateError = (
     lowerMessage.includes('google sign-in')
   ) {
     return {
-      userMessage: 'Google ile giriş işlemi tamamlanamadı. Lütfen tekrar deneyin.',
+      userMessage: i18n.isInitialized
+        ? i18n.t('errors.auth.googleSigninFailed')
+        : 'Google sign-in failed',
       technicalMessage,
       errorType: 'auth',
     };
@@ -148,7 +156,9 @@ export const translateError = (
     lowerMessage.includes('invalid redirect url')
   ) {
     return {
-      userMessage: 'Giriş işleminde bir sorun oluştu. Lütfen tekrar deneyin.',
+      userMessage: i18n.isInitialized
+        ? i18n.t('errors.auth.googleSigninFailed')
+        : 'Google sign-in failed',
       technicalMessage,
       errorType: 'auth',
     };
@@ -163,7 +173,7 @@ export const translateError = (
     lowerMessage.includes('authentication')
   ) {
     return {
-      userMessage: 'Giriş bağlantınızın süresi dolmuş. Lütfen yeni bir bağlantı talep edin.',
+      userMessage: i18n.isInitialized ? i18n.t('errors.auth.sessionExpired') : 'Session expired',
       technicalMessage,
       errorType: 'auth',
     };
@@ -177,7 +187,7 @@ export const translateError = (
     lowerMessage.includes('429')
   ) {
     return {
-      userMessage: 'Çok fazla deneme yapıldı. Lütfen bir süre bekleyip tekrar deneyin.',
+      userMessage: i18n.isInitialized ? i18n.t('errors.auth.rateLimited') : 'Rate limited',
       technicalMessage,
       errorType: 'auth',
     };
@@ -192,7 +202,7 @@ export const translateError = (
     lowerMessage.includes('offline')
   ) {
     return {
-      userMessage: 'İnternet bağlantınızı kontrol edin.',
+      userMessage: i18n.isInitialized ? i18n.t('errors.network.generic') : 'Network error',
       technicalMessage,
       errorType: 'network',
     };
@@ -208,7 +218,7 @@ export const translateError = (
     lowerMessage.includes('service unavailable')
   ) {
     return {
-      userMessage: 'Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.',
+      userMessage: i18n.isInitialized ? i18n.t('errors.server.generic') : 'Server error',
       technicalMessage,
       errorType: 'server',
     };
@@ -222,7 +232,7 @@ export const translateError = (
     lowerMessage.includes('format')
   ) {
     return {
-      userMessage: 'Girdiğiniz bilgileri kontrol edin.',
+      userMessage: i18n.isInitialized ? i18n.t('errors.validation.generic') : 'Validation error',
       technicalMessage,
       errorType: 'validation',
     };
@@ -238,7 +248,7 @@ export const translateError = (
     lowerMessage.includes('403')
   ) {
     return {
-      userMessage: 'Bu işlem için yetkiniz bulunmuyor.',
+      userMessage: i18n.isInitialized ? i18n.t('errors.permission.generic') : 'Permission error',
       technicalMessage,
       errorType: 'auth',
     };
@@ -252,14 +262,16 @@ export const translateError = (
   });
 
   return {
-    userMessage: 'Bir hata oluştu. Lütfen tekrar deneyin.',
+    userMessage: i18n.isInitialized
+      ? i18n.t('errors.unknown.generic')
+      : 'An unexpected error occurred',
     technicalMessage,
     errorType: 'unknown',
   };
 };
 
 /**
- * Ensures error messages are always in Turkish for users
+ * Ensures error messages are always localized for users
  * Use this for any error that will be displayed to users
  */
 export const getUserFriendlyError = (error: Error | string | unknown): string => {
@@ -267,12 +279,13 @@ export const getUserFriendlyError = (error: Error | string | unknown): string =>
 };
 
 /**
- * Checks if an error message is in Turkish (safe to show users)
+ * Checks if an error message appears already localized (rough heuristic)
  * @param message - The error message to check
  * @returns true if the message appears to be in Turkish
  */
-export const isTurkishErrorMessage = (message: string): boolean => {
-  const turkishWords = [
+export const isLocalizedErrorMessage = (message: string): boolean => {
+  const keywords = [
+    // Turkish
     'giriş',
     'bağlantı',
     'süresi',
@@ -280,18 +293,19 @@ export const isTurkishErrorMessage = (message: string): boolean => {
     'lütfen',
     'tekrar',
     'deneyin',
-    'hata',
-    'oluştu',
     'internet',
     'kontrol',
-    'edin',
-    'çok',
-    'fazla',
-    'deneme',
+    'hata',
+    // English
+    'please',
+    'try again',
+    'error',
+    'connection',
+    'permission',
+    'server',
   ];
-
   const lowerMessage = message.toLowerCase();
-  return turkishWords.some((word) => lowerMessage.includes(word));
+  return keywords.some((word) => lowerMessage.includes(word));
 };
 
 /**
@@ -302,8 +316,8 @@ export const isTurkishErrorMessage = (message: string): boolean => {
 export const safeErrorDisplay = (error: Error | string | unknown): string => {
   const message = error instanceof Error ? error.message : String(error);
 
-  // If it's already a Turkish message, use it
-  if (isTurkishErrorMessage(message)) {
+  // If it's already a localized message, use it
+  if (isLocalizedErrorMessage(message)) {
     return message;
   }
 
@@ -425,17 +439,17 @@ export const emergencyErrorSafetyNet = (error: unknown): string => {
       return result;
     }
 
-    // Fallback to generic Turkish message
-    return 'Bir hata oluştu. Lütfen tekrar deneyin.';
+    // Fallback to generic localized message (uses current i18n language)
+    return i18n.isInitialized ? i18n.t('errors.unknown.generic') : 'An unexpected error occurred';
   } catch (translationError) {
-    // Even the translation failed - use hardcoded Turkish message
+    // Even the translation failed - use generic localized message
     logger.error('Error translation failed in emergency safety net', {
       error:
         translationError instanceof Error ? translationError.message : String(translationError),
       originalError: error instanceof Error ? error.message : String(error),
       component: 'emergencyErrorSafetyNet',
     });
-    return 'Bir hata oluştu. Lütfen tekrar deneyin.';
+    return i18n.isInitialized ? i18n.t('errors.unknown.generic') : 'An unexpected error occurred';
   }
 };
 

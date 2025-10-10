@@ -3,6 +3,7 @@ import { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
+import { useTranslation } from 'react-i18next';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -35,6 +36,7 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
   onRefreshPrompt,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
 
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
@@ -42,14 +44,12 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
   // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
   const animations = useCoordinatedAnimations();
 
-  // Static fallback prompts for when varied prompts are disabled
-  const fallbackPrompts = [
-    'Bugün seni mutlu eden üç şey neydi?',
-    'Hangi anlardan dolayı minnettar hissediyorsun?',
-    'Bugün hayatında olan güzel şeyler neler?',
-    'Seni gülümsetmiş olan anları düşün...',
-    'Bugün hangi deneyimler için minnettarsın?',
-  ];
+  // Localized fallback prompts for when varied prompts are disabled
+  const getFallbackPrompts = () => {
+    return t('gratitude.prompt.fallbackList', { returnObjects: true }) as string[];
+  };
+
+  const fallbackPrompts = getFallbackPrompts();
 
   // Display current prompt or fallback
   const displayPrompt = promptText || fallbackPrompts[currentPromptIndex];
@@ -93,11 +93,11 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Icon name="lightbulb-on" size={20} color={theme.colors.primary} />
-              <Text style={styles.headerTitle}>İlham verici soru yükleniyor...</Text>
+              <Text style={styles.headerTitle}>{t('gratitude.prompt.loadingTitle')}</Text>
             </View>
           </View>
           <View style={styles.loadingContent}>
-            <Text style={styles.loadingText}>Kişiselleştirilmiş içerik hazırlanıyor...</Text>
+            <Text style={styles.loadingText}>{t('gratitude.prompt.loadingContent')}</Text>
           </View>
         </View>
       </View>
@@ -111,13 +111,13 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Icon name="alert-circle" size={20} color={theme.colors.error} />
-              <Text style={styles.title}>Bağlantı sorunu</Text>
+              <Text style={styles.title}>{t('gratitude.errors.connectionProblem')}</Text>
             </View>
           </View>
           <View style={styles.errorContent}>
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
-              <Text style={styles.retryText}>Tekrar dene</Text>
+              <Text style={styles.retryText}>{t('common.retry')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -141,7 +141,7 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Icon name="lightbulb-on" size={20} color={theme.colors.primary} />
-              <Text style={styles.headerTitle}>İlham verici soru</Text>
+              <Text style={styles.headerTitle}>{t('gratitude.prompt.inspiringQuestion')}</Text>
             </View>
             <View style={styles.headerRight}>
               {!useVariedPrompts && (
@@ -163,7 +163,7 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
               {!useVariedPrompts && (
                 <View style={styles.buttonWrapper}>
                   <ThemedButton
-                    title="Sonraki soru"
+                    title={t('gratitude.actions.nextQuestion')}
                     onPress={handleNext}
                     iconRight="chevron-right"
                     variant="ghost"
@@ -175,7 +175,7 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
               {useVariedPrompts && onRefreshPrompt && isToday && (
                 <View style={styles.buttonWrapper}>
                   <ThemedButton
-                    title="Yeni soru"
+                    title={t('gratitude.actions.newQuestion')}
                     onPress={handleRefresh}
                     iconRight="refresh"
                     variant="ghost"
@@ -186,14 +186,14 @@ const DailyEntryPrompt: React.FC<DailyEntryPromptProps> = ({
             </View>
 
             {!useVariedPrompts && (
-              <Text style={styles.swipeHint}>💡 Sorular otomatik olarak değişir</Text>
+              <Text style={styles.swipeHint}>{t('gratitude.prompt.refreshHint')}</Text>
             )}
           </View>
 
           {/* Refresh hint for varied prompts */}
           {useVariedPrompts && onRefreshPrompt && (
             <View style={styles.refreshContainer}>
-              <Text style={styles.swipeHint}>✨ Yeni kişiselleştirilmiş soru için yenile</Text>
+              <Text style={styles.swipeHint}>{t('gratitude.prompt.refreshHint')}</Text>
             </View>
           )}
         </View>

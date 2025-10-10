@@ -19,6 +19,7 @@ import SettingsScreen from '../features/settings/screens/SettingsScreen';
 import TermsOfServiceScreen from '../features/settings/screens/TermsOfServiceScreen';
 import { WhyGratitudeScreen } from '../features/whyGratitude';
 import { useTheme } from '../providers/ThemeProvider';
+import { useTranslation } from 'react-i18next';
 import { AppStackParamList, MainTabParamList } from '../types/navigation';
 import { hapticFeedback } from '../utils/hapticFeedback';
 import { getPrimaryShadow } from '@/themes/utils';
@@ -59,7 +60,7 @@ const createTabBarStyles = (theme: AppTheme, insets: { bottom: number }) =>
       flex: 1,
     },
     tabBarLabel: {
-      fontSize: 11,
+      fontSize: 10,
       fontWeight: '600',
       marginTop: 2,
       marginBottom: Platform.OS === 'ios' ? 0 : 4,
@@ -72,6 +73,7 @@ const MainAppTabNavigator: React.FC = () => {
   const insets = useSafeAreaInsets();
   const tabBarStyles = React.useMemo(() => createTabBarStyles(theme, insets), [theme, insets]);
 
+  const { t } = useTranslation();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -105,8 +107,8 @@ const MainAppTabNavigator: React.FC = () => {
         name="HomeTab"
         component={HomeScreen}
         options={{
-          title: 'Ana Sayfa',
-          tabBarAccessibilityLabel: 'Ana Sayfa sekmesi',
+          title: t('home.tab.title'),
+          tabBarAccessibilityLabel: t('home.tab.a11y'),
         }}
         listeners={{
           tabPress: (_e: EventArg<'tabPress', true>) => {
@@ -122,8 +124,8 @@ const MainAppTabNavigator: React.FC = () => {
         name="DailyEntryTab"
         component={DailyEntryScreen}
         options={{
-          title: 'Minnet Ekle',
-          tabBarAccessibilityLabel: 'Yeni günlük kayıt oluştur',
+          title: t('navigation.tabs.dailyEntry.title'),
+          tabBarAccessibilityLabel: t('navigation.tabs.dailyEntry.a11y'),
         }}
         listeners={{
           tabPress: (_e: EventArg<'tabPress', true>) => {
@@ -139,8 +141,8 @@ const MainAppTabNavigator: React.FC = () => {
         name="PastEntriesTab"
         component={PastEntriesScreen}
         options={{
-          title: 'Minnetlerim',
-          tabBarAccessibilityLabel: 'Geçmiş kayıtları görüntüle',
+          title: t('navigation.tabs.pastEntries.title'),
+          tabBarAccessibilityLabel: t('navigation.tabs.pastEntries.a11y'),
         }}
         listeners={{
           tabPress: (_e: EventArg<'tabPress', true>) => {
@@ -156,8 +158,8 @@ const MainAppTabNavigator: React.FC = () => {
         name="CalendarTab"
         component={CalendarViewScreen}
         options={{
-          title: 'Takvim',
-          tabBarAccessibilityLabel: 'Takvim görünümü',
+          title: t('navigation.tabs.calendar.title'),
+          tabBarAccessibilityLabel: t('navigation.tabs.calendar.a11y'),
         }}
         listeners={{
           tabPress: (_e: EventArg<'tabPress', true>) => {
@@ -173,8 +175,8 @@ const MainAppTabNavigator: React.FC = () => {
         name="SettingsTab"
         component={SettingsScreen}
         options={{
-          title: 'Ayarlar',
-          tabBarAccessibilityLabel: 'Uygulama ayarları',
+          title: t('navigation.tabs.settings.title'),
+          tabBarAccessibilityLabel: t('navigation.tabs.settings.a11y'),
         }}
         listeners={{
           tabPress: (_e: EventArg<'tabPress', true>) => {
@@ -192,6 +194,7 @@ const MainAppTabNavigator: React.FC = () => {
 
 const AppNavigator: React.FC = () => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   return (
     <AppStack.Navigator
       screenOptions={{
@@ -255,7 +258,7 @@ const AppNavigator: React.FC = () => {
         name="PastEntryCreation"
         component={PastEntryCreationScreen}
         options={{
-          title: 'Geçmiş Tarihe Ekle',
+          title: t('navigation.screens.pastEntryCreation.title'),
           presentation: 'modal',
         }}
         initialParams={{ date: new Date().toISOString() }}
@@ -263,17 +266,29 @@ const AppNavigator: React.FC = () => {
       <AppStack.Screen
         name="PrivacyPolicy"
         component={PrivacyPolicyScreen}
-        options={{ title: 'Gizlilik Politikası', presentation: 'modal', headerShown: false }}
+        options={{
+          title: t('settings.privacyPolicy.title'),
+          presentation: 'modal',
+          headerShown: false,
+        }}
       />
       <AppStack.Screen
         name="TermsOfService"
         component={TermsOfServiceScreen}
-        options={{ title: 'Kullanım Koşulları', presentation: 'modal', headerShown: false }}
+        options={{
+          title: t('settings.terms.title'),
+          presentation: 'modal',
+          headerShown: false,
+        }}
       />
       <AppStack.Screen
         name="Help"
         component={HelpScreen}
-        options={{ title: 'Yardım ve SSS', presentation: 'modal', headerShown: false }}
+        options={{
+          title: t('settings.help.title'),
+          presentation: 'modal',
+          headerShown: false,
+        }}
       />
       <AppStack.Screen
         name="WhyGratitude"

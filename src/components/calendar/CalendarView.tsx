@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 import CalendarDay from './CalendarDay';
 import CalendarHeader from './CalendarHeader';
@@ -19,20 +20,9 @@ import type { AppTheme } from '../../themes/types';
 // Configure locales for react-native-calendars (TR and EN)
 LocaleConfig.locales.tr = {
   monthNames: TURKISH_LOCALIZATION.months,
-  monthNamesShort: [
-    'Oca',
-    'Şub',
-    'Mar',
-    'Nis',
-    'May',
-    'Haz',
-    'Tem',
-    'Ağu',
-    'Eyl',
-    'Eki',
-    'Kas',
-    'Ara',
-  ],
+  monthNamesShort: i18n.isInitialized
+    ? (i18n.t('shared.calendar.monthsShort', { returnObjects: true }) as string[])
+    : TURKISH_LOCALIZATION.months.map((m) => m.slice(0, 3)),
   dayNames: TURKISH_LOCALIZATION.days,
   dayNamesShort: TURKISH_LOCALIZATION.daysShort,
 };

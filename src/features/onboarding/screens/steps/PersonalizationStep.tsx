@@ -6,6 +6,7 @@ import { hapticFeedback } from '@/utils/hapticFeedback';
 import { useUsernameValidation } from '@/shared/hooks';
 import { Ionicons } from '@expo/vector-icons';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { useTranslation } from 'react-i18next';
 import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
@@ -35,16 +36,7 @@ interface PersonalizationStepProps {
   };
 }
 
-const THEME_OPTIONS: {
-  key: ThemeKey;
-  name: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  description: string;
-}[] = [
-  { key: 'light', name: 'Açık Tema', icon: 'sunny-outline', description: 'Günün her saati için' },
-  { key: 'dark', name: 'Koyu Tema', icon: 'moon-outline', description: 'Gözlerini dinlendirir' },
-  { key: 'auto', name: 'Otomatik', icon: 'phone-portrait-outline', description: 'Sisteme göre' },
-];
+// Deprecated constant (replaced by localized THEME_OPTIONS_LOCALIZED)
 
 /**
  * 👋 SIMPLIFIED PERSONALIZATION STEP
@@ -62,6 +54,35 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
 }) => {
   const { theme, setColorMode } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
+  const THEME_OPTIONS_LOCALIZED: {
+    key: ThemeKey;
+    name: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    description: string;
+  }[] = useMemo(
+    () => [
+      {
+        key: 'light',
+        name: t('onboarding.personalization.theme.light.name'),
+        icon: 'sunny-outline',
+        description: t('onboarding.personalization.theme.light.desc'),
+      },
+      {
+        key: 'dark',
+        name: t('onboarding.personalization.theme.dark.name'),
+        icon: 'moon-outline',
+        description: t('onboarding.personalization.theme.dark.desc'),
+      },
+      {
+        key: 'auto',
+        name: t('onboarding.personalization.theme.auto.name'),
+        icon: 'phone-portrait-outline',
+        description: t('onboarding.personalization.theme.auto.desc'),
+      },
+    ],
+    [t]
+  );
 
   const [username, setUsername] = useState(initialData?.username || '');
   const [selectedTheme, setSelectedTheme] = useState<ThemeKey>(
@@ -152,15 +173,13 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
         {/* Content Header */}
         <ScreenSection>
           <View style={styles.header}>
-            <Text style={styles.title}>Seni Tanıyalım! 👋</Text>
-            <Text style={styles.subtitle}>
-              Senin için kişiselleştirilmiş bir deneyim oluşturalım.
-            </Text>
+            <Text style={styles.title}>{t('onboarding.personalization.title')}</Text>
+            <Text style={styles.subtitle}>{t('onboarding.personalization.subtitle')}</Text>
           </View>
         </ScreenSection>
 
         {/* Username Section */}
-        <ScreenSection title="Adın Ne?">
+        <ScreenSection title={t('onboarding.personalization.sectionNameTitle')}>
           <View style={styles.usernameInputContainer}>
             <TextInput
               style={[
@@ -169,14 +188,14 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
               ]}
               value={username}
               onChangeText={handleUsernameChange}
-              placeholder="Örneğin: Ayşe"
+              placeholder={t('onboarding.personalization.placeholderName')}
               placeholderTextColor={theme.colors.textSecondary}
               maxLength={50}
               autoCapitalize="none"
               autoCorrect={false}
               accessible
-              accessibilityLabel="Kullanıcı adı"
-              accessibilityHint="Minnettarlık günlüğünde seni nasıl çağıralım"
+              accessibilityLabel={t('onboarding.personalization.a11yLabelName')}
+              accessibilityHint={t('onboarding.personalization.a11yHintName')}
             />
             {isChecking && (
               <View style={styles.usernameValidationIndicator}>
@@ -191,22 +210,22 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
           </View>
           {validationError && <Text style={styles.errorText}>{validationError}</Text>}
           {!validationError && isAvailable === false && (
-            <Text style={styles.errorText}>Bu kullanıcı adı zaten kullanılıyor</Text>
+            <Text style={styles.errorText}>{t('onboarding.personalization.errorTaken')}</Text>
           )}
           {!validationError && !isChecking && isAvailable === true && username.length >= 3 && (
-            <Text style={styles.successText}>✅ Kullanıcı adı kullanılabilir</Text>
+            <Text style={styles.successText}>
+              {t('onboarding.personalization.successAvailable')}
+            </Text>
           )}
           <View style={styles.usernameHintContainer}>
-            <Text style={styles.usernameHint}>
-              Bu isim günlük hatırlatıcılarda ve kişiselleştirilmiş mesajlarda kullanılacak.
-            </Text>
+            <Text style={styles.usernameHint}>{t('onboarding.personalization.hintUsage')}</Text>
           </View>
         </ScreenSection>
 
         {/* Theme Section */}
-        <ScreenSection title="Tema Tercihin">
+        <ScreenSection title={t('onboarding.personalization.sectionThemeTitle')}>
           <View style={styles.themeOptions}>
-            {THEME_OPTIONS.map((themeOption) => (
+            {THEME_OPTIONS_LOCALIZED.map((themeOption) => (
               <TouchableOpacity
                 key={themeOption.key}
                 onPress={() => handleThemeSelect(themeOption.key)}
@@ -262,9 +281,9 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
           <View style={styles.footer}>
             <OnboardingButton
               onPress={handleContinue}
-              title="Devam Et"
+              title={t('onboarding.personalization.continue')}
               disabled={!canContinue}
-              accessibilityLabel="Kişiselleştirme ayarlarını kaydet ve devam et"
+              accessibilityLabel={t('onboarding.personalization.continueA11y')}
             />
           </View>
         </ScreenSection>

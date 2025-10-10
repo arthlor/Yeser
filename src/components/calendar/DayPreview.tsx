@@ -3,10 +3,11 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { DayPreviewProps } from './types';
-import { formatDateToTurkish } from './utils';
+import { formatDateLocalized } from './utils';
 import { StatementCard } from '@/shared/components/ui';
 import { useTheme } from '../../providers/ThemeProvider';
 import { getPrimaryShadow } from '../../themes/utils';
+import { useTranslation } from 'react-i18next';
 
 const DayPreview: React.FC<DayPreviewProps> = ({
   selectedDate,
@@ -17,6 +18,7 @@ const DayPreview: React.FC<DayPreviewProps> = ({
   onAddEntry,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const actionFooterStyle = React.useMemo(
     () => ({
@@ -62,7 +64,7 @@ const DayPreview: React.FC<DayPreviewProps> = ({
             { color: theme.colors.onSurface },
           ]}
         >
-          {formatDateToTurkish(selectedDate)}
+          {formatDateLocalized(selectedDate)}
         </Text>
       </View>
 
@@ -104,7 +106,7 @@ const DayPreview: React.FC<DayPreviewProps> = ({
                 { color: theme.colors.onSurfaceVariant },
               ]}
             >
-              Yükleniyor...
+              {t('calendar.dayPreview.loading')}
             </Text>
           </View>
         ) : selectedEntry ? (
@@ -117,6 +119,12 @@ const DayPreview: React.FC<DayPreviewProps> = ({
               numberOfLines={2}
               onPress={onViewEntry}
               style={styles.statementCardStyle}
+              date={selectedDate}
+              moodEmoji={
+                ((selectedEntry.moods as Record<string, string> | undefined)?.['0'] as unknown as
+                  | import('@/types/mood.types').MoodEmoji
+                  | undefined) ?? null
+              }
             />
             <TouchableOpacity
               onPress={onViewEntry}
@@ -131,8 +139,10 @@ const DayPreview: React.FC<DayPreviewProps> = ({
                   ]}
                 >
                   {selectedEntry.statements.length > 1
-                    ? `ve ${selectedEntry.statements.length - 1} diğerini gör`
-                    : 'Detayları Gör'}
+                    ? t('calendar.dayPreview.viewMore', {
+                        count: selectedEntry.statements.length - 1,
+                      })
+                    : t('calendar.dayPreview.details')}
                 </Text>
                 <Icon name="chevron-right" size={16} color={theme.colors.primary} />
               </View>
@@ -158,7 +168,7 @@ const DayPreview: React.FC<DayPreviewProps> = ({
                   { color: theme.colors.onSurfaceVariant },
                 ]}
               >
-                Bu tarih için minnet notu ekle
+                {t('calendar.dayPreview.addForDate')}
               </Text>
             </View>
           </TouchableOpacity>

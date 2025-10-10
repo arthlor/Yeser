@@ -126,7 +126,11 @@ class Logger {
     this.addToBuffer(entry);
 
     if (this.logLevel <= 2) {
-      this.originalConsole.warn(this.formatMessage('WARN', message, context), context);
+      if (context) {
+        this.originalConsole.warn(this.formatMessage('WARN', message, context), context);
+      } else {
+        this.originalConsole.warn(this.formatMessage('WARN', message));
+      }
     }
 
     // Log warnings to production in background

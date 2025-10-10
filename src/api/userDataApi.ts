@@ -4,16 +4,26 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
-import { supabase } from '../utils/supabaseClient'; // Ensure this path is correct for your Supabase client
 import { logger } from '@/utils/debugConfig';
 import { handleAPIError } from '@/utils/apiHelpers';
+import i18n from '@/i18n';
 import type { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
+import type { SupportedLanguage } from '@/store/languageStore';
+import { useLanguageStore } from '@/store/languageStore';
+import { supabase } from '../utils/supabaseClient'; // Ensure this path is correct for your Supabase client
 
 const EXPORT_FUNCTION_NAME = 'export-user-data';
 
 /**
  * Creates an HTML template for the PDF export
  */
+type ExportLanguage = SupportedLanguage;
+
+interface CreateTemplateOptions {
+  language: ExportLanguage;
+  data: ExportData;
+}
+
 interface UserProfile {
   username?: string;
   email?: string;
@@ -37,10 +47,42 @@ interface ExportData {
   export_date?: string;
 }
 
-const createPDFTemplate = (data: ExportData): string => {
+const getTranslation = (language: ExportLanguage) => {
+  if (!i18n.isInitialized) {
+    return i18n.getFixedT(language);
+  }
+  return i18n.getFixedT(language);
+};
+
+const createDateFormatter = (language: ExportLanguage) => {
+  const locale = language === 'en' ? 'en-US' : 'tr-TR';
+  return {
+    formatDate: (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toLocaleDateString(locale, {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      });
+    },
+    formatMonthYear: (monthKey: string) => {
+      const [year, month] = monthKey.split('-');
+      const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
+      return date.toLocaleDateString(locale, {
+        month: 'long',
+        year: 'numeric',
+      });
+    },
+  };
+};
+
+const createPDFTemplate = ({ language, data }: CreateTemplateOptions): string => {
   const profile = data.profile || {};
   const entries = data.gratitude_entries || [];
   const metadata = data.metadata || {};
+
+  const t = getTranslation(language);
+  const { formatDate, formatMonthYear } = createDateFormatter(language);
 
   // Group entries by month for better organization
   const entriesByMonth = entries.reduce(
@@ -56,31 +98,13 @@ const createPDFTemplate = (data: ExportData): string => {
     {}
   );
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    });
-  };
-
-  const formatMonthYear = (monthKey: string) => {
-    const [year, month] = monthKey.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-    return date.toLocaleDateString('tr-TR', {
-      month: 'long',
-      year: 'numeric',
-    });
-  };
-
   return `
     <!DOCTYPE html>
-    <html lang="tr">
+    <html lang="${language}">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Yeşer - Minnet Günlüğü Verilerim</title>
+      <title>${t('settings.data.exportTitle')}</title>
       <style>
         body {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -277,44 +301,44 @@ const createPDFTemplate = (data: ExportData): string => {
     <body>
       <div class="header">
         <h1>🌿 Yeşer</h1>
-        <p>Minnet Günlüğü Verilerim</p>
-        <p>Dışa aktarılma tarihi: ${formatDate(data.export_date || new Date().toISOString())}</p>
+        <p>${t('settings.data.pdf.headerTitle')}</p>
+        <p>${t('settings.data.pdf.exportedAt', { date: formatDate(data.export_date || new Date().toISOString()) })}</p>
       </div>
 
       <div class="profile-section">
-        <h2>👤 Profil Bilgileri</h2>
+        <h2>👤 ${t('settings.data.pdf.profile.title')}</h2>
         <div class="profile-info">
           <div class="profile-item">
-            <label>İsim:</label>
-            <span>${profile.full_name || 'Belirtilmemiş'}</span>
+            <label>${t('settings.data.pdf.profile.name')}:</label>
+            <span>${profile.full_name || t('settings.data.pdf.profile.empty')}</span>
           </div>
           <div class="profile-item">
-            <label>E-posta:</label>
-            <span>${profile.email || 'Belirtilmemiş'}</span>
+            <label>${t('settings.data.pdf.profile.email')}:</label>
+            <span>${profile.email || t('settings.data.pdf.profile.empty')}</span>
           </div>
         </div>
       </div>
 
       <div class="stats-section">
-        <h2>📊 İstatistikler</h2>
+        <h2>📊 ${t('settings.data.pdf.stats.title')}</h2>
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-number">${metadata.total_entries || 0}</span>
-            <div class="stat-label">Toplam Giriş</div>
+            <div class="stat-label">${t('settings.data.pdf.stats.totalEntries')}</div>
           </div>
           <div class="stat-item">
             <span class="stat-number">${metadata.total_statements || entries.reduce((total: number, entry: GratitudeEntry) => total + (entry.statements?.length || 0), 0)}</span>
-            <div class="stat-label">Toplam Minnet</div>
+            <div class="stat-label">${t('settings.data.pdf.stats.totalStatements')}</div>
           </div>
           <div class="stat-item">
             <span class="stat-number">${metadata.active_months || Object.keys(entriesByMonth).length}</span>
-            <div class="stat-label">Aktif Ay</div>
+            <div class="stat-label">${t('settings.data.pdf.stats.activeMonths')}</div>
           </div>
         </div>
       </div>
 
       <div class="entries-section">
-        <h2>📝 Minnet Girişlerim</h2>
+        <h2>📝 ${t('settings.data.pdf.entries.title')}</h2>
         
         ${Object.keys(entriesByMonth)
           .sort((a, b) => b.localeCompare(a)) // Most recent first
@@ -353,9 +377,17 @@ const createPDFTemplate = (data: ExportData): string => {
       </div>
 
       <div class="footer">
-        <p><strong>Yeşer</strong> - Minnet Günlüğü Uygulaması</p>
-        <p>Bu veriler ${formatDate(data.export_date || new Date().toISOString())} tarihinde dışa aktarılmıştır.</p>
-        <p>Toplam ${metadata.total_entries || 0} giriş ve ${metadata.total_statements || entries.reduce((total: number, entry: GratitudeEntry) => total + (entry.statements?.length || 0), 0)} minnet içermektedir.</p>
+        <p><strong>Yeşer</strong> - ${t('settings.data.pdf.footer.app')}</p>
+        <p>${t('settings.data.pdf.footer.exportedOn', { date: formatDate(data.export_date || new Date().toISOString()) })}</p>
+        <p>${t('settings.data.pdf.footer.summary', {
+          entries: metadata.total_entries || 0,
+          statements:
+            metadata.total_statements ||
+            entries.reduce(
+              (total: number, entry: GratitudeEntry) => total + (entry.statements?.length || 0),
+              0
+            ),
+        })}</p>
       </div>
     </body>
     </html>
@@ -366,6 +398,20 @@ const createPDFTemplate = (data: ExportData): string => {
  * Invokes the Supabase Edge Function to get user data and generates a PDF file.
  * Returns the URI of the temporary PDF file and the generated filename.
  */
+const resolveExportLanguage = (requestedLanguage?: string | null): ExportLanguage => {
+  if (requestedLanguage && (requestedLanguage === 'tr' || requestedLanguage === 'en')) {
+    return requestedLanguage;
+  }
+
+  const stateLanguage = useLanguageStore.getState().language;
+  if (stateLanguage === 'tr' || stateLanguage === 'en') {
+    return stateLanguage;
+  }
+
+  const i18nLanguage = i18n.language === 'en' ? 'en' : 'tr';
+  return i18nLanguage;
+};
+
 export const prepareUserExportFile = async (): Promise<{
   success: boolean;
   filePath?: string;
@@ -374,7 +420,15 @@ export const prepareUserExportFile = async (): Promise<{
 }> => {
   try {
     logger.debug(`Invoking Supabase function: ${EXPORT_FUNCTION_NAME}`);
-    const { data, error: invokeError } = await supabase.functions.invoke(EXPORT_FUNCTION_NAME, {});
+    const exportLanguage = resolveExportLanguage(i18n.language as SupportedLanguage);
+
+    const { data, error: invokeError } = await supabase.functions.invoke(EXPORT_FUNCTION_NAME, {
+      headers: {
+        'X-User-Language': exportLanguage,
+        'Accept-Language': exportLanguage === 'en' ? 'en-US,en;q=0.9' : 'tr-TR,tr;q=0.9',
+      },
+      body: { language: exportLanguage },
+    });
 
     if (invokeError) {
       const errorToHandle =
@@ -405,8 +459,13 @@ export const prepareUserExportFile = async (): Promise<{
       metadataKeys: data.metadata ? Object.keys(data.metadata) : [],
     });
 
-    // Create HTML template for PDF
-    const htmlContent = createPDFTemplate(data);
+    const languageFromResponse = (
+      typeof data.language === 'string' && (data.language === 'tr' || data.language === 'en')
+        ? data.language
+        : exportLanguage
+    ) as ExportLanguage;
+
+    const htmlContent = createPDFTemplate({ language: languageFromResponse, data });
 
     // Generate PDF from HTML
     const { uri: pdfUri } = await Print.printToFileAsync({

@@ -7,9 +7,10 @@ import { ScreenHeader, ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
 import { useStreakData } from '@/features/streak/hooks/useStreakData';
-import { ADVANCED_MILESTONES } from '@/features/streak/components/AdvancedStreakMilestones';
+import { createAdvancedMilestones } from '@/features/streak/components/AdvancedStreakMilestones';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { analyticsService } from '@/services/analyticsService';
+import { useTranslation } from 'react-i18next';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import type { AppTheme } from '@/themes/types';
@@ -33,6 +34,10 @@ interface StreakDetailsScreenProps {
 const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
+
+  // Create milestones with localized content
+  const ADVANCED_MILESTONES = useMemo(() => createAdvancedMilestones(t), [t]);
 
   const { data: streakData } = useStreakData();
   const currentStreak = streakData?.current_streak || 0;
@@ -46,14 +51,19 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
   const getCurrentMilestone = useCallback((): AdvancedMilestone => {
     return (
       ADVANCED_MILESTONES.find(
-        (milestone) => currentStreak >= milestone.minDays && currentStreak <= milestone.maxDays
+        (milestone: AdvancedMilestone) =>
+          currentStreak >= milestone.minDays && currentStreak <= milestone.maxDays
       ) || ADVANCED_MILESTONES[0]
     );
-  }, [currentStreak]);
+  }, [currentStreak, ADVANCED_MILESTONES]);
 
   const getNextMilestone = useCallback((): AdvancedMilestone | null => {
-    return ADVANCED_MILESTONES.find((milestone) => milestone.minDays > currentStreak) || null;
-  }, [currentStreak]);
+    return (
+      ADVANCED_MILESTONES.find(
+        (milestone: AdvancedMilestone) => milestone.minDays > currentStreak
+      ) || null
+    );
+  }, [currentStreak, ADVANCED_MILESTONES]);
 
   const getProgressPercentage = useCallback((): number => {
     const nextMilestone = getNextMilestone();
@@ -85,8 +95,9 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
       current_milestone: getCurrentMilestone().title,
       next_milestone: getNextMilestone()?.title || 'max_reached',
       progress_percentage: Math.round(getProgressPercentage()),
-      unlocked_milestones_count: ADVANCED_MILESTONES.filter((m) => currentStreak >= m.minDays)
-        .length,
+      unlocked_milestones_count: ADVANCED_MILESTONES.filter(
+        (m: AdvancedMilestone) => currentStreak >= m.minDays
+      ).length,
       days_to_next_milestone: (() => {
         const milestone = getNextMilestone();
         return milestone ? milestone.minDays - currentStreak : 0;
@@ -106,7 +117,14 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
       user_education_level:
         currentStreak >= 30 ? 'advanced' : currentStreak >= 7 ? 'intermediate' : 'basic',
     });
-  }, [currentStreak, longestStreak, getCurrentMilestone, getNextMilestone, getProgressPercentage]);
+  }, [
+    currentStreak,
+    longestStreak,
+    getCurrentMilestone,
+    getNextMilestone,
+    getProgressPercentage,
+    ADVANCED_MILESTONES,
+  ]);
 
   const handleGoBack = useCallback((): void => {
     hapticFeedback.light();
@@ -116,7 +134,9 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
   const currentMilestone = getCurrentMilestone();
   const nextMilestone = getNextMilestone();
   const progressPercentage = getProgressPercentage();
-  const unlockedMilestones = ADVANCED_MILESTONES.filter((m) => currentStreak >= m.minDays);
+  const unlockedMilestones = ADVANCED_MILESTONES.filter(
+    (m: AdvancedMilestone) => currentStreak >= m.minDays
+  );
 
   const heroCardStyle = useMemo(
     () => ({
@@ -140,7 +160,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
     >
       {/* 🎯 ENHANCED Edge-to-Edge Header */}
       <ScreenHeader
-        title="Seri Detayları"
+        title={t('streak.details.title')}
         showBackButton={true}
         onBackPress={handleGoBack}
         variant="large"
@@ -175,7 +195,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                 <Text style={styles.heroEmoji}>{currentMilestone.emoji}</Text>
                 <View style={styles.heroInfo}>
                   <Text style={styles.heroNumber}>{currentStreak}</Text>
-                  <Text style={styles.heroLabel}>günlük seri</Text>
+                  <Text style={styles.heroLabel}>{t('streak.details.dailyStreakLabel')}</Text>
                   <Text style={[styles.heroMilestone, { color: currentMilestone.colorPrimary }]}>
                     {currentMilestone.title}
                   </Text>
@@ -187,19 +207,21 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                 <Icon name="information-outline" size={16} color={theme.colors.onSurfaceVariant} />
                 <Text style={styles.streakExplanationText}>
                   {currentStreak === 0
-                    ? 'Seri, art arda günlerde minnet girişi yaparak başlar. Günlük pratiğin güçlü alışkanlıklar oluşturur.'
+                    ? t('streak.details.explain.new')
                     : currentStreak < 7
-                      ? 'Mükemmel başlangıç! Her gün devam ettiğin sürece serin güçlenir ve daha büyük başarılar açar.'
+                      ? t('streak.details.explain.beginner')
                       : currentStreak < 30
-                        ? 'Serin momentum kazanıyor! Bu ritim zihinsel sağlığını destekler ve pozitif düşünce alışkanlığı oluşturur.'
-                        : 'Güçlü bir alışkanlık oluşturdun! Araştırmalar günlük minnettarlığın stresi azalttığını ve mutluluğu artırdığını gösteriyor.'}
+                        ? t('streak.details.explain.developing')
+                        : t('streak.details.explain.established')}
                 </Text>
               </View>
 
               {longestStreak > currentStreak && (
                 <View style={styles.recordContainer}>
                   <Icon name="trophy-outline" size={16} color={theme.colors.primary} />
-                  <Text style={styles.recordText}>En uzun rekor: {longestStreak} gün</Text>
+                  <Text style={styles.recordText}>
+                    {t('streak.details.longestRecord', { days: longestStreak })}
+                  </Text>
                 </View>
               )}
             </View>
@@ -219,7 +241,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                 <View style={styles.progressHeaderLeft}>
                   <Text style={styles.nextMilestoneEmoji}>{nextMilestone.emoji}</Text>
                   <View style={styles.progressInfo}>
-                    <Text style={styles.progressTitle}>Sonraki Hedef</Text>
+                    <Text style={styles.progressTitle}>{t('streak.details.nextTarget')}</Text>
                     <Text style={styles.progressMilestone}>{nextMilestone.title}</Text>
                   </View>
                 </View>
@@ -227,7 +249,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                   <Text style={styles.daysToNextNumber}>
                     {nextMilestone.minDays - currentStreak}
                   </Text>
-                  <Text style={styles.daysToNextLabel}>gün kaldı</Text>
+                  <Text style={styles.daysToNextLabel}>{t('streak.details.daysLeft')}</Text>
                 </View>
               </View>
 
@@ -244,16 +266,13 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                   />
                 </View>
                 <Text style={styles.progressPercent}>
-                  {Math.round(progressPercentage)}% tamamlandı
+                  {t('streak.details.progressPercent', { percent: Math.round(progressPercentage) })}
                 </Text>
               </View>
 
               {/* 📚 SUBTLE INFO: How to maintain streak */}
               <View style={styles.streakMaintenanceInfo}>
-                <Text style={styles.streakMaintenanceText}>
-                  💡 İpucu: Serini korumak için her gün en az bir minnet girişi yap. Geç saatlerde
-                  unutursan 23:59'a kadar girişin sayılır!
-                </Text>
+                <Text style={styles.streakMaintenanceText}>{t('streak.details.tip')}</Text>
               </View>
             </ThemedCard>
           </View>
@@ -278,7 +297,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                   <Icon name="fire" size={24} color={theme.colors.primary} />
                 </View>
                 <Text style={styles.statNumber}>{currentStreak}</Text>
-                <Text style={styles.statLabel}>Mevcut Seri</Text>
+                <Text style={styles.statLabel}>{t('streak.details.stats.current')}</Text>
               </View>
 
               <View style={styles.statDivider} />
@@ -293,7 +312,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                   <Icon name="trophy" size={24} color={theme.colors.success} />
                 </View>
                 <Text style={styles.statNumber}>{longestStreak}</Text>
-                <Text style={styles.statLabel}>En Uzun Seri</Text>
+                <Text style={styles.statLabel}>{t('streak.details.stats.longest')}</Text>
               </View>
 
               <View style={styles.statDivider} />
@@ -308,7 +327,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                   <Icon name="medal" size={24} color={theme.colors.secondary} />
                 </View>
                 <Text style={styles.statNumber}>{unlockedMilestones.length}</Text>
-                <Text style={styles.statLabel}>Başarı Sayısı</Text>
+                <Text style={styles.statLabel}>{t('streak.details.stats.achievements')}</Text>
               </View>
             </View>
           </ThemedCard>
@@ -324,74 +343,78 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
           >
             <View style={styles.milestonesHeader}>
               <Icon name="star-circle" size={20} color={theme.colors.primary} />
-              <Text style={styles.sectionTitle}>Tüm Başarılar</Text>
+              <Text style={styles.sectionTitle}>{t('streak.details.allAchievements')}</Text>
               <Text style={styles.unlockedCount}>
                 {unlockedMilestones.length}/{ADVANCED_MILESTONES.length}
               </Text>
             </View>
 
             <View style={styles.milestonesGrid}>
-              {ADVANCED_MILESTONES.slice(0, 12).map((milestone, _index) => {
-                const isUnlocked = currentStreak >= milestone.minDays;
-                return (
-                  <View
-                    key={milestone.id}
-                    style={[
-                      styles.milestoneItem,
-                      isUnlocked ? styles.milestoneItemUnlocked : styles.milestoneItemLocked,
-                      {
-                        backgroundColor: isUnlocked
-                          ? milestone.colorPrimary + '12'
-                          : theme.colors.surfaceVariant + '40',
-                        borderColor: isUnlocked
-                          ? milestone.colorPrimary + '30'
-                          : theme.colors.outline + '20',
-                      },
-                    ]}
-                  >
-                    <View style={styles.milestoneContent}>
-                      <Text
-                        style={[
-                          styles.milestoneEmoji,
-                          isUnlocked ? styles.milestoneEmojiUnlocked : styles.milestoneEmojiLocked,
-                        ]}
-                      >
-                        {milestone.emoji}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.milestoneTitle,
-                          {
-                            color: isUnlocked
-                              ? theme.colors.onSurface
-                              : theme.colors.onSurfaceVariant,
-                          },
-                        ]}
-                      >
-                        {milestone.title}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.milestoneDays,
-                          {
-                            color: isUnlocked
-                              ? milestone.colorPrimary
-                              : theme.colors.onSurfaceVariant,
-                          },
-                        ]}
-                      >
-                        {milestone.minDays}+ gün
-                      </Text>
-                    </View>
-
-                    {isUnlocked && (
-                      <View style={styles.unlockedIndicator}>
-                        <Icon name="check-circle" size={12} color={milestone.colorPrimary} />
+              {ADVANCED_MILESTONES.slice(0, 12).map(
+                (milestone: AdvancedMilestone, _index: number) => {
+                  const isUnlocked = currentStreak >= milestone.minDays;
+                  return (
+                    <View
+                      key={milestone.id}
+                      style={[
+                        styles.milestoneItem,
+                        isUnlocked ? styles.milestoneItemUnlocked : styles.milestoneItemLocked,
+                        {
+                          backgroundColor: isUnlocked
+                            ? milestone.colorPrimary + '12'
+                            : theme.colors.surfaceVariant + '40',
+                          borderColor: isUnlocked
+                            ? milestone.colorPrimary + '30'
+                            : theme.colors.outline + '20',
+                        },
+                      ]}
+                    >
+                      <View style={styles.milestoneContent}>
+                        <Text
+                          style={[
+                            styles.milestoneEmoji,
+                            isUnlocked
+                              ? styles.milestoneEmojiUnlocked
+                              : styles.milestoneEmojiLocked,
+                          ]}
+                        >
+                          {milestone.emoji}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.milestoneTitle,
+                            {
+                              color: isUnlocked
+                                ? theme.colors.onSurface
+                                : theme.colors.onSurfaceVariant,
+                            },
+                          ]}
+                        >
+                          {milestone.title}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.milestoneDays,
+                            {
+                              color: isUnlocked
+                                ? milestone.colorPrimary
+                                : theme.colors.onSurfaceVariant,
+                            },
+                          ]}
+                        >
+                          {milestone.minDays}+ gün
+                        </Text>
                       </View>
-                    )}
-                  </View>
-                );
-              })}
+
+                      {isUnlocked && (
+                        <View style={styles.unlockedIndicator}>
+                          <Icon name="check-circle" size={12} color={milestone.colorPrimary} />
+                        </View>
+                      )}
+                    </View>
+                  );
+                }
+              )}
             </View>
           </ThemedCard>
         </View>
@@ -406,16 +429,18 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
           >
             <View style={styles.benefitsHeader}>
               <Icon name="heart-pulse" size={20} color={theme.colors.success} />
-              <Text style={styles.benefitsSectionTitle}>Seri Faydaları</Text>
+              <Text style={styles.benefitsSectionTitle}>{t('streak.details.benefits.title')}</Text>
             </View>
 
             <View style={styles.benefitsList}>
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitEmoji}>🧠</Text>
                 <View style={styles.benefitContent}>
-                  <Text style={styles.benefitTitle}>Zihinsel Sağlık</Text>
+                  <Text style={styles.benefitTitle}>
+                    {t('streak.details.benefits.mental.title')}
+                  </Text>
                   <Text style={styles.benefitDescription}>
-                    Günlük minnettarlık stresi azaltmaya ve uyku kalitesini artırmaya yardımcı olur.
+                    {t('streak.details.benefits.mental.desc')}
                   </Text>
                 </View>
               </View>
@@ -423,9 +448,11 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitEmoji}>😊</Text>
                 <View style={styles.benefitContent}>
-                  <Text style={styles.benefitTitle}>Mutluluk Seviyesi</Text>
+                  <Text style={styles.benefitTitle}>
+                    {t('streak.details.benefits.happiness.title')}
+                  </Text>
                   <Text style={styles.benefitDescription}>
-                    21 günlük düzenli pratik mutluluk hormonlarını artırabilir.
+                    {t('streak.details.benefits.happiness.desc')}
                   </Text>
                 </View>
               </View>
@@ -433,9 +460,11 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitEmoji}>🤝</Text>
                 <View style={styles.benefitContent}>
-                  <Text style={styles.benefitTitle}>İlişki Kalitesi</Text>
+                  <Text style={styles.benefitTitle}>
+                    {t('streak.details.benefits.relationships.title')}
+                  </Text>
                   <Text style={styles.benefitDescription}>
-                    Minnettarlık pratiği empatiyi güçlendirir ve sosyal bağları artırır.
+                    {t('streak.details.benefits.relationships.desc')}
                   </Text>
                 </View>
               </View>
@@ -444,9 +473,11 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                 <View style={styles.benefitItem}>
                   <Text style={styles.benefitEmoji}>⚡</Text>
                   <View style={styles.benefitContent}>
-                    <Text style={styles.benefitTitle}>Enerji & Motivasyon</Text>
+                    <Text style={styles.benefitTitle}>
+                      {t('streak.details.benefits.energy.title')}
+                    </Text>
                     <Text style={styles.benefitDescription}>
-                      1 haftalık seri enerjiyi artırır ve motivasyonu güçlendirir
+                      {t('streak.details.benefits.energy.desc')}
                     </Text>
                   </View>
                 </View>
@@ -457,7 +488,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                 <View style={styles.researchTipContainer}>
                   <Icon name="school-outline" size={14} color={theme.colors.secondary} />
                   <Text style={styles.researchTipText}>
-                    🔬 21+ günlük minnettarlık pratiği yaşam memnuniyetini önemli ölçüde artırır.
+                    {t('streak.details.benefits.researchTip')}
                   </Text>
                 </View>
               )}

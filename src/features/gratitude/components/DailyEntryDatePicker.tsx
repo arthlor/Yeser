@@ -4,6 +4,8 @@ import ThemedCard from '@/shared/components/ui/ThemedCard';
 
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { getCurrentLocale } from '@/utils/localeUtils';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface DailyEntryDatePickerProps {
@@ -18,10 +20,11 @@ const DailyEntryDatePicker: React.FC<DailyEntryDatePickerProps> = ({
   onPressChangeDate,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
 
   const formatMainDate = (date: Date) =>
-    date.toLocaleDateString('tr-TR', {
+    date.toLocaleDateString(getCurrentLocale(), {
       day: 'numeric',
       month: 'long',
     });
@@ -45,12 +48,12 @@ const DailyEntryDatePicker: React.FC<DailyEntryDatePickerProps> = ({
 
   const getDateLabel = () => {
     if (isToday()) {
-      return 'Bugün';
+      return t('gratitude.labels.today');
     }
     if (isYesterday()) {
-      return 'Dün';
+      return t('gratitude.labels.yesterday');
     }
-    return entryDate.toLocaleDateString('tr-TR', { weekday: 'long' });
+    return entryDate.toLocaleDateString(getCurrentLocale(), { weekday: 'long' });
   };
 
   const year = formatYear(entryDate);
@@ -61,7 +64,10 @@ const DailyEntryDatePicker: React.FC<DailyEntryDatePickerProps> = ({
         onPress={onPressChangeDate}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel={`Tarih seç: ${getDateLabel()}, ${formatMainDate(entryDate)}`}
+        accessibilityLabel={t('shared.ui.accessibility.selectDate', {
+          date: getDateLabel(),
+          formatted: formatMainDate(entryDate),
+        })}
       >
         <ThemedCard
           variant={isToday() ? 'elevated' : 'default'}

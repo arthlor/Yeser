@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
@@ -27,6 +28,7 @@ interface PastEntriesEmptyStateProps {}
 const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   return (
     <View style={styles.emptyZone}>
@@ -72,18 +74,15 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
 
           {/* Enhanced Main Content */}
           <View style={styles.headerSection}>
-            <Text style={styles.title}>Minnet yolculuğuna başla</Text>
-            <Text style={styles.description}>
-              İlk minnet kaydını oluşturup hayatındaki güzel anları keşfetmeye başla. Her gün küçük
-              mutlulukları fark etmek seni daha pozitif kılacak.
-            </Text>
+            <Text style={styles.title}>{t('pastEntries.empty.title')}</Text>
+            <Text style={styles.description}>{t('pastEntries.empty.subtitle')}</Text>
           </View>
 
           {/* Enhanced Step-by-Step Guidance */}
           <View style={styles.guidanceSection}>
             <View style={styles.guidanceHeader}>
               <Icon name="map-marker-path" size={20} color={theme.colors.primary} />
-              <Text style={styles.guidanceTitle}>Nasıl Başlarım?</Text>
+              <Text style={styles.guidanceTitle}>{t('pastEntries.empty.how')}</Text>
             </View>
 
             <View style={styles.stepsContainer}>
@@ -92,10 +91,8 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
                   <Text style={styles.stepText}>1</Text>
                 </View>
                 <View style={styles.stepContent}>
-                  <Text style={styles.stepTitle}>Günlük kayıt sayfasına git</Text>
-                  <Text style={styles.stepDescription}>
-                    Alt menüden "Günlük Kayıt" sekmesine dokun
-                  </Text>
+                  <Text style={styles.stepTitle}>{t('pastEntries.empty.step1')}</Text>
+                  <Text style={styles.stepDescription}>{t('pastEntries.empty.step1Hint')}</Text>
                 </View>
               </View>
 
@@ -106,10 +103,8 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
                   <Text style={styles.stepText}>2</Text>
                 </View>
                 <View style={styles.stepContent}>
-                  <Text style={styles.stepTitle}>Minnettarlıklarını yaz</Text>
-                  <Text style={styles.stepDescription}>
-                    Bugün için minnet duyduğun 3 şeyi paylaş
-                  </Text>
+                  <Text style={styles.stepTitle}>{t('pastEntries.empty.step2')}</Text>
+                  <Text style={styles.stepDescription}>{t('pastEntries.empty.step2Hint')}</Text>
                 </View>
               </View>
 
@@ -120,10 +115,8 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
                   <Text style={styles.stepText}>3</Text>
                 </View>
                 <View style={styles.stepContent}>
-                  <Text style={styles.stepTitle}>İlerlemeni takip et</Text>
-                  <Text style={styles.stepDescription}>
-                    Gelişimini izle ve günlük hedefine ulaş
-                  </Text>
+                  <Text style={styles.stepTitle}>{t('pastEntries.empty.step3')}</Text>
+                  <Text style={styles.stepDescription}>{t('pastEntries.empty.step3Hint')}</Text>
                 </View>
               </View>
             </View>
@@ -133,7 +126,7 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
           <View style={styles.benefitsSection}>
             <View style={styles.benefitsHeader}>
               <Icon name="gift-outline" size={20} color={theme.colors.success} />
-              <Text style={styles.benefitsTitle}>Faydaları</Text>
+              <Text style={styles.benefitsTitle}>{t('pastEntries.empty.benefits')}</Text>
             </View>
 
             <View style={styles.benefitsList}>
@@ -141,21 +134,21 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
                 <View style={styles.benefitIcon}>
                   <Icon name="heart" size={16} color={theme.colors.error} />
                 </View>
-                <Text style={styles.benefitText}>Mutluluk artışı</Text>
+                <Text style={styles.benefitText}>{t('pastEntries.empty.benefit1')}</Text>
               </View>
 
               <View style={styles.benefitItem}>
                 <View style={styles.benefitIcon}>
                   <Icon name="brain" size={16} color={theme.colors.info} />
                 </View>
-                <Text style={styles.benefitText}>Pozitif bakış</Text>
+                <Text style={styles.benefitText}>{t('pastEntries.empty.benefit2')}</Text>
               </View>
 
               <View style={styles.benefitItem}>
                 <View style={styles.benefitIcon}>
                   <Icon name="trending-up" size={16} color={theme.colors.success} />
                 </View>
-                <Text style={styles.benefitText}>Kişisel gelişim</Text>
+                <Text style={styles.benefitText}>{t('pastEntries.empty.benefit3')}</Text>
               </View>
             </View>
           </View>
@@ -163,9 +156,7 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
           {/* Enhanced Motivation Quote */}
           <View style={styles.motivationSection}>
             <Icon name="format-quote-open" size={24} color={theme.colors.primary + '60'} />
-            <Text style={styles.motivationQuote}>
-              "Minnettarlık, sahip olduklarımızı{'\n'}yeterli kılan büyülü bir anahtardır."
-            </Text>
+            <Text style={styles.motivationQuote}>{t('pastEntries.empty.quote')}</Text>
             <Text style={styles.motivationAuthor}>— Oprah Winfrey</Text>
           </View>
         </View>
@@ -178,10 +169,8 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
             <Icon name="lightbulb-on" size={18} color={theme.colors.warning} />
           </View>
           <View style={styles.tipContent}>
-            <Text style={styles.tipTitle}>💡 Minnetin faydası</Text>
-            <Text style={styles.tipText}>
-              Günde 3 minnet kaydı tutmak, ilerleyen süreçte mutluluk artışı sağlar!
-            </Text>
+            <Text style={styles.tipTitle}>{t('pastEntries.empty.tipTitle')}</Text>
+            <Text style={styles.tipText}>{t('pastEntries.empty.tip')}</Text>
           </View>
         </View>
       </View>

@@ -7,6 +7,7 @@ import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimation
 import React, { useEffect, useMemo } from 'react';
 import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import AdvancedStreakMilestones from '@/features/streak/components/AdvancedStreakMilestones';
 import { useStreakStatus } from '@/features/streak/hooks';
@@ -42,6 +43,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   const { theme } = useTheme();
   const { status, statusMessage, canExtendToday } = useStreakStatus();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { t } = useTranslation();
 
   // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
   const animations = useCoordinatedAnimations();
@@ -62,61 +64,69 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     const hour = new Date().getHours();
 
     if (hour >= 5 && hour < 8) {
-      return { icon: '🌅', timeText: 'Erken saatlerde', mood: 'fresh' };
+      return { icon: '🌅', timeText: t('home.hero.time.early'), mood: 'fresh' };
     } else if (hour >= 8 && hour < 12) {
-      return { icon: '☀️', timeText: 'Sabah enerjisiyle', mood: 'energetic' };
+      return { icon: '☀️', timeText: t('home.hero.time.morning'), mood: 'energetic' };
     } else if (hour >= 12 && hour < 15) {
-      return { icon: '🌞', timeText: 'Öğlen saatlerinde', mood: 'bright' };
+      return { icon: '🌞', timeText: t('home.hero.time.noon'), mood: 'bright' };
     } else if (hour >= 15 && hour < 18) {
-      return { icon: '🌤️', timeText: 'İkindi vakti', mood: 'calm' };
+      return { icon: '🌤️', timeText: t('home.hero.time.afternoon'), mood: 'calm' };
     } else if (hour >= 18 && hour < 21) {
-      return { icon: '🌆', timeText: 'Akşam saatlerinde', mood: 'warm' };
+      return { icon: '🌆', timeText: t('home.hero.time.evening'), mood: 'warm' };
     } else {
-      return { icon: '🌙', timeText: 'Gece sessizliğinde', mood: 'peaceful' };
+      return { icon: '🌙', timeText: t('home.hero.time.night'), mood: 'peaceful' };
     }
   };
 
   const getContextualGreeting = () => {
     const timeElements = getTimeBasedElements();
-    const displayName = username || 'Yeşeren Kalbi';
+    const displayName = username || t('home.hero.defaultName');
     const isGoalComplete = currentCount >= dailyGoal;
 
     if (isGoalComplete) {
       return {
-        primary: `${timeElements.icon} Harika, ${displayName}!`,
-        secondary: 'Bugünkü hedefinizi tamamladınız! 🎉',
-        accent: 'Başarılı bir gün geçiriyorsunuz',
+        primary: t('home.hero.goalComplete.primary', {
+          icon: timeElements.icon,
+          name: displayName,
+        }),
+        secondary: t('home.hero.goalComplete.secondary'),
+        accent: t('home.hero.goalComplete.accent'),
       };
     }
 
     if (currentCount > 0) {
       return {
-        primary: `${timeElements.icon} ${greeting}, ${displayName}`,
-        secondary: timeElements.timeText,
-        accent: 'Güzel ilerleme kaydediyorsunuz! 💫',
+        primary: t('home.hero.progress.primary', {
+          icon: timeElements.icon,
+          greeting,
+          name: displayName,
+        }),
+        secondary: t('home.hero.progress.secondary', { timeText: timeElements.timeText }),
+        accent: t('home.hero.progress.accent'),
       };
     }
 
     return {
-      primary: `${timeElements.icon} ${greeting}, ${displayName}`,
-      secondary: `${timeElements.timeText} yeni başlangıçlar yapın`,
-      accent: 'Bugünün ilk minnetini bekliyoruz ✨',
+      primary: t('home.hero.idle.primary', {
+        icon: timeElements.icon,
+        greeting,
+        name: displayName,
+      }),
+      secondary: t('home.hero.idle.secondary', { timeText: timeElements.timeText }),
+      accent: t('home.hero.idle.accent'),
     };
   };
 
   const getMotivationalSubtext = () => {
     if (currentCount === 0) {
-      return {
-        main: 'Bugünün ilk minnetini ekleyerek güne başlayın',
-        sub: 'Küçük adımlar, büyük değişimler yaratır',
-      };
+      return { main: t('home.hero.motivation.startMain'), sub: t('home.hero.motivation.startSub') };
     }
 
     const isGoalComplete = currentCount >= dailyGoal;
     if (isGoalComplete) {
       return {
-        main: 'Günlük hedefinizi tamamladınız! 🎊',
-        sub: 'İstersen daha fazla minnet ekleyebilirsiniz',
+        main: t('home.hero.motivation.completeMain'),
+        sub: t('home.hero.motivation.completeSub'),
       };
     }
 
@@ -124,8 +134,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     const progressPercentage = Math.round((currentCount / dailyGoal) * 100);
 
     return {
-      main: `Hedefe ${remaining} minnet kaldı (${progressPercentage}% tamamlandı)`,
-      sub: '',
+      main: t('home.hero.motivation.remaining', { remaining, progress: progressPercentage }),
+      sub: t('home.hero.motivation.remainingSub'),
     };
   };
 

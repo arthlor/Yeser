@@ -1,8 +1,10 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/providers/ThemeProvider';
+import i18n from '@/i18n';
 import { AppTheme } from '@/themes/types';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { getPrimaryShadow } from '@/themes/utils';
@@ -31,17 +33,18 @@ interface PastEntriesHeaderProps {
 const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, entryCount }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   const getSubtitleText = () => {
     if (subtitle) {
       return subtitle;
     }
     if (entryCount !== undefined) {
-      const lastUpdate = new Date().toLocaleDateString('tr-TR', {
+      const lastUpdate = new Date().toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'tr-TR', {
         day: 'numeric',
         month: 'long',
       });
-      return `Son güncelleme: ${lastUpdate}`;
+      return t('pastEntries.header.lastUpdate', { date: lastUpdate });
     }
     return undefined;
   };
@@ -106,7 +109,7 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
                 <View style={styles.statBadge}>
                   <Text style={styles.statNumber}>{stats.total}</Text>
                 </View>
-                <Text style={styles.statLabel}>Toplam Kayıt</Text>
+                <Text style={styles.statLabel}>{t('pastEntries.header.total')}</Text>
               </View>
 
               <View style={styles.statDivider} />
@@ -115,7 +118,7 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
                 <View style={styles.statBadge}>
                   <Text style={styles.statNumber}>{stats.monthlyProgress}%</Text>
                 </View>
-                <Text style={styles.statLabel}>Aylık Hedef</Text>
+                <Text style={styles.statLabel}>{t('pastEntries.header.monthly')}</Text>
               </View>
 
               <View style={styles.statDivider} />
@@ -141,7 +144,11 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
                     }
                   />
                 </View>
-                <Text style={styles.statLabel}>{stats.isOnTrack ? 'Hedefte' : 'Motivasyon'}</Text>
+                <Text style={styles.statLabel}>
+                  {stats.isOnTrack
+                    ? t('pastEntries.header.cta.onTrack')
+                    : t('pastEntries.header.cta.focus')}
+                </Text>
               </View>
             </View>
 
@@ -149,12 +156,16 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
             <View style={styles.progressSection}>
               <View style={styles.progressHeader}>
                 <Text style={styles.progressTitle}>
-                  {stats.isOnTrack ? '🎯 Aylık hedefe doğru ilerliyorsun!' : '💪 Hedefe odaklan!'}
+                  {stats.isOnTrack
+                    ? t('pastEntries.header.cta.onTrack')
+                    : t('pastEntries.header.cta.focus')}
                 </Text>
                 <Text style={styles.progressSubtitle}>
                   {stats.monthlyGoal - stats.total > 0
-                    ? `${stats.monthlyGoal - stats.total} kayıt daha`
-                    : 'Aylık hedef tamamlandı!'}
+                    ? t('pastEntries.header.cta.remaining', {
+                        count: stats.monthlyGoal - stats.total,
+                      })
+                    : t('pastEntries.header.cta.complete')}
                 </Text>
               </View>
 

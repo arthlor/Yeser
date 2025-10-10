@@ -6,13 +6,11 @@ import {
   Animated,
   RefreshControl,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import ErrorState from '@/shared/components/ui/ErrorState';
 import LoadingState from '@/components/states/LoadingState';
@@ -35,6 +33,10 @@ import { analyticsService } from '@/services/analyticsService';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { useUserProfile } from '@/shared/hooks';
+import { useTranslation } from 'react-i18next';
+import { getCurrentLocale } from '@/utils/localeUtils';
+import { useMoodEmoji } from '@/shared/hooks/useMoodEmoji';
+import type { MoodEmoji } from '@/types/mood.types';
 
 // Define the type for the route params
 type EntryDetailScreenRouteProp = RouteProp<AppStackParamList, 'EntryDetail'>;
@@ -69,6 +71,7 @@ const EnhancedEntryDetailScreen: React.FC<{
   const { theme } = useTheme();
   const { showSuccess, showError } = useToast();
   const { handleMutationError } = useGlobalError();
+  const { t } = useTranslation();
   const { entryDate: routeEntryDate } = route.params;
 
   // Provide fallback for entryDate if not provided
@@ -102,6 +105,10 @@ const EnhancedEntryDetailScreen: React.FC<{
 
   // Use live data or fallback to route params
   const gratitudeItems = useMemo(() => currentEntry?.statements || [], [currentEntry?.statements]);
+  // Display newest -> oldest
+  const displayItems = useMemo(() => {
+    return [...gratitudeItems].reverse();
+  }, [gratitudeItems]);
 
   // Scroll to edited card to keep it visible above the keyboard
   const scrollRef = useRef<ScrollView>(null);
@@ -112,7 +119,7 @@ const EnhancedEntryDetailScreen: React.FC<{
   // ✅ PERFORMANCE FIX: Memoized expensive date computation
   const dateInfo = useMemo(() => {
     if (!entryDate) {
-      return { formattedDate: 'Tarih bilgisi yok', relativeTime: '', isToday: false };
+      return { formattedDate: t('shared.statement.invalidDate'), relativeTime: '', isToday: false };
     }
 
     const entryDateObj = new Date(entryDate);
@@ -120,7 +127,7 @@ const EnhancedEntryDetailScreen: React.FC<{
     const diffTime = today.getTime() - entryDateObj.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    const formattedDate = entryDateObj.toLocaleDateString('tr-TR', {
+    const formattedDate = entryDateObj.toLocaleDateString(getCurrentLocale(), {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -131,21 +138,21 @@ const EnhancedEntryDetailScreen: React.FC<{
     const isToday = diffDays === 0;
 
     if (isToday) {
-      relativeTime = 'Bugün';
+      relativeTime = t('pastEntries.item.relative.today');
     } else if (diffDays === 1) {
-      relativeTime = 'Dün';
+      relativeTime = t('pastEntries.item.relative.yesterday');
     } else if (diffDays < 7) {
-      relativeTime = `${diffDays} gün önce`;
+      relativeTime = t('pastEntries.item.relative.days', { count: diffDays });
     } else if (diffDays < 30) {
       const weeks = Math.floor(diffDays / 7);
-      relativeTime = `${weeks} hafta önce`;
+      relativeTime = t('pastEntries.item.relative.weeks', { count: weeks });
     } else {
       const months = Math.floor(diffDays / 30);
-      relativeTime = `${months} ay önce`;
+      relativeTime = t('pastEntries.item.relative.months', { count: months });
     }
 
     return { formattedDate, relativeTime, isToday };
-  }, [entryDate]);
+  }, [entryDate, t]);
 
   const { formattedDate, relativeTime, isToday } = dateInfo;
 
@@ -156,30 +163,31 @@ const EnhancedEntryDetailScreen: React.FC<{
   const { profile } = useUserProfile();
   const dailyGoal = profile?.daily_gratitude_goal ?? 3;
 
+  // Subtle description for progress bar
+  const progressDescription = useMemo(() => {
+    const remaining = Math.max(dailyGoal - (currentEntry?.statements.length || 0), 0);
+    if ((currentEntry?.statements.length || 0) >= dailyGoal) {
+      return isToday ? t('gratitude.goal.completedToday') : t('gratitude.goal.completedPast');
+    }
+    return isToday
+      ? t('gratitude.goal.remainingToday', { remaining })
+      : t('gratitude.goal.remainingPast', { remaining });
+  }, [currentEntry?.statements.length, dailyGoal, isToday, t]);
+
   // 🎯 TOAST INTEGRATION: Refresh handler with toast feedback
   const handleRefresh = useCallback(async () => {
     try {
       await refetchEntry();
       // Success feedback for refresh
-      showSuccess('Minnet kayıtları yenilendi');
+      showSuccess(t('pastEntries.header.cta.complete'));
     } catch (error) {
       // Error feedback for refresh failure
-      showError('Kayıtlar yenilenemedi. Lütfen tekrar deneyin.');
+      showError(t('shared.layout.errorState.cases.generic.message'));
       logger.error('Refresh error:', error instanceof Error ? error : new Error(String(error)));
     }
-  }, [refetchEntry, showSuccess, showError]);
+  }, [refetchEntry, showSuccess, showError, t]);
 
-  // Share all statements with nice formatting
-  const handleShare = useCallback(async () => {
-    try {
-      const title = `Minnet Kayıtları • ${formattedDate}`;
-      const body = gratitudeItems.map((s, i) => `${i + 1}. ${s}`).join('\n');
-      await Share.share({ message: `${title}\n\n${body}` });
-    } catch (error) {
-      logger.warn('Share failed', { error });
-      showError('Paylaşma başarısız. Lütfen tekrar deneyin.');
-    }
-  }, [formattedDate, gratitudeItems, showError]);
+  // Share removed from minimal header
 
   // ✅ PERFORMANCE FIX: Memoized edit handler
   const handleEditStatement = useCallback((index: number) => {
@@ -203,22 +211,22 @@ const EnhancedEntryDetailScreen: React.FC<{
 
         await editStatement({
           entryDate: entryDate,
-          statementIndex: index,
+          statementIndex: Math.max(gratitudeItems.length - 1 - index, 0),
           updatedStatement: updatedText.trim(),
         });
 
         setEditingStatementIndex(null);
 
         // 🎯 TOAST INTEGRATION: Success feedback for statement updates
-        showSuccess('Minnet kaydın başarıyla güncellendi');
+        showSuccess(t('gratitude.success.entryUpdated'));
         hapticFeedback.success();
       } catch (error) {
         if (error instanceof ZodError) {
           // 🎯 TOAST INTEGRATION: Use toast for validation errors with user-friendly messages
-          showError('Lütfen geçerli bir minnet ifadesi girin');
+          showError(t('gratitude.validation.invalidEntry'));
         } else {
           // 🎯 TOAST INTEGRATION: Use toast for general errors
-          showError('Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.');
+          showError(t('gratitude.errors.editFailed'));
           handleMutationError(error, 'saveEditedStatement');
           logger.error(
             'Edit statement error:',
@@ -227,7 +235,15 @@ const EnhancedEntryDetailScreen: React.FC<{
         }
       }
     },
-    [entryDate, editStatement, showSuccess, showError, handleMutationError]
+    [
+      entryDate,
+      editStatement,
+      showSuccess,
+      showError,
+      handleMutationError,
+      t,
+      gratitudeItems.length,
+    ]
   );
 
   // ✅ PERFORMANCE FIX: Memoized cancel handler
@@ -241,14 +257,14 @@ const EnhancedEntryDetailScreen: React.FC<{
       try {
         await deleteStatement({
           entryDate: entryDate,
-          statementIndex: index,
+          statementIndex: Math.max(gratitudeItems.length - 1 - index, 0),
         });
 
         // 🎯 TOAST INTEGRATION: Success feedback for statement deletion with Undo
-        const deleted = gratitudeItems[index];
-        showSuccess('Minnet ifadesi silindi', {
+        const deleted = displayItems[index];
+        showSuccess(t('statement.deleted'), {
           action: {
-            label: 'Geri Al',
+            label: t('statement.undoAction'),
             onPress: () => {
               addStatement({ entryDate, statement: deleted });
             },
@@ -257,7 +273,7 @@ const EnhancedEntryDetailScreen: React.FC<{
         hapticFeedback.medium();
       } catch (error) {
         // 🎯 TOAST INTEGRATION: Use toast for general errors
-        showError('Silme işlemi başarısız oldu. Lütfen tekrar deneyin.');
+        showError(t('gratitude.errors.deleteFailed'));
         handleMutationError(error, 'deleteStatement');
         logger.error(
           'Delete statement error:',
@@ -272,7 +288,9 @@ const EnhancedEntryDetailScreen: React.FC<{
       showError,
       handleMutationError,
       addStatement,
-      gratitudeItems,
+      gratitudeItems.length,
+      displayItems,
+      t,
     ]
   );
 
@@ -294,16 +312,16 @@ const EnhancedEntryDetailScreen: React.FC<{
   useEffect(() => {
     if (editStatementError) {
       handleMutationError(editStatementError, 'editStatement');
-      showError('Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.');
+      showError(t('gratitude.errors.editOperationFailed'));
     }
-  }, [editStatementError, handleMutationError, showError]);
+  }, [editStatementError, handleMutationError, showError, t]);
 
   useEffect(() => {
     if (deleteStatementError) {
       handleMutationError(deleteStatementError, 'deleteStatement');
-      showError('Silme işlemi başarısız oldu. Lütfen tekrar deneyin.');
+      showError(t('gratitude.errors.deleteFailed'));
     }
-  }, [deleteStatementError, handleMutationError, showError]);
+  }, [deleteStatementError, handleMutationError, showError, t]);
 
   // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
@@ -313,7 +331,7 @@ const EnhancedEntryDetailScreen: React.FC<{
 
   // Handle initial loading state
   if (isLoadingEntry) {
-    return <LoadingState fullScreen={true} message="Minnet kayıtları yükleniyor..." />;
+    return <LoadingState fullScreen={true} message={t('shared.layout.screenContent.loading')} />;
   }
 
   // Handle error state
@@ -326,11 +344,11 @@ const EnhancedEntryDetailScreen: React.FC<{
         edgeToEdge={true}
       >
         <ErrorState
-          title="Yüklenemedi"
+          title={t('shared.layout.errorState.cases.generic.title')}
           error={entryError}
           icon="calendar-alert"
           onRetry={() => refetchEntry()}
-          retryText="Tekrar Dene"
+          retryText={t('common.retry')}
         />
       </ScreenLayout>
     );
@@ -413,12 +431,11 @@ const EnhancedEntryDetailScreen: React.FC<{
               </Animated.View>
             </View>
           </View>
-          <Text style={styles.emptyTitle}>Bu günün hikayesi henüz yazılmamış</Text>
+          <Text style={styles.emptyTitle}>{t('gratitude.empty.title')}</Text>
           <Text style={styles.emptySubtitle}>
-            Bu özel güne ait minnet kayıtları henüz yok.{'\n'}
-            {isToday
-              ? 'Bugün yaşadığın güzel anları kaydedebilirsin!'
-              : 'Geri dönüp o günün güzel anılarını paylaşabilirsin!'}
+            {t('gratitude.empty.subtitle')}
+            {'\n'}
+            {isToday ? t('gratitude.empty.todayMessage') : t('gratitude.empty.pastMessage')}
           </Text>
           {isToday && (
             <TouchableOpacity
@@ -427,7 +444,7 @@ const EnhancedEntryDetailScreen: React.FC<{
               activeOpacity={0.8}
             >
               <MaterialCommunityIcons name="plus" size={20} color={theme.colors.onPrimary} />
-              <Text style={styles.emptyActionText}>Minnet Ekle</Text>
+              <Text style={styles.emptyActionText}>{t('gratitude.actions.addGratitude')}</Text>
             </TouchableOpacity>
           )}
           <View style={styles.emptyQuote}>
@@ -436,9 +453,7 @@ const EnhancedEntryDetailScreen: React.FC<{
               size={20}
               color={theme.colors.primary + '60'}
             />
-            <Text style={styles.emptyQuoteText}>
-              "Her gün, minnettarlık için{'\n'}yeni fırsatlar sunar."
-            </Text>
+            <Text style={styles.emptyQuoteText}>{t('gratitude.quotes.dailyOpportunity')}</Text>
           </View>
         </View>
       </ThemedCard>
@@ -451,6 +466,7 @@ const EnhancedEntryDetailScreen: React.FC<{
       scrollRef={scrollRef}
       keyboardAware={true}
       keyboardVerticalOffset={0}
+      backgroundColor={theme.colors.surface}
       showsVerticalScrollIndicator={false}
       density="compact"
       edges={['top']}
@@ -465,94 +481,95 @@ const EnhancedEntryDetailScreen: React.FC<{
         />
       }
     >
-      {/* 🎨 CUSTOM EDGE-TO-EDGE HEADER */}
+      {/* Subtle, modern header (no gradient, minimal actions) */}
       <View style={styles.headerContainer}>
-        <LinearGradient
-          colors={[
-            theme.colors.primary + '10',
-            theme.colors.primaryContainer + '08',
-            theme.colors.surface + 'FA',
-            theme.colors.surface,
-          ]}
-          style={styles.headerGradient}
-        >
-          <View style={styles.headerContent}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-              activeOpacity={0.7}
+        <View style={styles.headerContent}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <View style={styles.backButtonInner}>
+              <Ionicons name="chevron-back" size={24} color={theme.colors.onSurface} />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>{formattedDate}</Text>
+            <Animated.View
+              style={[
+                styles.headerMetaContainer,
+                {
+                  opacity: animations.opacityAnim.interpolate({
+                    inputRange: [0, 80],
+                    outputRange: [1, 0.6],
+                    extrapolate: 'clamp',
+                  }),
+                  transform: [
+                    {
+                      translateY: animations.opacityAnim.interpolate({
+                        inputRange: [0, 80],
+                        outputRange: [0, -4],
+                        extrapolate: 'clamp',
+                      }),
+                    },
+                  ],
+                },
+              ]}
             >
-              <View style={styles.backButtonInner}>
-                <Ionicons name="chevron-back" size={24} color={theme.colors.onSurface} />
+              <View style={styles.pillsRow}>
+                <View style={[styles.pill, styles.pillNeutral]}>
+                  <MaterialCommunityIcons
+                    name="calendar-today"
+                    size={14}
+                    color={theme.colors.onSurfaceVariant}
+                  />
+                  <Text style={[styles.pillText, styles.pillTextNeutral]}>{relativeTime}</Text>
+                </View>
+
+                <View style={[styles.pill, styles.pillPrimary]}>
+                  <MaterialCommunityIcons
+                    name="cards-heart"
+                    size={14}
+                    color={theme.colors.onPrimaryContainer}
+                  />
+                  <Text style={[styles.pillText, styles.pillTextPrimary]}>
+                    {t('gratitude.detail.gratitudeCount', { count: gratitudeItems.length })}
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.pill,
+                    gratitudeItems.length >= dailyGoal
+                      ? styles.pillSuccess
+                      : styles.pillSoftPrimary,
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name={gratitudeItems.length >= dailyGoal ? 'trophy' : 'target'}
+                    size={14}
+                    color={
+                      gratitudeItems.length >= dailyGoal
+                        ? theme.colors.success
+                        : theme.colors.primary
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.pillText,
+                      gratitudeItems.length >= dailyGoal
+                        ? styles.pillTextSuccess
+                        : styles.pillTextSoftPrimary,
+                    ]}
+                  >
+                    {`${Math.min(gratitudeItems.length, dailyGoal)}/${dailyGoal}`}
+                  </Text>
+                </View>
               </View>
-            </TouchableOpacity>
-
-            <View style={styles.headerTitleSection}>
-              <View style={styles.headerIconContainer}>
-                <MaterialCommunityIcons
-                  name="book-open-page-variant"
-                  size={20}
-                  color={theme.colors.primary}
-                />
-              </View>
-              <View style={styles.headerTextContainer}>
-                <Text style={styles.headerTitle}>Kayıt Detayı</Text>
-                <Text style={styles.headerSubtitle}>
-                  {gratitudeItems.length} minnet • {relativeTime}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.headerActions}>
-              <TouchableOpacity
-                onPress={handleRefresh}
-                style={styles.headerActionButton}
-                activeOpacity={0.7}
-                disabled={isRefetching}
-              >
-                <MaterialCommunityIcons
-                  name="refresh"
-                  size={20}
-                  color={isRefetching ? theme.colors.primary : theme.colors.onSurfaceVariant}
-                />
-              </TouchableOpacity>
-
-              {/* Share all statements */}
-              <TouchableOpacity
-                onPress={handleShare}
-                style={styles.headerActionButton}
-                activeOpacity={0.7}
-              >
-                <MaterialCommunityIcons
-                  name="share-variant"
-                  size={20}
-                  color={theme.colors.onSurfaceVariant}
-                />
-              </TouchableOpacity>
-
-              {/* Quick add action: go to add screen for this date */}
-              <TouchableOpacity
-                onPress={() => {
-                  if (isToday) {
-                    navigation.navigate('MainAppTabs', {
-                      screen: 'DailyEntryTab' as never,
-                    } as never);
-                  } else {
-                    navigation.navigate('PastEntryCreation', { date: entryDate });
-                  }
-                }}
-                style={styles.headerActionButton}
-                activeOpacity={0.7}
-              >
-                <MaterialCommunityIcons
-                  name="plus"
-                  size={20}
-                  color={theme.colors.onSurfaceVariant}
-                />
-              </TouchableOpacity>
-            </View>
+            </Animated.View>
           </View>
-        </LinearGradient>
+        </View>
       </View>
 
       {/* 🎯 ENHANCED HERO ZONE: Complete edge-to-edge */}
@@ -566,95 +583,30 @@ const EnhancedEntryDetailScreen: React.FC<{
       >
         <ThemedCard variant="elevated" density="compact" elevation="card" style={styles.heroCard}>
           <View style={styles.heroContent}>
-            <View style={styles.dateSection}>
-              <View style={styles.dateDisplayContainer}>
-                <View style={styles.dateDisplayBadge}>
-                  <Text style={styles.dayNumber}>
-                    {new Date(entryDate || new Date()).getDate()}
-                  </Text>
-                  <Text style={styles.monthText}>
-                    {new Date(entryDate || new Date())
-                      .toLocaleDateString('tr-TR', { month: 'short' })
-                      .toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.dateInfo}>
-                  <Text style={styles.dateText}>{formattedDate}</Text>
-                  <View style={styles.relativeDateContainer}>
-                    <MaterialCommunityIcons
-                      name={isToday ? 'calendar-today' : 'calendar-heart'}
-                      size={16}
-                      color={theme.colors.primary}
-                    />
-                    <Text style={styles.relativeDateText}>{relativeTime}</Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.statsSection}>
-                <View style={styles.countBadge}>
-                  <MaterialCommunityIcons
-                    name="cards-heart"
-                    size={18}
-                    color={theme.colors.primary}
-                  />
-                  <Text style={styles.countText}>{gratitudeItems.length}</Text>
-                </View>
-                <Text style={styles.countLabel}>minnet</Text>
-              </View>
-            </View>
-
             {gratitudeItems.length > 0 && (
-              <View style={styles.progressSection}>
-                <View style={styles.progressHeader}>
-                  <MaterialCommunityIcons
-                    name={gratitudeItems.length >= dailyGoal ? 'trophy' : 'target'}
-                    size={16}
-                    color={
-                      gratitudeItems.length >= dailyGoal
-                        ? theme.colors.success
-                        : theme.colors.primary
-                    }
-                  />
-                  <Text
+              <View>
+                <Text
+                  style={[
+                    styles.progressCaption,
+                    gratitudeItems.length >= dailyGoal && styles.progressCaptionComplete,
+                  ]}
+                  accessibilityLabel={progressDescription}
+                >
+                  {progressDescription}
+                </Text>
+                <View style={styles.progressLineMinimal}>
+                  <View
                     style={[
-                      styles.progressTitle,
-                      gratitudeItems.length >= dailyGoal && styles.progressTitleComplete,
+                      styles.progressLineFill,
+                      {
+                        width: `${Math.min((gratitudeItems.length / Math.max(dailyGoal, 1)) * 100, 100)}%`,
+                        backgroundColor:
+                          gratitudeItems.length >= dailyGoal
+                            ? theme.colors.success
+                            : theme.colors.primary,
+                      },
                     ]}
-                  >
-                    {gratitudeItems.length >= dailyGoal
-                      ? isToday
-                        ? '🎉 Bugün hedef tamamlandı!'
-                        : '🎉 O gün hedef tamamlanmıştı!'
-                      : isToday
-                        ? `Hedefe ${Math.max(dailyGoal - gratitudeItems.length, 0)} kaldı`
-                        : `O gün hedefe ${Math.max(dailyGoal - gratitudeItems.length, 0)} minnet kalmıştı`}
-                  </Text>
-                </View>
-                <View style={styles.progressLineContainer}>
-                  <View style={styles.progressLine}>
-                    <View
-                      style={[
-                        styles.progressLineFill,
-                        {
-                          width: `${Math.min((gratitudeItems.length / Math.max(dailyGoal, 1)) * 100, 100)}%`,
-                          backgroundColor:
-                            gratitudeItems.length >= dailyGoal
-                              ? theme.colors.success
-                              : theme.colors.primary,
-                        },
-                      ]}
-                    />
-                  </View>
-                  {gratitudeItems.length >= dailyGoal && (
-                    <View style={styles.goalCompleteIndicator}>
-                      <MaterialCommunityIcons
-                        name="check-circle"
-                        size={18}
-                        color={theme.colors.success}
-                      />
-                    </View>
-                  )}
+                  />
                 </View>
               </View>
             )}
@@ -683,7 +635,9 @@ const EnhancedEntryDetailScreen: React.FC<{
                   />
                 </View>
                 <Text style={styles.statementsTitle}>
-                  {isToday ? 'Bugünkü minnetleriniz' : 'O günkü minnetleriniz'}
+                  {isToday
+                    ? t('gratitude.sections.todaysEntries')
+                    : t('gratitude.sections.thatDaysEntries')}
                 </Text>
               </View>
               <View style={styles.statementsCounter}>
@@ -692,7 +646,7 @@ const EnhancedEntryDetailScreen: React.FC<{
             </View>
 
             <View style={styles.statementsContainer}>
-              {gratitudeItems.map((item, index) => (
+              {displayItems.map((item, index) => (
                 <Animated.View
                   key={`${item}-${index}`}
                   style={[
@@ -713,15 +667,12 @@ const EnhancedEntryDetailScreen: React.FC<{
                     cardPositionsRef.current[index] = event.nativeEvent.layout.y;
                   }}
                 >
-                  <StatementDetailCard
-                    statement={item}
-                    date={entryDate}
+                  <EntryDetailStatementItem
                     index={index}
+                    rawIndex={Math.max(gratitudeItems.length - 1 - index, 0)}
+                    item={item}
+                    entryDate={entryDate}
                     totalCount={gratitudeItems.length}
-                    variant="elegant"
-                    showQuotes={true}
-                    showSequence={true}
-                    numberOfLines={undefined}
                     animateEntrance={animationsReady}
                     isEditing={editingStatementIndex === index}
                     isLoading={isDeletingStatement}
@@ -731,11 +682,11 @@ const EnhancedEntryDetailScreen: React.FC<{
                       handleSaveEditedStatement(index, newStatement)
                     }
                     onCancel={handleCancelEditingStatement}
-                    enableInlineEdit={true}
-                    confirmDelete={true}
-                    maxLength={500}
-                    edgeToEdge={true}
-                    style={styles.enhancedStatementCard}
+                    serverMood={
+                      ((currentEntry?.moods as Record<string, string> | undefined)?.[
+                        String(Math.max(gratitudeItems.length - 1 - index, 0))
+                      ] as MoodEmoji | undefined) ?? null
+                    }
                   />
                 </Animated.View>
               ))}
@@ -759,16 +710,16 @@ const createStyles = (theme: AppTheme) =>
     // 🎨 CUSTOM EDGE-TO-EDGE HEADER STYLES
     headerContainer: {
       backgroundColor: theme.colors.surface,
-    },
-    headerGradient: {
-      paddingTop: theme.spacing.sm,
-      paddingBottom: theme.spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outline + '10',
     },
     headerContent: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.md,
       gap: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.md,
     },
     backButton: {
       padding: theme.spacing.xs,
@@ -790,25 +741,11 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       gap: theme.spacing.xs,
     },
-    headerIconContainer: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: theme.colors.primaryContainer + '40',
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: theme.colors.primary + '20',
-    },
-    headerTextContainer: {
-      flex: 1,
-    },
+    headerTextContainer: { flex: 1 },
     headerTitle: {
-      ...theme.typography.titleLarge,
+      ...theme.typography.titleMedium,
       color: theme.colors.onSurface,
       fontWeight: '700',
-      letterSpacing: -0.2,
-      lineHeight: 24,
     },
     headerSubtitle: {
       ...theme.typography.bodySmall,
@@ -816,21 +753,39 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '500',
       marginTop: 1,
     },
-    headerActions: {
+    headerMetaContainer: { marginTop: 2 },
+    pillsRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+    pill: {
       flexDirection: 'row',
-      gap: theme.spacing.xs,
-    },
-    headerActionButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: theme.colors.surface + 'E0',
-      justifyContent: 'center',
       alignItems: 'center',
-      ...getPrimaryShadow.small(theme),
+      gap: 6,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 6,
+      borderRadius: theme.borderRadius.full,
       borderWidth: StyleSheet.hairlineWidth,
+    },
+    pillText: { ...theme.typography.labelSmall, fontWeight: '700' },
+    pillNeutral: {
+      backgroundColor: theme.colors.surface,
       borderColor: theme.colors.outline + '20',
     },
+    pillTextNeutral: { color: theme.colors.onSurfaceVariant },
+    pillPrimary: {
+      backgroundColor: theme.colors.primaryContainer,
+      borderColor: theme.colors.primary + '25',
+    },
+    pillTextPrimary: { color: theme.colors.onPrimaryContainer },
+    pillSoftPrimary: {
+      backgroundColor: theme.colors.primary + '10',
+      borderColor: theme.colors.primary + '25',
+    },
+    pillTextSoftPrimary: { color: theme.colors.primary },
+    pillSuccess: {
+      backgroundColor: theme.colors.success + '10',
+      borderColor: theme.colors.success + '25',
+    },
+    pillTextSuccess: { color: theme.colors.success },
+    // removed action buttons for minimal header
 
     // 🎯 ENHANCED HERO ZONE: Complete edge-to-edge layout
     heroZone: { marginTop: theme.spacing.xs },
@@ -847,135 +802,24 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.lg,
     },
-    dateSection: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: theme.spacing.md,
-    },
-    dateDisplayContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.md,
-      flex: 1,
-    },
-    dateDisplayBadge: {
-      width: 52,
-      height: 52,
-      borderRadius: theme.borderRadius.lg,
-      backgroundColor: theme.colors.primaryContainer,
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderWidth: 2,
-      borderColor: theme.colors.primary + '30',
-      ...getPrimaryShadow.medium(theme),
-    },
-    dayNumber: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onPrimaryContainer,
-      fontWeight: '900',
-      fontSize: 18,
-      lineHeight: 20,
-    },
-    monthText: {
-      ...theme.typography.labelSmall,
-      color: theme.colors.onPrimaryContainer,
-      fontWeight: '800',
-      fontSize: 8,
-      letterSpacing: 1,
-    },
-    dateInfo: {
-      flex: 1,
-    },
+    dateSection: { marginBottom: theme.spacing.sm },
     dateText: {
-      ...theme.typography.titleLarge,
+      ...theme.typography.titleMedium,
       color: theme.colors.onSurface,
       fontWeight: '700',
-      letterSpacing: -0.4,
       marginBottom: theme.spacing.xs,
-      lineHeight: 24,
-    },
-    relativeDateContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-      backgroundColor: theme.colors.primaryContainer + '20',
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.borderRadius.full,
-      alignSelf: 'flex-start',
     },
     relativeDateText: {
       ...theme.typography.bodySmall,
-      color: theme.colors.primary,
-      fontWeight: '600',
-    },
-    statsSection: {
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    countBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.colors.primaryContainer,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      borderRadius: theme.borderRadius.full,
-      gap: theme.spacing.sm,
-      ...getPrimaryShadow.medium(theme),
-      borderWidth: 2,
-      borderColor: theme.colors.primary + '20',
-    },
-    countText: {
-      ...theme.typography.titleLarge,
-      color: theme.colors.onPrimaryContainer,
-      fontWeight: '900',
-      fontSize: 18,
-    },
-    countLabel: {
-      ...theme.typography.labelMedium,
       color: theme.colors.onSurfaceVariant,
-      fontWeight: '600',
-      textTransform: 'uppercase',
-      letterSpacing: 1,
+      fontWeight: '500',
     },
+    // removed stats badges for a cleaner look
 
-    // Enhanced Progress Section
-    progressSection: {
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.outline + '10',
-      paddingTop: theme.spacing.md,
-      backgroundColor: theme.colors.primaryContainer + '08',
-      marginHorizontal: -theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
-      paddingBottom: theme.spacing.sm,
-      borderRadius: theme.borderRadius.lg,
-    },
-    progressHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.sm,
-    },
-    progressTitle: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '700',
-      letterSpacing: -0.2,
-      flex: 1,
-    },
-    progressTitleComplete: {
-      color: theme.colors.success,
-    },
-    progressLineContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    progressLine: {
-      flex: 1,
-      height: 6,
-      backgroundColor: theme.colors.primaryContainer + '30',
+    // Minimal progress line
+    progressLineMinimal: {
+      height: 4,
+      backgroundColor: theme.colors.outline + '12',
       borderRadius: theme.borderRadius.full,
       overflow: 'hidden',
     },
@@ -983,12 +827,16 @@ const createStyles = (theme: AppTheme) =>
       height: '100%',
       borderRadius: theme.borderRadius.full,
     },
-    goalCompleteIndicator: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.full,
-      padding: 4,
-      ...getPrimaryShadow.small(theme),
+    progressCaption: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: 6,
+      fontWeight: '600',
     },
+    progressCaptionComplete: {
+      color: theme.colors.success,
+    },
+    // removed goalCompleteIndicator
 
     // 🎯 ENHANCED CONTENT ZONE: Complete edge-to-edge layout
     contentZone: { marginTop: theme.spacing.sm, marginBottom: theme.spacing.lg },
@@ -1166,3 +1014,91 @@ const createStyles = (theme: AppTheme) =>
   });
 
 export default EnhancedEntryDetailScreen;
+
+const EntryDetailStatementItemDisplayName = 'EntryDetailStatementItem';
+const EntryDetailStatementItem: React.FC<{
+  index: number;
+  rawIndex?: number;
+  item: string;
+  entryDate: string;
+  totalCount: number;
+  animateEntrance: boolean;
+  isEditing: boolean;
+  isLoading: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onSave: (newStatement: string) => Promise<void>;
+  onCancel: () => void;
+  serverMood?: MoodEmoji | null;
+}> = React.memo(
+  ({
+    index,
+    rawIndex,
+    item,
+    entryDate,
+    totalCount,
+    animateEntrance,
+    isEditing,
+    isLoading,
+    onEdit,
+    onDelete,
+    onSave,
+    onCancel,
+    serverMood,
+  }) => {
+    const { moodEmoji, setMoodEmoji } = useMoodEmoji({ entryDate, index });
+    const { setStatementMood } = useGratitudeMutations();
+
+    useEffect(() => {
+      if (serverMood !== null && serverMood !== undefined && serverMood !== moodEmoji) {
+        void setMoodEmoji(serverMood);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [serverMood]);
+
+    const handleChangeMood = (mood: MoodEmoji | null) => {
+      setMoodEmoji(mood);
+      setStatementMood({ entryDate, statementIndex: rawIndex ?? index, moodEmoji: mood });
+      if (mood) {
+        analyticsService.logEvent('mood_selected', {
+          entry_date: entryDate,
+          index: rawIndex ?? index,
+          emoji: mood,
+        });
+      } else {
+        analyticsService.logEvent('mood_cleared', {
+          entry_date: entryDate,
+          index: rawIndex ?? index,
+        });
+      }
+    };
+
+    return (
+      <StatementDetailCard
+        statement={item}
+        date={entryDate}
+        index={index}
+        totalCount={totalCount}
+        variant="elegant"
+        showQuotes={true}
+        showSequence={true}
+        numberOfLines={undefined}
+        animateEntrance={animateEntrance}
+        isEditing={isEditing}
+        isLoading={isLoading}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onSave={onSave}
+        onCancel={onCancel}
+        enableInlineEdit={true}
+        confirmDelete={true}
+        maxLength={500}
+        edgeToEdge={true}
+        // style is applied on parent wrapper in this list
+        moodEmoji={moodEmoji}
+        onChangeMood={handleChangeMood}
+      />
+    );
+  }
+);
+EntryDetailStatementItem.displayName = EntryDetailStatementItemDisplayName;

@@ -7,6 +7,7 @@ import { AppTheme } from '../../../themes/types';
 import { semanticSpacing, semanticTypography, textColors } from '../../../themes/utils';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
 import ThemedButton from './ThemedButton';
+import { useTranslation } from 'react-i18next';
 
 type ErrorType = 'network' | 'server' | 'notFound' | 'permission' | 'validation' | 'generic';
 
@@ -47,21 +48,23 @@ const ErrorState: React.FC<ErrorStateProps> = ({
   onRetry,
   onGoBack,
   onContactSupport,
-  retryText = 'Tekrar Dene',
+  retryText,
   showGoBack = false,
   showContactSupport = false,
   style,
   compact = false,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const errorConfig = getErrorConfig(type);
   const styles = createStyles(theme, compact);
 
   const translatedErrorMessage = error ? safeErrorDisplay(error) : null;
 
-  const finalTitle = title || errorConfig.title;
-  const finalMessage = translatedErrorMessage || message || errorConfig.message;
+  const finalTitle = title || t(errorConfig.title);
+  const finalMessage = translatedErrorMessage || message || t(errorConfig.message);
   const finalIcon = icon || errorConfig.icon;
+  const finalRetryText = retryText || t('common.retry');
 
   return (
     <View style={[styles.container, style]}>
@@ -72,7 +75,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
           size={compact ? 32 : 48}
           color={theme.colors.error}
           accessibilityRole="image"
-          accessibilityLabel="Error icon"
+          accessibilityLabel={t('shared.ui.accessibility.errorIcon')}
         />
       </View>
 
@@ -95,7 +98,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
           {/* Primary action - Retry */}
           {onRetry && (
             <ThemedButton
-              title={retryText}
+              title={finalRetryText}
               onPress={onRetry}
               variant="primary"
               size={compact ? 'compact' : 'standard'}
@@ -108,7 +111,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
           <View style={styles.secondaryActions}>
             {showGoBack && onGoBack && (
               <ThemedButton
-                title="Geri Dön"
+                title={t('shared.layout.errorState.back')}
                 onPress={onGoBack}
                 variant="outline"
                 size={compact ? 'compact' : 'standard'}
@@ -119,7 +122,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
 
             {showContactSupport && onContactSupport && (
               <ThemedButton
-                title="Destek Al"
+                title={t('common.ok')}
                 onPress={onContactSupport}
                 variant="ghost"
                 size={compact ? 'compact' : 'standard'}
@@ -139,38 +142,39 @@ const ErrorState: React.FC<ErrorStateProps> = ({
  * Pre-configured error states with appropriate messaging and icons
  */
 const getErrorConfig = (type: ErrorType) => {
+  // Titles/messages are localized at render time via i18n keys in shared.layout.errorState
   const configs = {
     network: {
-      title: 'Bağlantı Sorunu',
-      message: 'İnternet bağlantınızı kontrol edip tekrar deneyin.',
+      title: 'shared.layout.errorState.cases.network.title',
+      message: 'shared.layout.errorState.cases.network.message',
       icon: 'wifi-off',
     },
     server: {
-      title: 'Sunucu Hatası',
-      message: 'Şu anda bir teknik sorun yaşıyoruz. Lütfen daha sonra tekrar deneyin.',
+      title: 'shared.layout.errorState.cases.server.title',
+      message: 'shared.layout.errorState.cases.server.message',
       icon: 'server-network-off',
     },
     notFound: {
-      title: 'Sayfa Bulunamadı',
-      message: 'Aradığınız sayfa mevcut değil veya taşınmış olabilir.',
+      title: 'shared.layout.errorState.cases.notFound.title',
+      message: 'shared.layout.errorState.cases.notFound.message',
       icon: 'file-question-outline',
     },
     permission: {
-      title: 'Erişim Yetkisi Yok',
-      message: 'Bu içeriği görüntülemek için gerekli izniniz bulunmuyor.',
+      title: 'shared.layout.errorState.cases.forbidden.title',
+      message: 'shared.layout.errorState.cases.forbidden.message',
       icon: 'lock-outline',
     },
     validation: {
-      title: 'Geçersiz Veri',
-      message: 'Girdiğiniz bilgileri kontrol edip tekrar deneyin.',
+      title: 'shared.layout.errorState.cases.validation.title',
+      message: 'shared.layout.errorState.cases.validation.message',
       icon: 'alert-circle-outline',
     },
     generic: {
-      title: 'Bir Hata Oluştu',
-      message: 'Beklenmedik bir sorun oluştu. Lütfen tekrar deneyin.',
+      title: 'shared.layout.errorState.cases.generic.title',
+      message: 'shared.layout.errorState.cases.generic.message',
       icon: 'alert-outline',
     },
-  };
+  } as const;
 
   return configs[type] || configs.generic;
 };

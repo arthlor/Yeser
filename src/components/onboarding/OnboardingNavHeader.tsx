@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
+import { useTranslation } from 'react-i18next';
 
 interface OnboardingNavHeaderProps {
   onBack?: () => void;
@@ -16,6 +17,7 @@ export const OnboardingNavHeader: React.FC<OnboardingNavHeaderProps> = ({
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   if (!onBack) {
     return <View style={styles.spacer} />;
@@ -27,12 +29,12 @@ export const OnboardingNavHeader: React.FC<OnboardingNavHeaderProps> = ({
         onPress={onBack}
         style={styles.backButton}
         activeOpacity={0.7}
-        accessibilityLabel="Geri dön"
+        accessibilityLabel={t('common.back')}
         accessibilityRole="button"
-        accessibilityHint="Önceki adıma geri dön"
+        accessibilityHint={t('onboarding.backHint') || ''}
       >
         <Ionicons name="arrow-back" size={18} color={theme.colors.onSurface} />
-        {!hideBackText && <Text style={styles.backText}>Geri</Text>}
+        {!hideBackText && <Text style={styles.backText}>{t('common.back')}</Text>}
       </TouchableOpacity>
       <View style={styles.rightSpacer} />
     </View>

@@ -13,9 +13,11 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import StatementDisplayCard from '@/shared/components/ui/StatementDisplayCard';
+import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import { logger } from '@/utils/debugConfig';
+import { useTranslation } from 'react-i18next';
 
 // Define a more specific type for the throwback entry prop
 interface ThrowbackEntryData {
@@ -32,8 +34,9 @@ interface ThrowbackTeaserProps {
 
 const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
   ({ throwbackEntry, isLoading, error, onRefresh }) => {
-    const { theme } = useTheme();
-    const styles = useMemo(() => createStyles(theme), [theme]);
+    const { theme, colorMode } = useTheme();
+    const { t } = useTranslation();
+    const styles = useMemo(() => createStyles(theme, colorMode), [theme, colorMode]);
 
     /**
      * **ENHANCED UI/UX IMPLEMENTATION**:
@@ -84,7 +87,12 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
     if (isLoading) {
       return (
         <View style={styles.container}>
-          <View style={styles.modernCard}>
+          <ThemedCard
+            variant="elevated"
+            density="standard"
+            elevation="card"
+            style={styles.edgeToEdgeCard}
+          >
             {/* Enhanced Header with Gradient */}
             <View style={styles.gradientHeader}>
               <View style={styles.headerContentLoading}>
@@ -93,8 +101,8 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
                     <ActivityIndicator size="small" color={theme.colors.primary} />
                   </View>
                   <View style={styles.titleSection}>
-                    <Text style={styles.titleText}>Geçmişten Anılar</Text>
-                    <Text style={styles.subtitleTextLoading}>Güzel bir anı yükleniyor...</Text>
+                    <Text style={styles.titleText}>{t('throwback.teaser.title')}</Text>
+                    <Text style={styles.subtitleTextLoading}>{t('throwback.teaser.loading')}</Text>
                   </View>
                 </View>
                 <View style={styles.loadingSpinner}>
@@ -113,7 +121,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
                 </View>
               </View>
             </View>
-          </View>
+          </ThemedCard>
         </View>
       );
     }
@@ -122,7 +130,14 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
     if (error && !throwbackEntry) {
       return (
         <View style={styles.container}>
-          <TouchableOpacity style={styles.modernCard} onPress={onRefresh} activeOpacity={0.8}>
+          <ThemedCard
+            variant="elevated"
+            density="standard"
+            elevation="card"
+            style={styles.edgeToEdgeCard}
+            onPress={onRefresh}
+            touchableProps={{ activeOpacity: 0.8 }}
+          >
             {/* Enhanced Error Header */}
             <View style={styles.errorHeader}>
               <View style={styles.headerContent}>
@@ -131,8 +146,10 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
                     <Icon name="alert-circle-outline" size={20} color={theme.colors.error} />
                   </View>
                   <View style={styles.titleSection}>
-                    <Text style={styles.titleText}>Anı Yüklenemedi</Text>
-                    <Text style={styles.subtitleTextError}>Bir sorun oluştu</Text>
+                    <Text style={styles.titleText}>{t('throwback.teaser.errorTitle')}</Text>
+                    <Text style={styles.subtitleTextError}>
+                      {t('throwback.teaser.errorSubtitle')}
+                    </Text>
                   </View>
                 </View>
                 <TouchableOpacity
@@ -156,10 +173,10 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
                   />
                 </View>
                 <Text style={styles.errorMessage}>{error}</Text>
-                <Text style={styles.errorRetryText}>Tekrar denemek için dokunun</Text>
+                <Text style={styles.errorRetryText}>{t('throwback.teaser.errorRetry')}</Text>
               </View>
             </View>
-          </TouchableOpacity>
+          </ThemedCard>
         </View>
       );
     }
@@ -168,13 +185,16 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
     if (!throwbackEntry) {
       return (
         <View style={styles.container}>
-          <TouchableOpacity
-            style={styles.modernCard}
+          <ThemedCard
+            variant="elevated"
+            density="standard"
+            elevation="card"
+            style={styles.edgeToEdgeCard}
             onPress={() => {
               logger.debug('ThrowbackTeaser: Manual refresh triggered by user tap');
               onRefresh?.();
             }}
-            activeOpacity={0.8}
+            touchableProps={{ activeOpacity: 0.8 }}
           >
             {/* Enhanced Placeholder Header */}
             <View style={styles.placeholderHeader}>
@@ -184,8 +204,10 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
                     <Icon name="history" size={22} color={theme.colors.primary} />
                   </View>
                   <View style={styles.titleSection}>
-                    <Text style={styles.titleText}>Geçmişten Anılar</Text>
-                    <Text style={styles.subtitleTextPlaceholder}>Anılarınız burada görünecek</Text>
+                    <Text style={styles.titleText}>{t('throwback.teaser.title')}</Text>
+                    <Text style={styles.subtitleTextPlaceholder}>
+                      {t('throwback.teaser.placeholderSubtitle')}
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.sparkleIcon}>
@@ -224,17 +246,21 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
                     />
                   </View>
                 </View>
-                <Text style={styles.placeholderTitle}>Anılarınız Birikiyor</Text>
+                <Text style={styles.placeholderTitle}>
+                  {t('throwback.teaser.placeholderTitle')}
+                </Text>
                 <Text style={styles.placeholderSubtitle}>
-                  Minnet kayıtlarınız arttıkça, burada geçmişten güzel anılarınızı keşfedeceksiniz.
+                  {t('throwback.teaser.placeholderSubtitle')}
                 </Text>
                 <View style={styles.placeholderHint}>
                   <Icon name="hand-pointing-up" size={16} color={theme.colors.primary} />
-                  <Text style={styles.placeholderHintText}>Keşfetmeye başlamak için dokunun</Text>
+                  <Text style={styles.placeholderHintText}>
+                    {t('throwback.teaser.placeholderHint')}
+                  </Text>
                 </View>
               </View>
             </View>
-          </TouchableOpacity>
+          </ThemedCard>
         </View>
       );
     }
@@ -242,7 +268,12 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
     // Enhanced main content with sophisticated design
     return (
       <View style={styles.container}>
-        <View style={styles.modernCard}>
+        <ThemedCard
+          variant="elevated"
+          density="standard"
+          elevation="card"
+          style={styles.edgeToEdgeCard}
+        >
           {/* Enhanced Header with Modern Design */}
           <View style={styles.modernHeader}>
             <View style={styles.headerContent}>
@@ -251,8 +282,8 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
                   <Icon name="history" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={styles.titleSection}>
-                  <Text style={styles.titleText}>Geçmişten Bir Anı</Text>
-                  <Text style={styles.subtitleText}>Geçmiş minnettarlıklarınızdan</Text>
+                  <Text style={styles.titleText}>{t('throwback.teaser.cardTitle')}</Text>
+                  <Text style={styles.subtitleText}>{t('throwback.teaser.cardSubtitle')}</Text>
                 </View>
               </View>
               <TouchableOpacity
@@ -260,8 +291,8 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
                 onPress={handleRefresh}
                 activeOpacity={0.7}
                 disabled={isLoading}
-                accessibilityLabel="Yeni anı getir"
-                accessibilityHint="Başka bir geçmiş minnettarlık anısı yükler"
+                accessibilityLabel={t('throwback.teaser.newA11y')}
+                accessibilityHint={t('throwback.teaser.newHint')}
               >
                 {isLoading ? (
                   <ActivityIndicator size="small" color={theme.colors.primary} />
@@ -277,44 +308,52 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
           {/* Enhanced Statement Display with Better Integration */}
           <View style={styles.cardBody}>
             <StatementDisplayCard
-              statement={throwbackEntry.statements?.[0] || 'Geçmişten bir minnet ifadeniz var.'}
+              statement={throwbackEntry.statements?.[0] || t('throwback.teaser.fallbackStatement')}
               date={throwbackEntry.entry_date}
               variant="inspiration"
               showQuotes={true}
               showTimestamp={true}
               animateEntrance={true}
               numberOfLines={4}
-              edgeToEdge={false}
+              edgeToEdge={true}
               style={styles.enhancedStatementCard}
             />
           </View>
-        </View>
+        </ThemedCard>
       </View>
     );
   }
 );
 
-const createStyles = (theme: AppTheme) =>
+const createStyles = (theme: AppTheme, colorMode: ReturnType<typeof useTheme>['colorMode']) =>
   StyleSheet.create({
     container: {
       marginBottom: theme.spacing.lg,
     } as ViewStyle,
 
     // Enhanced Modern Card Design - Edge-to-Edge
-    modernCard: {
-      backgroundColor: theme.colors.surface,
+    themedCard: {
+      minHeight: 180,
       borderRadius: 0,
-      overflow: 'hidden',
-      ...getPrimaryShadow.medium(theme),
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 4,
-      borderWidth: 0,
-      borderTopWidth: 1,
-      borderBottomWidth: 1,
-      borderTopColor: theme.colors.outline + '20',
-      borderBottomColor: theme.colors.outline + '20',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderTopColor:
+        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
+      borderBottomColor:
+        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
+    } as ViewStyle,
+
+    // Edge-to-edge card to match other home components
+    edgeToEdgeCard: {
+      minHeight: 180,
+      borderRadius: 0,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderTopColor:
+        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
+      borderBottomColor:
+        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
+      marginHorizontal: 0,
     } as ViewStyle,
 
     // Enhanced Header Designs

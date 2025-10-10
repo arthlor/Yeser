@@ -1,78 +1,77 @@
 # Yeşer - Minnettarlık Günlüğü 🙏
 
-> **Minnettarlık günlüğü ile hayatının güzel anlarını keşfet**  
-> _Hayatın güzel anlarını minnettarlık günlüğünle keşfet_
+## 🇹🇷 Yeşer Nedir?
 
-## 📱 Günlük Zihniyetini Minnettarlıkla Dönüştür
+Yeşer, her güne minnettar başlayabilmen için tasarlanmış, sıcak ve motive edici bir günlük ritüelidir. Günde yalnızca birkaç dakikada, duygularını yakalayıp yaşamındaki güzel anları yeniden görmeni sağlar.
 
-**Yeşer**, sürdürülebilir bir farkındalık pratiği geliştirmene yardımcı olan, özenle tasarlanmış bir minnettarlık günlüğü uygulamasıdır. Günde sadece birkaç dakika ayırarak pozitiflik ve iyi oluş yolculuğuna başla.
+### Sunduğu Deneyimler
 
-### ✨ Yeşer'i Özel Kılan Nedir
+- Günlük minnettarlık girişleri, duyguna uygun ifadeler ve esnek sıralama imkânı
+- Geçmişe dönüp yazdıklarını düzenleme, silme ve dilediğinde tamamen geri alma rahatlığı
+- Takvimde ısı haritası, aylık özetler ve tek dokunuşla geçmiş günlere dönüş
+- Geri dönüş anıları: Rastgele seçilen sıcak bir hatıra ile yeniden gülümseme fırsatı
+- Seri takibi, hedef belirleme, paylaşılabilir başarılar ve seni motive eden kilometre taşları
+- Günü kapatırken ilham veren kartlar ve rutinine uyum sağlayan küçük öneriler
 
-- **🎯 Basit Günlük Pratik** - Minnettarlık ifadelerini saniyeler içinde yaz
-- **🏆 Motivasyon Verici Hedef Sistemi** - Günlük minnettarlık hedefleri koy ve gelişimini izle
-- **🔥 Seri Takibi** - Görsel seri sayaçları ve kilometre taşı kutlamalarıyla momentum oluştur
-- **📅 Takvim** - Tüm minnettarlık yolculuğunu bir bakışta gör
-- **💭 Anı Şeridi** - Geçmiş girişleri ziyaret ederek unutulan minnettarlıklarını yeniden keşfet
-- **💡 İlham Verici İpuçları** - İlhama ihtiyacın olduğunda öneriler al
-- **🔔 Nazik Hatırlatıcılar** - İsteğe bağlı günlük bildirimler
-- **🌙 Karanlık & Aydınlık Temalar** - Düşünce zamanın için mükemmel ruh halini seç
-- **🚀 Şimşek Hızında** - Akıcı, duyarlı performans için optimize edildi
+### Onboarding ve Devamlılık
 
-### 🌟 Günlük Minnettarlık Neden Önemli
+- Kişiselleştirilmiş onboarding akışı ile hedeflerini seçer, bildirimlerden nasıl destek alacağını keşfedersin
+- Nazik hatırlatmalar, doğru zamanlama ve ilk günden itibaren gerçek bir örnek giriş ile başlama kolaylığı
+- Kararlı çalışan açılış ekranları sayesinde her seferinde sorunsuz başlangıç
 
-**Minnettarlığın Faydaları:**
+### İçerik ve Özelleştirme
 
-- Gelişmiş zihinsel refah ve yaşam memnuniyeti
-- Daha iyi uyku kalitesi ve azalmış stres
-- Güçlendirilmiş ilişkiler ve sosyal bağlantılar
-- Artmış dayanıklılık ve duygusal düzenleme
+- Türkçe ve İngilizce içerik, her ekranda özenle çevrilmiş metinler
+- Minnettarlık üzerine kısa okumalar, bilimsel faydalar ve sakin bir hikâye anlatımı
+- Açık ve koyu tema seçenekleri, yumuşak animasyonlarla desteklenen dingin deneyim
 
-**Yeşer ile Yolculuğun:**
+### Kişiselleştirme ve Güven
 
-1. **1-2. Hafta**: Nazik hatırlatıcılarla alışkanlığı oluştur
-2. **1. Ay**: Gelişmiş ruh hali ve bakış açısını fark et
-3. **3+ Ay**: Kalıcı pozitif zihniyet değişimlerini deneyimle
+- Profilini düzenle, avatarını seç, sevdiğin temayı ve dili anında değiştir
+- Bildirim zamanlarını, yardım içeriklerini ve gizlilik seçeneklerini tek yerden yönet
+- Verilerin koruma altında; istersen her zaman destek alabileceğin bir ekip yanında
 
-### 🎯 Şunlar İçin Mükemmel
+### Harekete Geç
 
-- **Farkındalık Başlangıç Seviyesi** - Basit arayüz
-- **Yoğun Profesyoneller** - Hızlı 2 dakikalık günlük pratik
-- **Öğrenciler & Gençler** - Erken yaşta pozitif düşünce alışkanlıkları oluştur
-- **Denge Arayanlar** - Hareketli günlerde sakin anlar bul
-
-### 🛡️ Gizliliğin & Verin
-
-- **Güvenli Kimlik Doğrulama** - Sihirli bağlantı ve Google giriş seçenekleri
-- **Tasarımda Gizli** - Girişlerin tamamen özel ve güvenli
-- **Yerel & Bulut Senkronizasyonu** - Verilerine güvenli tutarken her yerden eriş
-- **KVKK Uyumlu** - Tam veri gizliliği ve silme hakları
-
-### 🚀 Başlangıç
-
-1. **Kaydol** e-posta veya Google hesabınla
-2. **Günlük hedefini belirle** (sadece 1-3 minnettarlık ifadesiyle başla)
-3. **İlk girişini yaz** - bugün neye minnettarsın?
-4. **İlerlemeni takip et** ve minnettarlık serini oluştur
-5. **Düşün ve büyü** takvim ve geçmiş girişleri kullanarak
-
-### 💝 Minnettarlık Hareketine Katıl
-
-Yeşer ile dönüşümüne bugün başla. Günlük minnettarlık pratiğinin gücünü keşfet.
-
-**Şimdi indir ve daha pozitif, farkındalıkla dolu bir yaşam yolculuğuna başla.**
+- İki dakikalık minnettarlık ritüeline şimdi başla
+- İlk teşekkür notunu yaz, serini başlat ve küçük zaferlerini kutla
+- Yeşer'i indir, pozitiflik yolculuğunu sevgiyle büyüt
 
 ---
 
-### 📞 Destek & Geri Bildirim
+## 🇬🇧 What is Yeşer?
 
-- **E-posta**: yeserapp@gmail.com
-- **Gizlilik Politikası**: Uygulama içinde mevcut
-- **Hizmet Şartları**: Uygulama içinde mevcut
+Yeşer is the gratitude ritual that helps you greet each day with warmth, calm, and clarity. In just a few minutes, you can capture meaningful moments, reflect on your mood, and nurture a lasting sense of positivity.
 
----
+### What You'll Experience
 
-> **"Şükretmek, sahip olduklarımızı yeterli hale getirir."**  
-> _"Minnettarlık sahip olduklarımızı yeterli hale getirir."_
+- Daily gratitude entries with thoughtful prompts, mood tags, and easy reordering
+- Full control over past notes: revisit, refine, or roll back entire days whenever you need
+- A calendar-first journey that highlights streaks, heatmaps, and quick jumps to any date
+- Throwback memories that surface a joyful surprise and invite you to relive the moment
+- Motivation that sticks: streak tracking, progress goals, celebratory milestones, and shareable wins
+- Bite-sized inspiration cards that adjust to your progress and offer gentle guidance
 
-**Yeşer** - Hayatın güzel anlarını keşfet 🙏
+### Onboarding and Retention
+
+- Guided onboarding that tunes itself to your goals, notification preferences, and ideal pace
+- Gentle reminders, timezone-aware scheduling, and a live demo entry that makes day one effortless
+- Reliable splash and loading states that keep every launch steady and stress-free
+
+### Content and Personalization
+
+- Complete Turkish and English localization with carefully crafted wording in both languages
+- A Why Gratitude library that shares science-backed benefits through inviting storytelling
+- Light and dark themes, coordinated animations, and reduced-motion friendly interactions
+
+### Personal Touch and Trust
+
+- Update your profile, choose your avatar, and switch appearance or language on the fly
+- Edit notification times, explore the help center, and review privacy details in one place
+- Your data stays private, secure, and ready whenever you return to reflect
+
+### Take the First Step
+
+- Begin your two-minute gratitude ritual today
+- Capture your first thankful moment and spark a streak worth celebrating
+- Download Yeşer to grow positivity, honor your wins, and rediscover what truly matters

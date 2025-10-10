@@ -18,6 +18,7 @@ import { getPrimaryShadow } from '@/themes/utils';
 import { analyticsService } from '@/services/analyticsService';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { logger } from '@/utils/debugConfig';
+import { useTranslation } from 'react-i18next';
 
 interface DailyGoalSettingsProps {
   currentGoal: number;
@@ -27,22 +28,22 @@ interface DailyGoalSettingsProps {
 const GOAL_OPTIONS = [
   {
     value: 1,
-    label: '1 Minnet',
-    description: 'Küçük adımlar',
+    labelKey: 'settings.goal.options.one.label',
+    descriptionKey: 'settings.goal.options.one.desc',
     icon: 'numeric-1-circle',
     colorKey: 'secondary' as const,
   },
   {
     value: 3,
-    label: '3 Minnet',
-    description: 'Önerilen hedef',
+    labelKey: 'settings.goal.options.three.label',
+    descriptionKey: 'settings.goal.options.three.desc',
     icon: 'numeric-3-circle',
     colorKey: 'primary' as const,
   },
   {
     value: 5,
-    label: '5 Minnet',
-    description: 'Motive olduğumda',
+    labelKey: 'settings.goal.options.five.label',
+    descriptionKey: 'settings.goal.options.five.desc',
     icon: 'numeric-5-circle',
     colorKey: 'tertiary' as const,
   },
@@ -64,6 +65,7 @@ const MAX_CUSTOM_GOAL = 20;
 const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
   ({ currentGoal, onUpdateGoal }) => {
     const { theme } = useTheme();
+    const { t } = useTranslation();
     const styles = useMemo(() => createStyles(theme), [theme]);
 
     const [isExpanded, setIsExpanded] = useState(false);
@@ -76,19 +78,19 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
       const predefinedOption = GOAL_OPTIONS.find((option) => option.value === currentGoal);
       if (predefinedOption) {
         return {
-          label: predefinedOption.label,
-          description: predefinedOption.description,
+          label: t(predefinedOption.labelKey),
+          description: t(predefinedOption.descriptionKey),
           icon: predefinedOption.icon,
           color: theme.colors[predefinedOption.colorKey],
         };
       }
       return {
-        label: `${currentGoal} Minnet`,
-        description: 'Özel hedef',
+        label: t('settings.goal.custom.labelCount', { count: currentGoal }),
+        description: t('settings.goal.custom.desc'),
         icon: 'target',
         color: theme.colors.tertiary,
       };
-    }, [currentGoal, theme.colors]);
+    }, [currentGoal, t, theme.colors]);
 
     const isCustomGoal = !GOAL_OPTIONS.find((option) => option.value === currentGoal);
 
@@ -101,23 +103,26 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
       const numValue = parseInt(customGoalInput, 10);
 
       if (isNaN(numValue)) {
-        return { isValid: false, message: 'Geçersiz sayı' };
+        return { isValid: false, message: t('settings.goal.custom.validation.invalidNumber') };
       }
 
       if (numValue < 1) {
-        return { isValid: false, message: 'En az 1 olmalı' };
+        return { isValid: false, message: t('settings.goal.custom.validation.min') };
       }
 
       if (numValue > MAX_CUSTOM_GOAL) {
-        return { isValid: false, message: `En fazla ${MAX_CUSTOM_GOAL} olmalı` };
+        return {
+          isValid: false,
+          message: t('settings.goal.custom.validation.max', { max: MAX_CUSTOM_GOAL }),
+        };
       }
 
       if (numValue === currentGoal) {
-        return { isValid: false, message: 'Mevcut hedefle aynı' };
+        return { isValid: false, message: t('settings.goal.custom.validation.sameAsCurrent') };
       }
 
-      return { isValid: true, message: 'Geçerli hedef ✓' };
-    }, [customGoalInput, currentGoal]);
+      return { isValid: true, message: t('settings.goal.custom.validation.valid') };
+    }, [customGoalInput, currentGoal, t]);
 
     const handleToggleExpanded = useCallback(() => {
       if (isUpdating) {
@@ -199,9 +204,11 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
             onPress={handleToggleExpanded}
             activeOpacity={0.8}
             disabled={isUpdating}
-            accessibilityLabel={`Günlük minnettarlık hedefi: ${currentGoalInfo.label}`}
+            accessibilityLabel={t('settings.goal.accessibilityLabel', {
+              label: currentGoalInfo.label,
+            })}
             accessibilityRole="button"
-            accessibilityHint="Dokunarak seçenekleri görüntüleyin"
+            accessibilityHint={t('settings.goal.accessibilityHint')}
           >
             <View style={styles.settingInfo}>
               <View
@@ -210,7 +217,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                 <Icon name={currentGoalInfo.icon} size={22} color={currentGoalInfo.color} />
               </View>
               <View style={styles.textContainer}>
-                <Text style={styles.settingTitle}>Günlük Minnettarlık Hedefi</Text>
+                <Text style={styles.settingTitle}>{t('settings.goal.title')}</Text>
                 <View style={styles.currentGoalContainer}>
                   <View
                     style={[styles.goalBadge, { backgroundColor: currentGoalInfo.color + '20' }]}
@@ -256,7 +263,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                     onPress={() => handleGoalSelect(option.value)}
                     activeOpacity={0.7}
                     disabled={isUpdating}
-                    accessibilityLabel={`${option.label}: ${option.description}`}
+                    accessibilityLabel={`${t(option.labelKey)}: ${t(option.descriptionKey)}`}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: isSelected }}
                   >
@@ -271,13 +278,15 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                       )}
                       {option.value === 3 && !isSelected && (
                         <View style={styles.recommendedBadge}>
-                          <Text style={styles.recommendedText}>Önerilen</Text>
+                          <Text style={styles.recommendedText}>
+                            {t('settings.goal.recommended')}
+                          </Text>
                         </View>
                       )}
                     </View>
                     <View style={styles.goalOptionContent}>
                       <Text style={[styles.goalOptionLabel, isSelected && { color: optionColor }]}>
-                        {option.label}
+                        {t(option.labelKey)}
                       </Text>
                       <Text
                         style={[
@@ -285,7 +294,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                           isSelected && { color: optionColor + 'AA' },
                         ]}
                       >
-                        {option.description}
+                        {t(option.descriptionKey)}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -304,7 +313,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                 onPress={handleCustomGoalToggle}
                 activeOpacity={0.7}
                 disabled={isUpdating}
-                accessibilityLabel="Özel hedef belirle"
+                accessibilityLabel={t('settings.goal.custom.setLabel')}
                 accessibilityRole="button"
               >
                 <View style={styles.customGoalHeader}>
@@ -324,7 +333,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                         (showCustomInput || isCustomGoal) && { color: theme.colors.tertiary },
                       ]}
                     >
-                      Özel Hedef
+                      {t('settings.goal.custom.title')}
                     </Text>
                     <Text
                       style={[
@@ -335,8 +344,8 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                       ]}
                     >
                       {isCustomGoal && !showCustomInput
-                        ? `Mevcut: ${currentGoal} Minnet`
-                        : `1-${MAX_CUSTOM_GOAL} arasında seçin`}
+                        ? t('settings.goal.custom.current', { current: currentGoal })
+                        : t('settings.goal.custom.range', { max: MAX_CUSTOM_GOAL })}
                     </Text>
                   </View>
                   <Icon
@@ -362,14 +371,16 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                       ]}
                       value={customGoalInput}
                       onChangeText={setCustomGoalInput}
-                      placeholder={`1-${MAX_CUSTOM_GOAL} arası bir sayı`}
+                      placeholder={t('settings.goal.custom.placeholder', { max: MAX_CUSTOM_GOAL })}
                       placeholderTextColor={theme.colors.onSurfaceVariant + '80'}
                       keyboardType="number-pad"
                       maxLength={2}
                       onSubmitEditing={handleCustomGoalSubmit}
                       editable={!isUpdating}
-                      accessibilityLabel="Özel hedef sayısı"
-                      accessibilityHint={`1 ile ${MAX_CUSTOM_GOAL} arasında bir sayı girin`}
+                      accessibilityLabel={t('settings.goal.custom.inputLabel')}
+                      accessibilityHint={t('settings.goal.custom.inputHint', {
+                        max: MAX_CUSTOM_GOAL,
+                      })}
                     />
                     <TouchableOpacity
                       style={[
@@ -380,7 +391,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                       ]}
                       onPress={handleCustomGoalSubmit}
                       disabled={!customGoalValidation.isValid || isUpdating}
-                      accessibilityLabel="Özel hedefi kaydet"
+                      accessibilityLabel={t('settings.goal.custom.saveLabel')}
                       accessibilityRole="button"
                     >
                       <Icon
@@ -388,7 +399,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
                         size={18}
                         color={
                           customGoalValidation.isValid && !isUpdating
-                            ? 'white'
+                            ? theme.colors.onPrimary
                             : theme.colors.onSurfaceVariant
                         }
                       />
@@ -427,8 +438,7 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
             <View style={styles.infoFooter}>
               <Icon name="information-outline" size={16} color={theme.colors.onSurfaceVariant} />
               <Text style={styles.infoText}>
-                Günde en fazla {MAX_CUSTOM_GOAL} minnettarlık girişi yapabilirsiniz. Küçük
-                hedeflerle başlayın!
+                {t('settings.goal.info', { max: MAX_CUSTOM_GOAL })}
               </Text>
             </View>
           </View>
@@ -448,6 +458,8 @@ const createStyles = (theme: AppTheme) =>
     settingCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.outlineVariant,
       marginHorizontal: theme.spacing.md,
       ...getPrimaryShadow.medium(theme),
     } as ViewStyle,

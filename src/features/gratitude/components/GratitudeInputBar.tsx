@@ -1,5 +1,6 @@
 import React, {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -9,13 +10,15 @@ import React, {
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
+  Modal,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { logger } from '@/utils/logger';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
@@ -23,9 +26,13 @@ import { getPrimaryShadow } from '@/themes/utils';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { hapticFeedback } from '@/utils/hapticFeedback';
+import { useTranslation } from 'react-i18next';
+import { MOOD_EMOJIS } from '@/types/mood.types';
+import { moodStorageService } from '@/services/moodStorageService';
 
 interface GratitudeInputBarProps {
   onSubmit: (text: string) => void;
+  onSubmitWithMood?: (text: string, mood: import('@/types/mood.types').MoodEmoji | null) => void;
   placeholder?: string;
   error?: string | null;
   disabled?: boolean;
@@ -60,7 +67,8 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
   (
     {
       onSubmit,
-      placeholder = 'Bugün neye minnettarsın?',
+      onSubmitWithMood,
+      placeholder: _placeholder = undefined,
       error,
       disabled = false,
       autoFocus = false,
@@ -76,30 +84,40 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
     ref
   ) => {
     const { theme } = useTheme();
+    const { t } = useTranslation();
     const styles = useMemo(() => createStyles(theme, disabled), [theme, disabled]);
     const inputRef = useRef<TextInput>(null);
+    const emojiButtonRef = useRef<View>(null);
 
     const [inputText, setInputText] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const [fallbackPromptIndex, setFallbackPromptIndex] = useState(0);
+    const [selection, setSelection] = useState<{ start: number; end: number }>({
+      start: 0,
+      end: 0,
+    });
+    const [emojiOpen, setEmojiOpen] = useState(false);
+    const emojiAnim = useRef(new Animated.Value(0)).current;
+    const [emojiPosition, setEmojiPosition] = useState<{ top: number; left: number }>({
+      top: 0,
+      left: 0,
+    });
+    const [recents, setRecents] = useState<string[]>([]);
+    const [selectedMood, setSelectedMood] = useState<string | null>(null);
 
     // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
     const animations = useCoordinatedAnimations();
 
-    // **PERFORMANCE FIX**: Simple gradient border animation using native driver
-    const gradientOpacity = useRef(new Animated.Value(0.8)).current;
+    // Subtle submit button feedback
     const buttonScale = useRef(new Animated.Value(1)).current;
+    const shimmerOpacity = useRef(new Animated.Value(0.6)).current;
+    const labelAnim = useRef(new Animated.Value(0)).current;
+    const accentAnim = useRef(new Animated.Value(0)).current;
     const wasDisabledRef = useRef<boolean>(disabled ?? false);
     const submittedWhileDisabledRef = useRef<boolean>(false);
 
     // Fallback prompts for when varied prompts are disabled or unavailable
-    const fallbackPrompts = [
-      'Bugün hangi güzel anlar için minnettarsın?',
-      'Hayatındaki hangi kişiler seni mutlu ediyor?',
-      'Bugün seni gülümsetmiş olan şeyler neler?',
-      'Hangi deneyimler için minnettar hissediyorsun?',
-      'Bugün yaşadığın pozitif anları düşün...',
-    ];
+    const fallbackPrompts = t('gratitude.prompt.fallbackList', { returnObjects: true }) as string[];
 
     // **IMPERATIVE HANDLE**: Expose methods to parent components
     useImperativeHandle(ref, () => ({
@@ -118,34 +136,42 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       },
     }));
 
-    // Gradient border animation only while focused
+    // No gradient animations; keep focus handling only
+    useEffect(() => {}, [isFocused]);
+
+    // Shimmer animation for prompt loading
     useEffect(() => {
-      let opacityAnimation: Animated.CompositeAnimation | null = null;
-      if (isFocused) {
-        opacityAnimation = Animated.loop(
+      let shimmerLoop: Animated.CompositeAnimation | null = null;
+      if (promptLoading) {
+        shimmerLoop = Animated.loop(
           Animated.sequence([
-            Animated.timing(gradientOpacity, {
-              toValue: 1,
-              duration: 1400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(gradientOpacity, {
-              toValue: 0.7,
-              duration: 1400,
-              useNativeDriver: true,
-            }),
+            Animated.timing(shimmerOpacity, { toValue: 1, duration: 900, useNativeDriver: true }),
+            Animated.timing(shimmerOpacity, { toValue: 0.6, duration: 900, useNativeDriver: true }),
           ])
         );
-        opacityAnimation.start();
+        shimmerLoop.start();
       } else {
-        gradientOpacity.setValue(0.8);
+        shimmerOpacity.setValue(1);
       }
       return () => {
-        if (opacityAnimation) {
-          opacityAnimation.stop();
-        }
+        shimmerLoop?.stop?.();
       };
-    }, [gradientOpacity, isFocused]);
+    }, [promptLoading, shimmerOpacity]);
+
+    // Floating label + accent bar animations
+    useEffect(() => {
+      const active = isFocused || inputText.trim().length > 0;
+      Animated.timing(labelAnim, {
+        toValue: active ? 1 : 0,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+      Animated.timing(accentAnim, {
+        toValue: active ? 1 : 0.35,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    }, [isFocused, inputText, labelAnim, accentAnim]);
 
     // **COORDINATED ENTRANCE**: Simple entrance animation
     useEffect(() => {
@@ -174,12 +200,20 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       };
     }, []);
 
-    const handleSubmit = () => {
+    const handleSubmit = useCallback(() => {
       if (inputText.trim() && !disabled) {
         hapticFeedback.light();
         submittedWhileDisabledRef.current = true;
-        onSubmit(inputText.trim());
+        if (onSubmitWithMood) {
+          onSubmitWithMood(
+            inputText.trim(),
+            (selectedMood as unknown as import('@/types/mood.types').MoodEmoji) ?? null
+          );
+        } else {
+          onSubmit(inputText.trim());
+        }
         setInputText('');
+        setSelectedMood(null);
 
         // Keep focus for continuous input - with error handling
         setTimeout(() => {
@@ -188,27 +222,44 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
           }
         }, 100);
       }
-    };
+    }, [inputText, disabled, onSubmit, selectedMood, onSubmitWithMood]);
 
-    const handleFocus = () => {
+    const handleFocus = useCallback(() => {
       setIsFocused(true);
-    };
+    }, []);
 
-    const handleBlur = () => {
+    const handleBlur = useCallback(() => {
       setIsFocused(false);
-    };
+    }, []);
 
-    const handleChangeText = (text: string) => {
+    const handleChangeText = useCallback((text: string) => {
       setInputText(text);
-    };
+    }, []);
 
-    const handlePromptRefresh = () => {
+    const handleSelectionChange = useCallback(
+      (e: { nativeEvent: { selection: { start: number; end: number } } }) => {
+        setSelection(e.nativeEvent.selection);
+      },
+      []
+    );
+
+    const handlePromptRefresh = useCallback(() => {
       if (onRefreshPrompt) {
         onRefreshPrompt();
       }
       // Also cycle through fallback prompts for better UX
       setFallbackPromptIndex((prev) => (prev + 1) % fallbackPrompts.length);
-    };
+    }, [onRefreshPrompt, fallbackPrompts.length]);
+
+    // Log prompt errors subtly for diagnostics
+    useEffect(() => {
+      if (promptError) {
+        logger.warn('Prompt error in GratitudeInputBar', {
+          component: 'GratitudeInputBar',
+          error: promptError,
+        });
+      }
+    }, [promptError]);
 
     // Detect end of submitting state to play a subtle button success pulse
     useEffect(() => {
@@ -240,6 +291,65 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
     // Determine which prompt to display
     const displayPrompt = promptText || fallbackPrompts[fallbackPromptIndex];
 
+    // Load emoji recents on mount
+    useEffect(() => {
+      let mounted = true;
+      const loadRecents = async () => {
+        const r = await moodStorageService.getRecents();
+        if (mounted) {
+          setRecents(r);
+        }
+      };
+      loadRecents();
+      return () => {
+        mounted = false;
+      };
+    }, []);
+
+    const openEmoji = useCallback(() => {
+      if (!emojiButtonRef.current) {
+        setEmojiOpen(true);
+        Animated.timing(emojiAnim, { toValue: 1, duration: 160, useNativeDriver: true }).start();
+        return;
+      }
+      emojiButtonRef.current?.measureInWindow((x, y, width, height) => {
+        const menuWidth = 240;
+        const windowWidth = Dimensions.get('window').width;
+        const left = Math.min(Math.max(8, x + width - menuWidth), windowWidth - menuWidth - 8);
+        const top = y + height + 8;
+        setEmojiPosition({ top, left });
+        setEmojiOpen(true);
+        Animated.timing(emojiAnim, { toValue: 1, duration: 160, useNativeDriver: true }).start();
+      });
+    }, [emojiAnim]);
+
+    const closeEmoji = useCallback(() => {
+      Animated.timing(emojiAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
+        setEmojiOpen(false);
+      });
+    }, [emojiAnim]);
+
+    const toggleEmoji = useCallback(() => {
+      hapticFeedback.light();
+      if (emojiOpen) {
+        closeEmoji();
+      } else {
+        openEmoji();
+      }
+    }, [emojiOpen, closeEmoji, openEmoji]);
+
+    const insertEmoji = useCallback(
+      async (emoji: string) => {
+        hapticFeedback.light();
+        setSelectedMood(emoji);
+        moodStorageService.addRecent(emoji as never).catch(() => {});
+        closeEmoji();
+        // refocus input
+        setTimeout(() => inputRef.current?.focus(), 0);
+      },
+      [closeEmoji]
+    );
+
     return (
       <Animated.View
         style={[
@@ -255,13 +365,13 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
             <View style={styles.iconContainer}>
               <Icon name="heart-plus" size={24} color={theme.colors.onPrimary} />
             </View>
-            <Text style={styles.mottoText}>Minnetle yeşer</Text>
+            <Text style={styles.mottoText}>{t('gratitude.input.motto')}</Text>
           </View>
           <View style={styles.headerRight}>
             {typeof currentCount === 'number' && typeof goal === 'number' && (
               <View style={styles.progressPill}>
                 <Text style={styles.progressPillText}>
-                  {currentCount}/{goal} bugün
+                  {t('gratitude.input.progressToday', { current: currentCount, goal })}
                 </Text>
               </View>
             )}
@@ -275,31 +385,45 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
           </View>
         </View>
 
-        {/* Enhanced Input Section with Animated Gradient Border */}
+        {/* Enhanced Input Section (no gradient) */}
         <View style={[styles.inputContainer, isFocused && styles.inputContainerFocused]}>
-          {/* **PERFORMANCE IMPROVED GRADIENT BORDER** */}
+          {/* Left accent bar */}
+          <Animated.View
+            style={[
+              styles.accentBar,
+              {
+                opacity: accentAnim,
+              },
+            ]}
+            pointerEvents="none"
+          />
           <View style={styles.inputWrapper}>
-            <Animated.View
+            {/* Floating label */}
+            <Animated.Text
+              pointerEvents="none"
               style={[
-                styles.inputGradientBorderContainer,
+                styles.floatingLabel,
                 {
-                  opacity: gradientOpacity,
+                  transform: [
+                    {
+                      translateY: labelAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [12, -12],
+                      }),
+                    },
+                    {
+                      scale: labelAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 0.9],
+                      }),
+                    },
+                  ],
+                  opacity: labelAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }),
                 },
               ]}
             >
-              <LinearGradient
-                colors={[
-                  theme.colors.primary,
-                  theme.colors.secondary || theme.colors.primaryContainer,
-                  theme.colors.tertiary || theme.colors.primary,
-                  theme.colors.primary,
-                ]}
-                style={styles.inputGradientBorder}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
-            </Animated.View>
-
+              {t('gratitude.input.label', 'What are you grateful for?')}
+            </Animated.Text>
             <TextInput
               ref={inputRef}
               style={styles.input}
@@ -307,7 +431,8 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
               onChangeText={handleChangeText}
               onFocus={handleFocus}
               onBlur={handleBlur}
-              placeholder={placeholder}
+              onSelectionChange={handleSelectionChange}
+              placeholder={''}
               placeholderTextColor={theme.colors.onSurfaceVariant + '60'}
               multiline={true}
               textAlignVertical="top"
@@ -321,12 +446,27 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
               autoCapitalize="sentences"
               keyboardType="default"
               selectionColor={theme.colors.primary}
+              selection={selection}
               autoFocus={false} // We handle this manually
               // **ACCESSIBILITY IMPROVEMENTS**
-              accessibilityLabel={placeholder}
-              accessibilityHint="Minnettarlık ifadenizi yazın ve gönder tuşuna basın"
+              accessibilityLabel={t('gratitude.input.label', 'What are you grateful for?')}
+              accessibilityHint={t('gratitude.input.a11y.writeHint')}
             />
           </View>
+          <TouchableOpacity
+            ref={emojiButtonRef}
+            onPress={toggleEmoji}
+            style={[styles.emojiButton]}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('gratitude.prompt.refreshA11y')}
+          >
+            {selectedMood ? (
+              <Text style={styles.emojiSelected}>{selectedMood}</Text>
+            ) : (
+              <Icon name="emoticon-happy-outline" size={22} color={theme.colors.onSurfaceVariant} />
+            )}
+          </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleSubmit}
@@ -335,8 +475,12 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
             activeOpacity={0.8}
             // **ACCESSIBILITY IMPROVEMENTS**
             accessibilityRole="button"
-            accessibilityLabel={isButtonEnabled ? 'Minnet ifadesini gönder' : 'Gönderme devre dışı'}
-            accessibilityHint="Yazdığınız minnettarlık ifadesini kaydetmek için dokunun"
+            accessibilityLabel={
+              isButtonEnabled
+                ? t('gratitude.input.a11y.sendEnabled')
+                : t('gratitude.input.a11y.sendDisabled')
+            }
+            accessibilityHint={t('gratitude.input.a11y.writeHint')}
           >
             <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
               {disabled ? (
@@ -352,12 +496,47 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
           </TouchableOpacity>
         </View>
 
+        {/* Emoji Picker Modal */}
+        <Modal visible={emojiOpen} transparent animationType="none" onRequestClose={closeEmoji}>
+          <TouchableOpacity style={styles.emojiBackdrop} onPress={closeEmoji} activeOpacity={1} />
+          <Animated.View
+            style={[
+              styles.emojiPicker,
+              {
+                top: emojiPosition.top,
+                left: emojiPosition.left,
+                opacity: emojiAnim,
+                transform: [
+                  { scale: emojiAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) },
+                  {
+                    translateY: emojiAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.emojiRow}>
+              {[...new Set([...(recents as string[]), ...MOOD_EMOJIS])].slice(0, 10).map((e) => (
+                <TouchableOpacity
+                  key={e}
+                  style={styles.emojiItem}
+                  onPress={() => insertEmoji(e)}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.emojiText}>{e}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+        </Modal>
+
         {/* Subtle Inspirational Prompt */}
         {!inputText && !isFocused && showPrompt && (
           <View style={styles.promptContainer}>
             {promptLoading ? (
               <View style={styles.promptLoadingContainer}>
-                <Text style={styles.promptLoadingText}>💭 İlham verici soru yükleniyor...</Text>
+                <Animated.View style={[styles.shimmerLine, { opacity: shimmerOpacity }]} />
+                <Animated.View style={[styles.shimmerLineShort, { opacity: shimmerOpacity }]} />
               </View>
             ) : promptError ? (
               <View style={styles.promptErrorContainer}>
@@ -367,7 +546,7 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
                   style={styles.refreshButton}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel="Yeni soru yükle"
+                  accessibilityLabel={t('gratitude.prompt.refreshA11y')}
                 >
                   <Icon name="refresh" size={16} color={theme.colors.primary} />
                 </TouchableOpacity>
@@ -380,7 +559,7 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
                   style={styles.refreshButton}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel="Yeni soru yükle"
+                  accessibilityLabel={t('gratitude.prompt.refreshA11y')}
                 >
                   <Icon name="refresh" size={16} color={theme.colors.primary} />
                 </TouchableOpacity>
@@ -555,6 +734,62 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       backgroundColor: theme.colors.surfaceVariant,
     },
 
+    // Emoji button & picker styles
+    emojiButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: theme.colors.surfaceVariant,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '30',
+    },
+    emojiBackdrop: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: theme.colors.surface + '08',
+    },
+    emojiPicker: {
+      position: 'absolute',
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+      minWidth: 240,
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '20',
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    emojiRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
+    },
+    emojiItem: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '25',
+    },
+    emojiText: {
+      fontSize: 20,
+    },
+    emojiSelected: {
+      fontSize: 18,
+    },
+
     // **EDGE-TO-EDGE PROMPT SECTION**: Full-width prompt with subtle design
     promptContainer: {
       paddingHorizontal: theme.spacing.lg,
@@ -572,6 +807,35 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       color: theme.colors.onSurfaceVariant,
       fontStyle: 'italic',
       textAlign: 'center',
+    },
+    floatingLabel: {
+      position: 'absolute',
+      left: theme.spacing.lg,
+      top: theme.spacing.md,
+      zIndex: 2,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: 6,
+      borderRadius: theme.borderRadius.xs,
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+    },
+    accentBar: {
+      width: 3,
+      alignSelf: 'stretch',
+      backgroundColor: theme.colors.primary,
+      borderRadius: 2,
+    },
+    shimmerLine: {
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: theme.colors.outline + '20',
+      marginBottom: theme.spacing.xs,
+    },
+    shimmerLineShort: {
+      height: 10,
+      width: '65%',
+      borderRadius: 5,
+      backgroundColor: theme.colors.outline + '18',
     },
     promptErrorContainer: {
       flexDirection: 'row',

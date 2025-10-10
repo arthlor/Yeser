@@ -9,17 +9,37 @@ import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { useTheme } from '@/providers/ThemeProvider';
 import { analyticsService } from '@/services/analyticsService';
 import { AppTheme } from '@/themes/types';
+import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 
 interface TermsSectionProps {
   number: string;
-  title: string;
-  children: React.ReactNode;
+  titleKey: string;
+  contentKey: string;
+  itemsKey?: string;
+  prohibitedUsesKey?: string;
+  styles: ReturnType<typeof createStyles>;
+  t: (
+    key: string,
+    options?: { returnObjects?: boolean }
+  ) => string | string[] | { title: string; items: string[] };
 }
 
-const TermsSection: React.FC<TermsSectionProps> = ({ number, title, children }) => {
-  const { theme } = useTheme();
-  const styles = createStyles(theme);
+const TermsSection: React.FC<TermsSectionProps> = ({
+  number,
+  titleKey,
+  contentKey,
+  itemsKey,
+  prohibitedUsesKey,
+  styles,
+  t,
+}) => {
+  const title = t(titleKey) as string;
+  const content = t(contentKey) as string;
+  const items = itemsKey ? (t(itemsKey, { returnObjects: true }) as string[]) : [];
+  const prohibitedUses = prohibitedUsesKey
+    ? (t(prohibitedUsesKey, { returnObjects: true }) as { title: string; items: string[] })
+    : null;
   const fullTitle = `${number}. ${title}`;
 
   return (
@@ -27,7 +47,26 @@ const TermsSection: React.FC<TermsSectionProps> = ({ number, title, children }) 
       <Text style={styles.heading} accessibilityRole="header" accessibilityLabel={fullTitle}>
         {fullTitle}
       </Text>
-      {children}
+      <Text style={styles.paragraph}>{content}</Text>
+
+      {prohibitedUses && (
+        <>
+          <Text style={styles.paragraph}>{prohibitedUses.title}</Text>
+          {prohibitedUses.items.map((item: string, index: number) => (
+            <Text key={index} style={styles.listItem}>
+              • {item}
+            </Text>
+          ))}
+        </>
+      )}
+
+      {Array.isArray(items) &&
+        items.length > 0 &&
+        items.map((item: string, index: number) => (
+          <Text key={index} style={styles.listItem}>
+            • {item}
+          </Text>
+        ))}
     </View>
   );
 };
@@ -36,6 +75,7 @@ const TermsOfServiceScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const navigation = useNavigation();
+  const { t } = useTranslation();
 
   // Log screen view for analytics
   useEffect(() => {
@@ -46,7 +86,7 @@ const TermsOfServiceScreen: React.FC = () => {
     <ScreenLayout edges={['top']} edgeToEdge={true}>
       <ScreenHeader
         showBackButton
-        title="Kullanım Koşulları"
+        title={t('settings.terms.title') || 'Terms of Service'}
         onBackPress={() => navigation.goBack()}
         variant="default"
       />
@@ -57,17 +97,20 @@ const TermsOfServiceScreen: React.FC = () => {
             name="document-text-outline"
             size={40}
             color={theme.colors.primary}
-            accessibilityLabel="Kullanım koşulları ikonu"
+            accessibilityLabel={t('settings.terms.iconLabel') || 'Terms icon'}
           />
           <Text
             style={styles.title}
             accessibilityRole="header"
-            accessibilityLabel="Kullanım koşulları"
+            accessibilityLabel={t('settings.terms.title') || 'Terms of Service'}
           >
-            Kullanım Koşulları
+            {t('settings.terms.title') || 'Terms of Service'}
           </Text>
-          <Text style={styles.lastUpdated} accessibilityLabel="Son güncelleme tarihi">
-            Son Güncelleme: 12 Haziran 2025
+          <Text
+            style={styles.lastUpdated}
+            accessibilityLabel={t('settings.terms.lastUpdated') || 'Last updated'}
+          >
+            {t('termsOfService.lastUpdated')}
           </Text>
         </View>
       </ScreenSection>
@@ -75,148 +118,114 @@ const TermsOfServiceScreen: React.FC = () => {
       {/* Content Section */}
       <ScreenSection spacing="large">
         <ThemedCard density="comfortable" elevation="card" style={styles.card}>
-          <TermsSection number="1" title="Giriş ve Kabul">
-            <Text style={styles.paragraph}>
-              Yeşer mobil uygulamasına hoş geldiniz. Bu Kullanım Koşulları, uygulamaya erişiminizi
-              ve uygulamayı kullanımınızı düzenler. Uygulamayı indirerek, yükleyerek veya kullanarak
-              bu koşullara bağlı kalmayı kabul edersiniz. Koşulları kabul etmiyorsanız lütfen
-              uygulamayı kullanmayın.
-            </Text>
-          </TermsSection>
+          <TermsSection
+            number="1"
+            titleKey="termsOfService.sections.introduction.title"
+            contentKey="termsOfService.sections.introduction.content"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="2" title="Premium Uygulama ve Ödeme Koşulları">
-            <Text style={styles.paragraph}>
-              Yeşer ücretli bir premium uygulamadır. Uygulama 39,99 TL tek seferlik ödeme ile satın
-              alınır ve tüm özelliklerine sınırsız erişim sağlar. Ödeme koşulları:
-            </Text>
-            <Text style={styles.listItem}>
-              • Tek Seferlik Ödeme: Abonelik sistemi yoktur, sadece bir kez ödersiniz
-            </Text>
-            <Text style={styles.listItem}>
-              • App Store/Google Play: Tüm ödemeler ilgili uygulama mağazaları üzerinden işlenir
-            </Text>
-            <Text style={styles.listItem}>
-              • İade Politikası: İade talepleri Apple/Google'ın politikalarına tabidir
-            </Text>
-            <Text style={styles.listItem}>• KDV Dahil: Belirtilen fiyat KDV dahildir</Text>
-          </TermsSection>
+          <TermsSection
+            number="2"
+            titleKey="termsOfService.sections.premiumPayment.title"
+            contentKey="termsOfService.sections.premiumPayment.content"
+            itemsKey="termsOfService.sections.premiumPayment.items"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="3" title="Uygulamanın Kullanımı ve Yaş Sınırı">
-            <Text style={styles.paragraph}>
-              Uygulamayı yalnızca yasal amaçlarla ve bu koşullara uygun olarak kullanmayı kabul
-              edersiniz. Uygulama 13 yaş ve üzeri kullanıcılar için tasarlanmıştır. 13 yaş altındaki
-              kullanıcılar ebeveyn izni olmadan uygulamayı kullanamaz.
-            </Text>
-            <Text style={styles.paragraph}>Yasak kullanımlar:</Text>
-            <Text style={styles.listItem}>• Yasa dışı veya zararlı içerik paylaşmak</Text>
-            <Text style={styles.listItem}>• Başkalarının haklarını ihlal etmek</Text>
-            <Text style={styles.listItem}>• Uygulamanın güvenliğini tehlikeye atmak</Text>
-            <Text style={styles.listItem}>• Ticari amaçlarla izinsiz kullanım</Text>
-          </TermsSection>
+          <TermsSection
+            number="3"
+            titleKey="termsOfService.sections.usage.title"
+            contentKey="termsOfService.sections.usage.content"
+            prohibitedUsesKey="termsOfService.sections.usage.prohibitedUses"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="4" title="Hesap Yönetimi ve Sonlandırma">
-            <Text style={styles.paragraph}>Hesabınızı yönetme ve sonlandırma koşulları:</Text>
-            <Text style={styles.listItem}>
-              • Hesap Güvenliği: Hesap güvenliğinden siz sorumlusunuz
-            </Text>
-            <Text style={styles.listItem}>
-              • Hesap Silme: KVKK kapsamında Ayarlar {'>'} Hesap {'>'} Hesabımı Sil menüsünden
-              hesabınızı silebilirsiniz
-            </Text>
-            <Text style={styles.listItem}>
-              • Kalıcı İşlem: Silme işlemi GERİ ALINAMAZ, tüm verileriniz anında silinir
-            </Text>
-            <Text style={styles.listItem}>
-              • Yedekleme Önerisi: Silmeden önce verilerinizi dışa aktarın
-            </Text>
-            <Text style={styles.listItem}>
-              • Tekrar Kayıt: Aynı e-posta ile yeniden kayıt olabilirsiniz (veriler geri gelmez)
-            </Text>
-          </TermsSection>
+          <TermsSection
+            number="4"
+            titleKey="termsOfService.sections.accountManagement.title"
+            contentKey="termsOfService.sections.accountManagement.content"
+            itemsKey="termsOfService.sections.accountManagement.items"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="5" title="Fikri Mülkiyet">
-            <Text style={styles.paragraph}>
-              Uygulama ve içeriği; bilgileri, yazılımları, metinleri, ekranları, görselleri,
-              videoları, sesleri ve bunların tasarımını, seçimini ve düzenlenmesini kapsar. Tüm bu
-              unsurlar Yeşer’e aittir ve uluslararası telif hakkı, ticari marka, patent, ticari sır
-              ve diğer fikri mülkiyet yasalarıyla korunur.
-            </Text>
-          </TermsSection>
+          <TermsSection
+            number="5"
+            titleKey="termsOfService.sections.intellectualProperty.title"
+            contentKey="termsOfService.sections.intellectualProperty.content"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="6" title="Veri Sorumluluğu ve Yedekleme">
-            <Text style={styles.paragraph}>
-              Veri güvenliği ve yedekleme konularında sorumluluklar:
-            </Text>
-            <Text style={styles.listItem}>
-              • Düzenli Yedekleme: Uygulamada güvenli veri depolama sağlanır
-            </Text>
-            <Text style={styles.listItem}>
-              • Veri Kaybı: Teknik arızalar durumunda veri kurtarma için çaba harcanır
-            </Text>
-            <Text style={styles.listItem}>
-              • Kullanıcı Sorumluluğu: Önemli verilerinizi düzenli olarak dışa aktarmanız önerilir
-            </Text>
-            <Text style={styles.listItem}>• Sunucu Bakımı: Planlı bakımlar önceden duyurulur</Text>
-          </TermsSection>
+          <TermsSection
+            number="6"
+            titleKey="termsOfService.sections.dataResponsibility.title"
+            contentKey="termsOfService.sections.dataResponsibility.content"
+            itemsKey="termsOfService.sections.dataResponsibility.items"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="7" title="Sorumluluğun Reddi">
-            <Text style={styles.paragraph}>
-              Uygulama "olduğu gibi" ve "mevcut olduğu gibi" esasına göre sağlanır. Yasaların izin
-              verdiği azami ölçüde, satılabilirlik, belirli bir amaca uygunluk ve ihlal etmeme
-              garantileri dahil ancak bunlarla sınırlı olmamak üzere, açık veya zımni her türlü
-              garantiyi reddederiz.
-            </Text>
-          </TermsSection>
+          <TermsSection
+            number="7"
+            titleKey="termsOfService.sections.disclaimerOfLiability.title"
+            contentKey="termsOfService.sections.disclaimerOfLiability.content"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="8" title="Sorumluluğun Sınırlandırılması">
-            <Text style={styles.paragraph}>
-              Yasaların izin verdiği azami ölçüde, Yeşer; uygulamayı kullanımınızdan veya
-              kullanamamanızdan doğan herhangi bir dolaylı, arızi, özel, netice itibarıyla ortaya
-              çıkan ya da cezai zarardan (kâr, veri veya itibar kaybı dahil ancak bunlarla sınırlı
-              olmamak üzere) sorumlu değildir.
-            </Text>
-          </TermsSection>
+          <TermsSection
+            number="8"
+            titleKey="termsOfService.sections.limitationOfLiability.title"
+            contentKey="termsOfService.sections.limitationOfLiability.content"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="9" title="Geçerli Hukuk ve Yargı Yetkisi">
-            <Text style={styles.paragraph}>
-              Bu Koşullar Türkiye Cumhuriyeti yasalarına tabidir ve bu yasalara göre yorumlanır. Bu
-              Koşullardan kaynaklanan uyuşmazlıklar yerel mahkemeler ve İcra Müdürlüklerinin
-              yetkisindedir.
-            </Text>
-          </TermsSection>
+          <TermsSection
+            number="9"
+            titleKey="termsOfService.sections.governingLaw.title"
+            contentKey="termsOfService.sections.governingLaw.content"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="10" title="Mücbir Sebepler">
-            <Text style={styles.paragraph}>
-              Doğal afetler, savaş, hükümet eylemleri, pandemi, internet kesintileri veya bizim
-              kontrolümüz dışındaki diğer mücbir sebepler nedeniyle hizmet kesintileri yaşanması
-              durumunda sorumluluğumuz sınırlıdır.
-            </Text>
-          </TermsSection>
+          <TermsSection
+            number="10"
+            titleKey="termsOfService.sections.forceMajeure.title"
+            contentKey="termsOfService.sections.forceMajeure.content"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="11" title="Bu Koşullardaki Değişiklikler">
-            <Text style={styles.paragraph}>
-              Bu koşulları zaman zaman güncelleyebiliriz. Önemli değişiklikler için uygulama içi
-              bildirim göndeririz. Revize edilmiş koşullar yayımlandıktan sonra uygulamayı
-              kullanmaya devam etmeniz, değişiklikleri kabul ettiğiniz anlamına gelir.
-            </Text>
-          </TermsSection>
+          <TermsSection
+            number="11"
+            titleKey="termsOfService.sections.changesTerms.title"
+            contentKey="termsOfService.sections.changesTerms.content"
+            styles={styles}
+            t={t}
+          />
 
-          <TermsSection number="12" title="İletişim">
-            <Text style={styles.paragraph}>
-              Bu Kullanım Koşulları hakkında herhangi bir sorunuz varsa, lütfen bizimle iletişime
-              geçin:
+          <View style={styles.section}>
+            <Text style={styles.heading} accessibilityRole="header">
+              12. {t('termsOfService.sections.contact.title')}
             </Text>
+            <Text style={styles.paragraph}>{t('termsOfService.sections.contact.content')}</Text>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel="E-posta ile iletişime geç"
-              accessibilityHint="Kullanım koşulları hakkında soru sormak için e-posta gönder"
+              accessibilityLabel={t('settings.terms.contactEmailLabel') || 'Contact via email'}
+              accessibilityHint={t('settings.terms.contactEmailHint') || 'Send email about terms'}
             >
-              <Text style={styles.contactLink}>E-posta: yeserapp@gmail.com</Text>
+              <Text style={styles.contactLink}>{t('termsOfService.sections.contact.email')}</Text>
             </TouchableOpacity>
             <Text style={styles.paragraph}>
-              Sorularınızı en geç 5 iş günü içinde yanıtlamaya çalışırız.
+              {t('termsOfService.sections.contact.responseTime')}
             </Text>
-          </TermsSection>
+          </View>
         </ThemedCard>
       </ScreenSection>
     </ScreenLayout>

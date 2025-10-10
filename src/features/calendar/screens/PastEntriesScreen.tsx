@@ -19,6 +19,7 @@ import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useGratitudeEntriesPaginated } from '@/features/gratitude/hooks';
 import { analyticsService } from '@/services/analyticsService';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
+import { useTranslation } from 'react-i18next';
 import PastEntriesHeader from '@/components/past-entries/PastEntriesHeader';
 import PastEntryItem from '@/components/past-entries/PastEntryItem';
 import PastEntriesEmptyState from '@/components/past-entries/PastEntriesEmptyState';
@@ -50,6 +51,7 @@ const PastEntriesScreen: React.FC = () => {
   const { theme } = useTheme();
   const { showSuccess, handleMutationError } = useGlobalError();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const {
     data,
@@ -81,9 +83,9 @@ const PastEntriesScreen: React.FC = () => {
   // Enhanced error handling using centralized system
   useEffect(() => {
     if (isError && error) {
-      handleMutationError(error, 'geçmiş kayıtları yükleme');
+      handleMutationError(error, t('pastEntries.error.generic'));
     }
-  }, [isError, error, handleMutationError]);
+  }, [isError, error, handleMutationError, t]);
 
   const handleRefresh = useCallback(() => {
     refetch();
@@ -91,8 +93,8 @@ const PastEntriesScreen: React.FC = () => {
 
   const handleRetry = useCallback(() => {
     refetch();
-    showSuccess('Yeniden yükleniyor...');
-  }, [refetch, showSuccess]);
+    showSuccess(t('common.loading'));
+  }, [refetch, showSuccess, t]);
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -127,8 +129,8 @@ const PastEntriesScreen: React.FC = () => {
 
   // Memoize the translated error message for consistency
   const translatedErrorMessage = useMemo(() => {
-    return error ? safeErrorDisplay(error) : 'Geçmiş kayıtlar alınırken bir hata oluştu.';
-  }, [error]);
+    return error ? safeErrorDisplay(error) : t('pastEntries.error.generic');
+  }, [error, t]);
 
   const styles = createStyles(theme, insets);
 
@@ -142,7 +144,7 @@ const PastEntriesScreen: React.FC = () => {
           barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
         />
         <View style={styles.scrollableContent}>
-          <PastEntriesHeader title="Minnet Kayıtlarınız" subtitle="Yükleniyor..." />
+          <PastEntriesHeader title={t('pastEntries.title')} subtitle={t('common.loading')} />
           <PastEntriesSkeletonLoader count={5} />
         </View>
       </View>
@@ -159,7 +161,7 @@ const PastEntriesScreen: React.FC = () => {
           barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
         />
         <View style={styles.scrollableContent}>
-          <PastEntriesHeader title="Minnet Kayıtlarınız" />
+          <PastEntriesHeader title={t('pastEntries.title')} />
           <PastEntriesErrorState error={translatedErrorMessage} onRetry={handleRetry} />
         </View>
       </View>
@@ -176,7 +178,7 @@ const PastEntriesScreen: React.FC = () => {
           barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
         />
         <View style={styles.scrollableContent}>
-          <PastEntriesHeader title="Minnet Kayıtlarınız" />
+          <PastEntriesHeader title={t('pastEntries.title')} />
           <PastEntriesEmptyState />
         </View>
       </View>
@@ -196,17 +198,19 @@ const PastEntriesScreen: React.FC = () => {
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         ListHeaderComponent={
-          <PastEntriesHeader title="Minnet Kayıtlarınız" entryCount={entries.length} />
+          <PastEntriesHeader title={t('pastEntries.title')} entryCount={entries.length} />
         }
         ListFooterComponent={
           <View style={styles.footerContainer}>
             <View style={styles.paginationPill}>
-              <Text style={styles.paginationText}>Sayfa {data?.pages?.length || 1}</Text>
+              <Text style={styles.paginationText}>
+                {t('pastEntries.list.page', { count: data?.pages?.length || 1 })}
+              </Text>
             </View>
             {isFetchingNextPage ? (
               <View style={styles.loadingMoreContainer}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={styles.loadingMoreText}>Daha fazla yükleniyor...</Text>
+                <Text style={styles.loadingMoreText}>{t('pastEntries.list.loadingMore')}</Text>
               </View>
             ) : hasNextPage ? (
               <TouchableOpacity
@@ -214,9 +218,9 @@ const PastEntriesScreen: React.FC = () => {
                 onPress={() => fetchNextPage()}
                 activeOpacity={0.8}
                 accessibilityRole="button"
-                accessibilityLabel="Daha fazla kayıt yükle"
+                accessibilityLabel={t('pastEntries.list.a11yLoadMore')}
               >
-                <Text style={styles.loadMoreText}>Daha fazla</Text>
+                <Text style={styles.loadMoreText}>{t('pastEntries.list.loadMore')}</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -234,7 +238,7 @@ const PastEntriesScreen: React.FC = () => {
             tintColor={theme.colors.primary}
             colors={[theme.colors.primary]}
             progressBackgroundColor={theme.colors.surface}
-            title="Güncelleniyor..."
+            title={t('shared.layout.screenContent.loading')}
             titleColor={theme.colors.onSurfaceVariant}
           />
         }
@@ -263,20 +267,18 @@ const createStyles = (
     // Edge-to-edge container with proper safe area handling
     edgeToEdgeContainer: {
       flex: 1,
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.surface,
     },
     scrollableContent: {
       flex: 1,
-      paddingTop: insets.top,
       paddingBottom: insets.bottom + theme.spacing.xl, // Extra space for better scrolling
     },
     listContent: {
-      paddingTop: insets.top,
       paddingBottom: insets.bottom + theme.spacing.xxxl, // Extra space for better scrolling
     },
     list: {
       flex: 1,
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.surface,
     },
     footerContainer: {
       paddingTop: theme.spacing.md,

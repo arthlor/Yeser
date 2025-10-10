@@ -10,6 +10,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Animated,
   Platform,
@@ -149,6 +150,13 @@ const getThemedStyles = (theme: AppTheme) =>
       flex: 1,
       minWidth: 100,
     },
+    saveHintText: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '500',
+      textAlign: 'center',
+      marginTop: theme.spacing.sm,
+    },
   });
 
 interface GratitudeStatementItemProps {
@@ -170,11 +178,13 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
 }) => {
   const { theme } = useTheme();
   const { colors } = theme;
+  const { t } = useTranslation();
   const styles = getThemedStyles(theme);
   const placeholderTextColor = colors.onSurfaceVariant;
 
   const [currentText, setCurrentText] = useState(statementText);
   const [showActions, setShowActions] = useState(false);
+  const [showSaveHint, setShowSaveHint] = useState(false);
 
   // **SIMPLIFIED ANIMATION SYSTEM**: Replace complex refs with coordinated animations
   const animations = useCoordinatedAnimations();
@@ -194,14 +204,19 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
 
   // **SIMPLIFIED SAVE**: Replace complex sequence with haptic feedback
   const handleSave = useCallback(() => {
+    if (currentText.trim() === statementText.trim()) {
+      setShowSaveHint(true);
+      return;
+    }
+
     if (onSave && currentText.trim()) {
-      // Simple haptic feedback instead of complex animation
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
       onSave(currentText.trim());
+      setShowSaveHint(false);
     }
-  }, [onSave, currentText]);
+  }, [onSave, currentText, statementText]);
 
   const handleCancel = useCallback(() => {
     setCurrentText(statementText);
@@ -231,7 +246,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
       >
         <View style={styles.editingHeader}>
           <View style={styles.editingIndicator} />
-          <Text style={styles.editingLabel}>Düzenleniyor</Text>
+          <Text style={styles.editingLabel}>{t('shared.statement.editingLabel')}</Text>
         </View>
         <View style={styles.inputContainer}>
           <TextInput
@@ -239,7 +254,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
             value={currentText}
             onChangeText={setCurrentText}
             multiline
-            placeholder="Minnettarlık ifadenizi yazın..."
+            placeholder={t('shared.statement.inputPlaceholder')}
             placeholderTextColor={placeholderTextColor}
             autoFocus
             textAlignVertical="top"
@@ -261,7 +276,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
             {onCancelEdit && (
               <View style={styles.buttonWrapper}>
                 <ThemedButton
-                  title="İptal"
+                  title={t('common.cancel')}
                   onPress={handleCancel}
                   variant="secondary"
                   size="compact"
@@ -271,7 +286,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
             {onDelete && (
               <View style={styles.buttonWrapper}>
                 <ThemedButton
-                  title="Sil"
+                  title={t('statement.deleteButton')}
                   onPress={() => {
                     if (onDelete) {
                       onDelete();
@@ -285,12 +300,15 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
             {onSave && (
               <View style={styles.buttonWrapper}>
                 <ThemedButton
-                  title="Kaydet"
+                  title={t('gratitude.actions.save')}
                   onPress={handleSave}
                   variant="primary"
                   size="compact"
-                  disabled={!currentText.trim()}
+                  disabled={!currentText.trim() || currentText.trim() === statementText.trim()}
                 />
+                {showSaveHint && (
+                  <Text style={styles.saveHintText}>{t('gratitude.actions.saveHint')}</Text>
+                )}
               </View>
             )}
           </View>
@@ -312,7 +330,9 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
         <View style={styles.textContainer}>
           <Text style={styles.statementText}>{statementText}</Text>
           <View style={styles.tapHint}>
-            <Text style={styles.tapHintText}>{showActions ? '▲ Gizle' : '▼ Seçenekler'}</Text>
+            <Text style={styles.tapHintText}>
+              {showActions ? t('gratitude.actions.hide') : t('gratitude.actions.showOptions')}
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -330,7 +350,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
             {onPressEdit && (
               <View style={styles.buttonWrapper}>
                 <ThemedButton
-                  title="✏️ Düzenle"
+                  title={t('statement.editButton')}
                   onPress={() => {
                     setShowActions(false);
                     onPressEdit();
@@ -343,7 +363,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
             {onDelete && (
               <View style={styles.buttonWrapper}>
                 <ThemedButton
-                  title="🗑️ Sil"
+                  title={t('gratitude.actions.delete')}
                   onPress={() => {
                     setShowActions(false);
                     onDelete();

@@ -5,6 +5,7 @@ import { logger } from '@/utils/debugConfig';
 import { queryClient } from '@/api/queryClient';
 import { atomicOperationManager } from '../utils/atomicOperations';
 import * as authService from '@/services/authService';
+import { notificationService } from '@/services/notificationService';
 
 /**
  * Core Authentication State Interface
@@ -124,6 +125,24 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
                   isLoading: false,
                 });
                 logger.debug('Core auth store: User signed out');
+                // Remove push token on sign out
+                const removePushToken = async () => {
+                  try {
+                    const token = await notificationService.getCurrentDevicePushToken();
+                    if (token) {
+                      await notificationService.removeTokenFromBackend(token);
+                      logger.debug('Core auth store: Removed push token on sign out.');
+                    }
+                  } catch (error) {
+                    logger.warn(
+                      'Core auth store: Failed to get or remove push token on sign out.',
+                      {
+                        error: (error as Error).message,
+                      }
+                    );
+                  }
+                };
+                removePushToken();
               } else if (event === 'TOKEN_REFRESHED' && session?.user) {
                 set({
                   isAuthenticated: true,

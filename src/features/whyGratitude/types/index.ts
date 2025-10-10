@@ -3,13 +3,20 @@
  * These types correspond to the gratitude_benefits table in Supabase
  */
 
+/**
+ * @deprecated Use GratitudeBenefit from @/schemas/gratitudeBenefitSchema instead for consistency
+ */
 export interface GratitudeBenefit {
   id: number;
   icon: string;
   title_tr: string;
+  title_en: string | null;
   description_tr: string;
+  description_en: string | null;
   stat_tr: string | null;
+  stat_en: string | null;
   cta_prompt_tr: string | null;
+  cta_prompt_en: string | null;
   display_order: number;
   is_active: boolean;
   created_at: string;

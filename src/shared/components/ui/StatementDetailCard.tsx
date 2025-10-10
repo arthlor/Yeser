@@ -8,18 +8,18 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { AppTheme } from '@/themes/types';
-import { alpha, blend, darken, lighten } from '@/themes/utils';
+// Removed unused alpha import
 import {
   createSharedStyles,
   formatStatementDate,
   InteractiveStatementCardProps,
+  MoodChip,
   StatementCardWrapper,
   ThreeDotsMenu,
   useHapticFeedback,
@@ -27,6 +27,8 @@ import {
   useResponsiveLayout,
   useStatementCardAnimations,
 } from './StatementCardBase';
+import type { MoodEmoji } from '@/types/mood.types';
+import { useTranslation } from 'react-i18next';
 
 // 📖 ENTRY DETAIL SPECIFIC PROPS
 interface StatementDetailCardProps extends InteractiveStatementCardProps {
@@ -39,6 +41,8 @@ interface StatementDetailCardProps extends InteractiveStatementCardProps {
   animateEntrance?: boolean;
   onPress?: () => void;
   edgeToEdge?: boolean; // New prop for edge-to-edge layout
+  moodEmoji?: MoodEmoji | null;
+  onChangeMood?: (mood: MoodEmoji | null) => void;
 }
 
 /**
@@ -85,55 +89,18 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
     confirmDelete = true,
     maxLength = 500,
     edgeToEdge = false,
+    moodEmoji: _moodEmoji,
+    onChangeMood: _onChangeMood,
   }) => {
     const { theme } = useTheme();
+    const { t } = useTranslation();
     const { showError } = useGlobalError();
     const { showWarning, showSuccess } = useToast();
     const layout = useResponsiveLayout();
     const sharedStyles = createSharedStyles(theme, layout);
     const styles = useMemo(() => createStyles(theme, sharedStyles), [theme, sharedStyles]);
 
-    const gradientColors = useMemo(() => {
-      const isLight = theme.name === 'light';
-      const primaryEdge = alpha(theme.colors.primary, isLight ? 0.6 : 0.5);
-      const midBlend1 = blend(
-        theme.colors.primary,
-        theme.colors.secondary || theme.colors.primary,
-        0.5
-      );
-      const midBlend2 = blend(
-        theme.colors.primary,
-        theme.colors.tertiary || theme.colors.primary,
-        0.5
-      );
-      const mid1 = alpha(midBlend1, isLight ? 0.38 : 0.32);
-      const mid2 = alpha(midBlend2, isLight ? 0.28 : 0.24);
-
-      return [primaryEdge, mid1, mid2, primaryEdge] as const;
-    }, [theme]);
-    const gradientLocations = useMemo(() => [0, 0.33, 0.67, 1] as const, []);
-    const gradientStart = useMemo(() => ({ x: 0.08, y: 0 }) as const, []);
-    const gradientEnd = useMemo(() => ({ x: 0.92, y: 1 }) as const, []);
-
-    // Subtle surface sheen overlay to achieve an Apple-like polished feel
-    const surfaceGradientColors = useMemo(() => {
-      const isLight = theme.name === 'light';
-      const topSheen = alpha(
-        lighten(theme.colors.surface, isLight ? 0.06 : 0.03),
-        isLight ? 0.9 : 0.85
-      );
-      const bottomTint = alpha(
-        blend(
-          darken(theme.colors.surface, isLight ? 0.02 : 0.04),
-          theme.colors.primary,
-          isLight ? 0.06 : 0.04
-        ),
-        isLight ? 0.9 : 0.85
-      );
-      return [topSheen, bottomTint] as const;
-    }, [theme]);
-    const surfaceGradientStart = useMemo(() => ({ x: 0, y: 0 }) as const, []);
-    const surfaceGradientEnd = useMemo(() => ({ x: 0, y: 1 }) as const, []);
+    // Gradients removed for a subtle, minimalist card
 
     const animations = useStatementCardAnimations();
     const { triggerHaptic } = useHapticFeedback(hapticFeedback);
@@ -174,21 +141,21 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
 
       if (confirmDelete) {
         // 🚀 TOAST INTEGRATION: Use toast warning with action button instead of Alert.alert
-        showWarning('Bu minnet ifadesini silmek istediğinizden emin misiniz?', {
+        showWarning(t('shared.statement.confirmDelete'), {
           duration: 6000, // Give user time to read and decide
           action: {
-            label: 'Sil',
+            label: t('shared.statement.confirmDeleteAction'),
             onPress: () => {
               triggerHaptic('error');
               onDelete?.();
-              showSuccess('Minnet ifadesi silindi');
+              showSuccess(t('shared.statement.deleted'));
             },
           },
         });
       } else {
         triggerHaptic('error');
         onDelete?.();
-        showSuccess('Minnet ifadesi silindi');
+        showSuccess(t('shared.statement.deleted'));
       }
     };
 
@@ -206,7 +173,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
       } catch {
         triggerHaptic('error');
         // 🛡️ ERROR PROTECTION: Use global error system instead of Alert
-        showError('Minnet kaydedilirken bir hata oluştu.');
+        showError(t('shared.statement.saveError'));
       }
     };
 
@@ -321,7 +288,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
           >
             <Icon name="close" size={14} color={theme.colors.onSurfaceVariant} />
             <Text style={[styles.editingButtonText, { color: theme.colors.onSurfaceVariant }]}>
-              İptal
+              {t('common.cancel')}
             </Text>
           </TouchableOpacity>
 
@@ -333,7 +300,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
           >
             <Icon name="check" size={14} color={theme.colors.onPrimary} />
             <Text style={[styles.editingButtonText, { color: theme.colors.onPrimary }]}>
-              Kaydet
+              {t('gratitude.actions.save')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -350,30 +317,14 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
         }
         edgeToEdge={edgeToEdge}
       >
-        {/* Built-in subtle gradient border for elegance */}
-        <LinearGradient
-          colors={gradientColors}
-          locations={gradientLocations}
-          style={styles.gradientBorder}
-          start={gradientStart}
-          end={gradientEnd}
-          pointerEvents="none"
-        />
-        {/* Subtle surface sheen for polished depth */}
-        <LinearGradient
-          colors={surfaceGradientColors}
-          style={styles.surfaceGradientOverlay}
-          start={surfaceGradientStart}
-          end={surfaceGradientEnd}
-          pointerEvents="none"
-        />
+        <View style={styles.subtleBorderOverlay} pointerEvents="none" />
         <View style={variantStyles.content}>
           {/* 🎯 ENHANCED CARD HEADER: Better visual hierarchy with proper overflow handling */}
           <View style={styles.cardHeader}>
             {/* Left side: Sequence indicator (if enabled) */}
             <View style={styles.headerLeft}>{renderSequenceIndicator()}</View>
 
-            {/* Right side: Three dots menu - Made more prominent */}
+            {/* Right side: Actions */}
             <View style={styles.headerRight}>
               <ThreeDotsMenu
                 onEdit={onEdit}
@@ -394,7 +345,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
                   onChangeText={setLocalStatement}
                   multiline
                   maxLength={maxLength}
-                  placeholder="Minnetinizi yazın..."
+                  placeholder={t('shared.statement.edit.placeholder')}
                   placeholderTextColor={theme.colors.onSurfaceVariant + '60'}
                   autoFocus
                   selectionColor={theme.colors.primary}
@@ -405,7 +356,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
                     {localStatement.length}/{maxLength}
                   </Text>
                   {localStatement.length > maxLength * 0.9 && (
-                    <Text style={styles.warningText}>Yakında limit</Text>
+                    <Text style={styles.warningText}>{t('shared.statement.nearLimit')}</Text>
                   )}
                 </View>
               </View>
@@ -445,13 +396,13 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
             )}
           </View>
 
-          {/* 🕒 COMPACT META INFORMATION: Clean and minimal presentation */}
+          {/* 🕒 COMPACT META INFORMATION: Clean and minimal presentation with MoodChip */}
           {!isEditing && date && (
             <View style={styles.metaSection}>
               <View style={styles.metaContent}>
                 {isRecent && (
                   <View style={styles.recentBadge}>
-                    <Text style={styles.recentBadgeText}>YENİ</Text>
+                    <Text style={styles.recentBadgeText}>{t('shared.ui.badges.new')}</Text>
                   </View>
                 )}
                 <View style={styles.dateContainer}>
@@ -464,6 +415,21 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
                     {relativeTime}
                   </Text>
                 </View>
+                {_moodEmoji ? (
+                  <View style={styles.readonlyMoodContainer}>
+                    <Text style={styles.readonlyMoodLabel}>{t('Mood', 'Mood')}:</Text>
+                    <Text style={styles.readonlyMoodEmoji}>{_moodEmoji}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          )}
+
+          {/* Mood editing only when in edit mode */}
+          {isEditing && (
+            <View style={styles.metaSection}>
+              <View style={styles.metaContent}>
+                <MoodChip moodEmoji={_moodEmoji ?? null} onChangeMood={_onChangeMood} />
               </View>
             </View>
           )}
@@ -490,7 +456,9 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
           onLongPress={handleLongPress}
           onPressIn={animations.animatePressIn}
           onPressOut={animations.animatePressOut}
-          accessibilityLabel={accessibilityLabel || `Minnet: ${statement}`}
+          accessibilityLabel={
+            accessibilityLabel || t('shared.statement.a11y.memoryLabel', { text: statement })
+          }
           accessibilityRole="button"
         >
           {CardContent}
@@ -509,23 +477,15 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
 // 🎨 ENHANCED STYLES FOR DETAIL CARD
 const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSharedStyles>) =>
   StyleSheet.create({
-    gradientBorder: {
-      position: 'absolute',
-      top: -1,
-      left: -1,
-      right: -1,
-      bottom: -1,
-      borderRadius: theme.borderRadius.md + 1,
-      opacity: 1,
-    } as ViewStyle,
-    surfaceGradientOverlay: {
+    subtleBorderOverlay: {
       position: 'absolute',
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
       borderRadius: theme.borderRadius.md,
-      opacity: 0.9,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '1F',
     } as ViewStyle,
     // Detailed Variant - Enhanced readability and context
     detailedContainer: {
@@ -863,6 +823,21 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       borderRadius: theme.borderRadius.xs,
       borderWidth: 1,
       borderColor: theme.colors.outline + '10',
+    } as ViewStyle,
+
+    // Readonly mood styles for non-editing state
+    readonlyMoodContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: sharedStyles.spacing.elementGap / 2,
+      marginLeft: sharedStyles.spacing.elementGap,
+    } as ViewStyle,
+    readonlyMoodLabel: {
+      ...sharedStyles.typography.metadata.secondary,
+      color: sharedStyles.colors.secondary,
+    },
+    readonlyMoodEmoji: {
+      fontSize: 14,
     } as ViewStyle,
 
     // 🔄 ENHANCED LOADING INDICATOR

@@ -1,7 +1,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: '12.2.3 (519615d)';
@@ -41,37 +41,49 @@ export type Database = {
       gratitude_benefits: {
         Row: {
           created_at: string | null;
+          cta_prompt_en: string | null;
           cta_prompt_tr: string | null;
+          description_en: string | null;
           description_tr: string;
           display_order: number;
           icon: string;
           id: number;
           is_active: boolean | null;
+          stat_en: string | null;
           stat_tr: string | null;
+          title_en: string | null;
           title_tr: string;
           updated_at: string | null;
         };
         Insert: {
           created_at?: string | null;
+          cta_prompt_en?: string | null;
           cta_prompt_tr?: string | null;
+          description_en?: string | null;
           description_tr: string;
           display_order?: number;
           icon: string;
           id?: number;
           is_active?: boolean | null;
+          stat_en?: string | null;
           stat_tr?: string | null;
+          title_en?: string | null;
           title_tr: string;
           updated_at?: string | null;
         };
         Update: {
           created_at?: string | null;
+          cta_prompt_en?: string | null;
           cta_prompt_tr?: string | null;
+          description_en?: string | null;
           description_tr?: string;
           display_order?: number;
           icon?: string;
           id?: number;
           is_active?: boolean | null;
+          stat_en?: string | null;
           stat_tr?: string | null;
+          title_en?: string | null;
           title_tr?: string;
           updated_at?: string | null;
         };
@@ -82,6 +94,7 @@ export type Database = {
           created_at: string;
           entry_date: string;
           id: string;
+          moods: Json;
           statements: Json;
           updated_at: string;
           user_id: string;
@@ -90,6 +103,7 @@ export type Database = {
           created_at?: string;
           entry_date: string;
           id?: string;
+          moods?: Json;
           statements?: Json;
           updated_at?: string;
           user_id: string;
@@ -98,6 +112,7 @@ export type Database = {
           created_at?: string;
           entry_date?: string;
           id?: string;
+          moods?: Json;
           statements?: Json;
           updated_at?: string;
           user_id?: string;
@@ -106,9 +121,11 @@ export type Database = {
       };
       profiles: {
         Row: {
+          avatar_path: string | null;
           created_at: string | null;
           daily_gratitude_goal: number | null;
           id: string;
+          language: string;
           notification_time: string | null;
           onboarded: boolean;
           timezone: string | null;
@@ -117,9 +134,11 @@ export type Database = {
           username: string | null;
         };
         Insert: {
+          avatar_path?: string | null;
           created_at?: string | null;
           daily_gratitude_goal?: number | null;
           id: string;
+          language?: string;
           notification_time?: string | null;
           onboarded?: boolean;
           timezone?: string | null;
@@ -128,9 +147,11 @@ export type Database = {
           username?: string | null;
         };
         Update: {
+          avatar_path?: string | null;
           created_at?: string | null;
           daily_gratitude_goal?: number | null;
           id?: string;
+          language?: string;
           notification_time?: string | null;
           onboarded?: boolean;
           timezone?: string | null;
@@ -208,8 +229,17 @@ export type Database = {
     };
     Functions: {
       add_gratitude_statement: {
-        Args: { p_entry_date: string; p_statement: string };
+        Args: { p_entry_date: string; p_mood?: string; p_statement: string };
         Returns: undefined;
+      };
+      analyze_notification_query_performance: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          execution_time_ms: number;
+          notes: string;
+          query_step: string;
+          rows_processed: number;
+        }[];
       };
       bytea_to_text: {
         Args: { data: string };
@@ -223,6 +253,48 @@ export type Database = {
         Args: { p_username: string };
         Returns: boolean;
       };
+      cleanup_stale_tokens: {
+        Args: Record<PropertyKey, never> | { p_max_age_days?: number };
+        Returns: number;
+      };
+      debug_hourly_notification_users: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          current_hour_in_timezone: number;
+          next_hour_in_timezone: number;
+          notification_hour: number;
+          should_notify_next_hour: boolean;
+          timezone: string;
+          token_count: number;
+          user_id: string;
+          username: string;
+        }[];
+      };
+      debug_notification_matching: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          current_hour_in_timezone: number;
+          next_hour_in_timezone: number;
+          notification_hour: number;
+          should_notify_next_hour: boolean;
+          timezone: string;
+          token_count: number;
+          user_id: string;
+          username: string;
+        }[];
+      };
+      debug_notification_users: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          current_time_in_timezone: string;
+          notification_time: string;
+          should_notify: boolean;
+          timezone: string;
+          token_count: number;
+          user_id: string;
+          username: string;
+        }[];
+      };
       delete_gratitude_entry_by_date: {
         Args: { p_entry_date: string };
         Returns: undefined;
@@ -231,16 +303,39 @@ export type Database = {
         Args: { p_entry_date: string; p_statement_index: number };
         Returns: undefined;
       };
+      diagnose_cron_job_permissions: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          check_name: string;
+          check_result: string;
+          details: string;
+        }[];
+      };
       edit_gratitude_statement: {
-        Args: {
-          p_entry_date: string;
-          p_statement_index: number;
-          p_updated_statement: string;
-        };
+        Args:
+          | {
+              p_entry_date: string;
+              p_mood?: string;
+              p_statement_index: number;
+              p_updated_statement: string;
+            }
+          | {
+              p_entry_date: string;
+              p_statement_index: number;
+              p_updated_statement: string;
+            };
         Returns: undefined;
       };
+      get_basic_notification_stats: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          description: string;
+          stat_name: string;
+          stat_value: string;
+        }[];
+      };
       get_entry_dates_for_month: {
-        Args: { p_user_id: string; p_year: number; p_month: number };
+        Args: { p_month: number; p_user_id: string; p_year: number };
         Returns: string[];
       };
       get_multiple_random_active_prompts: {
@@ -258,9 +353,9 @@ export type Database = {
       get_random_active_prompt: {
         Args: Record<PropertyKey, never>;
         Returns: {
+          category: string;
           id: string;
           prompt_text_tr: string;
-          category: string;
         }[];
       };
       get_random_gratitude_entry: {
@@ -269,6 +364,7 @@ export type Database = {
           created_at: string;
           entry_date: string;
           id: string;
+          moods: Json;
           statements: Json;
           updated_at: string;
           user_id: string;
@@ -277,6 +373,16 @@ export type Database = {
       get_user_gratitude_entries_count: {
         Args: Record<PropertyKey, never>;
         Returns: number;
+      };
+      get_users_for_next_hour_optimized: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          language: string;
+          notification_time: string;
+          timezone: string;
+          tokens: string[];
+          user_id: string;
+        }[];
       };
       get_users_to_notify: {
         Args: Record<PropertyKey, never>;
@@ -291,11 +397,11 @@ export type Database = {
         Returns: Database['public']['CompositeTypes']['http_response'];
       };
       http_delete: {
-        Args: { uri: string } | { uri: string; content: string; content_type: string };
+        Args: { content: string; content_type: string; uri: string } | { uri: string };
         Returns: Database['public']['CompositeTypes']['http_response'];
       };
       http_get: {
-        Args: { uri: string } | { uri: string; data: Json };
+        Args: { data: Json; uri: string } | { uri: string };
         Returns: Database['public']['CompositeTypes']['http_response'];
       };
       http_head: {
@@ -314,15 +420,15 @@ export type Database = {
         }[];
       };
       http_patch: {
-        Args: { uri: string; content: string; content_type: string };
+        Args: { content: string; content_type: string; uri: string };
         Returns: Database['public']['CompositeTypes']['http_response'];
       };
       http_post: {
-        Args: { uri: string; content: string; content_type: string } | { uri: string; data: Json };
+        Args: { content: string; content_type: string; uri: string } | { data: Json; uri: string };
         Returns: Database['public']['CompositeTypes']['http_response'];
       };
       http_put: {
-        Args: { uri: string; content: string; content_type: string };
+        Args: { content: string; content_type: string; uri: string };
         Returns: Database['public']['CompositeTypes']['http_response'];
       };
       http_reset_curlopt: {
@@ -341,17 +447,48 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: undefined;
       };
+      register_push_token: {
+        Args: { p_timezone?: string; p_token: string; p_token_type?: string };
+        Returns: Json;
+      };
       set_daily_gratitude_statements: {
         Args: { p_entry_date: string; p_statements: Json };
+        Returns: undefined;
+      };
+      set_notification_hour: {
+        Args: { p_notification_time: string };
+        Returns: undefined;
+      };
+      set_statement_mood: {
+        Args: {
+          p_entry_date: string;
+          p_mood: string;
+          p_statement_index: number;
+        };
         Returns: undefined;
       };
       text_to_bytea: {
         Args: { data: string };
         Returns: string;
       };
-      trigger_daily_reminders: {
+      trigger_daily_reminders_fixed: {
         Args: Record<PropertyKey, never>;
         Returns: undefined;
+      };
+      trigger_hourly_reminders: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
+      unregister_push_token: {
+        Args: { p_token: string };
+        Returns: undefined;
+      };
+      update_cron_job: {
+        Args: { p_jobid: number; p_jobname?: string; p_new_schedule: string };
+        Returns: {
+          message: string;
+          success: boolean;
+        }[];
       };
       urlencode: {
         Args: { data: Json } | { string: string } | { string: string };

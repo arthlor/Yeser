@@ -26,6 +26,7 @@ import { ZodError } from 'zod';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
+import { useTranslation } from 'react-i18next';
 
 type PastEntryCreationScreenRouteProp = RouteProp<AppStackParamList, 'PastEntryCreation'>;
 
@@ -46,6 +47,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
   const { showSuccess, handleMutationError, showError } = useGlobalError();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { t, i18n } = useTranslation();
 
   // The date is passed from the calendar screen and is not user-changeable here.
   const { date: dateString } = route.params;
@@ -84,10 +86,10 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
   useEffect(() => {
     if (addStatementError || editStatementError || deleteStatementError) {
       const operation = addStatementError
-        ? 'minnet ekleme'
+        ? 'addStatement'
         : editStatementError
-          ? 'minnet düzenleme'
-          : 'minnet silme';
+          ? 'editStatement'
+          : 'deleteStatement';
       const error = addStatementError || editStatementError || deleteStatementError;
       handleMutationError(error, operation);
     }
@@ -95,7 +97,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
 
   useEffect(() => {
     if (entryError) {
-      handleMutationError(entryError, 'geçmiş kayıt yükleme');
+      handleMutationError(entryError, 'past entry load');
     }
   }, [entryError, handleMutationError]);
 
@@ -112,17 +114,17 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
   }, [finalDateString]);
 
   const handleAddStatement = useCallback(
-    (statementText: string) => {
+    (statementText: string, moodEmoji?: import('@/types/mood.types').MoodEmoji | null) => {
       try {
         gratitudeStatementSchema.parse(statementText);
 
         addStatement(
-          { entryDate: finalDateString, statement: statementText },
+          { entryDate: finalDateString, statement: statementText, moodEmoji: moodEmoji ?? null },
           {
             onSuccess: () => {
               // **ELIMINATED LAYOUTANIMATION**: Removed complex layout animation call
               if (statements.length + 1 >= (profile?.daily_gratitude_goal ?? 3)) {
-                showSuccess('Hedef tamamlandı!');
+                showSuccess(t('gratitude.success.goalCompletedPastEntry'));
                 navigation.goBack();
               }
             },
@@ -130,7 +132,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
         );
       } catch (error) {
         if (error instanceof ZodError) {
-          showError(error.issues[0]?.message || 'Geçersiz minnet ifadesi');
+          showError(error.issues[0]?.message || t('gratitude.validation.invalidStatement'));
         }
       }
     },
@@ -142,6 +144,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
       showSuccess,
       navigation,
       showError,
+      t,
     ]
   );
 
@@ -165,17 +168,17 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
             onSuccess: () => {
               setEditingStatementIndex(null);
               // **ELIMINATED LAYOUTANIMATION**: Removed complex layout animation call
-              showSuccess('Minnet ifadesi güncellendi');
+              showSuccess(t('statement.updated'));
             },
           }
         );
       } catch (error) {
         if (error instanceof ZodError) {
-          showError(error.issues[0]?.message || 'Geçersiz minnet ifadesi');
+          showError(error.issues[0]?.message || t('gratitude.validation.invalidStatement'));
         }
       }
     },
-    [finalDateString, editStatement, showSuccess, showError]
+    [finalDateString, editStatement, showSuccess, showError, t]
   );
 
   const handleDeleteStatement = useCallback(
@@ -197,7 +200,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
   }, [refetchEntry]);
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('tr-TR', {
+    return date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'tr-TR', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -245,7 +248,9 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
               <Icon name="calendar-today" size={24} color={theme.colors.primary} />
               <View style={styles.dateTextContainer}>
                 <Text style={styles.dateText}>{formatDate(entryDate)}</Text>
-                <Text style={styles.dateSubtext}>Bu tarihe minnet ekleniyor</Text>
+                <Text style={styles.dateSubtext}>
+                  {t('gratitude.input.a11y.addFirstGratitude')}
+                </Text>
               </View>
             </View>
           </ThemedCard>
@@ -253,14 +258,17 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
 
         <GratitudeInputBar
           onSubmit={handleAddStatement}
+          onSubmitWithMood={(text, mood) => handleAddStatement(text, mood ?? null)}
           disabled={isAddingStatement}
-          placeholder={isAddingStatement ? 'Minnet ekleniyor...' : 'Neye minnettar olduğunu yaz...'}
+          placeholder={
+            isAddingStatement ? t('gratitude.input.motto') : t('gratitude.input.placeholder')
+          }
         />
 
         {isLoadingEntry && (
           <View style={styles.entryLoadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Kayıtlar yükleniyor...</Text>
+            <Text style={styles.loadingText}>{t('shared.layout.screenContent.loading')}</Text>
           </View>
         )}
 
@@ -269,7 +277,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
             <View style={styles.sectionHeader}>
               <View style={styles.sectionHeaderLeft}>
                 <Icon name="format-list-bulleted" size={20} color={theme.colors.onSurface} />
-                <Text style={styles.sectionTitle}>Eklenen Minnetler</Text>
+                <Text style={styles.sectionTitle}>{t('home.actions.progress.title')}</Text>
               </View>
               <View style={styles.statementsCounter}>
                 <Text style={styles.statementsCountText}>{statements.length}</Text>
@@ -310,7 +318,9 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
                       enableInlineEdit={true}
                       confirmDelete={true}
                       maxLength={500}
-                      accessibilityLabel={`Minnet: ${statement}`}
+                      accessibilityLabel={t('shared.statement.a11y.memoryLabel', {
+                        text: statement,
+                      })}
                     />
                   </Animated.View>
                 </View>
@@ -327,10 +337,8 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
             >
               <View style={styles.emptyStateContent}>
                 <Icon name={'heart-plus-outline'} size={64} color={theme.colors.primary + '40'} />
-                <Text style={styles.emptyStateTitle}>İlk minnetini ekle!</Text>
-                <Text style={styles.emptyStateSubtitle}>
-                  Bu tarihe minnettarlık hissettiğin anları yazarak başla.
-                </Text>
+                <Text style={styles.emptyStateTitle}>{t('pastEntries.empty.title')}</Text>
+                <Text style={styles.emptyStateSubtitle}>{t('pastEntries.empty.subtitle')}</Text>
               </View>
             </ThemedCard>
           </View>

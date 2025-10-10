@@ -13,19 +13,13 @@ import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
 import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
 import { ScreenSection } from '@/shared/components/layout';
+import { useTranslation } from 'react-i18next';
 
 interface GoalSettingStepProps {
   onNext: (selectedGoal: number) => void;
   onBack: () => void;
   initialGoal?: number;
 }
-
-const GOAL_OPTIONS = [
-  { value: 1, label: 'Bir Minnet', description: 'Küçük adımlarla başlayalım' },
-  { value: 3, label: 'Üç Minnet', description: 'Ideal günlük hedef' },
-  { value: 5, label: 'Beş Minnet', description: 'Motive olduğunuzda' },
-  { value: 0, label: 'Özel', description: 'Kendim belirleyeceğim' },
-];
 
 /**
  * 🎯 SIMPLIFIED GOAL SETTING STEP
@@ -42,6 +36,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
   initialGoal = 3,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [selectedGoal, setSelectedGoal] = React.useState(initialGoal);
 
   // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
@@ -73,6 +68,32 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
     [animations.fadeAnim]
   );
 
+  const goalOptions = useMemo(
+    () => [
+      {
+        value: 1,
+        label: t('onboarding.goal.options.one.label'),
+        description: t('onboarding.goal.options.one.desc'),
+      },
+      {
+        value: 3,
+        label: t('onboarding.goal.options.three.label'),
+        description: t('onboarding.goal.options.three.desc'),
+      },
+      {
+        value: 5,
+        label: t('onboarding.goal.options.five.label'),
+        description: t('onboarding.goal.options.five.desc'),
+      },
+      {
+        value: 0,
+        label: t('onboarding.goal.options.custom.label'),
+        description: t('onboarding.goal.options.custom.desc'),
+      },
+    ],
+    [t]
+  );
+
   const handleGoalSelect = useCallback((goal: number) => {
     setSelectedGoal(goal);
     hapticFeedback.light();
@@ -92,7 +113,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
   }, [selectedGoal, onNext]);
 
   const renderGoalOption = useCallback(
-    (option: (typeof GOAL_OPTIONS)[0], _index: number) => {
+    (option: (typeof goalOptions)[0], _index: number) => {
       const isSelected = selectedGoal === option.value;
 
       return (
@@ -136,7 +157,9 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
               </View>
               {option.value === 3 && (
                 <View style={styles.recommendedBadge}>
-                  <Text style={styles.recommendedText}>Önerilen</Text>
+                  <Text style={styles.recommendedText}>
+                    {t('onboarding.goal.options.recommended')}
+                  </Text>
                 </View>
               )}
             </View>
@@ -144,7 +167,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
         </Animated.View>
       );
     },
-    [selectedGoal, animations.fadeAnim, theme, handleGoalSelect, styles]
+    [selectedGoal, animations.fadeAnim, theme, handleGoalSelect, styles, t]
   );
 
   return (
@@ -162,19 +185,14 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
         {/* Content Header */}
         <ScreenSection>
           <View style={styles.header}>
-            <Text style={styles.title}>Günlük Hedefin? 🎯</Text>
-            <Text style={styles.subtitle}>
-              Her gün kaç minnettarlık ifadesi yazmak istiyorsun? Başlangıçta küçük hedefler büyük
-              başarıları getirir.
-            </Text>
+            <Text style={styles.title}>{t('onboarding.goal.title')}</Text>
+            <Text style={styles.subtitle}>{t('onboarding.goal.subtitle')}</Text>
           </View>
         </ScreenSection>
 
         {/* Goal Options Section */}
         <ScreenSection>
-          <View style={styles.optionsContainer}>
-            {GOAL_OPTIONS.map((option, index) => renderGoalOption(option, index))}
-          </View>
+          <View style={styles.optionsContainer}>{goalOptions.map(renderGoalOption)}</View>
 
           {/* Info Card */}
           <Animated.View style={[infoCardStyle]}>
@@ -185,9 +203,7 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
                   size={20}
                   color={theme.colors.primary}
                 />
-                <Text style={styles.infoText}>
-                  Bu tercihini istediğin zaman profil ayarlarından değiştirebilirsin.
-                </Text>
+                <Text style={styles.infoText}>{t('onboarding.goal.info')}</Text>
               </View>
             </View>
           </Animated.View>
@@ -198,8 +214,8 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
           <View style={styles.footer}>
             <OnboardingButton
               onPress={handleContinue}
-              title="Devam Et"
-              accessibilityLabel="Hedef ayarını kaydet ve devam et"
+              title={t('onboarding.goal.continue')}
+              accessibilityLabel={t('onboarding.goal.continueA11y')}
             />
           </View>
         </ScreenSection>

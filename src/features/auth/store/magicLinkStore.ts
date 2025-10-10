@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import i18n from '@/i18n';
 
 import { logger } from '@/utils/debugConfig';
 import { atomicOperationManager } from '../utils/atomicOperations';
@@ -109,7 +110,9 @@ export const useMagicLinkStore = create<MagicLinkState>((set, get) => ({
             // Check rate limiting
             if (!get().canSendMagicLink()) {
               const remainingCooldown = get().getRemainingCooldown();
-              const errorMessage = `Please wait ${Math.ceil(remainingCooldown / 1000)} seconds before sending another magic link.`;
+              const errorMessage = i18n.t('auth.services.waitSeconds', {
+                seconds: Math.ceil(remainingCooldown / 1000),
+              });
               set({ error: errorMessage, isLoading: false });
 
               // FIXED: Don't throw after calling error callback - let caller handle the error
@@ -180,7 +183,7 @@ export const useMagicLinkStore = create<MagicLinkState>((set, get) => ({
       });
       // Don't throw here either - operation conflict is not a user-facing error
       if (onError) {
-        onError(new Error('Giriş işlemi devam ediyor. Lütfen bekleyin.'));
+        onError(new Error(i18n.t('auth.services.magicLink.inProgress')));
       }
     }
   },

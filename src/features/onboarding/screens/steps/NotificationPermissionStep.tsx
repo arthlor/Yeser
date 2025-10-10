@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
@@ -32,6 +33,7 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   const [isLoading, setIsLoading] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
@@ -158,8 +160,8 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
             <View style={styles.iconContainer}>
               <Ionicons name="notifications-outline" size={40} color={theme.colors.primary} />
             </View>
-            <Text style={styles.title}>Hatırlatıcılar 🔔</Text>
-            <Text style={styles.subtitle}>Günlük nazik hatırlatıcılar gönderelim mi?</Text>
+            <Text style={styles.title}>{t('onboarding.notifications.title')}</Text>
+            <Text style={styles.subtitle}>{t('onboarding.notifications.subtitle')}</Text>
           </View>
         </ScreenSection>
 
@@ -171,8 +173,12 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
                 <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.benefitContent}>
-                <Text style={styles.benefitTitle}>Düzenli Hatırlatma</Text>
-                <Text style={styles.benefitDescription}>Her gün aynı saatte nazik bir uyarı</Text>
+                <Text style={styles.benefitTitle}>
+                  {t('onboarding.notifications.benefit1Title')}
+                </Text>
+                <Text style={styles.benefitDescription}>
+                  {t('onboarding.notifications.benefit1Desc')}
+                </Text>
               </View>
             </View>
 
@@ -181,9 +187,11 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
                 <Ionicons name="leaf-outline" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.benefitContent}>
-                <Text style={styles.benefitTitle}>Alışkanlık Oluşturma</Text>
+                <Text style={styles.benefitTitle}>
+                  {t('onboarding.notifications.benefit2Title')}
+                </Text>
                 <Text style={styles.benefitDescription}>
-                  Günlük minnet pratiğini unutmana engel olur
+                  {t('onboarding.notifications.benefit2Desc')}
                 </Text>
               </View>
             </View>
@@ -193,9 +201,11 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
                 <Ionicons name="settings-outline" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.benefitContent}>
-                <Text style={styles.benefitTitle}>Tam Kontrol</Text>
+                <Text style={styles.benefitTitle}>
+                  {t('onboarding.notifications.benefit3Title')}
+                </Text>
                 <Text style={styles.benefitDescription}>
-                  İstediğin zaman ayarlarından değiştirebilirsin
+                  {t('onboarding.notifications.benefit3Desc')}
                 </Text>
               </View>
             </View>
@@ -221,8 +231,8 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
                   ]}
                 >
                   {permissionGranted
-                    ? 'Harika! Hatırlatıcılar etkinleştirildi ✨'
-                    : 'Şimdilik atlayabilirsin, sonra ayarlardan etkinleştirebilirsin'}
+                    ? t('onboarding.notifications.statusSuccess')
+                    : t('onboarding.notifications.statusSkip')}
                 </Text>
               </View>
             </View>
@@ -236,9 +246,13 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
               <>
                 <OnboardingButton
                   onPress={handleEnableNotifications}
-                  title={isLoading ? 'İzin İsteniyor...' : 'Hatırlatıcıları Etkinleştir'}
+                  title={
+                    isLoading
+                      ? t('onboarding.notifications.enableLoading')
+                      : t('onboarding.notifications.enable')
+                  }
                   disabled={isLoading}
-                  accessibilityLabel="Bildirim izni ver ve hatırlatıcıları etkinleştir"
+                  accessibilityLabel={t('onboarding.notifications.enableA11y')}
                 />
 
                 <TouchableOpacity
@@ -246,9 +260,9 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
                   style={styles.skipButton}
                   activeOpacity={0.7}
                   disabled={isLoading}
-                  accessibilityLabel="Hatırlatıcıları şimdilik atla"
+                  accessibilityLabel={t('onboarding.notifications.skipA11y')}
                 >
-                  <Text style={styles.skipButtonText}>Şimdilik Atla</Text>
+                  <Text style={styles.skipButtonText}>{t('onboarding.notifications.skip')}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -265,9 +279,7 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
                 color={theme.colors.onSurface}
                 style={styles.infoIcon}
               />
-              <Text style={styles.infoText}>
-                Bildirimleri istediğin zaman ayarlarından açıp kapatabilirsin
-              </Text>
+              <Text style={styles.infoText}>{t('onboarding.notifications.info')}</Text>
             </View>
           </View>
         </ScreenSection>

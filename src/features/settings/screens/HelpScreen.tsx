@@ -13,6 +13,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 
 import { ScreenHeader, ScreenLayout, ScreenSection } from '@/shared/components/layout';
+import { useTranslation } from 'react-i18next';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTheme } from '@/providers/ThemeProvider';
 import { analyticsService } from '@/services/analyticsService';
@@ -25,9 +26,10 @@ interface FAQItemProps {
   answer: string;
   theme: AppTheme;
   _index: number;
+  t: (key: string, options?: { question?: string; answer?: string }) => string;
 }
 
-const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) => {
+const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index, t }) => {
   const [isOpen, setIsOpen] = useState(false);
   const styles = createStyles(theme);
 
@@ -63,9 +65,13 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) =>
 
     // Announce to screen readers
     if (!isOpen) {
-      AccessibilityInfo.announceForAccessibility(`${question} açıldı. ${answer}`);
+      AccessibilityInfo.announceForAccessibility(
+        t('settings.help.accessibility.expanded', { question, answer })
+      );
     } else {
-      AccessibilityInfo.announceForAccessibility(`${question} kapandı.`);
+      AccessibilityInfo.announceForAccessibility(
+        t('settings.help.accessibility.collapsed', { question })
+      );
     }
   };
 
@@ -84,7 +90,11 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) =>
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={question}
-        accessibilityHint={isOpen ? 'Soruyu kapatmak için dokunun' : 'Cevabı görmek için dokunun'}
+        accessibilityHint={
+          isOpen
+            ? t('settings.help.accessibility.collapseHint')
+            : t('settings.help.accessibility.expandHint')
+        }
         accessibilityState={{ expanded: isOpen }}
       >
         <Text style={styles.faqQuestion}>{question}</Text>
@@ -107,6 +117,7 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, theme, _index }) =>
 
 const EnhancedHelpScreen: React.FC = () => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation();
 
   // Log screen view for analytics
@@ -114,28 +125,10 @@ const EnhancedHelpScreen: React.FC = () => {
     analyticsService.logScreenView('help_screen');
   }, []);
 
-  const faqs = [
-    {
-      question: 'Yeşer nedir?',
-      answer:
-        'Yeşer; günlük minnettarlıklarınızı kaydederek olumlu düşünme alışkanlığı geliştirmenize yardımcı olan bir mobil uygulamadır.',
-    },
-    {
-      question: 'Verilerim güvende mi?',
-      answer:
-        'Evet. Verileriniz güvenli bir şekilde saklanır. Ayrıntılı bilgi için Gizlilik Politikamızı inceleyebilirsiniz.',
-    },
-    {
-      question: 'Geri bildirimi nasıl iletebilirim?',
-      answer:
-        'Uygulama hakkındaki düşünce ve önerilerinizi yeserapp@gmail.com adresine e-posta göndererek paylaşabilirsiniz.',
-    },
-    {
-      question: 'Minnettarlık günlüğü tutmanın faydaları nelerdir?',
-      answer:
-        'Minnettarlık günlüğü tutmak; ruh hâlinizi iyileştirebilir, stres seviyenizi azaltabilir, uyku kalitenizi artırabilir ve genel yaşam memnuniyetinizi yükseltebilir. Düzenli kayıt, olumlu düşünme alışkanlığı geliştirmenize yardımcı olur.',
-    },
-  ];
+  const faqs = t('settings.help.faq', { returnObjects: true }) as Array<{
+    question: string;
+    answer: string;
+  }>;
 
   const handleContactSupport = () => {
     hapticFeedback.medium(); // Provide feedback for important action
@@ -143,7 +136,7 @@ const EnhancedHelpScreen: React.FC = () => {
     // Log analytics event
     analyticsService.logEvent('contact_support_clicked');
 
-    Linking.openURL('mailto:yeserapp@gmail.com?subject=Yeşer Destek Talebi');
+    Linking.openURL('mailto:yeserapp@gmail.com?subject=Yeser Destek Talebi');
   };
 
   const styles = createStyles(theme);
@@ -157,15 +150,15 @@ const EnhancedHelpScreen: React.FC = () => {
     >
       <ScreenHeader
         showBackButton
-        title="Yardım & Destek"
+        title={t('settings.help.title')}
         onBackPress={() => navigation.goBack()}
         variant="default"
       />
-      <ScreenSection title="Yardım & SSS">
+      <ScreenSection title={t('settings.help.sectionHelp')}>
         <View />
       </ScreenSection>
 
-      <ScreenSection title="Sıkça Sorulan Sorular">
+      <ScreenSection title={t('settings.help.sectionFAQ')}>
         {faqs.map((faq, index) => (
           <FAQItem
             key={index}
@@ -173,13 +166,14 @@ const EnhancedHelpScreen: React.FC = () => {
             answer={faq.answer}
             theme={theme}
             _index={index}
+            t={t}
           />
         ))}
       </ScreenSection>
 
-      <ScreenSection title="Destek">
+      <ScreenSection title={t('settings.help.sectionSupport')}>
         <Text style={styles.paragraph} accessibilityRole="text">
-          Aradığınız cevabı bulamadınız mı? Destek ekibimizle iletişime geçmekten çekinmeyin.
+          {t('settings.help.supportText')}
         </Text>
 
         <TouchableOpacity
@@ -187,8 +181,8 @@ const EnhancedHelpScreen: React.FC = () => {
           style={styles.contactButton}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel="Destek ekibine e-posta gönder"
-          accessibilityHint="E-posta uygulamanızı açar"
+          accessibilityLabel={t('settings.help.contactEmailLabel')}
+          accessibilityHint={t('settings.help.contactEmailHint')}
         >
           <Icon
             name="email"
@@ -196,10 +190,10 @@ const EnhancedHelpScreen: React.FC = () => {
             color={theme.colors.onPrimary}
             style={styles.contactButtonIcon}
           />
-          <Text style={styles.contactButtonText}>Destek ile İletişime Geç</Text>
+          <Text style={styles.contactButtonText}>{t('settings.help.contactCTA')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.versionText}>Yeşer v1.0.0</Text>
+        <Text style={styles.versionText}>{t('settings.help.appVersion')}</Text>
       </ScreenSection>
     </ScreenLayout>
   );

@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CalendarHeaderProps } from './types';
 import { formatMonthYear } from './utils';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useTranslation } from 'react-i18next';
 
 const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   currentMonth,
@@ -14,6 +15,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   isNextMonthDisabled = false,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const navButtonStyle = React.useMemo(
     () => ({
@@ -36,7 +38,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         onPress={onPreviousMonth}
         disabled={isLoading}
         style={[styles.navButton, navButtonStyle]}
-        accessibilityLabel="Önceki ay"
+        accessibilityLabel={t('calendar.previousMonth') || 'Previous month'}
         accessibilityRole="button"
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
@@ -59,7 +61,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         onPress={onNextMonth}
         disabled={isLoading || isNextMonthDisabled}
         style={[styles.navButton, navButtonStyle]}
-        accessibilityLabel="Sonraki ay"
+        accessibilityLabel={t('calendar.nextMonth') || 'Next month'}
         accessibilityRole="button"
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >

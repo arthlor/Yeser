@@ -4,6 +4,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
+import { useTranslation } from 'react-i18next';
 
 interface ScreenContentProps {
   children?: React.ReactNode;
@@ -40,21 +41,30 @@ const ScreenContent: React.FC<ScreenContentProps> = ({
   isEmpty = false,
   error = null,
   errorObject,
-  loadingText = 'Yükleniyor...',
-  emptyTitle = 'Henüz içerik yok',
-  emptySubtitle = 'İçerik eklendiğinde burada görünecek',
+  loadingText,
+  emptyTitle,
+  emptySubtitle,
   emptyIcon = '📄',
   emptyComponent,
-  errorTitle = 'Bir hata oluştu',
-  errorSubtitle = 'Lütfen tekrar deneyin',
+  errorTitle,
+  errorSubtitle,
   onRetry,
-  retryText = 'Tekrar Dene',
+  retryText,
   style,
   contentStyle,
   centerContent = false,
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme, centerContent);
+  const { t } = useTranslation();
+
+  // Defaults via i18n if props not overridden
+  const i18nLoadingText = loadingText ?? t('shared.layout.screenContent.loading');
+  const i18nEmptyTitle = emptyTitle ?? t('shared.layout.screenContent.emptyTitle');
+  const i18nEmptySubtitle = emptySubtitle ?? t('shared.layout.screenContent.emptySubtitle');
+  const i18nErrorTitle = errorTitle ?? t('shared.layout.screenContent.errorTitle');
+  const i18nErrorSubtitle = errorSubtitle ?? t('shared.layout.screenContent.errorSubtitle');
+  const i18nRetryText = retryText ?? t('common.retry');
 
   // Calculate the final error message
   const finalErrorMessage = errorObject ? safeErrorDisplay(errorObject) : error;
@@ -64,7 +74,7 @@ const ScreenContent: React.FC<ScreenContentProps> = ({
     return (
       <View style={[styles.container, styles.centeredContainer, style]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        {loadingText && <Text style={styles.loadingText}>{loadingText}</Text>}
+        {i18nLoadingText && <Text style={styles.loadingText}>{i18nLoadingText}</Text>}
       </View>
     );
   }
@@ -75,11 +85,11 @@ const ScreenContent: React.FC<ScreenContentProps> = ({
       <View style={[styles.container, styles.centeredContainer, style]}>
         <View style={styles.stateContainer}>
           <Text style={styles.stateIcon}>⚠️</Text>
-          <Text style={styles.stateTitle}>{errorTitle}</Text>
-          <Text style={styles.stateSubtitle}>{finalErrorMessage || errorSubtitle}</Text>
+          <Text style={styles.stateTitle}>{i18nErrorTitle}</Text>
+          <Text style={styles.stateSubtitle}>{finalErrorMessage || i18nErrorSubtitle}</Text>
           {onRetry && (
             <ThemedButton
-              title={retryText}
+              title={i18nRetryText}
               onPress={onRetry}
               variant="outline"
               style={styles.retryButton}
@@ -97,8 +107,8 @@ const ScreenContent: React.FC<ScreenContentProps> = ({
         {emptyComponent || (
           <View style={styles.stateContainer}>
             <Text style={styles.stateIcon}>{emptyIcon}</Text>
-            <Text style={styles.stateTitle}>{emptyTitle}</Text>
-            <Text style={styles.stateSubtitle}>{emptySubtitle}</Text>
+            <Text style={styles.stateTitle}>{i18nEmptyTitle}</Text>
+            <Text style={styles.stateSubtitle}>{i18nEmptySubtitle}</Text>
           </View>
         )}
       </View>

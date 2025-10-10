@@ -1,7 +1,15 @@
 import { deleteUserAccount, getProfile, updateProfile } from '@/api/profileApi';
+import { useEffect } from 'react';
 import { queryKeys } from '@/api/queryKeys';
 import { QUERY_STALE_TIMES } from '@/api/queryClient';
 import { Profile, UpdateProfilePayload } from '@/schemas/profileSchema';
+import {
+  clearAvatarSignedUrlSizedCacheForPath,
+  createAvatarSignedUrl,
+  createAvatarSignedUrlSized,
+  deleteAvatarAtPath,
+  uploadAvatarFromUri,
+} from '@/api/avatarApi';
 import useAuthStore from '@/store/authStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
@@ -48,6 +56,63 @@ export const useUserProfile = () => {
     },
   });
 
+  const { mutateAsync: uploadAvatar } = useMutation<{ path: string }, Error, string>({
+    mutationFn: uploadAvatarFromUri,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.profile(user?.id) });
+      // Clear sized URL cache for this user's avatar path to avoid stale images
+      if (user?.id) {
+        const currentPath = queryClient.getQueryData<Profile | null>(
+          queryKeys.profile(user?.id)
+        )?.avatar_path;
+        clearAvatarSignedUrlSizedCacheForPath(currentPath ?? null);
+      }
+    },
+  });
+
+  const { mutateAsync: deleteAvatar } = useMutation<void, Error, string | null | undefined>({
+    mutationFn: deleteAvatarAtPath,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.profile(user?.id) });
+    },
+  });
+
+  const { mutateAsync: getAvatarUrl } = useMutation<
+    string | null,
+    Error,
+    string | null | undefined
+  >({
+    mutationFn: (path) => createAvatarSignedUrl(path ?? null),
+  });
+
+  // Sized avatar URL helper for specific UI slots (e.g., header 44px, settings 48px)
+  const { mutateAsync: getSizedAvatarUrl } = useMutation<
+    string | null,
+    Error,
+    { path: string | null | undefined; size: number }
+  >({
+    mutationFn: ({ path, size }) => createAvatarSignedUrlSized(path ?? null, size),
+  });
+
+  // Prefetch a couple of common avatar sizes to reduce perceived latency
+  useEffect(() => {
+    const run = async (): Promise<void> => {
+      const path = profile?.avatar_path ?? null;
+      if (!path) {
+        return;
+      }
+      try {
+        await Promise.all([
+          createAvatarSignedUrlSized(path, 64),
+          createAvatarSignedUrlSized(path, 96),
+        ]);
+      } catch {
+        // Best effort prefetch; ignore errors
+      }
+    };
+    void run();
+  }, [profile?.avatar_path]);
+
   const {
     mutate: deleteAccountMutation,
     isPending: isDeletingAccount,
@@ -81,5 +146,9 @@ export const useUserProfile = () => {
     deleteAccount: deleteAccountMutation,
     isDeletingAccount,
     deleteAccountError,
+    uploadAvatar,
+    deleteAvatar,
+    getAvatarUrl,
+    getSizedAvatarUrl,
   };
 };

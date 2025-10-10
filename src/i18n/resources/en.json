@@ -3,24 +3,1354 @@
     "ok": "OK",
     "cancel": "Cancel",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "back": "Back",
+    "retry": "Retry",
+    "viewAll": "View all",
+    "loading": "Loading...",
+    "emptyTitle": "Nothing here yet",
+    "emptySubtitle": "Content will appear here when added",
+    "errorTitle": "An error occurred",
+    "errorSubtitle": "Please try again"
+  },
+  "home": {
+    "tab": {
+      "title": "Home",
+      "a11y": "Home tab"
+    },
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening",
+      "night": "Good night"
+    },
+    "errors": {
+      "refreshError": "page refresh"
+    },
+    "addButton": {
+      "a11y": "Add gratitude"
+    },
+    "header": {
+      "guest": "guest",
+      "avatar": {
+        "a11y": "{{name}} avatar"
+      }
+    },
+    "inspiration": {
+      "base": {
+        "gratitude": {
+          "title": "Gratitude",
+          "message": "Every gratitude is a seed of hope blossoming in your heart."
+        },
+        "peace": {
+          "title": "Inner Peace",
+          "message": "Gratitude is the key to finding peace hidden in the deepest corners of your soul."
+        },
+        "energy": {
+          "title": "Positive Energy",
+          "message": "Gratitude is the strongest source of positive energy that colors your life."
+        },
+        "growth": {
+          "title": "Growth",
+          "message": "Each gratitude is a solid step on your path of personal growth."
+        }
+      },
+      "progress": {
+        "start": {
+          "title": "Start",
+          "message": "Make a beautiful start by writing your first gratitude for today."
+        },
+        "complete": {
+          "title": "Success",
+          "message": "You completed today's goal! Your gratitude colors your life."
+        },
+        "progress": {
+          "title": "Keep Going",
+          "message": "{{remaining}} more gratitude to reach today's goal."
+        }
+      },
+      "progressLabel": "{{current}}/{{dailyGoal}}",
+      "dotA11y": "Go to {{index}}th inspiration card"
+    },
+    "actions": {
+      "start": {
+        "title": "Start Gratitude",
+        "subtitle": "Write your first gratitude for today",
+        "progress": "0/{{dailyGoal}} - Let's start!"
+      },
+      "progress": {
+        "title": "Continue",
+        "subtitle": "{{remaining}} more gratitudes",
+        "progress": "{{percent}}% completed"
+      },
+      "past": {
+        "title": "Past Records",
+        "subtitle": "View your past gratitudes",
+        "extra": "Browse"
+      },
+      "calendar": {
+        "title": "Calendar",
+        "subtitle": "Track your gratitude journey",
+        "extra": "Explore"
+      },
+      "why": {
+        "title": "Power of Gratitude",
+        "subtitle": "Discover the benefits",
+        "extra": "Learn"
+      }
+    },
+    "hero": {
+      "time": {
+        "early": "early morning",
+        "morning": "morning",
+        "noon": "noon",
+        "afternoon": "afternoon",
+        "evening": "evening",
+        "night": "night"
+      },
+      "defaultName": "Friend",
+      "goalComplete": {
+        "primary": "{{icon}} Perfect, {{name}}!",
+        "secondary": "You completed today's goal!",
+        "accent": "Your gratitude makes you stronger ✨"
+      },
+      "progress": {
+        "primary": "{{icon}} {{greeting}}, {{name}}!",
+        "secondary": "This {{timeText}} is going great",
+        "accent": "Write gratitude to continue 💫"
+      },
+      "idle": {
+        "primary": "{{icon}} {{greeting}}, {{name}}!",
+        "secondary": "How is this {{timeText}} going?",
+        "accent": "Perfect moment for gratitude ⭐"
+      },
+      "motivation": {
+        "startMain": "Great day to start gratitude!",
+        "startSub": "Make a beautiful start with your first gratitude",
+        "completeMain": "You successfully completed today's goal!",
+        "completeSub": "Your gratitude habit is getting stronger",
+        "remaining": "{{remaining}} more gratitudes - {{progress}}% completed",
+        "remainingSub": "You're very close to your goal, keep going!"
+      }
+    },
+    "stats": {
+      "dailyProgress": "Daily Progress",
+      "currentStreak": "Current Streak",
+      "longestStreak": "Longest: {{count}}"
+    }
+  },
+  "tips": {
+    "gratitude": {
+      "title": "Gratitude Tip",
+      "detail": "Try to be specific. Instead of 'my family', try 'the way my partner smiled this morning'.",
+      "challenge": "Think of a recent challenge. What did you learn from it? What strength did you discover?",
+      "simpleThings": "Notice the simple things. The warmth of the sun, the taste of your coffee, a comfortable chair.",
+      "people": "Think about someone who has helped you. Consider writing them a short thank you note.",
+      "selfCompassion": "Be grateful for yourself. Thank your body for its health or your mind for its resilience.",
+      "nature": "Connect with nature. Appreciate a beautiful tree, the sound of rain, or a colorful sunset.",
+      "body": "Thank your body for what it allows you to do, whether it's walking, seeing, or hugging.",
+      "pastPresent": "Reflect on a past difficulty you've overcome. Be grateful for your growth and where you are now."
+    }
   },
   "notifications": {
     "dailyRemindersTitle": "Daily Gratitude Reminders 🌱",
     "permissionRequiredTitle": "Notification Permission Required",
     "dailyRemindersMessage": "We'd like to send gentle daily reminders to sustain your gratitude habit.\n\n✨ Benefits:\n• A friendly reminder at the same time every day\n• Keep your practice consistent\n• You can turn it off anytime\n• A happier, more positive life\n\nWould you like to enable it?",
-    "permissionRequiredMessage": "To enable daily reminders, notification permission is required.\n\n📱 How to enable:\n1. Tap 'Open Settings'\n2. Find the 'Notifications' section\n3. Enable the Yeer app\n4. Return to this page\n\nReminders will help you feel happier! 😊",
+    "permissionRequiredMessage": "To enable daily reminders, notification permission is required.\n\n📱 How to enable:\n1. Tap 'Open Settings'\n2. Find the 'Notifications' section\n3. Enable the Yeser app\n4. Return to this page\n\nReminders will help you feel happier! 😊",
     "notNow": "Not Now",
     "enable": "Enable",
     "maybeLater": "Maybe Later",
     "openSettings": "Open Settings"
+  },
+  "calendar": {
+    "tab": { "title": "Calendar", "a11y": "Calendar view" },
+    "errors": {
+      "dataLoadFailed": "Calendar Data Could Not Be Loaded"
+    },
+    "dayPreview": {
+      "loading": "Loading...",
+      "viewMore": "and view {{count}} more",
+      "details": "View Details",
+      "addForDate": "Add gratitude note for this date"
+    },
+    "day": {
+      "hasEntry": "has gratitude entry",
+      "noEntry": "no gratitude entry"
+    },
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "guide": {
+      "dottedDays": "Dotted days contain gratitude notes",
+      "swipeToNavigate": "Swipe to navigate between months"
+    }
+  },
+  "settings": {
+    "privacyPolicy": { "title": "Privacy Policy", "lastUpdated": "Last updated: {{date}}" },
+    "terms": { "title": "Terms of Service" },
+    "language": {
+      "title": "Language",
+      "description": "Choose your preferred language",
+      "tr": "Turkish",
+      "en": "English"
+    },
+    "title": "Settings",
+    "subtitle": "Customize your preferences",
+    "loading": "Loading settings...",
+    "sections": {
+      "user": "User",
+      "goal": "Goal",
+      "notifications": "Notifications",
+      "appearance": "Appearance",
+      "data": "Data Management",
+      "about": "About"
+    },
+    "goal": {
+      "title": "Daily Goal",
+      "accessibilityLabel": "Daily goal setting. Current: {{label}}",
+      "accessibilityHint": "Opens goal options. You can choose a preset or set a custom goal.",
+      "recommended": "Recommended",
+      "info": "Set your daily gratitude goal. Choose 1, 3, 5, or set a custom number up to {{max}}.",
+      "options": {
+        "one": { "label": "One Gratitude", "desc": "Small steps" },
+        "three": { "label": "Three Gratitudes", "desc": "Recommended goal" },
+        "five": { "label": "Five Gratitudes", "desc": "When motivated" }
+      },
+      "custom": {
+        "title": "Custom Goal",
+        "setLabel": "Set custom daily goal",
+        "current": "Current: {{current}}",
+        "range": "1 to {{max}}",
+        "placeholder": "Enter a number up to {{max}}",
+        "inputLabel": "Custom daily goal",
+        "inputHint": "Enter a number between 1 and {{max}} and press save",
+        "saveLabel": "Save custom goal",
+        "labelCount": "{{count}} Gratitudes",
+        "desc": "Custom goal",
+        "validation": {
+          "invalidNumber": "Invalid number",
+          "min": "Must be at least 1",
+          "max": "Must be at most {{max}}",
+          "sameAsCurrent": "Same as current goal",
+          "valid": "Valid goal ✓"
+        }
+      }
+    },
+    "appearance": {
+      "inspirationTitle": "Get Inspired",
+      "inspirationDesc": "Show varied inspirations on the 'Add Gratitude' page.",
+      "title": "Appearance",
+      "lightTheme": "Light theme",
+      "darkTheme": "Dark theme"
+    },
+    "about": {
+      "whyGratitude": {
+        "label": "The Power of Gratitude",
+        "description": "Discover the benefits of gratitude"
+      },
+      "privacyPolicy": {
+        "label": "Privacy Policy",
+        "description": "Learn how your data is protected"
+      },
+      "termsOfService": {
+        "label": "Terms of Service",
+        "description": "Review our service terms"
+      },
+      "helpSupport": {
+        "label": "Help & Support",
+        "description": "Get support for your questions"
+      }
+    },
+    "data": {
+      "exportTitle": "Export Data",
+      "exportDesc": "Download all your gratitude journal data as PDF",
+      "export": "Export",
+      "exporting": "Exporting...",
+      "exportError": "An error occurred while exporting data.",
+      "notificationSettingsSaved": "Notification settings saved",
+      "exportFilename": "gratitude-data-{{date}}.json",
+      "pdf": {
+        "headerTitle": "My Gratitude Journal Data",
+        "exportedAt": "Exported on {{date}}",
+        "profile": {
+          "title": "Profile Information",
+          "name": "Name",
+          "email": "Email",
+          "empty": "Not provided"
+        },
+        "stats": {
+          "title": "Statistics",
+          "totalEntries": "Total Entries",
+          "totalStatements": "Total Gratitudes",
+          "activeMonths": "Active Months"
+        },
+        "entries": {
+          "title": "My Gratitude Entries"
+        },
+        "footer": {
+          "app": "Gratitude Journal App",
+          "exportedOn": "This data was exported on {{date}}.",
+          "summary": "Contains {{entries}} entries and {{statements}} gratitudes in total."
+        }
+      }
+    },
+    "account": {
+      "signOut": "Sign Out",
+      "signOutError": "An error occurred during sign out. Please try again.",
+      "delete": {
+        "button": "Delete My Account",
+        "dialogTitle": "Delete Account",
+        "dialogBody": "This action is permanent and cannot be undone. All your data will be deleted. Are you sure you want to continue?",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "deleting": "Deleting...",
+        "success": "Your account has been deleted successfully.",
+        "error": "Account deletion failed. Please try again or contact support."
+      }
+    },
+    "user": {
+      "usernameTitle": "Username"
+    },
+    "version": "Yeser v{{version}}",
+    "help": {
+      "title": "Help & FAQ",
+      "sectionHelp": "Help & FAQ",
+      "sectionFAQ": "Frequently Asked Questions",
+      "sectionSupport": "Support",
+      "supportText": "Need more help? Contact our support team.",
+      "contactEmailLabel": "Email support",
+      "contactEmailHint": "Opens email app to contact support",
+      "contactCTA": "Contact Support",
+      "appVersion": "Yeser v1.1.0",
+      "accessibility": {
+        "expanded": "{{question}} expanded. {{answer}}",
+        "collapsed": "{{question}} collapsed.",
+        "expandHint": "Tap to see the answer",
+        "collapseHint": "Tap to close the question"
+      },
+      "faq": [
+        {
+          "question": "What is Yeser?",
+          "answer": "Yeser is a mobile application that helps you develop positive thinking habits by recording your daily gratitudes."
+        },
+        {
+          "question": "Is my data safe?",
+          "answer": "Yes. Your data is stored securely. For detailed information, you can review our Privacy Policy."
+        },
+        {
+          "question": "How can I provide feedback?",
+          "answer": "You can share your thoughts and suggestions about the app by sending an email to yeserapp@gmail.com."
+        },
+        {
+          "question": "What are the benefits of keeping a gratitude journal?",
+          "answer": "Keeping a gratitude journal can improve your mood, reduce stress levels, enhance sleep quality, and increase overall life satisfaction. Regular recording helps you develop positive thinking habits."
+        }
+      ]
+    }
+  },
+  "whyGratitude": {
+    "title": "Why Gratitude?",
+    "loadingSubtext": "Loading the power of gratitude...",
+    "hero": {
+      "title": "Take a Step for Your Mental Health",
+      "subtitle": "Thinking about what you're grateful for every day with Yeser has proven powerful effects on your mental health."
+    },
+    "benefits": {
+      "title": "Why should we be grateful?",
+      "subtitle": "The power of gratitude backed by research..."
+    },
+    "cta": {
+      "title": "Start Today",
+      "subtitle": "Take the first step to experience these benefits.",
+      "button": "Start Now",
+      "successMessage": "Great start! \"{{prompt}}\" is waiting for you."
+    }
+  },
+  "validation": {
+    "email": {
+      "invalid": "Invalid email address.",
+      "invalidAddress": "Invalid email address."
+    },
+    "statement": {
+      "empty": "Statement cannot be empty",
+      "required": "At least one statement is required"
+    },
+    "username": {
+      "minLength": "Username must be at least 3 characters",
+      "maxLength": "Username cannot exceed 50 characters"
+    },
+    "gratitude": {
+      "empty": "Gratitude statement cannot be empty.",
+      "required": "At least one gratitude statement is required."
+    },
+    "streak": {
+      "negativeStreak": "Current streak cannot be negative",
+      "negativeLongest": "Longest streak cannot be negative"
+    },
+    "prompt": {
+      "turkishRequired": "Turkish prompt text is required",
+      "textRequired": "Prompt text is required"
+    }
+  },
+  "auth": {
+    "splash": {
+      "carousel": {
+        "moments": {
+          "title": "Notice Small Moments",
+          "desc": "Discover simple joys in daily life. A cup of tea, a beautiful view, a loved one's smile..."
+        },
+        "challenges": {
+          "title": "Learn from Challenges",
+          "desc": "The challenges you faced made you stronger. Every experience contributes to who you are today."
+        },
+        "relationships": {
+          "title": "Value Relationships",
+          "desc": "The people in your life are there for you. Friendships, family bonds, supporters... All are gifts."
+        },
+        "health": {
+          "title": "Be Grateful for Health",
+          "desc": "Breathing, moving, feeling... Your body performs miracles for you every day."
+        },
+        "growth": {
+          "title": "Opportunities to Grow",
+          "desc": "You have the chance to learn, improve, and experience new things. Every day is a new discovery."
+        }
+      },
+      "appName": "Yeser",
+      "journey": "Your Gratitude Journey...",
+      "preparing": "Preparing...",
+      "loadingA11y": "Loading",
+      "version": "Yeser • Version {{version}}",
+      "logoA11y": "Yeser app logo"
+    },
+    "login": {
+      "brand": "Yeser",
+      "welcome": "Welcome!",
+      "magicLinkSentTitle": "Login Link Sent!",
+      "magicLinkSentDesc": "Check your email and click the login link.",
+      "continueJourney": "Continue your gratitude journey",
+      "secure": {
+        "trust1": "Secure Login",
+        "trust2": "Passwordless",
+        "toggleHelp": {
+          "show": "What is a Secure Link?",
+          "hide": "Hide Help"
+        },
+        "helpTitle": "🔒 Secure and Easy",
+        "helpDesc": "With a secure link, there's no need to remember a password. We send a unique link to your email."
+      },
+      "labels": {
+        "email": "Email Address",
+        "emailPlaceholder": "name@example.com"
+      },
+      "divider": { "or": "or" },
+      "oauth": {
+        "googleContinue": "Continue with Google",
+        "appleContinue": "Continue with Apple",
+        "browserReturnInstruction": "Sign in in the browser and return to this app"
+      },
+      "toasts": {
+        "loginSuccess": "You have logged in successfully!",
+        "rateLimit": "Please wait, you have sent too many requests.",
+        "invalidEmail": "Enter a valid email address",
+        "googleNotReady": "Google services aren't ready yet. Please wait.",
+        "appleOnlyIOS": "Sign in with Apple is only supported on iOS.",
+        "appleNotReady": "Apple services aren't ready yet. Please wait."
+      },
+      "buttons": {
+        "send": "Send Login Link",
+        "sending": "Sending...",
+        "resend": "Resend",
+        "openInBrowser": "Sign in in the browser...",
+        "googleLoading": "Preparing Google services...",
+        "googleSigning": "Signing in with Google...",
+        "appleLoading": "Preparing Apple services...",
+        "appleSigning": "Signing in with Apple..."
+      }
+    },
+    "services": {
+      "waitSeconds": "Please wait {{seconds}} seconds and try again.",
+      "rateLimitMessage": "Please wait {{remainingTime}} seconds and try again.",
+      "magicLinkSent": "Sign-in link has been sent to your email!",
+      "appleStartFailed": "Could not start Sign in with Apple.",
+      "appleRedirectMissing": "Redirect URL for Apple sign-in could not be obtained.",
+      "appleInProgress": "Sign-in in progress. Please wait.",
+      "appleNetwork": "Internet connection issue. Please try again.",
+      "appleFailed": "Sign in with Apple failed. Please try again.",
+      "googleStartFailed": "Could not start Sign in with Google.",
+      "googleRedirectMissing": "Redirect URL for Google sign-in could not be obtained.",
+      "googleInProgress": "Sign-in in progress. Please wait.",
+      "googleNetwork": "Internet connection issue. Please try again.",
+      "googleFailed": "Sign in with Google failed. Please try again.",
+      "magicLink": {
+        "inProgress": "Sign-in in progress. Please wait.",
+        "linkSent": "Login link has been sent to your email!",
+        "invalidLink": "Invalid login link. Please request a new one."
+      }
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Enter a valid email address",
+      "emailTooLong": "Email address is too long"
+    }
+  },
+  "pastEntries": {
+    "tab": { "title": "My Gratitudes", "a11y": "View past entries" },
+    "title": "Your Gratitude Entries",
+    "item": {
+      "relative": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "days": "{{count}} days ago",
+        "weeks": "{{count}} weeks ago",
+        "months": "{{count}} months ago"
+      },
+      "previewEmpty": "No gratitude entry for this date yet.",
+      "new": "NEW",
+      "first": "First Gratitude",
+      "goal": {
+        "completeDay": "🎉 Daily goal complete",
+        "remaining": "{{count}} more needed for the goal"
+      }
+    },
+    "list": {
+      "page": "Page {{count}}",
+      "loadingMore": "Loading more...",
+      "loadMore": "Load more",
+      "a11yLoadMore": "Load more entries"
+    },
+    "empty": {
+      "title": "Start your gratitude journey",
+      "subtitle": "Create your first gratitude entry and start discovering the beautiful moments in your life. Noticing small joys every day will make you more positive.",
+      "how": "How do I start?",
+      "step1": "Go to the Daily Entry page",
+      "step1Hint": "Tap the 'Daily Entry' tab from the bottom menu",
+      "step2": "Write your gratitudes",
+      "step2Hint": "Share 3 things you're grateful for today",
+      "step3": "Track your progress",
+      "step3Hint": "Watch your growth and reach your daily goal",
+      "benefits": "Benefits",
+      "benefit1": "Increased happiness",
+      "benefit2": "Positive outlook",
+      "benefit3": "Personal growth",
+      "quote": "Gratitude is the magic key that makes what we have enough.",
+      "tipTitle": "💡 The benefit of gratitude",
+      "tip": "Writing 3 gratitudes a day leads to increased happiness over time!"
+    },
+    "header": {
+      "lastUpdate": "Last updated: {{date}}",
+      "total": "Total Entries",
+      "monthly": "Monthly Goal",
+      "cta": {
+        "onTrack": "🎯 You're on track for the monthly goal!",
+        "focus": "💪 Focus on your goal!",
+        "remaining": "{{count}} more entries",
+        "complete": "Monthly goal complete!"
+      }
+    },
+    "error": {
+      "networkTitle": "Connection Issue",
+      "networkMessage": "Check your internet connection and try again.",
+      "timeoutTitle": "Timeout",
+      "timeoutMessage": "The request took too long. The server may be responding slowly.",
+      "authTitle": "Authentication Error",
+      "authMessage": "Your session may have expired. Please sign in again.",
+      "generic": "There was a problem loading gratitude entries. You can try again.",
+      "devDetail": "Developer Detail",
+      "help": {
+        "troubleshootingTitle": "Troubleshooting",
+        "tryLater": "If the issue persists, try again later",
+        "restart": "Try closing and reopening the app",
+        "checkConnection": "Check your Wi‑Fi or mobile data connection",
+        "relogin": "Try signing out and signing in again"
+      },
+      "statusTitle": "System Status",
+      "status": {
+        "operational": "Operational",
+        "noConnection": "No Connection",
+        "temporary": "Temporary Error"
+      },
+      "statusLabels": {
+        "app": "App",
+        "data": "Data"
+      },
+      "back": "Go Back"
+    }
+  },
+  "shared": {
+    "ui": {
+      "badges": {
+        "new": "NEW"
+      },
+      "accessibility": {
+        "tapToEditDelete": "Tap to see editing and deletion options",
+        "errorIcon": "Error icon",
+        "clearText": "Clear text",
+        "required": ", required",
+        "error": ", Error: {{error}}",
+        "iconLabel": "{{icon}} icon",
+        "stateLabel": "{{state}} state",
+        "characterCount": "{{current}} of {{limit}} characters",
+        "characterLimit": "Character limit exceeded",
+        "selectDate": "Select date: {{date}}, {{formatted}}"
+      }
+    },
+    "mood": {
+      "setMood": {
+        "a11y": "Set mood {{emoji}}"
+      }
+    },
+    "emoji": {
+      "openPicker": "Open emoji picker"
+    },
+    "calendar": {
+      "stats": {
+        "daysLabel": "Days",
+        "streakLabel": "Streak",
+        "rateLabel": "Rate"
+      },
+      "months": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ],
+      "monthsShort": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ],
+      "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      "daysShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    },
+    "onboarding": {
+      "gratitudeInput": {
+        "placeholder": "For example: The warmth of my coffee...",
+        "buttonText": "Try"
+      }
+    },
+    "statement": {
+      "readMore": "read more",
+      "invalidDate": "Invalid date",
+      "editingLabel": "Editing",
+      "a11y": {
+        "memoryLabel": "Gratitude memory: {{text}}",
+        "preview": "Gratitude preview: {{text}}",
+        "tapToView": "Tap to view details",
+        "tapToViewOrExpand": "Tap to view or expand details"
+      },
+      "edit": {
+        "placeholder": "What are you grateful for today? 🌟",
+        "a11yLabel": "Gratitude entry",
+        "a11yHint": "Write your gratitude for today",
+        "remaining": "{{count}} characters left"
+      },
+      "confirmDelete": "Are you sure you want to delete this gratitude?",
+      "confirmDeleteAction": "Delete",
+      "saveError": "An error occurred while saving gratitude.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "inputPlaceholder": "Write your gratitude statement...",
+      "editButton": "✏️ Edit",
+      "deleteButton": "Delete",
+      "updated": "Gratitude statement updated",
+      "deleted": "Gratitude statement deleted",
+      "undoAction": "Undo",
+      "undoSuccess": "Undone",
+      "nearLimit": "Near limit",
+      "newBadge": "NEW"
+    },
+    "layout": {
+      "errorBoundary": {
+        "title": "Something went wrong",
+        "subtitle": "Unexpected error occurred. Please try restarting the app.",
+        "debugInfoTitle": "Debug Info:",
+        "technicalLabel": "Technical:",
+        "translatedLabel": "Translated:"
+      },
+      "screenContent": {
+        "loading": "Loading...",
+        "emptyTitle": "Nothing here yet",
+        "emptySubtitle": "Content will appear here when added",
+        "errorTitle": "An error occurred",
+        "errorSubtitle": "Please try again"
+      },
+      "errorState": {
+        "back": "Go Back",
+        "cases": {
+          "network": {
+            "title": "Connection Issue",
+            "message": "Check your internet connection and try again."
+          },
+          "server": {
+            "title": "Server Error",
+            "message": "We are experiencing a technical issue. Please try again later."
+          },
+          "notFound": {
+            "title": "Page Not Found",
+            "message": "The page you're looking for doesn't exist or may have moved."
+          },
+          "forbidden": {
+            "title": "No Access",
+            "message": "You don't have permission to view this content."
+          },
+          "validation": {
+            "title": "Invalid Data",
+            "message": "Check the information you entered and try again."
+          },
+          "generic": {
+            "title": "An Error Occurred",
+            "message": "An unexpected problem occurred. Please try again."
+          }
+        }
+      }
+    },
+    "validation": {
+      "usernameTooLong": "Username can be at most 50 characters",
+      "usernameTaken": "This username is already taken",
+      "usernameCheckError": "An error occurred while checking username"
+    },
+    "media": {
+      "imagePicker": {
+        "missingTitle": "Image picker missing",
+        "missingMessage": "Please install expo-image-picker: npx expo install expo-image-picker"
+      },
+      "permissions": {
+        "photos": {
+          "title": "Permission required",
+          "message": "Please allow photo library access to upload an avatar."
+        }
+      },
+      "actions": {
+        "choosePhoto": "Choose Photo",
+        "removePhoto": "Remove Photo"
+      }
+    },
+    "profile": {
+      "avatar": {
+        "title": "Avatar",
+        "profilePhotoLabel": "Profile Photo",
+        "profilePhotoSubtitle": "Tap to add or change your photo"
+      }
+    }
+  },
+  "navigation": {
+    "tabs": {
+      "dailyEntry": {
+        "title": "Add Gratitude",
+        "a11y": "Create new daily entry"
+      },
+      "pastEntries": {
+        "title": "My Gratitudes",
+        "a11y": "View past entries"
+      },
+      "calendar": {
+        "title": "Calendar",
+        "a11y": "Calendar view"
+      },
+      "settings": {
+        "title": "Settings",
+        "a11y": "App settings"
+      }
+    },
+    "screens": {
+      "pastEntryCreation": {
+        "title": "Add to Past Date"
+      }
+    }
+  },
+  "gratitude": {
+    "hero": {
+      "greeting": {
+        "morning": "Good morning! ☀️",
+        "afternoon": "Good afternoon! 🌤️",
+        "evening": "Good evening! 🌙"
+      },
+      "message": {
+        "todayStart": "What are you grateful for today?",
+        "pastStart": "What moments were you grateful for that day?",
+        "completed": "🎉 Amazing! You completed your daily goal!",
+        "nearCompletion": "✨ Great work! You're almost there!",
+        "goodProgress": "💚 Going well! Keep it up!",
+        "goodStart": "🌱 Nice start!"
+      }
+    },
+    "success": {
+      "goalCompleted": "Congratulations! You completed your daily goal! 🎉",
+      "firstEntryToday": "Today's first gratitude! Great start ✨",
+      "firstEntryThisDate": "This date's first gratitude! Great start ✨",
+      "goalCompletedPastEntry": "Goal completed!",
+      "entryUpdated": "Your gratitude entry was successfully updated",
+      "goalNearCompletion": "You're very close to your goal! Keep going 🎯",
+      "statementAdded": "Your gratitude has been added! ✨"
+    },
+    "validation": {
+      "invalidEntry": "Please enter a valid gratitude statement",
+      "invalidStatement": "Invalid gratitude statement"
+    },
+    "errors": {
+      "editFailed": "Edit operation failed. Please try again.",
+      "dataLoadFailed": "Data Could Not Be Loaded",
+      "deleteFailed": "Delete operation failed. Please try again.",
+      "editOperationFailed": "Edit operation failed. Please try again.",
+      "connectionProblem": "Connection problem"
+    },
+    "sections": {
+      "todaysGratitudes": "Today's Gratitudes",
+      "todaysEntries": "Today's gratitudes",
+      "thatDaysEntries": "That day's gratitudes"
+    },
+    "labels": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "quotes": {
+      "dailyOpportunity": "Every day offers new\nopportunities for gratitude."
+    },
+    "empty": {
+      "title": "This day's story hasn't been written yet",
+      "subtitle": "There are no gratitude records for this special day yet.",
+      "todayMessage": "You can record the beautiful moments you experience today!",
+      "pastMessage": "You can go back and share the beautiful memories of that day!",
+      "firstToday": "Add your first gratitude!",
+      "firstPast": "You haven't added gratitude that day yet",
+      "todayStart": "Start your day by writing down the moments you feel grateful for today.",
+      "pastStart": "No gratitude entries exist for this date yet."
+    },
+    "goal": {
+      "completedToday": "🎉 Today's goal completed!",
+      "completedPast": "🎉 That day's goal was completed!",
+      "remainingToday": "{{remaining}} more to goal",
+      "remainingPast": "That day needed {{remaining}} more gratitudes to goal",
+      "progressCompleted": "{{percentage}}% completed"
+    },
+    "detail": {
+      "title": "Entry Details",
+      "gratitudeCount": "{{count}} gratitudes"
+    },
+    "actions": {
+      "save": "Save",
+      "addGratitude": "Add Gratitude",
+      "hide": "▲ Hide",
+      "showOptions": "▼ Options",
+      "nextQuestion": "Next question",
+      "newQuestion": "New question",
+      "delete": "🗑️ Delete",
+      "saveHint": "Please modify the statement to save."
+    },
+    "input": {
+      "placeholder": "What are you grateful for today?",
+      "motto": "Grow with gratitude",
+      "progressToday": "{{current}}/{{goal}} today",
+      "a11y": {
+        "writeHint": "Write your gratitude statement and press send",
+        "sendEnabled": "Send gratitude statement",
+        "sendDisabled": "Sending disabled",
+        "addFirstGratitude": "Add your first gratitude",
+        "addFirstGratitudeHint": "Focus on the input field to write a gratitude statement"
+      }
+    },
+    "prompt": {
+      "inspiringQuestion": "Inspiring question",
+      "loading": "💭 Loading an inspiring question...",
+      "refreshA11y": "Load a new question",
+      "fallbackText": "What are you grateful for today?",
+      "fallbackList": [
+        "What beautiful moments are you grateful for today?",
+        "Which people in your life make you happy?",
+        "What made you smile today?",
+        "Which experiences are you grateful for?",
+        "Think about the positive moments you experienced today..."
+      ],
+      "loadingTitle": "Loading inspiring question...",
+      "loadingContent": "Preparing personalized content...",
+      "refreshHint": "✨ Refresh for a new personalized question"
+    }
+  },
+  "throwback": {
+    "teaser": {
+      "title": "Memories from the Past",
+      "loading": "Loading a beautiful memory...",
+      "errorTitle": "Failed to Load",
+      "errorSubtitle": "Something went wrong",
+      "errorRetry": "Tap to try again",
+      "placeholderTitle": "Your Memories Are Growing",
+      "placeholderSubtitle": "As your gratitude entries increase, you'll discover beautiful past memories here.",
+      "placeholderHint": "Tap to start exploring",
+      "cardTitle": "A Memory from the Past",
+      "cardSubtitle": "From your past gratitudes",
+      "newA11y": "Fetch a new memory",
+      "newHint": "Loads another throwback gratitude memory",
+      "fallbackStatement": "You have a gratitude statement from the past."
+    },
+    "modal": {
+      "errorTitle": "An Error Occurred",
+      "unexpected": "An unexpected error occurred",
+      "shardTitle": "✨ A Memory Shard ✨",
+      "another": "Another Memory",
+      "ok": "Got it!",
+      "empty": "No memory found to display."
+    }
+  },
+  "why": {
+    "title": "The Power of Gratitude",
+    "loadingSubtext": "Preparing benefits of gratitude"
+  },
+  "dailyEntry": { "tab": { "title": "Add Gratitude", "a11y": "Create new daily entry" } },
+  "streak": {
+    "status": {
+      "new": "You can start a new streak!",
+      "active": "Great! Your {{days}}-day streak continues.",
+      "grace": "To keep your streak, you need to add an entry today! ({{hours}}h {{minutes}}m left)",
+      "reset": "Your streak has reset. Make an entry today for a fresh start!",
+      "atRisk": "Your streak is at risk! If you don't add an entry today, your {{days}}-day streak will reset."
+    },
+    "motivation": {
+      "beginning": "Every great journey begins with a single step! 🌱",
+      "momentum": "You're gaining momentum! Keep going! 🚀",
+      "strong": "You've built a strong habit! 💎",
+      "legendary": "You're at legendary level! Keep it up! 👑"
+    },
+    "details": {
+      "title": "Streak Details",
+      "dailyStreakLabel": "daily streak",
+      "explain": {
+        "new": "A streak begins by adding gratitude entries on consecutive days. Daily practice builds strong habits.",
+        "beginner": "Excellent start! As you continue every day, your streak grows stronger and unlocks greater achievements.",
+        "developing": "Your streak is gaining momentum! This rhythm supports mental health and builds positive thinking habits.",
+        "established": "You've built a strong habit! Research shows daily gratitude reduces stress and increases happiness."
+      },
+      "longestRecord": "Longest record: {{days}} days",
+      "nextTarget": "Next Target",
+      "daysLeft": "days left",
+      "progressPercent": "{{percent}}% complete",
+      "tip": "💡 Tip: Keep your streak by adding at least one gratitude entry every day. Late entries count until 23:59!",
+      "stats": {
+        "current": "Current Streak",
+        "longest": "Longest Streak",
+        "achievements": "Achievements"
+      },
+      "allAchievements": "All Achievements",
+      "benefits": {
+        "title": "Streak Benefits",
+        "mental": {
+          "title": "Mental Health",
+          "desc": "Daily gratitude helps reduce stress and improve sleep quality."
+        },
+        "happiness": {
+          "title": "Happiness Level",
+          "desc": "21 days of regular practice can increase happiness hormones."
+        },
+        "relationships": {
+          "title": "Relationship Quality",
+          "desc": "Gratitude practice strengthens empathy and social bonds."
+        },
+        "energy": {
+          "title": "Energy & Motivation",
+          "desc": "A 1-week streak boosts energy and strengthens motivation."
+        },
+        "researchTip": "🔬 21+ days of gratitude practice can significantly improve life satisfaction."
+      }
+    },
+    "milestones": {
+      "firstStep": {
+        "title": "First Step",
+        "description": "Your gratitude journey has begun!",
+        "reward": "Beginner Badge",
+        "unlockedMessage": "Congratulations! You took the first step. This is a beautiful beginning! 🎉"
+      },
+      "momentum": {
+        "title": "Momentum",
+        "description": "Habit is starting to form!",
+        "reward": "Determination Badge",
+        "unlockedMessage": "Amazing! You're gaining momentum. Keep going! 💚"
+      },
+      "firstWeek": {
+        "title": "First Week",
+        "description": "You continued for a whole week!",
+        "reward": "Weekly Champion",
+        "unlockedMessage": "Incredible! You completed a week. This is now a habit! ⭐"
+      },
+      "twoWeeks": {
+        "title": "Two Weeks",
+        "description": "Time to bloom!",
+        "reward": "Bloomer",
+        "unlockedMessage": "Magnificent! Two weeks are done. You're blooming now! 🌸"
+      },
+      "threeWeeks": {
+        "title": "Three Weeks",
+        "description": "Habit has taken root!",
+        "reward": "Rooted Habit",
+        "unlockedMessage": "Fantastic! Three weeks! Your habit is now rooted! 🌺"
+      },
+      "oneMonth": {
+        "title": "One Month",
+        "description": "Monthly achievement! You shine like the sun!",
+        "reward": "Sun Warrior",
+        "unlockedMessage": "Extraordinary! One month is done! You now shine like the sun! ☀️"
+      },
+      "sixWeeks": {
+        "title": "Six Weeks",
+        "description": "Full of energy! Power is with you!",
+        "reward": "Energy Master",
+        "unlockedMessage": "Incredible energy! Six weeks! Power is with you! ⚡"
+      },
+      "twoMonths": {
+        "title": "Two Months",
+        "description": "You sparkle like a precious stone!",
+        "reward": "Diamond Heart",
+        "unlockedMessage": "Priceless! Two months! You're as valuable as a diamond! 💎"
+      },
+      "threeMonths": {
+        "title": "Three Months",
+        "description": "You have a fiery spirit!",
+        "reward": "Flame Guardian",
+        "unlockedMessage": "Like fire! Three months! You're now a flame guardian! 🔥"
+      },
+      "fourMonths": {
+        "title": "Four Months",
+        "description": "You shine like a star!",
+        "reward": "Star Hunter",
+        "unlockedMessage": "Like a star! Four months! You're a star in the sky! 🌟"
+      },
+      "fiveMonths": {
+        "title": "Five Months",
+        "description": "Magical like moonlight!",
+        "reward": "Moonlight Wizard",
+        "unlockedMessage": "Magical! Five months! You're magical like moonlight! 🌙"
+      },
+      "sixMonths": {
+        "title": "Six Months",
+        "description": "Colorful like a rainbow!",
+        "reward": "Rainbow Guardian",
+        "unlockedMessage": "Colorful life! Six months! You're the guardian of the rainbow! 🌈"
+      },
+      "nineMonths": {
+        "title": "👑 Nine Months",
+        "description": "Majestic like a queen/king!",
+        "reward": "Gratitude King",
+        "unlockedMessage": "Royalty! Nine months! You're the king of gratitude! 👑"
+      },
+      "oneYear": {
+        "title": "One Year",
+        "description": "Legendary achievement! Champion!",
+        "reward": "Golden Champion",
+        "unlockedMessage": "LEGENDARY! A full year! You're now a champion! 🏆"
+      },
+      "infinite": {
+        "title": "Infinite",
+        "description": "You are now one with the energy of the universe!",
+        "reward": "Universe Master",
+        "unlockedMessage": "INFINITE POWER! You are one with the energy of the universe! ✨"
+      },
+      "newRecord": "NEW RECORD!",
+      "next": "Next: {{title}} ({{days}} days)",
+      "tapHint": "Tap to view details"
+    }
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Welcome! 🌱",
+      "subtitle": "Let's begin gratitude.",
+      "featureDailyTitle": "Daily Gratitude",
+      "featureDailyDesc": "Be grateful for small things every day",
+      "featureStreakTitle": "Streak Tracking",
+      "featureStreakDesc": "Build strong habits with regular practice",
+      "featureGrowthTitle": "Personal Growth",
+      "featureGrowthDesc": "A more positive life",
+      "encouragement": "If you're ready, let's start this beautiful journey together! ✨",
+      "getStarted": "Let's Start",
+      "getStartedA11y": "Start the onboarding process"
+    },
+    "demo": {
+      "title": "Let's Try! ✨",
+      "subtitle": "Let's start with a small statement.",
+      "promptLabel": "Today's Inspiration",
+      "promptLoading": "Loading...",
+      "promptFallback": "What are you grateful for today?",
+      "placeholder": "For example: The warmth of my coffee, my friend's smile...",
+      "buttonTry": "Try",
+      "buttonSaving": "Saving...",
+      "successTitle": "Great! 🎉",
+      "successText": "Your first gratitude has been saved.",
+      "savingText": "Saving...",
+      "encouragement": "💡 Small things make a big difference"
+    },
+    "personalization": {
+      "title": "Let's Get to Know You! 👋",
+      "subtitle": "Let's create a personalized experience for you.",
+      "sectionNameTitle": "What's Your Name?",
+      "placeholderName": "e.g., Ayşe",
+      "a11yLabelName": "Username",
+      "a11yHintName": "How should we call you in your gratitude journal",
+      "errorTaken": "This username is already taken",
+      "successAvailable": "✅ Username is available",
+      "hintUsage": "This name will be used in daily reminders and personalized messages.",
+      "sectionThemeTitle": "Theme Preference",
+      "continue": "Continue",
+      "continueA11y": "Save personalization settings and continue",
+      "theme": {
+        "light": { "name": "Light Theme", "desc": "For every hour of the day" },
+        "dark": { "name": "Dark Theme", "desc": "Rests your eyes" },
+        "auto": { "name": "Automatic", "desc": "Follows system" }
+      }
+    },
+    "notifications": {
+      "title": "Reminders 🔔",
+      "subtitle": "Shall we send gentle daily reminders?",
+      "benefit1Title": "Regular Reminder",
+      "benefit1Desc": "A gentle alert at the same time each day",
+      "benefit2Title": "Habit Building",
+      "benefit2Desc": "Prevents you from forgetting daily gratitude practice",
+      "benefit3Title": "Full Control",
+      "benefit3Desc": "You can change it anytime in settings",
+      "statusSuccess": "Great! Reminders enabled ✨",
+      "statusSkip": "You can skip for now; enable later in settings",
+      "enable": "Enable Reminders",
+      "enableLoading": "Requesting Permission...",
+      "enableA11y": "Grant notification permission and enable reminders",
+      "skip": "Skip for Now",
+      "skipA11y": "Skip reminders for now",
+      "info": "You can turn notifications on/off anytime from settings"
+    },
+    "goal": {
+      "options": {
+        "one": { "label": "One Gratitude", "desc": "Let's start with small steps" },
+        "three": { "label": "Three Gratitudes", "desc": "Ideal daily goal" },
+        "five": { "label": "Five Gratitudes", "desc": "When you're motivated" },
+        "custom": { "label": "Custom", "desc": "I'll set my own" },
+        "recommended": "Recommended"
+      },
+      "title": "Your Daily Goal? 🎯",
+      "subtitle": "How many gratitude statements do you want to write each day? Small goals bring big successes.",
+      "info": "You can change this preference anytime from profile settings.",
+      "continue": "Continue",
+      "continueA11y": "Save goal setting and continue"
+    },
+    "completion": {
+      "goalCustom": "Custom goal",
+      "goalText": "{{count}} gratitude entries a day",
+      "themeMap": { "light": "Light Theme", "dark": "Dark Theme", "auto": "Automatic Theme" },
+      "congratsTitle": "Congratulations {{username}}! 🎉",
+      "congratsSubtitle": "You're ready. Let's begin.",
+      "summaryTitle": "Your Profile",
+      "featuresActiveSuffix": "active",
+      "encouragementTitle": "You're ready! ✨",
+      "encouragementText": "Small steps, big changes.",
+      "startJourney": "Start the Journey",
+      "startJourneyA11y": "Start your gratitude journey",
+      "footer": "You can change your preferences anytime from settings."
+    },
+    "flow": {
+      "defaultUsername": "User",
+      "featuresEnabled": ["Varied Prompts", "Moment Highlights"]
+    }
+  },
+  "privacyPolicy": {
+    "sections": {
+      "dataController": {
+        "title": "Data Controller",
+        "content": "As the Yeser application, we process your personal data as the data controller under the Personal Data Protection Law No. 6698 (KVKK)."
+      },
+      "collectedData": {
+        "title": "Collected Data",
+        "content": "The following personal data is collected in our application:",
+        "items": [
+          "Your email address (for login)",
+          "Your username (optional)",
+          "Your gratitude journal entries",
+          "Notification preferences",
+          "Application usage statistics (anonymized)"
+        ]
+      },
+      "dataProcessingPurposes": {
+        "title": "Data Processing Purposes",
+        "content": "Your personal data is processed for the following purposes:",
+        "items": [
+          "Service provision and user experience improvement",
+          "Authentication and account security",
+          "Sending notifications (with your permission)",
+          "Application performance improvement",
+          "Fulfilling legal obligations"
+        ]
+      },
+      "dataSecurity": {
+        "title": "Data Security",
+        "content": "We take industry-standard security measures to protect your data:",
+        "items": [
+          "Encrypted data transmission (SSL/TLS)",
+          "Secure data storage (Supabase)",
+          "Access control and authorization",
+          "Regular security updates"
+        ]
+      },
+      "kvkkRights": {
+        "title": "Your KVKK Rights",
+        "content": "Your rights under KVKK:",
+        "items": [
+          "Learning whether your personal data is processed",
+          "Requesting information about your processed data",
+          "Learning the purposes of processing and whether they are used appropriately",
+          "Learning third parties to whom data is transferred domestically or abroad",
+          "Requesting correction of incomplete or incorrect data",
+          "Requesting deletion or destruction",
+          "Requesting notification of correction, deletion and destruction to third parties",
+          "Objecting to automated analysis resulting in adverse consequences",
+          "Requesting deletion from third parties where legally appropriate"
+        ]
+      },
+      "dataRetention": {
+        "title": "Data Retention Period",
+        "content": "Your personal data is stored for the period required by the processing purpose and for the period necessary to fulfill our legal obligations. When you delete your account, all your personal data is permanently deleted."
+      },
+      "cookiesAnalytics": {
+        "title": "Cookies and Analytics",
+        "content": "We collect anonymized analytical data in our application to improve user experience. This data is processed in a way that does not reveal your personal identity."
+      },
+      "thirdPartyServices": {
+        "title": "Third Party Services",
+        "content": "Our application uses the following third party services:",
+        "items": ["Supabase (data storage and authentication)", "Google OAuth (optional login)"]
+      },
+      "accountDeletion": {
+        "title": "Account Deletion and Data Destruction",
+        "content": "You have the \"right to be forgotten\" under KVKK. Regarding account deletion:",
+        "items": [
+          "Account Deletion Process: You can do this from Settings > Account > Delete My Account menu",
+          "Permanent Deletion: This process is irreversible and all your data is permanently deleted",
+          "Deleted Data: Your gratitude journal entries, account information, statistics, notification settings",
+          "Deletion Time: Account deletion process happens instantly",
+          "Backup Recommendation: We strongly recommend exporting your data before deletion",
+          "Re-registration: You can register again with the same email, but your past data will not return"
+        ]
+      },
+      "otherRights": {
+        "title": "Using Your Other Rights",
+        "content": "To use your other rights under KVKK:",
+        "items": [
+          "Data Export: You can export your data in PDF format from Settings > Data Export menu",
+          "Notification Settings: You can change them anytime from within the app",
+          "Data Correction: You can edit your profile information and gratitude entries",
+          "Support Request: You can contact us through the support channels in the app",
+          "Complaint Right: You have the right to apply to the Personal Data Protection Board"
+        ]
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "For questions about our privacy policy or your KVKK rights, you can contact us through the support channels in the app. If you have any questions about the account deletion process, we recommend contacting us before performing the process."
+      },
+      "footer": {
+        "content": "This privacy policy has been prepared in accordance with KVKK and other applicable data protection legislation and is updated regularly."
+      }
+    }
+  },
+  "termsOfService": {
+    "lastUpdated": "Last Updated: 12 June 2025",
+    "sections": {
+      "introduction": {
+        "title": "Introduction and Acceptance",
+        "content": "Welcome to the Yeser mobile application. These Terms of Service govern your access to and use of the application. By downloading, installing or using the application, you agree to be bound by these terms. If you do not agree to the terms, please do not use the application."
+      },
+      "premiumPayment": {
+        "title": "Premium Application and Payment Terms",
+        "content": "Yeser is a paid premium application. The application is purchased with a one-time payment of 39.99 TL and provides unlimited access to all features. Payment terms:",
+        "items": [
+          "One-Time Payment: There is no subscription system, you only pay once",
+          "App Store/Google Play: All payments are processed through the relevant app stores",
+          "Refund Policy: Refund requests are subject to Apple/Google policies",
+          "VAT Included: The stated price includes VAT"
+        ]
+      },
+      "usage": {
+        "title": "Application Usage and Age Limit",
+        "content": "You agree to use the application only for legal purposes and in accordance with these terms. The application is designed for users aged 13 and over. Users under 13 cannot use the application without parental permission.",
+        "prohibitedUses": {
+          "title": "Prohibited uses:",
+          "items": [
+            "Sharing illegal or harmful content",
+            "Violating the rights of others",
+            "Endangering the security of the application",
+            "Unauthorized commercial use"
+          ]
+        }
+      },
+      "accountManagement": {
+        "title": "Account Management and Termination",
+        "content": "Terms for managing and terminating your account:",
+        "items": [
+          "Account Security: You are responsible for account security",
+          "Account Deletion: Under KVKK, you can delete your account from Settings > Account > Delete My Account menu",
+          "Permanent Process: The deletion process is IRREVERSIBLE, all your data is instantly deleted",
+          "Backup Recommendation: Export your data before deletion",
+          "Re-registration: You can register again with the same email (data will not return)"
+        ]
+      },
+      "intellectualProperty": {
+        "title": "Intellectual Property",
+        "content": "The application and its content include information, software, texts, screens, images, videos, sounds and their design, selection and arrangement. All these elements belong to Yeser and are protected by international copyright, trademark, patent, trade secret and other intellectual property laws."
+      },
+      "dataResponsibility": {
+        "title": "Data Responsibility and Backup",
+        "content": "Responsibilities regarding data security and backup:",
+        "items": [
+          "Regular Backup: Secure data storage is provided in the application",
+          "Data Loss: In case of technical failures, efforts are made for data recovery",
+          "User Responsibility: It is recommended that you regularly export your important data",
+          "Server Maintenance: Planned maintenance is announced in advance"
+        ]
+      },
+      "disclaimerOfLiability": {
+        "title": "Disclaimer of Liability",
+        "content": "The application is provided on an \"as is\" and \"as available\" basis. To the maximum extent permitted by law, we disclaim all warranties, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose and non-infringement."
+      },
+      "limitationOfLiability": {
+        "title": "Limitation of Liability",
+        "content": "To the maximum extent permitted by law, Yeser is not liable for any indirect, incidental, special, consequential or punitive damages (including but not limited to loss of profit, data or reputation) arising from your use or inability to use the application."
+      },
+      "governingLaw": {
+        "title": "Governing Law and Jurisdiction",
+        "content": "These Terms are subject to and shall be interpreted in accordance with the laws of the Republic of Turkey. Disputes arising from these Terms are under the jurisdiction of local courts and Enforcement Offices."
+      },
+      "forceMajeure": {
+        "title": "Force Majeure",
+        "content": "Our liability is limited in case of service interruptions due to natural disasters, war, government actions, pandemic, internet outages or other force majeure events beyond our control."
+      },
+      "changesTerms": {
+        "title": "Changes to These Terms",
+        "content": "We may update these terms from time to time. We will send in-app notifications for important changes. Your continued use of the application after the revised terms are published means that you accept the changes."
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "If you have any questions about these Terms of Service, please contact us:",
+        "email": "Email: yeserapp@gmail.com",
+        "responseTime": "We try to answer your questions within 5 business days at the latest."
+      }
+    }
   },
   "errors": {
     "auth": {
       "noPermission": "You don't have permission for this operation. Please sign out and sign in again.",
       "googleSigninFailed": "Google sign-in couldn't be completed. Please try again.",
       "sessionExpired": "Your sign-in link has expired. Please request a new one.",
-      "rateLimited": "Too many attempts. Please wait a bit and try again."
+      "rateLimited": "Too many attempts. Please wait a bit and try again.",
+      "notAuthenticated": "User not authenticated.",
+      "noActiveSession": "No active session found"
     },
     "db": {
       "integrity": "A data integrity error occurred. Please try again.",
@@ -32,6 +1362,10 @@
     "server": { "generic": "A server error occurred. Please try again later." },
     "validation": { "generic": "Please check the information you entered." },
     "permission": { "generic": "You don't have permission for this operation." },
-    "unknown": { "generic": "Something went wrong. Please try again." }
+    "unknown": { "generic": "Something went wrong. Please try again." },
+    "export": {
+      "unknownError": "Unknown error",
+      "exportFailed": "Export failed"
+    }
   }
 }

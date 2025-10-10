@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
@@ -21,32 +22,33 @@ const AboutSettings: React.FC<AboutSettingsProps> = ({
   onNavigateToWhyGratitude,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
 
   const settingItems = [
     {
-      label: 'Minnetin Gücü',
+      label: t('settings.about.whyGratitude.label'),
       icon: 'heart-outline',
       action: onNavigateToWhyGratitude,
-      description: 'Minnettarlığın faydalarını keşfedin',
+      description: t('settings.about.whyGratitude.description'),
     },
     {
-      label: 'Gizlilik Politikası',
+      label: t('settings.about.privacyPolicy.label'),
       icon: 'shield-check-outline',
       action: onNavigateToPrivacyPolicy,
-      description: 'Verilerinizin nasıl korunduğunu öğrenin',
+      description: t('settings.about.privacyPolicy.description'),
     },
     {
-      label: 'Kullanım Şartları',
+      label: t('settings.about.termsOfService.label'),
       icon: 'file-document-outline',
       action: onNavigateToTermsOfService,
-      description: 'Hizmet şartlarımızı inceleyin',
+      description: t('settings.about.termsOfService.description'),
     },
     {
-      label: 'Yardım & Destek',
+      label: t('settings.about.helpSupport.label'),
       icon: 'help-circle-outline',
       action: onNavigateToHelp,
-      description: 'Sorularınız için destek alın',
+      description: t('settings.about.helpSupport.description'),
     },
   ];
 
@@ -83,6 +85,8 @@ const createStyles = (theme: AppTheme) =>
     settingCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.outlineVariant,
       marginBottom: theme.spacing.sm,
       marginHorizontal: theme.spacing.md,
       // 🌟 Medium primary shadow for consistency with other settings - matches SettingsScreen pattern

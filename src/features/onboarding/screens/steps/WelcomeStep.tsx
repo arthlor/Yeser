@@ -8,6 +8,7 @@ import type { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 
@@ -28,6 +29,7 @@ interface WelcomeStepProps {
 export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   // **SIMPLIFIED ANIMATION SYSTEM**: Single coordinated instance (4 → 1, 75% reduction)
   const animations = useCoordinatedAnimations();
@@ -66,8 +68,8 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
         {/* Compact standardized header */}
         <OnboardingNavHeader />
         <View style={styles.headerSection}>
-          <Text style={styles.welcomeTitle}>Hoş Geldin! 🌱</Text>
-          <Text style={styles.welcomeSubtitle}>Minnettarlığa başlayalım.</Text>
+          <Text style={styles.welcomeTitle}>{t('onboarding.welcome.title')}</Text>
+          <Text style={styles.welcomeSubtitle}>{t('onboarding.welcome.subtitle')}</Text>
         </View>
 
         {/* **ENHANCED FEATURES**: Modern icon design with consistent visuals */}
@@ -77,8 +79,10 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
               <Ionicons name="heart-outline" size={28} color={theme.colors.primary} />
             </View>
             <View style={styles.featureContent}>
-              <Text style={styles.featureTitle}>Günlük Minnetler</Text>
-              <Text style={styles.featureDescription}>Her gün küçük şeyler için minnet</Text>
+              <Text style={styles.featureTitle}>{t('onboarding.welcome.featureDailyTitle')}</Text>
+              <Text style={styles.featureDescription}>
+                {t('onboarding.welcome.featureDailyDesc')}
+              </Text>
             </View>
           </View>
 
@@ -87,9 +91,9 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
               <Ionicons name="flame-outline" size={28} color={theme.colors.primary} />
             </View>
             <View style={styles.featureContent}>
-              <Text style={styles.featureTitle}>Seri Takibi</Text>
+              <Text style={styles.featureTitle}>{t('onboarding.welcome.featureStreakTitle')}</Text>
               <Text style={styles.featureDescription}>
-                Düzenli minnet pratiklerin ile güçlü alışkanlıklar oluştur
+                {t('onboarding.welcome.featureStreakDesc')}
               </Text>
             </View>
           </View>
@@ -99,25 +103,25 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
               <Ionicons name="leaf-outline" size={28} color={theme.colors.primary} />
             </View>
             <View style={styles.featureContent}>
-              <Text style={styles.featureTitle}>Kişisel Gelişim</Text>
-              <Text style={styles.featureDescription}>Daha pozitif bir yaşam</Text>
+              <Text style={styles.featureTitle}>{t('onboarding.welcome.featureGrowthTitle')}</Text>
+              <Text style={styles.featureDescription}>
+                {t('onboarding.welcome.featureGrowthDesc')}
+              </Text>
             </View>
           </View>
         </View>
 
         {/* **SIMPLIFIED ENCOURAGEMENT**: No separate animations, unified entrance */}
         <View style={styles.encouragementSection}>
-          <Text style={styles.encouragementText}>
-            Hazırsan, bu güzel yolculuğa birlikte başlayalım! ✨
-          </Text>
+          <Text style={styles.encouragementText}>{t('onboarding.welcome.encouragement')}</Text>
         </View>
 
         {/* **STANDARDIZED BUTTON**: Using OnboardingButton for consistency */}
         <View style={styles.actionSection}>
           <OnboardingButton
             onPress={handleGetStarted}
-            title="Başlayalım"
-            accessibilityLabel="Onboarding sürecine başla"
+            title={t('onboarding.welcome.getStarted')}
+            accessibilityLabel={t('onboarding.welcome.getStartedA11y')}
           />
         </View>
       </Animated.View>

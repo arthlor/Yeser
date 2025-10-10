@@ -7,20 +7,59 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { ScreenHeader, ScreenLayout } from '../../../shared/components/layout';
 import { getPrimaryShadow } from '@/themes/utils';
+import { useTranslation } from 'react-i18next';
 
 import type { AppTheme } from '../../../themes/types';
+
+interface PolicySectionProps {
+  number: number;
+  titleKey: string;
+  contentKey: string;
+  itemsKey?: string;
+  styles: ReturnType<typeof createStyles>;
+  t: (key: string, options?: { returnObjects?: boolean }) => string | string[];
+}
+
+const PolicySection: React.FC<PolicySectionProps> = ({
+  number,
+  titleKey,
+  contentKey,
+  itemsKey,
+  styles,
+  t,
+}) => {
+  const items = itemsKey ? (t(itemsKey, { returnObjects: true }) as string[]) : [];
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>
+        {number}. {t(titleKey) as string}
+      </Text>
+      <Text style={styles.sectionText}>
+        {t(contentKey) as string}
+        {Array.isArray(items) && items.length > 0 && (
+          <>
+            {'\n\n'}
+            {items.map((item: string, _index: number) => `• ${item}`).join('\n')}
+          </>
+        )}
+      </Text>
+    </View>
+  );
+};
 
 const PrivacyPolicyScreen: React.FC = () => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme);
   const navigation = useNavigation();
+  const { t, i18n } = useTranslation();
 
   return (
-    <ScreenLayout edges={['bottom']} showsVerticalScrollIndicator={false} style={styles.container}>
+    <ScreenLayout edges={['bottom']} showsVerticalScrollIndicator={false}>
       <ScreenHeader
         showBackButton
-        title="Gizlilik Politikası"
+        title={t('settings.privacyPolicy.title')}
         onBackPress={() => navigation.goBack()}
         variant="default"
       />
@@ -30,131 +69,112 @@ const PrivacyPolicyScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Gizlilik Politikası ve KVKK</Text>
+          <Text style={styles.title}>{t('settings.privacyPolicy.title')}</Text>
           <Text style={styles.subtitle}>
-            Son güncellenme: {new Date().toLocaleDateString('tr-TR')}
+            {t('settings.privacyPolicy.lastUpdated', {
+              defaultValue: 'Last updated: {{date}}',
+              date: new Date().toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'tr-TR'),
+            })}
           </Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>1. Veri Sorumlusu</Text>
-          <Text style={styles.sectionText}>
-            Yeşer uygulaması olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK)
-            kapsamında veri sorumlusu sıfatıyla kişisel verilerinizi işlemekteyiz.
-          </Text>
-        </View>
+        <PolicySection
+          number={1}
+          titleKey="privacyPolicy.sections.dataController.title"
+          contentKey="privacyPolicy.sections.dataController.content"
+          styles={styles}
+          t={t}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>2. Toplanan Veriler</Text>
-          <Text style={styles.sectionText}>
-            Uygulamamızda şu kişisel veriler toplanmaktadır:{'\n\n'}• E-posta adresiniz (giriş için)
-            {'\n'}• Kullanıcı adınız (isteğe bağlı){'\n'}• Minnettarlık günlüğü girişleriniz{'\n'}•
-            Bildirim tercihleri{'\n'}• Uygulama kullanım istatistikleri (anonimleştirilmiş)
-          </Text>
-        </View>
+        <PolicySection
+          number={2}
+          titleKey="privacyPolicy.sections.collectedData.title"
+          contentKey="privacyPolicy.sections.collectedData.content"
+          itemsKey="privacyPolicy.sections.collectedData.items"
+          styles={styles}
+          t={t}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3. Veri İşleme Amaçları</Text>
-          <Text style={styles.sectionText}>
-            Kişisel verileriniz şu amaçlarla işlenmektedir:{'\n\n'}• Hizmet sunumu ve kullanıcı
-            deneyiminin iyileştirilmesi{'\n'}• Kimlik doğrulama ve hesap güvenliği{'\n'}• Bildirim
-            gönderimi (izniniz dahilinde){'\n'}• Uygulama performansının iyileştirilmesi{'\n'}•
-            Yasal yükümlülüklerin yerine getirilmesi
-          </Text>
-        </View>
+        <PolicySection
+          number={3}
+          titleKey="privacyPolicy.sections.dataProcessingPurposes.title"
+          contentKey="privacyPolicy.sections.dataProcessingPurposes.content"
+          itemsKey="privacyPolicy.sections.dataProcessingPurposes.items"
+          styles={styles}
+          t={t}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>4. Veri Güvenliği</Text>
-          <Text style={styles.sectionText}>
-            Verilerinizin güvenliği için endüstri standartlarında güvenlik önlemleri almaktayız:
-            {'\n\n'}• Şifreli veri iletimi (SSL/TLS){'\n'}• Güvenli veri depolama (Supabase){'\n'}•
-            Erişim kontrolü ve yetkilendirme{'\n'}• Düzenli güvenlik güncellemeleri
-          </Text>
-        </View>
+        <PolicySection
+          number={4}
+          titleKey="privacyPolicy.sections.dataSecurity.title"
+          contentKey="privacyPolicy.sections.dataSecurity.content"
+          itemsKey="privacyPolicy.sections.dataSecurity.items"
+          styles={styles}
+          t={t}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>5. KVKK Haklarınız</Text>
-          <Text style={styles.sectionText}>
-            KVKK kapsamında sahip olduğunuz haklar:{'\n\n'}• Kişisel verilerinizin işlenip
-            işlenmediğini öğrenme{'\n'}• İşlenen verileriniz hakkında bilgi talep etme{'\n'}•
-            Verilerinizin işlendiği amaçları ve bu amaçlara uygun kullanılıp kullanılmadığını
-            öğrenme{'\n'}• Yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri öğrenme{'\n'}•
-            Eksik veya yanlış işlenmiş verilerin düzeltilmesini isteme{'\n'}• Silinmesini veya yok
-            edilmesini isteme{'\n'}• Düzeltme, silme ve yok etme işlemlerinin üçüncü kişilere
-            bildirilmesini isteme{'\n'}• İşlenen verilerin münhasıran otomatik sistemlerle analiz
-            edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme{'\n'}• Kanunen
-            uygun olan hallerde, verilerin aktarıldığı üçüncü kişilerden de silinmesini isteme
-          </Text>
-        </View>
+        <PolicySection
+          number={5}
+          titleKey="privacyPolicy.sections.kvkkRights.title"
+          contentKey="privacyPolicy.sections.kvkkRights.content"
+          itemsKey="privacyPolicy.sections.kvkkRights.items"
+          styles={styles}
+          t={t}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>6. Veri Saklama Süresi</Text>
-          <Text style={styles.sectionText}>
-            Kişisel verileriniz, işleme amacının gerektirdiği süre boyunca ve yasal
-            yükümlülüklerimizi yerine getirmek için gerekli olan süre boyunca saklanır. Hesabınızı
-            sildiğinizde, tüm kişisel verileriniz kalıcı olarak silinir.
-          </Text>
-        </View>
+        <PolicySection
+          number={6}
+          titleKey="privacyPolicy.sections.dataRetention.title"
+          contentKey="privacyPolicy.sections.dataRetention.content"
+          styles={styles}
+          t={t}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>7. Çerezler ve Analitik</Text>
-          <Text style={styles.sectionText}>
-            Uygulamamızda kullanıcı deneyimini iyileştirmek için anonimleştirilmiş analitik veriler
-            toplamaktayız. Bu veriler kişisel kimliğinizi ortaya çıkarmayacak şekilde işlenmektedir.
-          </Text>
-        </View>
+        <PolicySection
+          number={7}
+          titleKey="privacyPolicy.sections.cookiesAnalytics.title"
+          contentKey="privacyPolicy.sections.cookiesAnalytics.content"
+          styles={styles}
+          t={t}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>8. Üçüncü Taraf Hizmetler</Text>
-          <Text style={styles.sectionText}>
-            Uygulamamız şu üçüncü taraf hizmetleri kullanmaktadır:{'\n\n'}• Supabase (veri depolama
-            ve kimlik doğrulama){'\n'}• Google OAuth (isteğe bağlı giriş)
-          </Text>
-        </View>
+        <PolicySection
+          number={8}
+          titleKey="privacyPolicy.sections.thirdPartyServices.title"
+          contentKey="privacyPolicy.sections.thirdPartyServices.content"
+          itemsKey="privacyPolicy.sections.thirdPartyServices.items"
+          styles={styles}
+          t={t}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>9. Hesap Silme ve Veri İmhası</Text>
-          <Text style={styles.sectionText}>
-            KVKK kapsamında "unutulma hakkınız" bulunmaktadır. Hesabınızı silme konusunda:{'\n\n'}•
-            Hesap Silme Süreci: Ayarlar {'>'} Hesap {'>'} Hesabımı Sil menüsünden
-            gerçekleştirebilirsiniz{'\n'}• Kalıcı Silme: Bu işlem geri alınamaz ve tüm verileriniz
-            kalıcı olarak silinir{'\n'}• Silinen Veriler: Minnettarlık günlüğü girişleriniz, hesap
-            bilgileri, istatistikleriniz, bildirim ayarlarınız{'\n'}• Silme Süresi: Hesap silme
-            işlemi anında gerçekleşir{'\n'}• Yedekleme Önerisi: Silmeden önce verilerinizi dışa
-            aktarmanızı önemle tavsiye ederiz{'\n'}• Tekrar Kayıt: Aynı e-posta ile tekrar kayıt
-            olabilirsiniz, ancak geçmiş verileriniz geri gelmez.
-          </Text>
-        </View>
+        <PolicySection
+          number={9}
+          titleKey="privacyPolicy.sections.accountDeletion.title"
+          contentKey="privacyPolicy.sections.accountDeletion.content"
+          itemsKey="privacyPolicy.sections.accountDeletion.items"
+          styles={styles}
+          t={t}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>10. Diğer Haklarınızı Kullanma</Text>
-          <Text style={styles.sectionText}>
-            KVKK kapsamındaki diğer haklarınızı kullanmak için:{'\n\n'}• Veri Dışa Aktarma: Ayarlar{' '}
-            {'>'}
-            Veri Dışa Aktarma menüsünden verilerinizi PDF formatında dışa aktarabilirsiniz{'\n'}•
-            Bildirim Ayarları: Uygulama içinden dilediğiniz zaman değiştirebilirsiniz{'\n'}• Veri
-            Düzeltme: Profil bilgilerinizi ve minnettarlık girişlerinizi düzenleyebilirsiniz{'\n'}•
-            Destek Talebi: Uygulama içindeki destek kanalları üzerinden bizimle iletişime
-            geçebilirsiniz{'\n'}• Şikayet Hakkı: Kişisel Verileri Koruma Kurulu’na başvuru hakkınız
-            bulunmaktadır
-          </Text>
-        </View>
+        <PolicySection
+          number={10}
+          titleKey="privacyPolicy.sections.otherRights.title"
+          contentKey="privacyPolicy.sections.otherRights.content"
+          itemsKey="privacyPolicy.sections.otherRights.items"
+          styles={styles}
+          t={t}
+        />
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>11. İletişim</Text>
-          <Text style={styles.sectionText}>
-            Gizlilik politikamız veya KVKK haklarınız hakkında sorularınız için uygulama içindeki
-            destek kanalları üzerinden bizimle iletişime geçebilirsiniz. Hesap silme işlemiyle
-            ilgili herhangi bir sorunuz varsa, işlemi gerçekleştirmeden önce bizimle iletişime
-            geçmenizi öneririz.
-          </Text>
-        </View>
+        <PolicySection
+          number={11}
+          titleKey="privacyPolicy.sections.contact.title"
+          contentKey="privacyPolicy.sections.contact.content"
+          styles={styles}
+          t={t}
+        />
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Bu gizlilik politikası KVKK ve diğer geçerli veri koruma mevzuatı uyarınca
-            hazırlanmıştır ve düzenli olarak güncellenmektedir.
-          </Text>
+          <Text style={styles.footerText}>{t('privacyPolicy.sections.footer.content')}</Text>
         </View>
       </ScrollView>
     </ScreenLayout>
@@ -163,10 +183,6 @@ const PrivacyPolicyScreen: React.FC = () => {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
     scrollView: {
       flex: 1,
     },

@@ -4,6 +4,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getVersion } from 'react-native-device-info';
+import { useTranslation } from 'react-i18next';
 
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme, ThemeName } from '@/themes/types';
@@ -13,6 +14,8 @@ import AboutSettings from '@/components/settings/AboutSettings';
 import AppearanceSettings from '@/components/settings/AppearanceSettings';
 import DailyGoalSettings from '@/components/settings/DailyGoalSettings';
 import { NotificationSettings } from '../components/NotificationSettings';
+import AvatarPickerRow from '../components/AvatarPickerRow';
+import { LanguageSettings } from '../components/LanguageSettings';
 import { ScreenContent, ScreenLayout } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import ThemedSwitch from '@/shared/components/ui/ThemedSwitch';
@@ -58,6 +61,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { handleMutationError } = useGlobalError();
   const { showError: showToastError } = useToast();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   // **COORDINATED ANIMATION**: Add minimal entrance animation for consistency
   const animations = useCoordinatedAnimations();
@@ -73,6 +77,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     refetchProfile,
     deleteAccount,
     isDeletingAccount,
+    uploadAvatar,
+    deleteAvatar,
+    getSizedAvatarUrl,
   } = useUserProfile();
 
   const { logout } = useAuthStore();
@@ -96,8 +103,8 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
       if (!prepareResult.success || !prepareResult.filePath || !prepareResult.filename) {
         handleMutationError(
-          new Error(prepareResult.message ?? 'Veriler dışa aktarılırken bir hata oluştu.'),
-          'veri dışa aktarma'
+          new Error(prepareResult.message ?? t('settings.data.exportError')),
+          'export data'
         );
         return;
       }
@@ -111,17 +118,14 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         // logger.debug('Data shared successfully or share dialog opened.');
       } else {
         if (shareResult.message && shareResult.message !== 'Sharing cancelled by user.') {
-          handleMutationError(
-            new Error(`Paylaşım hatası: ${shareResult.message}`),
-            'veri paylaşma'
-          );
+          handleMutationError(new Error(`Share error: ${shareResult.message}`), 'share data');
         } else if (shareResult.message === 'Sharing cancelled by user.') {
           // logger.debug('User cancelled sharing process.');
         }
       }
     } catch (error: unknown) {
       // logger.error('Export data error:', error);
-      handleMutationError(error, 'veri dışa aktarma');
+      handleMutationError(error, 'export data');
     } finally {
       // Guaranteed cleanup - this will never throw due to improved cleanupTemporaryFile
       if (tempFilePath) {
@@ -182,67 +186,132 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const navigateToWhyGratitude = () => {
     navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('WhyGratitude');
   };
+  // Avatar helpers
+  const [awaitedAvatarUrl, setAwaitedAvatarUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      const url = await getSizedAvatarUrl({ path: profile?.avatar_path ?? null, size: 96 });
+      if (mounted) {
+        setAwaitedAvatarUrl(url);
+      }
+    };
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, [getSizedAvatarUrl, profile?.avatar_path]);
+
+  const handlePickAvatar = useCallback(async () => {
+    type ImagePickerLike = {
+      requestMediaLibraryPermissionsAsync: () => Promise<{ status: 'granted' | 'denied' }>;
+      launchImageLibraryAsync: (options: {
+        mediaTypes?: unknown;
+        allowsEditing?: boolean;
+        aspect?: [number, number];
+        quality?: number;
+      }) => Promise<{ canceled: boolean; assets?: Array<{ uri: string }> }>;
+      MediaTypeOptions: { Images: unknown };
+    };
+    try {
+      const moduleName = 'expo-image-picker';
+      const imagePicker: ImagePickerLike = (await import(moduleName)) as unknown as ImagePickerLike;
+      const perm = await imagePicker.requestMediaLibraryPermissionsAsync();
+      if (perm.status !== 'granted') {
+        Alert.alert(
+          t('shared.media.permissions.photos.title'),
+          t('shared.media.permissions.photos.message')
+        );
+        return;
+      }
+      const result = await imagePicker.launchImageLibraryAsync({
+        mediaTypes: imagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+      });
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+      const uri = result.assets[0].uri;
+      await uploadAvatar(uri);
+      const url = await getSizedAvatarUrl({ path: profile?.avatar_path ?? null, size: 96 });
+      setAwaitedAvatarUrl(url);
+      await refetchProfile();
+    } catch {
+      Alert.alert(
+        t('shared.media.imagePicker.missingTitle'),
+        t('shared.media.imagePicker.missingMessage')
+      );
+    }
+  }, [getSizedAvatarUrl, profile?.avatar_path, refetchProfile, uploadAvatar, t]);
+
+  const handleRemoveAvatar = useCallback(async () => {
+    await deleteAvatar(profile?.avatar_path ?? null);
+    setAwaitedAvatarUrl(null);
+    await refetchProfile();
+  }, [deleteAvatar, profile?.avatar_path, refetchProfile]);
 
   // Account management handlers
   const handleLogoutPress = () => {
     try {
       logout();
     } catch {
-      showToastError('Çıkış işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+      showToastError(t('settings.account.signOutError'));
     }
   };
 
   const handleDeleteAccountPress = () => {
-    Alert.alert(
-      'Hesabı Sil',
-      'Bu işlem kalıcıdır ve geri alınamaz. Tüm verileriniz silinecektir. Devam etmek istediğinizden emin misiniz?',
-      [
-        {
-          text: 'İptal',
-          style: 'cancel',
-        },
-        {
-          text: 'Sil',
-          style: 'destructive',
-          onPress: confirmAccountDeletion,
-        },
-      ]
-    );
+    Alert.alert(t('settings.account.delete.dialogTitle'), t('settings.account.delete.dialogBody'), [
+      {
+        text: t('settings.account.delete.cancel'),
+        style: 'cancel',
+      },
+      {
+        text: t('settings.account.delete.confirm'),
+        style: 'destructive',
+        onPress: confirmAccountDeletion,
+      },
+    ]);
   };
 
   const confirmAccountDeletion = () => {
     deleteAccount(undefined, {
       onSuccess: (data) => {
-        showToastError(data.message || 'Hesabınız başarıyla silindi.');
+        showToastError(data.message || t('settings.account.delete.success'));
       },
       onError: (_error) => {
-        showToastError(
-          'Hesap silme işlemi başarısız oldu. Lütfen tekrar deneyin veya destek ile iletişime geçin.'
-        );
+        showToastError(t('settings.account.delete.error'));
       },
     });
   };
 
   return (
-    <ScreenLayout edges={['top']} edgeToEdge={true}>
+    <ScreenLayout edges={['top']} edgeToEdge={true} backgroundColor={theme.colors.surface}>
       <ScreenContent
         isLoading={isLoadingProfile && !profile}
         errorObject={profileError && !profile ? profileError : null}
         onRetry={refetchProfile}
-        loadingText="Ayarlar yükleniyor..."
+        loadingText={t('settings.loading')}
       >
         {/* Header Section */}
         <View style={styles.headerSection}>
           <View style={styles.header}>
-            <Text style={styles.screenTitle}>Ayarlar</Text>
-            <Text style={styles.screenSubtitle}>Tercihlerinizi özelleştirin</Text>
+            <Text style={styles.screenTitle}>{t('settings.title')}</Text>
+            <Text style={styles.screenSubtitle}>{t('settings.subtitle')}</Text>
           </View>
         </View>
 
-        {/* User Profile Section - Compact username display only */}
-        {profile?.username && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Kullanıcı</Text>
+        {/* User Profile Section with Avatar */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.sections.user')}</Text>
+          <AvatarPickerRow
+            username={profile?.username}
+            avatarUrl={awaitedAvatarUrl}
+            onPick={handlePickAvatar}
+            onRemove={handleRemoveAvatar}
+          />
+          {profile?.username && (
             <View style={styles.settingCard}>
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
@@ -250,18 +319,18 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                     <Icon name="account-circle" size={20} color={theme.colors.primary} />
                   </View>
                   <View style={styles.textContainer}>
-                    <Text style={styles.settingTitle}>Kullanıcı Adı</Text>
+                    <Text style={styles.settingTitle}>{t('settings.user.usernameTitle')}</Text>
                     <Text style={styles.settingDescription}>{profile.username}</Text>
                   </View>
                 </View>
               </View>
             </View>
-          </View>
-        )}
+          )}
+        </View>
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hedef</Text>
+          <Text style={styles.sectionTitle}>{t('settings.sections.goal')}</Text>
           <DailyGoalSettings
             currentGoal={profile?.daily_gratitude_goal ?? 3}
             onUpdateGoal={handleDailyGoalUpdate}
@@ -270,7 +339,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Notification Settings Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bildirimler</Text>
+          <Text style={styles.sectionTitle}>{t('settings.sections.notifications')}</Text>
           <View style={styles.settingCard}>
             <NotificationSettings />
           </View>
@@ -278,7 +347,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Appearance Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Görünüm</Text>
+          <Text style={styles.sectionTitle}>{t('settings.sections.appearance')}</Text>
           <AppearanceSettings
             activeThemeName={colorMode as ThemeName}
             onToggleTheme={toggleColorMode}
@@ -290,9 +359,11 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                   <Icon name="lightbulb-on-outline" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={styles.textContainer}>
-                  <Text style={styles.settingTitle}>İlham al</Text>
+                  <Text style={styles.settingTitle}>
+                    {t('settings.appearance.inspirationTitle')}
+                  </Text>
                   <Text style={styles.settingDescription}>
-                    "Minnet Ekle" sayfasında çeşitli ilhamlar göster.
+                    {t('settings.appearance.inspirationDesc')}
                   </Text>
                 </View>
               </View>
@@ -306,9 +377,14 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
+        {/* Language Section */}
+        <View style={styles.section}>
+          <LanguageSettings />
+        </View>
+
         {/* Data Management Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Veri Yönetimi</Text>
+          <Text style={styles.sectionTitle}>{t('settings.sections.data')}</Text>
           <View style={styles.settingCard}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
@@ -316,15 +392,13 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                   <Icon name="download-outline" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={styles.textContainer}>
-                  <Text style={styles.settingTitle}>Verileri Dışa Aktar</Text>
-                  <Text style={styles.settingDescription}>
-                    Tüm minnet günlüğü verilerinizi PDF formatında indirin
-                  </Text>
+                  <Text style={styles.settingTitle}>{t('settings.data.exportTitle')}</Text>
+                  <Text style={styles.settingDescription}>{t('settings.data.exportDesc')}</Text>
                 </View>
               </View>
               <View style={styles.actionContainer}>
                 <ThemedButton
-                  title={isExporting ? 'Aktarılıyor...' : 'Dışa Aktar'}
+                  title={isExporting ? t('settings.data.exporting') : t('settings.data.export')}
                   onPress={handleExportData}
                   variant="outline"
                   disabled={isExporting}
@@ -337,7 +411,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* About Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hakkında</Text>
+          <Text style={styles.sectionTitle}>{t('settings.sections.about')}</Text>
           <AboutSettings
             onNavigateToPrivacyPolicy={navigateToPrivacyPolicy}
             onNavigateToTermsOfService={navigateToTermsOfService}
@@ -352,7 +426,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             {/* Sign Out Button - Compact */}
             <TouchableOpacity style={styles.compactActionButton} onPress={handleLogoutPress}>
               <Icon name="logout" size={18} color={theme.colors.error} />
-              <Text style={styles.compactActionText}>Hesaptan Çık</Text>
+              <Text style={styles.compactActionText}>{t('settings.account.signOut')}</Text>
             </TouchableOpacity>
 
             {/* Delete Account Button - Compact */}
@@ -367,7 +441,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                 color={theme.colors.error}
               />
               <Text style={styles.compactActionText}>
-                {isDeletingAccount ? 'Siliniyor...' : 'Hesabımı Sil'}
+                {isDeletingAccount
+                  ? t('settings.account.delete.deleting')
+                  : t('settings.account.delete.button')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -376,7 +452,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         {/* Footer Section */}
         <View style={styles.footerSection}>
           <View style={styles.footer}>
-            <Text style={styles.versionText}>Yeşer v{getVersion()}</Text>
+            <Text style={styles.versionText}>
+              {t('settings.version', { version: getVersion() })}
+            </Text>
           </View>
         </View>
       </ScreenContent>
@@ -426,6 +504,8 @@ const createStyles = (theme: AppTheme) =>
     settingCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.outlineVariant,
       marginBottom: theme.spacing.sm,
       marginHorizontal: theme.spacing.md,
       // 🌟 Medium primary shadow for inline setting cards
@@ -490,6 +570,8 @@ const createStyles = (theme: AppTheme) =>
       justifyContent: 'space-around',
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.outlineVariant,
       marginHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
       ...getPrimaryShadow.small(theme),

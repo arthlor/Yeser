@@ -1,4 +1,5 @@
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { ScreenLayout } from '@/shared/components/layout';
 import { getPrimaryShadow } from '@/themes/utils';
 
@@ -19,24 +20,31 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ErrorState from '@/shared/components/ui/ErrorState';
 
 import {
+  useCurrentPrompt,
   useGratitudeEntry,
   useGratitudeMutations,
   usePromptMutations,
   usePromptText,
 } from '../hooks';
 import { useUserProfile } from '@/shared/hooks';
+import { useLanguageStore } from '@/store/languageStore';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { gratitudeStatementSchema } from '@/schemas/gratitudeSchema';
 import StatementEditCard from '@/shared/components/ui/StatementEditCard';
+import { useMoodEmoji } from '@/shared/hooks/useMoodEmoji';
+import type { MoodEmoji } from '@/types/mood.types';
 import { AppTheme } from '@/themes/types';
-import { MainTabParamList } from '@/types/navigation';
+import { AppStackParamList, MainTabParamList } from '@/types/navigation';
 import { analyticsService } from '@/services/analyticsService';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
+import { logger } from '@/utils/logger';
 
 import GratitudeInputBar, { GratitudeInputBarRef } from '../components/GratitudeInputBar';
+
 import { hapticFeedback } from '@/utils/hapticFeedback';
+import { useTranslation } from 'react-i18next';
 
 type DailyEntryScreenRouteProp = RouteProp<MainTabParamList, 'DailyEntryTab'>;
 
@@ -56,10 +64,12 @@ interface Props {
  * - Enhanced statement card interactions with coordinated feedback
  */
 const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
+  const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
   const { theme } = useTheme();
   const { handleMutationError, showError } = useGlobalError();
   const { showSuccess } = useToast();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { t } = useTranslation();
 
   const initialDate = route?.params?.initialDate ? new Date(route.params.initialDate) : new Date();
 
@@ -89,6 +99,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const { profile } = useUserProfile();
 
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
+  const [showSaveHint, setShowSaveHint] = useState(false);
 
   // **INPUT BAR REF**: Reference to control input focus from empty state button
   const inputBarRef = useRef<GratitudeInputBarRef>(null);
@@ -108,8 +119,43 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     error: promptError,
   } = usePromptText();
 
+  // 🔍 DEBUG: Log prompt data to identify Turkish prompt source
+  const language = useLanguageStore((state) => state.language);
+  const { data: rawCurrentPrompt } = useCurrentPrompt();
+
+  React.useEffect(() => {
+    logger.debug('Prompt debug', {
+      component: 'DailyEntryScreen',
+      language,
+      currentPrompt,
+      promptText: rawCurrentPrompt?.prompt_text,
+      isLoading: promptLoading,
+      error: promptError?.message,
+    });
+
+    if (language === 'en' && rawCurrentPrompt?.prompt_text) {
+      logger.debug('English prompt check', {
+        component: 'DailyEntryScreen',
+        promptId: rawCurrentPrompt.id,
+        promptText: rawCurrentPrompt.prompt_text,
+        isEnglishText:
+          rawCurrentPrompt.prompt_text.includes('you') ||
+          rawCurrentPrompt.prompt_text.includes('what') ||
+          rawCurrentPrompt.prompt_text.includes('how'),
+        isTurkishText:
+          rawCurrentPrompt.prompt_text.includes('bugün') ||
+          rawCurrentPrompt.prompt_text.includes('ne') ||
+          rawCurrentPrompt.prompt_text.includes('hangi'),
+      });
+    }
+  }, [language, currentPrompt, rawCurrentPrompt, promptLoading, promptError]);
+
   // Computed values (after profile data is available)
   const statements = useMemo(() => currentEntry?.statements || [], [currentEntry?.statements]);
+  // Newest-first display order
+  const displayStatements = useMemo(() => {
+    return [...statements].reverse();
+  }, [statements]);
   const dailyGoal = daily_gratitude_goal || 3;
   const isToday = finalDateString === new Date().toISOString().split('T')[0];
   const progressPercentage = Math.min((statements.length / dailyGoal) * 100, 100);
@@ -155,7 +201,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     if (isGoalComplete && !wasGoalJustCompleted.current) {
       wasGoalJustCompleted.current = true;
       // 🚀 TOAST INTEGRATION: Replace visual celebration with success toast
-      showSuccess('Tebrikler! Günlük hedefinizi tamamladınız! 🎉');
+      showSuccess(t('gratitude.success.goalCompleted'));
       hapticFeedback.success();
 
       // 📊 ANALYTICS TRACKING: Log goal completion achievement
@@ -180,6 +226,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     isGoalComplete,
     animations,
     showSuccess,
+    t,
     finalDateString,
     isToday,
     statements.length,
@@ -235,7 +282,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   // **SIMPLE STATEMENT OPERATIONS**: Minimal animation feedback
   const handleAddStatement = useCallback(
-    (statementText: string) => {
+    (statementText: string, moodEmoji?: MoodEmoji | null) => {
       try {
         gratitudeStatementSchema.parse(statementText);
 
@@ -245,14 +292,16 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         const newPercentage = (newCount / dailyGoal) * 100;
 
         addStatement(
-          { entryDate: finalDateString, statement: statementText },
+          { entryDate: finalDateString, statement: statementText, moodEmoji: moodEmoji ?? null },
           {
             onSuccess: () => {
               // 🚀 ENHANCED TOAST INTEGRATION: Contextual success feedback
               hapticFeedback.medium();
               if (isFirstStatement) {
                 showSuccess(
-                  `${isToday ? 'Günün' : 'Bu tarihin'} ilk minnettarlığı! Harika bir başlangıç ✨`
+                  isToday
+                    ? t('gratitude.success.firstEntryToday')
+                    : t('gratitude.success.firstEntryThisDate')
                 );
                 analyticsService.logEvent('first_statement_added', {
                   entry_date: finalDateString,
@@ -260,7 +309,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                   daily_goal: dailyGoal,
                 });
               } else if (newPercentage >= 80 && newPercentage < 100) {
-                showSuccess('Hedefinize çok yaklaştınız! Devam edin 🎯');
+                showSuccess(t('gratitude.success.goalNearCompletion'));
                 analyticsService.logEvent('progress_milestone_reached', {
                   entry_date: finalDateString,
                   new_count: newCount,
@@ -269,7 +318,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                   milestone: '80_percent',
                 });
               } else {
-                showSuccess('Minnet ifadeniz eklendi! ✨');
+                showSuccess(t('gratitude.success.statementAdded'));
                 analyticsService.logEvent('statement_added', {
                   entry_date: finalDateString,
                   new_count: newCount,
@@ -289,7 +338,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       } catch (error) {
         if (error instanceof ZodError) {
           // 🚀 TOAST INTEGRATION: Use toast error instead of inline error state
-          showError(error.issues[0]?.message || 'Geçersiz minnet ifadesi');
+          showError(error.issues[0]?.message || t('gratitude.validation.invalidStatement'));
           hapticFeedback.warning();
           // Simple fade feedback for errors instead of shake
           animations.animateFade(0.7, { duration: 150 });
@@ -305,28 +354,25 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       showSuccess,
       showError,
       animations,
+      t,
       statements.length,
       dailyGoal,
       isToday,
     ]
   );
 
-  const handleEditStatement = useCallback(
-    (index: number) => {
-      setEditingStatementIndex(index);
-      // **MINIMAL EDITING STATE**: Simple layout transition
-      animations.animateLayoutTransition(true, 100, { duration: 200 });
-      // Ensure the edited card is visible above the keyboard
-      const y = cardPositionsRef.current[index] ?? 0;
-      setTimeout(() => {
-        scrollRef.current?.scrollTo({ y: Math.max(y - 100, 0), animated: true });
-      }, 150);
-    },
-    [animations]
-  );
+  // Removed unused handleEditStatement to satisfy linter
 
   const handleSaveEditedStatement = useCallback(
     async (index: number, updatedStatement: string) => {
+      // Find the original statement. Note the reverse order of displayStatements.
+      const originalStatement = statements[statements.length - 1 - index];
+
+      if (updatedStatement.trim() === originalStatement.trim()) {
+        setShowSaveHint(true);
+        return;
+      }
+
       try {
         gratitudeStatementSchema.parse(updatedStatement);
 
@@ -337,13 +383,14 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               // **MINIMAL COMPLETION**: Simple layout transition
               animations.animateLayoutTransition(false, 0, { duration: 200 });
               setEditingStatementIndex(null);
-              showSuccess('Minnet ifadesi güncellendi');
+              setShowSaveHint(false); // Hide hint on successful save
+              showSuccess(t('statement.updated'));
             },
           }
         );
       } catch (error) {
         if (error instanceof ZodError) {
-          showError(error.issues[0]?.message || 'Geçersiz minnet ifadesi');
+          showError(error.issues[0]?.message || t('gratitude.validation.invalidStatement'));
           // Simple fade feedback for errors
           animations.animateFade(0.7, { duration: 150 });
           animationTimerRef.current = setTimeout(() => {
@@ -352,7 +399,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         }
       }
     },
-    [finalDateString, editStatement, showSuccess, showError, animations]
+    [finalDateString, editStatement, showSuccess, showError, animations, t, statements]
   );
 
   const handleCancelEditing = useCallback(() => {
@@ -370,13 +417,13 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           onSuccess: () => {
             // **MINIMAL DELETION FEEDBACK**: Simple layout transition
             animations.animateLayoutTransition(false, 0, { duration: 200 });
-            showSuccess('Minnet ifadesi silindi', {
+            showSuccess(t('statement.deleted'), {
               action: {
-                label: 'Geri Al',
+                label: t('statement.undoAction'),
                 onPress: () => {
                   addStatement(
                     { entryDate: finalDateString, statement: deleted },
-                    { onSuccess: () => showSuccess('Geri alındı') }
+                    { onSuccess: () => showSuccess(t('statement.undoSuccess')) }
                   );
                 },
               },
@@ -385,7 +432,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         }
       );
     },
-    [finalDateString, deleteStatement, showSuccess, animations, addStatement, statements]
+    [finalDateString, deleteStatement, showSuccess, animations, addStatement, statements, t]
   );
 
   const handleRefresh = async () => {
@@ -407,9 +454,9 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       <ScreenLayout>
         <ErrorState
           error={entryError}
-          title="Veriler Yüklenemedi"
+          title={t('gratitude.errors.dataLoadFailed')}
           onRetry={refetchEntry}
-          retryText="Tekrar Dene"
+          retryText={t('common.retry')}
         />
       </ScreenLayout>
     );
@@ -425,6 +472,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         scrollRef={scrollRef}
         density="compact"
         edgeToEdge={true}
+        backgroundColor={theme.colors.surface}
         showsVerticalScrollIndicator={false}
         keyboardAware={true}
         keyboardVerticalOffset={0}
@@ -459,9 +507,13 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                   <Icon name="book-open-page-variant" size={22} color={theme.colors.primary} />
                 </View>
                 <View style={styles.titleTextContainer}>
-                  <Text style={styles.enhancedNavigationTitle}>Minnettarlık Günlüğü</Text>
+                  <Text style={styles.enhancedNavigationTitle}>
+                    {t('home.actions.start.subtitle')}
+                  </Text>
                   <Text style={styles.enhancedNavigationSubtitle}>
-                    {isToday ? 'Bugünün güzel anları' : 'Geçmiş anıların ışığı'}
+                    {isToday
+                      ? t('home.inspiration.progress.start.message')
+                      : t('throwback.teaser.placeholderSubtitle')}
                   </Text>
                 </View>
               </View>
@@ -472,7 +524,9 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           <View style={styles.edgeToEdgeProgressSection}>
             <View style={styles.progressContent}>
               <View style={styles.progressHeader}>
-                <Text style={styles.progressTitle}>Günlük İlerleme</Text>
+                <Text style={styles.progressTitle}>
+                  {t('home.inspiration.progress.progress.title')}
+                </Text>
                 <View style={styles.progressBadge}>
                   <Text style={styles.progressBadgeText}>
                     {statements.length}/{dailyGoal}
@@ -494,16 +548,14 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                     ]}
                   />
                 </View>
-                <Text style={styles.progressPercentageText}>
-                  {Math.round(progressPercentage)}% tamamlandı
-                </Text>
+                <Text style={styles.progressPercentageText}>{Math.round(progressPercentage)}%</Text>
               </View>
 
               {isGoalComplete && (
                 <View style={styles.goalCompleteBadge}>
                   <Icon name="check-circle" size={16} color={theme.colors.success} />
                   <Text style={styles.goalCompleteText}>
-                    Harika! Günlük hedefiniz tamamlandı 🎉
+                    {t('home.hero.goalComplete.secondary')}
                   </Text>
                 </View>
               )}
@@ -525,14 +577,17 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           <View style={styles.inputBarContainer}>
             <GratitudeInputBar
               ref={inputBarRef}
-              promptText={profile?.useVariedPrompts ? currentPrompt : undefined}
+              promptText={currentPrompt}
               onSubmit={handleAddStatement}
+              onSubmitWithMood={(text, mood) => {
+                handleAddStatement(text, mood ?? null);
+              }}
               disabled={isAddingStatement}
               error={null}
-              onRefreshPrompt={profile?.useVariedPrompts ? handlePromptRefresh : undefined}
-              promptLoading={profile?.useVariedPrompts ? promptLoading || isLoadingEntry : false}
-              promptError={profile?.useVariedPrompts ? promptError?.message || null : null}
-              showPrompt={profile?.useVariedPrompts ?? false}
+              onRefreshPrompt={handlePromptRefresh}
+              promptLoading={promptLoading || isLoadingEntry}
+              promptError={promptError?.message || null}
+              showPrompt={true}
               currentCount={statements.length}
               goal={dailyGoal}
             />
@@ -547,37 +602,47 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                   <View style={styles.sectionIconContainer}>
                     <Icon name="heart-multiple" size={20} color={theme.colors.primary} />
                   </View>
-                  <Text style={styles.modernSectionTitle}>Bugünün Minnettarlıkları</Text>
+                  <Text style={styles.modernSectionTitle}>
+                    {t('gratitude.sections.todaysGratitudes')}
+                  </Text>
                 </View>
                 <View style={styles.sectionCounterContainer}>
                   <Text style={styles.sectionCounterText}>{statements.length}</Text>
                 </View>
               </View>
 
-              {/* Statements directly in the same container */}
-              {statements.map((statement, index) => (
+              {/* Statements directly in the same container (newest first) */}
+              {displayStatements.map((statement, index) => (
                 <View
-                  key={`${finalDateString}-${index}`}
+                  key={`${finalDateString}-${index}-${statement.slice(0, 10)}`}
                   style={styles.modernStatementWrapper}
                   onLayout={(event) => {
                     cardPositionsRef.current[index] = event.nativeEvent.layout.y;
                   }}
                 >
-                  <StatementEditCard
+                  <DailyEntryStatementItem
+                    index={index}
                     statement={statement}
-                    date={effectiveDate.toISOString()}
+                    entryDate={finalDateString}
+                    dateIso={effectiveDate.toISOString()}
                     isEditing={editingStatementIndex === index}
-                    onEdit={() => handleEditStatement(index)}
-                    onSave={(updatedStatement) =>
-                      handleSaveEditedStatement(index, updatedStatement)
-                    }
+                    isLoading={isEditingStatement || isDeletingStatement}
+                    onEdit={() => {
+                      // Force editing only in Entry Detail screen
+                      navigation.navigate('EntryDetail', {
+                        entryDate: finalDateString,
+                        entryId: '',
+                      });
+                    }}
+                    onSave={(updated) => handleSaveEditedStatement(index, updated)}
                     onCancel={handleCancelEditing}
                     onDelete={() => handleDeleteStatement(index)}
-                    isLoading={isEditingStatement || isDeletingStatement}
-                    edgeToEdge={true}
-                    variant="primary"
-                    showQuotes={true}
-                    animateEntrance={true}
+                    serverMood={
+                      ((currentEntry?.moods as Record<string, string> | undefined)?.[
+                        String(statements.length - 1 - index)
+                      ] as MoodEmoji | undefined) ?? null
+                    }
+                    showSaveHint={editingStatementIndex === index && showSaveHint}
                   />
                 </View>
               ))}
@@ -590,12 +655,12 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                   <Icon name="heart-plus-outline" size={56} color={theme.colors.primary + '30'} />
                 </View>
                 <Text style={styles.modernEmptyTitle}>
-                  {isToday ? 'Günün ilk minnettarlığını ekle' : 'Bu tarihte henüz bir giriş yok'}
+                  {isToday ? t('home.actions.start.title') : t('pastEntries.empty.title')}
                 </Text>
                 <Text style={styles.modernEmptySubtitle}>
                   {isToday
-                    ? 'Günün güzel anlarını ve minnettarlıklarını paylaş ✨'
-                    : 'Bu tarih için yeni minnettarlıklar ekleyebilirsin'}
+                    ? t('home.inspiration.progress.start.message')
+                    : t('throwback.teaser.placeholderHint')}
                 </Text>
                 {isToday && (
                   <TouchableOpacity
@@ -614,11 +679,13 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                     activeOpacity={0.8}
                     // **ACCESSIBILITY IMPROVEMENTS**
                     accessibilityRole="button"
-                    accessibilityLabel="İlk minnettarlığını ekle"
-                    accessibilityHint="Minnet ifadesi yazmak için giriş alanına odaklan"
+                    accessibilityLabel={t('gratitude.input.a11y.addFirstGratitude')}
+                    accessibilityHint={t('gratitude.input.a11y.addFirstGratitudeHint')}
                   >
                     <Icon name="plus" size={18} color={theme.colors.onPrimary} />
-                    <Text style={styles.emptyStateButtonText}>İlk minnettarlığını ekle</Text>
+                    <Text style={styles.emptyStateButtonText}>
+                      {t('gratitude.input.a11y.addFirstGratitude')}
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -629,7 +696,9 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           {isLoadingEntry && statements.length === 0 && (
             <View style={styles.loadingStateSection}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
-              <Text style={styles.loadingStateText}>Günlük girişler yükleniyor...</Text>
+              <Text style={styles.loadingStateText}>
+                {t('shared.layout.screenContent.loading')}
+              </Text>
             </View>
           )}
         </Animated.View>
@@ -645,7 +714,7 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: theme.spacing.md,
     },
     builtInNavigationHeader: {
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.surface,
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.md,
       paddingBottom: theme.spacing.sm,
@@ -654,7 +723,7 @@ const createStyles = (theme: AppTheme) =>
     },
     enhancedNavigationHeader: {
       position: 'relative',
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.surface,
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.lg,
       paddingBottom: theme.spacing.md,
@@ -668,8 +737,8 @@ const createStyles = (theme: AppTheme) =>
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: `linear-gradient(135deg, ${theme.colors.primaryContainer}15, ${theme.colors.secondaryContainer}10)`,
-      opacity: 0.3,
+      // Subtle tinted backdrop instead of invalid gradient string
+      backgroundColor: theme.colors.primaryContainer + '0D',
     },
     enhancedNavigationContent: {
       position: 'relative',
@@ -682,14 +751,13 @@ const createStyles = (theme: AppTheme) =>
       gap: theme.spacing.md,
     },
     titleIconContainer: {
-      backgroundColor: theme.colors.primaryContainer + '40',
+      backgroundColor: theme.colors.primaryContainer + '20',
       padding: theme.spacing.sm,
       borderRadius: theme.borderRadius.full,
       shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 4,
-      elevation: 2,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.08,
+      shadowRadius: 2,
     },
     titleTextContainer: {
       flex: 1,
@@ -699,8 +767,8 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.headlineSmall,
       color: theme.colors.onBackground,
       fontWeight: '700',
-      fontSize: 24,
-      lineHeight: 28,
+      fontSize: 22,
+      lineHeight: 26,
       letterSpacing: -0.5,
       textAlign: 'center',
       marginBottom: 2,
@@ -727,9 +795,9 @@ const createStyles = (theme: AppTheme) =>
 
     // **EDGE-TO-EDGE PROGRESS SECTION**: More compact progress section
     edgeToEdgeProgressSection: {
-      backgroundColor: theme.colors.primaryContainer + '20',
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.outline + '15',
+      backgroundColor: theme.colors.primaryContainer + '10',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.outline + '12',
     },
     progressContent: {
       paddingHorizontal: theme.spacing.lg,
@@ -749,10 +817,10 @@ const createStyles = (theme: AppTheme) =>
     },
     progressBadge: {
       backgroundColor: theme.colors.primaryContainer,
-      paddingHorizontal: theme.spacing.xs, // Reduced from sm
-      paddingVertical: 2, // Reduced from xs
+      paddingHorizontal: theme.spacing.xs,
+      paddingVertical: 2,
       borderRadius: theme.borderRadius.full,
-      minWidth: 28, // Reduced from 32
+      minWidth: 26,
       alignItems: 'center',
     },
     progressBadgeText: {
@@ -762,19 +830,19 @@ const createStyles = (theme: AppTheme) =>
       fontSize: 12, // Reduced
     },
     progressBarContainer: {
-      marginBottom: theme.spacing.xs, // Reduced from sm
+      marginBottom: theme.spacing.xs,
     },
     progressTrack: {
-      height: 6, // Reduced from 8
-      borderRadius: 3, // Reduced from 4
-      backgroundColor: theme.colors.outline + '20',
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: theme.colors.outline + '12',
       overflow: 'hidden',
-      marginBottom: theme.spacing.xs, // Reduced from sm
+      marginBottom: theme.spacing.xs,
     },
     progressFill: {
       height: '100%',
-      borderRadius: 3, // Reduced from 4
-      minWidth: 6, // Reduced from 8
+      borderRadius: 2,
+      minWidth: 4,
     },
     progressPercentageText: {
       ...theme.typography.bodySmall,
@@ -812,13 +880,12 @@ const createStyles = (theme: AppTheme) =>
     },
     unifiedStatementsSection: {
       flex: 1,
-      backgroundColor: theme.colors.surface + 'F5', // Very subtle transparency
-      paddingTop: theme.spacing.lg,
+      backgroundColor: theme.colors.surface,
+      paddingTop: theme.spacing.md,
       paddingBottom: theme.spacing.md,
       paddingHorizontal: theme.spacing.lg,
-      // Subtle inner shadow for depth
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline + '15',
+      borderTopColor: theme.colors.outline + '12',
     },
     unifiedSectionHeader: {
       flexDirection: 'row',
@@ -874,17 +941,17 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: theme.spacing.xs, // Reduced from sm
     },
     modernStatementWrapper: {
-      marginBottom: theme.spacing.sm, // Reduced from lg
-      // Wrapper for gradient border - relative positioning
+      marginBottom: theme.spacing.sm,
       position: 'relative',
       borderRadius: theme.borderRadius.md,
-      // Slight overlap prevention
       overflow: 'hidden',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '10',
     },
     modernEmptyState: {
       flex: 1,
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xxxl,
+      paddingVertical: theme.spacing.xl,
       backgroundColor: theme.colors.surface,
       justifyContent: 'center',
     },
@@ -920,12 +987,13 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
-      // Enhanced shadow
       shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 4,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 4,
+      elevation: 2,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.onPrimary + '10',
     },
     emptyStateButtonText: {
       ...theme.typography.bodyMedium,
@@ -1104,3 +1172,77 @@ const createStyles = (theme: AppTheme) =>
   });
 
 export default EnhancedDailyEntryScreen;
+// Local component to satisfy hooks rules for mood per item
+const DailyEntryStatementItemDisplayName = 'DailyEntryStatementItem';
+const DailyEntryStatementItem: React.FC<{
+  index: number;
+  statement: string;
+  entryDate: string;
+  dateIso: string;
+  isEditing: boolean;
+  isLoading: boolean;
+  onEdit: () => void;
+  onSave: (updated: string) => Promise<void>;
+  onCancel: () => void;
+  onDelete: () => void;
+  serverMood?: MoodEmoji | null;
+  showSaveHint?: boolean;
+}> = React.memo(
+  ({
+    index,
+    statement,
+    entryDate,
+    dateIso,
+    isEditing,
+    isLoading,
+    onEdit,
+    onSave,
+    onCancel,
+    onDelete,
+    serverMood,
+    showSaveHint,
+  }) => {
+    const { moodEmoji, setMoodEmoji } = useMoodEmoji({ entryDate, index });
+    const { setStatementMood } = useGratitudeMutations();
+
+    // Initialize local mood from server when available
+    useEffect(() => {
+      if (serverMood !== null && serverMood !== undefined && serverMood !== moodEmoji) {
+        void setMoodEmoji(serverMood);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [serverMood]);
+
+    const handleChangeMood = (mood: MoodEmoji | null) => {
+      setMoodEmoji(mood); // instant local UX
+      // persist on server
+      setStatementMood({ entryDate, statementIndex: index, moodEmoji: mood });
+      if (mood) {
+        analyticsService.logEvent('mood_selected', { entry_date: entryDate, index, emoji: mood });
+      } else {
+        analyticsService.logEvent('mood_cleared', { entry_date: entryDate, index });
+      }
+    };
+
+    return (
+      <StatementEditCard
+        statement={statement}
+        date={dateIso}
+        isEditing={isEditing}
+        onEdit={onEdit}
+        onSave={onSave}
+        onCancel={onCancel}
+        onDelete={onDelete}
+        isLoading={isLoading}
+        edgeToEdge={true}
+        variant="primary"
+        showQuotes={true}
+        animateEntrance={true}
+        moodEmoji={moodEmoji}
+        onChangeMood={handleChangeMood}
+        showSaveHint={showSaveHint}
+      />
+    );
+  }
+);
+DailyEntryStatementItem.displayName = DailyEntryStatementItemDisplayName;

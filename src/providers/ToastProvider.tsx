@@ -10,6 +10,7 @@ import React, {
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from './ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import type { AppTheme } from '@/themes/types';
@@ -20,6 +21,15 @@ export interface ToastOptions {
   action?: {
     label: string;
     onPress: () => void;
+  };
+  // Optional i18n for message and action label
+  i18n?: {
+    key: string;
+    params?: Record<string, string | number | boolean>;
+  };
+  actionI18n?: {
+    key: string;
+    params?: Record<string, string | number | boolean>;
   };
 }
 
@@ -117,6 +127,7 @@ const getToastConfig = (theme: AppTheme, type: ToastState['type']) => {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const [toastState, setToastState] = useState<ToastState>({
     visible: false,
     message: '',
@@ -146,20 +157,29 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
   const showToast = useCallback(
     (message: string, options: ToastOptions = {}) => {
-      const { duration = 4000, type = 'info', action } = options;
+      const { duration = 4000, type = 'info', action, i18n: i18nOpt, actionI18n } = options;
 
       // Clear any existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
+      const resolvedMessage = i18nOpt ? t(i18nOpt.key, i18nOpt.params) : message;
+
+      const resolvedAction = action
+        ? {
+            ...action,
+            label: actionI18n ? t(actionI18n.key, actionI18n.params) : action.label,
+          }
+        : undefined;
+
       // Update state
       setToastState({
         visible: true,
-        message,
+        message: resolvedMessage,
         type,
         duration,
-        action,
+        action: resolvedAction,
       });
 
       // **COORDINATED SHOW**: Simple entrance animation
@@ -170,7 +190,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         hideToast();
       }, duration);
     },
-    [animations, hideToast]
+    [animations, hideToast, t]
   );
 
   const showSuccess = useCallback(

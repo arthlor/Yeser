@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
@@ -31,6 +32,7 @@ interface PastEntriesErrorStateProps {
 const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, onRetry }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   // Enhanced error type detection with better messaging
   const getErrorInfo = () => {
@@ -43,9 +45,9 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
     ) {
       return {
         icon: 'wifi-off',
-        title: 'Bağlantı Sorunu',
-        message: 'İnternet bağlantınızı kontrol edin ve tekrar deneyin.',
-        actionText: 'Yeniden Bağlan',
+        title: t('pastEntries.error.networkTitle'),
+        message: t('pastEntries.error.networkMessage'),
+        actionText: t('common.retry'),
         type: 'network',
         color: theme.colors.warning,
       };
@@ -54,9 +56,9 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
     if (errorLower.includes('timeout') || errorLower.includes('slow')) {
       return {
         icon: 'clock-alert',
-        title: 'Zaman Aşımı',
-        message: 'İstek çok uzun sürdü. Sunucu yavaş yanıt veriyor olabilir.',
-        actionText: 'Tekrar Dene',
+        title: t('pastEntries.error.timeoutTitle'),
+        message: t('pastEntries.error.timeoutMessage'),
+        actionText: t('common.retry'),
         type: 'timeout',
         color: theme.colors.warning,
       };
@@ -65,9 +67,9 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
     if (errorLower.includes('auth') || errorLower.includes('unauthorized')) {
       return {
         icon: 'account-alert',
-        title: 'Kimlik Doğrulama Hatası',
-        message: 'Oturumunuz sona ermiş olabilir. Lütfen yeniden giriş yapın.',
-        actionText: 'Tekrar Dene',
+        title: t('pastEntries.error.authTitle'),
+        message: t('pastEntries.error.authMessage'),
+        actionText: t('common.retry'),
         type: 'auth',
         color: theme.colors.error,
       };
@@ -76,9 +78,9 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
     // Generic error
     return {
       icon: 'alert-circle',
-      title: 'Beklenmeyen Hata',
-      message: 'Minnet kayıtları yüklenirken bir sorun oluştu. Tekrar deneyebilirsiniz.',
-      actionText: 'Yeniden Dene',
+      title: t('pastEntries.error.generic'),
+      message: t('pastEntries.error.generic'),
+      actionText: t('common.retry'),
       type: 'generic',
       color: theme.colors.error,
     };
@@ -126,7 +128,7 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
               <View style={styles.technicalSection}>
                 <View style={styles.technicalHeader}>
                   <Icon name="code-tags" size={14} color={theme.colors.onSurfaceVariant} />
-                  <Text style={styles.technicalTitle}>Geliştirici Detayı</Text>
+                  <Text style={styles.technicalTitle}>{t('pastEntries.error.devDetail')}</Text>
                 </View>
                 <Text style={styles.technicalText}>{error}</Text>
               </View>
@@ -148,7 +150,9 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
           <View style={styles.troubleshootingSection}>
             <View style={styles.troubleshootingHeader}>
               <Icon name="tools" size={16} color={theme.colors.info} />
-              <Text style={styles.troubleshootingTitle}>Sorun Giderme</Text>
+              <Text style={styles.troubleshootingTitle}>
+                {t('pastEntries.error.help.troubleshootingTitle', 'Troubleshooting')}
+              </Text>
             </View>
 
             <View style={styles.helpList}>
@@ -156,7 +160,7 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
                 <View style={styles.helpBullet}>
                   <Icon name="circle" size={6} color={theme.colors.primary} />
                 </View>
-                <Text style={styles.helpText}>Uygulamayı kapatıp yeniden açmayı deneyin</Text>
+                <Text style={styles.helpText}>{t('pastEntries.error.help.restart')}</Text>
               </View>
 
               {errorInfo.type === 'network' && (
@@ -164,9 +168,7 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
                   <View style={styles.helpBullet}>
                     <Icon name="circle" size={6} color={theme.colors.warning} />
                   </View>
-                  <Text style={styles.helpText}>
-                    Wi-Fi veya mobil veri bağlantınızı kontrol edin
-                  </Text>
+                  <Text style={styles.helpText}>{t('pastEntries.error.help.checkConnection')}</Text>
                 </View>
               )}
 
@@ -175,7 +177,7 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
                   <View style={styles.helpBullet}>
                     <Icon name="circle" size={6} color={theme.colors.error} />
                   </View>
-                  <Text style={styles.helpText}>Çıkış yapıp tekrar giriş yapmayı deneyin</Text>
+                  <Text style={styles.helpText}>{t('pastEntries.error.help.relogin')}</Text>
                 </View>
               )}
 
@@ -183,7 +185,9 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
                 <View style={styles.helpBullet}>
                   <Icon name="circle" size={6} color={theme.colors.info} />
                 </View>
-                <Text style={styles.helpText}>Sorun devam ederse daha sonra tekrar deneyin</Text>
+                <Text style={styles.helpText}>
+                  {t('pastEntries.error.help.tryLater', 'If the issue persists, try again later')}
+                </Text>
               </View>
             </View>
           </View>
@@ -192,14 +196,16 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
           <View style={styles.statusSection}>
             <View style={styles.statusHeader}>
               <Icon name="information-outline" size={16} color={theme.colors.onSurfaceVariant} />
-              <Text style={styles.statusTitle}>Sistem Durumu</Text>
+              <Text style={styles.statusTitle}>
+                {t('pastEntries.error.statusTitle', 'System Status')}
+              </Text>
             </View>
 
             <View style={styles.statusGrid}>
               <View style={styles.statusItem}>
                 <View style={[styles.statusDot, { backgroundColor: theme.colors.success }]} />
-                <Text style={styles.statusText}>Uygulama</Text>
-                <Text style={styles.statusValue}>Çalışıyor</Text>
+                <Text style={styles.statusText}>{t('pastEntries.error.status.app', 'App')}</Text>
+                <Text style={styles.statusValue}>{t('pastEntries.error.status.operational')}</Text>
               </View>
 
               <View style={styles.statusItem}>
@@ -212,9 +218,11 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
                     },
                   ]}
                 />
-                <Text style={styles.statusText}>Veri</Text>
+                <Text style={styles.statusText}>{t('pastEntries.error.status.data', 'Data')}</Text>
                 <Text style={styles.statusValue}>
-                  {errorInfo.type === 'network' ? 'Bağlantı Yok' : 'Geçici Hata'}
+                  {errorInfo.type === 'network'
+                    ? t('pastEntries.error.status.noConnection')
+                    : t('pastEntries.error.status.temporary')}
                 </Text>
               </View>
             </View>

@@ -1,13 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
@@ -15,15 +7,17 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '@/providers/ThemeProvider';
-import { useGlobalError } from '@/providers/GlobalErrorProvider';
+import { useToast } from '@/providers/ToastProvider';
 import { useGratitudeBenefits } from '../hooks/useGratitudeBenefits';
 import { useUserProfile } from '@/shared/hooks/useUserProfile';
 import { useStreakData } from '@/features/streak/hooks/useStreakData';
 import ErrorBoundary from '@/shared/components/layout/ErrorBoundary';
+import { ScreenLayout } from '@/shared/components/layout';
 import { analyticsService } from '@/services/analyticsService';
 import { logger } from '@/utils/debugConfig';
 import type { AppTheme } from '@/themes/types';
 import type { AppStackParamList } from '@/types/navigation';
+import { useTranslation } from 'react-i18next';
 
 // Screen dimensions available if needed
 // const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -35,8 +29,9 @@ type WhyGratitudeScreenNavigationProp = NativeStackNavigationProp<
 
 export const WhyGratitudeScreen: React.FC = React.memo(() => {
   const { theme } = useTheme();
-  const { showError, showSuccess } = useGlobalError();
+  const { showSuccess } = useToast();
   const navigation = useNavigation<WhyGratitudeScreenNavigationProp>();
+  const { t } = useTranslation();
 
   // Data fetching hooks
   const { data: benefits, isLoading, error, refetch } = useGratitudeBenefits();
@@ -46,9 +41,9 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
   // 🛡️ ERROR PROTECTION: Handle benefits loading errors
   React.useEffect(() => {
     if (error) {
-      showError('Minnet faydaları yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+      logger.error('WhyGratitudeScreen error:', { error });
     }
-  }, [error, showError]);
+  }, [error, t]);
 
   // ✅ PERFORMANCE FIX: Separate static styles from dynamic values
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -105,10 +100,10 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
 
       // 🚀 TOAST INTEGRATION: Use centralized toast system instead of custom Snackbar
       if (prompt) {
-        showSuccess(`Harika bir başlangıç! "${prompt}" seni bekliyor.`);
+        showSuccess(t('whyGratitude.cta.successMessage', { prompt }));
       }
     },
-    [navigation, streak?.current_streak, profile?.id, showSuccess]
+    [navigation, streak?.current_streak, profile?.id, showSuccess, t]
   );
 
   const handleBenefitCtaPress = useCallback(
@@ -131,40 +126,40 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
   const handleRetry = useCallback(() => {
     refetch();
     // 🛡️ ERROR PROTECTION: Notify user when retrying
-    showSuccess('Yeniden yükleniyor...');
-  }, [refetch, showSuccess]);
+    showSuccess(t('common.loading'));
+  }, [refetch, showSuccess, t]);
 
   const handleGoBack = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
   // ✅ PERFORMANCE FIX: Memoize computed values
-  const primaryPrompt = useMemo(() => benefits?.[0]?.cta_prompt_tr, [benefits]);
+  const primaryPrompt = useMemo(() => benefits?.[0]?.cta_prompt, [benefits]);
 
   // Enhanced Loading State
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <ScreenLayout edges={['top']} edgeToEdge={true} backgroundColor={theme.colors.surface}>
         <View style={styles.loadingContainer}>
           <Animated.View entering={FadeIn.duration(600)} style={styles.loadingContent}>
             <ActivityIndicator
               animating={true}
               color={theme.colors.primary}
               size="large"
-              accessibilityLabel="İçerik yükleniyor"
+              accessibilityLabel={t('shared.layout.screenContent.loading')}
             />
-            <Text style={styles.loadingText}>İçerik yükleniyor...</Text>
-            <Text style={styles.loadingSubtext}>Minnetin faydaları hazırlanıyor</Text>
+            <Text style={styles.loadingText}>{t('shared.layout.screenContent.loading')}</Text>
+            <Text style={styles.loadingSubtext}>{t('whyGratitude.loadingSubtext')}</Text>
           </Animated.View>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   // Enhanced Error State
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <ScreenLayout edges={['top']} edgeToEdge={true} backgroundColor={theme.colors.surface}>
         <View style={styles.errorContainer}>
           <Animated.View entering={FadeInUp.duration(600)} style={styles.errorContent}>
             <Icon
@@ -173,116 +168,111 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
               color={theme.colors.error}
               style={styles.errorIcon}
             />
-            <Text style={styles.errorTitle}>İçerik yüklenirken bir hata oluştu</Text>
+            <Text style={styles.errorTitle}>
+              {t('shared.layout.errorState.cases.generic.title')}
+            </Text>
             <Text style={styles.errorMessage}>
-              Lütfen internet bağlantınızı kontrol edip tekrar deneyin.
+              {t('shared.layout.errorState.cases.generic.message')}
             </Text>
             <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
-              <Text style={styles.retryButtonLabel}>Tekrar Dene</Text>
+              <Text style={styles.retryButtonLabel}>{t('common.retry')}</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
-      </SafeAreaView>
+      </ScreenLayout>
     );
   }
 
   return (
     <ErrorBoundary>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <ScreenLayout
+        edges={['top']}
+        edgeToEdge={true}
+        backgroundColor={theme.colors.surface}
+        scrollable={true}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+      >
         {/* Simple Header */}
         <View style={styles.appBar}>
           <TouchableOpacity
             onPress={handleGoBack}
-            accessibilityLabel="Geri dön"
+            accessibilityLabel={t('common.back')}
             style={styles.appBarBackAction}
           >
-            <Icon name="arrow-left" size={24} color={theme.colors.onBackground} />
+            <Icon name="arrow-left" size={24} color={theme.colors.onSurface} />
           </TouchableOpacity>
-          <Text style={styles.appBarTitle}>Minnetin Gücü</Text>
+          <Text style={styles.appBarTitle}>{t('whyGratitude.title')}</Text>
+        </View>
+        {/* Simple Hero Section */}
+        <View style={styles.heroSection}>
+          <Text style={styles.title}>{t('whyGratitude.hero.title')}</Text>
+          <Text style={styles.intro}>{t('whyGratitude.hero.subtitle')}</Text>
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Simple Hero Section */}
-          <View style={styles.heroSection}>
-            <Text style={styles.title}>Zihinsel Sağlığınız İçin Bir Adım Atın</Text>
-            <Text style={styles.intro}>
-              Yeşer ile her gün minnettar olduğunuz şeyleri düşünmek, zihinsel sağlığınız üzerinde
-              kanıtlanmış güçlü etkilere sahiptir.
-            </Text>
-          </View>
+        {/* Benefits Section */}
+        <View style={styles.benefitsSection}>
+          <Text style={styles.benefitsTitle}>{t('whyGratitude.benefits.title')}</Text>
+          <Text style={styles.benefitsSubtitle}>{t('whyGratitude.benefits.subtitle')}</Text>
 
-          {/* Benefits Section */}
-          <View style={styles.benefitsSection}>
-            <Text style={styles.benefitsTitle}>Neden minnet duymalıyız?</Text>
-            <Text style={styles.benefitsSubtitle}>Araştırmalarla desteklenen minnetin gücü...</Text>
-
-            {benefits?.map((benefit, index) => (
-              <TouchableOpacity
-                key={benefit.id}
-                style={styles.benefitCard}
-                onPress={() =>
-                  handleBenefitCtaPress(
-                    benefit.cta_prompt_tr || '',
-                    benefit.id,
-                    benefit.title_tr,
-                    index
-                  )
-                }
-                activeOpacity={0.8}
-              >
-                {/* Gradient Border Container */}
-                <View style={styles.benefitGradientBorderContainer}>
-                  <LinearGradient
-                    colors={[
-                      theme.colors.primary,
-                      theme.colors.secondary || theme.colors.primaryContainer,
-                      theme.colors.tertiary || theme.colors.primary,
-                    ]}
-                    style={styles.benefitGradientBorder}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  />
-                </View>
-
-                <View style={styles.benefitContent}>
-                  {/* Icon */}
-                  <View style={styles.benefitIconContainer}>
-                    <Icon name={benefit.icon} size={24} color={theme.colors.primary} />
-                  </View>
-
-                  {/* Content */}
-                  <View style={styles.benefitTextContainer}>
-                    <Text style={styles.benefitTitle}>{benefit.title_tr}</Text>
-                    <Text style={styles.benefitDescription}>{benefit.description_tr}</Text>
-                    {benefit.stat_tr && <Text style={styles.benefitStat}>{benefit.stat_tr}</Text>}
-                  </View>
-
-                  {/* Arrow */}
-                  <View style={styles.benefitArrow}>
-                    <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Simple CTA Section */}
-          <View style={styles.ctaSection}>
-            <Text style={styles.ctaTitle}>Bugün Hemen Başla</Text>
-            <Text style={styles.ctaSubtitle}>Bu faydaları deneyimlemek için ilk adımını at.</Text>
-
+          {benefits?.map((benefit, index) => (
             <TouchableOpacity
-              onPress={() => handleStartJournaling(primaryPrompt)}
-              style={styles.ctaButton}
+              key={benefit.id}
+              style={styles.benefitCard}
+              onPress={() =>
+                handleBenefitCtaPress(benefit.cta_prompt || '', benefit.id, benefit.title, index)
+              }
+              activeOpacity={0.8}
             >
-              <Text style={styles.ctaButtonLabel}>Hemen Başla</Text>
+              {/* Gradient Border Container */}
+              <View style={styles.benefitGradientBorderContainer}>
+                <LinearGradient
+                  colors={[
+                    theme.colors.primary,
+                    theme.colors.secondary || theme.colors.primaryContainer,
+                    theme.colors.tertiary || theme.colors.primary,
+                  ]}
+                  style={styles.benefitGradientBorder}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                />
+              </View>
+
+              <View style={styles.benefitContent}>
+                {/* Icon */}
+                <View style={styles.benefitIconContainer}>
+                  <Icon name={benefit.icon} size={24} color={theme.colors.primary} />
+                </View>
+
+                {/* Content */}
+                <View style={styles.benefitTextContainer}>
+                  <Text style={styles.benefitTitle}>{benefit.title}</Text>
+                  <Text style={styles.benefitDescription}>{benefit.description}</Text>
+                  {benefit.stat && <Text style={styles.benefitStat}>{benefit.stat}</Text>}
+                </View>
+
+                {/* Arrow */}
+                <View style={styles.benefitArrow}>
+                  <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                </View>
+              </View>
             </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+          ))}
+        </View>
+
+        {/* Simple CTA Section */}
+        <View style={styles.ctaSection}>
+          <Text style={styles.ctaTitle}>{t('whyGratitude.cta.title')}</Text>
+          <Text style={styles.ctaSubtitle}>{t('whyGratitude.cta.subtitle')}</Text>
+
+          <TouchableOpacity
+            onPress={() => handleStartJournaling(primaryPrompt)}
+            style={styles.ctaButton}
+          >
+            <Text style={styles.ctaButtonLabel}>{t('whyGratitude.cta.button')}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenLayout>
     </ErrorBoundary>
   );
 });
@@ -292,11 +282,6 @@ WhyGratitudeScreen.displayName = 'WhyGratitudeScreen';
 // **CLEAN DESIGN**: Simplified styles without gradients
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-
     // Header styles
     appBar: {
       backgroundColor: theme.colors.surface,
@@ -323,12 +308,7 @@ const createStyles = (theme: AppTheme) =>
     },
 
     // Layout containers
-    contentWrapper: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
     contentContainer: {
-      paddingHorizontal: theme.spacing.lg,
       paddingBottom: theme.spacing.xxxl,
     },
 

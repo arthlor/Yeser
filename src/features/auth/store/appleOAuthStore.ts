@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { logger } from '@/utils/debugConfig';
 import { atomicOperationManager } from '../utils/atomicOperations';
 import { appleOAuthService } from '../services';
+import i18n from '@/i18n';
 
 export interface AppleOAuthState {
   isLoading: boolean;
@@ -67,7 +68,9 @@ export const useAppleOAuthStore = create<AppleOAuthState>((set, get) => ({
 
           if (!get().canAttemptSignIn()) {
             const remainingTime = get().getRemainingCooldown();
-            const error = `Lütfen ${Math.ceil(remainingTime / 1000)} saniye bekleyin ve tekrar deneyin.`;
+            const error = i18n.t('auth.services.waitSeconds', {
+              seconds: Math.ceil(remainingTime / 1000),
+            });
             set({ error, isLoading: false });
             throw new Error(error);
           }
@@ -81,21 +84,20 @@ export const useAppleOAuthStore = create<AppleOAuthState>((set, get) => ({
             logger.debug('Apple OAuth store: OAuth flow initiated, waiting for callback');
             return;
           } else if (result.success && result.user && result.session) {
-            // Direct ID token path (not typical with hosted flow)
             set({ isLoading: false, error: null });
             logger.debug('Apple OAuth store: Direct sign-in successful');
           } else if (result.userCancelled) {
             set({ isLoading: false, error: null });
             logger.debug('Apple OAuth store: Sign-in cancelled by user');
           } else {
-            const errorMessage = result.error || 'Apple ile giriş başarısız oldu';
+            const errorMessage = result.error || i18n.t('auth.services.appleFailed');
             set({ error: errorMessage, isLoading: false });
             logger.error('Apple OAuth store: Sign-in failed:', { error: errorMessage });
             throw new Error(errorMessage);
           }
         } catch (error) {
           const errorMessage =
-            error instanceof Error ? error.message : 'Apple ile giriş başarısız oldu';
+            error instanceof Error ? error.message : i18n.t('auth.services.appleFailed');
           set({ error: errorMessage, isLoading: false });
           logger.error('Apple OAuth store: Sign-in error:', error as Error);
           throw error;

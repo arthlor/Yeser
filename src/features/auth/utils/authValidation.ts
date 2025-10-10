@@ -1,4 +1,5 @@
 import { logger } from '@/utils/debugConfig';
+import i18n from '@/i18n';
 import { AUTH_CONSTANTS } from './authConstants';
 
 /**
@@ -6,7 +7,7 @@ import { AUTH_CONSTANTS } from './authConstants';
  */
 export const validateEmail = (email: string): { isValid: boolean; error?: string } => {
   if (!email || email.trim().length === 0) {
-    return { isValid: false, error: 'Email adresi gereklidir' };
+    return { isValid: false, error: i18n.t('auth.validation.emailRequired') };
   }
 
   const trimmedEmail = email.trim().toLowerCase();
@@ -15,13 +16,13 @@ export const validateEmail = (email: string): { isValid: boolean; error?: string
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (!emailRegex.test(trimmedEmail)) {
-    return { isValid: false, error: 'Geçerli bir email adresi girin' };
+    return { isValid: false, error: i18n.t('auth.validation.emailInvalid') };
   }
 
   // Additional checks
   if (trimmedEmail.length > 320) {
     // RFC 5321 limit
-    return { isValid: false, error: 'Email adresi çok uzun' };
+    return { isValid: false, error: i18n.t('auth.validation.emailTooLong') };
   }
 
   return { isValid: true };

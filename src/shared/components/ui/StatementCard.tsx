@@ -28,7 +28,9 @@ import {
   unifiedShadows,
 } from '@/themes/utils';
 import { ThreeDotsMenu, useReducedMotion } from './StatementCardBase';
+import type { MoodEmoji } from '@/types/mood.types';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
+import { useTranslation } from 'react-i18next';
 
 // Simplified props interface focusing on core functionality
 export interface StatementCardProps {
@@ -37,6 +39,7 @@ export interface StatementCardProps {
   onPress?: () => void;
   variant?: 'default' | 'highlighted' | 'minimal';
   showQuotes?: boolean;
+  showLeftAccent?: boolean;
   animateEntrance?: boolean;
   numberOfLines?: number;
   style?: ViewStyle;
@@ -61,14 +64,17 @@ export interface StatementCardProps {
   // Accessibility & Feedback
   accessibilityLabel?: string;
   hapticFeedback?: boolean;
+  moodEmoji?: MoodEmoji | null;
+  onChangeMood?: (mood: MoodEmoji | null) => void;
 }
 
-const StatementCard: React.FC<StatementCardProps> = ({
+export const StatementCard: React.FC<StatementCardProps> = ({
   statement,
   date,
   onPress,
   variant = 'default',
   showQuotes = true,
+  showLeftAccent,
   animateEntrance: _animateEntrance = true,
   numberOfLines,
   style,
@@ -93,11 +99,14 @@ const StatementCard: React.FC<StatementCardProps> = ({
   // Accessibility
   accessibilityLabel,
   hapticFeedback = true,
+  moodEmoji,
+  onChangeMood: _onChangeMood,
 }) => {
   const { theme } = useTheme();
   const { showError } = useGlobalError();
   const { showWarning, showSuccess } = useToast();
   const styles = React.useMemo(() => createStyles(theme), [theme]);
+  const { t } = useTranslation();
 
   // Local state management
   const [localStatement, setLocalStatement] = useState(statement);
@@ -160,21 +169,21 @@ const StatementCard: React.FC<StatementCardProps> = ({
     if (confirmDelete) {
       triggerHaptic('warning');
       // 🚀 TOAST INTEGRATION: Use toast warning with action button instead of Alert.alert
-      showWarning('Bu minnet ifadesini silmek istediğinizden emin misiniz?', {
+      showWarning(t('shared.statement.confirmDelete'), {
         duration: 6000, // Give user time to read and decide
         action: {
-          label: 'Sil',
+          label: t('shared.statement.confirmDeleteAction'),
           onPress: () => {
             triggerHaptic('error');
             onDelete?.();
-            showSuccess('Minnet ifadesi silindi');
+            showSuccess(t('shared.statement.deleted'));
           },
         },
       });
     } else {
       triggerHaptic('error');
       onDelete?.();
-      showSuccess('Minnet ifadesi silindi');
+      showSuccess(t('shared.statement.deleted'));
     }
   };
 
@@ -192,7 +201,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
     } catch {
       triggerHaptic('error');
       // 🛡️ ERROR PROTECTION: Use global error system instead of Alert
-      showError('Minnet kaydedilirken bir hata oluştu.');
+      showError(t('shared.statement.saveError'));
     }
   };
 
@@ -253,6 +262,14 @@ const StatementCard: React.FC<StatementCardProps> = ({
 
   const variantStyles = getVariantStyles();
 
+  // By default hide left accent for minimal variant; show for others unless explicitly overridden
+  const shouldShowLeftAccent = React.useMemo(() => {
+    if (typeof showLeftAccent === 'boolean') {
+      return showLeftAccent;
+    }
+    return variant !== 'minimal';
+  }, [showLeftAccent, variant]);
+
   const handleLongPress = useCallback(async () => {
     try {
       await Share.share({ message: localStatement });
@@ -276,7 +293,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
           activeOpacity={0.8}
         >
           <Text style={[styles.editingButtonText, { color: theme.colors.onSurfaceVariant }]}>
-            İptal
+            {t('common.cancel')}
           </Text>
         </TouchableOpacity>
 
@@ -285,7 +302,9 @@ const StatementCard: React.FC<StatementCardProps> = ({
           onPress={handleSave}
           activeOpacity={0.8}
         >
-          <Text style={[styles.editingButtonText, { color: theme.colors.onPrimary }]}>Kaydet</Text>
+          <Text style={[styles.editingButtonText, { color: theme.colors.onPrimary }]}>
+            {t('gratitude.actions.save')}
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -295,9 +314,10 @@ const StatementCard: React.FC<StatementCardProps> = ({
   const CardContent = (
     <Animated.View style={[variantStyles.container, style]}>
       <View style={variantStyles.content}>
+        {shouldShowLeftAccent && <View style={styles.leftAccent} pointerEvents="none" />}
         {/* Three Dots Menu - Only show if actions are available */}
         {(onEdit || onDelete) && (
-          <View style={styles.headerSection}>
+          <View style={styles.headerSection} pointerEvents="box-none">
             <View style={styles.headerSpacer} />
             <ThreeDotsMenu
               onEdit={onEdit}
@@ -336,7 +356,7 @@ const StatementCard: React.FC<StatementCardProps> = ({
               onChangeText={setLocalStatement}
               multiline
               maxLength={maxLength}
-              placeholder="Minnetinizi yazın..."
+              placeholder={t('shared.statement.edit.placeholder')}
               placeholderTextColor={theme.colors.onSurfaceVariant + '60'}
               autoFocus
               selectionColor={theme.colors.primary}
@@ -355,11 +375,19 @@ const StatementCard: React.FC<StatementCardProps> = ({
           )}
         </View>
 
+        {/* Removed social reaction row; only show Mood: in footer */}
+
         {/* Date Footer - Hidden during editing */}
         {date && !isEditing && (
           <View style={styles.dateContainer}>
             <View style={styles.dateLine} />
             <Text style={styles.dateText}>{date}</Text>
+            {moodEmoji && (
+              <View style={styles.moodInlineContainer}>
+                <Text style={styles.moodInlineLabel}>{t('Mood', 'Mood')}:</Text>
+                <Text style={styles.moodInlineEmoji}>{moodEmoji}</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -376,9 +404,11 @@ const StatementCard: React.FC<StatementCardProps> = ({
         activeOpacity={1}
         onPress={onPress}
         onLongPress={handleLongPress}
-        accessibilityLabel={accessibilityLabel || `Minnet: ${statement}`}
+        accessibilityLabel={
+          accessibilityLabel || t('shared.statement.a11y.memoryLabel', { text: statement })
+        }
         accessibilityRole="button"
-        accessibilityHint="Detayları görüntülemek için dokunun"
+        accessibilityHint={t('shared.statement.a11y.tapToView')}
       >
         {CardContent}
       </TouchableOpacity>
@@ -403,17 +433,17 @@ const createStyles = (theme: AppTheme) => {
     // Default Variant - Enhanced card with elegant shadows and typography
     defaultContainer: {
       borderRadius: theme.borderRadius.xl,
-      backgroundColor: getSurfaceColor(theme, 'elevated'),
-      borderWidth: 0,
+      backgroundColor: getSurfaceColor(theme, 'container'),
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: getBorderColor(theme, 'light'),
       marginHorizontal: spacing.contentGap,
       marginVertical: spacing.sectionGap,
       overflow: 'visible',
-      ...shadows.card,
-      // Enhanced shadow for more depth
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 12,
-      elevation: 3,
+      ...shadows.subtle,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 1,
     } as ViewStyle,
 
     defaultContent: {
@@ -438,19 +468,19 @@ const createStyles = (theme: AppTheme) => {
     // Highlighted Variant - Premium card with gradient-like effect
     highlightedContainer: {
       borderRadius: theme.borderRadius.xl,
-      backgroundColor: alpha(theme.colors.primaryContainer, 0.08),
-      borderWidth: 0,
-      borderLeftWidth: 4,
+      backgroundColor: alpha(theme.colors.primaryContainer, 0.06),
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: getBorderColor(theme, 'light'),
+      borderLeftWidth: 3,
       borderLeftColor: theme.colors.primary,
       marginHorizontal: spacing.contentGap,
       marginVertical: spacing.sectionGap,
       overflow: 'visible',
-      ...shadows.floating,
-      // Enhanced shadow for premium feel
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.12,
-      shadowRadius: 16,
-      elevation: 4,
+      ...shadows.subtle,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 10,
+      elevation: 2,
     } as ViewStyle,
 
     highlightedContent: {
@@ -478,35 +508,35 @@ const createStyles = (theme: AppTheme) => {
 
     // Minimal Variant - Clean, modern design with subtle borders
     minimalContainer: {
-      borderRadius: theme.borderRadius.lg,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
+      borderRadius: theme.borderRadius.xl,
+      backgroundColor: getSurfaceColor(theme, 'container'),
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: getBorderColor(theme, 'light'),
       marginHorizontal: spacing.contentGap,
       marginVertical: spacing.elementGap,
       overflow: 'visible',
       ...shadows.subtle,
-      // Refined minimal shadow
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
+      shadowOpacity: 0.05,
       shadowRadius: 8,
       elevation: 1,
     } as ViewStyle,
 
     minimalContent: {
-      paddingHorizontal: spacing.cardPadding,
-      paddingVertical: spacing.contentGap + 2,
+      paddingHorizontal: spacing.cardPadding + 4,
+      paddingVertical: spacing.contentGap + 4,
     } as ViewStyle,
 
     minimalStatement: {
-      fontFamily: 'Lora-Regular',
-      fontSize: 16,
-      fontWeight: '400',
-      color: colors.secondary,
+      fontFamily: 'Lora-MediumItalic',
+      fontSize: 17,
+      fontWeight: '500',
+      color: colors.primary,
       fontStyle: 'italic',
-      lineHeight: 24,
-      letterSpacing: 0.2,
+      lineHeight: 26,
+      letterSpacing: 0.3,
       textAlign: 'left',
+      marginBottom: 2,
     } as TextStyle,
 
     // Enhanced header with more options button
@@ -537,9 +567,20 @@ const createStyles = (theme: AppTheme) => {
       transform: [{ scale: 1.2 }],
     },
 
-    // Statement Container
+    // Statement Container with left accent bar
     statementContainer: {
       flex: 1,
+      paddingLeft: spacing.elementGap,
+    } as ViewStyle,
+    leftAccent: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: spacing.cardPadding,
+      width: 3,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 2,
+      opacity: 0.9,
     } as ViewStyle,
 
     // Statement input for inline editing
@@ -584,15 +625,33 @@ const createStyles = (theme: AppTheme) => {
     dateText: {
       fontFamily: 'Lora-Medium',
       fontSize: 11,
-      fontWeight: '600',
-      color: alpha(colors.secondary, 0.8),
+      fontWeight: '700',
+      color: alpha(colors.secondary, 0.9),
       fontStyle: 'italic',
       letterSpacing: 0.8,
       textTransform: 'uppercase',
       paddingHorizontal: spacing.elementGap,
       paddingVertical: 2,
-      backgroundColor: alpha(theme.colors.surfaceVariant, 0.3),
+      backgroundColor: alpha(theme.colors.surfaceVariant, 0.35),
       borderRadius: theme.borderRadius.xs,
+    } as TextStyle,
+
+    // Inline mood next to date label
+    moodInlineContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.elementGap / 2,
+      marginLeft: spacing.elementGap,
+    } as ViewStyle,
+    moodInlineLabel: {
+      ...typography.navigation.menuItem,
+      color: colors.secondary,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 0.2,
+    } as TextStyle,
+    moodInlineEmoji: {
+      fontSize: 14,
     } as TextStyle,
 
     // Loading indicator

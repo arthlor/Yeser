@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
 import LottieView from 'lottie-react-native';
+import { useTranslation } from 'react-i18next';
 
 import splashAnimation from '@/assets/animations/splash.json';
 
@@ -15,34 +16,30 @@ import { AppTheme } from '@/themes/types';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Turkish gratitude tips that rotate while users wait
-const GRATITUDE_TIPS = [
-  {
-    title: 'Küçük Anları Fark Et',
-    description:
-      'Günlük hayattaki basit zevkleri keşfet. Bir fincan çay, güzel bir manzara, sevdiklerinin gülümsemesi...',
-  },
-  {
-    title: 'Zorluklardan Öğren',
-    description:
-      'Yaşadığın zorluklar seni güçlendirdi. Her deneyim, bugünkü bilge ve güçlü haline katkı sağladı.',
-  },
-  {
-    title: 'İlişkilerini Değerlendir',
-    description:
-      'Hayatındaki insanlar senin için orada. Dostluklar, aile bağları, destekçilerin... Hepsi birer armağan.',
-  },
-  {
-    title: 'Sağlığına Minnet Duy',
-    description:
-      'Nefes alabilmek, hareket edebilmek, hissetmek... Vücudun her gün senin için mucizeler gerçekleştiriyor.',
-  },
-  {
-    title: 'Büyüme Fırsatları',
-    description:
-      'Öğrenme, gelişme ve yeni deneyimler yaşama şansın var. Her gün yeni bir keşif, yeni bir adım.',
-  },
-];
+// Localized rotating gratitude tips
+const buildLocalizedTips = (t: (key: string) => string) =>
+  [
+    {
+      title: t('auth.splash.carousel.moments.title'),
+      description: t('auth.splash.carousel.moments.desc'),
+    },
+    {
+      title: t('auth.splash.carousel.challenges.title'),
+      description: t('auth.splash.carousel.challenges.desc'),
+    },
+    {
+      title: t('auth.splash.carousel.relationships.title'),
+      description: t('auth.splash.carousel.relationships.desc'),
+    },
+    {
+      title: t('auth.splash.carousel.health.title'),
+      description: t('auth.splash.carousel.health.desc'),
+    },
+    {
+      title: t('auth.splash.carousel.growth.title'),
+      description: t('auth.splash.carousel.growth.desc'),
+    },
+  ] as const;
 
 /**
  * **ENHANCED SPLASH SCREEN WITH GRATITUDE TIPS**
@@ -57,6 +54,7 @@ const EnhancedSplashScreen: React.FC = () => {
   const { theme } = useTheme();
   const { showError } = useGlobalError();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   // Tip rotation state
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
@@ -89,7 +87,7 @@ const EnhancedSplashScreen: React.FC = () => {
         useNativeDriver: true,
       }).start(() => {
         // Change tip and fade in
-        setCurrentTipIndex((prev) => (prev + 1) % GRATITUDE_TIPS.length);
+        setCurrentTipIndex((prev) => (prev + 1) % 5);
         Animated.timing(tipOpacity, {
           toValue: 1,
           duration: 300,
@@ -124,7 +122,8 @@ const EnhancedSplashScreen: React.FC = () => {
     triggerEntranceAnimations();
   }, [triggerEntranceAnimations]);
 
-  const currentTip = GRATITUDE_TIPS[currentTipIndex];
+  const tips = useMemo(() => buildLocalizedTips(t), [t]);
+  const currentTip = tips[currentTipIndex];
 
   // Memoized animated style to avoid inline objects and satisfy hook deps
   const tipContainerAnimatedStyle = useMemo(() => ({ opacity: tipOpacity }), [tipOpacity]);
@@ -139,7 +138,6 @@ const EnhancedSplashScreen: React.FC = () => {
       edges={['top']}
       edgeToEdge={true}
       constrainContentWidth={false}
-      style={styles.container}
     >
       <Animated.View style={[styles.content, contentAnimatedStyle]}>
         {/* Background Gradient Overlay */}
@@ -153,13 +151,13 @@ const EnhancedSplashScreen: React.FC = () => {
               <Text
                 style={styles.title}
                 accessibilityRole="header"
-                accessibilityLabel="Yeşer uygulama logosu"
+                accessibilityLabel={t('auth.splash.logoA11y')}
               >
-                Yeşer
+                {t('auth.splash.appName')}
               </Text>
               <View style={styles.logoUnderline} />
             </View>
-            <Text style={styles.subtitle}>Minnettarlık Yolculuğun...</Text>
+            <Text style={styles.subtitle}>{t('auth.splash.journey')}</Text>
           </View>
 
           {/* Lottie Animation Section */}
@@ -186,14 +184,14 @@ const EnhancedSplashScreen: React.FC = () => {
         <View style={styles.bottomSection}>
           {/* Loading Text */}
           <View style={styles.loadingTextContainer}>
-            <Text style={styles.loadingText} accessibilityLabel="Yükleniyor">
-              Hazırlanıyor...
+            <Text style={styles.loadingText} accessibilityLabel={t('auth.splash.loadingA11y')}>
+              {t('auth.splash.preparing')}
             </Text>
           </View>
 
           {/* Tip Progress Indicator */}
           <View style={styles.progressContainer}>
-            {GRATITUDE_TIPS.map((_, index) => (
+            {tips.map((_, index) => (
               <View
                 key={index}
                 style={[styles.progressDot, currentTipIndex === index && styles.progressDotActive]}
@@ -202,7 +200,7 @@ const EnhancedSplashScreen: React.FC = () => {
           </View>
 
           {/* Version Info */}
-          <Text style={styles.versionText}>Yeşer • Versiyon 1.0</Text>
+          <Text style={styles.versionText}>{t('auth.splash.version', { version: '1.0' })}</Text>
         </View>
       </Animated.View>
     </ScreenLayout>
@@ -211,9 +209,6 @@ const EnhancedSplashScreen: React.FC = () => {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: {
-      backgroundColor: theme.colors.background,
-    },
     backgroundOverlay: {
       position: 'absolute',
       top: 0,

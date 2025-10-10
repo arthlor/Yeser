@@ -6,6 +6,7 @@ import { getPrimaryShadow } from '@/themes/utils';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Animated,
   FlatList,
@@ -16,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import type { MoodEmoji } from '@/types/mood.types';
 
 // Assuming 'statements' are an array of strings for now.
 // If they are objects, this type should be adjusted.
@@ -35,7 +37,9 @@ const StatementItemWrapper: React.FC<{
   index: number;
   styles: ReturnType<typeof createStyles>;
   theme: AppTheme;
-}> = React.memo(({ item, index, styles, theme: _theme }) => {
+  serverMood?: MoodEmoji | null;
+}> = React.memo(({ item, index, styles, theme: _theme, serverMood = null }) => {
+  const { t } = useTranslation();
   // Create individual coordinated animations for each item
   const itemAnimations = useCoordinatedAnimations();
 
@@ -72,9 +76,11 @@ const StatementItemWrapper: React.FC<{
         enableInlineEdit={false} // Disabled: handled by parent screen
         maxLength={500}
         // Accessibility
-        accessibilityLabel={`Minnet: ${item}`}
+        accessibilityLabel={t('shared.statement.a11y.memoryLabel', { text: item })}
         hapticFeedback={false}
         style={styles.statementCardMargin}
+        date={undefined}
+        moodEmoji={serverMood}
         // 🚫 REMOVED: Edit/delete functionality to prevent conflicts
         // isEditing, onEdit, onDelete, onCancel, onSave removed
         // All editing is handled by the parent DailyEntryScreen
@@ -92,6 +98,7 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
   isRefreshing = false,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
 
   // **RACE CONDITION FIX**: Use coordinated animation system
@@ -126,7 +133,15 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
   // **RACE CONDITION FIX**: Memoized render function with coordinated animations
   const renderStatementItem = useCallback(
     ({ item, index }: ListRenderItemInfo<string>) => {
-      return <StatementItemWrapper item={item} index={index} styles={styles} theme={theme} />;
+      return (
+        <StatementItemWrapper
+          item={item}
+          index={index}
+          styles={styles}
+          theme={theme}
+          serverMood={null}
+        />
+      );
     },
     [styles, theme]
   );
@@ -144,18 +159,16 @@ const DailyEntryStatementList: React.FC<DailyEntryStatementListProps> = ({
               />
             </View>
             <Text style={styles.emptyTitle}>
-              {isToday ? 'İlk minnetini ekle!' : 'O gün henüz minnet eklemedin'}
+              {isToday ? t('gratitude.empty.firstToday') : t('gratitude.empty.firstPast')}
             </Text>
             <Text style={styles.emptySubtitle}>
-              {isToday
-                ? 'Bugün minnettarlık hissettiğin anları yazarak güne başla.'
-                : 'Bu tarihte henüz bir minnet ifadesi bulunmuyor.'}
+              {isToday ? t('gratitude.empty.todayStart') : t('gratitude.empty.pastStart')}
             </Text>
           </View>
         </ThemedCard>
       </View>
     ),
-    [isToday, styles, theme]
+    [isToday, styles, theme, t]
   );
 
   const renderSeparator = useCallback(() => <View style={styles.itemSeparator} />, [styles]);

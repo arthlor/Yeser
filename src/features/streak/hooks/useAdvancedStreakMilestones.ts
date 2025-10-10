@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  ADVANCED_MILESTONES,
   type AdvancedMilestone,
+  createAdvancedMilestones,
 } from '../components/AdvancedStreakMilestones';
 
 interface UseAdvancedStreakMilestonesProps {
@@ -34,6 +35,11 @@ export const useAdvancedStreakMilestones = ({
   previousStreak: _previousStreak,
   longestStreak,
 }: UseAdvancedStreakMilestonesProps): MilestoneState => {
+  const { t } = useTranslation();
+
+  // Create milestones with localized content
+  const ADVANCED_MILESTONES = useMemo(() => createAdvancedMilestones(t), [t]);
+
   const [showCelebration, setShowCelebration] = useState(false);
   const [justUnlockedMilestone, setJustUnlockedMilestone] = useState<AdvancedMilestone | null>(
     null
@@ -41,11 +47,13 @@ export const useAdvancedStreakMilestones = ({
 
   // Find current milestone
   const currentMilestone =
-    ADVANCED_MILESTONES.find((m) => currentStreak >= m.minDays && currentStreak <= m.maxDays) ||
-    ADVANCED_MILESTONES[0];
+    ADVANCED_MILESTONES.find(
+      (m: AdvancedMilestone) => currentStreak >= m.minDays && currentStreak <= m.maxDays
+    ) || ADVANCED_MILESTONES[0];
 
   // Find next milestone
-  const nextMilestone = ADVANCED_MILESTONES.find((m) => m.minDays > currentStreak) || null;
+  const nextMilestone =
+    ADVANCED_MILESTONES.find((m: AdvancedMilestone) => m.minDays > currentStreak) || null;
 
   // Check if this is a personal record
   const isPersonalRecord = currentStreak > longestStreak && currentStreak > 0;
@@ -65,7 +73,9 @@ export const useAdvancedStreakMilestones = ({
   const daysToNext = nextMilestone ? nextMilestone.minDays - currentStreak : 0;
 
   // Get all unlocked achievements
-  const achievementsUnlocked = ADVANCED_MILESTONES.filter((m) => currentStreak >= m.minDays);
+  const achievementsUnlocked = ADVANCED_MILESTONES.filter(
+    (m: AdvancedMilestone) => currentStreak >= m.minDays
+  );
 
   const dismissCelebration = () => {
     setShowCelebration(false);
@@ -74,34 +84,38 @@ export const useAdvancedStreakMilestones = ({
 
   const getMotivationalMessage = (): string => {
     if (currentStreak === 0) {
-      return 'Her büyük yolculuk tek bir adımla başlar! 🌱';
+      return t('streak.motivation.beginning');
     }
 
     if (currentStreak < 7) {
-      return 'Harika başlangıç! Devam et! 💪';
+      return t('streak.milestones.momentum.unlockedMessage');
     }
 
     if (currentStreak < 30) {
-      return 'Momentum kazanıyorsun! Durma! 🚀';
+      return t('streak.motivation.momentum');
     }
 
     if (currentStreak < 100) {
-      return 'Alışkanlığın artık güçlü! Mükemmelsin! ⭐';
+      return t('streak.motivation.strong');
     }
 
     if (currentStreak < 365) {
-      return 'İnanılmaz kararlılık! Efsanesin! 🔥';
+      return t('streak.motivation.legendary');
     }
 
-    return 'Artık bir usta oldun! Evrenin enerjisiyle birsin! ✨';
+    return t('streak.motivation.legendary');
   };
 
   const getCategoryProgress = () => {
     const categories = ['beginner', 'intermediate', 'advanced', 'expert', 'legendary'] as const;
 
     return categories.map((category) => {
-      const categoryMilestones = ADVANCED_MILESTONES.filter((m) => m.category === category);
-      const unlockedInCategory = categoryMilestones.filter((m) => currentStreak >= m.minDays);
+      const categoryMilestones = ADVANCED_MILESTONES.filter(
+        (m: AdvancedMilestone) => m.category === category
+      );
+      const unlockedInCategory = categoryMilestones.filter(
+        (m: AdvancedMilestone) => currentStreak >= m.minDays
+      );
 
       return {
         category,

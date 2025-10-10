@@ -166,4 +166,15 @@ export const analyticsService = {
   trackGamification,
   trackContentAnalytics,
   trackDetailedError,
+  // Convenience wrappers (still no-op under the hood)
+  trackMoodSelected: async (params: {
+    entryDate: string;
+    index: number;
+    emoji: string;
+  }): Promise<void> => {
+    await logEvent('mood_selected', params);
+  },
+  trackMoodCleared: async (params: { entryDate: string; index: number }): Promise<void> => {
+    await logEvent('mood_cleared', params);
+  },
 };

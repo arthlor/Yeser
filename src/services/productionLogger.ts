@@ -60,7 +60,7 @@ class ProductionLogger {
         // Add more context as available
       },
       metadata: {
-        appVersion: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0',
+        appVersion: process.env.EXPO_PUBLIC_APP_VERSION || '1.1.0',
         environment: process.env.EXPO_PUBLIC_APP_ENVIRONMENT || 'production',
         platform: 'react-native',
       },
@@ -112,7 +112,7 @@ class ProductionLogger {
         ...context,
       },
       metadata: {
-        appVersion: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0',
+        appVersion: process.env.EXPO_PUBLIC_APP_VERSION || '1.1.0',
         environment: process.env.EXPO_PUBLIC_APP_ENVIRONMENT || 'production',
         platform: 'react-native',
       },

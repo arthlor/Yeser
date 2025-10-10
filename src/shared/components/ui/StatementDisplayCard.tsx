@@ -16,6 +16,7 @@ import {
   useStatementCardAnimations,
 } from './StatementCardBase';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 // 🏠 HOME/THROWBACK SPECIFIC PROPS
 interface StatementDisplayCardProps extends BaseStatementCardProps {
@@ -55,6 +56,7 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
 }) => {
   const { theme } = useTheme();
   const layout = useResponsiveLayout();
+  const { t } = useTranslation();
 
   // OPTIMIZED: Memoize shared styles to prevent recreation on every render
   const sharedStyles = useMemo(() => createSharedStyles(theme, layout), [theme, layout]);
@@ -210,7 +212,9 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
           <Text
             style={variantStyles.statement}
             numberOfLines={expanded ? undefined : numberOfLines}
-            accessibilityLabel={accessibilityLabel || `Minnet: ${statement}`}
+            accessibilityLabel={
+              accessibilityLabel || t('shared.statement.a11y.memoryLabel', { text: statement })
+            }
             selectable={!onPress}
           >
             {expanded ? statement : displayText}
@@ -220,7 +224,7 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
           {isTruncated && !expanded && (
             <View style={styles.truncationIndicator}>
               <Icon name="dots-horizontal" size={18} color={theme.colors.onSurfaceVariant + '60'} />
-              <Text style={styles.truncationText}>devamını oku</Text>
+              <Text style={styles.truncationText}>{t('shared.statement.readMore')}</Text>
             </View>
           )}
         </View>
@@ -254,12 +258,14 @@ const StatementDisplayCardComponent: React.FC<StatementDisplayCardProps> = ({
         onLongPress={handleLongPress}
         onPressIn={animations.animatePressIn}
         onPressOut={animations.animatePressOut}
-        accessibilityLabel={accessibilityLabel || `Minnet anısı: ${statement}`}
+        accessibilityLabel={
+          accessibilityLabel || t('shared.statement.a11y.memoryLabel', { text: statement })
+        }
         accessibilityRole="button"
         accessibilityHint={
           isTruncated
-            ? 'Detayları görüntülemek veya genişletmek için dokunun'
-            : 'Detayları görüntülemek için dokunun'
+            ? t('shared.statement.a11y.tapToViewOrExpand')
+            : t('shared.statement.a11y.tapToView')
         }
       >
         {CardContent}

@@ -9,6 +9,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { analyticsService } from '@/services/analyticsService';
+import { useTranslation } from 'react-i18next';
 import { getPrimaryShadow } from '@/themes/utils';
 import type { AppTheme } from '@/themes/types';
 
@@ -39,6 +40,7 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
   userSummary,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   // **SIMPLIFIED ANIMATION SYSTEM**: Single coordinated instance (8+ → 1, 87.5% reduction)
   const animations = useCoordinatedAnimations();
@@ -73,16 +75,16 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
 
   const getGoalText = () => {
     if (userSummary.dailyGoal === 0) {
-      return 'Özel hedef';
+      return t('onboarding.completion.goalCustom');
     }
-    return `Günde ${userSummary.dailyGoal} minnettarlık ifadesi`;
+    return t('onboarding.completion.goalText', { count: userSummary.dailyGoal });
   };
 
   const getThemeText = () => {
     const themeMap = {
-      light: 'Açık Tema',
-      dark: 'Koyu Tema',
-      auto: 'Otomatik Tema',
+      light: t('onboarding.completion.themeMap.light'),
+      dark: t('onboarding.completion.themeMap.dark'),
+      auto: t('onboarding.completion.themeMap.auto'),
     };
     return (
       themeMap[userSummary.selectedTheme as keyof typeof themeMap] || userSummary.selectedTheme
@@ -114,13 +116,15 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
       >
         {/* **SIMPLIFIED CELEBRATION**: Static celebration with minimal animation */}
         <View style={styles.celebrationContainer}>
-          <Text style={styles.congratsTitle}>Tebrikler {userSummary.username}! 🎉</Text>
-          <Text style={styles.congratsSubtitle}>Hazırsın. Hadi başlayalım.</Text>
+          <Text style={styles.congratsTitle}>
+            {t('onboarding.completion.congratsTitle', { username: userSummary.username })}
+          </Text>
+          <Text style={styles.congratsSubtitle}>{t('onboarding.completion.congratsSubtitle')}</Text>
         </View>
 
         {/* **SIMPLIFIED SUMMARY**: No complex slide animations */}
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Senin Profilin</Text>
+          <Text style={styles.summaryTitle}>{t('onboarding.completion.summaryTitle')}</Text>
 
           <View style={styles.summaryItems}>
             <View style={styles.summaryItem}>
@@ -150,7 +154,8 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
                   <Ionicons name="star" size={16} color={theme.colors.primary} />
                 </View>
                 <Text style={styles.summaryText}>
-                  {userSummary.featuresEnabled.join(', ')} aktif
+                  {userSummary.featuresEnabled.join(', ')}{' '}
+                  {t('onboarding.completion.featuresActiveSuffix')}
                 </Text>
               </View>
             )}
@@ -160,8 +165,12 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
         {/* **SIMPLIFIED ENCOURAGEMENT**: Static content, no complex animations */}
         <View style={styles.encouragementContainer}>
           <View style={styles.encouragementContent}>
-            <Text style={styles.encouragementTitle}>Hazırsın! ✨</Text>
-            <Text style={styles.encouragementText}>Küçük adımlar, büyük değişimler.</Text>
+            <Text style={styles.encouragementTitle}>
+              {t('onboarding.completion.encouragementTitle')}
+            </Text>
+            <Text style={styles.encouragementText}>
+              {t('onboarding.completion.encouragementText')}
+            </Text>
 
             {/* **STATIC CELEBRATION ICONS**: No rotating sparkles */}
             <View style={styles.staticCelebrationIcons}>
@@ -181,16 +190,14 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
         >
           <OnboardingButton
             onPress={handleStartJourney}
-            title="Yolculuğa Başla"
-            accessibilityLabel="Minnettarlık yolculuğuna başla"
+            title={t('onboarding.completion.startJourney')}
+            accessibilityLabel={t('onboarding.completion.startJourneyA11y')}
           />
         </Animated.View>
 
         {/* **MINIMAL FOOTER**: Simple text, no complex animations */}
         <View style={styles.footerContainer}>
-          <Text style={styles.footerText}>
-            İstediğin zaman ayarlarından tercihlerini değiştirebilirsin.
-          </Text>
+          <Text style={styles.footerText}>{t('onboarding.completion.footer')}</Text>
         </View>
       </Animated.View>
     </OnboardingLayout>

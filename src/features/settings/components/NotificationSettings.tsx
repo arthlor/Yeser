@@ -3,6 +3,7 @@ import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import ToggleSwitch from 'toggle-switch-react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Notifications from 'expo-notifications';
+import * as Localization from 'expo-localization';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
@@ -13,10 +14,12 @@ import { notificationService } from '@/services/notificationService';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import LoadingState from '@/components/states/LoadingState';
 import { logger } from '@/utils/logger';
+import { useTranslation } from 'react-i18next';
 
 export const NotificationSettings: React.FC = () => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { t } = useTranslation();
   const { profile } = useUserProfile();
   const { handleMutationError } = useGlobalError();
   const { showError: showToastError, showSuccess: showToastSuccess } = useToast();
@@ -31,16 +34,17 @@ export const NotificationSettings: React.FC = () => {
   // Refs for cleanup and race condition prevention
   const isMountedRef = useRef(true);
   const operationInProgressRef = useRef(false);
+  const hasSyncedPermissionMismatchRef = useRef(false);
 
   // Effect to get the current push token on mount with proper cleanup
   useEffect(() => {
     let isCancelled = false;
 
-    const getToken = async () => {
+    const fetchToken = async (): Promise<void> => {
       try {
-        const token = await Notifications.getExpoPushTokenAsync();
+        const token = await notificationService.getCurrentDevicePushToken();
         if (!isCancelled && isMountedRef.current) {
-          setPushToken(token.data);
+          setPushToken(token);
         }
       } catch (error) {
         if (!isCancelled && isMountedRef.current) {
@@ -49,7 +53,7 @@ export const NotificationSettings: React.FC = () => {
       }
     };
 
-    getToken();
+    void fetchToken();
 
     return () => {
       isCancelled = true;
@@ -61,51 +65,56 @@ export const NotificationSettings: React.FC = () => {
     let isCancelled = false;
 
     const syncProfileState = async () => {
-      if (!profile || !isMountedRef.current) {
+      if (!isMountedRef.current) {
         return;
       }
 
       setIsInitializing(true);
 
       try {
-        const hasNotificationTime = !!profile.notification_time;
+        const permissions = await Notifications.getPermissionsAsync();
 
-        // If profile says notifications are enabled, verify device permissions
-        if (hasNotificationTime) {
-          const permissions = await Notifications.getPermissionsAsync();
-
-          if (!isCancelled && isMountedRef.current) {
-            if (permissions.status !== 'granted') {
-              // Profile says enabled but permissions not granted - sync state
+        // Determine enabled state
+        if (!isCancelled && isMountedRef.current) {
+          if (profile?.notification_time) {
+            if (!permissions.granted) {
               setIsEnabled(false);
               logger.warn(
                 'Notification settings out of sync - profile enabled but no device permission'
               );
+
+              // Auto-sync backend to reflect current device permission (avoid repeated mismatch)
+              if (!hasSyncedPermissionMismatchRef.current) {
+                try {
+                  hasSyncedPermissionMismatchRef.current = true;
+                  await notificationService.updateNotificationTime(null);
+                } catch {
+                  // Silent fail; will be retried on next explicit user action
+                }
+              }
             } else {
               setIsEnabled(true);
             }
+          } else {
+            // No profile time yet – base on permission only
+            setIsEnabled(!!permissions.granted);
           }
-        } else if (!isCancelled && isMountedRef.current) {
-          setIsEnabled(false);
         }
 
-        // Set selected time with validation
+        // Set selected time with validation or default
         if (!isCancelled && isMountedRef.current) {
-          if (profile.notification_time) {
+          if (profile?.notification_time) {
             const [hour] = profile.notification_time.split(':').map(Number);
             if (hour >= 0 && hour <= 23) {
               const date = new Date();
               date.setHours(hour);
-              date.setMinutes(0); // 🔧 FIX: Always use :00 minutes
+              date.setMinutes(0);
               date.setSeconds(0);
               setSelectedTime(date);
             }
           } else {
-            // Default time if none is set (9:00 AM)
             const date = new Date();
-            date.setHours(9);
-            date.setMinutes(0);
-            date.setSeconds(0);
+            date.setHours(9, 0, 0, 0);
             setSelectedTime(date);
           }
         }
@@ -145,15 +154,15 @@ export const NotificationSettings: React.FC = () => {
           // Handle different permission scenarios with helpful guidance
           if (result.status === 'denied' && result.canAskAgain === false) {
             // User permanently denied - guide to settings
-            showToastError('Bildirimler için sistem ayarlarından izin vermeniz gerekiyor.');
+            showToastError(t('notifications.permissionRequiredMessage'));
             notificationService.showNotificationPermissionGuidance(false);
           } else if (result.status === 'denied') {
             // User denied but can ask again - show explanation
-            showToastError('Günlük hatırlatıcılar için bildirim izni gerekli.');
+            showToastError(t('notifications.dailyRemindersTitle'));
             notificationService.showNotificationPermissionGuidance(true);
           } else {
             // Other error (token generation failed)
-            showToastError('Bildirim kaydedilemedi. Lütfen tekrar deneyin.');
+            showToastError(t('settings.data.exportError'));
           }
           throw new Error('Permission not granted');
         }
@@ -168,7 +177,7 @@ export const NotificationSettings: React.FC = () => {
       const saveResult = await notificationService.saveTokenToBackend(token);
       if (saveResult.error) {
         logger.error('Failed to save push token:', saveResult.error);
-        showToastError('Bildirim kaydedilemedi. Lütfen tekrar deneyin.');
+        showToastError(t('settings.data.exportError'));
         throw saveResult.error;
       }
 
@@ -178,12 +187,12 @@ export const NotificationSettings: React.FC = () => {
       const updateResult = await notificationService.updateNotificationTime(timeString);
       if (updateResult.error) {
         logger.error('Failed to update notification time:', updateResult.error);
-        showToastError('Bildirim saati güncellenemedi. Lütfen tekrar deneyin.');
+        showToastError(t('settings.data.exportError'));
         throw updateResult.error;
       }
 
       if (isMountedRef.current) {
-        showToastSuccess('Günlük hatırlatıcılar etkinleştirildi.');
+        showToastSuccess(t('onboarding.notifications.statusSuccess'));
       }
     } finally {
       if (isMountedRef.current) {
@@ -191,7 +200,7 @@ export const NotificationSettings: React.FC = () => {
       }
       operationInProgressRef.current = false;
     }
-  }, [pushToken, selectedTime, showToastError, showToastSuccess]);
+  }, [pushToken, selectedTime, showToastError, showToastSuccess, t]);
 
   const disableNotifications = useCallback(async () => {
     // Prevent concurrent operations
@@ -210,12 +219,12 @@ export const NotificationSettings: React.FC = () => {
       const updateResult = await notificationService.updateNotificationTime(null);
       if (updateResult.error) {
         logger.error('Failed to disable notification time:', updateResult.error);
-        showToastError('Bildirimler devre dışı bırakılamadı. Lütfen tekrar deneyin.');
+        showToastError(t('settings.data.exportError'));
         throw updateResult.error;
       }
 
       if (isMountedRef.current) {
-        showToastSuccess('Günlük hatırlatıcılar devre dışı bırakıldı.');
+        showToastSuccess(t('notifications.maybeLater'));
       }
     } finally {
       if (isMountedRef.current) {
@@ -223,7 +232,7 @@ export const NotificationSettings: React.FC = () => {
       }
       operationInProgressRef.current = false;
     }
-  }, [pushToken, showToastSuccess, showToastError]);
+  }, [pushToken, showToastSuccess, showToastError, t]);
 
   const handleToggleSwitch = useCallback(
     async (isOn: boolean) => {
@@ -232,52 +241,65 @@ export const NotificationSettings: React.FC = () => {
         return;
       }
 
-      if (isOn) {
-        // Before enabling, check if we should show educational guidance
-        const permissions = await Notifications.getPermissionsAsync();
-
-        if (permissions.status === 'undetermined') {
-          // First time - show educational dialog with enhanced messaging
-          notificationService.showNotificationPermissionGuidance(true, (granted) => {
-            if (granted && isMountedRef.current) {
-              // Permission granted - proceed with enabling notifications
-              setIsEnabled(true);
-              enableNotifications().catch((error) => {
-                if (isMountedRef.current) {
-                  setIsEnabled(false);
-                  if ((error as Error).message !== 'Permission not granted') {
-                    handleMutationError(error, 'bildirim ayarları');
-                  }
-                }
-              });
-            }
-            // If denied, do nothing - user can try again later
-          });
-          return;
-        } else if (permissions.status === 'denied') {
-          // Already denied - show more helpful guidance
-          showToastError('Bildirimleri sistem ayarlarından etkinleştirmeniz gerekiyor.');
-          notificationService.showNotificationPermissionGuidance(false);
-          return;
-        }
-      }
-
       // Store previous state for rollback
       const previousState = isEnabled;
-      setIsEnabled(isOn); // Optimistic UI update
 
-      try {
-        if (isOn) {
-          await enableNotifications();
-        } else {
-          await disableNotifications();
+      if (isOn) {
+        // Optimistically turn on
+        setIsEnabled(true);
+
+        const permissions = await Notifications.getPermissionsAsync();
+
+        if (!permissions.granted && permissions.canAskAgain) {
+          notificationService.showNotificationPermissionGuidance(true, (granted) => {
+            if (!isMountedRef.current) {
+              return;
+            }
+            if (granted) {
+              enableNotifications().catch((error) => {
+                if (!isMountedRef.current) {
+                  return;
+                }
+                setIsEnabled(previousState);
+                if ((error as Error).message !== 'Permission not granted') {
+                  handleMutationError(error, 'notification settings');
+                }
+              });
+            } else {
+              setIsEnabled(false);
+            }
+          });
+          return;
         }
+
+        if (!permissions.granted && !permissions.canAskAgain) {
+          showToastError(t('notifications.permissionRequiredMessage'));
+          notificationService.showNotificationPermissionGuidance(false);
+          setIsEnabled(false);
+          return;
+        }
+
+        try {
+          await enableNotifications();
+        } catch (error) {
+          if (isMountedRef.current) {
+            setIsEnabled(previousState);
+            if ((error as Error).message !== 'Permission not granted') {
+              handleMutationError(error, 'notification settings');
+            }
+          }
+        }
+        return;
+      }
+
+      // Turning off
+      setIsEnabled(false);
+      try {
+        await disableNotifications();
       } catch (error) {
         if (isMountedRef.current) {
-          setIsEnabled(previousState); // Revert to previous state on error
-          if ((error as Error).message !== 'Permission not granted') {
-            handleMutationError(error, 'bildirim ayarları');
-          }
+          setIsEnabled(previousState);
+          handleMutationError(error, 'notification settings');
         }
       }
     },
@@ -289,6 +311,7 @@ export const NotificationSettings: React.FC = () => {
       disableNotifications,
       showToastError,
       handleMutationError,
+      t,
     ]
   );
 
@@ -304,7 +327,7 @@ export const NotificationSettings: React.FC = () => {
       setIsLoading(true);
 
       try {
-        // Create new date with selected hour in Turkish timezone
+        // Create new date with selected hour
         const adjustedTime = new Date();
         adjustedTime.setHours(hour);
         adjustedTime.setMinutes(0);
@@ -316,17 +339,17 @@ export const NotificationSettings: React.FC = () => {
         setSelectedTime(adjustedTime); // Optimistic update
 
         try {
-          // Store as HH:00 format (hours only) for Turkish time
+          // Store as HH:00 format (hours only)
           const timeString = `${hour.toString().padStart(2, '0')}:00`;
           await notificationService.updateNotificationTime(timeString);
 
           if (isMountedRef.current) {
-            showToastSuccess('Bildirim saati güncellendi.');
+            showToastSuccess(t('settings.data.notificationSettingsSaved'));
           }
         } catch (error) {
           if (isMountedRef.current) {
             setSelectedTime(previousTime); // Revert on error
-            handleMutationError(error, 'bildirim saati güncelleme');
+            handleMutationError(error, 'notification time update');
           }
         }
       } finally {
@@ -336,20 +359,32 @@ export const NotificationSettings: React.FC = () => {
         operationInProgressRef.current = false;
       }
     },
-    [profile, selectedTime, showToastSuccess, handleMutationError]
+    [profile, selectedTime, showToastSuccess, handleMutationError, t]
   );
 
   const formatTime = useCallback((date: Date) => {
-    // 🔧 FIX: Only show hours, always display as HH:00 in Turkish time
-    return `${date.getHours().toString().padStart(2, '0')}:00`;
+    const locale =
+      (Localization.getLocales && Localization.getLocales()[0]?.languageTag) || 'en-US';
+    const formatter = new Intl.DateTimeFormat(locale, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return formatter.format(date);
   }, []);
 
-  // Generate 24-hour options for Turkish time (00:00 to 23:00)
+  // Generate 24-hour options and format labels according to current locale
   const hourOptions = useMemo(() => {
-    return Array.from({ length: 24 }, (_, i) => ({
-      value: i,
-      label: `${i.toString().padStart(2, '0')}:00`,
-    }));
+    const locale =
+      (Localization.getLocales && Localization.getLocales()[0]?.languageTag) || 'en-US';
+    const formatter = new Intl.DateTimeFormat(locale, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return Array.from({ length: 24 }, (_, i) => {
+      const d = new Date();
+      d.setHours(i, 0, 0, 0);
+      return { value: i, label: formatter.format(d) };
+    });
   }, []);
 
   // Computed styles for loading states
@@ -376,7 +411,7 @@ export const NotificationSettings: React.FC = () => {
     return (
       <View style={styles.loadingContainer}>
         <LoadingState size="small" />
-        <Text style={styles.loadingText}>Bildirim ayarları yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('settings.loading')}</Text>
       </View>
     );
   }
@@ -390,10 +425,8 @@ export const NotificationSettings: React.FC = () => {
             <Icon name="bell-outline" size={20} color={theme.colors.primary} />
           </View>
           <View style={styles.textContainer}>
-            <Text style={styles.settingTitle}>Günlük Hatırlatıcılar</Text>
-            <Text style={styles.settingDescription}>
-              Her gün minnet günlüğü yazmanız için hatırlatıcılar alın.
-            </Text>
+            <Text style={styles.settingTitle}>{t('onboarding.notifications.title')}</Text>
+            <Text style={styles.settingDescription}>{t('onboarding.notifications.info')}</Text>
           </View>
         </View>
         <ToggleSwitch
@@ -415,13 +448,11 @@ export const NotificationSettings: React.FC = () => {
           activeOpacity={0.8}
         >
           <View style={styles.timePickerLabelContainer}>
-            <Text style={styles.timePickerLabel}>Hatırlatıcı Saati</Text>
-            <Text style={styles.timePickerDescription}>
-              Bildirim almak istediğiniz saati seçin.
-            </Text>
+            <Text style={styles.timePickerLabel}>{t('notifications.dailyRemindersTitle')}</Text>
+            <Text style={styles.timePickerDescription}>{t('onboarding.notifications.info')}</Text>
           </View>
           <ThemedButton
-            title={isLoading ? 'Güncelleniyor...' : formatTime(selectedTime)}
+            title={isLoading ? t('common.loading') : formatTime(selectedTime)}
             onPress={() => !isLoading && setShowHourPicker(true)}
             variant="outline"
             style={timeButtonStyle}
@@ -446,10 +477,8 @@ export const NotificationSettings: React.FC = () => {
           <View style={styles.modalContainer}>
             <TouchableOpacity activeOpacity={1} style={styles.pickerContainer}>
               <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>Bildirim Saati Seçin</Text>
-                <Text style={styles.pickerSubtitle}>
-                  Sadece saat seçin (dakikalar otomatik olarak :00 olacak)
-                </Text>
+                <Text style={styles.pickerTitle}>{t('notifications.dailyRemindersTitle')}</Text>
+                <Text style={styles.pickerSubtitle}>{t('onboarding.notifications.info')}</Text>
               </View>
 
               <ScrollView style={styles.hourScrollView} showsVerticalScrollIndicator={false}>
@@ -476,7 +505,7 @@ export const NotificationSettings: React.FC = () => {
 
               <View style={styles.pickerActions}>
                 <ThemedButton
-                  title="İptal"
+                  title={t('common.cancel')}
                   onPress={() => setShowHourPicker(false)}
                   variant="outline"
                   style={styles.cancelButton}

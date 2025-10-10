@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 import { AppTheme } from '@/themes/types';
@@ -8,6 +9,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { useUserProfile } from '@/shared/hooks';
+import { getCurrentLocale } from '@/utils/localeUtils';
 import { StatementCard } from '@/shared/components/ui';
 
 interface PastEntryItemProps {
@@ -35,6 +37,7 @@ interface PastEntryItemProps {
 const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { t } = useTranslation();
 
   const entryDate = entry.entry_date ? new Date(entry.entry_date) : new Date();
   const isRecent = index < 3;
@@ -44,7 +47,7 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
   const isGoalComplete = statementCount >= dailyGoal;
 
   const formatDate = (date: Date) =>
-    date.toLocaleDateString('tr-TR', {
+    date.toLocaleDateString(getCurrentLocale(), {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -57,26 +60,26 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
-      return 'Bugün';
+      return t('pastEntries.item.relative.today');
     }
     if (diffDays === 1) {
-      return 'Dün';
+      return t('pastEntries.item.relative.yesterday');
     }
     if (diffDays < 7) {
-      return `${diffDays} gün önce`;
+      return t('pastEntries.item.relative.days', { count: diffDays });
     }
     if (diffDays < 30) {
       const weeks = Math.floor(diffDays / 7);
-      return `${weeks} hafta önce`;
+      return t('pastEntries.item.relative.weeks', { count: weeks });
     }
     const months = Math.floor(diffDays / 30);
-    return `${months} ay önce`;
+    return t('pastEntries.item.relative.months', { count: months });
   };
 
   const getEnhancedContentPreview = () => {
     if (!entry.statements || entry.statements.length === 0) {
       return {
-        preview: 'Bu tarihe ait henüz bir minnet kaydı eklenmemiş.',
+        preview: t('pastEntries.item.previewEmpty'),
         hasMore: false,
         isEmpty: true,
       };
@@ -107,8 +110,10 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
           onPress={handlePress}
           style={styles.cardContent}
           activeOpacity={0.8}
-          accessibilityLabel={`Minnet kaydı: ${getRelativeDate(entryDate)}`}
-          accessibilityHint="Detayları görüntülemek için dokunun"
+          accessibilityLabel={t('shared.statement.a11y.memoryLabel', {
+            text: getRelativeDate(entryDate),
+          })}
+          accessibilityHint={t('shared.statement.a11y.tapToView')}
         >
           {/* Enhanced Header Section */}
           <View style={styles.headerSection}>
@@ -117,7 +122,9 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
                 <View style={styles.dateDisplayBadge}>
                   <Text style={styles.dayNumber}>{entryDate.getDate()}</Text>
                   <Text style={styles.monthText}>
-                    {entryDate.toLocaleDateString('tr-TR', { month: 'short' }).toUpperCase()}
+                    {entryDate
+                      .toLocaleDateString(getCurrentLocale(), { month: 'short' })
+                      .toUpperCase()}
                   </Text>
                 </View>
                 <View style={styles.dateInfo}>
@@ -128,7 +135,7 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
                   {isRecent && (
                     <View style={styles.recentBadge}>
                       <Icon name="clock-fast" size={12} color={theme.colors.primary} />
-                      <Text style={styles.recentBadgeText}>YENİ</Text>
+                      <Text style={styles.recentBadgeText}>{t('pastEntries.item.new')}</Text>
                     </View>
                   )}
                 </View>
@@ -139,7 +146,7 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
               <View style={styles.statBadge}>
                 <Text style={styles.statNumber}>{statementCount}</Text>
               </View>
-              <Text style={styles.statLabel}>minnet</Text>
+              <Text style={styles.statLabel}> </Text>
             </View>
           </View>
 
@@ -149,7 +156,7 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
               <>
                 <View style={styles.contentHeader}>
                   <Icon name="format-quote-open" size={16} color={theme.colors.primary + '60'} />
-                  <Text style={styles.contentLabel}>İlk Minnet</Text>
+                  <Text style={styles.contentLabel}>{t('pastEntries.item.first')}</Text>
                 </View>
 
                 {/* 🚀 ENHANCED Statement Card Preview - READ-ONLY MODE */}
@@ -161,17 +168,23 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
                   numberOfLines={2}
                   onPress={() => onPress(entry)}
                   // ✨ Accessibility & Feedback
-                  accessibilityLabel={`Minnet önizleme: ${entry.statements[0]}`}
+                  accessibilityLabel={t('shared.statement.a11y.preview', {
+                    text: entry.statements[0],
+                  })}
                   hapticFeedback={false} // Simplified feedback
                   style={styles.previewCard}
-                  // 🚫 REMOVED: No edit/delete functionality in past entries
-                  // onEdit and onDelete props removed for read-only display
+                  date={entry.entry_date}
+                  moodEmoji={
+                    ((entry.moods as Record<string, string> | undefined)?.['0'] as unknown as
+                      | import('@/types/mood.types').MoodEmoji
+                      | undefined) ?? null
+                  }
                 />
 
                 {hasMore && (
                   <View style={styles.contentMeta}>
                     <Icon name="plus-circle-outline" size={14} color={theme.colors.primary} />
-                    <Text style={styles.moreText}>+{statementCount - 1} minnet daha</Text>
+                    <Text style={styles.moreText}>+{statementCount - 1}</Text>
                   </View>
                 )}
               </>
@@ -198,8 +211,10 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
               </View>
               <Text style={styles.progressText}>
                 {isGoalComplete
-                  ? '🎉 Günlük hedef tamamlandı'
-                  : `Hedef için ${Math.max(dailyGoal - statementCount, 0)} minnet daha gerekli`}
+                  ? t('pastEntries.item.goal.completeDay')
+                  : t('pastEntries.item.goal.remaining', {
+                      count: Math.max(dailyGoal - statementCount, 0),
+                    })}
               </Text>
             </View>
 

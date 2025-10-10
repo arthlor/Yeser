@@ -1,11 +1,25 @@
 import { z } from 'zod';
+import i18n from '@/i18n';
+import type { SupportedLanguage } from '@/store/languageStore';
+
+const supportedLanguageSchema = z.union([z.literal('en'), z.literal('tr')]);
 
 export const rawProfileDataSchema = z.object({
   id: z.string().uuid('Invalid UUID format for id'),
   username: z
     .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(50, 'Username cannot exceed 50 characters')
+    .min(
+      3,
+      i18n.isInitialized
+        ? i18n.t('validation.username.minLength')
+        : 'Username must be at least 3 characters'
+    )
+    .max(
+      50,
+      i18n.isInitialized
+        ? i18n.t('validation.username.maxLength')
+        : 'Username cannot exceed 50 characters'
+    )
     .nullable(),
   onboarded: z.boolean(),
   created_at: z
@@ -19,6 +33,8 @@ export const rawProfileDataSchema = z.object({
   enable_reminders: z.boolean().default(true),
   notification_time: z.string().nullable().optional(),
   timezone: z.string().nullable().optional(),
+  avatar_path: z.string().nullable().optional(),
+  language: supportedLanguageSchema.optional().nullable(),
 });
 
 export type RawProfileData = z.infer<typeof rawProfileDataSchema>;
@@ -37,6 +53,8 @@ export const profileSchema = rawProfileDataSchema.transform((data) => ({
   daily_gratitude_goal: data.daily_gratitude_goal ?? undefined,
   notification_time: data.notification_time ?? undefined,
   timezone: data.timezone ?? undefined,
+  avatar_path: data.avatar_path ?? undefined,
+  language: (data.language ?? 'en') as SupportedLanguage,
 }));
 
 export type Profile = z.infer<typeof profileSchema>;
@@ -58,6 +76,8 @@ export const updateProfileSchema = z.object({
     .nullable()
     .optional(),
   timezone: z.string().nullable().optional(),
+  avatar_path: z.string().nullable().optional(),
+  language: supportedLanguageSchema.optional(),
 });
 
 export type UpdateProfilePayload = z.infer<typeof updateProfileSchema>;

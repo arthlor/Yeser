@@ -1,5 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
+import i18n from '@/i18n';
 
 import { logger } from '@/utils/debugConfig';
 import { config } from '@/utils/config';
@@ -83,7 +84,9 @@ export class ExpoAppleOAuthService {
             const remainingTime = this.getRemainingCooldown();
             return {
               success: false,
-              error: `Lütfen ${Math.ceil(remainingTime / 1000)} saniye bekleyin ve tekrar deneyin.`,
+              error: i18n.t('auth.services.waitSeconds', {
+                seconds: Math.ceil(remainingTime / 1000),
+              }),
             };
           }
 
@@ -108,14 +111,14 @@ export class ExpoAppleOAuthService {
 
             if (error) {
               logger.error('Expo Apple OAuth: signInWithOAuth failed', { error: error.message });
-              return { success: false, error: 'Apple ile giriş başlatılamadı.' };
+              return { success: false, error: i18n.t('auth.services.appleStartFailed') };
             }
 
             const authUrl = data?.url;
             if (!authUrl) {
               return {
                 success: false,
-                error: 'Apple ile giriş için yönlendirme adresi alınamadı.',
+                error: i18n.t('auth.services.appleRedirectMissing'),
               };
             }
 
@@ -142,7 +145,7 @@ export class ExpoAppleOAuthService {
     } catch {
       return {
         success: false,
-        error: 'Giriş işlemi devam ediyor. Lütfen bekleyin.',
+        error: i18n.t('auth.services.appleInProgress'),
       };
     }
   }
@@ -151,10 +154,10 @@ export class ExpoAppleOAuthService {
     const message = error.message.toLowerCase();
 
     if (message.includes('network')) {
-      return 'İnternet bağlantısı sorunu. Lütfen tekrar deneyin.';
+      return i18n.t('auth.services.appleNetwork');
     }
 
-    return 'Apple ile giriş yapılamadı. Lütfen tekrar deneyin.';
+    return i18n.t('auth.services.appleFailed');
   }
 
   private canAttemptSignIn(): boolean {

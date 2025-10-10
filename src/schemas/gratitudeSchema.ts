@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import i18n from '@/i18n';
 
 // Schema for validating a single gratitude statement
 export const gratitudeStatementSchema = z
@@ -6,7 +7,11 @@ export const gratitudeStatementSchema = z
     required_error: 'Gratitude statement is required.',
   })
   .trim()
-  .min(1, { message: 'Gratitude statement cannot be empty.' });
+  .min(1, {
+    message: i18n.isInitialized
+      ? i18n.t('validation.gratitude.empty')
+      : 'Gratitude statement cannot be empty.',
+  });
 
 export type GratitudeStatementFormData = z.infer<typeof gratitudeStatementSchema>;
 
@@ -14,7 +19,11 @@ export type GratitudeStatementFormData = z.infer<typeof gratitudeStatementSchema
 export const gratitudeEntrySchema = z.object({
   statements: z
     .array(gratitudeStatementSchema)
-    .min(1, { message: 'At least one gratitude statement is required.' }),
+    .min(1, {
+      message: i18n.isInitialized
+        ? i18n.t('validation.gratitude.required')
+        : 'At least one gratitude statement is required.',
+    }),
 });
 
 export type GratitudeEntryFormData = z.infer<typeof gratitudeEntrySchema>;

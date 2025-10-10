@@ -1,8 +1,10 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getGratitudeBenefits } from '@/api/whyGratitudeApi';
+import { getLocalizedGratitudeBenefits } from '@/api/whyGratitudeApi';
 import { queryKeys } from '@/api/queryKeys';
 import { logger } from '@/utils/debugConfig';
+import { useLanguageStore } from '@/store/languageStore';
+import type { SupportedLanguage } from '@/store/languageStore';
 // GratitudeBenefit type is available from types file when needed
 
 /**
@@ -12,9 +14,10 @@ import { logger } from '@/utils/debugConfig';
  * @returns TanStack Query result with data, loading, and error states
  */
 export const useGratitudeBenefits = () => {
+  const language = useLanguageStore((state: { language: SupportedLanguage }) => state.language);
   const query = useQuery({
-    queryKey: queryKeys.gratitudeBenefits(),
-    queryFn: getGratitudeBenefits,
+    queryKey: [...queryKeys.gratitudeBenefits(), language],
+    queryFn: () => getLocalizedGratitudeBenefits(language),
     staleTime: 24 * 60 * 60 * 1000, // 24 hours (content changes rarely)
     gcTime: 25 * 60 * 60 * 1000, // 25 hours
     retry: (failureCount, error: Error) => {

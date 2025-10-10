@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import {
   KeyboardAvoidingView,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   RefreshControl,
   ScrollView,
@@ -9,6 +11,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { Animated } from 'react-native';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -18,6 +21,8 @@ interface ScreenLayoutProps {
   children: React.ReactNode;
   scrollable?: boolean;
   scrollRef?: React.Ref<ScrollView>;
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  animatedScroll?: boolean;
   keyboardAware?: boolean;
   keyboardDismissMode?: 'none' | 'on-drag' | 'interactive';
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
@@ -54,6 +59,8 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
   children,
   scrollable = true,
   scrollRef,
+  onScroll,
+  animatedScroll = false,
   keyboardAware = false,
   keyboardDismissMode = 'interactive',
   keyboardShouldPersistTaps = 'handled',
@@ -91,7 +98,7 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
 
   const defaultStatusBarStyle =
     statusBarStyle || (colorMode === 'dark' ? 'light-content' : 'dark-content');
-  const screenBackgroundColor = backgroundColor || theme.colors.background;
+  const screenBackgroundColor = backgroundColor || theme.colors.surface;
   const containerBackgroundStyle = useMemo(
     () => ({ backgroundColor: screenBackgroundColor }),
     [screenBackgroundColor]
@@ -108,18 +115,37 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
       )}
 
       {scrollable ? (
-        <ScrollView
-          ref={scrollRef}
-          style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
-          showsVerticalScrollIndicator={showsVerticalScrollIndicator}
-          refreshControl={refreshControl}
-          keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-          keyboardDismissMode={keyboardDismissMode}
-          contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : undefined}
-        >
-          {children}
-        </ScrollView>
+        animatedScroll ? (
+          <Animated.ScrollView
+            ref={scrollRef as never}
+            style={styles.scrollView}
+            contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
+            showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+            refreshControl={refreshControl}
+            keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+            keyboardDismissMode={keyboardDismissMode}
+            contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : undefined}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+          >
+            {children}
+          </Animated.ScrollView>
+        ) : (
+          <ScrollView
+            ref={scrollRef}
+            style={styles.scrollView}
+            contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
+            showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+            refreshControl={refreshControl}
+            keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+            keyboardDismissMode={keyboardDismissMode}
+            contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : undefined}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+          >
+            {children}
+          </ScrollView>
+        )
       ) : (
         <View style={[styles.content, contentContainerStyle]}>
           <View style={styles.contentInnerFull}>{children}</View>

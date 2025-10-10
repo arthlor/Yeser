@@ -1,62 +1,52 @@
 import { CalendarLocalization, CalendarStatsData, CustomMarkedDates } from './types';
+import i18n from '@/i18n';
 
-// Turkish localization constants
+// Turkish localization constants from i18n
 export const TURKISH_LOCALIZATION: CalendarLocalization = {
-  months: [
-    'Ocak',
-    'Şubat',
-    'Mart',
-    'Nisan',
-    'Mayıs',
-    'Haziran',
-    'Temmuz',
-    'Ağustos',
-    'Eylül',
-    'Ekim',
-    'Kasım',
-    'Aralık',
-  ],
-  days: ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'],
-  daysShort: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
+  months: i18n.t('shared.calendar.months', { returnObjects: true, lng: 'tr' }) as string[],
+  days: i18n.t('shared.calendar.days', { returnObjects: true, lng: 'tr' }) as string[],
+  daysShort: i18n.t('shared.calendar.daysShort', { returnObjects: true, lng: 'tr' }) as string[],
 };
 
-// English localization constants
+// English localization constants from i18n
 export const ENGLISH_LOCALIZATION: CalendarLocalization = {
-  months: [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ],
-  days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-  daysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  months: i18n.t('shared.calendar.months', { returnObjects: true, lng: 'en' }) as string[],
+  days: i18n.t('shared.calendar.days', { returnObjects: true, lng: 'en' }) as string[],
+  daysShort: i18n.t('shared.calendar.daysShort', { returnObjects: true, lng: 'en' }) as string[],
+};
+
+// Dynamic localization using i18n
+export const getCalendarLocalization = (): CalendarLocalization => {
+  if (!i18n.isInitialized) {
+    // Fallback to English localization if i18n is not ready
+    return ENGLISH_LOCALIZATION;
+  }
+
+  return {
+    months: i18n.t('shared.calendar.months', { returnObjects: true }) as string[],
+    days: i18n.t('shared.calendar.days', { returnObjects: true }) as string[],
+    daysShort: i18n.t('shared.calendar.daysShort', { returnObjects: true }) as string[],
+  };
 };
 
 /**
  * Format date string to Turkish locale
  */
-export const formatDateToTurkish = (dateString: string): string => {
+export const formatDateLocalized = (dateString: string, locale?: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('tr-TR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const resolved =
+    locale || (i18n.isInitialized ? i18n.language : Intl.DateTimeFormat().resolvedOptions().locale);
+  const map = resolved === 'en' ? 'en-US' : resolved === 'tr' ? 'tr-TR' : resolved;
+  return date.toLocaleDateString(map, { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 /**
- * Format month and year to Turkish
+ * Format month and year using current locale
  */
-export const formatMonthYear = (date: Date): string =>
-  `${TURKISH_LOCALIZATION.months[date.getMonth()]} ${date.getFullYear()}`;
+export const formatMonthYear = (date: Date): string => {
+  const localization = getCalendarLocalization();
+  return `${localization.months[date.getMonth()]} ${date.getFullYear()}`;
+};
 
 /**
  * Calculate number of entries in current month

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Animated,
   NativeSyntheticEvent,
@@ -75,6 +76,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
   ...rest
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [isFocused, setIsFocused] = React.useState(false);
 
   // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
@@ -174,7 +176,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
         <Text
           style={styles.label}
           accessibilityRole="text"
-          accessibilityLabel={`${label}${isRequired ? ', required' : ''}${errorText ? `, Error: ${errorText}` : ''}`}
+          accessibilityLabel={`${label}${isRequired ? t('shared.ui.accessibility.required') : ''}${errorText ? t('shared.ui.accessibility.error', { error: errorText }) : ''}`}
         >
           {label}
           {isRequired && <Text style={styles.requiredIndicator}> *</Text>}
@@ -198,7 +200,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
             color={styles.icon.color}
             style={styles.leftIcon}
             accessibilityRole="image"
-            accessibilityLabel={`${leftIcon} icon`}
+            accessibilityLabel={t('shared.ui.accessibility.iconLabel', { icon: leftIcon })}
           />
         )}
 
@@ -230,7 +232,9 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
                 color={getValidationIconColor()}
                 style={styles.validationIcon}
                 accessibilityRole="image"
-                accessibilityLabel={`${effectiveValidationState} state`}
+                accessibilityLabel={t('shared.ui.accessibility.stateLabel', {
+                  state: effectiveValidationState,
+                })}
               />
             ) : null;
           })()}
@@ -241,7 +245,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
             onPress={handleClear}
             style={styles.iconButton}
             accessibilityRole="button"
-            accessibilityLabel="Clear text"
+            accessibilityLabel={t('shared.ui.accessibility.clearText')}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Icon name="close-circle" size={getIconSize(size)} color={theme.colors.textSecondary} />
@@ -255,7 +259,10 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
             style={styles.iconButton}
             disabled={!onRightIconPress}
             accessibilityRole={onRightIconPress ? 'button' : 'image'}
-            accessibilityLabel={rightIconAccessibilityLabel || `${rightIcon} icon`}
+            accessibilityLabel={
+              rightIconAccessibilityLabel ||
+              t('shared.ui.accessibility.iconLabel', { icon: rightIcon })
+            }
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Icon name={rightIcon} size={getIconSize(size)} color={styles.icon.color} />
@@ -285,7 +292,8 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
               accessibilityRole="text"
               accessibilityLiveRegion={errorText || isOverLimit ? 'polite' : 'none'}
             >
-              {errorText || (isOverLimit ? `Character limit exceeded` : helperText)}
+              {errorText ||
+                (isOverLimit ? t('shared.ui.accessibility.characterLimit') : helperText)}
             </Text>
           </View>
 
@@ -294,7 +302,10 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
             <Text
               style={[styles.characterCount, isOverLimit && styles.characterCountError]}
               accessibilityRole="text"
-              accessibilityLabel={`${characterCount} of ${characterLimit} characters`}
+              accessibilityLabel={t('shared.ui.accessibility.characterCount', {
+                current: characterCount,
+                limit: characterLimit,
+              })}
             >
               {characterCount}/{characterLimit}
             </Text>

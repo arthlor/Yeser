@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-nativ
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
+import { useTranslation } from 'react-i18next';
 
 interface ScreenHeaderProps {
   title?: string;
@@ -39,6 +40,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme, variant);
+  const { t } = useTranslation();
 
   const handleBackPress = () => {
     if (onBackPress) {
@@ -56,7 +58,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
             style={styles.backButton}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel="Geri git"
+            accessibilityLabel={t('common.back')}
           >
             <Icon name="arrow-left" size={24} color={theme.colors.onBackground} />
           </TouchableOpacity>
@@ -100,7 +102,7 @@ const createStyles = (theme: AppTheme, variant: 'default' | 'large' | 'minimal')
       paddingHorizontal: theme.spacing.page,
       paddingVertical: isMinimal ? theme.spacing.sm : theme.spacing.md,
       minHeight: isLarge ? 80 : isMinimal ? 44 : 56,
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.surface,
     },
     leftSection: {
       width: 44,

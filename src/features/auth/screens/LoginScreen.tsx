@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Animated, Dimensions, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import ThemedInput from '@/shared/components/ui/ThemedInput';
+import ScreenLayout from '@/shared/components/layout/ScreenLayout';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
@@ -56,6 +57,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   const { showWarning, showError, showSuccess } = useToast();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets);
+  const { t } = useTranslation();
 
   // Modern selective auth state for better performance
   const { isAuthenticated, isLoading: coreLoading } = useCoreAuth();
@@ -107,10 +109,10 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       logger.debug('OAuth callback successful - resetting state');
       // Show success message for OAuth completion (provider-agnostic)
       setTimeout(() => {
-        showSuccess?.('Başarıyla giriş yaptınız!');
+        showSuccess?.(t('auth.login.toasts.loginSuccess'));
       }, 100);
     }
-  }, [isAuthenticated, isWaitingForOAuthCallback, showSuccess]);
+  }, [isAuthenticated, isWaitingForOAuthCallback, showSuccess, t]);
 
   // Form state
   const [email, setEmail] = useState('');
@@ -279,13 +281,13 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   // 🚀 TOAST INTEGRATION: Enhanced magic link login with complementary toast notifications
   const handleSendMagicLink = useCallback(async () => {
     if (!canSendMagicLink()) {
-      showWarning('Lütfen bekleyin, çok fazla istek gönderdiniz.');
+      showWarning(t('auth.login.toasts.rateLimit'));
       return;
     }
 
     // Simple email validation
     if (!email || !email.includes('@')) {
-      showError('Geçerli bir email adresi girin');
+      showError(t('auth.login.toasts.invalidEmail'));
       return;
     }
 
@@ -299,7 +301,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
         },
         // Success callback - this will be called when magic link is sent successfully
         (message: string) => {
-          showSuccess(message); // This will now work!
+          showSuccess(message);
           logger.debug('Magic link sent successfully with UI feedback');
         },
         // Error callback - this will be called if there's an error
@@ -312,11 +314,11 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       // This catch is for any remaining unhandled errors
       logger.error('Magic link send failed in UI catch block:', error as Error);
     }
-  }, [email, canSendMagicLink, sendMagicLink, showWarning, showError, showSuccess]);
+  }, [email, canSendMagicLink, sendMagicLink, showWarning, showError, showSuccess, t]);
 
   const handleGoogleLogin = useCallback(async (): Promise<void> => {
     if (!canAttemptGoogleSignIn) {
-      showWarning('Google servisleri henüz hazır değil. Lütfen bekleyin.');
+      showWarning(t('auth.login.toasts.googleNotReady'));
       return;
     }
 
@@ -336,16 +338,16 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
         logger.error('Google OAuth error in UI:', error as Error);
       }
     }
-  }, [canAttemptGoogleSignIn, signInWithGoogle, showWarning]);
+  }, [canAttemptGoogleSignIn, signInWithGoogle, showWarning, t]);
 
   const handleAppleLogin = useCallback(async (): Promise<void> => {
     if (Platform.OS !== 'ios') {
-      showWarning('Apple ile giriş sadece iOS üzerinde desteklenir.');
+      showWarning(t('auth.login.toasts.appleOnlyIOS'));
       return;
     }
 
     if (!canAttemptAppleSignIn) {
-      showWarning('Apple servisleri henüz hazır değil. Lütfen bekleyin.');
+      showWarning(t('auth.login.toasts.appleNotReady'));
       return;
     }
 
@@ -360,25 +362,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
         logger.error('Apple OAuth error in UI:', error as Error);
       }
     }
-  }, [canAttemptAppleSignIn, signInWithApple, showWarning]);
-
-  // **ENHANCED GRADIENT COLORS**: More visible and properly structured
-  const gradientColors = useMemo(() => {
-    if (theme.name === 'dark') {
-      return [
-        `${theme.colors.primary}25`,
-        `${theme.colors.secondary}18`,
-        `${theme.colors.background}85`,
-        theme.colors.background,
-      ] as const;
-    }
-    return [
-      `${theme.colors.primary}15`,
-      `${theme.colors.secondary}12`,
-      `${theme.colors.background}90`,
-      theme.colors.background,
-    ] as const;
-  }, [theme]);
+  }, [canAttemptAppleSignIn, signInWithApple, showWarning, t]);
 
   // Animated styles
   const headerAnimatedStyle = useMemo(
@@ -402,15 +386,13 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
         <View style={styles.brandIcon}>
           <Ionicons name="leaf" size={24} color={theme.colors.primary} />
         </View>
-        <Text style={styles.brandText}>Yeşer</Text>
+        <Text style={styles.brandText}>{t('auth.login.brand')}</Text>
       </View>
       <Text style={styles.welcomeTitle}>
-        {magicLinkSent ? 'Giriş Bağlantısı Gönderildi!' : 'Hoş Geldiniz!'}
+        {magicLinkSent ? t('auth.login.magicLinkSentTitle') : t('auth.login.welcome')}
       </Text>
       <Text style={styles.welcomeSubtitle}>
-        {magicLinkSent
-          ? 'E-postanızı kontrol edin ve giriş bağlantısına tıklayın.'
-          : 'Minnet yolculuğunuza devam edin'}
+        {magicLinkSent ? t('auth.login.magicLinkSentDesc') : t('auth.login.continueJourney')}
       </Text>
     </Animated.View>
   );
@@ -430,18 +412,18 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                   <View style={styles.trustSection}>
                     <View style={styles.trustBadge}>
                       <Ionicons name="shield-checkmark" size={14} color={theme.colors.success} />
-                      <Text style={styles.trustText}>Güvenli Giriş</Text>
+                      <Text style={styles.trustText}>{t('auth.login.secure.trust1')}</Text>
                     </View>
                     <View style={styles.trustBadge}>
                       <Ionicons name="lock-closed" size={14} color={theme.colors.success} />
-                      <Text style={styles.trustText}>Şifresiz</Text>
+                      <Text style={styles.trustText}>{t('auth.login.secure.trust2')}</Text>
                     </View>
                   </View>
 
                   {/* Email Input */}
                   <View style={styles.inputSection}>
                     <ThemedInput
-                      label="E-posta Adresi"
+                      label={t('auth.login.labels.email')}
                       value={email}
                       onChangeText={handleEmailChange}
                       keyboardType="email-address"
@@ -453,13 +435,15 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                       editable={!isLoading}
                       validationState={isEmailValid ? 'success' : 'default'}
                       showValidationIcon={email.length > 0}
-                      placeholder="ornek@email.com"
+                      placeholder={t('auth.login.labels.emailPlaceholder')}
                     />
                   </View>
 
                   {/* Login Button */}
                   <ThemedButton
-                    title={isLoading ? 'Gönderiliyor...' : 'Giriş Bağlantısı Gönder'}
+                    title={
+                      isLoading ? t('auth.login.buttons.sending') : t('auth.login.buttons.send')
+                    }
                     onPress={handleSendMagicLink}
                     variant="primary"
                     isLoading={isLoading}
@@ -471,19 +455,19 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                   {/* Social OAuth Section */}
                   <View style={styles.divider}>
                     <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>veya</Text>
+                    <Text style={styles.dividerText}>{t('auth.login.divider.or')}</Text>
                     <View style={styles.dividerLine} />
                   </View>
 
                   <ThemedButton
                     title={
                       !googleOAuthReady
-                        ? 'Google servisleri hazırlanıyor...'
+                        ? t('auth.login.buttons.googleLoading')
                         : isWaitingForOAuthCallback
-                          ? 'Tarayıcıda giriş yapın...'
+                          ? t('auth.login.buttons.openInBrowser')
                           : googleOAuthLoading
-                            ? 'Google ile giriş yapılıyor...'
-                            : 'Google ile Devam Et'
+                            ? t('auth.login.buttons.googleSigning')
+                            : t('auth.login.oauth.googleContinue')
                     }
                     onPress={handleGoogleLogin}
                     variant="secondary"
@@ -503,12 +487,12 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                     <ThemedButton
                       title={
                         !appleOAuthReady
-                          ? 'Apple servisleri hazırlanıyor...'
+                          ? t('auth.login.buttons.appleLoading')
                           : isWaitingForOAuthCallback
-                            ? 'Tarayıcıda giriş yapın...'
+                            ? t('auth.login.buttons.openInBrowser')
                             : appleOAuthLoading
-                              ? 'Apple ile giriş yapılıyor...'
-                              : 'Apple ile Devam Et'
+                              ? t('auth.login.buttons.appleSigning')
+                              : t('auth.login.oauth.appleContinue')
                       }
                       onPress={handleAppleLogin}
                       variant="secondary"
@@ -530,14 +514,18 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                     <View style={styles.oauthCallbackIndicator}>
                       <Ionicons name="open-outline" size={16} color={theme.colors.primary} />
                       <Text style={styles.oauthCallbackText}>
-                        Tarayıcıda giriş yapın ve bu uygulamaya geri dönün
+                        {t('auth.login.oauth.browserReturnInstruction')}
                       </Text>
                     </View>
                   )}
 
                   {/* Help Section Toggle */}
                   <ThemedButton
-                    title={showHelpSection ? 'Yardımı Gizle' : 'Güvenli Link Nedir?'}
+                    title={
+                      showHelpSection
+                        ? t('auth.login.secure.toggleHelp.hide')
+                        : t('auth.login.secure.toggleHelp.show')
+                    }
                     variant="ghost"
                     onPress={toggleHelpSection}
                     style={styles.helpToggle}
@@ -548,11 +536,8 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                   {/* **SIMPLIFIED HELP SECTION**: Using layout transition animation */}
                   <Animated.View style={[styles.helpSection, helpSectionAnimatedStyle]}>
                     <View style={styles.helpContent}>
-                      <Text style={styles.helpTitle}>🔒 Güvenli ve Kolay</Text>
-                      <Text style={styles.helpText}>
-                        Güvenli link ile şifre hatırlamaya gerek yok. E-postanıza özel bir bağlantı
-                        gönderiyoruz.
-                      </Text>
+                      <Text style={styles.helpTitle}>{t('auth.login.secure.helpTitle')}</Text>
+                      <Text style={styles.helpText}>{t('auth.login.secure.helpDesc')}</Text>
                     </View>
                   </Animated.View>
                 </>
@@ -564,12 +549,10 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                   <View style={styles.successIcon}>
                     <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
                   </View>
-                  <Text style={styles.successTitle}>Başarılı!</Text>
-                  <Text style={styles.successMessage}>
-                    E-posta adresinizi kontrol edin ve güvenli giriş bağlantısına tıklayın.
-                  </Text>
+                  <Text style={styles.successTitle}>{t('auth.login.magicLinkSentTitle')}</Text>
+                  <Text style={styles.successMessage}>{t('auth.login.magicLinkSentDesc')}</Text>
                   <ThemedButton
-                    title="Tekrar Gönder"
+                    title={t('auth.login.buttons.resend')}
                     variant="secondary"
                     onPress={handleSendMagicLink}
                     disabled={!canSendMagicLink()}
@@ -585,18 +568,20 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   );
 
   return (
-    <LinearGradient colors={gradientColors} style={styles.fullScreenContainer}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.safeContainer}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {renderHeader()}
+    <ScreenLayout
+      scrollable={true}
+      keyboardAware={true}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      backgroundColor={theme.colors.background}
+      statusBarStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
+      contentContainerStyle={styles.safeContainer}
+    >
+      {renderHeader()}
 
-        <View style={styles.contentArea}>{renderMainContent()}</View>
-      </ScrollView>
-    </LinearGradient>
+      <View style={styles.contentArea}>{renderMainContent()}</View>
+    </ScreenLayout>
   );
 });
 
@@ -605,14 +590,6 @@ const createStyles = (
   insets: { top: number; bottom: number; left: number; right: number }
 ) =>
   StyleSheet.create({
-    // **FULL SCREEN GRADIENT**: Covers entire screen
-    fullScreenContainer: {
-      flex: 1,
-    },
-    // **SCROLLABLE CONTAINER**: Enables scrolling while maintaining gradient
-    scrollView: {
-      flex: 1,
-    },
     // **SAFE CONTENT CONTAINER**: Applies safe area insets and spacing
     safeContainer: {
       flexGrow: 1,

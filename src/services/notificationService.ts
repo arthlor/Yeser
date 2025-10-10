@@ -1,10 +1,14 @@
 import * as Notifications from 'expo-notifications';
 import * as Localization from 'expo-localization';
 import { Alert, Linking, Platform } from 'react-native';
-import { supabase } from '@/utils/supabaseClient'; // Assuming this is your Supabase client path
+import i18n from '@/i18n';
+import { supabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
+import { config } from '@/utils/config';
+import { useLanguageStore } from '@/store/languageStore';
 
 const ANDROID_CHANNEL_ID = 'daily-reminder-channel';
+const EXPO_PROJECT_ID = config.eas.projectId;
 
 // Configure notification handling for different app states
 Notifications.setNotificationHandler({
@@ -24,7 +28,8 @@ Notifications.setNotificationHandler({
 async function setupAndroidChannel() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-      name: 'Daily Reminders',
+      // Localized channel name
+      name: i18n.isInitialized ? i18n.t('notifications.dailyRemindersTitle') : 'Daily Reminders',
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF231F7C',
@@ -45,16 +50,22 @@ async function registerForPushNotificationsAsync(): Promise<{
   await setupAndroidChannel();
 
   const { status: existingStatus, canAskAgain } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+  // Map to a broader union that may include 'provisional' on iOS
+  let finalStatus: 'granted' | 'denied' | 'undetermined' | 'provisional' = existingStatus as
+    | 'granted'
+    | 'denied'
+    | 'undetermined'
+    | 'provisional';
   let finalCanAskAgain = canAskAgain;
 
   if (existingStatus !== 'granted') {
     const { status, canAskAgain: newCanAskAgain } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+    finalStatus = status as 'granted' | 'denied' | 'undetermined' | 'provisional';
     finalCanAskAgain = newCanAskAgain;
   }
 
-  if (finalStatus !== 'granted') {
+  // Treat 'provisional' as acceptable permission on iOS
+  if (finalStatus !== 'granted' && finalStatus !== 'provisional') {
     logger.warn('Push notification permission denied.', {
       status: finalStatus,
       canAskAgain: finalCanAskAgain,
@@ -67,16 +78,16 @@ async function registerForPushNotificationsAsync(): Promise<{
   }
 
   try {
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    const token = await getExpoProjectPushToken();
     return {
       token,
-      status: 'granted',
+      status: finalStatus,
     };
   } catch (error) {
     logger.error('Failed to get push token:', error as Error);
     return {
       token: null,
-      status: 'granted', // Permission was granted but token failed
+      status: finalStatus,
     };
   }
 }
@@ -95,74 +106,34 @@ async function saveTokenToBackend(token: string) {
   }
 
   const timezone = Localization.getCalendars()[0].timeZone ?? 'UTC';
+  const { language } = useLanguageStore.getState();
 
-  // First, check if profile exists
-  const { data: existingProfile, error: profileCheckError } = await supabase
+  const { error } = await supabase.rpc('register_push_token', {
+    p_token: token,
+    p_timezone: timezone,
+    p_token_type: 'expo',
+  });
+
+  if (error) {
+    logger.error('Error saving push token:', error);
+    return { error };
+  }
+
+  const { error: languageError } = await supabase
     .from('profiles')
-    .select('id')
-    .eq('id', user.id)
-    .single();
+    .update({ language })
+    .eq('id', user.id);
 
-  if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-    // PGRST116 means no rows returned, which is expected if profile doesn't exist
-    logger.error('Error checking profile existence:', profileCheckError);
-    return { error: profileCheckError };
+  if (languageError) {
+    logger.error('Error updating profile language:', languageError);
+    return { error: languageError };
   }
 
-  // Update or create profile with timezone
-  if (existingProfile) {
-    // Profile exists, just update timezone
-    const { error: profileUpdateError } = await supabase
-      .from('profiles')
-      .update({
-        timezone,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id);
-
-    if (profileUpdateError) {
-      logger.error('Error updating profile timezone:', profileUpdateError);
-      return { error: profileUpdateError };
-    }
-  } else {
-    // Profile doesn't exist, create it
-    const { error: profileCreateError } = await supabase.from('profiles').insert({
-      id: user.id,
-      timezone,
-      onboarded: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
-
-    if (profileCreateError) {
-      logger.error('Error creating profile:', profileCreateError);
-      return { error: profileCreateError };
-    }
-  }
-
-  // Now save the push token
-  // Use ignoreDuplicates to avoid UPDATE path (which can violate RLS when token exists for another user)
-  const { error: tokenError } = await supabase
-    .from('push_tokens')
-    .upsert(
-      { user_id: user.id, token, token_type: 'expo' },
-      { onConflict: 'token', ignoreDuplicates: true }
-    );
-
-  if (tokenError) {
-    logger.error('Error saving push token:', tokenError);
-    // Gracefully handle unique or RLS edge cases by treating as success, since permission is granted
-    // and token is already present in DB (possibly associated with another user on the same device).
-    if (
-      (tokenError as { code?: string }).code === '23505' ||
-      (tokenError as { code?: string }).code === '42501'
-    ) {
-      return { success: true };
-    }
-    return { error: tokenError };
-  }
-
-  logger.debug('Successfully saved push token and timezone', { userId: user.id, timezone });
+  logger.debug('Successfully saved push token, timezone, and language', {
+    userId: user.id,
+    timezone,
+    language,
+  });
   return { success: true };
 }
 
@@ -179,10 +150,9 @@ async function updateNotificationTime(time: string | null) {
     return { error: new Error('User not authenticated.') };
   }
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ notification_time: time })
-    .eq('id', user.id);
+  const { error } = await supabase.rpc('set_notification_hour', {
+    p_notification_time: (time ?? null) as unknown as string,
+  });
 
   if (error) {
     logger.error('Error updating notification time:', error);
@@ -198,10 +168,33 @@ async function updateNotificationTime(time: string | null) {
  * @param token The Expo Push Token to remove.
  */
 async function removeTokenFromBackend(token: string) {
-  const { error } = await supabase.from('push_tokens').delete().eq('token', token);
+  const { error } = await supabase.rpc('unregister_push_token', {
+    p_token: token,
+  });
 
   if (error) {
     logger.error('Error removing push token:', error);
+  }
+}
+
+async function getExpoProjectPushToken(): Promise<string> {
+  if (!EXPO_PROJECT_ID) {
+    logger.warn('Expo project ID missing – falling back to default token request');
+    return (await Notifications.getExpoPushTokenAsync()).data;
+  }
+
+  const response = await Notifications.getExpoPushTokenAsync({ projectId: EXPO_PROJECT_ID });
+  return response.data;
+}
+
+async function getCurrentDevicePushToken(): Promise<string | null> {
+  try {
+    return await getExpoProjectPushToken();
+  } catch (error) {
+    logger.warn('Failed to read existing push token.', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
   }
 }
 
@@ -214,17 +207,30 @@ function showNotificationPermissionGuidance(
   canAskAgain: boolean = true,
   onPermissionResult?: (granted: boolean) => void
 ) {
-  const title = canAskAgain ? 'Günlük Minnettarlık Hatırlatıcıları 🌱' : 'Bildirim İzni Gerekli';
+  const title = canAskAgain
+    ? i18n.isInitialized
+      ? i18n.t('notifications.dailyRemindersTitle')
+      : 'Daily Reminders'
+    : i18n.isInitialized
+      ? i18n.t('notifications.permissionRequiredTitle')
+      : 'Permission Required';
 
   const message = canAskAgain
-    ? 'Minnettarlık alışkanlığını sürdürmek için günlük hatırlatıcılar göndermek istiyoruz.\n\n✨ Faydaları:\n• Her gün aynı saatte nazik hatırlatıcı\n• Minnettarlık pratiğini unutmazsın\n• İstediğin zaman ayarlarından kapatabilirsin\n• Daha pozitif ve mutlu bir yaşam\n\nİzin vermek ister misin?'
-    : 'Günlük hatırlatıcıları etkinleştirmek için bildirim izni gerekiyor.\n\n📱 Nasıl etkinleştirilir:\n1. "Ayarlara Git" butonuna dokunun\n2. "Bildirimler" bölümünü bulun\n3. Yeşer uygulamasını etkinleştirin\n4. Bu sayfaya geri dönün\n\nHatırlatıcılar sizi daha mutlu hissettirecek! 😊';
+    ? i18n.isInitialized
+      ? i18n.t('notifications.dailyRemindersMessage')
+      : 'Set daily gratitude reminders'
+    : i18n.isInitialized
+      ? i18n.t('notifications.permissionRequiredMessage')
+      : 'Notification permission required';
 
   const buttons = canAskAgain
     ? [
-        { text: 'Şimdi Değil', style: 'cancel' as const },
         {
-          text: 'Evet, Etkinleştir',
+          text: i18n.isInitialized ? i18n.t('notifications.notNow') : 'Not Now',
+          style: 'cancel' as const,
+        },
+        {
+          text: i18n.isInitialized ? i18n.t('notifications.enable') : 'Enable',
           onPress: async () => {
             const result = await Notifications.requestPermissionsAsync();
             onPermissionResult?.(result.status === 'granted');
@@ -232,8 +238,14 @@ function showNotificationPermissionGuidance(
         },
       ]
     : [
-        { text: 'Belki Sonra', style: 'cancel' as const },
-        { text: 'Ayarlara Git', onPress: openNotificationSettings },
+        {
+          text: i18n.isInitialized ? i18n.t('notifications.maybeLater') : 'Maybe Later',
+          style: 'cancel' as const,
+        },
+        {
+          text: i18n.isInitialized ? i18n.t('notifications.openSettings') : 'Open Settings',
+          onPress: openNotificationSettings,
+        },
       ];
 
   Alert.alert(title, message, buttons);
@@ -257,4 +269,5 @@ export const notificationService = {
   removeTokenFromBackend,
   showNotificationPermissionGuidance,
   openNotificationSettings,
+  getCurrentDevicePushToken,
 };

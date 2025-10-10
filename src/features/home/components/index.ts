@@ -1,4 +1,20 @@
 // Home feature components
-export { default as ActionCards } from './ActionCards';
-export { default as DailyInspiration } from './DailyInspiration';
-export { default as HeroSection } from './HeroSection';
+import ActionCards from './ActionCards';
+import FloatingAddButton from './FloatingAddButton';
+import HeroSection from './HeroSection';
+import HomeHeader from './HomeHeader';
+import HomeGratitudeListItem from './HomeGratitudeListItem';
+import InspirationCard from './InspirationCard';
+import StatsRow from './StatsRow';
+import StreakMiniCard from './StreakMiniCard';
+
+export {
+  ActionCards,
+  FloatingAddButton,
+  HeroSection,
+  HomeHeader,
+  HomeGratitudeListItem,
+  InspirationCard,
+  StatsRow,
+  StreakMiniCard,
+};

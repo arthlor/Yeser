@@ -3,6 +3,8 @@ import {
   deleteEntireEntry,
   deleteStatement,
   editStatement,
+  getGratitudeDailyEntryByDate,
+  setStatementMood as setStatementMoodRpc,
 } from '@/api/gratitudeApi';
 // 🔧 FIX: Import streak recalculation function
 import { recalculateUserStreak } from '@/api/streakApi';
@@ -101,12 +103,14 @@ const isValidOptimisticVersion = (entryDate: string, userId: string, version: nu
 interface AddStatementPayload {
   entryDate: string;
   statement: string;
+  moodEmoji?: string | null;
 }
 
 interface EditStatementPayload {
   entryDate: string;
   statementIndex: number;
   updatedStatement: string;
+  moodEmoji?: string | null;
 }
 
 interface DeleteStatementPayload {
@@ -124,6 +128,16 @@ interface AddStatementContext {
   optimisticVersion: number;
 }
 
+interface SetMoodPayload {
+  entryDate: string;
+  statementIndex: number;
+  moodEmoji: string | null;
+}
+
+interface SetMoodContext {
+  previousEntry: GratitudeEntry | null | undefined;
+}
+
 export const useGratitudeMutations = () => {
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
@@ -135,7 +149,7 @@ export const useGratitudeMutations = () => {
     AddStatementPayload,
     AddStatementContext
   >({
-    mutationFn: async ({ entryDate, statement }) => {
+    mutationFn: async ({ entryDate, statement, moodEmoji }) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
@@ -144,12 +158,12 @@ export const useGratitudeMutations = () => {
       await acquireMutationLock(entryDate, 'add', user.id);
 
       try {
-        return await addStatement(entryDate, statement);
+        return await addStatement(entryDate, statement, moodEmoji ?? null);
       } finally {
         releaseMutationLock(entryDate, user.id);
       }
     },
-    onMutate: async ({ entryDate, statement }) => {
+    onMutate: async ({ entryDate, statement, moodEmoji }) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
@@ -182,13 +196,22 @@ export const useGratitudeMutations = () => {
               user_id: user.id || '',
               entry_date: entryDate,
               statements: [statement],
+              moods: moodEmoji ? { '0': moodEmoji } : {},
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             };
           }
+          const nextStatements = [...old.statements, statement];
+          const nextIndex = nextStatements.length - 1;
+          const prevMoods = (old.moods as Record<string, string> | undefined) || {};
+          const nextMoods = { ...prevMoods } as Record<string, string>;
+          if (moodEmoji) {
+            nextMoods[String(nextIndex)] = moodEmoji;
+          }
           return {
             ...old,
-            statements: [...old.statements, statement],
+            statements: nextStatements,
+            moods: nextMoods,
             updated_at: new Date().toISOString(),
           };
         }
@@ -238,7 +261,7 @@ export const useGratitudeMutations = () => {
   });
 
   const editStatementMutation = useMutation<void, Error, EditStatementPayload>({
-    mutationFn: async ({ entryDate, statementIndex, updatedStatement }) => {
+    mutationFn: async ({ entryDate, statementIndex, updatedStatement, moodEmoji }) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
@@ -247,7 +270,27 @@ export const useGratitudeMutations = () => {
       await acquireMutationLock(entryDate, 'edit', user.id);
 
       try {
-        return await editStatement(entryDate, statementIndex, updatedStatement);
+        // Preserve existing mood if not explicitly provided
+        let moodToSend: string | null | undefined = moodEmoji;
+        if (moodToSend === undefined) {
+          const cached = queryClient.getQueryData<GratitudeEntry | null>(
+            queryKeys.gratitudeEntry(user.id, entryDate)
+          );
+          const existingFromCache = (cached?.moods as Record<string, string> | undefined)?.[
+            String(statementIndex)
+          ];
+          if (existingFromCache !== undefined) {
+            moodToSend = existingFromCache ?? null;
+          } else {
+            const fresh = await getGratitudeDailyEntryByDate(entryDate);
+            const existingFromServer = (fresh?.moods as Record<string, string> | undefined)?.[
+              String(statementIndex)
+            ];
+            moodToSend = existingFromServer ?? null;
+          }
+        }
+
+        return await editStatement(entryDate, statementIndex, updatedStatement, moodToSend ?? null);
       } finally {
         releaseMutationLock(entryDate, user.id);
       }
@@ -391,6 +434,62 @@ export const useGratitudeMutations = () => {
     },
   });
 
+  // Mood-only setter mutation with optimistic update of moods map
+  const setStatementMoodMutation = useMutation<void, Error, SetMoodPayload, SetMoodContext>({
+    mutationFn: async ({ entryDate, statementIndex, moodEmoji }) => {
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+      await setStatementMoodRpc(entryDate, statementIndex, moodEmoji);
+    },
+    onMutate: async ({ entryDate, statementIndex, moodEmoji }) => {
+      if (!user?.id) {
+        return;
+      }
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.gratitudeEntry(user.id, entryDate),
+      });
+
+      const previousEntry = queryClient.getQueryData<GratitudeEntry | null>(
+        queryKeys.gratitudeEntry(user.id, entryDate)
+      );
+
+      if (previousEntry) {
+        const prevMoods = (previousEntry.moods as Record<string, string> | undefined) || {};
+        const key = String(statementIndex);
+        const nextMoods: Record<string, string> = { ...prevMoods };
+        if (moodEmoji) {
+          nextMoods[key] = moodEmoji;
+        } else {
+          delete nextMoods[key];
+        }
+        queryClient.setQueryData<GratitudeEntry>(queryKeys.gratitudeEntry(user.id, entryDate), {
+          ...previousEntry,
+          moods: nextMoods,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      return { previousEntry };
+    },
+    onError: (_err, { entryDate }, context) => {
+      if (!user?.id || !context?.previousEntry) {
+        return;
+      }
+      queryClient.setQueryData(queryKeys.gratitudeEntry(user.id, entryDate), context.previousEntry);
+    },
+    onSettled: (_data, _error, { entryDate }) => {
+      if (!user?.id) {
+        return;
+      }
+      setTimeout(() => {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.gratitudeEntry(user.id as string, entryDate),
+        });
+      }, 0);
+    },
+  });
+
   return {
     addStatement: addStatementMutation.mutate,
     isAddingStatement: addStatementMutation.isPending,
@@ -408,5 +507,6 @@ export const useGratitudeMutations = () => {
     deleteEntireEntry: deleteEntireEntryMutation.mutate,
     isDeletingEntry: deleteEntireEntryMutation.isPending,
     deleteEntryError: deleteEntireEntryMutation.error,
+    setStatementMood: setStatementMoodMutation.mutate,
   };
 };

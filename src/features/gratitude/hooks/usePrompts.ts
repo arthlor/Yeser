@@ -1,31 +1,44 @@
-import { getMultipleRandomActivePrompts, getRandomActivePrompt } from '@/api/promptApi';
-import type { DailyPrompt } from '@/schemas/gratitudeEntrySchema';
+import {
+  getLocalizedMultipleRandomActivePrompts,
+  getLocalizedRandomActivePrompt,
+} from '@/api/promptApi';
+import type { LocalizedDailyPrompt } from '@/schemas/gratitudeEntrySchema';
 import { queryKeys } from '@/api/queryKeys';
 import { QUERY_STALE_TIMES } from '@/api/queryClient';
 import useAuthStore from '@/store/authStore';
+import { useLanguageStore } from '@/store/languageStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/debugConfig';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
+import i18n from '@/i18n';
 
-// Default static prompt text (Turkish) - Centralized here
-export const STATIC_DEFAULT_PROMPT = 'Bugün neler için minnettarsın?';
+// Localized static prompt texts - Centralized here
+export const getStaticDefaultPrompt = (language: 'tr' | 'en'): string => {
+  const t = i18n.getFixedT(language);
+  return t('gratitude.prompt.fallbackText');
+};
+
+// Legacy constant for backward compatibility
+export const STATIC_DEFAULT_PROMPT = getStaticDefaultPrompt('tr');
 
 /**
- * Hook to get current daily prompt with TanStack Query
+ * Hook to get current daily prompt with localization support
  * **NETWORK RESILIENCE**: Enhanced error handling and fallback strategies
  */
 export const useCurrentPrompt = () => {
   const user = useAuthStore((state) => state.user);
+  const language = useLanguageStore((state) => state.language);
 
   return useQuery({
-    queryKey: queryKeys.currentPrompt(user?.id),
+    queryKey: [...queryKeys.currentPrompt(user?.id), 'localized', language],
     queryFn: async () => {
       try {
-        const prompt = await getRandomActivePrompt();
+        const prompt = await getLocalizedRandomActivePrompt(language);
         return prompt;
       } catch (error) {
-        logger.warn('Prompt API failed, returning null for graceful fallback:', {
+        logger.warn('Localized prompt API failed, returning null for graceful fallback:', {
           error: error instanceof Error ? error.message : String(error),
+          language,
         });
         // Return null instead of throwing to prevent cascade failures
         return null;
@@ -48,22 +61,27 @@ export const useCurrentPrompt = () => {
 };
 
 /**
- * Hook to get multiple random prompts for varied inspiration
+ * Hook to get multiple random prompts for varied inspiration with localization
  * **NETWORK RESILIENCE**: Enhanced with graceful fallback to empty array
  */
 export const useMultiplePrompts = (limit: number = 10) => {
   const user = useAuthStore((state) => state.user);
+  const language = useLanguageStore((state) => state.language);
 
   return useQuery({
-    queryKey: [...queryKeys.currentPrompt(user?.id), 'multiple', limit],
+    queryKey: [...queryKeys.currentPrompt(user?.id), 'multiple', limit, 'localized', language],
     queryFn: async () => {
       try {
-        const prompts = await getMultipleRandomActivePrompts(limit);
+        const prompts = await getLocalizedMultipleRandomActivePrompts(limit, language);
         return prompts;
       } catch (error) {
-        logger.warn('Multiple prompts API failed, returning empty array for graceful fallback:', {
-          error: error instanceof Error ? error.message : String(error),
-        });
+        logger.warn(
+          'Multiple localized prompts API failed, returning empty array for graceful fallback:',
+          {
+            error: error instanceof Error ? error.message : String(error),
+            language,
+          }
+        );
         // Return empty array instead of throwing
         return [];
       }
@@ -93,15 +111,20 @@ export const usePromptMutations = () => {
   const queryClient = useQueryClient();
   const { handleMutationError } = useGlobalError();
 
+  const language = useLanguageStore((state) => state.language);
+
   const fetchNewPrompt = useMutation({
-    mutationFn: async (): Promise<DailyPrompt | null> => {
-      const prompt = await getRandomActivePrompt();
+    mutationFn: async (): Promise<LocalizedDailyPrompt | null> => {
+      const prompt = await getLocalizedRandomActivePrompt(language);
       return prompt;
     },
 
     onSuccess: (newPrompt) => {
       // Update the current prompt cache with new data
-      queryClient.setQueryData(queryKeys.currentPrompt(user?.id), newPrompt);
+      queryClient.setQueryData(
+        [...queryKeys.currentPrompt(user?.id), 'localized', language],
+        newPrompt
+      );
     },
 
     onError: (error) => {
@@ -111,15 +134,15 @@ export const usePromptMutations = () => {
   });
 
   const fetchMultiplePrompts = useMutation({
-    mutationFn: async (limit: number = 10): Promise<DailyPrompt[]> => {
-      const prompts = await getMultipleRandomActivePrompts(limit);
+    mutationFn: async (limit: number = 10): Promise<LocalizedDailyPrompt[]> => {
+      const prompts = await getLocalizedMultipleRandomActivePrompts(limit, language);
       return prompts;
     },
 
     onSuccess: (newPrompts, limit) => {
       // Update the multiple prompts cache with new data
       queryClient.setQueryData(
-        [...queryKeys.currentPrompt(user?.id), 'multiple', limit],
+        [...queryKeys.currentPrompt(user?.id), 'multiple', limit, 'localized', language],
         newPrompts
       );
     },
@@ -132,7 +155,7 @@ export const usePromptMutations = () => {
 
   const resetToDefaultPrompt = () => {
     // Clear the prompt cache to show default
-    queryClient.setQueryData(queryKeys.currentPrompt(user?.id), null);
+    queryClient.setQueryData([...queryKeys.currentPrompt(user?.id), 'localized', language], null);
   };
 
   return {
@@ -147,13 +170,15 @@ export const usePromptMutations = () => {
 };
 
 /**
- * Utility hook that combines prompt data with default behavior
- * Returns the current prompt or default text
+ * Utility hook that combines prompt data with localized default behavior
+ * Returns the current prompt or localized default text
  */
 export const usePromptText = () => {
   const { data: currentPrompt, isLoading, error } = useCurrentPrompt();
+  const language = useLanguageStore((state) => state.language);
 
-  const promptText = (currentPrompt as DailyPrompt)?.prompt_text_tr || STATIC_DEFAULT_PROMPT;
+  const promptText =
+    (currentPrompt as LocalizedDailyPrompt)?.prompt_text || getStaticDefaultPrompt(language);
   const isUsingDefault = !currentPrompt;
 
   return {

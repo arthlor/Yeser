@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 
 import CompletionStep from './steps/CompletionStep';
+import { useTranslation } from 'react-i18next';
 import GoalSettingStep from './steps/GoalSettingStep';
 import InteractiveDemoStep from './steps/InteractiveDemoStep';
 import NotificationPermissionStep from './steps/NotificationPermissionStep';
@@ -39,6 +40,7 @@ interface OnboardingData {
 export const EnhancedOnboardingFlowScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   // TanStack Query for profile updates
   const { updateProfile } = useUserProfile();
@@ -47,7 +49,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData>>({
     dailyGoal: 3,
-    selectedTheme: 'light',
+    selectedTheme: 'auto',
     hasCompletedDemo: false,
   });
 
@@ -111,7 +113,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   const handleOnboardingComplete = useCallback(async () => {
     try {
       const finalData = {
-        username: onboardingData.username || 'Kullanıcı',
+        username: onboardingData.username || t('onboarding.flow.defaultUsername'),
         daily_gratitude_goal: onboardingData.dailyGoal || 3,
         use_varied_prompts: true, // Always enable varied prompts
         onboarded: true,
@@ -125,7 +127,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         flow_version: '2.2', // Updated version
         username_length: finalData.username.length,
         daily_goal: finalData.daily_gratitude_goal,
-        theme: onboardingData.selectedTheme || 'light',
+        theme: onboardingData.selectedTheme || 'auto',
         varied_prompts: finalData.use_varied_prompts,
         completed_demo: onboardingData.hasCompletedDemo || false,
       });
@@ -140,7 +142,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
-  }, [onboardingData, updateProfile]);
+  }, [onboardingData, updateProfile, t]);
 
   // Render current step
   const renderCurrentStep = () => {
@@ -196,11 +198,13 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
             onComplete={handleOnboardingComplete}
             onBack={handleStepBack}
             userSummary={{
-              username: onboardingData.username || 'Kullanıcı',
+              username: onboardingData.username || t('onboarding.flow.defaultUsername'),
               dailyGoal: onboardingData.dailyGoal || 3,
-              selectedTheme: onboardingData.selectedTheme || 'light',
+              selectedTheme: onboardingData.selectedTheme || 'auto',
               // ✅ SIMPLIFIED: Default features enabled, no user selection needed
-              featuresEnabled: ['Çeşitli İlham Soruları', 'Anı Pırıltıları'],
+              featuresEnabled: t('onboarding.flow.featuresEnabled', {
+                returnObjects: true,
+              }) as string[],
             }}
           />
         );
@@ -211,7 +215,12 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   };
 
   return (
-    <ScreenLayout showsVerticalScrollIndicator={false} edges={['top']} edgeToEdge={true}>
+    <ScreenLayout
+      showsVerticalScrollIndicator={false}
+      edges={['top']}
+      edgeToEdge={true}
+      backgroundColor={theme.colors.background}
+    >
       <View style={styles.container}>
         <View style={styles.stepContainer}>{renderCurrentStep()}</View>
 

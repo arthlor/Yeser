@@ -8,20 +8,22 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
-import { alpha, blend, darken, lighten } from '@/themes/utils';
+import { alpha } from '@/themes/utils';
 import {
   formatStatementDate,
   InteractiveStatementCardProps,
+  MoodChip,
   ThreeDotsMenu,
   useHapticFeedback,
   useReducedMotion,
   useStatementCardAnimations,
 } from './StatementCardBase';
+import type { MoodEmoji } from '@/types/mood.types';
+import { useTranslation } from 'react-i18next';
 
 // 📝 DAILY ENTRY SPECIFIC PROPS
 interface StatementEditCardProps extends InteractiveStatementCardProps {
@@ -31,6 +33,9 @@ interface StatementEditCardProps extends InteractiveStatementCardProps {
   animateEntrance?: boolean;
   onPress?: () => void;
   edgeToEdge?: boolean;
+  moodEmoji?: MoodEmoji | null;
+  onChangeMood?: (mood: MoodEmoji | null) => void;
+  showSaveHint?: boolean;
 }
 
 /**
@@ -73,52 +78,16 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
   confirmDelete: _confirmDelete = true,
   maxLength = 500,
   edgeToEdge: _edgeToEdge = true, // Default to true for new design
+  moodEmoji,
+  onChangeMood: _onChangeMood,
+  showSaveHint,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  // Premium border gradient (Apple-like polish)
-  const borderGradientColors = useMemo(() => {
-    const isLight = theme.name === 'light';
-    const primaryEdge = alpha(theme.colors.primary, isLight ? 0.6 : 0.5);
-    const midBlend1 = blend(
-      theme.colors.primary,
-      theme.colors.secondary || theme.colors.primary,
-      0.5
-    );
-    const midBlend2 = blend(
-      theme.colors.primary,
-      theme.colors.tertiary || theme.colors.primary,
-      0.5
-    );
-    const mid1 = alpha(midBlend1, isLight ? 0.38 : 0.32);
-    const mid2 = alpha(midBlend2, isLight ? 0.28 : 0.24);
-    return [primaryEdge, mid1, mid2, primaryEdge] as const;
-  }, [theme]);
-  const borderGradientLocations = useMemo(() => [0, 0.33, 0.67, 1] as const, []);
-  const borderGradientStart = useMemo(() => ({ x: 0.08, y: 0 }) as const, []);
-  const borderGradientEnd = useMemo(() => ({ x: 0.92, y: 1 }) as const, []);
-
-  // Subtle surface sheen overlay
-  const surfaceGradientColors = useMemo(() => {
-    const isLight = theme.name === 'light';
-    const topSheen = alpha(
-      lighten(theme.colors.surface, isLight ? 0.06 : 0.03),
-      isLight ? 0.9 : 0.85
-    );
-    const bottomTint = alpha(
-      blend(
-        darken(theme.colors.surface, isLight ? 0.02 : 0.04),
-        theme.colors.primary,
-        isLight ? 0.06 : 0.04
-      ),
-      isLight ? 0.9 : 0.85
-    );
-    return [topSheen, bottomTint] as const;
-  }, [theme]);
-  const surfaceGradientStart = useMemo(() => ({ x: 0, y: 0 }) as const, []);
-  const surfaceGradientEnd = useMemo(() => ({ x: 0, y: 1 }) as const, []);
+  // Gradients removed for a cleaner, more subtle card
 
   const animations = useStatementCardAnimations();
   const { triggerHaptic } = useHapticFeedback(hapticFeedback);
@@ -218,28 +187,17 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
   }, [localStatement, triggerHaptic]);
 
   // Enhanced placeholder text
-  const placeholderText = useMemo(() => 'Bugün hangi güzellik için minnettarsın? 🌟', []);
+  const placeholderText = useMemo(() => t('shared.statement.edit.placeholder'), [t]);
 
   // Main card content with new edge-to-edge design
   const CardContent = (
     <View style={[styles.edgeToEdgeContainer, style]}>
-      <LinearGradient
-        colors={borderGradientColors}
-        locations={borderGradientLocations}
-        style={styles.edgeToEdgeGradientBorder}
-        start={borderGradientStart}
-        end={borderGradientEnd}
-      />
-      <LinearGradient
-        colors={surfaceGradientColors}
-        style={styles.surfaceGradientOverlay}
-        start={surfaceGradientStart}
-        end={surfaceGradientEnd}
-      />
-      {/* Inner glow container for sophisticated border effect */}
-      <View style={styles.innerGlowContainer}>
+      <View style={styles.subtleCardBorder} pointerEvents="none" />
+      {/* Inner container with left accent bar */}
+      <View style={styles.innerGlowContainer} pointerEvents="box-none">
+        <View style={styles.leftAccent} pointerEvents="none" />
         {/* MODERN CARD HEADER - Edge-to-edge with enhanced visual hierarchy */}
-        <View style={styles.cardHeader}>
+        <View style={styles.cardHeader} pointerEvents="box-none">
           <View style={styles.headerContent}>
             {/* Statement number or icon */}
             <View style={styles.headerLeft}>
@@ -255,15 +213,17 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
               )}
             </View>
 
-            {/* Three dots menu with enhanced positioning */}
-            <View style={styles.headerRight}>
-              <ThreeDotsMenu
-                onEdit={onEdit}
-                onDelete={onDelete}
-                isVisible={!isEditing}
-                hapticFeedback={hapticFeedback}
-              />
-            </View>
+            {/* Actions menu */}
+            {(onEdit || onDelete) && (
+              <View style={styles.headerRight} pointerEvents="box-none">
+                <ThreeDotsMenu
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  isVisible={!isEditing}
+                  hapticFeedback={hapticFeedback}
+                />
+              </View>
+            )}
           </View>
         </View>
 
@@ -290,8 +250,8 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
                   selectionColor={theme.colors.primary}
                   textAlignVertical="top"
                   scrollEnabled={true}
-                  accessibilityLabel={accessibilityLabel || 'Minnet girişi'}
-                  accessibilityHint="Bugünkü minnettarlığınızı yazın"
+                  accessibilityLabel={accessibilityLabel || t('shared.statement.edit.a11yLabel')}
+                  accessibilityHint={t('shared.statement.edit.a11yHint')}
                 />
 
                 {/* Floating character counter */}
@@ -318,8 +278,8 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
                   />
                   <Text style={[styles.statusText, isOverLimit && styles.errorStatusText]}>
                     {isOverLimit
-                      ? `${characterCount - maxLength} karakter fazla`
-                      : `${maxLength - characterCount} karakter kaldı`}
+                      ? t('shared.statement.nearLimit')
+                      : t('shared.statement.edit.remaining', { count: maxLength - characterCount })}
                   </Text>
                 </View>
               )}
@@ -330,10 +290,10 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
                   style={styles.cancelButton}
                   onPress={handleCancel}
                   activeOpacity={0.7}
-                  accessibilityLabel="İptal"
+                  accessibilityLabel={t('common.cancel')}
                 >
                   <Icon name="close" size={14} color={theme.colors.onSurfaceVariant} />
-                  <Text style={styles.cancelButtonText}>İptal</Text>
+                  <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -345,12 +305,15 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
                   onPress={handleSave}
                   activeOpacity={0.7}
                   disabled={!localStatement.trim() || isOverLimit || !isDirty}
-                  accessibilityLabel="Kaydet"
+                  accessibilityLabel={t('shared.statement.save') || 'Save'}
                 >
                   <Icon name="check" size={14} color={theme.colors.onPrimary} />
-                  <Text style={styles.saveButtonText}>Kaydet</Text>
+                  <Text style={styles.saveButtonText}>{t('shared.statement.save') || 'Save'}</Text>
                 </TouchableOpacity>
               </View>
+              {showSaveHint && (
+                <Text style={styles.saveHintText}>{t('gratitude.actions.saveHint')}</Text>
+              )}
             </View>
           ) : (
             /* ENHANCED READING INTERFACE */
@@ -361,6 +324,15 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
             </View>
           )}
         </View>
+
+        {/* Mood editing available only during edit mode */}
+        {isEditing && (
+          <View style={styles.moodEditRow}>
+            <MoodChip moodEmoji={moodEmoji ?? null} onChangeMood={_onChangeMood} />
+          </View>
+        )}
+
+        {/* Removed social reaction row; only show Mood: in footer */}
 
         {/* MODERN FOOTER SECTION - Date and metadata */}
         {date && !isEditing && (
@@ -377,9 +349,17 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
                 </Text>
               </View>
 
+              {/* Mood display only (no change) when not editing */}
+              {moodEmoji ? (
+                <View style={styles.moodInlineContainer}>
+                  <Text style={styles.moodInlineLabel}>{t('Mood', 'Mood')}:</Text>
+                  <Text style={styles.moodInlineEmoji}>{moodEmoji}</Text>
+                </View>
+              ) : null}
+
               {isRecent && (
                 <View style={styles.recentBadge}>
-                  <Text style={styles.recentBadgeText}>YENİ</Text>
+                  <Text style={styles.recentBadgeText}>{t('shared.ui.badges.new')}</Text>
                 </View>
               )}
             </View>
@@ -405,7 +385,9 @@ const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
         onLongPress={handleLongPress}
         onPressIn={animations.animatePressIn}
         onPressOut={animations.animatePressOut}
-        accessibilityLabel={accessibilityLabel || `Minnet: ${statement}`}
+        accessibilityLabel={
+          accessibilityLabel || t('shared.statement.a11y.memoryLabel', { text: statement })
+        }
         accessibilityRole="button"
         style={styles.touchableContainer}
       >
@@ -460,26 +442,24 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.md - 1, // Reduced
       overflow: 'hidden',
     } as ViewStyle,
-
-    // Built-in subtle gradient border for the entire card
-    // This lets DailyEntryScreen remove its external gradient wrapper
-    edgeToEdgeGradientBorder: {
+    leftAccent: {
       position: 'absolute',
-      top: -1,
-      left: -1,
-      right: -1,
-      bottom: -1,
-      borderRadius: theme.borderRadius.md + 1,
-      opacity: 0.6,
+      top: 0,
+      bottom: 0,
+      left: 0,
+      width: 3,
+      backgroundColor: alpha(theme.colors.primary, 0.9),
     } as ViewStyle,
-    surfaceGradientOverlay: {
+
+    subtleCardBorder: {
       position: 'absolute',
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
       borderRadius: theme.borderRadius.md,
-      opacity: 0.9,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: alpha(theme.colors.outline, 0.12),
     } as ViewStyle,
 
     // MODERN CARD HEADER - Clean and minimal
@@ -539,6 +519,13 @@ const createStyles = (theme: AppTheme) =>
       paddingTop: theme.spacing.sm, // Reduced from md
       paddingBottom: theme.spacing.md, // Reduced from lg
       minHeight: 50, // Reduced from 60
+    } as ViewStyle,
+
+    moodEditRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.sm,
     } as ViewStyle,
 
     // ENHANCED EDITING INTERFACE
@@ -767,6 +754,29 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: 16,
       backgroundColor: alpha(theme.colors.primary, 0.3),
     } as ViewStyle,
+
+    // Inline mood next to date label
+    moodInlineContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+    } as ViewStyle,
+    moodInlineLabel: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '600',
+    } as ViewStyle,
+    moodInlineEmoji: {
+      fontSize: 14,
+    } as ViewStyle,
+
+    saveHintText: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '500',
+      textAlign: 'center',
+      marginTop: theme.spacing.sm,
+    },
   });
 
 export default StatementEditCard;

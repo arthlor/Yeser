@@ -6,6 +6,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { getPrimaryShadow } from '@/themes/utils';
+import { useTranslation } from 'react-i18next';
 
 import type { AppTheme } from '@/themes/types';
 
@@ -27,8 +28,9 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
     onNavigateToCalendar,
     onNavigateToWhyGratitude,
   }) => {
-    const { theme } = useTheme();
-    const styles = useMemo(() => createStyles(theme), [theme]);
+    const { theme, colorMode } = useTheme();
+    const styles = useMemo(() => createStyles(theme, colorMode), [theme, colorMode]);
+    const { t } = useTranslation();
 
     // **RACE CONDITION FIX**: Use coordinated animation system
     const primaryAnimations = useCoordinatedAnimations();
@@ -64,19 +66,8 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
             opacity: whyGratitudeAnimations.fadeAnim,
           },
         ],
-        progressBarWidth: {
-          width: `${Math.min((currentCount / dailyGoal) * 100, 100)}%` as const,
-        },
       }),
-      [
-        primaryAnimations,
-        pastEntriesAnimations,
-        calendarAnimations,
-        whyGratitudeAnimations,
-        styles,
-        currentCount,
-        dailyGoal,
-      ]
+      [primaryAnimations, pastEntriesAnimations, calendarAnimations, whyGratitudeAnimations, styles]
     );
 
     // **RACE CONDITION FIX**: Coordinated press handlers with haptic feedback
@@ -97,15 +88,11 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
     );
 
     const getPrimaryActionData = useMemo(() => {
-      const progress = currentCount / dailyGoal;
-
       if (currentCount === 0) {
         return {
-          title: 'Bugünün İlk Minnetini Ekle',
-          subtitle: 'Güne minnetle başlayın',
+          title: t('home.actions.start.title'),
           icon: 'plus-circle',
-          progressText: 'Henüz başlamadınız',
-        };
+        } as const;
       }
 
       if (currentCount >= dailyGoal) {
@@ -113,14 +100,24 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
       }
 
       return {
-        title: 'Bugünün Minnetlerini Tamamla',
-        subtitle: `${dailyGoal - currentCount} minnet daha`,
+        title: t('home.actions.progress.title'),
         icon: 'heart-plus',
-        progressText: `${Math.round(progress * 100)}% tamamlandı`,
-      };
-    }, [currentCount, dailyGoal]);
+      } as const;
+    }, [currentCount, dailyGoal, t]);
 
     const primaryAction = getPrimaryActionData;
+
+    // Subtle description under the Continue title
+    const primarySubtitle = useMemo(() => {
+      if (!primaryAction) {
+        return '';
+      }
+      if (currentCount === 0) {
+        return t('home.inspiration.progress.start.message');
+      }
+      const remaining = Math.max(dailyGoal - currentCount, 0);
+      return t('home.inspiration.progress.progress.message', { remaining });
+    }, [primaryAction, currentCount, dailyGoal, t]);
 
     return (
       <View style={styles.container}>
@@ -132,7 +129,7 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
               density="comfortable"
               elevation="floating"
               onPress={onNavigateToEntry}
-              style={styles.primaryCard}
+              style={styles.primaryCardFrame}
               containerStyle={styles.primaryCardContainer}
               touchableProps={{
                 onPressIn: () => handlePressIn(primaryAnimations),
@@ -145,18 +142,18 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                   <Icon name={primaryAction.icon} size={26} color={theme.colors.primary} />
                 </View>
                 <View style={styles.primaryTextContainer}>
-                  <Text style={styles.primaryActionTitle}>{primaryAction.title}</Text>
-                  <Text style={styles.primaryActionSubtitle}>{primaryAction.subtitle}</Text>
-                  <Text style={styles.progressText}>{primaryAction.progressText}</Text>
+                  <Text style={styles.primaryActionTitle} numberOfLines={1}>
+                    {primaryAction.title}
+                  </Text>
+                  {!!primarySubtitle && (
+                    <Text style={styles.primaryActionSubtitle} numberOfLines={1}>
+                      {primarySubtitle}
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.chevronContainer}>
                   <Icon name="chevron-right" size={26} color={theme.colors.primary} />
                 </View>
-              </View>
-
-              {/* Enhanced Progress indicator with theme awareness */}
-              <View style={styles.progressIndicator}>
-                <View style={[styles.progressBar, dynamicStyles.progressBarWidth]} />
               </View>
             </ThemedCard>
           </Animated.View>
@@ -167,7 +164,7 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
           variant="elevated"
           density="compact"
           elevation="card"
-          style={styles.secondaryCardsContainer}
+          style={styles.secondaryCardsFrame}
         >
           <View style={styles.secondaryCardsGrid}>
             {/* Enhanced Past Entries Card */}
@@ -187,9 +184,9 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                   <View style={styles.primaryIconBg}>
                     <Icon name="history" size={22} color={theme.colors.primary} />
                   </View>
-                  <Text style={styles.secondaryCardTitle}>Geçmiş</Text>
-                  <Text style={styles.secondaryCardSubtitle}>Kayıtlarınız</Text>
-                  <Text style={styles.secondaryCardExtra}>Keşfedin</Text>
+                  <Text style={styles.secondaryCardTitle} numberOfLines={1}>
+                    {t('home.actions.past.title')}
+                  </Text>
                 </View>
               </ThemedCard>
             </Animated.View>
@@ -211,9 +208,9 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                   <View style={styles.secondaryIconBg}>
                     <Icon name="calendar-month" size={22} color={theme.colors.secondary} />
                   </View>
-                  <Text style={styles.secondaryCardTitle}>Takvim</Text>
-                  <Text style={styles.secondaryCardSubtitle}>Görünümü</Text>
-                  <Text style={styles.secondaryCardExtra}>Planlayın</Text>
+                  <Text style={styles.secondaryCardTitle} numberOfLines={1}>
+                    {t('home.actions.calendar.title')}
+                  </Text>
                 </View>
               </ThemedCard>
             </Animated.View>
@@ -235,9 +232,9 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
                   <View style={styles.tertiaryIconBg}>
                     <Icon name="heart-outline" size={22} color={theme.colors.tertiary} />
                   </View>
-                  <Text style={styles.secondaryCardTitle}>Minnetin</Text>
-                  <Text style={styles.secondaryCardSubtitle}>Gücü</Text>
-                  <Text style={styles.secondaryCardExtra}>Öğrenin</Text>
+                  <Text style={styles.secondaryCardTitle} numberOfLines={1}>
+                    {t('home.actions.why.title')}
+                  </Text>
                 </View>
               </ThemedCard>
             </Animated.View>
@@ -250,21 +247,24 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
 
 ActionCards.displayName = 'ActionCards';
 
-const createStyles = (theme: AppTheme) =>
+const createStyles = (theme: AppTheme, colorMode: ReturnType<typeof useTheme>['colorMode']) =>
   StyleSheet.create({
     container: {
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.sm,
     },
     // Edge-to-edge primary card with theme-aware design
-    primaryCard: {
+    primaryCardFrame: {
       borderRadius: 0,
-      backgroundColor: theme.colors.primaryContainer,
+      backgroundColor: theme.colors.surface,
       borderWidth: 0,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline,
-      borderBottomColor: theme.colors.outline,
+      borderTopColor:
+        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
+      borderBottomColor:
+        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
       ...getPrimaryShadow.floating(theme),
+      minHeight: 120,
     },
     primaryCardContainer: {
       marginBottom: theme.spacing.lg,
@@ -272,6 +272,7 @@ const createStyles = (theme: AppTheme) =>
     primaryCardContent: {
       flexDirection: 'row',
       alignItems: 'center',
+      minHeight: 88,
     },
     primaryIconContainer: {
       width: 42,
@@ -288,25 +289,21 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
     },
     primaryActionTitle: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onPrimaryContainer,
+      ...theme.typography.titleSmall,
+      color: theme.colors.onSurface,
       marginBottom: theme.spacing.xs,
       fontWeight: '700',
-      lineHeight: 22,
+      lineHeight: 20,
     },
     primaryActionSubtitle: {
-      ...theme.typography.titleSmall,
-      color: theme.colors.onPrimaryContainer,
-      marginBottom: theme.spacing.xs,
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
       fontWeight: '500',
-      opacity: 0.8,
-      lineHeight: 18,
+      fontSize: 12,
+      lineHeight: 16,
     },
     progressText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onPrimaryContainer,
-      fontWeight: '400',
-      opacity: 0.7,
+      display: 'none',
     },
     chevronContainer: {
       width: 36,
@@ -318,47 +315,43 @@ const createStyles = (theme: AppTheme) =>
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.outline,
     },
-    progressIndicator: {
-      height: 4,
-      backgroundColor: theme.colors.outline,
-      marginTop: theme.spacing.md,
-      borderRadius: theme.borderRadius.sm,
-      overflow: 'hidden',
-      opacity: 0.4,
-    },
-    progressBar: {
-      height: '100%',
-      backgroundColor: theme.colors.primary,
-      borderRadius: theme.borderRadius.sm,
-    },
+    progressIndicator: { height: 0 },
+    progressBar: { height: 0 },
     // Edge-to-edge secondary cards container with theme awareness
-    secondaryCardsContainer: {
+    secondaryCardsFrame: {
       borderRadius: 0,
       backgroundColor: theme.colors.surface,
       borderWidth: 0,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outlineVariant,
-      borderBottomColor: theme.colors.outlineVariant,
+      borderTopColor:
+        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
+      borderBottomColor:
+        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
       ...getPrimaryShadow.card(theme),
+      minHeight: 140,
     },
     secondaryCardsGrid: {
       flexDirection: 'row',
-      paddingHorizontal: theme.spacing.xs,
+      paddingHorizontal: 0,
+      gap: theme.spacing.xs,
     },
     cardWrapper: {
       flex: 1,
-      marginHorizontal: theme.spacing.xs,
+      marginHorizontal: 0,
+      minWidth: 0,
     },
     // Individual secondary card items with enhanced theme adaptation
     secondaryCard: {
+      flex: 1,
       borderRadius: theme.borderRadius.lg,
       backgroundColor: theme.colors.surfaceVariant,
-      borderWidth: 0,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
     },
     secondaryCardContent: {
       alignItems: 'center',
-      minHeight: 90,
+      minHeight: 100,
       justifyContent: 'center',
       paddingVertical: theme.spacing.md,
       paddingHorizontal: theme.spacing.sm,
@@ -396,28 +389,19 @@ const createStyles = (theme: AppTheme) =>
     },
     // Enhanced typography with better dark theme readability
     secondaryCardTitle: {
-      ...theme.typography.titleSmall,
+      ...theme.typography.bodySmall,
       color: theme.colors.onSurface,
       textAlign: 'center',
       marginBottom: theme.spacing.xs,
-      fontWeight: '700',
-      lineHeight: 18,
+      fontWeight: '600',
+      lineHeight: 16,
+      fontSize: 12,
     },
     secondaryCardSubtitle: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      marginBottom: theme.spacing.xs,
-      fontWeight: '500',
-      lineHeight: 16,
+      display: 'none',
     },
     secondaryCardExtra: {
-      ...theme.typography.labelMedium,
-      color: theme.colors.primary,
-      textAlign: 'center',
-      fontWeight: '600',
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
+      display: 'none',
     },
   });
 

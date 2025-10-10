@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
@@ -18,6 +19,7 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
   onToggleTheme,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
 
   const isDarkThemeActive = activeThemeName === 'dark';
@@ -34,9 +36,11 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({
             />
           </View>
           <View style={styles.textContainer}>
-            <Text style={styles.settingTitle}>Görünüm</Text>
+            <Text style={styles.settingTitle}>{t('settings.appearance.title')}</Text>
             <Text style={styles.settingDescription}>
-              {isDarkThemeActive ? 'Koyu tema' : 'Açık tema'}
+              {isDarkThemeActive
+                ? t('settings.appearance.darkTheme')
+                : t('settings.appearance.lightTheme')}
             </Text>
           </View>
         </View>
@@ -56,6 +60,8 @@ const createStyles = (theme: AppTheme) =>
     settingCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.outlineVariant,
       marginBottom: theme.spacing.sm,
       marginHorizontal: theme.spacing.md,
       // 🌟 Medium primary shadow for interactive setting cards

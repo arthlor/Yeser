@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import { CustomMarkedDates, StatCardProps } from './types';
 import { calculateCalendarStats } from './utils';
@@ -62,6 +63,7 @@ const CalendarStats: React.FC<CalendarStatsProps> = ({
   isLoading = false,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const { data: streakData, isLoading: streakLoading } = useStreakData();
   const stats = calculateCalendarStats(markedDates, currentMonth);
 
@@ -94,21 +96,21 @@ const CalendarStats: React.FC<CalendarStatsProps> = ({
         <StatCard
           icon="calendar-check"
           value={stats.entryCount}
-          label="Gün"
+          label={t('shared.calendar.stats.daysLabel')}
           color={theme.colors.primary}
           isLoading={isLoading}
         />
         <StatCard
           icon="fire"
           value={currentStreak}
-          label="Seri"
+          label={t('shared.calendar.stats.streakLabel')}
           color={theme.colors.tertiary}
           isLoading={isStreakDataLoading}
         />
         <StatCard
           icon="trending-up"
           value={`%${Math.round(stats.completionRate)}`}
-          label="Oran"
+          label={t('shared.calendar.stats.rateLabel')}
           color={theme.colors.secondary}
           isLoading={isLoading}
         />

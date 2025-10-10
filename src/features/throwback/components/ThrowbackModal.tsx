@@ -15,6 +15,7 @@ import { AppTheme } from '@/themes/types';
 import { alpha, getPrimaryShadow } from '@/themes/utils';
 import { formatDate as formatUtilityDate } from '@/utils/dateUtils';
 import { analyticsService } from '@/services/analyticsService';
+import { useTranslation } from 'react-i18next';
 
 interface EnhancedThrowbackModalProps {
   isVisible: boolean;
@@ -34,6 +35,7 @@ interface EnhancedThrowbackModalProps {
 const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisible, onClose }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
 
   // TanStack Query hook replaces the old throwback store
   const { randomEntry, isLoading, error, hideThrowback, refreshThrowback, hasRandomEntry } =
@@ -112,28 +114,30 @@ const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisib
               />
             ) : error ? (
               <>
-                <Text style={styles.modalTitle}>Bir Hata Oluştu</Text>
+                <Text style={styles.modalTitle}>{t('throwback.modal.errorTitle')}</Text>
                 <Text style={styles.errorText}>
-                  {error instanceof Error ? error.message : 'Beklenmeyen bir hata oluştu'}
+                  {error instanceof Error ? error.message : t('throwback.modal.unexpected')}
                 </Text>
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity
                     style={[styles.button, styles.buttonSecondary]}
                     onPress={handleRefresh}
                   >
-                    <Text style={styles.textStyleSecondary}>Tekrar Dene</Text>
+                    <Text style={styles.textStyleSecondary}>
+                      {t('throwback.teaser.errorRetry')}
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.button, styles.buttonClose]}
                     onPress={handleClose}
                   >
-                    <Text style={styles.textStyle}>Kapat</Text>
+                    <Text style={styles.textStyle}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                 </View>
               </>
             ) : randomEntry?.statements && randomEntry.statements.length > 0 ? (
               <>
-                <Text style={styles.modalTitle}>✨ Bir Anı Parçacığı ✨</Text>
+                <Text style={styles.modalTitle}>{t('throwback.modal.shardTitle')}</Text>
                 <ScrollView
                   style={styles.entryScrollView}
                   contentContainerStyle={styles.entryScrollContentContainer}
@@ -150,22 +154,24 @@ const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisib
                     style={[styles.button, styles.buttonSecondary]}
                     onPress={handleRefresh}
                   >
-                    <Text style={styles.textStyleSecondary}>Başka Anı</Text>
+                    <Text style={styles.textStyleSecondary}>{t('throwback.modal.another')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.button, styles.buttonClose]}
                     onPress={handleClose}
                   >
-                    <Text style={styles.textStyle}>Anladım!</Text>
+                    <Text style={styles.textStyle}>{t('throwback.modal.ok')}</Text>
                   </TouchableOpacity>
                 </View>
               </>
             ) : (
               <>
-                <Text style={styles.modalTitle}>✨ Bir Anı Parçacığı ✨</Text>
-                <Text style={styles.entryContent}>Görünecek bir anı bulunamadı.</Text>
+                <Text style={styles.modalTitle}>{t('throwback.modal.shardTitle')}</Text>
+                <Text style={styles.entryContent}>{t('throwback.modal.empty')}</Text>
                 <TouchableOpacity style={[styles.button, styles.buttonClose]} onPress={handleClose}>
-                  <Text style={styles.textStyle}>Kapat</Text>
+                  <Text style={styles.textStyle}>
+                    {t('common.cancel', { defaultValue: 'Tamam' })}
+                  </Text>
                 </TouchableOpacity>
               </>
             )}

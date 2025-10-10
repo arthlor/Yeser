@@ -1,4 +1,5 @@
 import { logger } from '@/utils/debugConfig';
+import i18n from '@/i18n';
 import { analyticsService } from '@/services/analyticsService';
 import * as authService from '@/services/authService';
 import { AUTH_CONSTANTS, MagicLinkRequest } from '../utils/authConstants';
@@ -57,7 +58,7 @@ export class MagicLinkService {
       // Check rate limiting
       if (!this.canSendMagicLink()) {
         const remainingTime = this.getMagicLinkCooldownRemaining();
-        const error = new Error(`Lütfen ${remainingTime} saniye bekleyin ve tekrar deneyin.`);
+        const error = new Error(i18n.t('auth.services.waitSeconds', { seconds: remainingTime }));
         onError(error);
         reject(error);
         return;
@@ -133,14 +134,12 @@ export class MagicLinkService {
                 }
               );
 
-              onSuccess('Başarıyla giriş yaptınız!');
+              onSuccess(i18n.t('auth.login.toasts.loginSuccess'));
               return { user, session };
             } else {
               setLoading(false);
               setMagicLinkSent(false);
-              const error = new Error(
-                'Geçersiz giriş bağlantısı. Lütfen yeni bir bağlantı talep edin.'
-              );
+              const error = new Error(i18n.t('auth.services.magicLink.invalidLink'));
               onError(error);
               return null;
             }
@@ -324,7 +323,7 @@ export class MagicLinkService {
             const remainingTime = this.getMagicLinkCooldownRemaining();
             callbacks.onStateChange({ isLoading: false, magicLinkSent: false });
             callbacks.onError(
-              new Error(`Lütfen ${remainingTime} saniye bekleyin ve tekrar deneyin.`)
+              new Error(i18n.t('auth.services.waitSeconds', { seconds: remainingTime }))
             );
             return;
           }
@@ -344,7 +343,7 @@ export class MagicLinkService {
             this.lastSuccessfulMagicLinkTime = Date.now();
             // Single state update: success
             callbacks.onStateChange({ isLoading: false, magicLinkSent: true });
-            callbacks.onSuccess('Giriş bağlantısı email adresinize gönderildi!');
+            callbacks.onSuccess(i18n.t('auth.services.magicLink.linkSent'));
 
             analyticsService.logEvent('magic_link_sent', {
               email: credentials.email.charAt(0) + '***',
@@ -388,7 +387,7 @@ export class MagicLinkService {
         // Fast rate limiting check
         if (!this.canSendMagicLink()) {
           const remainingTime = this.getMagicLinkCooldownRemaining();
-          throw new Error(`Lütfen ${remainingTime} saniye bekleyin ve tekrar deneyin.`);
+          throw new Error(i18n.t('auth.services.waitSeconds', { seconds: remainingTime }));
         }
 
         // Single state update: loading start
@@ -409,7 +408,7 @@ export class MagicLinkService {
           } else {
             this.lastSuccessfulMagicLinkTime = Date.now();
             callbacks.onStateChange({ isLoading: false, magicLinkSent: true });
-            callbacks.onSuccess('Giriş bağlantısı email adresinize gönderildi!');
+            callbacks.onSuccess(i18n.t('auth.services.magicLink.linkSent'));
 
             analyticsService.logEvent('magic_link_sent', {
               email: credentials.email.charAt(0) + '***',
@@ -446,7 +445,11 @@ export class MagicLinkService {
           const remainingTime = Math.ceil(
             (AUTH_CONSTANTS.MAGIC_LINK_COOLDOWN_MS - timeSinceLastRequest) / 1000
           );
-          throw new Error(`Lütfen ${remainingTime} saniye bekleyin ve tekrar deneyin.`);
+          throw new Error(
+            i18n.isInitialized
+              ? i18n.t('auth.services.rateLimitMessage', { remainingTime })
+              : `Please wait ${remainingTime} seconds and try again.`
+          );
         }
       }
 
@@ -467,7 +470,7 @@ export class MagicLinkService {
         setLoading(false);
         setMagicLinkSent(true);
 
-        const successMessage = 'Giriş bağlantısı email adresinize gönderildi!';
+        const successMessage = i18n.t('auth.services.magicLink.linkSent');
         onSuccess(successMessage);
         request.promise.resolve();
 
@@ -517,7 +520,11 @@ export class MagicLinkService {
           const remainingTime = Math.ceil(
             (AUTH_CONSTANTS.MAGIC_LINK_COOLDOWN_MS - timeSinceLastRequest) / 1000
           );
-          throw new Error(`Lütfen ${remainingTime} saniye bekleyin ve tekrar deneyin.`);
+          throw new Error(
+            i18n.isInitialized
+              ? i18n.t('auth.services.rateLimitMessage', { remainingTime })
+              : `Please wait ${remainingTime} seconds and try again.`
+          );
         }
       }
 
@@ -538,7 +545,9 @@ export class MagicLinkService {
         setLoading(false);
         setMagicLinkSent(true);
 
-        const successMessage = 'Giriş bağlantısı email adresinize gönderildi!';
+        const successMessage = i18n.isInitialized
+          ? i18n.t('auth.services.magicLinkSent')
+          : 'Sign-in link has been sent to your email!';
         onSuccess(successMessage);
         request.promise.resolve();
 

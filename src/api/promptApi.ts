@@ -1,9 +1,11 @@
 import { supabase } from '../utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { handleAPIError } from '@/utils/apiHelpers';
-import { dailyPromptSchema } from '@/schemas/gratitudeEntrySchema';
+import { dailyPromptSchema, localizedDailyPromptSchema } from '@/schemas/gratitudeEntrySchema';
+import { localizeDailyPrompt } from '@/utils/localizationHelpers';
 
-import type { DailyPrompt } from '@/schemas/gratitudeEntrySchema';
+import type { DailyPrompt, LocalizedDailyPrompt } from '@/schemas/gratitudeEntrySchema';
+import type { SupportedLanguage } from '@/store/languageStore';
 
 /**
  * Fetches a single random active daily prompt from the backend.
@@ -99,5 +101,120 @@ export const getMultipleRandomActivePrompts = async (
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     throw handleAPIError(error, 'fetch multiple random active prompts');
+  }
+};
+
+/**
+ * Fetches a single random active daily prompt with localized content.
+ * @param language - The target language for localization ('tr' | 'en')
+ * @returns A LocalizedDailyPrompt object or null if no prompt is found or an error occurs.
+ */
+export const getLocalizedRandomActivePrompt = async (
+  language: SupportedLanguage = 'tr'
+): Promise<LocalizedDailyPrompt | null> => {
+  try {
+    logger.debug('Fetching localized random active prompt', { language });
+
+    // Fetch raw prompt data with BOTH language columns directly from table
+    const { data, error } = await supabase
+      .from('daily_prompts')
+      .select('id, prompt_text_tr, prompt_text_en, category')
+      .eq('is_active', true)
+      .limit(20); // Fetch multiple to randomize on client side
+
+    if (error) {
+      logger.warn('Error fetching prompt from daily_prompts table:', {
+        error: error.message,
+        language,
+      });
+      return null;
+    }
+
+    if (!data || !data.length) {
+      logger.warn('No prompt data returned from daily_prompts table');
+      return null;
+    }
+
+    // Randomly select one prompt from the fetched results
+    const randomIndex = Math.floor(Math.random() * data.length);
+    const selectedPrompt = data[randomIndex];
+
+    // Transform to localized format using both language columns
+    const localizedPrompt = localizeDailyPrompt(selectedPrompt as DailyPrompt, language);
+
+    // Validate the localized prompt
+    const validatedPrompt = localizedDailyPromptSchema.parse(localizedPrompt);
+
+    logger.debug('Successfully localized daily prompt', {
+      language,
+      promptId: validatedPrompt.id,
+      promptText: validatedPrompt.prompt_text,
+    });
+
+    return validatedPrompt;
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    logger.error('Error in getLocalizedRandomActivePrompt:', { error: error.message, language });
+
+    // **GRACEFUL DEGRADATION**: Return null instead of throwing for consistency
+    return null;
+  }
+};
+
+/**
+ * Fetches multiple random active daily prompts with localized content.
+ * @param limit Number of prompts to fetch (default: 10)
+ * @param language - The target language for localization ('tr' | 'en')
+ * @returns Array of LocalizedDailyPrompt objects or empty array if none found
+ */
+export const getLocalizedMultipleRandomActivePrompts = async (
+  limit: number = 10,
+  language: SupportedLanguage = 'tr'
+): Promise<LocalizedDailyPrompt[]> => {
+  try {
+    logger.debug('Fetching multiple localized random active prompts', { limit, language });
+
+    // Fetch raw prompt data with BOTH language columns directly from table
+    const { data, error } = await supabase
+      .from('daily_prompts')
+      .select('id, prompt_text_tr, prompt_text_en, category')
+      .eq('is_active', true)
+      .limit(Math.max(limit * 2, 20)); // Fetch more to randomize on client side
+
+    if (error) {
+      throw handleAPIError(
+        new Error(error.message),
+        'fetch multiple localized random active prompts'
+      );
+    }
+
+    if (!data || !data.length) {
+      logger.warn('No prompt data returned from daily_prompts table');
+      return [];
+    }
+
+    // Randomly shuffle and select the requested number of prompts
+    const shuffled = [...data].sort(() => Math.random() - 0.5);
+    const selectedPrompts = shuffled.slice(0, limit);
+
+    // Transform to localized format using both language columns
+    const localizedPrompts = selectedPrompts.map((prompt) =>
+      localizeDailyPrompt(prompt as DailyPrompt, language)
+    );
+
+    // Validate each localized prompt
+    const validatedPrompts = localizedPrompts.map((prompt) =>
+      localizedDailyPromptSchema.parse(prompt)
+    );
+
+    logger.debug('Successfully localized multiple daily prompts', {
+      language,
+      count: validatedPrompts.length,
+    });
+
+    return validatedPrompts;
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'fetch multiple localized random active prompts');
   }
 };

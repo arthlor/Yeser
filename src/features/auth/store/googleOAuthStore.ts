@@ -5,6 +5,7 @@ import { logger } from '@/utils/debugConfig';
 import { atomicOperationManager } from '../utils/atomicOperations';
 import { googleOAuthService } from '../services';
 import { useCoreAuthStore } from './coreAuthStore';
+import i18n from '@/i18n';
 
 import type { GoogleOAuthResult } from '../services';
 
@@ -102,7 +103,9 @@ export const useGoogleOAuthStore = create<GoogleOAuthState>((set, get) => ({
           // Check rate limiting
           if (!get().canAttemptSignIn()) {
             const remainingTime = get().getRemainingCooldown();
-            const error = `Lütfen ${Math.ceil(remainingTime / 1000)} saniye bekleyin ve tekrar deneyin.`;
+            const error = i18n.t('auth.services.waitSeconds', {
+              seconds: Math.ceil(remainingTime / 1000),
+            });
             set({ error, isLoading: false });
             throw new Error(error);
           }
@@ -140,7 +143,7 @@ export const useGoogleOAuthStore = create<GoogleOAuthState>((set, get) => ({
             });
             logger.debug('Google OAuth store: Sign-in cancelled by user');
           } else {
-            const errorMessage = result.error || 'Google ile giriş başarısız oldu';
+            const errorMessage = result.error || i18n.t('auth.services.googleFailed');
             set({
               error: errorMessage,
               isLoading: false,
@@ -150,7 +153,7 @@ export const useGoogleOAuthStore = create<GoogleOAuthState>((set, get) => ({
           }
         } catch (error) {
           const errorMessage =
-            error instanceof Error ? error.message : 'Google ile giriş başarısız oldu';
+            error instanceof Error ? error.message : i18n.t('auth.services.googleFailed');
           set({ error: errorMessage, isLoading: false });
           logger.error('Google OAuth store: Sign-in error:', error as Error);
           throw error;

@@ -5,6 +5,7 @@ import { Streak } from '@/schemas/streakSchema';
 import useAuthStore from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const useStreakData = () => {
   const user = useAuthStore((state) => state.user);
@@ -31,6 +32,7 @@ export interface StreakStatus {
 
 export const useStreakStatus = (): StreakStatus => {
   const { data: streak, isLoading } = useStreakData();
+  const { t } = useTranslation();
 
   return useMemo(() => {
     const now = new Date();
@@ -47,7 +49,7 @@ export const useStreakStatus = (): StreakStatus => {
         status: 'new',
         timeUntilMidnight,
         daysUntilRisk: 0,
-        statusMessage: 'Yeni bir seri başlatabilirsin!',
+        statusMessage: t('streak.status.new'),
         canExtendToday: true,
       };
     }
@@ -66,7 +68,7 @@ export const useStreakStatus = (): StreakStatus => {
     if (lastEntryDate === today) {
       // Entry made today - streak is active
       status = 'active';
-      statusMessage = `Harika! ${currentStreak} günlük serin devam ediyor.`;
+      statusMessage = t('streak.status.active', { days: currentStreak });
       daysUntilRisk = 1; // Risk tomorrow if no entry
       canExtendToday = false; // Already extended today
     } else if (lastEntryDate === getYesterday()) {
@@ -74,18 +76,18 @@ export const useStreakStatus = (): StreakStatus => {
       status = 'grace_period';
       const hours = Math.floor(timeUntilMidnight / (1000 * 60 * 60));
       const minutes = Math.floor((timeUntilMidnight % (1000 * 60 * 60)) / (1000 * 60));
-      statusMessage = `Serinin devam etmesi için bugün bir giriş yapman gerek! (${hours}s ${minutes}dk kaldı)`;
+      statusMessage = t('streak.status.grace', { hours, minutes });
       daysUntilRisk = 0; // At risk now
       canExtendToday = true;
     } else if (currentStreak === 0) {
       status = 'broken';
-      statusMessage = 'Serin sıfırlandı. Yeni bir başlangıç için bugün bir giriş yap!';
+      statusMessage = t('streak.status.reset');
       daysUntilRisk = 0;
       canExtendToday = true;
     } else {
       // Should not happen with our grace period logic, but handle edge case
       status = 'at_risk';
-      statusMessage = `Serin tehlikede! Bugün bir giriş yapmazsan ${currentStreak} günlük serin sıfırlanacak.`;
+      statusMessage = t('streak.status.atRisk', { days: currentStreak });
       daysUntilRisk = 0;
       canExtendToday = true;
     }
@@ -99,7 +101,7 @@ export const useStreakStatus = (): StreakStatus => {
       statusMessage,
       canExtendToday,
     };
-  }, [streak, isLoading]);
+  }, [streak, isLoading, t]);
 };
 
 // Helper function to get yesterday's date string

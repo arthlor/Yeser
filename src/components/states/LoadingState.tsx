@@ -5,6 +5,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../themes/types';
 import { ScreenLayout } from '../../shared/components/layout';
 import { getPrimaryShadow } from '@/themes/utils';
+import { useTranslation } from 'react-i18next';
 
 export interface LoadingStateProps {
   /**
@@ -62,6 +63,7 @@ const LoadingState: React.FC<LoadingStateProps> = ({
   style,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const styles = React.useMemo(
     () => createStyles(theme, overlay, fullScreen),
@@ -70,7 +72,11 @@ const LoadingState: React.FC<LoadingStateProps> = ({
 
   const content = (
     <View style={[styles.container, style]} accessibilityRole="progressbar">
-      <ActivityIndicator size={size} color={theme.colors.primary} accessibilityLabel="Loading" />
+      <ActivityIndicator
+        size={size}
+        color={theme.colors.primary}
+        accessibilityLabel={t('shared.layout.screenContent.loading')}
+      />
       {message && (
         <Text style={styles.message} accessibilityRole="text">
           {message}

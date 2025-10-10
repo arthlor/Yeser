@@ -5,6 +5,7 @@ import { atomicOperationManager } from '../utils/atomicOperations';
 import { config } from '@/utils/config';
 import { supabaseService } from '@/utils/supabaseClient';
 import { deepLinkService } from './deepLinkService';
+import i18n from '@/i18n';
 
 /**
  * Google OAuth Result Interface (same as existing)
@@ -101,7 +102,9 @@ export class ExpoGoogleOAuthService {
             const remainingTime = this.getRemainingCooldown();
             return {
               success: false,
-              error: `Lütfen ${Math.ceil(remainingTime / 1000)} saniye bekleyin ve tekrar deneyin.`,
+              error: i18n.t('auth.services.waitSeconds', {
+                seconds: Math.ceil(remainingTime / 1000),
+              }),
             };
           }
 
@@ -127,14 +130,14 @@ export class ExpoGoogleOAuthService {
 
             if (error) {
               logger.error('Expo Google OAuth: signInWithOAuth failed', { error: error.message });
-              return { success: false, error: 'Google ile giriş başlatılamadı.' };
+              return { success: false, error: i18n.t('auth.services.googleStartFailed') };
             }
 
             const authUrl = data?.url;
             if (!authUrl) {
               return {
                 success: false,
-                error: 'Google ile giriş için yönlendirme adresi alınamadı.',
+                error: i18n.t('auth.services.googleRedirectMissing'),
               };
             }
 
@@ -167,7 +170,7 @@ export class ExpoGoogleOAuthService {
       // Operation already in progress
       return {
         success: false,
-        error: 'Giriş işlemi devam ediyor. Lütfen bekleyin.',
+        error: i18n.t('auth.services.googleInProgress'),
       };
     }
   }
@@ -179,10 +182,10 @@ export class ExpoGoogleOAuthService {
     const message = error.message.toLowerCase();
 
     if (message.includes('network')) {
-      return 'İnternet bağlantısı sorunu. Lütfen tekrar deneyin.';
+      return i18n.t('auth.services.googleNetwork');
     }
 
-    return 'Google ile giriş yapılamadı. Lütfen tekrar deneyin.';
+    return i18n.t('auth.services.googleFailed');
   }
 
   /**

@@ -10,6 +10,7 @@ import { TablesUpdate } from '../types/supabase.types';
 import { supabase } from '../utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { handleAPIError } from '@/utils/apiHelpers';
+// (avatar helpers moved to avatarApi)
 
 // Removed local RawProfileData interface, will use inferred type from Zod schema
 
@@ -71,7 +72,7 @@ export const getProfile = async (): Promise<Profile | null> => {
     const { data, error, status } = await supabase
       .from('profiles')
       .select(
-        'id, username, onboarded, created_at, updated_at, daily_gratitude_goal, use_varied_prompts, notification_time, timezone'
+        'id, username, onboarded, created_at, updated_at, daily_gratitude_goal, use_varied_prompts, notification_time, timezone, avatar_path, language'
       )
       .eq('id', user.id)
       .single();
@@ -122,7 +123,7 @@ export const updateProfile = async (
       });
       throw new Error(`Invalid update profile payload: ${validationResult.error.toString()}`);
     }
-    const { useVariedPrompts, ...otherValidatedUpdates } = validationResult.data;
+    const { useVariedPrompts, language, ...otherValidatedUpdates } = validationResult.data;
 
     const payloadForSupabase: TablesUpdate<'profiles'> = {
       ...otherValidatedUpdates,
@@ -130,6 +131,10 @@ export const updateProfile = async (
 
     if (useVariedPrompts !== undefined) {
       payloadForSupabase.use_varied_prompts = useVariedPrompts;
+    }
+
+    if (language !== undefined) {
+      payloadForSupabase.language = language;
     }
 
     // Guard: Prevent empty update
@@ -144,7 +149,7 @@ export const updateProfile = async (
       .update(payloadForSupabase)
       .eq('id', user.id)
       .select(
-        'id, username, onboarded, created_at, updated_at, daily_gratitude_goal, use_varied_prompts, notification_time, timezone'
+        'id, username, onboarded, created_at, updated_at, daily_gratitude_goal, use_varied_prompts, notification_time, timezone, avatar_path, language'
       )
       .single();
 
@@ -236,5 +241,34 @@ export const deleteUserAccount = async (): Promise<{ success: boolean; message: 
     const error = err instanceof Error ? err : new Error(String(err));
     logger.error('Unexpected error in deleteUserAccount:', { extra: { error: error.message } });
     throw handleAPIError(error, 'delete user account');
+  }
+};
+
+export const updateTimezone = async (timezone: string): Promise<void> => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      logger.warn('updateTimezone skipped: No user session.');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ timezone, updated_at: new Date().toISOString() })
+      .eq('id', user.id);
+
+    if (error) {
+      throw handleAPIError(new Error(error.message), 'update timezone');
+    }
+
+    logger.debug('User timezone updated successfully.', { userId: user.id, timezone });
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    // Do not rethrow for this background task to avoid unhandled promise rejections.
+    // handleAPIError is called for logging consistency.
+    handleAPIError(error, 'update timezone');
+    logger.error('Failed to update timezone silently.', error);
   }
 };

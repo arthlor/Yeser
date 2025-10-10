@@ -3,8 +3,10 @@ import {
   AccessibilityInfo,
   Animated,
   Dimensions,
+  Modal,
   Platform,
   StyleSheet,
+  Text,
   TouchableOpacity,
   View,
   ViewStyle,
@@ -12,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import {
@@ -22,6 +25,10 @@ import {
   textColors,
 } from '@/themes/utils';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
+import i18n from '@/i18n';
+import type { MoodEmoji } from '@/types/mood.types';
+import { MOOD_EMOJIS } from '@/types/mood.types';
+import { moodStorageService } from '@/services/moodStorageService';
 
 // 🎯 SHARED TYPES AND INTERFACES
 export interface BaseStatementCardProps {
@@ -57,10 +64,16 @@ interface ThreeDotsMenuProps {
 export const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = React.memo(
   ({ onEdit, onDelete, isVisible = true, hapticFeedback = true }) => {
     const { theme } = useTheme();
+    const { t } = useTranslation();
     const { triggerHaptic } = useHapticFeedback(hapticFeedback);
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuAnim = useRef(new Animated.Value(0)).current;
+    const buttonRef = useRef<View>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>({
+      top: 0,
+      left: 0,
+    });
     const styles = useMemo(() => createRobustMenuStyles(theme), [theme]);
 
     // 🛡️ OPTIMIZED STATE MANAGEMENT - Prevent render-time side effects
@@ -76,13 +89,22 @@ export const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = React.memo(
     }, [menuAnim]);
 
     const openMenu = useCallback(() => {
-      setIsMenuOpen(true);
-      Animated.spring(menuAnim, {
-        toValue: 1,
-        tension: 300,
-        friction: 30,
-        useNativeDriver: true,
-      }).start();
+      // Measure button position to anchor menu in a portal Modal
+      const windowWidth = Dimensions.get('window').width;
+      buttonRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+        // Position the menu below the button, right-aligned with small padding
+        const menuWidth = 140;
+        const left = Math.min(Math.max(8, x + width - menuWidth), windowWidth - menuWidth - 8);
+        const top = y + height + 6;
+        setMenuPosition({ top, left });
+        setIsMenuOpen(true);
+        Animated.spring(menuAnim, {
+          toValue: 1,
+          tension: 300,
+          friction: 30,
+          useNativeDriver: true,
+        }).start();
+      });
     }, [menuAnim]);
 
     // 🔄 SIMPLIFIED TOGGLE - Remove try/catch that may cause side effects
@@ -136,94 +158,277 @@ export const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = React.memo(
     }
 
     return (
-      <View style={styles.container}>
-        {/* 🛡️ BULLETPROOF BACKDROP - Enhanced touch handling */}
-        {isMenuOpen && (
-          <TouchableOpacity
-            style={styles.backdrop}
-            onPress={handleBackdropPress}
-            activeOpacity={1}
-            accessibilityLabel="Menüyü kapat"
-            accessibilityRole="button"
-          />
-        )}
-
-        {/* 🎯 ROBUST MENU BUTTON - Enhanced touch targets */}
+      <View style={styles.container} pointerEvents="box-none">
+        {/* Menu button (anchor) */}
         <TouchableOpacity
+          ref={buttonRef}
           style={styles.dotsButton}
           onPress={toggleMenu}
           activeOpacity={0.7}
-          accessibilityLabel="Seçenekler menüsü"
+          accessibilityLabel={t('shared.statement.a11y.tapToView')}
           accessibilityRole="button"
-          accessibilityHint="Düzenleme ve silme seçeneklerini görmek için dokunun"
+          accessibilityHint={t('shared.ui.accessibility.tapToEditDelete')}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Icon name="dots-vertical" size={20} color={theme.colors.onSurfaceVariant + 'CC'} />
         </TouchableOpacity>
 
-        {/* 🎯 ROBUST DROPDOWN MENU - Enhanced animations and positioning */}
-        <Animated.View
-          style={[
-            styles.menu,
-            {
-              opacity: menuAnim,
-              transform: [
-                {
-                  scale: menuAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.95, 1],
-                    extrapolate: 'clamp',
-                  }),
-                },
-                {
-                  translateY: menuAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-8, 0],
-                    extrapolate: 'clamp',
-                  }),
-                },
-              ],
-            },
-          ]}
-          pointerEvents={isMenuOpen ? 'auto' : 'none'}
-        >
-          {/* 🎨 ICON-ONLY ACTIONS - Clean minimal design */}
-          <View style={styles.menuItemsContainer}>
-            {/* Edit Action - Icon Only */}
-            {onEdit && (
-              <TouchableOpacity
-                style={styles.iconMenuItem}
-                onPress={handleEdit}
-                activeOpacity={0.7}
-                accessibilityLabel="Düzenle"
-                accessibilityRole="button"
-                accessibilityHint="Bu minnet ifadesini düzenle"
-              >
-                <Icon name="pencil" size={16} color={theme.colors.primary} />
-              </TouchableOpacity>
-            )}
-
-            {/* Delete Action - Icon Only */}
-            {onDelete && (
-              <TouchableOpacity
-                style={styles.iconMenuItem}
-                onPress={handleDelete}
-                activeOpacity={0.7}
-                accessibilityLabel="Sil"
-                accessibilityRole="button"
-                accessibilityHint="Bu minnet ifadesini sil"
-              >
-                <Icon name="trash-can" size={16} color={theme.colors.error} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </Animated.View>
+        {/* Portal menu via Modal to avoid clipping by ScrollView */}
+        <Modal visible={isMenuOpen} transparent animationType="none" onRequestClose={closeMenu}>
+          {/* Backdrop */}
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            onPress={handleBackdropPress}
+            activeOpacity={1}
+            accessibilityLabel={t('common.cancel')}
+            accessibilityRole="button"
+          />
+          {/* Positioned menu */}
+          <Animated.View
+            style={[
+              styles.modalMenu,
+              {
+                top: menuPosition.top,
+                left: menuPosition.left,
+                opacity: menuAnim,
+                transform: [
+                  {
+                    scale: menuAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.95, 1],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                  {
+                    translateY: menuAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-8, 0],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.menuItemsContainer}>
+              {onEdit && (
+                <TouchableOpacity
+                  style={styles.iconMenuItem}
+                  onPress={handleEdit}
+                  activeOpacity={0.7}
+                  accessibilityLabel={i18n.t('shared.statement.edit.a11yLabel')}
+                  accessibilityRole="button"
+                  accessibilityHint={i18n.t('shared.statement.edit.a11yHint')}
+                >
+                  <Icon name="pencil" size={16} color={theme.colors.primary} />
+                </TouchableOpacity>
+              )}
+              {onDelete && (
+                <TouchableOpacity
+                  style={styles.iconMenuItem}
+                  onPress={handleDelete}
+                  activeOpacity={0.7}
+                  accessibilityLabel={i18n.t('shared.statement.confirmDelete')}
+                  accessibilityRole="button"
+                  accessibilityHint={i18n.t('shared.statement.confirmDelete')}
+                >
+                  <Icon name="trash-can" size={16} color={theme.colors.error} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
+        </Modal>
       </View>
     );
   }
 );
 
 ThreeDotsMenu.displayName = 'ThreeDotsMenu';
+
+// 😊 MOOD CHIP WITH INLINE PICKER
+interface MoodChipProps {
+  moodEmoji: MoodEmoji | null | undefined;
+  onChangeMood?: (mood: MoodEmoji | null) => void;
+  disabled?: boolean;
+  hapticFeedback?: boolean;
+}
+
+export const MoodChip: React.FC<MoodChipProps> = React.memo(
+  ({ moodEmoji, onChangeMood, disabled = false, hapticFeedback = true }) => {
+    const { theme } = useTheme();
+    const { t } = useTranslation();
+    const { triggerHaptic } = useHapticFeedback(hapticFeedback);
+    const styles = useMemo(() => createMoodChipStyles(theme), [theme]);
+
+    const [isOpen, setIsOpen] = useState(false);
+    const anim = useRef(new Animated.Value(0)).current;
+    const pulse = useRef(new Animated.Value(0)).current;
+    const buttonRef = useRef<View>(null);
+    const [position, setPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+    const [recents, setRecents] = useState<MoodEmoji[]>([]);
+
+    const close = useCallback(() => {
+      Animated.timing(anim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
+        setIsOpen(false);
+      });
+    }, [anim]);
+
+    const open = useCallback(() => {
+      if (disabled) {
+        return;
+      }
+      buttonRef.current?.measureInWindow((x, y, width, height) => {
+        const menuWidth = 180;
+        const windowWidth = Dimensions.get('window').width;
+        const left = Math.min(Math.max(8, x + width - menuWidth), windowWidth - menuWidth - 8);
+        const top = y + height + 6;
+        setPosition({ top, left });
+        setIsOpen(true);
+        Animated.timing(anim, { toValue: 1, duration: 160, useNativeDriver: true }).start();
+      });
+    }, [anim, disabled]);
+
+    const toggle = useCallback(() => {
+      triggerHaptic('selection');
+      if (isOpen) {
+        close();
+      } else {
+        open();
+      }
+    }, [isOpen, open, close, triggerHaptic]);
+
+    const handleSelect = useCallback(
+      (emoji: MoodEmoji) => {
+        triggerHaptic('medium');
+        onChangeMood?.(emoji);
+        // persist recent
+        moodStorageService
+          .addRecent(emoji)
+          .then(() => {
+            moodStorageService
+              .getRecents()
+              .then(setRecents)
+              .catch(() => {});
+          })
+          .catch(() => {});
+        close();
+      },
+      [onChangeMood, triggerHaptic, close]
+    );
+
+    const handleClear = useCallback(() => {
+      triggerHaptic('light');
+      onChangeMood?.(null);
+      close();
+    }, [onChangeMood, triggerHaptic, close]);
+
+    // Load recents on mount/open
+    useEffect(() => {
+      let mounted = true;
+      const load = async () => {
+        const r = await moodStorageService.getRecents();
+        if (mounted) {
+          setRecents(r);
+        }
+      };
+      load();
+      return () => {
+        mounted = false;
+      };
+    }, []);
+
+    // Subtle pulse when mood set
+    useEffect(() => {
+      if (!moodEmoji) {
+        return;
+      }
+      pulse.setValue(0);
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 100, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 150, useNativeDriver: true }),
+      ]).start();
+    }, [moodEmoji, pulse]);
+
+    return (
+      <View style={styles.container} pointerEvents="box-none">
+        <Animated.View
+          style={{
+            transform: [
+              {
+                scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] }),
+              },
+            ],
+          }}
+        >
+          <TouchableOpacity
+            ref={buttonRef}
+            style={[styles.chipButton, disabled && styles.chipDisabled]}
+            activeOpacity={0.8}
+            onPress={toggle}
+            onLongPress={handleClear}
+            accessibilityRole="button"
+            accessibilityLabel={
+              moodEmoji
+                ? t('shared.statement.a11y.tapToViewOrExpand')
+                : t('shared.statement.a11y.tapToView')
+            }
+            accessibilityHint={t('shared.ui.accessibility.tapToEditDelete')}
+          >
+            <Text style={styles.chipText}>{moodEmoji ?? '•'}</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <Modal visible={isOpen} transparent animationType="none" onRequestClose={close}>
+          <TouchableOpacity style={styles.backdrop} onPress={close} activeOpacity={1} />
+          <Animated.View
+            style={[
+              styles.picker,
+              {
+                top: position.top,
+                left: position.left,
+                opacity: anim,
+                transform: [
+                  {
+                    scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }),
+                  },
+                  {
+                    translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.row}>
+              {[...new Set([...recents, ...MOOD_EMOJIS])].slice(0, 8).map((emoji) => (
+                <TouchableOpacity
+                  key={emoji}
+                  style={styles.emojiButton}
+                  onPress={() => handleSelect(emoji)}
+                  activeOpacity={0.9}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('shared.mood.setMood.a11y', { emoji })}
+                >
+                  <Text style={styles.emojiText}>{emoji}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[styles.emojiButton, styles.clearButton]}
+                onPress={handleClear}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.cancel')}
+              >
+                <Icon name="close" size={16} color={theme.colors.onSurfaceVariant} />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </Modal>
+      </View>
+    );
+  }
+);
+
+MoodChip.displayName = 'MoodChip';
 
 // 🎨 ROBUST MENU STYLES - SIMPLIFIED AND RELIABLE
 const createRobustMenuStyles = (theme: AppTheme) => {
@@ -232,8 +437,8 @@ const createRobustMenuStyles = (theme: AppTheme) => {
   return StyleSheet.create({
     container: {
       position: 'relative',
-      zIndex: 99999, // Extremely high z-index for bulletproof layering
-      elevation: 15, // Higher Android elevation
+      zIndex: 1000,
+      elevation: 6,
     } as ViewStyle,
 
     backdrop: {
@@ -256,27 +461,29 @@ const createRobustMenuStyles = (theme: AppTheme) => {
       // No background - transparent by default
     } as ViewStyle,
 
-    menu: {
+    // Old in-flow menu style removed; using modalMenu for portal rendering
+    modalBackdrop: {
       position: 'absolute',
-      top: 40, // Positioned below button with small gap
-      right: -8, // Slight offset to prevent edge cutoff
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: alpha(theme.colors.surface, 0),
+    } as ViewStyle,
+    modalMenu: {
+      position: 'absolute',
       backgroundColor: getSurfaceColor(theme, 'elevated'),
       borderRadius: theme.borderRadius.md,
       paddingHorizontal: spacing.elementGap,
       paddingVertical: spacing.elementGap / 2,
-      minWidth: 100,
-      zIndex: 99999,
-      // Enhanced shadows for better depth
+      minWidth: 140,
       shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.1,
       shadowRadius: 8,
-      elevation: 6,
-      // Better border definition
-      borderWidth: 1,
+      elevation: 8,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: getBorderColor(theme, 'light'),
-      // Ensure menu doesn't get clipped
-      overflow: 'visible',
     } as ViewStyle,
 
     menuItemsContainer: {
@@ -287,14 +494,88 @@ const createRobustMenuStyles = (theme: AppTheme) => {
     } as ViewStyle,
 
     iconMenuItem: {
-      width: 32, // Smaller touch target
+      width: 32,
       height: 32,
       alignItems: 'center',
       justifyContent: 'center',
+      borderRadius: theme.borderRadius.sm,
     } as ViewStyle,
 
     // Loading indicator
     loadingIndicator: {} as ViewStyle,
+  });
+};
+
+const createMoodChipStyles = (theme: AppTheme) => {
+  const spacing = semanticSpacing(theme);
+  return StyleSheet.create({
+    container: {
+      position: 'relative',
+      zIndex: 999,
+    } as ViewStyle,
+    chipButton: {
+      width: 28,
+      height: 28,
+      borderRadius: theme.borderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: alpha(theme.colors.primaryContainer, 0.6),
+      borderWidth: 1,
+      borderColor: alpha(theme.colors.primary, 0.35),
+      marginRight: spacing.elementGap,
+    } as ViewStyle,
+    chipDisabled: {
+      opacity: 0.5,
+    } as ViewStyle,
+    chipText: {
+      fontSize: 14,
+    },
+    backdrop: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: alpha(theme.colors.surface, 0),
+    } as ViewStyle,
+    picker: {
+      position: 'absolute',
+      backgroundColor: getSurfaceColor(theme, 'elevated'),
+      borderRadius: theme.borderRadius.md,
+      paddingHorizontal: spacing.contentGap,
+      paddingVertical: spacing.contentGap,
+      minWidth: 200,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: getBorderColor(theme, 'light'),
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 8,
+    } as ViewStyle,
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.elementGap,
+    } as ViewStyle,
+    emojiButton: {
+      width: 32,
+      height: 32,
+      borderRadius: theme.borderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: getBorderColor(theme, 'light'),
+    } as ViewStyle,
+    emojiText: {
+      fontSize: 18,
+    },
+    clearButton: {
+      backgroundColor: alpha(theme.colors.errorContainer, 0.3),
+      borderColor: alpha(theme.colors.error, 0.3),
+    } as ViewStyle,
   });
 };
 
@@ -629,14 +910,18 @@ export const useReducedMotion = () => {
 // 🛠️ ENHANCED UTILITY FUNCTIONS
 export const formatStatementDate = (date: Date | string | undefined) => {
   if (!date) {
-    return { formattedDate: 'Tarih bilgisi yok', relativeTime: '', isRecent: false };
+    return { formattedDate: '', relativeTime: '', isRecent: false };
   }
 
   const dateObj = typeof date === 'string' ? new Date(date) : date;
 
   // Validate date object
   if (isNaN(dateObj.getTime())) {
-    return { formattedDate: 'Geçersiz tarih', relativeTime: '', isRecent: false };
+    return {
+      formattedDate: i18n.t('shared.statement.invalidDate'),
+      relativeTime: '',
+      isRecent: false,
+    };
   }
 
   const today = new Date();
@@ -646,13 +931,13 @@ export const formatStatementDate = (date: Date | string | undefined) => {
   // Handle future dates
   if (diffDays < 0) {
     return {
-      formattedDate: dateObj.toLocaleDateString('tr-TR'),
-      relativeTime: 'Gelecek',
+      formattedDate: dateObj.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US'),
+      relativeTime: '',
       isRecent: false,
     };
   }
 
-  const formattedDate = dateObj.toLocaleDateString('tr-TR', {
+  const formattedDate = dateObj.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -663,23 +948,24 @@ export const formatStatementDate = (date: Date | string | undefined) => {
   let isRecent = false;
 
   if (diffDays === 0) {
-    relativeTime = 'Bugün';
+    relativeTime = i18n.t('pastEntries.item.relative.today');
     isRecent = true;
   } else if (diffDays === 1) {
-    relativeTime = 'Dün';
+    relativeTime = i18n.t('pastEntries.item.relative.yesterday');
     isRecent = true;
   } else if (diffDays >= 2 && diffDays < 7) {
-    relativeTime = `${diffDays} gün önce`;
+    relativeTime = i18n.t('pastEntries.item.relative.days', { count: diffDays });
     isRecent = true;
   } else if (diffDays >= 7 && diffDays < 30) {
     const weeks = Math.floor(diffDays / 7);
-    relativeTime = weeks === 1 ? '1 hafta önce' : `${weeks} hafta önce`;
+    relativeTime = i18n.t('pastEntries.item.relative.weeks', { count: weeks });
   } else if (diffDays >= 30 && diffDays < 365) {
     const months = Math.floor(diffDays / 30);
-    relativeTime = months === 1 ? '1 ay önce' : `${months} ay önce`;
+    relativeTime = i18n.t('pastEntries.item.relative.months', { count: months });
   } else if (diffDays >= 365) {
     const years = Math.floor(diffDays / 365);
-    relativeTime = years === 1 ? '1 yıl önce' : `${years} yıl önce`;
+    // Approximate using months if year-specific keys are not defined
+    relativeTime = i18n.t('pastEntries.item.relative.months', { count: years * 12 });
   }
 
   return { formattedDate, relativeTime, isRecent };
@@ -726,7 +1012,12 @@ export const StatementCardWrapper: React.FC<{
         containerStyle,
         style,
         {
-          opacity: animations.pressAnim,
+          opacity: animations.fadeAnim,
+          transform: [
+            {
+              scale: animations.pressAnim,
+            },
+          ],
         },
       ]}
     >

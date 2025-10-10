@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { analyticsService } from '@/services/analyticsService';
 import { logger } from '@/utils/debugConfig';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
+import i18n from '@/i18n';
 import { AppTheme } from '@/themes/types';
 
 // A complete, static fallback theme based on the light theme structure.
@@ -262,25 +263,31 @@ class ErrorBoundary extends Component<Props, State> {
         <View style={styles.container}>
           <View style={styles.content}>
             <Icon name="alert-circle-outline" size={64} color={theme.colors.error} />
-            <Text style={styles.title}>Bir şeyler ters gitti</Text>
+            <Text style={styles.title}>{i18n.t('shared.layout.errorBoundary.title')}</Text>
             <Text style={styles.message}>
               {this.state.error
                 ? safeErrorDisplay(this.state.error)
-                : 'Beklenmeyen bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı deneyin.'}
+                : i18n.t('shared.layout.errorBoundary.subtitle')}
             </Text>
 
             {__DEV__ && this.state.error && (
               <View style={styles.debugInfo}>
-                <Text style={styles.debugTitle}>Debug Info:</Text>
-                <Text style={styles.debugText}>Technical: {this.state.error.message}</Text>
+                <Text style={styles.debugTitle}>
+                  {i18n.t('shared.layout.errorBoundary.debugInfoTitle', 'Debug Info:')}
+                </Text>
                 <Text style={styles.debugText}>
-                  Translated: {safeErrorDisplay(this.state.error)}
+                  {i18n.t('shared.layout.errorBoundary.technicalLabel', 'Technical:')}{' '}
+                  {this.state.error.message}
+                </Text>
+                <Text style={styles.debugText}>
+                  {i18n.t('shared.layout.errorBoundary.translatedLabel', 'Translated:')}{' '}
+                  {safeErrorDisplay(this.state.error)}
                 </Text>
               </View>
             )}
 
             <TouchableOpacity style={styles.retryButton} onPress={this.handleRetry}>
-              <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+              <Text style={styles.retryButtonText}>{i18n.t('common.retry')}</Text>
             </TouchableOpacity>
           </View>
         </View>

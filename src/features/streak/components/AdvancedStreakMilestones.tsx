@@ -6,6 +6,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
+import { useTranslation } from 'react-i18next';
 
 interface AdvancedStreakMilestonesProps {
   currentStreak: number;
@@ -33,217 +34,217 @@ export interface AdvancedMilestone {
 
 // Removed unused screenWidth variable
 
-// Enhanced milestone system with 15 levels
-const ADVANCED_MILESTONES: AdvancedMilestone[] = [
+// Create milestones with i18n support
+const createAdvancedMilestones = (t: (key: string) => string): AdvancedMilestone[] => [
   {
     id: 'first-step',
     minDays: 1,
     maxDays: 1,
-    title: 'İlk Adım',
-    description: 'Minnettarlık yolculuğun başladı!',
+    title: t('streak.milestones.firstStep.title'),
+    description: t('streak.milestones.firstStep.description'),
     emoji: '🌱',
-    reward: 'Başlangıç Rozeti',
+    reward: t('streak.milestones.firstStep.reward'),
     category: 'beginner',
     colorPrimary: '#4CAF50',
     colorSecondary: '#81C784',
     particleEffect: 'sparks',
-    unlockedMessage: 'Tebrikler! İlk adımı attın. Bu, güzel bir başlangıç! 🎉',
+    unlockedMessage: t('streak.milestones.firstStep.unlockedMessage'),
   },
   {
     id: 'momentum',
     minDays: 3,
     maxDays: 6,
-    title: 'Momentum',
-    description: 'Alışkanlık oluşmaya başlıyor!',
+    title: t('streak.milestones.momentum.title'),
+    description: t('streak.milestones.momentum.description'),
     emoji: '🌿',
-    reward: 'Kararlılık Rozeti',
+    reward: t('streak.milestones.momentum.reward'),
     category: 'beginner',
     colorPrimary: '#66BB6A',
     colorSecondary: '#A5D6A7',
     particleEffect: 'hearts',
-    unlockedMessage: 'Harika! Momentum kazanıyorsun. Devam et! 💚',
+    unlockedMessage: t('streak.milestones.momentum.unlockedMessage'),
   },
   {
     id: 'first-week',
     minDays: 7,
     maxDays: 13,
-    title: 'İlk Hafta',
-    description: 'Bir hafta boyunca devam ettin!',
+    title: t('streak.milestones.firstWeek.title'),
+    description: t('streak.milestones.firstWeek.description'),
     emoji: '🌳',
-    reward: 'Haftalık Şampiyon',
+    reward: t('streak.milestones.firstWeek.reward'),
     category: 'intermediate',
     colorPrimary: '#2E7D32',
     colorSecondary: '#4CAF50',
     particleEffect: 'stars',
-    unlockedMessage: 'İnanılmaz! Bir hafta tamamladın. Artık bir alışkanlık! ⭐',
+    unlockedMessage: t('streak.milestones.firstWeek.unlockedMessage'),
   },
   {
     id: 'two-weeks',
     minDays: 14,
     maxDays: 20,
-    title: 'İki Hafta',
-    description: 'Çiçeklenme zamanı!',
+    title: t('streak.milestones.twoWeeks.title'),
+    description: t('streak.milestones.twoWeeks.description'),
     emoji: '🌸',
-    reward: 'Çiçek Açtırıcı',
+    reward: t('streak.milestones.twoWeeks.reward'),
     category: 'intermediate',
     colorPrimary: '#E91E63',
     colorSecondary: '#F48FB1',
     particleEffect: 'hearts',
-    unlockedMessage: 'Muhteşem! İki hafta doldu. Artık çiçek açıyorsun! 🌸',
+    unlockedMessage: t('streak.milestones.twoWeeks.unlockedMessage'),
   },
   {
     id: 'three-weeks',
     minDays: 21,
     maxDays: 29,
-    title: 'Üç Hafta',
-    description: 'Alışkanlık kökleşti!',
+    title: t('streak.milestones.threeWeeks.title'),
+    description: t('streak.milestones.threeWeeks.description'),
     emoji: '🌺',
-    reward: 'Köklü Alışkanlık',
+    reward: t('streak.milestones.threeWeeks.reward'),
     category: 'intermediate',
     colorPrimary: '#9C27B0',
     colorSecondary: '#CE93D8',
     particleEffect: 'fire',
-    unlockedMessage: 'Fantastik! Üç hafta! Alışkanlığın artık kökleşti! 🌺',
+    unlockedMessage: t('streak.milestones.threeWeeks.unlockedMessage'),
   },
   {
     id: 'one-month',
     minDays: 30,
     maxDays: 44,
-    title: 'Bir Ay',
-    description: 'Aylık başarı! Güneş gibi parlıyorsun!',
+    title: t('streak.milestones.oneMonth.title'),
+    description: t('streak.milestones.oneMonth.description'),
     emoji: '🌻',
-    reward: 'Güneş Savaşçısı',
+    reward: t('streak.milestones.oneMonth.reward'),
     category: 'advanced',
     colorPrimary: '#FF9800',
     colorSecondary: '#FFB74D',
     particleEffect: 'rainbow',
-    unlockedMessage: 'Olağanüstü! Bir ay doldu! Artık güneş gibi parlıyorsun! ☀️',
+    unlockedMessage: t('streak.milestones.oneMonth.unlockedMessage'),
   },
   {
     id: 'six-weeks',
     minDays: 45,
     maxDays: 59,
-    title: 'Altı Hafta',
-    description: 'Enerji dolu! Güç seninle!',
+    title: t('streak.milestones.sixWeeks.title'),
+    description: t('streak.milestones.sixWeeks.description'),
     emoji: '⚡',
-    reward: 'Enerji Ustası',
+    reward: t('streak.milestones.sixWeeks.reward'),
     category: 'advanced',
     colorPrimary: '#FFC107',
     colorSecondary: '#FFF176',
     particleEffect: 'fire',
-    unlockedMessage: 'İnanılmaz enerji! Altı hafta! Güç seninle! ⚡',
+    unlockedMessage: t('streak.milestones.sixWeeks.unlockedMessage'),
   },
   {
     id: 'two-months',
     minDays: 60,
     maxDays: 89,
-    title: 'İki Ay',
-    description: 'Değerli taş gibi parıldıyorsun!',
+    title: t('streak.milestones.twoMonths.title'),
+    description: t('streak.milestones.twoMonths.description'),
     emoji: '💎',
-    reward: 'Elmas Kalbi',
+    reward: t('streak.milestones.twoMonths.reward'),
     category: 'advanced',
     colorPrimary: '#3F51B5',
     colorSecondary: '#7986CB',
     particleEffect: 'stars',
-    unlockedMessage: 'Paha biçilmez! İki ay! Elmas gibi değerlisin! 💎',
+    unlockedMessage: t('streak.milestones.twoMonths.unlockedMessage'),
   },
   {
     id: 'three-months',
     minDays: 90,
     maxDays: 119,
-    title: 'Üç Ay',
-    description: 'Ateşli ruha sahipsin!',
+    title: t('streak.milestones.threeMonths.title'),
+    description: t('streak.milestones.threeMonths.description'),
     emoji: '🔥',
-    reward: 'Alev Koruyucusu',
+    reward: t('streak.milestones.threeMonths.reward'),
     category: 'expert',
     colorPrimary: '#F44336',
     colorSecondary: '#EF5350',
     particleEffect: 'fire',
-    unlockedMessage: 'Ateş gibi! Üç ay! Artık alev koruyucususun! 🔥',
+    unlockedMessage: t('streak.milestones.threeMonths.unlockedMessage'),
   },
   {
     id: 'four-months',
     minDays: 120,
     maxDays: 149,
-    title: 'Dört Ay',
-    description: 'Yıldız gibi ışıldıyorsun!',
+    title: t('streak.milestones.fourMonths.title'),
+    description: t('streak.milestones.fourMonths.description'),
     emoji: '🌟',
-    reward: 'Yıldız Avcısı',
+    reward: t('streak.milestones.fourMonths.reward'),
     category: 'expert',
     colorPrimary: '#795548',
     colorSecondary: '#A1887F',
     particleEffect: 'galaxy',
-    unlockedMessage: 'Yıldız gibi! Dört ay! Gökyüzünün yıldızısın! 🌟',
+    unlockedMessage: t('streak.milestones.fourMonths.unlockedMessage'),
   },
   {
     id: 'five-months',
     minDays: 150,
     maxDays: 179,
-    title: 'Beş Ay',
-    description: 'Ay ışığı gibi büyülü!',
+    title: t('streak.milestones.fiveMonths.title'),
+    description: t('streak.milestones.fiveMonths.description'),
     emoji: '🌙',
-    reward: 'Ay Işığı Sihirbazı',
+    reward: t('streak.milestones.fiveMonths.reward'),
     category: 'expert',
     colorPrimary: '#607D8B',
     colorSecondary: '#90A4AE',
     particleEffect: 'stars',
-    unlockedMessage: 'Büyülü! Beş ay! Ay ışığı gibi büyülüsün! 🌙',
+    unlockedMessage: t('streak.milestones.fiveMonths.unlockedMessage'),
   },
   {
     id: 'six-months',
     minDays: 180,
     maxDays: 269,
-    title: 'Altı Ay',
-    description: 'Gökkuşağı gibi renkli!',
+    title: t('streak.milestones.sixMonths.title'),
+    description: t('streak.milestones.sixMonths.description'),
     emoji: '🌈',
-    reward: 'Gökkuşağı Koruyucusu',
+    reward: t('streak.milestones.sixMonths.reward'),
     category: 'expert',
     colorPrimary: '#E91E63',
     colorSecondary: '#F48FB1',
     particleEffect: 'rainbow',
-    unlockedMessage: 'Renkli hayat! Altı ay! Gökkuşağının koruyucususun! 🌈',
+    unlockedMessage: t('streak.milestones.sixMonths.unlockedMessage'),
   },
   {
     id: 'nine-months',
     minDays: 270,
     maxDays: 364,
-    title: '👑 Dokuz Ay',
-    description: 'Kraliçe/Kral gibi heybetli!',
+    title: t('streak.milestones.nineMonths.title'),
+    description: t('streak.milestones.nineMonths.description'),
     emoji: '👑',
-    reward: 'Minnettarlık Kralı',
+    reward: t('streak.milestones.nineMonths.reward'),
     category: 'legendary',
     colorPrimary: '#FF6F00',
     colorSecondary: '#FFB74D',
     particleEffect: 'galaxy',
-    unlockedMessage: 'Kraliyet! Dokuz ay! Minnettarlık kralısın! 👑',
+    unlockedMessage: t('streak.milestones.nineMonths.unlockedMessage'),
   },
   {
     id: 'one-year',
     minDays: 365,
     maxDays: 499,
-    title: 'Bir Yıl',
-    description: 'Efsane başarı! Şampiyon!',
+    title: t('streak.milestones.oneYear.title'),
+    description: t('streak.milestones.oneYear.description'),
     emoji: '🏆',
-    reward: 'Altın Şampiyon',
+    reward: t('streak.milestones.oneYear.reward'),
     category: 'legendary',
     colorPrimary: '#FFD700',
     colorSecondary: '#FFF176',
     particleEffect: 'galaxy',
-    unlockedMessage: 'EFSANEVİ! Tam bir yıl! Artık şampiyonsun! 🏆',
+    unlockedMessage: t('streak.milestones.oneYear.unlockedMessage'),
   },
   {
     id: 'infinite',
     minDays: 500,
     maxDays: Infinity,
-    title: 'Sonsuz',
-    description: 'Artık evrenin enerjisiyle birsin!',
+    title: t('streak.milestones.infinite.title'),
+    description: t('streak.milestones.infinite.description'),
     emoji: '✨',
-    reward: 'Evren Ustası',
+    reward: t('streak.milestones.infinite.reward'),
     category: 'legendary',
     colorPrimary: '#9C27B0',
     colorSecondary: '#E1BEE7',
     particleEffect: 'galaxy',
-    unlockedMessage: 'SONSUZ GÜÇ! Evrenin enerjisiyle birsin! ✨',
+    unlockedMessage: t('streak.milestones.infinite.unlockedMessage'),
   },
 ];
 
@@ -264,6 +265,10 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const { t } = useTranslation();
+
+  // Create milestones with localized content
+  const ADVANCED_MILESTONES = useMemo(() => createAdvancedMilestones(t), [t]);
 
   // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
   const animations = useCoordinatedAnimations();
@@ -284,7 +289,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
       };
       return styles;
     }, {});
-  }, [currentStreak, theme.colors.surfaceVariant]);
+  }, [currentStreak, theme.colors.surfaceVariant, ADVANCED_MILESTONES]);
 
   // Find current and next milestones
   useEffect(() => {
@@ -297,7 +302,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
     setCurrentMilestone(current);
     setNextMilestone(next || null);
     setIsPersonalRecord(currentStreak > longestStreak && currentStreak > 0);
-  }, [currentStreak, longestStreak]);
+  }, [currentStreak, longestStreak, ADVANCED_MILESTONES]);
 
   // Calculate progress to next milestone
   const getProgressPercentage = useCallback((): number => {
@@ -408,9 +413,15 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
             </View>
             <View style={styles.milestoneInfo}>
               <Text style={[styles.milestoneTitle, { color: currentMilestone.colorPrimary }]}>
-                {currentMilestone.title}
+                {t(`streak.milestones.titles.${currentMilestone.id}`, {
+                  defaultValue: currentMilestone.title,
+                })}
               </Text>
-              <Text style={styles.milestoneDescription}>{currentMilestone.description}</Text>
+              <Text style={styles.milestoneDescription}>
+                {t(`streak.milestones.descriptions.${currentMilestone.id}`, {
+                  defaultValue: currentMilestone.description,
+                })}
+              </Text>
             </View>
             {/* Subtle clickable indicator */}
             {onPress && (
@@ -423,12 +434,12 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
           {/* Compact streak counter */}
           <View style={styles.streakCounter}>
             <Text style={styles.streakNumber}>{currentStreak}</Text>
-            <Text style={styles.streakLabel}>günlük seri</Text>
+            <Text style={styles.streakLabel}>{t('streak.details.dailyStreakLabel')}</Text>
 
             {isPersonalRecord && (
               <View style={styles.recordBadge}>
                 <Icon name="trophy" size={10} color={theme.colors.warning} />
-                <Text style={styles.recordText}>YENİ REKOR!</Text>
+                <Text style={styles.recordText}>{t('streak.milestones.newRecord')}</Text>
               </View>
             )}
           </View>
@@ -437,7 +448,12 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
           {nextMilestone && (
             <View style={styles.progressSection}>
               <Text style={styles.progressLabel}>
-                Sonraki: {nextMilestone.title} ({daysToNext} gün)
+                {t('streak.milestones.next', {
+                  title: t(`streak.milestones.titles.${nextMilestone.id}`, {
+                    defaultValue: nextMilestone.title,
+                  }),
+                  days: daysToNext,
+                })}
               </Text>
 
               <View style={styles.progressBarContainer}>
@@ -469,7 +485,7 @@ const AdvancedStreakMilestones: React.FC<AdvancedStreakMilestonesProps> = ({
           {/* Subtle hint at bottom */}
           {onPress && (
             <View style={styles.tapHint}>
-              <Text style={styles.tapHintText}>Detayları görmek için dokunun</Text>
+              <Text style={styles.tapHintText}>{t('streak.milestones.tapHint')}</Text>
             </View>
           )}
         </View>
@@ -663,4 +679,4 @@ const createStyles = (theme: AppTheme) =>
   });
 
 export default AdvancedStreakMilestones;
-export { ADVANCED_MILESTONES };
+export { createAdvancedMilestones };

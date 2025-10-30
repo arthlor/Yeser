@@ -175,20 +175,20 @@ export const NotificationSettings: React.FC = () => {
 
       // Save token and check for errors
       const saveResult = await notificationService.saveTokenToBackend(token);
-      if (saveResult.error) {
+      if (!saveResult.ok) {
         logger.error('Failed to save push token:', saveResult.error);
         showToastError(t('settings.data.exportError'));
-        throw saveResult.error;
+        throw saveResult.error ?? new Error('Failed to save push token');
       }
 
       // Update notification time and check for errors
       // 🔧 FIX: Store as HH:00 format (hours only) to match backend logic
       const timeString = `${selectedTime.getHours().toString().padStart(2, '0')}:00`;
       const updateResult = await notificationService.updateNotificationTime(timeString);
-      if (updateResult.error) {
+      if (!updateResult.ok) {
         logger.error('Failed to update notification time:', updateResult.error);
         showToastError(t('settings.data.exportError'));
-        throw updateResult.error;
+        throw updateResult.error ?? new Error('Failed to update notification time');
       }
 
       if (isMountedRef.current) {
@@ -213,14 +213,20 @@ export const NotificationSettings: React.FC = () => {
 
     try {
       if (pushToken) {
-        await notificationService.removeTokenFromBackend(pushToken);
+        const removalResult = await notificationService.removeTokenFromBackend(pushToken);
+
+        if (!removalResult.ok) {
+          logger.warn('Failed to remove push token when disabling notifications', {
+            error: removalResult.error?.message,
+          });
+        }
       }
 
       const updateResult = await notificationService.updateNotificationTime(null);
-      if (updateResult.error) {
+      if (!updateResult.ok) {
         logger.error('Failed to disable notification time:', updateResult.error);
         showToastError(t('settings.data.exportError'));
-        throw updateResult.error;
+        throw updateResult.error ?? new Error('Failed to disable notification time');
       }
 
       if (isMountedRef.current) {
@@ -341,7 +347,11 @@ export const NotificationSettings: React.FC = () => {
         try {
           // Store as HH:00 format (hours only)
           const timeString = `${hour.toString().padStart(2, '0')}:00`;
-          await notificationService.updateNotificationTime(timeString);
+          const updateResult = await notificationService.updateNotificationTime(timeString);
+
+          if (!updateResult.ok) {
+            throw updateResult.error ?? new Error('Failed to update notification time');
+          }
 
           if (isMountedRef.current) {
             showToastSuccess(t('settings.data.notificationSettingsSaved'));

@@ -119,6 +119,104 @@ export type Database = {
         };
         Relationships: [];
       };
+      notification_jobs: {
+        Row: {
+          attempts: number;
+          created_at: string;
+          id: string;
+          language: string;
+          last_error: string | null;
+          metadata: Json;
+          scheduled_for: string;
+          status: string;
+          tokens: string[];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          attempts?: number;
+          created_at?: string;
+          id?: string;
+          language?: string;
+          last_error?: string | null;
+          metadata?: Json;
+          scheduled_for: string;
+          status?: string;
+          tokens: string[];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          attempts?: number;
+          created_at?: string;
+          id?: string;
+          language?: string;
+          last_error?: string | null;
+          metadata?: Json;
+          scheduled_for?: string;
+          status?: string;
+          tokens?: string[];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notification_jobs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'notification_windows';
+            referencedColumns: ['user_id'];
+          },
+          {
+            foreignKeyName: 'notification_jobs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      notification_logs: {
+        Row: {
+          delivered_at: string;
+          error_detail: Json | null;
+          expo_message: string | null;
+          expo_status: string | null;
+          expo_ticket_id: string | null;
+          id: number;
+          job_id: string | null;
+          token: string | null;
+        };
+        Insert: {
+          delivered_at?: string;
+          error_detail?: Json | null;
+          expo_message?: string | null;
+          expo_status?: string | null;
+          expo_ticket_id?: string | null;
+          id?: number;
+          job_id?: string | null;
+          token?: string | null;
+        };
+        Update: {
+          delivered_at?: string;
+          error_detail?: Json | null;
+          expo_message?: string | null;
+          expo_status?: string | null;
+          expo_ticket_id?: string | null;
+          id?: number;
+          job_id?: string | null;
+          token?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notification_logs_job_id_fkey';
+            columns: ['job_id'];
+            isOneToOne: false;
+            referencedRelation: 'notification_jobs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_path: string | null;
@@ -188,6 +286,13 @@ export type Database = {
             foreignKeyName: 'push_tokens_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
+            referencedRelation: 'notification_windows';
+            referencedColumns: ['user_id'];
+          },
+          {
+            foreignKeyName: 'push_tokens_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
           },
@@ -225,7 +330,18 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      notification_windows: {
+        Row: {
+          language: string | null;
+          local_next_hour: string | null;
+          local_now: string | null;
+          notification_time: string | null;
+          timezone: string | null;
+          tokens: string[] | null;
+          user_id: string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       add_gratitude_statement: {
@@ -233,7 +349,7 @@ export type Database = {
         Returns: undefined;
       };
       analyze_notification_query_performance: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           execution_time_ms: number;
           notes: string;
@@ -241,24 +357,17 @@ export type Database = {
           rows_processed: number;
         }[];
       };
-      bytea_to_text: {
-        Args: { data: string };
-        Returns: string;
-      };
-      calculate_streak: {
-        Args: { p_user_id: string };
-        Returns: number;
-      };
+      bytea_to_text: { Args: { data: string }; Returns: string };
+      calculate_streak: { Args: { p_user_id: string }; Returns: number };
       check_username_availability: {
         Args: { p_username: string };
         Returns: boolean;
       };
-      cleanup_stale_tokens: {
-        Args: Record<PropertyKey, never> | { p_max_age_days?: number };
-        Returns: number;
-      };
+      cleanup_stale_tokens:
+        | { Args: { p_max_age_days?: number }; Returns: number }
+        | { Args: never; Returns: number };
       debug_hourly_notification_users: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           current_hour_in_timezone: number;
           next_hour_in_timezone: number;
@@ -271,7 +380,7 @@ export type Database = {
         }[];
       };
       debug_notification_matching: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           current_hour_in_timezone: number;
           next_hour_in_timezone: number;
@@ -284,7 +393,7 @@ export type Database = {
         }[];
       };
       debug_notification_users: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           current_time_in_timezone: string;
           notification_time: string;
@@ -304,30 +413,37 @@ export type Database = {
         Returns: undefined;
       };
       diagnose_cron_job_permissions: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           check_name: string;
           check_result: string;
           details: string;
         }[];
       };
-      edit_gratitude_statement: {
-        Args:
-          | {
+      edit_gratitude_statement:
+        | {
+            Args: {
               p_entry_date: string;
               p_mood?: string;
               p_statement_index: number;
               p_updated_statement: string;
-            }
-          | {
+            };
+            Returns: undefined;
+          }
+        | {
+            Args: {
               p_entry_date: string;
               p_statement_index: number;
               p_updated_statement: string;
             };
-        Returns: undefined;
+            Returns: undefined;
+          };
+      enqueue_notification_jobs: {
+        Args: { p_horizon_minutes?: number };
+        Returns: number;
       };
       get_basic_notification_stats: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           description: string;
           stat_name: string;
@@ -349,9 +465,15 @@ export type Database = {
           prompt_text_tr: string;
           updated_at: string;
         }[];
+        SetofOptions: {
+          from: '*';
+          to: 'daily_prompts';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       get_random_active_prompt: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           category: string;
           id: string;
@@ -369,13 +491,16 @@ export type Database = {
           updated_at: string;
           user_id: string;
         }[];
+        SetofOptions: {
+          from: '*';
+          to: 'gratitude_entries';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
-      get_user_gratitude_entries_count: {
-        Args: Record<PropertyKey, never>;
-        Returns: number;
-      };
+      get_user_gratitude_entries_count: { Args: never; Returns: number };
       get_users_for_next_hour_optimized: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           language: string;
           notification_time: string;
@@ -385,7 +510,7 @@ export type Database = {
         }[];
       };
       get_users_to_notify: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           id: string;
           notification_time: string;
@@ -395,25 +520,77 @@ export type Database = {
       http: {
         Args: { request: Database['public']['CompositeTypes']['http_request'] };
         Returns: Database['public']['CompositeTypes']['http_response'];
+        SetofOptions: {
+          from: 'http_request';
+          to: 'http_response';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
-      http_delete: {
-        Args: { content: string; content_type: string; uri: string } | { uri: string };
-        Returns: Database['public']['CompositeTypes']['http_response'];
-      };
-      http_get: {
-        Args: { data: Json; uri: string } | { uri: string };
-        Returns: Database['public']['CompositeTypes']['http_response'];
-      };
+      http_delete:
+        | {
+            Args: { uri: string };
+            Returns: Database['public']['CompositeTypes']['http_response'];
+            SetofOptions: {
+              from: '*';
+              to: 'http_response';
+              isOneToOne: true;
+              isSetofReturn: false;
+            };
+          }
+        | {
+            Args: { content: string; content_type: string; uri: string };
+            Returns: Database['public']['CompositeTypes']['http_response'];
+            SetofOptions: {
+              from: '*';
+              to: 'http_response';
+              isOneToOne: true;
+              isSetofReturn: false;
+            };
+          };
+      http_get:
+        | {
+            Args: { uri: string };
+            Returns: Database['public']['CompositeTypes']['http_response'];
+            SetofOptions: {
+              from: '*';
+              to: 'http_response';
+              isOneToOne: true;
+              isSetofReturn: false;
+            };
+          }
+        | {
+            Args: { data: Json; uri: string };
+            Returns: Database['public']['CompositeTypes']['http_response'];
+            SetofOptions: {
+              from: '*';
+              to: 'http_response';
+              isOneToOne: true;
+              isSetofReturn: false;
+            };
+          };
       http_head: {
         Args: { uri: string };
         Returns: Database['public']['CompositeTypes']['http_response'];
+        SetofOptions: {
+          from: '*';
+          to: 'http_response';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       http_header: {
         Args: { field: string; value: string };
         Returns: Database['public']['CompositeTypes']['http_header'];
+        SetofOptions: {
+          from: '*';
+          to: 'http_header';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       http_list_curlopt: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           curlopt: string;
           value: string;
@@ -422,27 +599,73 @@ export type Database = {
       http_patch: {
         Args: { content: string; content_type: string; uri: string };
         Returns: Database['public']['CompositeTypes']['http_response'];
+        SetofOptions: {
+          from: '*';
+          to: 'http_response';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
-      http_post: {
-        Args: { content: string; content_type: string; uri: string } | { data: Json; uri: string };
-        Returns: Database['public']['CompositeTypes']['http_response'];
-      };
+      http_post:
+        | {
+            Args: { content: string; content_type: string; uri: string };
+            Returns: Database['public']['CompositeTypes']['http_response'];
+            SetofOptions: {
+              from: '*';
+              to: 'http_response';
+              isOneToOne: true;
+              isSetofReturn: false;
+            };
+          }
+        | {
+            Args: { data: Json; uri: string };
+            Returns: Database['public']['CompositeTypes']['http_response'];
+            SetofOptions: {
+              from: '*';
+              to: 'http_response';
+              isOneToOne: true;
+              isSetofReturn: false;
+            };
+          };
       http_put: {
         Args: { content: string; content_type: string; uri: string };
         Returns: Database['public']['CompositeTypes']['http_response'];
+        SetofOptions: {
+          from: '*';
+          to: 'http_response';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
-      http_reset_curlopt: {
-        Args: Record<PropertyKey, never>;
-        Returns: boolean;
-      };
+      http_reset_curlopt: { Args: never; Returns: boolean };
       http_set_curlopt: {
         Args: { curlopt: string; value: string };
         Returns: boolean;
       };
-      normalize_turkish: {
-        Args: { input_text: string };
-        Returns: string;
+      insert_notification_logs: { Args: { p_logs: Json }; Returns: undefined };
+      lock_notification_jobs: {
+        Args: { p_cutoff?: string; p_limit: number };
+        Returns: {
+          attempts: number;
+          created_at: string;
+          id: string;
+          language: string;
+          last_error: string | null;
+          metadata: Json;
+          scheduled_for: string;
+          status: string;
+          tokens: string[];
+          updated_at: string;
+          user_id: string;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'notification_jobs';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
+      normalize_turkish: { Args: { input_text: string }; Returns: string };
       recalculate_user_streak: {
         Args: { p_user_id: string };
         Returns: undefined;
@@ -450,6 +673,10 @@ export type Database = {
       register_push_token: {
         Args: { p_timezone?: string; p_token: string; p_token_type?: string };
         Returns: Json;
+      };
+      reset_stuck_notification_jobs: {
+        Args: { p_threshold?: unknown };
+        Returns: number;
       };
       set_daily_gratitude_statements: {
         Args: { p_entry_date: string; p_statements: Json };
@@ -467,22 +694,10 @@ export type Database = {
         };
         Returns: undefined;
       };
-      text_to_bytea: {
-        Args: { data: string };
-        Returns: string;
-      };
-      trigger_daily_reminders_fixed: {
-        Args: Record<PropertyKey, never>;
-        Returns: undefined;
-      };
-      trigger_hourly_reminders: {
-        Args: Record<PropertyKey, never>;
-        Returns: undefined;
-      };
-      unregister_push_token: {
-        Args: { p_token: string };
-        Returns: undefined;
-      };
+      text_to_bytea: { Args: { data: string }; Returns: string };
+      trigger_daily_reminders_fixed: { Args: never; Returns: undefined };
+      trigger_hourly_reminders: { Args: never; Returns: undefined };
+      unregister_push_token: { Args: { p_token: string }; Returns: undefined };
       update_cron_job: {
         Args: { p_jobid: number; p_jobname?: string; p_new_schedule: string };
         Returns: {
@@ -490,10 +705,20 @@ export type Database = {
           success: boolean;
         }[];
       };
-      urlencode: {
-        Args: { data: Json } | { string: string } | { string: string };
-        Returns: string;
-      };
+      urlencode:
+        | { Args: { data: Json }; Returns: string }
+        | {
+            Args: { string: string };
+            Returns: {
+              error: true;
+            } & 'Could not choose the best candidate function between: public.urlencode(string => bytea), public.urlencode(string => varchar). Try renaming the parameters or the function itself in the database so function overloading can be resolved';
+          }
+        | {
+            Args: { string: string };
+            Returns: {
+              error: true;
+            } & 'Could not choose the best candidate function between: public.urlencode(string => bytea), public.urlencode(string => varchar). Try renaming the parameters or the function itself in the database so function overloading can be resolved';
+          };
     };
     Enums: {
       [_ in never]: never;
@@ -504,7 +729,7 @@ export type Database = {
         value: string | null;
       };
       http_request: {
-        method: unknown | null;
+        method: unknown;
         uri: string | null;
         headers: Database['public']['CompositeTypes']['http_header'][] | null;
         content_type: string | null;

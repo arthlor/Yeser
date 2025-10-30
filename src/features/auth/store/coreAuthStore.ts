@@ -129,10 +129,20 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
                 const removePushToken = async () => {
                   try {
                     const token = await notificationService.getCurrentDevicePushToken();
-                    if (token) {
-                      await notificationService.removeTokenFromBackend(token);
-                      logger.debug('Core auth store: Removed push token on sign out.');
+                    if (!token) {
+                      return;
                     }
+
+                    const removalResult = await notificationService.removeTokenFromBackend(token);
+
+                    if (!removalResult.ok) {
+                      logger.warn('Core auth store: Failed to remove push token on sign out.', {
+                        error: removalResult.error?.message,
+                      });
+                      return;
+                    }
+
+                    logger.debug('Core auth store: Removed push token on sign out.');
                   } catch (error) {
                     logger.warn(
                       'Core auth store: Failed to get or remove push token on sign out.',

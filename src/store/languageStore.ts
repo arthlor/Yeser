@@ -5,12 +5,12 @@ import i18n from '@/i18n';
 
 export type SupportedLanguage = 'tr' | 'en';
 
-interface LanguageState {
+export interface LanguageStoreState {
   language: SupportedLanguage;
   setLanguage: (lang: SupportedLanguage) => void;
 }
 
-export const useLanguageStore = create<LanguageState>()(
+export const useLanguageStore = create<LanguageStoreState>()(
   persist(
     (set, get) => ({
       language: (i18n.language as SupportedLanguage) === 'en' ? 'en' : 'tr',

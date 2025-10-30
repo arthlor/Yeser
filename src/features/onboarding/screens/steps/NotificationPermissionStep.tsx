@@ -74,9 +74,9 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
         // Save token to backend
         const saveResult = await notificationService.saveTokenToBackend(result.token);
 
-        if (saveResult.error) {
+        if (!saveResult.ok) {
           logger.warn('Token saved but backend save failed:', {
-            error: saveResult.error.message || 'Unknown error',
+            error: saveResult.error?.message || 'Unknown error',
           });
           // Treat RLS/duplicate cases as soft success
         }
@@ -85,9 +85,9 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
         const defaultTime = '09:00'; // 🔧 FIX: Hour-only format
         const timeUpdateResult = await notificationService.updateNotificationTime(defaultTime);
 
-        if (timeUpdateResult.error) {
+        if (!timeUpdateResult.ok) {
           logger.warn('Token saved but notification time update failed:', {
-            error: timeUpdateResult.error.message || 'Unknown error',
+            error: timeUpdateResult.error?.message || 'Unknown error',
           });
           // Still consider this success for UX - user can set time later in settings
         }

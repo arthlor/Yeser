@@ -1,14 +1,37 @@
 import * as Notifications from 'expo-notifications';
 import * as Localization from 'expo-localization';
 import { Alert, Linking, Platform } from 'react-native';
+import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
+
 import i18n from '@/i18n';
-import { supabase } from '@/utils/supabaseClient';
-import { logger } from '@/utils/logger';
-import { config } from '@/utils/config';
+import type { LanguageStoreState } from '@/store/languageStore';
 import { useLanguageStore } from '@/store/languageStore';
+import { config } from '@/utils/config';
+import type { Database } from '@/types/supabase.types';
+import { supabaseService } from '@/utils/supabaseClient';
+import { logger } from '@/utils/logger';
 
 const ANDROID_CHANNEL_ID = 'daily-reminder-channel';
 const EXPO_PROJECT_ID = config.eas.projectId;
+
+const ensureSupabaseClient = async (): Promise<SupabaseClient<Database>> => {
+  await supabaseService.initializeLazy();
+  return supabaseService.getClient();
+};
+
+type NotificationPermissionStatus = 'granted' | 'denied' | 'undetermined' | 'provisional';
+
+interface NotificationRegistrationResult {
+  token: string | null;
+  status: NotificationPermissionStatus;
+  canAskAgain?: boolean;
+}
+
+interface NotificationOperationResult<T = void> {
+  ok: boolean;
+  data?: T;
+  error?: Error;
+}
 
 // Configure notification handling for different app states
 Notifications.setNotificationHandler({
@@ -42,25 +65,17 @@ async function setupAndroidChannel() {
  * and returns the Expo Push Token.
  * @returns Object with token and permission status details
  */
-async function registerForPushNotificationsAsync(): Promise<{
-  token: string | null;
-  status: 'granted' | 'denied' | 'undetermined' | 'provisional';
-  canAskAgain?: boolean;
-}> {
+async function registerForPushNotificationsAsync(): Promise<NotificationRegistrationResult> {
   await setupAndroidChannel();
 
   const { status: existingStatus, canAskAgain } = await Notifications.getPermissionsAsync();
   // Map to a broader union that may include 'provisional' on iOS
-  let finalStatus: 'granted' | 'denied' | 'undetermined' | 'provisional' = existingStatus as
-    | 'granted'
-    | 'denied'
-    | 'undetermined'
-    | 'provisional';
+  let finalStatus: NotificationPermissionStatus = existingStatus as NotificationPermissionStatus;
   let finalCanAskAgain = canAskAgain;
 
   if (existingStatus !== 'granted') {
     const { status, canAskAgain: newCanAskAgain } = await Notifications.requestPermissionsAsync();
-    finalStatus = status as 'granted' | 'denied' | 'undetermined' | 'provisional';
+    finalStatus = status as NotificationPermissionStatus;
     finalCanAskAgain = newCanAskAgain;
   }
 
@@ -97,44 +112,53 @@ async function registerForPushNotificationsAsync(): Promise<{
  * @param token The Expo Push Token.
  * @returns An object indicating success or failure.
  */
-async function saveTokenToBackend(token: string) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: new Error('User not authenticated.') };
+async function saveTokenToBackend(token: string): Promise<NotificationOperationResult<void>> {
+  try {
+    const client = await ensureSupabaseClient();
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+
+    if (!user) {
+      return { ok: false, error: new Error('User not authenticated.') };
+    }
+
+    const timezone = Localization.getCalendars()[0]?.timeZone ?? 'UTC';
+    const { language } = useLanguageStore.getState() as LanguageStoreState;
+
+    const { error: registerError } = await client.rpc('register_push_token', {
+      p_token: token,
+      p_timezone: timezone,
+      p_token_type: 'expo',
+    });
+
+    if (registerError) {
+      logger.error('Error saving push token:', registerError);
+      return { ok: false, error: mapPostgrestError(registerError) };
+    }
+
+    const { error: languageError } = await client
+      .from('profiles')
+      .update({ language })
+      .eq('id', user.id);
+
+    if (languageError) {
+      logger.error('Error updating profile language:', languageError);
+      return { ok: false, error: mapPostgrestError(languageError) };
+    }
+
+    logger.debug('Successfully saved push token, timezone, and language', {
+      userId: user.id,
+      timezone,
+      language,
+    });
+
+    return { ok: true };
+  } catch (error) {
+    const resolvedError = error instanceof Error ? error : new Error(String(error));
+    logger.error('Unexpected error saving push token', resolvedError);
+    return { ok: false, error: resolvedError };
   }
-
-  const timezone = Localization.getCalendars()[0].timeZone ?? 'UTC';
-  const { language } = useLanguageStore.getState();
-
-  const { error } = await supabase.rpc('register_push_token', {
-    p_token: token,
-    p_timezone: timezone,
-    p_token_type: 'expo',
-  });
-
-  if (error) {
-    logger.error('Error saving push token:', error);
-    return { error };
-  }
-
-  const { error: languageError } = await supabase
-    .from('profiles')
-    .update({ language })
-    .eq('id', user.id);
-
-  if (languageError) {
-    logger.error('Error updating profile language:', languageError);
-    return { error: languageError };
-  }
-
-  logger.debug('Successfully saved push token, timezone, and language', {
-    userId: user.id,
-    timezone,
-    language,
-  });
-  return { success: true };
 }
 
 /**
@@ -142,24 +166,34 @@ async function saveTokenToBackend(token: string) {
  * @param time A string in 'HH:00' format (e.g., '14:00') - only hour precision is used.
  * @returns An object indicating success or failure.
  */
-async function updateNotificationTime(time: string | null) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: new Error('User not authenticated.') };
+async function updateNotificationTime(
+  time: string | null
+): Promise<NotificationOperationResult<void>> {
+  try {
+    const client = await ensureSupabaseClient();
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+
+    if (!user) {
+      return { ok: false, error: new Error('User not authenticated.') };
+    }
+
+    const { error } = await client.rpc('set_notification_hour', {
+      p_notification_time: (time ?? null) as unknown as string,
+    });
+
+    if (error) {
+      logger.error('Error updating notification time:', error);
+      return { ok: false, error: mapPostgrestError(error) };
+    }
+
+    return { ok: true };
+  } catch (error) {
+    const resolvedError = error instanceof Error ? error : new Error(String(error));
+    logger.error('Unexpected error updating notification time', resolvedError);
+    return { ok: false, error: resolvedError };
   }
-
-  const { error } = await supabase.rpc('set_notification_hour', {
-    p_notification_time: (time ?? null) as unknown as string,
-  });
-
-  if (error) {
-    logger.error('Error updating notification time:', error);
-    return { error };
-  }
-
-  return { success: true };
 }
 
 /**
@@ -167,13 +201,23 @@ async function updateNotificationTime(time: string | null) {
  * notifications for that device.
  * @param token The Expo Push Token to remove.
  */
-async function removeTokenFromBackend(token: string) {
-  const { error } = await supabase.rpc('unregister_push_token', {
-    p_token: token,
-  });
+async function removeTokenFromBackend(token: string): Promise<NotificationOperationResult<void>> {
+  try {
+    const client = await ensureSupabaseClient();
+    const { error } = await client.rpc('unregister_push_token', {
+      p_token: token,
+    });
 
-  if (error) {
-    logger.error('Error removing push token:', error);
+    if (error) {
+      logger.error('Error removing push token:', error);
+      return { ok: false, error: mapPostgrestError(error) };
+    }
+
+    return { ok: true };
+  } catch (error) {
+    const resolvedError = error instanceof Error ? error : new Error(String(error));
+    logger.error('Unexpected error removing push token', resolvedError);
+    return { ok: false, error: resolvedError };
   }
 }
 
@@ -270,4 +314,8 @@ export const notificationService = {
   showNotificationPermissionGuidance,
   openNotificationSettings,
   getCurrentDevicePushToken,
+};
+
+const mapPostgrestError = (error: PostgrestError): Error => {
+  return new Error(error.message);
 };

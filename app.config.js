@@ -198,6 +198,8 @@ module.exports = {
     'expo-tracking-transparency',
     // Enable custom fonts
     'expo-font',
+    // Ensure Android string resources include required localization defaults
+    './plugins/withAndroidUsageDescriptions.js',
     // 🔥 CRITICAL: Custom plugin to handle google-services.json from environment
     './plugins/withGoogleServices.js',
   ],

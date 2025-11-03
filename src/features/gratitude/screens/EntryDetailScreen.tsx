@@ -209,6 +209,12 @@ const EnhancedEntryDetailScreen: React.FC<{
       try {
         gratitudeStatementSchema.parse(updatedText.trim());
 
+        const originalStatement = displayItems[index]?.trim();
+        if (originalStatement && originalStatement === updatedText.trim()) {
+          setEditingStatementIndex(null);
+          return;
+        }
+
         await editStatement({
           entryDate: entryDate,
           statementIndex: Math.max(gratitudeItems.length - 1 - index, 0),
@@ -243,6 +249,7 @@ const EnhancedEntryDetailScreen: React.FC<{
       handleMutationError,
       t,
       gratitudeItems.length,
+      displayItems,
     ]
   );
 

@@ -166,8 +166,8 @@ async function saveTokenToBackend(token: string): Promise<NotificationOperationR
  * @param time A string in 'HH:00' format (e.g., '14:00') - only hour precision is used.
  * @returns An object indicating success or failure.
  */
-async function updateNotificationTime(
-  time: string | null
+async function setNotificationsEnabled(
+  enabled: boolean
 ): Promise<NotificationOperationResult<void>> {
   try {
     const client = await ensureSupabaseClient();
@@ -179,19 +179,19 @@ async function updateNotificationTime(
       return { ok: false, error: new Error('User not authenticated.') };
     }
 
-    const { error } = await client.rpc('set_notification_hour', {
-      p_notification_time: (time ?? null) as unknown as string,
+    const { error } = await client.rpc('set_notifications_enabled', {
+      p_enabled: enabled,
     });
 
     if (error) {
-      logger.error('Error updating notification time:', error);
+      logger.error('Error updating notification preference:', error);
       return { ok: false, error: mapPostgrestError(error) };
     }
 
     return { ok: true };
   } catch (error) {
     const resolvedError = error instanceof Error ? error : new Error(String(error));
-    logger.error('Unexpected error updating notification time', resolvedError);
+    logger.error('Unexpected error updating notification preference', resolvedError);
     return { ok: false, error: resolvedError };
   }
 }
@@ -309,7 +309,7 @@ function openNotificationSettings() {
 export const notificationService = {
   registerForPushNotificationsAsync,
   saveTokenToBackend,
-  updateNotificationTime,
+  setNotificationsEnabled,
   removeTokenFromBackend,
   showNotificationPermissionGuidance,
   openNotificationSettings,

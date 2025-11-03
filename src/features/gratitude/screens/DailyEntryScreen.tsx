@@ -108,6 +108,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   // Extract profile data first
   const { daily_gratitude_goal } = profile || {};
+  const showInspirationPrompts = profile?.useVariedPrompts ?? profile?.use_varied_prompts ?? true;
 
   // 🎬 MINIMAL ANIMATIONS: Simple and non-intrusive animation system
   const animations = useCoordinatedAnimations();
@@ -368,13 +369,15 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       // Find the original statement. Note the reverse order of displayStatements.
       const originalStatement = statements[statements.length - 1 - index];
 
-      if (updatedStatement.trim() === originalStatement.trim()) {
-        setShowSaveHint(true);
-        return;
-      }
-
       try {
         gratitudeStatementSchema.parse(updatedStatement);
+
+        if (updatedStatement.trim() === originalStatement.trim()) {
+          animations.animateLayoutTransition(false, 0, { duration: 200 });
+          setEditingStatementIndex(null);
+          setShowSaveHint(false);
+          return;
+        }
 
         await editStatement(
           { entryDate: finalDateString, statementIndex: index, updatedStatement },
@@ -500,7 +503,6 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         >
           {/* Enhanced Navigation Header - Beautiful Title Design */}
           <View style={styles.enhancedNavigationHeader}>
-            <View style={styles.enhancedNavigationBackground} />
             <View style={styles.enhancedNavigationContent}>
               <View style={styles.titleContainer}>
                 <View style={styles.titleIconContainer}>
@@ -575,22 +577,33 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         >
           {/* Gratitude Input Bar */}
           <View style={styles.inputBarContainer}>
-            <GratitudeInputBar
-              ref={inputBarRef}
-              promptText={currentPrompt}
-              onSubmit={handleAddStatement}
-              onSubmitWithMood={(text, mood) => {
-                handleAddStatement(text, mood ?? null);
-              }}
-              disabled={isAddingStatement}
-              error={null}
-              onRefreshPrompt={handlePromptRefresh}
-              promptLoading={promptLoading || isLoadingEntry}
-              promptError={promptError?.message || null}
-              showPrompt={true}
-              currentCount={statements.length}
-              goal={dailyGoal}
-            />
+            <View style={styles.inputHaloWrapper}>
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.inputHaloGlow,
+                  {
+                    opacity: animations.fadeAnim,
+                  },
+                ]}
+              />
+              <GratitudeInputBar
+                ref={inputBarRef}
+                promptText={currentPrompt}
+                onSubmit={handleAddStatement}
+                onSubmitWithMood={(text, mood) => {
+                  handleAddStatement(text, mood ?? null);
+                }}
+                disabled={isAddingStatement}
+                error={null}
+                onRefreshPrompt={handlePromptRefresh}
+                promptLoading={promptLoading || isLoadingEntry}
+                promptError={promptError?.message || null}
+                showPrompt={showInspirationPrompts}
+                currentCount={statements.length}
+                goal={dailyGoal}
+              />
+            </View>
           </View>
 
           {/* Statement Cards Section - Unified design */}
@@ -729,16 +742,6 @@ const createStyles = (theme: AppTheme) =>
       paddingBottom: theme.spacing.md,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.outline + '15',
-      overflow: 'hidden',
-    },
-    enhancedNavigationBackground: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      // Subtle tinted backdrop instead of invalid gradient string
-      backgroundColor: theme.colors.primaryContainer + '0D',
     },
     enhancedNavigationContent: {
       position: 'relative',
@@ -873,7 +876,25 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
     },
     inputBarContainer: {
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    inputHaloWrapper: {
+      position: 'relative',
+      borderRadius: theme.borderRadius.xl,
+      overflow: 'visible',
+    },
+    inputHaloGlow: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: theme.borderRadius.xl,
+      backgroundColor: theme.colors.primaryContainer + '22',
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.15,
+      shadowRadius: 24,
+      elevation: 6,
+      opacity: 0.75,
+      transform: [{ scaleX: 1.05 }, { scaleY: 1.08 }],
     },
     statementsSection: {
       flex: 1,

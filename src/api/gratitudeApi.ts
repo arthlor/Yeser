@@ -9,6 +9,7 @@ import {
 import { supabase } from '../utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { handleAPIError } from '@/utils/apiHelpers';
+import useAuthStore from '@/store/authStore';
 
 import type { GratitudeEntry } from '../schemas/gratitudeEntrySchema';
 import type { Database } from '../types/supabase.types';
@@ -102,32 +103,158 @@ export const editStatement = async (
       throw new Error('Invalid input for editing statement.');
     }
 
-    // Build the RPC parameters object, only including p_mood if it has a value
-    const rpcParams: {
-      p_entry_date: string;
-      p_statement_index: number;
-      p_updated_statement: string;
-      p_mood?: string;
-    } = {
-      p_entry_date: entryDate,
-      p_statement_index: statementIndex,
-      p_updated_statement: updatedStatementText,
-    };
+    const normalizedMood = typeof moodEmoji === 'string' ? moodEmoji.trim() : undefined;
 
-    // Only add p_mood if moodEmoji has a valid value
-    if (moodEmoji && moodEmoji.trim() !== '') {
-      rpcParams.p_mood = moodEmoji;
-    }
+    try {
+      const { error } = await supabase.rpc(
+        'edit_gratitude_statement',
+        normalizedMood && normalizedMood.length > 0
+          ? {
+              p_entry_date: entryDate,
+              p_statement_index: statementIndex,
+              p_updated_statement: updatedStatementText,
+              p_mood: normalizedMood,
+            }
+          : {
+              p_entry_date: entryDate,
+              p_statement_index: statementIndex,
+              p_updated_statement: updatedStatementText,
+            }
+      );
 
-    const { error } = await supabase.rpc('edit_gratitude_statement', rpcParams);
+      if (error) {
+        throw new Error(error.message);
+      }
+    } catch (rpcError) {
+      const rpcMessage = rpcError instanceof Error ? rpcError.message : String(rpcError);
 
-    if (error) {
-      throw handleAPIError(new Error(error.message), 'edit gratitude statement');
+      if (rpcMessage.includes('Could not choose the best candidate function')) {
+        logger.warn('editStatement RPC ambiguity detected. Falling back to direct update.', {
+          entryDate,
+          statementIndex,
+        });
+
+        await fallbackEditStatement(entryDate, statementIndex, updatedStatementText, moodEmoji);
+        return;
+      }
+
+      throw rpcError instanceof Error ? rpcError : new Error(rpcMessage);
     }
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     throw handleAPIError(error, 'edit gratitude statement');
   }
+};
+
+const fallbackEditStatement = async (
+  entryDate: string,
+  statementIndex: number,
+  updatedStatementText: string,
+  moodEmoji?: string | null
+): Promise<void> => {
+  const userId = useAuthStore.getState().user?.id;
+
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data: entry, error: fetchError } = await supabase
+    .from('gratitude_entries')
+    .select('statements, moods')
+    .eq('user_id', userId)
+    .eq('entry_date', entryDate)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error(fetchError.message);
+  }
+
+  if (!entry) {
+    throw new Error('Gratitude entry not found');
+  }
+
+  const statementsArray = normalizeStatements(entry.statements);
+
+  if (statementIndex < 0 || statementIndex >= statementsArray.length) {
+    throw new Error('Invalid statement index');
+  }
+
+  statementsArray[statementIndex] = updatedStatementText;
+
+  const updatePayload: Record<string, unknown> = {
+    statements: statementsArray,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (moodEmoji !== undefined) {
+    const moodsMap = normalizeMoods(entry.moods);
+    const key = String(statementIndex);
+
+    if (moodEmoji === null || (typeof moodEmoji === 'string' && moodEmoji.trim().length === 0)) {
+      delete moodsMap[key];
+    } else {
+      moodsMap[key] = moodEmoji.trim();
+    }
+
+    updatePayload.moods = moodsMap;
+  }
+
+  const { error: updateError } = await supabase
+    .from('gratitude_entries')
+    .update(updatePayload)
+    .eq('user_id', userId)
+    .eq('entry_date', entryDate);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+};
+
+const normalizeStatements = (statements: unknown): string[] => {
+  if (Array.isArray(statements)) {
+    return statements.map((item) => String(item));
+  }
+
+  if (statements && typeof statements === 'object') {
+    const entries = Object.entries(statements as Record<string, unknown>)
+      .filter(([, value]) => typeof value === 'string')
+      .sort(([a], [b]) => Number(a) - Number(b));
+
+    if (entries.length > 0) {
+      return entries.map(([, value]) => String(value));
+    }
+  }
+
+  throw new Error('Invalid statements format received from the server');
+};
+
+const normalizeMoods = (moods: unknown): Record<string, string> => {
+  if (!moods) {
+    return {};
+  }
+
+  if (Array.isArray(moods)) {
+    return moods.reduce<Record<string, string>>((acc, value, index) => {
+      if (typeof value === 'string' && value.trim().length > 0) {
+        acc[String(index)] = value;
+      }
+      return acc;
+    }, {});
+  }
+
+  if (typeof moods === 'object') {
+    return Object.entries(moods as Record<string, unknown>).reduce<Record<string, string>>(
+      (acc, [key, value]) => {
+        if (typeof value === 'string' && value.trim().length > 0) {
+          acc[key] = value;
+        }
+        return acc;
+      },
+      {}
+    );
+  }
+
+  return {};
 };
 
 /**

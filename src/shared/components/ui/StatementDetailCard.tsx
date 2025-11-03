@@ -417,7 +417,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
                 </View>
                 {_moodEmoji ? (
                   <View style={styles.readonlyMoodContainer}>
-                    <Text style={styles.readonlyMoodLabel}>{t('Mood', 'Mood')}:</Text>
+                    <Text style={styles.readonlyMoodLabel}>{t('shared.mood.label')}:</Text>
                     <Text style={styles.readonlyMoodEmoji}>{_moodEmoji}</Text>
                   </View>
                 ) : null}

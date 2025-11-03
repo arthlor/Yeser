@@ -99,6 +99,10 @@
         "extra": "Learn"
       }
     },
+    "todayList": {
+      "viewMore": "View all ({{count}} more)",
+      "viewMoreA11y": "View all gratitude entries. {{count}} more available."
+    },
     "hero": {
       "time": {
         "early": "early morning",
@@ -160,7 +164,8 @@
     "notNow": "Not Now",
     "enable": "Enable",
     "maybeLater": "Maybe Later",
-    "openSettings": "Open Settings"
+    "openSettings": "Open Settings",
+    "fixedScheduleDescription": "We'll remind you twice a day at {{firstTime}} and {{secondTime}} in your local time."
   },
   "calendar": {
     "tab": { "title": "Calendar", "a11y": "Calendar view" },
@@ -595,6 +600,7 @@
       }
     },
     "mood": {
+      "label": "Mood",
       "setMood": {
         "a11y": "Set mood {{emoji}}"
       }
@@ -855,8 +861,10 @@
       "saveHint": "Please modify the statement to save."
     },
     "input": {
+      "label": "What are you grateful for?",
       "placeholder": "What are you grateful for today?",
       "motto": "Grow with gratitude",
+      "revisitMotto": "Grow with gratitude 🌱",
       "progressToday": "{{current}}/{{goal}} today",
       "a11y": {
         "writeHint": "Write your gratitude statement and press send",
@@ -864,13 +872,25 @@
         "sendDisabled": "Sending disabled",
         "addFirstGratitude": "Add your first gratitude",
         "addFirstGratitudeHint": "Focus on the input field to write a gratitude statement"
-      }
+      },
+      "moods": {
+        "title": "Emotion Seeds",
+        "recent": "Your recent picks",
+        "primary": "Choose your mood",
+        "clear": "Remove mood"
+      },
+      "moodQuickAction": "Choose mood",
+      "moodQuickActionSelected": "Tap to change",
+      "sendButton": "Send gratitude"
     },
     "prompt": {
       "inspiringQuestion": "Inspiring question",
       "loading": "💭 Loading an inspiring question...",
       "refreshA11y": "Load a new question",
       "fallbackText": "What are you grateful for today?",
+      "storyTitle": "Grow with gratitude",
+      "storyHint": "Plant a new seed by sharing one gratitude today.",
+      "storyHintFallback": "Refresh to discover another seed of inspiration.",
       "fallbackList": [
         "What beautiful moments are you grateful for today?",
         "Which people in your life make you happy?",

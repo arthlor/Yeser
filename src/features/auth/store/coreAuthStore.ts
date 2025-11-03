@@ -136,8 +136,18 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
                     const removalResult = await notificationService.removeTokenFromBackend(token);
 
                     if (!removalResult.ok) {
+                      const message = removalResult.error?.message ?? '';
+                      const isAuthError = message.toLowerCase().includes('not authenticated');
+
+                      if (isAuthError) {
+                        logger.debug(
+                          'Core auth store: Push token removal skipped (session already cleared).'
+                        );
+                        return;
+                      }
+
                       logger.warn('Core auth store: Failed to remove push token on sign out.', {
-                        error: removalResult.error?.message,
+                        error: message,
                       });
                       return;
                     }

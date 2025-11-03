@@ -81,15 +81,13 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
           // Treat RLS/duplicate cases as soft success
         }
 
-        // Set default notification time (9:00 AM) so settings toggle shows as enabled
-        const defaultTime = '09:00'; // 🔧 FIX: Hour-only format
-        const timeUpdateResult = await notificationService.updateNotificationTime(defaultTime);
+        const preferenceResult = await notificationService.setNotificationsEnabled(true);
 
-        if (!timeUpdateResult.ok) {
-          logger.warn('Token saved but notification time update failed:', {
-            error: timeUpdateResult.error?.message || 'Unknown error',
+        if (!preferenceResult.ok) {
+          logger.warn('Token saved but enabling notifications failed:', {
+            error: preferenceResult.error?.message || 'Unknown error',
           });
-          // Still consider this success for UX - user can set time later in settings
+          // Still consider this success for UX - user can re-enable in settings
         }
 
         // Track successful permission grant

@@ -31,6 +31,7 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -45,6 +46,8 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
 interface HomeScreenProps {
   navigation: HomeScreenNavigationProp;
 }
+
+const MAX_VISIBLE_HOME_STATEMENTS = 5;
 
 const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }) => {
   const { theme } = useTheme();
@@ -81,6 +84,13 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
   const todaysStatementsReversed = useMemo(() => {
     return [...todaysStatements].reverse();
   }, [todaysStatements]);
+  const visibleStatements = useMemo(() => {
+    return todaysStatementsReversed.slice(0, MAX_VISIBLE_HOME_STATEMENTS);
+  }, [todaysStatementsReversed]);
+  const remainingStatementsCount = useMemo(() => {
+    return Math.max(todaysStatementsReversed.length - MAX_VISIBLE_HOME_STATEMENTS, 0);
+  }, [todaysStatementsReversed]);
+  const shouldShowViewMore = remainingStatementsCount > 0;
 
   const [refreshing, setRefreshing] = useState(false);
   const [streakDetailsVisible, setStreakDetailsVisible] = useState(false);
@@ -147,6 +157,13 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     analyticsService.logEvent('navigate_to_new_entry', { source: 'home_main_cta' });
     navigation.navigate('DailyEntryTab', { initialDate: todayDateString });
   }, [navigation, todayDateString]);
+
+  const handleViewMorePress = useCallback(() => {
+    analyticsService.logEvent('home_view_more_tapped', {
+      remainingStatements: remainingStatementsCount,
+    });
+    navigation.navigate('PastEntriesTab');
+  }, [navigation, remainingStatementsCount]);
 
   const handleStreakPress = useCallback(() => {
     analyticsService.logEvent('streak_showcase_pressed');
@@ -296,7 +313,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     </>
   );
 
-  const listData = todaysStatementsReversed;
+  const listData = visibleStatements;
 
   return (
     <>
@@ -328,6 +345,22 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
           ListHeaderComponent={header}
           ListFooterComponent={
             <>
+              {shouldShowViewMore ? (
+                <View style={styles.section}>
+                  <TouchableOpacity
+                    style={styles.viewAllButton}
+                    onPress={handleViewMorePress}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('home.todayList.viewMoreA11y', {
+                      count: remainingStatementsCount,
+                    })}
+                  >
+                    <Text style={styles.viewAllText}>
+                      {t('home.todayList.viewMore', { count: remainingStatementsCount })}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
               <View style={styles.section}>
                 <ActionCards
                   currentCount={todaysGratitudeCount}

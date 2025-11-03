@@ -3,7 +3,6 @@ import {
   deleteEntireEntry,
   deleteStatement,
   editStatement,
-  getGratitudeDailyEntryByDate,
   setStatementMood as setStatementMoodRpc,
 } from '@/api/gratitudeApi';
 // 🔧 FIX: Import streak recalculation function
@@ -270,27 +269,7 @@ export const useGratitudeMutations = () => {
       await acquireMutationLock(entryDate, 'edit', user.id);
 
       try {
-        // Preserve existing mood if not explicitly provided
-        let moodToSend: string | null | undefined = moodEmoji;
-        if (moodToSend === undefined) {
-          const cached = queryClient.getQueryData<GratitudeEntry | null>(
-            queryKeys.gratitudeEntry(user.id, entryDate)
-          );
-          const existingFromCache = (cached?.moods as Record<string, string> | undefined)?.[
-            String(statementIndex)
-          ];
-          if (existingFromCache !== undefined) {
-            moodToSend = existingFromCache ?? null;
-          } else {
-            const fresh = await getGratitudeDailyEntryByDate(entryDate);
-            const existingFromServer = (fresh?.moods as Record<string, string> | undefined)?.[
-              String(statementIndex)
-            ];
-            moodToSend = existingFromServer ?? null;
-          }
-        }
-
-        return await editStatement(entryDate, statementIndex, updatedStatement, moodToSend ?? null);
+        return await editStatement(entryDate, statementIndex, updatedStatement, moodEmoji);
       } finally {
         releaseMutationLock(entryDate, user.id);
       }

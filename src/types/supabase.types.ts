@@ -682,8 +682,8 @@ export type Database = {
         Args: { p_entry_date: string; p_statements: Json };
         Returns: undefined;
       };
-      set_notification_hour: {
-        Args: { p_notification_time: string };
+      set_notifications_enabled: {
+        Args: { p_enabled: boolean };
         Returns: undefined;
       };
       set_statement_mood: {

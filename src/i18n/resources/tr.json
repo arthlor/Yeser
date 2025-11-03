@@ -58,7 +58,7 @@
       "progress": {
         "start": {
           "title": "Başlangıç",
-          "message": "Bugün için ilk minnettarlığını yazarak güzel bir başlangıç yap."
+          "message": "Güne güzel bir başlangıç yap."
         },
         "complete": {
           "title": "Başarı",
@@ -75,7 +75,7 @@
     "actions": {
       "start": {
         "title": "Minnettarlığa Başla",
-        "subtitle": "Bugün için ilk minnettarlığını yaz",
+        "subtitle": "İlk minnettarlığını yaz",
         "progress": "0/{{dailyGoal}} - Başlayalım!"
       },
       "progress": {
@@ -98,6 +98,10 @@
         "subtitle": "Faydalarını keşfet",
         "extra": "Öğren"
       }
+    },
+    "todayList": {
+      "viewMore": "Tümünü gör ({{count}} tane daha)",
+      "viewMoreA11y": "Tüm minnettarlık kayıtlarını gör. {{count}} tane daha var."
     },
     "hero": {
       "time": {
@@ -153,14 +157,15 @@
     }
   },
   "notifications": {
-    "dailyRemindersTitle": "Günlük Minnettarlık Hatırlatıcıları 🌱",
+    "dailyRemindersTitle": "Günlük Minnettarlık Hatırlatıcı",
     "permissionRequiredTitle": "Bildirim İzni Gerekli",
     "dailyRemindersMessage": "Minnettarlık alışkanlığını sürdürmek için günlük hatırlatıcılar göndermek istiyoruz.\n\n✨ Faydaları:\n• Her gün aynı saatte nazik hatırlatıcı\n• Minnettarlık pratiğini unutmazsın\n• İstediğin zaman kapatabilirsin\n• Daha pozitif ve mutlu bir yaşam\n\nİzin vermek ister misin?",
     "permissionRequiredMessage": "Günlük hatırlatıcıları etkinleştirmek için bildirim izni gerekiyor.\n\n📱 Nasıl etkinleştirilir:\n1. 'Ayarlara Git' butonuna dokunun\n2. 'Bildirimler' bölümünü bulun\n3. Yeşer uygulamasını etkinleştirin\n4. Bu sayfaya geri dönün\n\nHatırlatıcılar sizi daha mutlu hissettirecek! 😊",
     "notNow": "Şimdi Değil",
     "enable": "Evet, Etkinleştir",
     "maybeLater": "Belki Sonra",
-    "openSettings": "Ayarlara Git"
+    "openSettings": "Ayarlara Git",
+    "fixedScheduleDescription": "Her gün {{firstTime}} ve {{secondTime}}'de minnettar olmanızı hatırlatacağız 🌱"
   },
   "calendar": {
     "tab": { "title": "Takvim", "a11y": "Takvim görünümü" },
@@ -591,6 +596,7 @@
       }
     },
     "mood": {
+      "label": "Duygu",
       "setMood": {
         "a11y": "Ruh halini ayarla {{emoji}}"
       }
@@ -850,8 +856,10 @@
       "delete": "🗑️ Sil"
     },
     "input": {
+      "label": "Neye minnettarsın?",
       "placeholder": "Bugün neye minnettarsın?",
-      "motto": "Minnetle yeşer",
+      "motto": "Minnetle Yeşer",
+      "revisitMotto": "Minnetle Yeşer 🌱",
       "progressToday": "{{current}}/{{goal}} bugün",
       "a11y": {
         "writeHint": "Minnettarlık ifadenizi yazın ve gönder tuşuna basın",
@@ -859,13 +867,25 @@
         "sendDisabled": "Gönderme devre dışı",
         "addFirstGratitude": "İlk minnettarlığını ekle",
         "addFirstGratitudeHint": "Minnet ifadesi yazmak için giriş alanına odaklan"
-      }
+      },
+      "moods": {
+        "title": "Duygu Tohumları",
+        "recent": "Son seçimlerin",
+        "primary": "Duygunu seç",
+        "clear": "Duyguyu kaldır"
+      },
+      "moodQuickAction": "Duygunu seç",
+      "moodQuickActionSelected": "Değiştir",
+      "sendButton": "Minnetini gönder"
     },
     "prompt": {
       "inspiringQuestion": "İlham verici soru",
       "loading": "💭 İlham verici soru yükleniyor...",
       "refreshA11y": "Yeni soru yükle",
       "fallbackText": "Bugün neler için minnettarsın?",
+      "storyTitle": "Minnetle Yeşer",
+      "storyHint": "Bugün bir minnet yazarak yeni bir tohum ek.",
+      "storyHintFallback": "İlhamı yeniledikçe yeni tohumlar keşfedeceksin.",
       "fallbackList": [
         "Bugün hangi güzel anlar için minnettarsın?",
         "Hayatındaki hangi kişiler seni mutlu ediyor?",
@@ -1063,11 +1083,11 @@
       "title": "Hoş Geldin! 🌱",
       "subtitle": "Minnettarlığa başlayalım.",
       "featureDailyTitle": "Günlük Minnetler",
-      "featureDailyDesc": "Her gün küçük şeyler için minnet",
+      "featureDailyDesc": "Minnettarlık ile hayatını renklendir!",
       "featureStreakTitle": "Seri Takibi",
       "featureStreakDesc": "Düzenli minnet pratiklerin ile güçlü alışkanlıklar oluştur",
       "featureGrowthTitle": "Kişisel Gelişim",
-      "featureGrowthDesc": "Daha pozitif bir yaşam",
+      "featureGrowthDesc": "Daha pozitif bir yaşama sahip ol",
       "encouragement": "Hazırsan, bu güzel yolculuğa birlikte başlayalım! ✨",
       "getStarted": "Başlayalım",
       "getStartedA11y": "Onboarding sürecine başla"
@@ -1121,7 +1141,7 @@
       "enableA11y": "Bildirim izni ver ve hatırlatıcıları etkinleştir",
       "skip": "Şimdilik Atla",
       "skipA11y": "Hatırlatıcıları şimdilik atla",
-      "info": "Bildirimleri istediğin zaman ayarlarından açıp kapatabilirsin"
+      "info": "Bildirimleri istediğin zaman açıp kapatabilirsin"
     },
     "goal": {
       "options": {

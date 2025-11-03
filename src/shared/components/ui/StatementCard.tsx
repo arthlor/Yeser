@@ -384,7 +384,7 @@ export const StatementCard: React.FC<StatementCardProps> = ({
             <Text style={styles.dateText}>{date}</Text>
             {moodEmoji && (
               <View style={styles.moodInlineContainer}>
-                <Text style={styles.moodInlineLabel}>{t('Mood', 'Mood')}:</Text>
+                <Text style={styles.moodInlineLabel}>{t('shared.mood.label')}:</Text>
                 <Text style={styles.moodInlineEmoji}>{moodEmoji}</Text>
               </View>
             )}

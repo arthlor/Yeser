@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import ToggleSwitch from 'toggle-switch-react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Notifications from 'expo-notifications';
-import * as Localization from 'expo-localization';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
@@ -11,10 +10,12 @@ import { useUserProfile } from '@/shared/hooks';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { notificationService } from '@/services/notificationService';
-import ThemedButton from '@/shared/components/ui/ThemedButton';
 import LoadingState from '@/components/states/LoadingState';
 import { logger } from '@/utils/logger';
 import { useTranslation } from 'react-i18next';
+
+const FIRST_REMINDER_TIME = '12:30';
+const SECOND_REMINDER_TIME = '21:00';
 
 export const NotificationSettings: React.FC = () => {
   const { theme } = useTheme();
@@ -26,8 +27,6 @@ export const NotificationSettings: React.FC = () => {
 
   const [isEnabled, setIsEnabled] = useState(false);
   const [pushToken, setPushToken] = useState<string | null>(null);
-  const [selectedTime, setSelectedTime] = useState(new Date());
-  const [showHourPicker, setShowHourPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -74,48 +73,25 @@ export const NotificationSettings: React.FC = () => {
       try {
         const permissions = await Notifications.getPermissionsAsync();
 
-        // Determine enabled state
         if (!isCancelled && isMountedRef.current) {
-          if (profile?.notification_time) {
-            if (!permissions.granted) {
-              setIsEnabled(false);
-              logger.warn(
-                'Notification settings out of sync - profile enabled but no device permission'
-              );
+          const hasBackendPreference = Boolean(profile?.notification_time);
 
-              // Auto-sync backend to reflect current device permission (avoid repeated mismatch)
-              if (!hasSyncedPermissionMismatchRef.current) {
-                try {
-                  hasSyncedPermissionMismatchRef.current = true;
-                  await notificationService.updateNotificationTime(null);
-                } catch {
-                  // Silent fail; will be retried on next explicit user action
-                }
+          if (hasBackendPreference && !permissions.granted) {
+            setIsEnabled(false);
+            logger.warn(
+              'Notification settings out of sync - profile enabled but no device permission'
+            );
+
+            if (!hasSyncedPermissionMismatchRef.current) {
+              try {
+                hasSyncedPermissionMismatchRef.current = true;
+                await notificationService.setNotificationsEnabled(false);
+              } catch {
+                // Silent fail; next user action will retry
               }
-            } else {
-              setIsEnabled(true);
             }
           } else {
-            // No profile time yet – base on permission only
-            setIsEnabled(!!permissions.granted);
-          }
-        }
-
-        // Set selected time with validation or default
-        if (!isCancelled && isMountedRef.current) {
-          if (profile?.notification_time) {
-            const [hour] = profile.notification_time.split(':').map(Number);
-            if (hour >= 0 && hour <= 23) {
-              const date = new Date();
-              date.setHours(hour);
-              date.setMinutes(0);
-              date.setSeconds(0);
-              setSelectedTime(date);
-            }
-          } else {
-            const date = new Date();
-            date.setHours(9, 0, 0, 0);
-            setSelectedTime(date);
+            setIsEnabled(hasBackendPreference && permissions.granted);
           }
         }
       } catch (error) {
@@ -181,14 +157,11 @@ export const NotificationSettings: React.FC = () => {
         throw saveResult.error ?? new Error('Failed to save push token');
       }
 
-      // Update notification time and check for errors
-      // 🔧 FIX: Store as HH:00 format (hours only) to match backend logic
-      const timeString = `${selectedTime.getHours().toString().padStart(2, '0')}:00`;
-      const updateResult = await notificationService.updateNotificationTime(timeString);
-      if (!updateResult.ok) {
-        logger.error('Failed to update notification time:', updateResult.error);
+      const preferenceResult = await notificationService.setNotificationsEnabled(true);
+      if (!preferenceResult.ok) {
+        logger.error('Failed to enable notifications:', preferenceResult.error);
         showToastError(t('settings.data.exportError'));
-        throw updateResult.error ?? new Error('Failed to update notification time');
+        throw preferenceResult.error ?? new Error('Failed to enable notifications');
       }
 
       if (isMountedRef.current) {
@@ -200,7 +173,7 @@ export const NotificationSettings: React.FC = () => {
       }
       operationInProgressRef.current = false;
     }
-  }, [pushToken, selectedTime, showToastError, showToastSuccess, t]);
+  }, [pushToken, showToastError, showToastSuccess, t]);
 
   const disableNotifications = useCallback(async () => {
     // Prevent concurrent operations
@@ -222,11 +195,11 @@ export const NotificationSettings: React.FC = () => {
         }
       }
 
-      const updateResult = await notificationService.updateNotificationTime(null);
-      if (!updateResult.ok) {
-        logger.error('Failed to disable notification time:', updateResult.error);
+      const preferenceResult = await notificationService.setNotificationsEnabled(false);
+      if (!preferenceResult.ok) {
+        logger.error('Failed to disable notifications:', preferenceResult.error);
         showToastError(t('settings.data.exportError'));
-        throw updateResult.error ?? new Error('Failed to disable notification time');
+        throw preferenceResult.error ?? new Error('Failed to disable notifications');
       }
 
       if (isMountedRef.current) {
@@ -321,93 +294,14 @@ export const NotificationSettings: React.FC = () => {
     ]
   );
 
-  const onHourSelect = useCallback(
-    async (hour: number) => {
-      setShowHourPicker(false);
-
-      if (!profile || !isMountedRef.current || operationInProgressRef.current) {
-        return;
-      }
-
-      operationInProgressRef.current = true;
-      setIsLoading(true);
-
-      try {
-        // Create new date with selected hour
-        const adjustedTime = new Date();
-        adjustedTime.setHours(hour);
-        adjustedTime.setMinutes(0);
-        adjustedTime.setSeconds(0);
-        adjustedTime.setMilliseconds(0);
-
-        // Store previous time for rollback
-        const previousTime = selectedTime;
-        setSelectedTime(adjustedTime); // Optimistic update
-
-        try {
-          // Store as HH:00 format (hours only)
-          const timeString = `${hour.toString().padStart(2, '0')}:00`;
-          const updateResult = await notificationService.updateNotificationTime(timeString);
-
-          if (!updateResult.ok) {
-            throw updateResult.error ?? new Error('Failed to update notification time');
-          }
-
-          if (isMountedRef.current) {
-            showToastSuccess(t('settings.data.notificationSettingsSaved'));
-          }
-        } catch (error) {
-          if (isMountedRef.current) {
-            setSelectedTime(previousTime); // Revert on error
-            handleMutationError(error, 'notification time update');
-          }
-        }
-      } finally {
-        if (isMountedRef.current) {
-          setIsLoading(false);
-        }
-        operationInProgressRef.current = false;
-      }
-    },
-    [profile, selectedTime, showToastSuccess, handleMutationError, t]
+  const scheduleDescription = useMemo(
+    () =>
+      t('notifications.fixedScheduleDescription', {
+        firstTime: FIRST_REMINDER_TIME,
+        secondTime: SECOND_REMINDER_TIME,
+      }),
+    [t]
   );
-
-  const formatTime = useCallback((date: Date) => {
-    const locale =
-      (Localization.getLocales && Localization.getLocales()[0]?.languageTag) || 'en-US';
-    const formatter = new Intl.DateTimeFormat(locale, {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-    return formatter.format(date);
-  }, []);
-
-  // Generate 24-hour options and format labels according to current locale
-  const hourOptions = useMemo(() => {
-    const locale =
-      (Localization.getLocales && Localization.getLocales()[0]?.languageTag) || 'en-US';
-    const formatter = new Intl.DateTimeFormat(locale, {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-    return Array.from({ length: 24 }, (_, i) => {
-      const d = new Date();
-      d.setHours(i, 0, 0, 0);
-      return { value: i, label: formatter.format(d) };
-    });
-  }, []);
-
-  // Computed styles for loading states
-  const timeButtonStyle = useMemo(() => {
-    return StyleSheet.flatten([styles.timeButton, isLoading ? styles.timeButtonDisabled : {}]);
-  }, [isLoading, styles.timeButton, styles.timeButtonDisabled]);
-
-  const timeButtonTextStyle = useMemo(() => {
-    return StyleSheet.flatten([
-      styles.timeButtonText,
-      isLoading ? styles.timeButtonTextDisabled : {},
-    ]);
-  }, [isLoading, styles.timeButtonText, styles.timeButtonTextDisabled]);
 
   // Cleanup effect for component unmount
   useEffect(() => {
@@ -450,81 +344,17 @@ export const NotificationSettings: React.FC = () => {
         />
       </View>
 
-      {/* Time Picker Section (conditionally rendered) */}
       {isEnabled && (
-        <TouchableOpacity
-          style={styles.timePickerRow}
-          onPress={() => setShowHourPicker(true)}
-          activeOpacity={0.8}
-        >
-          <View style={styles.timePickerLabelContainer}>
-            <Text style={styles.timePickerLabel}>{t('notifications.dailyRemindersTitle')}</Text>
-            <Text style={styles.timePickerDescription}>{t('onboarding.notifications.info')}</Text>
+        <View style={styles.scheduleRow}>
+          <View style={styles.scheduleIconContainer}>
+            <Icon name="clock-outline" size={20} color={theme.colors.primary} />
           </View>
-          <ThemedButton
-            title={isLoading ? t('common.loading') : formatTime(selectedTime)}
-            onPress={() => !isLoading && setShowHourPicker(true)}
-            variant="outline"
-            style={timeButtonStyle}
-            textStyle={timeButtonTextStyle}
-            disabled={isLoading}
-          />
-        </TouchableOpacity>
+          <View style={styles.scheduleTextContainer}>
+            <Text style={styles.scheduleTitle}>{t('notifications.dailyRemindersTitle')}</Text>
+            <Text style={styles.scheduleDescription}>{scheduleDescription}</Text>
+          </View>
+        </View>
       )}
-
-      {/* Custom Hour Picker Modal for Turkish time (24-hour format, hours only) */}
-      <Modal
-        visible={showHourPicker}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowHourPicker(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowHourPicker(false)}
-        >
-          <View style={styles.modalContainer}>
-            <TouchableOpacity activeOpacity={1} style={styles.pickerContainer}>
-              <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>{t('notifications.dailyRemindersTitle')}</Text>
-                <Text style={styles.pickerSubtitle}>{t('onboarding.notifications.info')}</Text>
-              </View>
-
-              <ScrollView style={styles.hourScrollView} showsVerticalScrollIndicator={false}>
-                {hourOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[
-                      styles.hourOption,
-                      selectedTime.getHours() === option.value && styles.selectedHourOption,
-                    ]}
-                    onPress={() => onHourSelect(option.value)}
-                  >
-                    <Text
-                      style={[
-                        styles.hourOptionText,
-                        selectedTime.getHours() === option.value && styles.selectedHourOptionText,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <View style={styles.pickerActions}>
-                <ThemedButton
-                  title={t('common.cancel')}
-                  onPress={() => setShowHourPicker(false)}
-                  variant="outline"
-                  style={styles.cancelButton}
-                />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </View>
   );
 };
@@ -567,44 +397,36 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       lineHeight: 20,
     },
-    timePickerRow: {
+    scheduleRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
-      borderTopWidth: 1, // Add a top border to separate from the toggle
+      borderTopWidth: 1,
       borderTopColor: theme.colors.outlineVariant,
     },
-    timePickerLabelContainer: {
-      flex: 1,
-      marginRight: theme.spacing.md,
+    scheduleIconContainer: {
+      width: 36,
+      height: 36,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
-    timePickerLabel: {
+    scheduleTextContainer: {
+      flex: 1,
+      marginLeft: theme.spacing.md,
+    },
+    scheduleTitle: {
       ...theme.typography.bodyLarge,
       color: theme.colors.onSurface,
       fontWeight: '600',
       marginBottom: theme.spacing.xs / 2,
     },
-    timePickerDescription: {
+    scheduleDescription: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
       lineHeight: 20,
-    },
-    timeButton: {
-      minWidth: 100,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-    },
-    timeButtonText: {
-      ...theme.typography.bodyMedium,
-      fontWeight: '600',
-    },
-    timeButtonDisabled: {
-      opacity: 0.6,
-    },
-    timeButtonTextDisabled: {
-      color: theme.colors.onSurfaceVariant,
     },
     loadingContainer: {
       flexDirection: 'row',
@@ -616,78 +438,5 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
       marginLeft: theme.spacing.sm,
-    },
-    // Custom hour picker modal styles
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: theme.colors.scrim,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    modalContainer: {
-      width: '85%',
-      maxWidth: 400,
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      elevation: 8,
-      shadowColor: theme.colors.onSurface,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 8,
-    },
-    pickerContainer: {
-      maxHeight: '70%',
-    },
-    pickerHeader: {
-      padding: theme.spacing.lg,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.outlineVariant,
-    },
-    pickerTitle: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '600',
-      textAlign: 'center',
-      marginBottom: theme.spacing.xs,
-    },
-    pickerSubtitle: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      lineHeight: 20,
-    },
-    hourScrollView: {
-      maxHeight: 300,
-      padding: theme.spacing.sm,
-    },
-    hourOption: {
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.lg,
-      borderRadius: theme.borderRadius.md,
-      marginVertical: theme.spacing.xs / 2,
-    },
-    selectedHourOption: {
-      backgroundColor: theme.colors.primaryContainer,
-    },
-    hourOptionText: {
-      ...theme.typography.bodyLarge,
-      color: theme.colors.onSurface,
-      textAlign: 'center',
-      fontWeight: '500',
-      fontSize: 18,
-    },
-    selectedHourOptionText: {
-      color: theme.colors.onPrimaryContainer,
-      fontWeight: '600',
-    },
-    pickerActions: {
-      padding: theme.spacing.lg,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.outlineVariant,
-      flexDirection: 'row',
-      justifyContent: 'center',
-    },
-    cancelButton: {
-      minWidth: 120,
     },
   });

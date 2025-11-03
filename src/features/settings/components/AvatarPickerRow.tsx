@@ -91,7 +91,7 @@ const AvatarPickerRow: React.FC<AvatarPickerRowProps> = ({
               <Text style={styles.avatarInitial}>{initial}</Text>
             )}
           </View>
-          <View>
+          <View style={styles.textContent}>
             <Text style={styles.title}>{t('shared.profile.avatar.profilePhotoLabel')}</Text>
             <Text style={styles.subtitle}>{t('shared.profile.avatar.profilePhotoSubtitle')}</Text>
           </View>
@@ -125,7 +125,11 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       justifyContent: 'space-between',
       padding: theme.spacing.lg,
     },
-    left: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, flex: 1 },
+    left: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
     avatar: {
       width: 80,
       height: 80,
@@ -140,8 +144,23 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       color: theme.colors.onSurfaceVariant,
       fontWeight: '700',
     },
-    title: { ...theme.typography.bodyLarge, color: theme.colors.onSurface, fontWeight: '600' },
-    subtitle: { ...theme.typography.bodySmall, color: theme.colors.onSurfaceVariant },
+    textContent: {
+      flex: 1,
+      marginLeft: theme.spacing.md,
+      minWidth: 0,
+    },
+    title: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
+      flexShrink: 1,
+    },
+    subtitle: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      marginTop: theme.spacing.xs / 2,
+      flexShrink: 1,
+    },
     action: { padding: theme.spacing.xs },
   });
 

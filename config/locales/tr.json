@@ -1,0 +1,6 @@
+{
+  "CFBundleDisplayName": "Yeşer",
+  "NSCameraUsageDescription": "Minnettarlık kayıtlarınıza fotoğraf ekleyebilmemiz için kameraya erişmemiz gerekiyor.",
+  "NSPhotoLibraryUsageDescription": "Minnettarlık kayıtlarınız için fotoğraf seçebilmemiz adına fotoğraf kütüphanenize erişmemiz gerekiyor.",
+  "NSUserTrackingUsageDescription": "Bu izin, size kişiselleştirilmiş minnettarlık içgörüleri sunmamıza ve deneyiminizi geliştirmemize yardımcı olur."
+}

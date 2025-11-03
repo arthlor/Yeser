@@ -92,6 +92,10 @@ module.exports = {
     resizeMode: 'contain',
     backgroundColor: '#2F4F4F',
   },
+  locales: {
+    en: './config/locales/en.json',
+    tr: './config/locales/tr.json',
+  },
   ios: {
     bundleIdentifier: appId,
     supportsTablet: true,
@@ -103,6 +107,7 @@ module.exports = {
     },
 
     infoPlist: {
+      CFBundleLocalizations: ['en', 'tr'],
       NSUserTrackingUsageDescription:
         'This allows us to provide personalized gratitude insights and improve your experience.',
       CFBundleURLTypes: [

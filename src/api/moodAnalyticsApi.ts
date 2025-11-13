@@ -72,7 +72,7 @@ const mapRawAnalytics = (
     overview: {
       totalEntries: raw.overview.total_entries,
       analyzedStatements: raw.overview.analyzed_statements,
-      dominantMood: raw.overview.dominant_mood,
+      dominantMood: isMoodEmoji(raw.overview.dominant_mood) ? raw.overview.dominant_mood : null,
       balanceScore: {
         value: raw.overview.balance_score.value,
         label: raw.overview.balance_score.label,

@@ -118,7 +118,10 @@ export const getMoodAnalytics = async (
     const parseResult = rawMoodAnalyticsSchema.safeParse(data);
     if (!parseResult.success) {
       logger.error('Failed to parse mood analytics payload', {
-        extra: parseResult.error.flatten(),
+        extra: {
+          flattened: parseResult.error.flatten(),
+          issues: parseResult.error.issues,
+        },
       });
       throw new Error('Invalid mood analytics payload received');
     }

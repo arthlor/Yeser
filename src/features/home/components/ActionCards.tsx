@@ -6,9 +6,10 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
-import { getPrimaryShadow, getSurfaceColor } from '@/themes/utils';
+import { getSurfaceColor } from '@/themes/utils';
 import { useTranslation } from 'react-i18next';
 
+import type { ViewStyle } from 'react-native';
 import type { AppTheme } from '@/themes/types';
 
 interface ActionCardsProps {
@@ -40,36 +41,21 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
     const whyGratitudeAnimations = useCoordinatedAnimations();
 
     // Memoize dynamic styles to prevent object creation on every render
-    const dynamicStyles = useMemo(
-      () => ({
-        primaryCardTransform: {
-          transform: primaryAnimations.combinedTransform,
-          opacity: primaryAnimations.fadeAnim,
-        },
-        pastEntriesTransform: [
-          styles.cardWrapper,
-          {
-            transform: pastEntriesAnimations.combinedTransform,
-            opacity: pastEntriesAnimations.fadeAnim,
-          },
-        ],
-        calendarTransform: [
-          styles.cardWrapper,
-          {
-            transform: calendarAnimations.combinedTransform,
-            opacity: calendarAnimations.fadeAnim,
-          },
-        ],
-        whyGratitudeTransform: [
-          styles.cardWrapper,
-          {
-            transform: whyGratitudeAnimations.combinedTransform,
-            opacity: whyGratitudeAnimations.fadeAnim,
-          },
-        ],
-      }),
-      [primaryAnimations, pastEntriesAnimations, calendarAnimations, whyGratitudeAnimations, styles]
-    );
+    const dynamicStyles = useMemo(() => {
+      const buildAnimatedStyle = (
+        animations: ReturnType<typeof useCoordinatedAnimations>
+      ): Animated.WithAnimatedObject<ViewStyle> => ({
+        transform: animations.combinedTransform,
+        opacity: animations.fadeAnim,
+      });
+
+      return {
+        primaryCardTransform: buildAnimatedStyle(primaryAnimations),
+        pastEntriesTransform: buildAnimatedStyle(pastEntriesAnimations),
+        calendarTransform: buildAnimatedStyle(calendarAnimations),
+        whyGratitudeTransform: buildAnimatedStyle(whyGratitudeAnimations),
+      };
+    }, [primaryAnimations, pastEntriesAnimations, calendarAnimations, whyGratitudeAnimations]);
 
     // **RACE CONDITION FIX**: Coordinated press handlers with haptic feedback
     const handlePressIn = useCallback((animations: ReturnType<typeof useCoordinatedAnimations>) => {
@@ -114,24 +100,34 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
         return '';
       }
       if (currentCount === 0) {
-        return t('home.inspiration.progress.start.message');
+        return t('home.actions.start.subtitle');
       }
       const remaining = Math.max(dailyGoal - currentCount, 0);
-      return t('home.inspiration.progress.progress.message', { remaining });
+      return t('home.actions.progress.subtitle', { remaining });
     }, [primaryAction, currentCount, dailyGoal, t]);
+
+    const progressLabel = useMemo(() => {
+      if (!primaryAction || dailyGoal <= 0) {
+        return '';
+      }
+
+      return t('home.inspiration.progressLabel', {
+        current: Math.min(currentCount, dailyGoal),
+        dailyGoal,
+      });
+    }, [currentCount, dailyGoal, primaryAction, t]);
 
     return (
       <View style={styles.container}>
         {/* Enhanced Primary Action Card - Edge-to-Edge */}
         {primaryAction && (
-          <Animated.View style={dynamicStyles.primaryCardTransform}>
+          <Animated.View style={[styles.primaryCardContainer, dynamicStyles.primaryCardTransform]}>
             <ThemedCard
               variant="outlined"
               density="comfortable"
               elevation="none"
               onPress={onNavigateToEntry}
               style={styles.primaryCardFrame}
-              containerStyle={styles.primaryCardContainer}
               touchableProps={{
                 onPressIn: () => handlePressIn(primaryAnimations),
                 onPressOut: () => handlePressOut(primaryAnimations),
@@ -139,21 +135,26 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
               }}
             >
               <View style={styles.primaryCardContent}>
-                <View style={styles.primaryIconContainer}>
-                  <Icon name={primaryAction.icon} size={26} color={theme.colors.primary} />
-                </View>
-                <View style={styles.primaryTextContainer}>
-                  <Text style={styles.primaryActionTitle} numberOfLines={1}>
-                    {primaryAction.title}
-                  </Text>
-                  {!!primarySubtitle && (
-                    <Text style={styles.primaryActionSubtitle} numberOfLines={1}>
-                      {primarySubtitle}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.chevronContainer}>
-                  <Icon name="chevron-right" size={26} color={theme.colors.primary} />
+                <View style={styles.primaryHeader}>
+                  <View style={styles.primaryHeaderLeft}>
+                    <View style={styles.primaryIconContainer}>
+                      <Icon name={primaryAction.icon} size={22} color={theme.colors.primary} />
+                    </View>
+                    <View style={styles.primaryTextContainer}>
+                      <Text style={styles.primaryActionTitle}>{primaryAction.title}</Text>
+                      {!!primarySubtitle && (
+                        <Text style={styles.primaryActionSubtitle}>{primarySubtitle}</Text>
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.primaryHeaderRight}>
+                    {!!progressLabel && (
+                      <View style={styles.progressBadge}>
+                        <Text style={styles.progressBadgeText}>{progressLabel}</Text>
+                      </View>
+                    )}
+                    <Icon name="chevron-right" size={22} color={theme.colors.primary} />
+                  </View>
                 </View>
               </View>
             </ThemedCard>
@@ -161,86 +162,103 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
         )}
 
         {/* Enhanced Secondary Action Cards - Edge-to-Edge Grid */}
-        <ThemedCard
-          variant="elevated"
-          density="compact"
-          elevation="card"
-          style={styles.secondaryCardsFrame}
-        >
-          <View style={styles.secondaryCardsGrid}>
-            {/* Enhanced Past Entries Card */}
-            <Animated.View style={dynamicStyles.pastEntriesTransform}>
-              <ThemedCard
-                density="compact"
-                elevation="none"
-                onPress={onNavigateToPastEntries}
-                style={styles.secondaryCard}
-                touchableProps={{
-                  onPressIn: () => handlePressIn(pastEntriesAnimations),
-                  onPressOut: () => handlePressOut(pastEntriesAnimations),
-                  activeOpacity: 1,
-                }}
-              >
-                <View style={styles.secondaryCardContent}>
-                  <View style={styles.primaryIconBg}>
-                    <Icon name="history" size={22} color={theme.colors.primary} />
-                  </View>
-                  <Text style={styles.secondaryCardTitle} numberOfLines={1}>
-                    {t('home.actions.past.title')}
+        <View style={styles.secondaryList}>
+          {/* Enhanced Past Entries Card */}
+          <Animated.View style={[styles.secondaryItemWrapper, dynamicStyles.pastEntriesTransform]}>
+            <ThemedCard
+              density="comfortable"
+              elevation="none"
+              variant="outlined"
+              onPress={onNavigateToPastEntries}
+              style={styles.secondaryCard}
+              touchableProps={{
+                onPressIn: () => handlePressIn(pastEntriesAnimations),
+                onPressOut: () => handlePressOut(pastEntriesAnimations),
+                activeOpacity: 1,
+              }}
+            >
+              <View style={styles.secondaryItemContent}>
+                <View style={[styles.secondaryIconBase, styles.secondaryIconPrimary]}>
+                  <Icon name="history" size={20} color={theme.colors.primary} />
+                </View>
+                <View style={styles.secondaryTextContainer}>
+                  <Text style={styles.secondaryCardTitle}>{t('home.actions.past.title')}</Text>
+                  <Text style={styles.secondaryCardSubtitle}>
+                    {t('home.actions.past.subtitle')}
                   </Text>
                 </View>
-              </ThemedCard>
-            </Animated.View>
+                <View style={styles.secondaryMeta}>
+                  <Text style={styles.secondaryActionExtra}>{t('home.actions.past.extra')}</Text>
+                  <Icon name="chevron-right" size={20} color={theme.colors.primary} />
+                </View>
+              </View>
+            </ThemedCard>
+          </Animated.View>
 
-            {/* Enhanced Calendar Card */}
-            <Animated.View style={dynamicStyles.calendarTransform}>
-              <ThemedCard
-                density="compact"
-                elevation="none"
-                onPress={onNavigateToCalendar}
-                style={styles.secondaryCard}
-                touchableProps={{
-                  onPressIn: () => handlePressIn(calendarAnimations),
-                  onPressOut: () => handlePressOut(calendarAnimations),
-                  activeOpacity: 1,
-                }}
-              >
-                <View style={styles.secondaryCardContent}>
-                  <View style={styles.secondaryIconBg}>
-                    <Icon name="calendar-month" size={22} color={theme.colors.secondary} />
-                  </View>
-                  <Text style={styles.secondaryCardTitle} numberOfLines={1}>
-                    {t('home.actions.calendar.title')}
+          {/* Enhanced Calendar Card */}
+          <Animated.View style={[styles.secondaryItemWrapper, dynamicStyles.calendarTransform]}>
+            <ThemedCard
+              density="comfortable"
+              elevation="none"
+              variant="outlined"
+              onPress={onNavigateToCalendar}
+              style={styles.secondaryCard}
+              touchableProps={{
+                onPressIn: () => handlePressIn(calendarAnimations),
+                onPressOut: () => handlePressOut(calendarAnimations),
+                activeOpacity: 1,
+              }}
+            >
+              <View style={styles.secondaryItemContent}>
+                <View style={[styles.secondaryIconBase, styles.secondaryIconSecondary]}>
+                  <Icon name="calendar-month" size={20} color={theme.colors.secondary} />
+                </View>
+                <View style={styles.secondaryTextContainer}>
+                  <Text style={styles.secondaryCardTitle}>{t('home.actions.calendar.title')}</Text>
+                  <Text style={styles.secondaryCardSubtitle}>
+                    {t('home.actions.calendar.subtitle')}
                   </Text>
                 </View>
-              </ThemedCard>
-            </Animated.View>
+                <View style={styles.secondaryMeta}>
+                  <Text style={styles.secondaryActionExtra}>
+                    {t('home.actions.calendar.extra')}
+                  </Text>
+                  <Icon name="chevron-right" size={20} color={theme.colors.primary} />
+                </View>
+              </View>
+            </ThemedCard>
+          </Animated.View>
 
-            {/* Enhanced Why Gratitude Card */}
-            <Animated.View style={dynamicStyles.whyGratitudeTransform}>
-              <ThemedCard
-                density="compact"
-                elevation="none"
-                onPress={onNavigateToWhyGratitude}
-                style={styles.secondaryCard}
-                touchableProps={{
-                  onPressIn: () => handlePressIn(whyGratitudeAnimations),
-                  onPressOut: () => handlePressOut(whyGratitudeAnimations),
-                  activeOpacity: 1,
-                }}
-              >
-                <View style={styles.secondaryCardContent}>
-                  <View style={styles.tertiaryIconBg}>
-                    <Icon name="heart-outline" size={22} color={theme.colors.tertiary} />
-                  </View>
-                  <Text style={styles.secondaryCardTitle} numberOfLines={1}>
-                    {t('home.actions.why.title')}
-                  </Text>
+          {/* Enhanced Why Gratitude Card */}
+          <Animated.View style={[styles.secondaryItemWrapper, dynamicStyles.whyGratitudeTransform]}>
+            <ThemedCard
+              density="comfortable"
+              elevation="none"
+              variant="outlined"
+              onPress={onNavigateToWhyGratitude}
+              style={styles.secondaryCard}
+              touchableProps={{
+                onPressIn: () => handlePressIn(whyGratitudeAnimations),
+                onPressOut: () => handlePressOut(whyGratitudeAnimations),
+                activeOpacity: 1,
+              }}
+            >
+              <View style={styles.secondaryItemContent}>
+                <View style={[styles.secondaryIconBase, styles.secondaryIconTertiary]}>
+                  <Icon name="heart-outline" size={20} color={theme.colors.tertiary} />
                 </View>
-              </ThemedCard>
-            </Animated.View>
-          </View>
-        </ThemedCard>
+                <View style={styles.secondaryTextContainer}>
+                  <Text style={styles.secondaryCardTitle}>{t('home.actions.why.title')}</Text>
+                  <Text style={styles.secondaryCardSubtitle}>{t('home.actions.why.subtitle')}</Text>
+                </View>
+                <View style={styles.secondaryMeta}>
+                  <Text style={styles.secondaryActionExtra}>{t('home.actions.why.extra')}</Text>
+                  <Icon name="chevron-right" size={20} color={theme.colors.primary} />
+                </View>
+              </View>
+            </ThemedCard>
+          </Animated.View>
+        </View>
       </View>
     );
   }
@@ -251,156 +269,136 @@ ActionCards.displayName = 'ActionCards';
 const createStyles = (theme: AppTheme, colorMode: ReturnType<typeof useTheme>['colorMode']) =>
   StyleSheet.create({
     container: {
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
-    // Edge-to-edge primary card with theme-aware design
+    primaryCardContainer: {
+      borderRadius: theme.borderRadius.lg,
+    },
     primaryCardFrame: {
       borderRadius: theme.borderRadius.lg,
       backgroundColor: getSurfaceColor(theme, 'base'),
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colorMode === 'dark' ? theme.colors.outline + '12' : theme.colors.outline + '10',
-      minHeight: 120,
+      borderColor: colorMode === 'dark' ? theme.colors.outline + '18' : theme.colors.outline + '10',
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
       shadowColor: 'transparent',
       shadowOpacity: 0,
       shadowRadius: 0,
       elevation: 0,
     },
-    primaryCardContainer: {
-      marginBottom: theme.spacing.md,
-    },
     primaryCardContent: {
+      gap: theme.spacing.md,
+    },
+    primaryHeader: {
       flexDirection: 'row',
-      alignItems: 'center',
-      minHeight: 88,
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+    },
+    primaryHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      flex: 1,
     },
     primaryIconContainer: {
-      width: 42,
-      height: 42,
+      width: 40,
+      height: 40,
       borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.primaryContainer,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: theme.spacing.md,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline,
+      borderWidth: 0,
     },
     primaryTextContainer: {
       flex: 1,
+      gap: theme.spacing.xs,
     },
     primaryActionTitle: {
       ...theme.typography.titleSmall,
       color: theme.colors.onSurface,
-      marginBottom: theme.spacing.xs,
-      fontWeight: '700',
+      fontWeight: '600',
       lineHeight: 20,
     },
     primaryActionSubtitle: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      fontWeight: '500',
-      fontSize: 12,
-      lineHeight: 16,
+      lineHeight: 18,
     },
-    progressText: {
-      display: 'none',
-    },
-    chevronContainer: {
-      width: 36,
-      height: 36,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: colorMode === 'dark' ? theme.colors.surface : theme.colors.surfaceVariant,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline,
-    },
-    progressIndicator: { height: 0 },
-    progressBar: { height: 0 },
-    // Edge-to-edge secondary cards container with theme awareness
-    secondaryCardsFrame: {
-      borderRadius: 0,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 0,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderTopColor:
-        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
-      borderBottomColor:
-        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
-      ...getPrimaryShadow.card(theme),
-      minHeight: 140,
-    },
-    secondaryCardsGrid: {
-      flexDirection: 'row',
-      paddingHorizontal: 0,
+    primaryHeaderRight: {
+      alignItems: 'flex-end',
       gap: theme.spacing.xs,
     },
-    cardWrapper: {
-      flex: 1,
-      marginHorizontal: 0,
-      minWidth: 0,
-    },
-    // Individual secondary card items with enhanced theme adaptation
-    secondaryCard: {
-      flex: 1,
-      borderRadius: theme.borderRadius.lg,
-      backgroundColor: theme.colors.surfaceVariant,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
-    },
-    secondaryCardContent: {
-      alignItems: 'center',
-      minHeight: 100,
-      justifyContent: 'center',
-      paddingVertical: theme.spacing.md,
+    progressBadge: {
       paddingHorizontal: theme.spacing.sm,
-    },
-    // Enhanced icon containers with better dark theme contrast
-    primaryIconBg: {
-      width: 36,
-      height: 36,
+      paddingVertical: theme.spacing.xs,
       borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primaryContainer,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: theme.spacing.sm,
-      borderWidth: 0,
+      backgroundColor:
+        colorMode === 'dark' ? theme.colors.primary + '22' : theme.colors.primaryContainer,
     },
-    secondaryIconBg: {
-      width: 36,
-      height: 36,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.secondaryContainer,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: theme.spacing.sm,
-      borderWidth: 0,
-    },
-    tertiaryIconBg: {
-      width: 36,
-      height: 36,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.tertiaryContainer,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: theme.spacing.sm,
-      borderWidth: 0,
-    },
-    // Enhanced typography with better dark theme readability
-    secondaryCardTitle: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurface,
-      textAlign: 'center',
-      marginBottom: theme.spacing.xs,
+    progressBadgeText: {
+      ...theme.typography.labelSmall,
+      color: colorMode === 'dark' ? theme.colors.primaryContainer : theme.colors.primary,
       fontWeight: '600',
-      lineHeight: 16,
-      fontSize: 12,
+    },
+    secondaryList: {
+      gap: theme.spacing.xs,
+    },
+    secondaryItemWrapper: {
+      borderRadius: theme.borderRadius.lg,
+    },
+    secondaryCard: {
+      borderRadius: theme.borderRadius.lg,
+      backgroundColor: getSurfaceColor(theme, 'base'),
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colorMode === 'dark' ? theme.colors.outline + '18' : theme.colors.outline + '10',
+    },
+    secondaryItemContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      gap: theme.spacing.md,
+    },
+    secondaryIconBase: {
+      width: 36,
+      height: 36,
+      borderRadius: theme.borderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    secondaryIconPrimary: {
+      backgroundColor: theme.colors.primaryContainer,
+    },
+    secondaryIconSecondary: {
+      backgroundColor: theme.colors.secondaryContainer,
+    },
+    secondaryIconTertiary: {
+      backgroundColor: theme.colors.tertiaryContainer,
+    },
+    secondaryTextContainer: {
+      flex: 1,
+      gap: theme.spacing.xs,
+    },
+    secondaryCardTitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
     },
     secondaryCardSubtitle: {
-      display: 'none',
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      lineHeight: 18,
     },
-    secondaryCardExtra: {
-      display: 'none',
+    secondaryMeta: {
+      alignItems: 'flex-end',
+      gap: theme.spacing.xs,
+    },
+    secondaryActionExtra: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.primary,
+      fontWeight: '600',
+      textAlign: 'right',
     },
   });
 

@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 
+type EdgeOption = 'top' | 'bottom' | 'left' | 'right';
+
 interface ScreenLayoutProps {
   children: React.ReactNode;
   scrollable?: boolean;
@@ -34,7 +36,7 @@ interface ScreenLayoutProps {
   style?: ViewStyle;
   refreshControl?: React.ReactElement<React.ComponentProps<typeof RefreshControl>>;
   showsVerticalScrollIndicator?: boolean;
-  edges?: ('top' | 'bottom' | 'left' | 'right')[];
+  edges?: EdgeOption[];
   density?: 'comfortable' | 'standard' | 'compact';
   edgeToEdge?: boolean;
 
@@ -55,45 +57,64 @@ interface ScreenLayoutProps {
  * - Edge-to-edge support
  * - Customizable keyboard dismiss modes
  */
-const ScreenLayout: React.FC<ScreenLayoutProps> = ({
-  children,
-  scrollable = true,
-  scrollRef,
-  onScroll,
-  animatedScroll = false,
-  keyboardAware = false,
-  keyboardDismissMode = 'interactive',
-  keyboardShouldPersistTaps = 'handled',
-  keyboardVerticalOffset,
-  showStatusBar = true,
-  statusBarStyle,
-  backgroundColor,
-  contentContainerStyle,
-  style,
-  refreshControl,
-  showsVerticalScrollIndicator = false,
-  edges = ['top', 'bottom'],
-  density = 'standard',
-  edgeToEdge = false,
-  maxContentWidth = 900,
-  constrainContentWidth = true,
-}) => {
+const DEFAULT_EDGES: ReadonlyArray<EdgeOption> = ['top', 'bottom'];
+const ScreenLayout: React.FC<ScreenLayoutProps> = (props) => {
+  const {
+    children,
+    scrollable = true,
+    scrollRef,
+    onScroll,
+    animatedScroll = false,
+    keyboardAware = false,
+    keyboardDismissMode = 'interactive',
+    keyboardShouldPersistTaps = 'handled',
+    keyboardVerticalOffset,
+    showStatusBar = true,
+    statusBarStyle,
+    backgroundColor,
+    contentContainerStyle,
+    style,
+    refreshControl,
+    showsVerticalScrollIndicator = false,
+    edges: edgesProp,
+    density = 'standard',
+    edgeToEdge = false,
+    maxContentWidth = 900,
+    constrainContentWidth = true,
+  } = props;
+
+  const resolvedEdges: ReadonlyArray<EdgeOption> = useMemo(() => {
+    return edgesProp ? [...edgesProp] : DEFAULT_EDGES;
+  }, [edgesProp]);
   const { theme, colorMode } = useTheme();
   const insets = useSafeAreaInsets();
+  const { top: insetTop, bottom: insetBottom, left: insetLeft, right: insetRight } = insets;
   const { width } = useWindowDimensions();
   const styles = useMemo(
     () =>
       createStyles(
         theme,
-        insets,
-        edges,
+        { top: insetTop, bottom: insetBottom, left: insetLeft, right: insetRight },
+        resolvedEdges,
         density,
         edgeToEdge,
         width,
         maxContentWidth,
         constrainContentWidth
       ),
-    [theme, insets, edges, density, edgeToEdge, width, maxContentWidth, constrainContentWidth]
+    [
+      theme,
+      insetTop,
+      insetBottom,
+      insetLeft,
+      insetRight,
+      resolvedEdges,
+      density,
+      edgeToEdge,
+      width,
+      maxContentWidth,
+      constrainContentWidth,
+    ]
   );
 
   const defaultStatusBarStyle =
@@ -179,7 +200,7 @@ const ScreenLayout: React.FC<ScreenLayoutProps> = ({
 const createStyles = (
   theme: AppTheme,
   insets: { top: number; bottom: number; left: number; right: number },
-  edges: ('top' | 'bottom' | 'left' | 'right')[],
+  edges: ReadonlyArray<EdgeOption>,
   density: 'comfortable' | 'standard' | 'compact',
   edgeToEdge: boolean,
   screenWidth: number,

@@ -579,33 +579,22 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         >
           {/* Gratitude Input Bar */}
           <View style={styles.inputBarContainer}>
-            <View style={styles.inputHaloWrapper}>
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  styles.inputHaloGlow,
-                  {
-                    opacity: animations.fadeAnim,
-                  },
-                ]}
-              />
-              <GratitudeInputBar
-                ref={inputBarRef}
-                promptText={currentPrompt}
-                onSubmit={handleAddStatement}
-                onSubmitWithMood={(text, mood) => {
-                  handleAddStatement(text, mood ?? null);
-                }}
-                disabled={isAddingStatement}
-                error={null}
-                onRefreshPrompt={handlePromptRefresh}
-                promptLoading={promptLoading || isLoadingEntry}
-                promptError={promptError?.message || null}
-                showPrompt={showInspirationPrompts}
-                currentCount={statements.length}
-                goal={dailyGoal}
-              />
-            </View>
+            <GratitudeInputBar
+              ref={inputBarRef}
+              promptText={currentPrompt}
+              onSubmit={handleAddStatement}
+              onSubmitWithMood={(text, mood) => {
+                handleAddStatement(text, mood ?? null);
+              }}
+              disabled={isAddingStatement}
+              error={null}
+              onRefreshPrompt={handlePromptRefresh}
+              promptLoading={promptLoading || isLoadingEntry}
+              promptError={promptError?.message || null}
+              showPrompt={showInspirationPrompts}
+              currentCount={statements.length}
+              goal={dailyGoal}
+            />
           </View>
 
           {/* Statement Cards Section - Unified design */}
@@ -878,25 +867,8 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
     },
     inputBarContainer: {
-      marginBottom: theme.spacing.xl,
-      paddingHorizontal: theme.spacing.lg,
-    },
-    inputHaloWrapper: {
-      position: 'relative',
-      borderRadius: theme.borderRadius.xl,
-      overflow: 'visible',
-    },
-    inputHaloGlow: {
-      ...StyleSheet.absoluteFillObject,
-      borderRadius: theme.borderRadius.xl,
-      backgroundColor: theme.colors.primaryContainer + '22',
-      shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: 0.15,
-      shadowRadius: 24,
-      elevation: 6,
-      opacity: 0.75,
-      transform: [{ scaleX: 1.05 }, { scaleY: 1.08 }],
+      marginBottom: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.md,
     },
     statementsSection: {
       flex: 1,

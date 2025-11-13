@@ -88,6 +88,19 @@ export const translateError = (
       const dbErrorMessage = dbError.message.toLowerCase();
 
       // Check for specific database error patterns
+      if (
+        dbErrorMessage.includes('coalesce') &&
+        dbErrorMessage.includes('time without time zone')
+      ) {
+        return {
+          userMessage: i18n.isInitialized
+            ? i18n.t('errors.db.notificationSchedule')
+            : 'We could not update your notification schedule. Please try again.',
+          technicalMessage: dbError.message,
+          errorType: 'server',
+        };
+      }
+
       if (dbErrorMessage.includes('row level security') || dbErrorMessage.includes('policy')) {
         return {
           userMessage: i18n.isInitialized

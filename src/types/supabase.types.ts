@@ -454,6 +454,10 @@ export type Database = {
         Args: { p_month: number; p_user_id: string; p_year: number };
         Returns: string[];
       };
+      get_mood_analytics: {
+        Args: { p_range?: string };
+        Returns: Json;
+      };
       get_multiple_random_active_prompts: {
         Args: { p_limit?: number };
         Returns: {

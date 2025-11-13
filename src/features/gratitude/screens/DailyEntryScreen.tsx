@@ -387,7 +387,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               animations.animateLayoutTransition(false, 0, { duration: 200 });
               setEditingStatementIndex(null);
               setShowSaveHint(false); // Hide hint on successful save
-              showSuccess(t('statement.updated'));
+              showSuccess(t('shared.statement.updated'));
             },
           }
         );
@@ -420,13 +420,15 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           onSuccess: () => {
             // **MINIMAL DELETION FEEDBACK**: Simple layout transition
             animations.animateLayoutTransition(false, 0, { duration: 200 });
-            showSuccess(t('statement.deleted'), {
+            showSuccess(t('shared.statement.deleted'), {
               action: {
-                label: t('statement.undoAction'),
+                label: t('shared.statement.undoAction'),
                 onPress: () => {
                   addStatement(
                     { entryDate: finalDateString, statement: deleted },
-                    { onSuccess: () => showSuccess(t('statement.undoSuccess')) }
+                    {
+                      onSuccess: () => showSuccess(t('shared.statement.undoSuccess')),
+                    }
                   );
                 },
               },

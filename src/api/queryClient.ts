@@ -28,6 +28,7 @@ export const QUERY_STALE_TIMES = {
   benefits: 24 * 60 * 60 * 1000, // 24 hours (very static content)
   totalCount: 10 * 60 * 1000, // 10 minutes (changes slowly)
   monthlyData: 20 * 60 * 1000, // 20 minutes (historical data)
+  analytics: 30 * 60 * 1000, // 30 minutes (insights recompute occasionally)
 } as const;
 
 /**

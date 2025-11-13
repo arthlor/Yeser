@@ -97,6 +97,10 @@
         "title": "Minnetin Gücü",
         "subtitle": "Faydalarını keşfet",
         "extra": "Öğren"
+      },
+      "mood": {
+        "title": "Duygu içgörüleri",
+        "subtitle": "Duygusal örüntülerini incele"
       }
     },
     "todayList": {
@@ -163,7 +167,7 @@
     "permissionRequiredMessage": "Günlük hatırlatıcıları etkinleştirmek için bildirim izni gerekiyor.\n\n📱 Nasıl etkinleştirilir:\n1. 'Ayarlara Git' butonuna dokunun\n2. 'Bildirimler' bölümünü bulun\n3. Yeşer uygulamasını etkinleştirin\n4. Bu sayfaya geri dönün\n\nHatırlatıcılar sizi daha mutlu hissettirecek! 😊",
     "notNow": "Şimdi Değil",
     "enable": "Evet, Etkinleştir",
-    "maybeLater": "Belki Sonra",
+    "maybeLater": "Bildirimler minnet pratiğinizi güçlendirir",
     "openSettings": "Ayarlara Git",
     "fixedScheduleDescription": "Her gün {{firstTime}} ve {{secondTime}}'de minnettar olmanızı hatırlatacağız 🌱"
   },
@@ -248,6 +252,10 @@
       "darkTheme": "Koyu tema"
     },
     "about": {
+      "moodAnalysis": {
+        "label": "Duygu Analizi",
+        "description": "Minnet duygularındaki desenleri inceleyin"
+      },
       "whyGratitude": {
         "label": "Minnetin Gücü",
         "description": "Minnettarlığın faydalarını keşfedin"
@@ -774,6 +782,109 @@
     "screens": {
       "pastEntryCreation": {
         "title": "Geçmiş Tarihe Ekle"
+      }
+    }
+  },
+  "mood": {
+    "analysis": {
+      "title": "Duygu Analizi",
+      "subtitle": "Minnet pratiğin duygusal dünyanı nasıl şekillendiriyor, keşfet.",
+      "loading": "Duygu içgörüleri hazırlanıyor…",
+      "actions": {
+        "refresh": "İçgörüleri yenile"
+      },
+      "empty": {
+        "title": "Henüz yeterli duygu verisi yok",
+        "message": "Minnet ifadelerine duygu ekleyerek sana özel yansımaları açabilirsin.",
+        "cta": "Bir duygu ekle"
+      },
+      "overview": {
+        "entries": "Analiz edilen kayıt",
+        "statements": "İfade",
+        "dominantMood": "Baskın duygu",
+        "balanceScore": "Denge puanı",
+        "statementsPerEntry": "Kayıt başına ortalama {{value}} ifade",
+        "generatedAt": "{{date}} tarihinde güncellendi",
+        "noDominantMood": "Tek baskın duygu yok"
+      },
+      "sections": {
+        "streak": {
+          "title": "Tutarlılık nabzı",
+          "subtitle": "Serin son dönem duygu dağılımına anlam katıyor."
+        },
+        "distribution": {
+          "title": "Duygu dağılımı",
+          "subtitle": "Her duygunun görülme sıklığı."
+        },
+        "trend": {
+          "title": "Duygu eğrisi",
+          "subtitle": "Zaman içindeki baskın duygular."
+        },
+        "highlighted": {
+          "title": "Öne çıkan kayıtlar",
+          "subtitle": "Duygusal olarak parlayan ifadeler."
+        },
+        "narrative": {
+          "title": "Yorum",
+          "subtitle": "Son kayıtlarına nazik bir yansıma."
+        }
+      },
+      "streak": {
+        "loading": "Seri bilgisi alınıyor…",
+        "current": "Güncel seri",
+        "longest": "En uzun seri",
+        "lastEntry": "Son kayıt",
+        "noLastEntry": "Henüz kayıt yok",
+        "empty": "Seri bilgisi yüklenemedi.",
+        "hint": "Serini canlı tutmak duygu karışımının nasıl değiştiğini görmene yardımcı olur."
+      },
+      "distribution": {
+        "empty": "Bir dağılım hesaplayabilmek için daha fazla duygu gerekiyor."
+      },
+      "trend": {
+        "empty": "Zaman içindeki değişimi görmek için daha fazla duygu ekle.",
+        "entries": "{{count}} kayıt",
+        "mixed": "Karışık duygular"
+      },
+      "highlighted": {
+        "empty": "Öne çıkan ifadeleri henüz belirleyemedik.",
+        "meta": "{{date}} tarihinde kaydedildi"
+      },
+      "narrative": {
+        "logical": "Mantıksal çıkarım",
+        "emotional": "Duygusal okuma",
+        "suggestions": "Önerilen adımlar",
+        "logicalStates": {
+          "empty": "Daha fazla duygu ekleyerek derin içgörüler açabilirsin.",
+          "imbalanced": "Son dönemde tek bir duygu öne çıkıyor.",
+          "balanced": "Minnet duyguların dengeli bir karışım sunuyor.",
+          "neutral": "Farklı duyguları sağlıklı şekilde harmanlıyorsun."
+        },
+        "emotionalStates": {
+          "none": "Duygusal bir eğilim görebilmek için birkaç duygu etiketi daha gerekiyor.",
+          "dominant": "Son kayıtlar çoğunlukla {{mood}} hissi taşıyor."
+        },
+        "suggestionTexts": {
+          "addMoods": "Bugünkü minnettarlığına bir duygu ekleyerek içgörüyü derinleştir.",
+          "balance": "Yarın farklı bir duygu üzerine yazıp dengeyi yakalayabilirsin.",
+          "keepStreak": "Serini canlı tut; tutarlılık duygu hikayeni zenginleştirir.",
+          "writeMore": "Bu hafta birkaç kayıt daha eklemek içgörüyü keskinleştirecek."
+        }
+      },
+      "balance": {
+        "imbalanced": "Daha fazla çeşit gerekli",
+        "neutral": "Dengeli karışım",
+        "balanced": "Sağlıklı denge"
+      },
+      "moods": {
+        "😊": "Neşeli",
+        "🙏": "Minnet dolu",
+        "🌟": "İlhamlı",
+        "💪": "Güçlü",
+        "🧘": "Sakin"
+      },
+      "date": {
+        "unknown": "Bilinmeyen tarih"
       }
     }
   },
@@ -1373,7 +1484,8 @@
       "integrity": "Veri bütünlüğü hatası oluştu. Lütfen tekrar deneyin.",
       "recordNotFound": "Kayıt bulunamadı.",
       "access": "Veritabanı erişim hatası. Lütfen tekrar deneyin.",
-      "security": "Güvenlik kısıtlaması nedeniyle işlem gerçekleştirilemedi. Lütfen çıkış yapıp tekrar giriş yapın."
+      "security": "Güvenlik kısıtlaması nedeniyle işlem gerçekleştirilemedi. Lütfen çıkış yapıp tekrar giriş yapın.",
+      "notificationSchedule": "Bildirim ayarlarınızı kaydedemedik. Lütfen biraz sonra tekrar deneyin."
     },
     "network": { "generic": "İnternet bağlantınızı kontrol edin." },
     "server": { "generic": "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin." },

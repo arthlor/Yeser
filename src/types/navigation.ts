@@ -23,6 +23,7 @@ export interface AppStackParamList extends Record<string, object | undefined> {
   MainAppTabs: NavigatorScreenParams<MainTabParamList>;
   EntryDetail: { entryId: string; entryDate?: string };
   PastEntryCreation: { date: string };
+  MoodAnalysis: { focusMood?: string } | undefined;
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
   Help: undefined;

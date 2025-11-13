@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-color-literals */
 import React, { useCallback, useMemo } from 'react';
 import { Animated, Platform, StyleSheet, Text, Vibration, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -5,7 +6,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
-import { getPrimaryShadow } from '@/themes/utils';
+import { getPrimaryShadow, getSurfaceColor } from '@/themes/utils';
 import { useTranslation } from 'react-i18next';
 
 import type { AppTheme } from '@/themes/types';
@@ -125,9 +126,9 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
         {primaryAction && (
           <Animated.View style={dynamicStyles.primaryCardTransform}>
             <ThemedCard
-              variant="elevated"
+              variant="outlined"
               density="comfortable"
-              elevation="floating"
+              elevation="none"
               onPress={onNavigateToEntry}
               style={styles.primaryCardFrame}
               containerStyle={styles.primaryCardContainer}
@@ -254,20 +255,18 @@ const createStyles = (theme: AppTheme, colorMode: ReturnType<typeof useTheme>['c
     },
     // Edge-to-edge primary card with theme-aware design
     primaryCardFrame: {
-      borderRadius: 0,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 0,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderTopColor:
-        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
-      borderBottomColor:
-        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
-      ...getPrimaryShadow.floating(theme),
+      borderRadius: theme.borderRadius.lg,
+      backgroundColor: getSurfaceColor(theme, 'base'),
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colorMode === 'dark' ? theme.colors.outline + '12' : theme.colors.outline + '10',
       minHeight: 120,
+      shadowColor: 'transparent',
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
     },
     primaryCardContainer: {
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
     },
     primaryCardContent: {
       flexDirection: 'row',
@@ -309,7 +308,7 @@ const createStyles = (theme: AppTheme, colorMode: ReturnType<typeof useTheme>['c
       width: 36,
       height: 36,
       borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: colorMode === 'dark' ? theme.colors.surface : theme.colors.surfaceVariant,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: StyleSheet.hairlineWidth,

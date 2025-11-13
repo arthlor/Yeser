@@ -11,6 +11,7 @@ import CalendarViewScreen from '../features/calendar/screens/CalendarViewScreen'
 import DailyEntryScreen from '../features/gratitude/screens/DailyEntryScreen';
 import EntryDetailScreen from '../features/gratitude/screens/EntryDetailScreen';
 import PastEntryCreationScreen from '../features/gratitude/screens/PastEntryCreationScreen';
+import MoodAnalysisScreen from '../features/mood/screens/MoodAnalysisScreen';
 import HelpScreen from '../features/settings/screens/HelpScreen';
 import HomeScreen from '../features/home/screens/HomeScreen';
 import PastEntriesScreen from '../features/calendar/screens/PastEntriesScreen';
@@ -253,6 +254,13 @@ const AppNavigator: React.FC = () => {
         component={EntryDetailScreen}
         options={{ headerShown: false }}
         initialParams={{ entryId: '' }}
+      />
+      <AppStack.Screen
+        name="MoodAnalysis"
+        component={MoodAnalysisScreen}
+        options={{
+          headerShown: false,
+        }}
       />
       <AppStack.Screen
         name="PastEntryCreation"

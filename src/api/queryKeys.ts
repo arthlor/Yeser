@@ -1,3 +1,5 @@
+import type { MoodAnalyticsRange } from '@/types/moodAnalytics.types';
+
 export const queryKeys = {
   // Root key for global invalidation
   all: ['yeser'] as const,
@@ -28,4 +30,8 @@ export const queryKeys = {
 
   // Daily prompt queries
   currentPrompt: (userId?: string) => [...queryKeys.all, 'currentPrompt', userId] as const,
+
+  // Mood analytics queries
+  moodAnalytics: (userId?: string, range: MoodAnalyticsRange = '90d') =>
+    [...queryKeys.all, 'moodAnalytics', userId, range] as const,
 } as const;

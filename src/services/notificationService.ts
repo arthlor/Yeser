@@ -7,12 +7,18 @@ import i18n from '@/i18n';
 import type { LanguageStoreState } from '@/store/languageStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { config } from '@/utils/config';
-import type { Database } from '@/types/supabase.types';
+import type { Database, TablesUpdate } from '@/types/supabase.types';
 import { supabaseService } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
 
 const ANDROID_CHANNEL_ID = 'daily-reminder-channel';
 const EXPO_PROJECT_ID = config.eas.projectId;
+const DEFAULT_NOTIFICATION_TIME = '12:30:00';
+const SAFE_UPDATE_MISSING_WHERE_CODE = '21000';
+const SAFE_UPDATE_MISSING_WHERE_MESSAGE = 'UPDATE requires a WHERE clause';
+const SAFE_UPDATE_MISSING_COLUMN_CODE = '42703';
+const SAFE_UPDATE_MISSING_COLUMN_FRAGMENT = 'enable_reminders';
+const DAILY_REMINDER_DATA_TAG = 'daily-reminder';
 
 const ensureSupabaseClient = async (): Promise<SupabaseClient<Database>> => {
   await supabaseService.initializeLazy();
@@ -32,6 +38,18 @@ interface NotificationOperationResult<T = void> {
   data?: T;
   error?: Error;
 }
+
+type DailyReminderVariant = 'midday' | 'evening';
+
+interface DailyReminderSchedule {
+  variant: DailyReminderVariant;
+  time: string;
+}
+
+const DAILY_REMINDER_SCHEDULES: ReadonlyArray<DailyReminderSchedule> = [
+  { variant: 'midday', time: '12:30' },
+  { variant: 'evening', time: '21:00' },
+];
 
 // Configure notification handling for different app states
 Notifications.setNotificationHandler({
@@ -162,8 +180,9 @@ async function saveTokenToBackend(token: string): Promise<NotificationOperationR
 }
 
 /**
- * Updates the user's preferred notification time in their profile.
- * @param time A string in 'HH:00' format (e.g., '14:00') - only hour precision is used.
+ * Enables or disables notifications for the current user.
+ * Attempts the primary Supabase RPC and falls back to a guarded profile update when required.
+ * @param enabled Whether notifications should be enabled.
  * @returns An object indicating success or failure.
  */
 async function setNotificationsEnabled(
@@ -183,9 +202,39 @@ async function setNotificationsEnabled(
       p_enabled: enabled,
     });
 
+    let baseResult: NotificationOperationResult<void> = { ok: true };
+
     if (error) {
-      logger.error('Error updating notification preference:', error);
-      return { ok: false, error: mapPostgrestError(error) };
+      logger.error('Error updating notification preference via RPC:', error);
+
+      const shouldFallback =
+        (error.code === SAFE_UPDATE_MISSING_WHERE_CODE &&
+          error.message === SAFE_UPDATE_MISSING_WHERE_MESSAGE) ||
+        error.code === SAFE_UPDATE_MISSING_COLUMN_CODE ||
+        error.message?.toLowerCase().includes(SAFE_UPDATE_MISSING_COLUMN_FRAGMENT);
+
+      if (shouldFallback) {
+        logger.warn('Falling back to direct profile update for notification preference', {
+          userId: user.id,
+          enabled,
+        });
+        baseResult = await updateNotificationPreferenceFallback(client, user.id, enabled);
+      } else {
+        return { ok: false, error: mapPostgrestError(error) };
+      }
+    }
+
+    if (!baseResult.ok) {
+      return baseResult;
+    }
+
+    if (enabled) {
+      const scheduleResult = await scheduleDailyReminderNotifications();
+      if (!scheduleResult.ok) {
+        return scheduleResult;
+      }
+    } else {
+      await cancelDailyReminderNotifications();
     }
 
     return { ok: true };
@@ -239,6 +288,68 @@ async function getCurrentDevicePushToken(): Promise<string | null> {
       error: error instanceof Error ? error.message : String(error),
     });
     return null;
+  }
+}
+
+async function scheduleDailyReminderNotifications(): Promise<NotificationOperationResult<void>> {
+  try {
+    await setupAndroidChannel();
+
+    const { status } = await Notifications.getPermissionsAsync();
+    const permissionStatus = status as NotificationPermissionStatus;
+    if (permissionStatus !== 'granted' && permissionStatus !== 'provisional') {
+      return {
+        ok: false,
+        error: new Error('Notification permission not granted for scheduling reminders.'),
+      };
+    }
+
+    await cancelDailyReminderNotifications();
+
+    const localizedCopy = getLocalizedReminderCopy();
+
+    await Promise.all(
+      DAILY_REMINDER_SCHEDULES.map(({ variant, time }) => {
+        const trigger = parseDailyTrigger(time);
+        return Notifications.scheduleNotificationAsync({
+          content: {
+            title: localizedCopy.title,
+            body: localizedCopy.body,
+            sound: 'default',
+            data: {
+              tag: DAILY_REMINDER_DATA_TAG,
+              variant,
+              screen: 'DailyEntryTab',
+            },
+          },
+          trigger,
+        });
+      })
+    );
+
+    return { ok: true };
+  } catch (error) {
+    const resolvedError = error instanceof Error ? error : new Error(String(error));
+    logger.error('Failed to schedule local reminder notifications', resolvedError);
+    return { ok: false, error: resolvedError };
+  }
+}
+
+async function cancelDailyReminderNotifications(): Promise<void> {
+  try {
+    const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const cancellations = scheduledNotifications
+      .filter((request) => {
+        const data = request.content.data as Record<string, unknown> | undefined;
+        return data?.tag === DAILY_REMINDER_DATA_TAG;
+      })
+      .map((request) => Notifications.cancelScheduledNotificationAsync(request.identifier));
+
+    await Promise.all(cancellations);
+  } catch (error) {
+    logger.warn('Failed to cancel existing local reminder notifications', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
@@ -314,8 +425,85 @@ export const notificationService = {
   showNotificationPermissionGuidance,
   openNotificationSettings,
   getCurrentDevicePushToken,
+  scheduleDailyReminderNotifications,
+  cancelDailyReminderNotifications,
 };
 
-const mapPostgrestError = (error: PostgrestError): Error => {
+function mapPostgrestError(error: PostgrestError): Error {
   return new Error(error.message);
+}
+
+async function updateNotificationPreferenceFallback(
+  client: SupabaseClient<Database>,
+  userId: string,
+  enabled: boolean
+): Promise<NotificationOperationResult<void>> {
+  try {
+    const { data: profileRow, error: profileFetchError } = await client
+      .from('profiles')
+      .select('notification_time')
+      .eq('id', userId)
+      .single();
+
+    if (profileFetchError) {
+      logger.warn('Failed to read existing notification preference before fallback update', {
+        error: profileFetchError,
+        userId,
+      });
+    }
+
+    const nextNotificationTime =
+      enabled === true ? (profileRow?.notification_time ?? DEFAULT_NOTIFICATION_TIME) : null;
+
+    const payload: TablesUpdate<'profiles'> = {
+      notification_time: nextNotificationTime,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error: updateError } = await client.from('profiles').update(payload).eq('id', userId);
+
+    if (updateError) {
+      logger.error('Fallback profile update failed for notification preference:', updateError);
+      return { ok: false, error: mapPostgrestError(updateError) };
+    }
+
+    logger.debug('Notification preference updated via fallback profile update', {
+      userId,
+      enabled,
+      nextNotificationTime,
+    });
+
+    return { ok: true };
+  } catch (error) {
+    const resolvedError = error instanceof Error ? error : new Error(String(error));
+    logger.error('Unexpected fallback error updating notification preference', resolvedError);
+    return { ok: false, error: resolvedError };
+  }
+}
+
+const getLocalizedReminderCopy = (): { title: string; body: string } => {
+  if (i18n.isInitialized) {
+    return {
+      title: i18n.t('notifications.dailyRemindersTitle'),
+      body: i18n.t('notifications.dailyRemindersMessage'),
+    };
+  }
+
+  return {
+    title: 'Daily Reminders',
+    body: 'Remember to record what you are grateful for.',
+  };
+};
+
+const parseDailyTrigger = (time: string): Notifications.DailyTriggerInput => {
+  const [hourPart, minutePart] = time.split(':');
+  const hour = Number.parseInt(hourPart, 10);
+  const minute = Number.parseInt(minutePart, 10);
+
+  return {
+    type: Notifications.SchedulableTriggerInputTypes.DAILY,
+    hour,
+    minute,
+    channelId: ANDROID_CHANNEL_ID,
+  };
 };

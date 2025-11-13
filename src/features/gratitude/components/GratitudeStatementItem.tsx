@@ -286,7 +286,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
             {onDelete && (
               <View style={styles.buttonWrapper}>
                 <ThemedButton
-                  title={t('statement.deleteButton')}
+                  title={t('shared.statement.deleteButton')}
                   onPress={() => {
                     if (onDelete) {
                       onDelete();
@@ -350,7 +350,7 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
             {onPressEdit && (
               <View style={styles.buttonWrapper}>
                 <ThemedButton
-                  title={t('statement.editButton')}
+                  title={t('shared.statement.editButton')}
                   onPress={() => {
                     setShowActions(false);
                     onPressEdit();

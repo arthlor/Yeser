@@ -269,9 +269,9 @@ const EnhancedEntryDetailScreen: React.FC<{
 
         // 🎯 TOAST INTEGRATION: Success feedback for statement deletion with Undo
         const deleted = displayItems[index];
-        showSuccess(t('statement.deleted'), {
+        showSuccess(t('shared.statement.deleted'), {
           action: {
-            label: t('statement.undoAction'),
+            label: t('shared.statement.undoAction'),
             onPress: () => {
               addStatement({ entryDate, statement: deleted });
             },

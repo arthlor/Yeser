@@ -168,7 +168,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
             onSuccess: () => {
               setEditingStatementIndex(null);
               // **ELIMINATED LAYOUTANIMATION**: Removed complex layout animation call
-              showSuccess(t('statement.updated'));
+              showSuccess(t('shared.statement.updated'));
             },
           }
         );

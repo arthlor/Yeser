@@ -97,6 +97,10 @@
         "title": "Power of Gratitude",
         "subtitle": "Discover the benefits",
         "extra": "Learn"
+      },
+      "mood": {
+        "title": "Mood insights",
+        "subtitle": "Review your emotional patterns"
       }
     },
     "todayList": {
@@ -165,7 +169,7 @@
     "enable": "Enable",
     "maybeLater": "Maybe Later",
     "openSettings": "Open Settings",
-    "fixedScheduleDescription": "We'll remind you twice a day at {{firstTime}} and {{secondTime}} in your local time."
+    "fixedScheduleDescription": "We'll remind you twice a day at {{firstTime}} and {{secondTime}} (9 PM) in your local time."
   },
   "calendar": {
     "tab": { "title": "Calendar", "a11y": "Calendar view" },
@@ -248,6 +252,10 @@
       "darkTheme": "Dark theme"
     },
     "about": {
+      "moodAnalysis": {
+        "label": "Mood Insights",
+        "description": "Analyse patterns in your gratitude moods"
+      },
       "whyGratitude": {
         "label": "The Power of Gratitude",
         "description": "Discover the benefits of gratitude"
@@ -778,6 +786,109 @@
     "screens": {
       "pastEntryCreation": {
         "title": "Add to Past Date"
+      }
+    }
+  },
+  "mood": {
+    "analysis": {
+      "title": "Mood Insights",
+      "subtitle": "See how your gratitude practice shapes your emotional landscape.",
+      "loading": "Getting your mood insights…",
+      "actions": {
+        "refresh": "Refresh insights"
+      },
+      "empty": {
+        "title": "Not enough mood data yet",
+        "message": "Add moods to your gratitude statements to unlock personalised reflections.",
+        "cta": "Add a gratitude mood"
+      },
+      "overview": {
+        "entries": "Entries analysed",
+        "statements": "Statements",
+        "dominantMood": "Dominant mood",
+        "balanceScore": "Balance score",
+        "statementsPerEntry": "{{value}} statements per entry on average",
+        "generatedAt": "Updated {{date}}",
+        "noDominantMood": "No single mood"
+      },
+      "sections": {
+        "streak": {
+          "title": "Consistency pulse",
+          "subtitle": "Your streak adds context to recent moods."
+        },
+        "distribution": {
+          "title": "Mood distribution",
+          "subtitle": "How often each mood appears."
+        },
+        "trend": {
+          "title": "Mood trend",
+          "subtitle": "Dominant moods over time."
+        },
+        "highlighted": {
+          "title": "Highlighted entries",
+          "subtitle": "Statements that stand out emotionally."
+        },
+        "narrative": {
+          "title": "Narrative insight",
+          "subtitle": "A gentle reflection on your recent entries."
+        }
+      },
+      "streak": {
+        "loading": "Fetching streak context…",
+        "current": "Current streak",
+        "longest": "Longest streak",
+        "lastEntry": "Last entry",
+        "noLastEntry": "No entries yet",
+        "empty": "We could not load streak data.",
+        "hint": "Keeping your streak alive helps reveal how consistency changes your mood mix."
+      },
+      "distribution": {
+        "empty": "We need more moods to calculate a distribution."
+      },
+      "trend": {
+        "empty": "Add more moods to see how they shift over time.",
+        "entries": "{{count}} entries",
+        "mixed": "Mixed moods"
+      },
+      "highlighted": {
+        "empty": "We could not surface standout entries yet.",
+        "meta": "Captured on {{date}}"
+      },
+      "narrative": {
+        "logical": "Logical takeaway",
+        "emotional": "Emotional reading",
+        "suggestions": "Suggested next steps",
+        "logicalStates": {
+          "empty": "Add a few more moods to unlock deeper insights.",
+          "imbalanced": "One feeling has been leading your recent reflections.",
+          "balanced": "Your gratitude moods are beautifully balanced.",
+          "neutral": "You are mixing different moods in a healthy way."
+        },
+        "emotionalStates": {
+          "none": "We need a few more mood tags to spot an emotional trend.",
+          "dominant": "The latest entries feel mostly {{mood}}."
+        },
+        "suggestionTexts": {
+          "addMoods": "Tag today’s gratitude with a mood to unlock deeper reflections.",
+          "balance": "Write about a different feeling tomorrow to balance things out.",
+          "keepStreak": "Keep your streak alive to see how consistency shifts your mood story.",
+          "writeMore": "A few more entries this week will sharpen your insights."
+        }
+      },
+      "balance": {
+        "imbalanced": "Needs variety",
+        "neutral": "Even mix",
+        "balanced": "Healthy balance"
+      },
+      "moods": {
+        "😊": "Joyful",
+        "🙏": "Grateful",
+        "🌟": "Inspired",
+        "💪": "Empowered",
+        "🧘": "Calm"
+      },
+      "date": {
+        "unknown": "Unknown date"
       }
     }
   },
@@ -1376,7 +1487,8 @@
       "integrity": "A data integrity error occurred. Please try again.",
       "recordNotFound": "Record not found.",
       "access": "Database access error. Please try again.",
-      "security": "Due to a security restriction, the operation couldn't be completed. Please sign out and sign in again."
+      "security": "Due to a security restriction, the operation couldn't be completed. Please sign out and sign in again.",
+      "notificationSchedule": "We couldn't update your notification schedule. Please try again."
     },
     "network": { "generic": "Check your internet connection." },
     "server": { "generic": "A server error occurred. Please try again later." },

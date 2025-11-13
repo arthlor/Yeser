@@ -10,15 +10,13 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { analyticsService } from '@/services/analyticsService';
 import type { MainTabParamList, RootStackParamList } from '@/types/navigation';
-import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { ScreenLayout } from '@/shared/components/layout';
 import StatsRow from '@/features/home/components/StatsRow';
 import HomeGratitudeListItem from '@/features/home/components/HomeGratitudeListItem';
 import FloatingAddButton from '@/features/home/components/FloatingAddButton';
 import ThrowbackTeaser from '@/features/throwback/components/ThrowbackTeaser';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
+import ThemedCard from '@/shared/components/ui/ThemedCard';
 // debug logger removed (noisy)
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -34,6 +32,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useTranslation } from 'react-i18next';
 // StatementEditCard and inline today item are no longer used in the FlatList refactor
 import type { MoodEmoji } from '@/types/mood.types';
@@ -169,6 +171,13 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     analyticsService.logEvent('streak_showcase_pressed');
     setStreakDetailsVisible(true);
   }, []);
+
+  const handleMoodAnalysisPress = useCallback(() => {
+    analyticsService.logEvent('navigate_to_mood_analysis', {
+      source: 'home_footer_card',
+    });
+    navigation.getParent<StackNavigationProp<RootStackParamList>>()?.navigate('MoodAnalysis');
+  }, [navigation]);
 
   // Dynamic image picking without compile-time dependency
   const pickImageAndUpload = useCallback(async () => {
@@ -372,6 +381,27 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
                 />
               </View>
               <View style={styles.section}>
+                <ThemedCard
+                  variant="elevated"
+                  density="comfortable"
+                  elevation="card"
+                  onPress={handleMoodAnalysisPress}
+                >
+                  <View style={styles.moodCardContent}>
+                    <View style={styles.moodIconContainer}>
+                      <Icon name="emoticon-happy-outline" size={24} color={theme.colors.primary} />
+                    </View>
+                    <View style={styles.moodTextContainer}>
+                      <Text style={styles.moodCardTitle}>{t('home.actions.mood.title')}</Text>
+                      <Text style={styles.moodCardSubtitle}>{t('home.actions.mood.subtitle')}</Text>
+                    </View>
+                    <View style={styles.moodChevronContainer}>
+                      <Icon name="chevron-right" size={24} color={theme.colors.primary} />
+                    </View>
+                  </View>
+                </ThemedCard>
+              </View>
+              <View style={styles.section}>
                 <InspirationCard currentCount={todaysGratitudeCount} dailyGoal={dailyGoal} />
               </View>
               <View style={styles.section}>
@@ -486,5 +516,41 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       ...theme.typography.labelMedium,
       color: theme.colors.onSurface,
       fontWeight: '700',
+    },
+    moodCardContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    moodIconContainer: {
+      width: 44,
+      height: 44,
+      borderRadius: theme.borderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.primaryContainer,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.primary + '25',
+    },
+    moodTextContainer: {
+      flex: 1,
+    },
+    moodCardTitle: {
+      ...theme.typography.titleSmall,
+      color: theme.colors.onSurface,
+      fontWeight: '700',
+    },
+    moodCardSubtitle: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      marginTop: theme.spacing.xs / 2,
+    },
+    moodChevronContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: theme.borderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
     },
   });

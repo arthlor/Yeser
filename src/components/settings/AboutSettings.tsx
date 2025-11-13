@@ -13,6 +13,7 @@ interface AboutSettingsProps {
   onNavigateToTermsOfService: () => void;
   onNavigateToHelp: () => void;
   onNavigateToWhyGratitude: () => void;
+  onNavigateToMoodAnalysis: () => void;
 }
 
 const AboutSettings: React.FC<AboutSettingsProps> = ({
@@ -20,12 +21,19 @@ const AboutSettings: React.FC<AboutSettingsProps> = ({
   onNavigateToTermsOfService,
   onNavigateToHelp,
   onNavigateToWhyGratitude,
+  onNavigateToMoodAnalysis,
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const styles = createStyles(theme);
 
   const settingItems = [
+    {
+      label: t('settings.about.moodAnalysis.label'),
+      icon: 'chart-arc',
+      action: onNavigateToMoodAnalysis,
+      description: t('settings.about.moodAnalysis.description'),
+    },
     {
       label: t('settings.about.whyGratitude.label'),
       icon: 'heart-outline',

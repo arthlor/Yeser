@@ -18,6 +18,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import type { ColorValue } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { logger } from '@/utils/logger';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -86,6 +88,10 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
     const { theme } = useTheme();
     const { t } = useTranslation();
     const styles = useMemo(() => createStyles(theme, disabled), [theme, disabled]);
+    const headerGradientColors = useMemo<[ColorValue, ColorValue]>(
+      () => [theme.colors.primary + '26', theme.colors.primaryContainer + '08'],
+      [theme.colors.primary, theme.colors.primaryContainer]
+    );
     const inputRef = useRef<TextInput>(null);
     const emojiButtonRef = useRef<View>(null);
 
@@ -342,6 +348,17 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       }
       return theme.colors.onSurfaceVariant;
     }, [inputText.length, theme.colors.error, theme.colors.onSurfaceVariant, theme.colors.warning]);
+    const showProgressInline = useMemo(
+      () => typeof currentCount === 'number' && typeof goal === 'number',
+      [currentCount, goal]
+    );
+    const progressCaption = useMemo(() => {
+      if (typeof currentCount === 'number' && typeof goal === 'number') {
+        return t('gratitude.input.progressToday', { current: currentCount, goal });
+      }
+
+      return t('gratitude.prompt.storyHint', 'Bugün bir minnet yazarak yeni bir tohum ek.');
+    }, [currentCount, goal, t]);
 
     const moodQuickActionLabel = selectedMood
       ? t('gratitude.input.moodQuickActionSelected', 'Tap to change')
@@ -424,11 +441,13 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
         ]}
       >
         <View style={styles.header}>
-          <View style={styles.headerDividerContainer}>
-            <View style={styles.headerDivider} />
-          </View>
-          <View style={styles.headerContent}>
-            <View style={styles.headerLeft}>
+          <LinearGradient
+            colors={headerGradientColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerGradient}
+          >
+            <View style={styles.headerTopRow}>
               <Animated.View
                 style={[
                   styles.iconContainer,
@@ -450,10 +469,12 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
                   },
                 ]}
               >
-                <Icon name="heart-plus" size={24} color={theme.colors.onPrimary} />
+                <Icon name="heart-plus" size={22} color={theme.colors.onPrimary} />
               </Animated.View>
-              <View style={styles.mottoContainer}>
+              <View style={styles.mottoColumn}>
                 <Animated.Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                   style={[
                     styles.mottoText,
                     {
@@ -467,6 +488,8 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
                   {t('gratitude.input.motto')}
                 </Animated.Text>
                 <Animated.Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                   style={[
                     styles.revisitMottoText,
                     {
@@ -477,20 +500,27 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
                   {t('gratitude.input.revisitMotto', 'Minnetle yeşer 🌱')}
                 </Animated.Text>
               </View>
-            </View>
-            <View style={styles.headerRight}>
-              {typeof currentCount === 'number' && typeof goal === 'number' && (
-                <Animated.Text
-                  style={[
-                    styles.progressInlineText,
-                    {
-                      opacity: accentAnim,
-                    },
-                  ]}
-                >
-                  {t('gratitude.input.progressToday', { current: currentCount, goal })}
-                </Animated.Text>
+              {showProgressInline && (
+                <View style={styles.progressChip}>
+                  <Text style={styles.progressChipText}>
+                    {currentCount}/{goal}
+                  </Text>
+                </View>
               )}
+            </View>
+            <View style={styles.headerBottomRow}>
+              <Animated.Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={[
+                  styles.progressInlineText,
+                  {
+                    opacity: accentAnim,
+                  },
+                ]}
+              >
+                {progressCaption}
+              </Animated.Text>
               {showCounter && (
                 <View style={styles.characterCountContainer}>
                   <Text style={[styles.characterCount, { color: counterColor }]}>
@@ -499,7 +529,7 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
                 </View>
               )}
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Enhanced Input Section (no gradient) */}
@@ -795,42 +825,36 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
 
     // **COMPACT HEADER**: Edge-to-edge header with compact layout
     header: {
-      paddingTop: theme.spacing.lg,
-      paddingBottom: theme.spacing.md,
-      backgroundColor: theme.colors.primaryContainer + '08',
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.outline + '12',
-    },
-    headerDividerContainer: {
-      height: 4,
-      paddingHorizontal: theme.spacing.lg,
-      overflow: 'hidden',
-      marginBottom: theme.spacing.sm / 2,
-    },
-    headerDivider: {
-      height: 2,
-      width: '45%',
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primary + '45',
-    },
-    headerContent: {
-      flex: 1,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
       paddingHorizontal: theme.spacing.lg,
       paddingTop: theme.spacing.md,
       paddingBottom: theme.spacing.md,
     },
-    headerLeft: {
+    headerGradient: {
+      borderRadius: theme.borderRadius.xl,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.primary + '24',
+      backgroundColor: theme.colors.primaryContainer + '10',
+      gap: theme.spacing.md,
+      ...getPrimaryShadow.small(theme),
+    },
+    headerTopRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.md,
-      flex: 1,
     },
-    mottoContainer: {
+    mottoColumn: {
       flex: 1,
       position: 'relative',
+      minHeight: 30,
+      justifyContent: 'center',
+    },
+    headerBottomRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
     },
     mottoText: {
       ...theme.typography.titleMedium,
@@ -838,6 +862,8 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       fontWeight: '700',
       letterSpacing: -0.3,
       fontFamily: theme.typography.fontFamilySerifBold ?? theme.typography.fontFamilyBold,
+      fontSize: 13,
+      lineHeight: 21,
     },
     revisitMottoText: {
       ...theme.typography.titleMedium,
@@ -852,45 +878,63 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
         theme.typography.fontFamilySerifMedium ??
         theme.typography.fontFamilySerif ??
         theme.typography.fontFamilyMedium,
+      fontSize: 17,
+      lineHeight: 21,
+      top: 0,
     },
     iconContainer: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
       ...getPrimaryShadow.small(theme),
-    },
-    headerRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
     },
     progressInlineText: {
       ...theme.typography.labelMedium,
       color: theme.colors.onSurfaceVariant,
       fontWeight: '600',
     },
+    progressChip: {
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.primary + '30',
+      minWidth: 68,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...getPrimaryShadow.small(theme),
+    },
+    progressChipText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.primary,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
     characterCountContainer: {
-      backgroundColor: theme.colors.primary + '12',
-      borderRadius: theme.borderRadius.md,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.full,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,
-      borderWidth: 1,
-      borderColor: theme.colors.primary + '25',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
+      ...getPrimaryShadow.small(theme),
     },
     characterCount: {
       ...theme.typography.labelSmall,
       color: theme.colors.onSurfaceVariant,
       fontWeight: '600',
+      textAlign: 'right',
     },
 
     // **EDGE-TO-EDGE INPUT SECTION**: Full-width input with enhanced design
     inputContainer: {
       backgroundColor: theme.colors.surface,
       paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.xl,
+      paddingTop: theme.spacing.lg,
       paddingBottom: theme.spacing.lg,
       borderRadius: theme.borderRadius.xl,
       borderWidth: StyleSheet.hairlineWidth,
@@ -905,7 +949,7 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
     inputWrapper: {
       position: 'relative',
       justifyContent: 'center',
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
       ...getPrimaryShadow.medium(theme),
     },
     focusGlow: {
@@ -924,10 +968,10 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       fontSize: 20,
       fontFamily: theme.typography.fontFamilyRegular,
       color: theme.colors.onSurface,
-      minHeight: 120,
+      minHeight: 112,
       maxHeight: 220,
-      paddingHorizontal: theme.spacing.xl,
-      paddingVertical: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
       borderWidth: 2,
       borderColor: theme.colors.outline + '25',
       borderRadius: theme.borderRadius.xl,
@@ -950,7 +994,7 @@ const createStyles = (theme: AppTheme, disabled: boolean = false) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginTop: theme.spacing.lg,
+      marginTop: theme.spacing.md,
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
       borderTopWidth: StyleSheet.hairlineWidth,

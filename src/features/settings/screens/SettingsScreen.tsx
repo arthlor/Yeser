@@ -41,6 +41,7 @@ interface RootStackParamListFixed extends Record<string, object | undefined> {
   TermsOfService: undefined;
   Help: undefined;
   WhyGratitude: undefined;
+  MoodAnalysis: { focusMood?: string } | undefined;
 }
 
 type SettingsScreenNavigationProp = BottomTabNavigationProp<
@@ -185,6 +186,11 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   const navigateToWhyGratitude = () => {
     navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('WhyGratitude');
+  };
+
+  const navigateToMoodAnalysis = () => {
+    analyticsService.logEvent('settings_open_mood_analysis');
+    navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('MoodAnalysis');
   };
   // Avatar helpers
   const [awaitedAvatarUrl, setAwaitedAvatarUrl] = useState<string | null>(null);
@@ -417,6 +423,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             onNavigateToTermsOfService={navigateToTermsOfService}
             onNavigateToHelp={navigateToHelp}
             onNavigateToWhyGratitude={navigateToWhyGratitude}
+            onNavigateToMoodAnalysis={navigateToMoodAnalysis}
           />
         </View>
 

@@ -83,12 +83,9 @@ export const NotificationSettings: React.FC = () => {
             );
 
             if (!hasSyncedPermissionMismatchRef.current) {
-              try {
-                hasSyncedPermissionMismatchRef.current = true;
-                await notificationService.setNotificationsEnabled(false);
-              } catch {
-                // Silent fail; next user action will retry
-              }
+              hasSyncedPermissionMismatchRef.current = true;
+              // We no longer automatically disable notifications on the backend
+              // to avoid affecting other devices where the user might have permissions.
             }
           } else {
             setIsEnabled(hasBackendPreference && permissions.granted);

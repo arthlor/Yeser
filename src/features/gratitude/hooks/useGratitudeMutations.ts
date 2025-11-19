@@ -423,7 +423,8 @@ export const useGratitudeMutations = () => {
     },
     onMutate: async ({ entryDate, statementIndex, moodEmoji }) => {
       if (!user?.id) {
-        return;
+        // Return a valid context object even if user is not authenticated
+        return { previousEntry: null };
       }
       await queryClient.cancelQueries({
         queryKey: queryKeys.gratitudeEntry(user.id, entryDate),

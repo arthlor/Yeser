@@ -22,6 +22,7 @@ interface MutationLock {
   operation: 'add' | 'edit' | 'delete' | 'delete_entry';
   timestamp: number;
   promise: Promise<unknown>;
+  resolve: () => void;
 }
 
 interface OptimisticUpdateVersion {
@@ -42,11 +43,10 @@ const acquireMutationLock = async (
 ): Promise<boolean> => {
   const lockKey = `${userId}:${entryDate}`;
 
-  // Check if lock exists for this entry
-  if (mutationLocks.has(lockKey)) {
+  // Wait for any existing lock to be released
+  while (mutationLocks.has(lockKey)) {
     const existingLock = mutationLocks.get(lockKey);
     if (existingLock) {
-      // Wait for existing operation to complete
       try {
         await existingLock.promise;
       } catch {
@@ -55,10 +55,9 @@ const acquireMutationLock = async (
     }
   }
 
-  // Acquire new lock
+  let resolveLock: () => void = () => {};
   const lockPromise = new Promise<void>((resolve) => {
-    // Lock will be resolved when operation completes
-    setTimeout(resolve, 0);
+    resolveLock = resolve;
   });
 
   mutationLocks.set(lockKey, {
@@ -66,6 +65,7 @@ const acquireMutationLock = async (
     operation,
     timestamp: Date.now(),
     promise: lockPromise,
+    resolve: resolveLock,
   });
 
   return true;
@@ -74,7 +74,12 @@ const acquireMutationLock = async (
 // **RACE CONDITION FIX**: Release mutation lock
 const releaseMutationLock = (entryDate: string, userId: string): void => {
   const lockKey = `${userId}:${entryDate}`;
-  mutationLocks.delete(lockKey);
+  const lock = mutationLocks.get(lockKey);
+
+  if (lock) {
+    lock.resolve();
+    mutationLocks.delete(lockKey);
+  }
 };
 
 // **RACE CONDITION FIX**: Get next optimistic version

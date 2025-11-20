@@ -75,20 +75,42 @@ export const NotificationSettings: React.FC = () => {
 
         if (!isCancelled && isMountedRef.current) {
           const hasBackendPreference = Boolean(profile?.notification_time);
+          const isPermissionGranted = permissions.granted;
 
-          if (hasBackendPreference && !permissions.granted) {
-            setIsEnabled(false);
-            logger.warn(
-              'Notification settings out of sync - profile enabled but no device permission'
-            );
+          if (hasBackendPreference) {
+            if (isPermissionGranted) {
+              // Backend ON + Permission ON = Ensure Enabled & Scheduled
+              setIsEnabled(true);
+              // Idempotent call to ensure schedules are active
+              await notificationService.scheduleDailyReminderNotifications();
 
-            if (!hasSyncedPermissionMismatchRef.current) {
-              hasSyncedPermissionMismatchRef.current = true;
-              // We no longer automatically disable notifications on the backend
-              // to avoid affecting other devices where the user might have permissions.
+              // Ensure token is fresh if missing
+              if (!pushToken) {
+                const token = await notificationService.getCurrentDevicePushToken();
+                if (token) {
+                  setPushToken(token);
+                }
+              }
+            } else {
+              // Backend ON + Permission OFF = Mismatch
+              setIsEnabled(false);
+              logger.warn(
+                'Notification settings out of sync - profile enabled but no device permission'
+              );
+
+              // Ensure no local notifications are scheduled if we don't have permission
+              await notificationService.cancelDailyReminderNotifications();
+
+              if (!hasSyncedPermissionMismatchRef.current) {
+                hasSyncedPermissionMismatchRef.current = true;
+                // We no longer automatically disable notifications on the backend
+                // to avoid affecting other devices where the user might have permissions.
+              }
             }
           } else {
-            setIsEnabled(hasBackendPreference && permissions.granted);
+            // Backend OFF = Ensure Disabled & Cancelled
+            setIsEnabled(false);
+            await notificationService.cancelDailyReminderNotifications();
           }
         }
       } catch (error) {
@@ -107,7 +129,7 @@ export const NotificationSettings: React.FC = () => {
     return () => {
       isCancelled = true;
     };
-  }, [profile]);
+  }, [profile, pushToken]);
 
   const enableNotifications = useCallback(async () => {
     // Prevent concurrent operations

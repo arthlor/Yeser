@@ -351,7 +351,7 @@
       "contactEmailLabel": "Destek ekibiyle iletişim",
       "contactEmailHint": "Destek ekibiyle iletişim kurmak için e-posta uygulamasını açar",
       "contactCTA": "Destek Ekibiyle İletişim",
-      "appVersion": "Yeşer v1.1.0",
+      "appVersion": "Yeşer v1.2.0",
       "accessibility": {
         "expanded": "{{question}} açıldı. {{answer}}",
         "collapsed": "{{question}} kapandı.",

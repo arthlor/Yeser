@@ -354,7 +354,7 @@
       "contactEmailLabel": "Soporte por correo",
       "contactEmailHint": "Abre la aplicación de correo para contactar a soporte",
       "contactCTA": "Contactar Soporte",
-      "appVersion": "Yeser v1.1.0",
+      "appVersion": "Yeser v1.2.0",
       "accessibility": {
         "expanded": "{{question}} expandido. {{answer}}",
         "collapsed": "{{question}} contraído.",

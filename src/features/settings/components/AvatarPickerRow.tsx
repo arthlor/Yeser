@@ -13,6 +13,7 @@ import { Image } from 'expo-image';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { useTranslation } from 'react-i18next';
+import { AppTheme } from '@/themes/types';
 
 interface AvatarPickerRowProps {
   username?: string | null;
@@ -75,93 +76,90 @@ const AvatarPickerRow: React.FC<AvatarPickerRowProps> = ({
   }, [onPick, onRemove, t]);
 
   return (
-    <View style={styles.card}>
-      <View style={styles.row}>
-        <View style={styles.left}>
-          <View style={styles.avatar}>
-            {avatarUrl ? (
-              <Image
-                source={{ uri: avatarUrl }}
-                style={styles.avatarImage}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={120}
-              />
-            ) : (
-              <Text style={styles.avatarInitial}>{initial}</Text>
-            )}
-          </View>
-          <View style={styles.textContent}>
-            <Text style={styles.title}>{t('shared.profile.avatar.profilePhotoLabel')}</Text>
-            <Text style={styles.subtitle}>{t('shared.profile.avatar.profilePhotoSubtitle')}</Text>
-          </View>
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.row} onPress={openSheet} activeOpacity={0.7}>
+        <View style={styles.avatar}>
+          {avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.avatarImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={120}
+            />
+          ) : (
+            <Text style={styles.avatarInitial}>{initial}</Text>
+          )}
         </View>
-        <TouchableOpacity
-          onPress={openSheet}
-          style={styles.action}
-          accessibilityRole="button"
-          accessibilityLabel={t('shared.profile.avatar.title')}
-        >
-          <Icon name="image-edit" size={20} color={theme.colors.primary} />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>{t('shared.profile.avatar.profilePhotoLabel')}</Text>
+          <Text style={styles.subtitle}>{t('shared.profile.avatar.profilePhotoSubtitle')}</Text>
+        </View>
+        <View style={styles.editIconContainer}>
+          <Icon name="image-edit" size={18} color={theme.colors.primary} />
+        </View>
+      </TouchableOpacity>
     </View>
   );
 };
 
-const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
+const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    card: {
+    container: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.outlineVariant,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
       marginHorizontal: theme.spacing.md,
       marginBottom: theme.spacing.sm,
+      overflow: 'hidden',
     },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: theme.spacing.lg,
-    },
-    left: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
     avatar: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       backgroundColor: theme.colors.surfaceVariant,
       alignItems: 'center',
       justifyContent: 'center',
+      overflow: 'hidden',
     },
-    avatarImage: { width: '100%', height: '100%', borderRadius: 40 },
+    avatarImage: {
+      width: '100%',
+      height: '100%',
+    },
     avatarInitial: {
-      ...theme.typography.headlineMedium,
+      ...theme.typography.titleLarge,
       color: theme.colors.onSurfaceVariant,
       fontWeight: '700',
     },
-    textContent: {
+    textContainer: {
       flex: 1,
-      marginLeft: theme.spacing.md,
-      minWidth: 0,
     },
     title: {
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
       color: theme.colors.onSurface,
       fontWeight: '600',
-      flexShrink: 1,
     },
     subtitle: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      marginTop: theme.spacing.xs / 2,
-      flexShrink: 1,
+      marginTop: 2,
     },
-    action: { padding: theme.spacing.xs },
+    editIconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
   });
 
 export default AvatarPickerRow;

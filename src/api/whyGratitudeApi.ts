@@ -52,7 +52,7 @@ export const getGratitudeBenefits = async (): Promise<GratitudeBenefit[]> => {
  * Fetches the list of active gratitude benefits from the database and returns localized content.
  * The content is for the "Why Gratitude Matters" screen.
  *
- * @param language - The target language for localization ('tr' | 'en')
+ * @param language - The target language for localization ('tr' | 'en' | 'es')
  * @returns Promise<LocalizedGratitudeBenefit[]> Array of active gratitude benefits with localized content
  * @throws {Error} When database query fails or user is not authenticated
  */

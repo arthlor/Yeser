@@ -14,7 +14,7 @@ import i18n from '@/i18n';
 interface ExportData {
   export_date: string;
   user_id: string;
-  language: 'tr' | 'en';
+  language: 'tr' | 'en' | 'es';
   profile: {
     full_name: string | null;
     email: string | null;
@@ -82,18 +82,21 @@ export const exportUserDataWithLocalization = async (): Promise<ExportData> => {
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
           'X-User-Language': language, // Primary language source
-          'Accept-Language': language === 'en' ? 'en-US,en;q=0.9' : 'tr-TR,tr;q=0.9', // Fallback
+          'Accept-Language':
+            language === 'en'
+              ? 'en-US,en;q=0.9'
+              : language === 'es'
+                ? 'es-ES,es;q=0.9'
+                : 'tr-TR,tr;q=0.9', // Fallback
         },
         body: JSON.stringify(requestBody),
       }
     );
 
     if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({
-          error: i18n.isInitialized ? i18n.t('errors.export.unknownError') : 'Unknown error',
-        }));
+      const errorData = await response.json().catch(() => ({
+        error: i18n.isInitialized ? i18n.t('errors.export.unknownError') : 'Unknown error',
+      }));
       throw new Error(
         errorData.error ||
           `HTTP ${response.status}: ${i18n.isInitialized ? i18n.t('errors.export.exportFailed') : 'Export failed'}`
@@ -132,7 +135,7 @@ export const exportUserDataWithLocalization = async (): Promise<ExportData> => {
  * @returns Localized filename string
  */
 export const generateLocalizedFilename = (
-  language: 'tr' | 'en',
+  language: 'tr' | 'en' | 'es',
   customFilename?: string
 ): string => {
   if (customFilename) {

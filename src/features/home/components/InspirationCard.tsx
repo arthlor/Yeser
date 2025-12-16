@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { useTranslation } from 'react-i18next';
+import ThemedCard from '@/shared/components/ui/ThemedCard';
 
 interface InspirationCardProps {
   currentCount: number;
@@ -58,7 +59,7 @@ const InspirationCard: React.FC<InspirationCardProps> = React.memo(
     }, [currentCount, dailyGoal, t, theme.colors]);
 
     return (
-      <View style={styles.container}>
+      <ThemedCard variant="elevated" density="comfortable" elevation="card">
         <View style={styles.cardHeader}>
           <View style={[styles.iconContainer, { backgroundColor: cardContent.iconColor + '20' }]}>
             <Ionicons name={cardContent.icon} size={22} color={cardContent.iconColor} />
@@ -66,7 +67,7 @@ const InspirationCard: React.FC<InspirationCardProps> = React.memo(
           <Text style={styles.cardTitle}>{cardContent.title}</Text>
         </View>
         <Text style={styles.cardMessage}>"{cardContent.message}"</Text>
-      </View>
+      </ThemedCard>
     );
   }
 );
@@ -75,14 +76,6 @@ InspirationCard.displayName = 'InspirationCard';
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    container: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      padding: theme.spacing.md,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '20',
-      marginBottom: theme.spacing.sm,
-    },
     cardHeader: {
       flexDirection: 'row',
       alignItems: 'center',

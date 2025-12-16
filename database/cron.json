@@ -1,0 +1,54 @@
+[
+  {
+    "cron_job_json": {
+      "jobid": 48,
+      "schedule": "*/5 * * * *",
+      "command": "refresh materialized view concurrently public.notification_windows;",
+      "nodename": "localhost",
+      "nodeport": 5432,
+      "database": "postgres",
+      "username": "postgres",
+      "active": true,
+      "jobname": "refresh-notification-windows"
+    }
+  },
+  {
+    "cron_job_json": {
+      "jobid": 49,
+      "schedule": "25,55 * * * *",
+      "command": "SELECT public.enqueue_notification_jobs()",
+      "nodename": "localhost",
+      "nodeport": 5432,
+      "database": "postgres",
+      "username": "postgres",
+      "active": true,
+      "jobname": "enqueue-notification-jobs"
+    }
+  },
+  {
+    "cron_job_json": {
+      "jobid": 50,
+      "schedule": "*/10 * * * *",
+      "command": "select public.reset_stuck_notification_jobs();",
+      "nodename": "localhost",
+      "nodeport": 5432,
+      "database": "postgres",
+      "username": "postgres",
+      "active": true,
+      "jobname": "reset-stuck-notification-jobs"
+    }
+  },
+  {
+    "cron_job_json": {
+      "jobid": 51,
+      "schedule": "*/5 * * * *",
+      "command": "select\n  net.http_post(\n      url:='https://svnexpdbckqiexdjbaca.supabase.co/functions/v1/process-notification-jobs',\n      headers:=jsonb_build_object('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2bmV4cGRiY2txaWV4ZGpiYWNhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODcwNjE1OCwiZXhwIjoyMDY0MjgyMTU4fQ.T85wVXnHsKAC0c5PoeTrq7jrild2Qtlc1jAzqyhV67A', 'x-internal-secret', 'Rl4dlMORBKOh4bREXzTuZhXEyxhmsVjqfHO4txpj68A='), \n      body:='{}',\n      timeout_milliseconds:=1000\n  );",
+      "nodename": "localhost",
+      "nodeport": 5432,
+      "database": "postgres",
+      "username": "postgres",
+      "active": true,
+      "jobname": "cron-trigger"
+    }
+  }
+]

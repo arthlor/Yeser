@@ -13,6 +13,7 @@ export type InitializationStage = 1 | 2 | 3 | 4;
 export type InitializationPhase = 'critical' | 'core' | 'enhancement' | 'complete';
 export type ServiceName = 'asyncStorage' | 'supabase' | 'backgroundSync' | 'networkMonitor';
 export type ServiceStatus = 'pending' | 'initializing' | 'ready' | 'error' | 'skipped';
+import { useSubscriptionStore } from '@/store/subscriptionStore';
 
 // 🛡️ DEVELOPMENT MODE: Detect development environment
 const IS_DEVELOPMENT = __DEV__ || process.env.EXPO_PUBLIC_ENV === 'development';
@@ -142,7 +143,11 @@ class ServiceManager {
 
     try {
       // Run all core services in parallel using Promise.allSettled
-      const coreServices = [this.initializeAsyncStorageCore(), this.initializeSupabaseCore()];
+      const coreServices = [
+        this.initializeAsyncStorageCore(),
+        this.initializeSupabaseCore(),
+        this.initializeRevenueCatCore(),
+      ];
 
       const results = await Promise.allSettled(coreServices);
 
@@ -309,6 +314,20 @@ class ServiceManager {
     }
   }
 
+  private async initializeRevenueCatCore(): Promise<void> {
+    // RevenueCat isn't strictly 'critical' for app boot, but we want it early for Paywalls
+    // It handles its own internal init state safe-guards
+    try {
+      await useSubscriptionStore.getState().initialize();
+      // We generally don't block core init on this unless we want to enforce paywall on boot
+      // For now, allow it to fail or succeed independently but track it
+      logger.debug('[COLD START v2] RevenueCat initialized');
+    } catch (error) {
+      logger.warn('[COLD START v2] RevenueCat init failed', { error: error });
+      // Don't throw, let app continue
+    }
+  }
+
   // 🆕 NEW: Enhancement service initialization (background)
 
   private async runEnhancementServices(): Promise<void> {
@@ -325,7 +344,8 @@ class ServiceManager {
       const serviceName = ['backgroundSync', 'networkMonitor', 'optimization'][index];
       if (result.status === 'rejected') {
         logger.warn(
-          `[COLD START v2] Enhancement service ${serviceName} failed (non-critical): ${String(result.reason)}`
+          `[COLD START v2] Enhancement service ${serviceName} failed (non-critical): ${String(result.reason)}`,
+          { error: result.reason }
         );
       }
     });

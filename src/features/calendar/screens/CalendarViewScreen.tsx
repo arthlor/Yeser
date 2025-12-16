@@ -1,8 +1,9 @@
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { isAfter, isSameMonth, startOfDay } from 'date-fns';
+import { addMonths, format, isAfter, isSameMonth, startOfDay, subMonths } from 'date-fns';
+import { enUS, es, tr } from 'date-fns/locale';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { DateData } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ErrorState from '@/shared/components/ui/ErrorState';
@@ -24,6 +25,8 @@ import { AppTheme } from '@/themes/types';
 import { MainTabParamList, RootStackParamList } from '@/types/navigation';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
 import { useTranslation } from 'react-i18next';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useLanguageStore } from '@/store/languageStore';
 
 type CalendarViewScreenNavigationProp = CompositeNavigationProp<
   NativeStackNavigationProp<MainTabParamList, 'PastEntriesTab'>,
@@ -34,8 +37,10 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
   const navigation = useNavigation<CalendarViewScreenNavigationProp>();
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const language = useLanguageStore((state) => state.language);
 
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { checkGate } = useSubscription();
 
   const animations = useCoordinatedAnimations();
 
@@ -75,6 +80,7 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
     isLoading: isLoadingDates,
     error: datesError,
     refetch: refetchDates,
+    isRefetching,
   } = useEntryDatesForMonth(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
 
   const {
@@ -84,55 +90,52 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
   } = useGratitudeEntry(selectedDate || '');
 
   useEffect(() => {
-    animations.animateEntrance({ duration: 100 });
+    animations.animateEntrance({ duration: 500 });
   }, [animations]);
 
+  // Handle Month Navigation locally
+  const handlePreviousMonth = useCallback(() => {
+    const prev = subMonths(currentMonth, 1);
+    setCurrentMonth(prev);
+    setSelectedDate(null);
+  }, [currentMonth]);
+
+  const handleNextMonth = useCallback(() => {
+    const next = addMonths(currentMonth, 1);
+    setCurrentMonth(next);
+    setSelectedDate(null);
+  }, [currentMonth]);
+
+  // Analytics Effects
   useEffect(() => {
     const monthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth() + 1}`;
-
     if (!analyticsTrackedRef.current) {
       analyticsService.logScreenView('calendar_screen');
       analyticsTrackedRef.current = true;
     }
-
     if (lastMonthAnalyticsRef.current !== monthKey && entryDates.length >= 0) {
       analyticsService.logEvent('calendar_screen_viewed', {
         current_year: currentMonth.getFullYear(),
         current_month: currentMonth.getMonth() + 1,
         total_entry_dates: entryDates.length,
-        has_selected_date: !!selectedDate,
-        selected_date: selectedDate || null,
-        has_entry_for_selected: !!selectedEntry,
       });
-
-      if (entryDates.length > 0) {
-        analyticsService.logEvent('calendar_month_viewed', {
-          year: currentMonth.getFullYear(),
-          month: currentMonth.getMonth() + 1,
-          entry_count: entryDates.length,
-        });
-      }
-
       lastMonthAnalyticsRef.current = monthKey;
     }
-  }, [currentMonth, entryDates, selectedDate, selectedEntry]);
+  }, [currentMonth, entryDates]);
 
+  // Marked Dates Calculation
   useEffect(() => {
     if (!Array.isArray(entryDates)) {
       return;
     }
-
     const entryDatesString = JSON.stringify(entryDates.sort());
     const currentKey = `${entryDatesString}-${selectedDate}-${currentMonth.getTime()}`;
-
     if (lastProcessedEntryDatesRef.current === currentKey) {
       return;
     }
-
     lastProcessedEntryDatesRef.current = currentKey;
 
     const newMarkedDates: CustomMarkedDates = {};
-
     entryDates.forEach((entryDate: string) => {
       newMarkedDates[entryDate] = {
         marked: true,
@@ -157,47 +160,28 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
 
   const handleMonthChange = useCallback((dateData: DateData) => {
     const newMonthDate = new Date(dateData.timestamp);
+    // synchronize local state if updated from calendar internal (though we disabled swipe)
     setCurrentMonth(newMonthDate);
     setSelectedDate(null);
-
-    analyticsService.logEvent('calendar_month_changed', {
-      year: newMonthDate.getFullYear(),
-      month: newMonthDate.getMonth() + 1,
-    });
   }, []);
 
-  const handleDayPress = useCallback(
-    (day: DateData): void => {
-      const newSelectedDate = day.dateString;
-      setSelectedDate(newSelectedDate);
-
-      analyticsService.logEvent('calendar_day_selected', {
-        date: newSelectedDate,
-        has_entry: Boolean(selectedEntry),
-      });
-    },
-    [selectedEntry]
-  );
+  const handleDayPress = useCallback((day: DateData): void => {
+    const newSelectedDate = day.dateString;
+    setSelectedDate(newSelectedDate);
+    analyticsService.logEvent('calendar_day_selected', { date: newSelectedDate });
+  }, []);
 
   const handleAddNewEntry = useCallback((): void => {
-    analyticsService.logEvent('add_entry_from_calendar', {
-      date: selectedDate ?? new Date().toISOString().split('T')[0],
-    });
-
-    if (selectedDate) {
-      navigation.navigate('PastEntryCreation', {
-        date: selectedDate,
-      });
+    if (!checkGate('past_entries')) {
+      return;
     }
-  }, [navigation, selectedDate]);
+    if (selectedDate) {
+      navigation.navigate('PastEntryCreation', { date: selectedDate });
+    }
+  }, [selectedDate, checkGate, navigation]);
 
   const handleViewEntry = useCallback((): void => {
     if (selectedEntry) {
-      analyticsService.logEvent('view_entry_from_calendar', {
-        date: selectedDate,
-        entry_id: selectedEntry.id,
-      });
-
       navigation.navigate('EntryDetail', {
         entryId: selectedEntry.id,
         entryDate: selectedDate ?? undefined,
@@ -216,6 +200,19 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
     return isSameMonth(today, current) || isAfter(current, today);
   }, [currentMonth]);
 
+  const getDateLocale = () => {
+    switch (language) {
+      case 'tr':
+        return tr;
+      case 'es':
+        return es;
+      default:
+        return enUS;
+    }
+  };
+
+  const monthYearDisplay = format(currentMonth, 'MMMM yyyy', { locale: getDateLocale() });
+
   if (datesError) {
     return (
       <ScreenLayout>
@@ -232,31 +229,64 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
     <ScreenLayout
       scrollable={true}
       edges={['top']}
-      density="compact"
+      density="comfortable"
       edgeToEdge={true}
       showsVerticalScrollIndicator={false}
       keyboardAware={false}
-      keyboardDismissMode="none"
-      keyboardShouldPersistTaps="always"
-      backgroundColor={theme.colors.surface}
+      backgroundColor={theme.colors.background}
+      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchDates} />}
     >
       <Animated.View
         style={[
-          styles.animatedContainer,
+          styles.container,
           {
             opacity: animations.fadeAnim,
-            transform: animations.combinedTransform,
+            transform: animations.entranceTransform,
           },
         ]}
       >
-        <CalendarView
-          currentMonth={currentMonth}
-          markedDates={markedDates}
-          onMonthChange={handleMonthChange}
-          onDayPress={handleDayPress}
-          isLoading={isLoadingDates}
-          isFutureMonth={isFutureMonth}
-        />
+        {/* NEW HEADER SECTION */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerLabel}>{t('calendar.title', 'YOUR JOURNEY')}</Text>
+            <Text style={styles.headerTitle}>{monthYearDisplay}</Text>
+            <Text style={styles.headerSubtitle}>
+              {t('calendar.subtitle', 'Map your moments of gratitude.')}
+            </Text>
+          </View>
+          <View style={styles.navRow}>
+            <TouchableOpacity
+              onPress={handlePreviousMonth}
+              style={styles.navButton}
+              disabled={isLoadingDates}
+            >
+              <Icon name="chevron-left" size={28} color={theme.colors.onSurface} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleNextMonth}
+              style={[styles.navButton, isFutureMonth && styles.navButtonDisabled]}
+              disabled={isFutureMonth || isLoadingDates}
+            >
+              <Icon
+                name="chevron-right"
+                size={28}
+                color={isFutureMonth ? theme.colors.onSurfaceVariant : theme.colors.onSurface}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.calendarCard}>
+          <CalendarView
+            currentMonth={currentMonth}
+            markedDates={markedDates}
+            onMonthChange={handleMonthChange}
+            onDayPress={handleDayPress}
+            isLoading={isLoadingDates}
+            isFutureMonth={isFutureMonth}
+            hideHeader={true} // HIDING DEFAULT HEADER
+          />
+        </View>
 
         <CalendarStats
           markedDates={markedDates}
@@ -272,15 +302,6 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
           onViewEntry={handleViewEntry}
           onAddEntry={handleAddNewEntry}
         />
-
-        <View style={styles.guideCard}>
-          <View style={styles.guideContent}>
-            <Icon name="lightbulb-outline" size={20} color={theme.colors.secondary} />
-            <Text style={styles.guideText}>
-              {t('calendar.guide.dottedDays')} • {t('calendar.guide.swipeToNavigate')}
-            </Text>
-          </View>
-        </View>
       </Animated.View>
     </ScreenLayout>
   );
@@ -290,33 +311,68 @@ EnhancedCalendarViewScreen.displayName = 'EnhancedCalendarViewScreen';
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    animatedContainer: {
+    container: {
       flex: 1,
+      paddingBottom: theme.spacing.xl,
     },
-    guideCard: {
-      borderRadius: 0,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 0,
-      borderTopWidth: 1,
-      borderBottomWidth: 1,
-      borderTopColor: theme.colors.outline + '10',
-      borderBottomColor: theme.colors.outline + '10',
-      marginTop: theme.spacing.md,
-      ...getPrimaryShadow.card(theme),
-    },
-    guideContent: {
+    header: {
       flexDirection: 'row',
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.md,
-      alignItems: 'center',
-      gap: theme.spacing.md,
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.xl,
+      paddingBottom: theme.spacing.md,
     },
-    guideText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
+    headerContent: {
       flex: 1,
-      lineHeight: 18,
-      opacity: 0.8,
+      paddingRight: theme.spacing.md,
+    },
+    headerLabel: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.primary,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      marginBottom: 4,
+    },
+    headerTitle: {
+      ...theme.typography.displaySmall,
+      color: theme.colors.onBackground,
+      fontWeight: '700',
+      marginBottom: 4,
+      fontFamily: 'Lora-Bold',
+    },
+    headerSubtitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      lineHeight: 22,
+    },
+    navRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      marginTop: 8,
+    },
+    navButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.surfaceVariant + '40',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    navButtonDisabled: {
+      opacity: 0.3,
+    },
+    calendarCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg, // Make it a card
+      marginHorizontal: theme.spacing.md,
+      marginVertical: theme.spacing.sm,
+      paddingVertical: theme.spacing.sm, // Add internal padding
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '20',
+      ...getPrimaryShadow.card(theme),
+      overflow: 'hidden',
     },
   });
 

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Share,
+  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -12,20 +12,10 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
-import { alpha } from '@/themes/utils';
-import {
-  formatStatementDate,
-  InteractiveStatementCardProps,
-  MoodChip,
-  ThreeDotsMenu,
-  useHapticFeedback,
-  useReducedMotion,
-  useStatementCardAnimations,
-} from './StatementCardBase';
+import { formatStatementDate, InteractiveStatementCardProps } from './StatementCardBase';
 import type { MoodEmoji } from '@/types/mood.types';
 import { useTranslation } from 'react-i18next';
 
-// 📝 DAILY ENTRY SPECIFIC PROPS
 interface StatementEditCardProps extends InteractiveStatementCardProps {
   variant?: 'primary' | 'secondary' | 'minimal';
   showQuotes?: boolean;
@@ -38,745 +28,387 @@ interface StatementEditCardProps extends InteractiveStatementCardProps {
   showSaveHint?: boolean;
 }
 
-/**
- * 📝 StatementEditCard - REDESIGNED for Modern Edge-to-Edge UI
- *
- * DESIGN FOCUS:
- * - Full-width edge-to-edge design maximizing screen real estate
- * - Modern iOS-inspired card sections with enhanced visual hierarchy
- * - Improved editing experience with floating input design
- * - Enhanced accessibility and touch targets
- * - Smooth micro-interactions and visual feedback
- * - Better content organization and readability
- */
-const StatementEditCardComponent: React.FC<StatementEditCardProps> = ({
+const StatementEditCard: React.FC<StatementEditCardProps> = ({
   statement,
   date,
-  variant: _variant = 'primary',
   showQuotes = true,
   numberOfLines,
-  animateEntrance = true,
   onPress,
   style,
-  accessibilityLabel,
-  hapticFeedback = true,
-
-  // Interactive states
   isEditing = false,
-  isSelected: _isSelected = false,
   isLoading = false,
-  hasError = false,
-
-  // Action handlers
   onEdit,
   onDelete,
   onCancel,
   onSave,
-
-  // Configuration
-  enableInlineEdit = true,
-  confirmDelete: _confirmDelete = true,
   maxLength = 500,
-  edgeToEdge: _edgeToEdge = true, // Default to true for new design
   moodEmoji,
-  onChangeMood: _onChangeMood,
-  showSaveHint,
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
-
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  // Gradients removed for a cleaner, more subtle card
-
-  const animations = useStatementCardAnimations();
-  const { triggerHaptic } = useHapticFeedback(hapticFeedback);
-  const { reducedMotion } = useReducedMotion();
-
-  // Local state for editing
   const [localStatement, setLocalStatement] = useState(statement);
+  const [showActions, setShowActions] = useState(false);
   const textInputRef = useRef<TextInput>(null);
 
-  // Cleanup ref on unmount
-  useEffect(() => {
-    const textInput = textInputRef.current;
-    return () => {
-      if (textInput) {
-        // No explicit cleanup needed for the ref itself
-      }
-    };
-  }, []);
-
-  // Sync local statement with prop changes
   useEffect(() => {
     setLocalStatement(statement);
   }, [statement]);
 
-  // Simple error feedback
-  useEffect(() => {
-    if (hasError) {
-      triggerHaptic('error');
-    }
-  }, [hasError, triggerHaptic]);
+  const { relativeTime } = formatStatementDate(date);
 
-  // Simple entrance feedback
-  useEffect(() => {
-    if (animateEntrance && !reducedMotion) {
-      triggerHaptic('light');
-    }
-  }, [animateEntrance, triggerHaptic, reducedMotion]);
-
-  // Enhanced date formatting
-  const { relativeTime, isRecent } = formatStatementDate(date);
-
-  // Character count and warnings
-  const { characterCount, isNearLimit, isOverLimit } = useMemo(() => {
-    const count = localStatement.length;
-    return {
-      characterCount: count,
-      isNearLimit: count >= maxLength * 0.85,
-      isOverLimit: count > maxLength,
-    };
-  }, [localStatement, maxLength]);
-
-  // Enhanced action handlers
   const handleSave = useCallback(async () => {
-    if (!localStatement.trim() || isOverLimit) {
-      triggerHaptic('warning');
+    if (!localStatement.trim()) {
       return;
     }
-
     try {
-      triggerHaptic('medium');
       await onSave?.(localStatement.trim());
-      triggerHaptic('success');
     } catch {
-      triggerHaptic('error');
+      // Error handled by parent
     }
-  }, [localStatement, isOverLimit, onSave, triggerHaptic]);
+  }, [localStatement, onSave]);
 
   const handleCancel = useCallback(() => {
-    triggerHaptic('light');
     setLocalStatement(statement);
     onCancel?.();
-  }, [statement, onCancel, triggerHaptic]);
+  }, [statement, onCancel]);
 
-  const handleStatementChange = useCallback((text: string) => {
-    setLocalStatement(text);
-  }, []);
+  const handleDelete = useCallback(() => {
+    Alert.alert(t('shared.statement.confirmDeleteAction'), t('shared.statement.confirmDelete'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('shared.statement.deleteButton'), style: 'destructive', onPress: onDelete },
+    ]);
+  }, [onDelete, t]);
 
-  const handlePress = useCallback(() => {
-    if (onPress && !isEditing) {
-      triggerHaptic('selection');
-      onPress();
-    }
-  }, [onPress, isEditing, triggerHaptic]);
+  const isDirty = localStatement.trim() !== (statement ?? '').trim();
 
-  const isDirty = useMemo(
-    () => localStatement.trim() !== (statement ?? '').trim(),
-    [localStatement, statement]
-  );
-
-  const handleLongPress = useCallback(async () => {
-    try {
-      await Share.share({ message: localStatement });
-      triggerHaptic('success');
-    } catch {
-      // ignore
-    }
-  }, [localStatement, triggerHaptic]);
-
-  // Enhanced placeholder text
-  const placeholderText = useMemo(() => t('shared.statement.edit.placeholder'), [t]);
-
-  // Main card content with new edge-to-edge design
-  const CardContent = (
-    <View style={[styles.edgeToEdgeContainer, style]}>
-      <View style={styles.subtleCardBorder} pointerEvents="none" />
-      {/* Inner container with left accent bar */}
-      <View style={styles.innerGlowContainer} pointerEvents="box-none">
-        <View style={styles.leftAccent} pointerEvents="none" />
-        {/* MODERN CARD HEADER - Edge-to-edge with enhanced visual hierarchy */}
-        <View style={styles.cardHeader} pointerEvents="box-none">
-          <View style={styles.headerContent}>
-            {/* Statement number or icon */}
-            <View style={styles.headerLeft}>
-              {showQuotes && !isEditing && (
-                <View style={styles.quoteIconContainer}>
-                  <Icon name="format-quote-open" size={16} color={theme.colors.primary + '60'} />
-                </View>
-              )}
-              {isEditing && (
-                <View style={styles.editingIconContainer}>
-                  <Icon name="pencil" size={14} color={theme.colors.primary} />
-                </View>
-              )}
-            </View>
-
-            {/* Actions menu */}
-            {(onEdit || onDelete) && (
-              <View style={styles.headerRight} pointerEvents="box-none">
-                <ThreeDotsMenu
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  isVisible={!isEditing}
-                  hapticFeedback={hapticFeedback}
-                />
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* MODERN CONTENT SECTION - Enhanced padding and layout */}
-        <View style={styles.contentSection}>
-          {isEditing && enableInlineEdit ? (
-            /* ENHANCED EDITING INTERFACE */
-            <View style={styles.editingInterface}>
-              <View style={styles.inputContainer}>
-                <TextInput
-                  ref={textInputRef}
-                  style={[
-                    styles.modernTextInput,
-                    hasError && styles.errorInput,
-                    isOverLimit && styles.overLimitInput,
-                  ]}
-                  value={localStatement}
-                  onChangeText={handleStatementChange}
-                  multiline
-                  maxLength={maxLength}
-                  placeholder={placeholderText}
-                  placeholderTextColor={theme.colors.onSurfaceVariant + '50'}
-                  autoFocus
-                  selectionColor={theme.colors.primary}
-                  textAlignVertical="top"
-                  scrollEnabled={true}
-                  accessibilityLabel={accessibilityLabel || t('shared.statement.edit.a11yLabel')}
-                  accessibilityHint={t('shared.statement.edit.a11yHint')}
-                />
-
-                {/* Floating character counter */}
-                <View style={styles.floatingCounter}>
-                  <Text
-                    style={[
-                      styles.characterCountText,
-                      isNearLimit && !isOverLimit && styles.warningCountText,
-                      isOverLimit && styles.errorCountText,
-                    ]}
-                  >
-                    {characterCount}/{maxLength}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Input status indicators */}
-              {(isNearLimit || isOverLimit) && (
-                <View style={styles.inputStatusContainer}>
-                  <Icon
-                    name={isOverLimit ? 'alert-circle' : 'alert-outline'}
-                    size={16}
-                    color={isOverLimit ? theme.colors.error : theme.colors.tertiary}
-                  />
-                  <Text style={[styles.statusText, isOverLimit && styles.errorStatusText]}>
-                    {isOverLimit
-                      ? t('shared.statement.nearLimit')
-                      : t('shared.statement.edit.remaining', { count: maxLength - characterCount })}
-                  </Text>
-                </View>
-              )}
-
-              {/* Modern action buttons */}
-              <View style={styles.modernActionButtons}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={handleCancel}
-                  activeOpacity={0.7}
-                  accessibilityLabel={t('common.cancel')}
-                >
-                  <Icon name="close" size={14} color={theme.colors.onSurfaceVariant} />
-                  <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.saveButton,
-                    (!localStatement.trim() || isOverLimit || !isDirty) &&
-                      styles.disabledSaveButton,
-                  ]}
-                  onPress={handleSave}
-                  activeOpacity={0.7}
-                  disabled={!localStatement.trim() || isOverLimit || !isDirty}
-                  accessibilityLabel={t('shared.statement.save') || 'Save'}
-                >
-                  <Icon name="check" size={14} color={theme.colors.onPrimary} />
-                  <Text style={styles.saveButtonText}>{t('shared.statement.save') || 'Save'}</Text>
-                </TouchableOpacity>
-              </View>
-              {showSaveHint && (
-                <Text style={styles.saveHintText}>{t('gratitude.actions.saveHint')}</Text>
-              )}
-            </View>
-          ) : (
-            /* ENHANCED READING INTERFACE */
-            <View style={styles.readingInterface}>
-              <Text style={styles.modernStatementText} numberOfLines={numberOfLines}>
-                {localStatement}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Mood editing available only during edit mode */}
-        {isEditing && (
-          <View style={styles.moodEditRow}>
-            <MoodChip moodEmoji={moodEmoji ?? null} onChangeMood={_onChangeMood} />
-          </View>
-        )}
-
-        {/* Removed social reaction row; only show Mood: in footer */}
-
-        {/* MODERN FOOTER SECTION - Date and metadata */}
-        {date && !isEditing && (
-          <View style={styles.cardFooter}>
-            <View style={styles.footerContent}>
-              <View style={styles.dateSection}>
-                <Icon
-                  name={isRecent ? 'clock-outline' : 'calendar'}
-                  size={14}
-                  color={theme.colors.onSurfaceVariant + (isRecent ? '90' : '60')}
-                />
-                <Text style={[styles.dateText, isRecent && styles.recentDateText]}>
-                  {relativeTime}
-                </Text>
-              </View>
-
-              {/* Mood display only (no change) when not editing */}
-              {moodEmoji ? (
-                <View style={styles.moodInlineContainer}>
-                  <Text style={styles.moodInlineLabel}>{t('shared.mood.label')}:</Text>
-                  <Text style={styles.moodInlineEmoji}>{moodEmoji}</Text>
-                </View>
-              ) : null}
-
-              {isRecent && (
-                <View style={styles.recentBadge}>
-                  <Text style={styles.recentBadgeText}>{t('shared.ui.badges.new')}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Loading indicator */}
-        {isLoading && (
-          <View style={styles.loadingOverlay}>
-            <View style={styles.loadingIndicator} />
-          </View>
-        )}
-      </View>
-    </View>
-  );
-
-  // Enhanced TouchableOpacity wrapper
-  if (onPress && !isEditing) {
+  // Editing mode
+  if (isEditing) {
     return (
-      <TouchableOpacity
-        activeOpacity={0.95}
-        onPress={handlePress}
-        onLongPress={handleLongPress}
-        onPressIn={animations.animatePressIn}
-        onPressOut={animations.animatePressOut}
-        accessibilityLabel={
-          accessibilityLabel || t('shared.statement.a11y.memoryLabel', { text: statement })
-        }
-        accessibilityRole="button"
-        style={styles.touchableContainer}
-      >
-        {CardContent}
-      </TouchableOpacity>
+      <View style={[styles.container, style]}>
+        {/* Edit Header */}
+        <View style={styles.editHeader}>
+          <View style={styles.editIconContainer}>
+            <Icon name="pencil" size={16} color={theme.colors.primary} />
+          </View>
+          <Text style={styles.editTitle}>{t('shared.statement.editingLabel')}</Text>
+        </View>
+
+        {/* Text Input */}
+        <TextInput
+          ref={textInputRef}
+          style={styles.textInput}
+          value={localStatement}
+          onChangeText={setLocalStatement}
+          multiline
+          maxLength={maxLength}
+          placeholder={t('shared.statement.edit.placeholder')}
+          placeholderTextColor={theme.colors.onSurfaceVariant + '60'}
+          autoFocus
+          selectionColor={theme.colors.primary}
+          textAlignVertical="top"
+        />
+
+        {/* Character Count */}
+        <Text style={styles.charCount}>
+          {localStatement.length}/{maxLength}
+        </Text>
+
+        {/* Action Buttons */}
+        <View style={styles.editActions}>
+          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel} activeOpacity={0.7}>
+            <Icon name="close" size={18} color={theme.colors.onSurfaceVariant} />
+            <Text style={styles.cancelText}>{t('common.cancel')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.saveButton, !isDirty && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            activeOpacity={0.7}
+            disabled={!isDirty}
+          >
+            <Icon name="check" size={18} color={theme.colors.onPrimary} />
+            <Text style={styles.saveText}>{t('shared.statement.save')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   }
 
+  // Reading mode
   return (
     <TouchableOpacity
-      activeOpacity={1}
-      onLongPress={handleLongPress}
-      style={styles.touchableContainer}
+      style={[styles.container, style]}
+      onPress={onPress}
+      activeOpacity={0.7}
+      disabled={!onPress}
     >
-      {CardContent}
+      {/* Header Row */}
+      <View style={styles.headerRow}>
+        {showQuotes && (
+          <View style={styles.quoteIconContainer}>
+            <Icon name="format-quote-open" size={14} color={theme.colors.primary} />
+          </View>
+        )}
+        <View style={styles.spacer} />
+
+        {/* 3-dot Menu */}
+        {(onEdit || onDelete) && (
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => setShowActions(!showActions)}
+            activeOpacity={0.7}
+          >
+            <Icon name="dots-vertical" size={20} color={theme.colors.onSurfaceVariant} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Actions Row (shown when menu is active) */}
+      {showActions && (
+        <View style={styles.actionsRow}>
+          {onEdit && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => {
+                setShowActions(false);
+                onEdit();
+              }}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
+              >
+                <Icon name="pencil-outline" size={18} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.actionText}>{t('shared.statement.editButton')}</Text>
+            </TouchableOpacity>
+          )}
+          {onDelete && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => {
+                setShowActions(false);
+                handleDelete();
+              }}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  { backgroundColor: theme.colors.errorContainer },
+                ]}
+              >
+                <Icon name="trash-can-outline" size={18} color={theme.colors.error} />
+              </View>
+              <Text style={[styles.actionText, { color: theme.colors.error }]}>
+                {t('shared.statement.deleteButton')}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* Statement Text */}
+      <Text style={styles.statementText} numberOfLines={numberOfLines}>
+        {statement}
+      </Text>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <View style={styles.dateRow}>
+          <Icon name="clock-outline" size={14} color={theme.colors.onSurfaceVariant} />
+          <Text style={styles.dateText}>{relativeTime}</Text>
+        </View>
+        {moodEmoji && <Text style={styles.moodEmoji}>{moodEmoji}</Text>}
+      </View>
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <Icon name="loading" size={24} color={theme.colors.primary} />
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
 
-const StatementEditCard = React.memo(StatementEditCardComponent);
-StatementEditCard.displayName = 'StatementEditCard';
-
-// 🎨 MODERN EDGE-TO-EDGE STYLES
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    // MAIN CONTAINER - Enhanced edge-to-edge design
-    touchableContainer: {
-      marginBottom: 2, // Better visual separation between cards
-    } as ViewStyle,
-
-    edgeToEdgeContainer: {
-      // Clean background to sit on top of gradient border
+    container: {
       backgroundColor: theme.colors.surface,
-      // Position on top of gradient border
-      position: 'relative',
-      zIndex: 1,
-      // Remove border to let gradient show through
-      borderRadius: theme.borderRadius.md, // Reduced from lg
-      overflow: 'hidden',
-      minHeight: 70, // Reduced from 90
-      // Small margin for breathing room
-      marginHorizontal: 2,
-      marginVertical: 1,
-    } as ViewStyle,
-
-    // Inner glow container - creates subtle depth without complexity
-    innerGlowContainer: {
-      flex: 1,
-      // Reduced alpha to avoid bright surfaces
-      backgroundColor: alpha(theme.colors.surface, 0.85),
-      // No additional borders to avoid overlap
-      borderRadius: theme.borderRadius.md - 1, // Reduced
-      overflow: 'hidden',
-    } as ViewStyle,
-    leftAccent: {
-      position: 'absolute',
-      top: 0,
-      bottom: 0,
-      left: 0,
-      width: 3,
-      backgroundColor: alpha(theme.colors.primary, 0.9),
-    } as ViewStyle,
-
-    subtleCardBorder: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      borderRadius: theme.borderRadius.md,
+      borderRadius: theme.borderRadius.lg,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: alpha(theme.colors.outline, 0.12),
-    } as ViewStyle,
-
-    // MODERN CARD HEADER - Clean and minimal
-    cardHeader: {
-      // Reduced alpha for less brightness
-      backgroundColor: alpha(theme.colors.surface, 0.9),
-      paddingHorizontal: theme.spacing.md, // Reduced from lg
-      paddingTop: theme.spacing.sm, // Reduced from md
-      paddingBottom: theme.spacing.xs, // Reduced from sm
-      // Single clean divider
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: alpha(theme.colors.outline, 0.08),
-    } as ViewStyle,
-
-    headerContent: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      minHeight: 24, // Reduced from 32
-    } as ViewStyle,
-
-    headerLeft: {
+      borderColor: theme.colors.outline + '20',
+      overflow: 'hidden',
+    },
+    headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
-    } as ViewStyle,
-
-    headerRight: {
-      overflow: 'visible',
-      zIndex: 1000,
-    } as ViewStyle,
-
-    quoteIconContainer: {
-      width: 32, // Reduced from 36
-      height: 32, // Reduced from 36
-      borderRadius: 16, // Reduced from 18
-      // Subtle container with theme color
-      backgroundColor: alpha(theme.colors.primaryContainer, 0.5),
-      alignItems: 'center',
-      justifyContent: 'center',
-    } as ViewStyle,
-
-    editingIconContainer: {
-      width: 28, // Reduced from 32
-      height: 28, // Reduced from 32
-      borderRadius: 14, // Reduced from 16
-      backgroundColor: alpha(theme.colors.primary, 0.1),
-      alignItems: 'center',
-      justifyContent: 'center',
-    } as ViewStyle,
-
-    // CONTENT SECTION - Clean and spacious
-    contentSection: {
-      // Consistent background
-      backgroundColor: alpha(theme.colors.surface, 0),
-      paddingHorizontal: theme.spacing.md, // Reduced from lg
-      paddingTop: theme.spacing.sm, // Reduced from md
-      paddingBottom: theme.spacing.md, // Reduced from lg
-      minHeight: 50, // Reduced from 60
-    } as ViewStyle,
-
-    moodEditRow: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
       paddingHorizontal: theme.spacing.md,
-      paddingBottom: theme.spacing.sm,
-    } as ViewStyle,
-
-    // ENHANCED EDITING INTERFACE
-    editingInterface: {
+      paddingTop: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    quoteIconContainer: {
+      width: 28,
+      height: 28,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    spacer: {
+      flex: 1,
+    },
+    menuButton: {
+      width: 32,
+      height: 32,
+      borderRadius: theme.borderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionsRow: {
+      flexDirection: 'row',
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.sm,
       gap: theme.spacing.md,
-    } as ViewStyle,
-
-    inputContainer: {
-      position: 'relative',
-    } as ViewStyle,
-
-    modernTextInput: {
-      fontFamily: 'Lora-Regular',
-      fontSize: 16, // Reduced from 18
-      lineHeight: 24, // Reduced from 28
-      color: theme.colors.onSurface,
-      // Clean single border
-      backgroundColor: alpha(theme.colors.surface, 0.5),
-      borderWidth: 1.5,
-      borderColor: alpha(theme.colors.outline, 0.2),
-      borderRadius: theme.borderRadius.md,
-      paddingHorizontal: theme.spacing.md, // Reduced from lg
-      paddingVertical: theme.spacing.sm, // Reduced from md
-      paddingBottom: theme.spacing.md + 8, // Extra space for counter
-      minHeight: 100, // Reduced from 120
-      maxHeight: 180, // Reduced from 200
-      textAlignVertical: 'top',
-    } as ViewStyle,
-
-    errorInput: {
-      borderColor: theme.colors.error,
-      backgroundColor: alpha(theme.colors.error, 0.04),
-    } as ViewStyle,
-
-    overLimitInput: {
-      borderColor: theme.colors.error,
-      borderWidth: 2,
-      backgroundColor: alpha(theme.colors.error, 0.08),
-    } as ViewStyle,
-
-    floatingCounter: {
-      position: 'absolute',
-      bottom: theme.spacing.sm,
-      right: theme.spacing.md,
-      backgroundColor: alpha(theme.colors.surface, 0.8), // Reduced from 0.9
+    },
+    actionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      paddingVertical: theme.spacing.xs,
       paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 4,
-      borderRadius: theme.borderRadius.sm,
-    } as ViewStyle,
-
-    characterCountText: {
-      fontSize: 13,
+      backgroundColor: theme.colors.surfaceVariant + '40',
+      borderRadius: theme.borderRadius.full,
+    },
+    actionIconContainer: {
+      width: 28,
+      height: 28,
+      borderRadius: theme.borderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.onSurface,
       fontWeight: '600',
+    },
+    statementText: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurface,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+      lineHeight: 26,
+    },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.md,
+    },
+    dateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+    },
+    dateText: {
+      ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      letterSpacing: 0.2,
-    } as ViewStyle,
-
-    warningCountText: {
-      color: theme.colors.tertiary,
-      fontWeight: '700',
-    } as ViewStyle,
-
-    errorCountText: {
-      color: theme.colors.error,
-      fontWeight: '800',
-    } as ViewStyle,
-
-    inputStatusContainer: {
+    },
+    moodEmoji: {
+      fontSize: 18,
+    },
+    // Edit mode styles
+    editHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.sm,
-    } as ViewStyle,
-
-    statusText: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: theme.colors.tertiary,
-    } as ViewStyle,
-
-    errorStatusText: {
-      color: theme.colors.error,
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.md,
+      paddingBottom: theme.spacing.sm,
+    },
+    editIconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    editTitle: {
+      ...theme.typography.titleSmall,
+      color: theme.colors.onSurface,
       fontWeight: '600',
-    } as ViewStyle,
-
-    // MODERN ACTION BUTTONS - More compact design
-    modernActionButtons: {
+    },
+    textInput: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurface,
+      marginHorizontal: theme.spacing.md,
+      padding: theme.spacing.md,
+      backgroundColor: theme.colors.surfaceVariant + '30',
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '30',
+      minHeight: 100,
+      maxHeight: 200,
+      textAlignVertical: 'top',
+    },
+    charCount: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'right',
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.xs,
+    },
+    editActions: {
       flexDirection: 'row',
-      gap: theme.spacing.sm, // Reduced from lg
-      paddingTop: theme.spacing.sm, // Reduced from lg
-      marginTop: theme.spacing.sm, // Reduced from md
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: alpha(theme.colors.outline, 0.08),
-    } as ViewStyle,
-
+      gap: theme.spacing.sm,
+      padding: theme.spacing.md,
+    },
     cancelButton: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: theme.spacing.xs, // Reduced from sm
-      paddingVertical: theme.spacing.sm, // Reduced from lg
-      paddingHorizontal: theme.spacing.md,
-      backgroundColor: alpha(theme.colors.surfaceVariant, 0.5),
-      borderRadius: theme.borderRadius.sm, // Reduced from md
-      borderWidth: 1,
-      borderColor: alpha(theme.colors.outline, 0.15),
-    } as ViewStyle,
-
-    cancelButtonText: {
-      fontSize: 14, // Reduced from 17
-      fontWeight: '600',
+      gap: theme.spacing.xs,
+      paddingVertical: theme.spacing.sm,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: theme.borderRadius.md,
+    },
+    cancelText: {
+      ...theme.typography.labelLarge,
       color: theme.colors.onSurfaceVariant,
-      fontFamily: 'Lora-SemiBold',
-      letterSpacing: 0.3,
-    } as ViewStyle,
-
+      fontWeight: '600',
+    },
     saveButton: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: theme.spacing.xs, // Reduced from sm
-      paddingVertical: theme.spacing.sm, // Reduced from lg
-      paddingHorizontal: theme.spacing.md,
+      gap: theme.spacing.xs,
+      paddingVertical: theme.spacing.sm,
       backgroundColor: theme.colors.primary,
-      borderRadius: theme.borderRadius.sm, // Reduced from md
-    } as ViewStyle,
-
-    disabledSaveButton: {
-      backgroundColor: alpha(theme.colors.outline, 0.3),
-      shadowOpacity: 0,
-      elevation: 0,
-    } as ViewStyle,
-
-    saveButtonText: {
-      fontSize: 14, // Reduced from 17
-      fontWeight: '700',
+      borderRadius: theme.borderRadius.md,
+    },
+    saveButtonDisabled: {
+      opacity: 0.5,
+    },
+    saveText: {
+      ...theme.typography.labelLarge,
       color: theme.colors.onPrimary,
-      fontFamily: 'Lora-SemiBold',
-      letterSpacing: 0.3,
-    } as ViewStyle,
-
-    // ENHANCED READING INTERFACE
-    readingInterface: {
-      paddingVertical: theme.spacing.md,
-    } as ViewStyle,
-
-    modernStatementText: {
-      fontFamily: 'Lora-Medium',
-      fontSize: 17, // Reduced from 19
-      lineHeight: 26, // Reduced from 30
-      color: theme.colors.onSurface,
-      fontWeight: '500',
-      letterSpacing: 0.2,
-      textAlign: 'left',
-      marginHorizontal: 2, // Subtle indent for better readability
-    } as ViewStyle,
-
-    // MODERN FOOTER SECTION
-    cardFooter: {
-      // Very subtle background
-      backgroundColor: alpha(theme.colors.surfaceVariant, 0.2),
-      paddingHorizontal: theme.spacing.md, // Reduced from lg
-      paddingVertical: theme.spacing.xs, // Reduced from sm
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: alpha(theme.colors.outline, 0.06),
-    } as ViewStyle,
-
-    footerContent: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    } as ViewStyle,
-
-    dateSection: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-    } as ViewStyle,
-
-    dateText: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: theme.colors.onSurfaceVariant,
-      fontFamily: 'Lora-Medium',
-      letterSpacing: 0.2,
-    } as ViewStyle,
-
-    recentDateText: {
-      color: theme.colors.primary,
-      fontWeight: '700',
-    } as ViewStyle,
-
-    recentBadge: {
-      backgroundColor: alpha(theme.colors.primary, 0.1),
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 2,
-      borderRadius: theme.borderRadius.xs,
-      borderWidth: 1,
-      borderColor: alpha(theme.colors.primary, 0.2),
-    } as ViewStyle,
-
-    recentBadgeText: {
-      fontSize: 10,
-      fontWeight: '800',
-      color: theme.colors.primary,
-      letterSpacing: 0.5,
-    } as ViewStyle,
-
-    // LOADING OVERLAY
+      fontWeight: '600',
+    },
     loadingOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: alpha(theme.colors.surface, 0.7), // Reduced from 0.8
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: theme.colors.surface + 'CC',
       alignItems: 'center',
       justifyContent: 'center',
     } as ViewStyle,
-
-    loadingIndicator: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: alpha(theme.colors.primary, 0.3),
-    } as ViewStyle,
-
-    // Inline mood next to date label
-    moodInlineContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-    } as ViewStyle,
-    moodInlineLabel: {
-      ...theme.typography.labelSmall,
-      color: theme.colors.onSurfaceVariant,
-      fontWeight: '600',
-    } as ViewStyle,
-    moodInlineEmoji: {
-      fontSize: 14,
-    } as ViewStyle,
-
-    saveHintText: {
-      ...theme.typography.labelSmall,
-      color: theme.colors.onSurfaceVariant,
-      fontWeight: '500',
-      textAlign: 'center',
-      marginTop: theme.spacing.sm,
-    },
   });
 
-export default StatementEditCard;
+export default React.memo(StatementEditCard);

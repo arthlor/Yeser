@@ -5,7 +5,6 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ThemedCard } from '@/shared/components/ui';
 import { ScreenHeader, ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
-import { getPrimaryShadow } from '@/themes/utils';
 import { useStreakData } from '@/features/streak/hooks/useStreakData';
 import { createAdvancedMilestones } from '@/features/streak/components/AdvancedStreakMilestones';
 import { hapticFeedback } from '@/utils/hapticFeedback';
@@ -294,7 +293,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                     { backgroundColor: theme.colors.primary + '15' },
                   ]}
                 >
-                  <Icon name="fire" size={24} color={theme.colors.primary} />
+                  <Icon name="fire" size={18} color={theme.colors.primary} />
                 </View>
                 <Text style={styles.statNumber}>{currentStreak}</Text>
                 <Text style={styles.statLabel}>{t('streak.details.stats.current')}</Text>
@@ -309,7 +308,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                     { backgroundColor: theme.colors.success + '15' },
                   ]}
                 >
-                  <Icon name="trophy" size={24} color={theme.colors.success} />
+                  <Icon name="trophy" size={18} color={theme.colors.success} />
                 </View>
                 <Text style={styles.statNumber}>{longestStreak}</Text>
                 <Text style={styles.statLabel}>{t('streak.details.stats.longest')}</Text>
@@ -324,7 +323,7 @@ const StreakDetailsScreen: React.FC<StreakDetailsScreenProps> = ({ navigation })
                     { backgroundColor: theme.colors.secondary + '15' },
                   ]}
                 >
-                  <Icon name="medal" size={24} color={theme.colors.secondary} />
+                  <Icon name="medal" size={18} color={theme.colors.secondary} />
                 </View>
                 <Text style={styles.statNumber}>{unlockedMilestones.length}</Text>
                 <Text style={styles.statLabel}>{t('streak.details.stats.achievements')}</Text>
@@ -517,7 +516,6 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: theme.spacing.xs,
       borderRadius: theme.borderRadius.full,
       gap: theme.spacing.xs,
-      ...getPrimaryShadow.small(theme),
     },
     streakBadgeText: {
       ...theme.typography.labelMedium,
@@ -682,7 +680,6 @@ const createStyles = (theme: AppTheme) =>
     progressBarFill: {
       height: '100%',
       borderRadius: theme.borderRadius.full,
-      ...getPrimaryShadow.small(theme),
     },
     progressPercent: {
       ...theme.typography.labelLarge,
@@ -730,13 +727,12 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
     },
     statIconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: theme.spacing.sm,
-      ...getPrimaryShadow.small(theme),
     },
     statNumber: {
       ...theme.typography.headlineSmall,
@@ -805,9 +801,8 @@ const createStyles = (theme: AppTheme) =>
       width: '31%',
       aspectRatio: 1,
       borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       position: 'relative',
-      ...getPrimaryShadow.small(theme),
     },
     milestoneContent: {
       flex: 1,

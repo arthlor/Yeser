@@ -1,40 +1,28 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-// Icon removed with pills and add button
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/providers/ThemeProvider';
-import ThemedCard from '@/shared/components/ui/ThemedCard';
 
 interface HomeHeaderProps {
   greeting: string;
   username?: string | null;
-  currentCount: number;
-  dailyGoal: number;
-  currentStreak: number;
+  currentCount: number; // Kept for interface compatibility but not used visually in header anymore
+  dailyGoal: number; // Kept for interface compatibility
+  currentStreak: number; // Kept for interface compatibility
   onStreakPress?: () => void;
   avatarUrl?: string | null;
   onAvatarPress?: () => void;
 }
 
 const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
-  ({
-    greeting,
-    username,
-    currentCount: _currentCount,
-    dailyGoal: _dailyGoal,
-    currentStreak: _currentStreak,
-    onStreakPress: _onStreakPress,
-    avatarUrl,
-    onAvatarPress,
-  }) => {
-    const { theme, colorMode } = useTheme();
+  ({ greeting, username, avatarUrl, onAvatarPress }) => {
+    const { theme } = useTheme();
     const { t } = useTranslation();
-    const styles = useMemo(() => createStyles(theme, colorMode), [theme, colorMode]);
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
     const name = username || '';
-    // Progress bar removed; keep calculations out of header for a cleaner look
 
     const initial = useMemo(() => {
       const trimmed = (username || '').trim();
@@ -42,102 +30,107 @@ const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
     }, [username]);
 
     return (
-      <ThemedCard variant="elevated" density="comfortable" elevation="card" style={styles.edgeCard}>
-        <View style={styles.headerRow}>
-          <View style={styles.leftGroup}>
-            <TouchableOpacity
-              style={styles.avatar}
-              accessibilityRole="imagebutton"
-              accessibilityLabel={t('home.header.avatar.a11y', {
-                name: name || t('home.header.guest'),
-              })}
-              onPress={onAvatarPress}
-              disabled={!onAvatarPress}
-              activeOpacity={0.8}
-            >
-              {avatarUrl ? (
-                <Image
-                  source={{ uri: avatarUrl }}
-                  style={styles.avatarImage}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  transition={120}
-                />
-              ) : (
-                <Text style={styles.avatarText}>{initial}</Text>
-              )}
-            </TouchableOpacity>
-            <Text style={styles.greetingText} numberOfLines={1}>
-              {greeting}
-              {name ? `, ${name}` : ''}
-            </Text>
-          </View>
-          {/* Removed add button; persistent FAB is used on HomeScreen */}
-        </View>
+      <View style={styles.container}>
+        {/* Main Row: Avatar + Greeting */}
+        <View style={styles.mainRow}>
+          <TouchableOpacity
+            style={styles.avatar}
+            accessibilityRole="imagebutton"
+            accessibilityLabel={t('home.header.avatar.a11y', {
+              name: name || t('home.header.guest'),
+            })}
+            onPress={onAvatarPress}
+            disabled={!onAvatarPress}
+            activeOpacity={0.8}
+          >
+            {avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={styles.avatarImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={120}
+              />
+            ) : (
+              <Text style={styles.avatarText}>{initial}</Text>
+            )}
+          </TouchableOpacity>
 
-        {/* Removed inline pills; stats now live in StatsRow */}
-      </ThemedCard>
+          {/* Greeting Section */}
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greetingText} numberOfLines={1} adjustsFontSizeToFit>
+              {greeting}
+            </Text>
+            {name ? (
+              <Text style={styles.nameText} numberOfLines={1} adjustsFontSizeToFit>
+                {name}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      </View>
     );
   }
 );
 
 HomeHeader.displayName = 'HomeHeader';
 
-const createStyles = (
-  theme: ReturnType<typeof useTheme>['theme'],
-  colorMode: ReturnType<typeof useTheme>['colorMode']
-) =>
+const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
-    // Subtle outline that is slightly stronger in dark mode
-    // Using computed variables within styles context is not supported,
-    // so we expand values inline below where needed.
-    headerRow: {
+    container: {
+      marginBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
+    },
+    mainRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: theme.spacing.sm,
-    },
-    leftGroup: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
-      flex: 1,
-    },
-    greetingText: {
-      ...theme.typography.headlineSmall,
-      color: theme.colors.onBackground,
-      fontWeight: '700',
-      letterSpacing: -0.2,
-      flexShrink: 1,
     },
     avatar: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 64,
+      height: 64,
+      borderRadius: 32,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.surfaceVariant,
+      borderWidth: 2,
+      borderColor: theme.colors.primary + '40',
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      elevation: 4,
     },
     avatarImage: {
       width: '100%',
       height: '100%',
-      borderRadius: 22,
+      borderRadius: 32,
     },
     avatarText: {
-      ...theme.typography.labelLarge,
+      ...theme.typography.headlineSmall,
       color: theme.colors.onSurfaceVariant,
       fontWeight: '700',
     },
-    // iconButton removed
-    // progress styles removed
-    edgeCard: {
-      borderRadius: 0,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderTopColor:
-        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
-      borderBottomColor:
-        colorMode === 'dark' ? theme.colors.outline + '20' : theme.colors.outline + '15',
+    greetingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      marginLeft: theme.spacing.md,
+    },
+    greetingText: {
+      ...theme.typography.displaySmall,
+      color: theme.colors.onBackground,
+      fontWeight: '700',
+      fontFamily: 'Lora-Bold',
+      letterSpacing: -0.5,
+      lineHeight: 38,
+    },
+    nameText: {
+      ...theme.typography.displaySmall,
+      color: theme.colors.primary,
+      fontWeight: '400',
+      fontFamily: 'Lora-Regular',
+      letterSpacing: -0.5,
+      lineHeight: 38,
     },
   });
 

@@ -9,6 +9,7 @@ import OnboardingFlowScreen from '../features/onboarding/screens/EnhancedOnboard
 import SplashScreen from '../features/auth/screens/SplashScreen';
 import useAuthStore from '../store/authStore';
 import { RootStackParamList } from '../types/navigation';
+import { PaywallScreen } from '../features/subscription/components/Paywall';
 
 const Root = createStackNavigator<RootStackParamList>();
 
@@ -41,7 +42,17 @@ const RootNavigator: React.FC = () => {
         <Root.Screen name="Onboarding" component={OnboardingFlowScreen} />
       ) : (
         // Fully ready → main app
-        <Root.Screen name="MainApp" component={AppNavigator} />
+        <Root.Group>
+          <Root.Screen name="MainApp" component={AppNavigator} />
+          <Root.Screen
+            name="PaywallModal"
+            component={PaywallScreen}
+            options={{
+              presentation: 'modal',
+              headerShown: false,
+            }}
+          />
+        </Root.Group>
       )}
     </Root.Navigator>
   );

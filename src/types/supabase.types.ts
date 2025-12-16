@@ -223,6 +223,7 @@ export type Database = {
           created_at: string | null;
           daily_gratitude_goal: number | null;
           id: string;
+          is_pro: boolean | null;
           language: string;
           notification_time: string | null;
           onboarded: boolean;
@@ -236,6 +237,7 @@ export type Database = {
           created_at?: string | null;
           daily_gratitude_goal?: number | null;
           id: string;
+          is_pro?: boolean | null;
           language?: string;
           notification_time?: string | null;
           onboarded?: boolean;
@@ -249,6 +251,7 @@ export type Database = {
           created_at?: string | null;
           daily_gratitude_goal?: number | null;
           id?: string;
+          is_pro?: boolean | null;
           language?: string;
           notification_time?: string | null;
           onboarded?: boolean;
@@ -339,6 +342,7 @@ export type Database = {
           timezone: string | null;
           tokens: string[] | null;
           user_id: string | null;
+          variant: string | null;
         };
         Relationships: [];
       };
@@ -364,8 +368,8 @@ export type Database = {
         Returns: boolean;
       };
       cleanup_stale_tokens:
-        | { Args: { p_max_age_days?: number }; Returns: number }
-        | { Args: never; Returns: number };
+        | { Args: never; Returns: number }
+        | { Args: { p_max_age_days?: number }; Returns: number };
       debug_hourly_notification_users: {
         Args: never;
         Returns: {
@@ -424,7 +428,6 @@ export type Database = {
         | {
             Args: {
               p_entry_date: string;
-              p_mood?: string;
               p_statement_index: number;
               p_updated_statement: string;
             };
@@ -433,6 +436,7 @@ export type Database = {
         | {
             Args: {
               p_entry_date: string;
+              p_mood?: string;
               p_statement_index: number;
               p_updated_statement: string;
             };
@@ -454,10 +458,21 @@ export type Database = {
         Args: { p_month: number; p_user_id: string; p_year: number };
         Returns: string[];
       };
-      get_mood_analytics: {
-        Args: { p_range?: string };
-        Returns: Json;
+      get_gratitude_entries_paginated: {
+        Args: { p_limit?: number; p_page?: number };
+        Returns: {
+          created_at: string;
+          entry_date: string;
+          has_more: boolean;
+          id: string;
+          moods: Json;
+          statements: Json;
+          total_count: number;
+          updated_at: string;
+          user_id: string;
+        }[];
       };
+      get_mood_analytics: { Args: { p_range?: string }; Returns: Json };
       get_multiple_random_active_prompts: {
         Args: { p_limit?: number };
         Returns: {
@@ -699,8 +714,6 @@ export type Database = {
         Returns: undefined;
       };
       text_to_bytea: { Args: { data: string }; Returns: string };
-      trigger_daily_reminders_fixed: { Args: never; Returns: undefined };
-      trigger_hourly_reminders: { Args: never; Returns: undefined };
       unregister_push_token: { Args: { p_token: string }; Returns: undefined };
       update_cron_job: {
         Args: { p_jobid: number; p_jobname?: string; p_new_schedule: string };

@@ -29,6 +29,7 @@ import i18n from '@/i18n';
 import type { MoodEmoji } from '@/types/mood.types';
 import { MOOD_EMOJIS } from '@/types/mood.types';
 import { moodStorageService } from '@/services/moodStorageService';
+import { getCurrentLocale } from '@/utils/localeUtils';
 
 // 🎯 SHARED TYPES AND INTERFACES
 export interface BaseStatementCardProps {
@@ -931,13 +932,13 @@ export const formatStatementDate = (date: Date | string | undefined) => {
   // Handle future dates
   if (diffDays < 0) {
     return {
-      formattedDate: dateObj.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US'),
+      formattedDate: dateObj.toLocaleDateString(getCurrentLocale()),
       relativeTime: '',
       isRecent: false,
     };
   }
 
-  const formattedDate = dateObj.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', {
+  const formattedDate = dateObj.toLocaleDateString(getCurrentLocale(), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

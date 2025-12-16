@@ -267,7 +267,7 @@ const createStyles = (
     // Edge-to-edge container with proper safe area handling
     edgeToEdgeContainer: {
       flex: 1,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.background,
     },
     scrollableContent: {
       flex: 1,
@@ -278,7 +278,7 @@ const createStyles = (
     },
     list: {
       flex: 1,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.background,
     },
     footerContainer: {
       paddingTop: theme.spacing.md,

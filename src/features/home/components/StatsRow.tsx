@@ -149,7 +149,7 @@ const createRowStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
     rowContainer: {
       flexDirection: 'row',
-      gap: theme.spacing.xs,
+      gap: theme.spacing.md,
     },
     item: {
       flex: 1,
@@ -165,12 +165,12 @@ const createMiniStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      minHeight: 60,
+      minHeight: 44,
     },
     iconWrap: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
       alignItems: 'center',
       justifyContent: 'center',
     },

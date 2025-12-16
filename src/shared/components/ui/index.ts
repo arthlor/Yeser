@@ -2,6 +2,8 @@
 export { default as ThemedButton } from './ThemedButton';
 export { default as ThemedInput } from './ThemedInput';
 export { default as ThemedCard } from './ThemedCard';
+export { default as SegmentedControl } from './SegmentedControl';
+export { default as DonutChart } from './DonutChart';
 export { default as ThemedModal } from './ThemedModal';
 export { default as ThemedList } from './ThemedList';
 export { default as ThemedDivider } from './ThemedDivider';

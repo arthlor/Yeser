@@ -106,6 +106,7 @@ export interface CalendarViewProps {
   onDayPress: (day: DateData) => void;
   isLoading?: boolean;
   isFutureMonth?: boolean;
+  hideHeader?: boolean;
 }
 
 // Turkish localization

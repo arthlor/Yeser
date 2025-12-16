@@ -9,5 +9,8 @@ export const getCurrentLocale = (): string => {
   if (lang.startsWith('tr')) {
     return 'tr-TR';
   }
+  if (lang.startsWith('es')) {
+    return 'es-ES';
+  }
   return lang;
 };

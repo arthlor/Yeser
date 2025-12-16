@@ -36,7 +36,7 @@ interface ScreenLayoutProps {
   style?: ViewStyle;
   refreshControl?: React.ReactElement<React.ComponentProps<typeof RefreshControl>>;
   showsVerticalScrollIndicator?: boolean;
-  edges?: EdgeOption[];
+  edges?: ReadonlyArray<EdgeOption>;
   density?: 'comfortable' | 'standard' | 'compact';
   edgeToEdge?: boolean;
 
@@ -279,4 +279,4 @@ const createStyles = (
   });
 };
 
-export default ScreenLayout;
+export default React.memo(ScreenLayout);

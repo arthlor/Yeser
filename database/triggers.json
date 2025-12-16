@@ -1,0 +1,66 @@
+[
+  {
+    "trigger_name": "handle_daily_prompts_updated_at",
+    "schema_name": "public",
+    "table_name": "daily_prompts",
+    "table_owner": "postgres",
+    "enabled": "e",
+    "trigger_definition": "CREATE TRIGGER handle_daily_prompts_updated_at BEFORE UPDATE ON daily_prompts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+  },
+  {
+    "trigger_name": "update_gratitude_benefits_updated_at",
+    "schema_name": "public",
+    "table_name": "gratitude_benefits",
+    "table_owner": "postgres",
+    "enabled": "e",
+    "trigger_definition": "CREATE TRIGGER update_gratitude_benefits_updated_at BEFORE UPDATE ON gratitude_benefits FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+  },
+  {
+    "trigger_name": "handle_gratitude_entries_update_updated_at",
+    "schema_name": "public",
+    "table_name": "gratitude_entries",
+    "table_owner": "postgres",
+    "enabled": "e",
+    "trigger_definition": "CREATE TRIGGER handle_gratitude_entries_update_updated_at BEFORE UPDATE ON gratitude_entries FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+  },
+  {
+    "trigger_name": "on_gratitude_entry_change",
+    "schema_name": "public",
+    "table_name": "gratitude_entries",
+    "table_owner": "postgres",
+    "enabled": "e",
+    "trigger_definition": "CREATE TRIGGER on_gratitude_entry_change AFTER INSERT OR DELETE OR UPDATE ON gratitude_entries FOR EACH ROW EXECUTE FUNCTION update_user_streak()"
+  },
+  {
+    "trigger_name": "set_notification_jobs_updated_at",
+    "schema_name": "public",
+    "table_name": "notification_jobs",
+    "table_owner": "postgres",
+    "enabled": "e",
+    "trigger_definition": "CREATE TRIGGER set_notification_jobs_updated_at BEFORE UPDATE ON notification_jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+  },
+  {
+    "trigger_name": "handle_updated_at",
+    "schema_name": "public",
+    "table_name": "profiles",
+    "table_owner": "postgres",
+    "enabled": "e",
+    "trigger_definition": "CREATE TRIGGER handle_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION moddatetime('updated_at')"
+  },
+  {
+    "trigger_name": "protect_is_pro_field",
+    "schema_name": "public",
+    "table_name": "profiles",
+    "table_owner": "postgres",
+    "enabled": "e",
+    "trigger_definition": "CREATE TRIGGER protect_is_pro_field BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION check_is_pro_update()"
+  },
+  {
+    "trigger_name": "handle_streaks_update_updated_at",
+    "schema_name": "public",
+    "table_name": "streaks",
+    "table_owner": "postgres",
+    "enabled": "e",
+    "trigger_definition": "CREATE TRIGGER handle_streaks_update_updated_at BEFORE UPDATE ON streaks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+  }
+]

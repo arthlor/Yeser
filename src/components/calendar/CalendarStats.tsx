@@ -7,7 +7,7 @@ import { CustomMarkedDates, StatCardProps } from './types';
 import { calculateCalendarStats } from './utils';
 import { useStreakData } from '@/features/streak/hooks';
 import { useTheme } from '../../providers/ThemeProvider';
-import { getPrimaryShadow } from '@/themes/utils';
+import { AppTheme } from '@/themes/types';
 
 interface CalendarStatsProps {
   markedDates: CustomMarkedDates;
@@ -15,45 +15,32 @@ interface CalendarStatsProps {
   isLoading?: boolean;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ icon, value, label, color, isLoading = false }) => {
+const StatItem: React.FC<StatCardProps & { showDivider?: boolean }> = ({
+  icon,
+  value,
+  label,
+  color,
+  isLoading = false,
+  showDivider = false,
+}) => {
   const { theme } = useTheme();
-
-  const cardStyle = React.useMemo(
-    () => ({
-      backgroundColor: theme.colors.surfaceVariant + '20',
-      borderColor: theme.colors.outline + '08',
-    }),
-    [theme]
-  );
+  const styles = createStyles(theme);
 
   return (
-    <View style={[styles.statCard, cardStyle]}>
-      <View style={[styles.statContent, { gap: theme.spacing.xs }]}>
-        {isLoading ? (
-          <ActivityIndicator size="small" color={color} />
-        ) : (
-          <Icon name={icon} size={20} color={color} />
-        )}
-        <Text
-          style={[
-            styles.statValue,
-            theme.typography.titleMedium,
-            { color: theme.colors.onSurface },
-          ]}
-        >
-          {isLoading ? '—' : value}
-        </Text>
-        <Text
-          style={[
-            styles.statLabel,
-            theme.typography.bodySmall,
-            { color: theme.colors.onSurfaceVariant },
-          ]}
-        >
-          {label}
-        </Text>
+    <>
+      <View style={styles.statItem}>
+        <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
+          {isLoading ? (
+            <ActivityIndicator size="small" color={color} />
+          ) : (
+            <Icon name={icon} size={18} color={color} />
+          )}
+        </View>
+        <Text style={styles.statValue}>{isLoading ? '—' : value}</Text>
+        <Text style={styles.statLabel}>{label}</Text>
       </View>
-    </View>
+      {showDivider && <View style={styles.divider} />}
+    </>
   );
 };
 
@@ -64,50 +51,33 @@ const CalendarStats: React.FC<CalendarStatsProps> = ({
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const styles = createStyles(theme);
   const { data: streakData, isLoading: streakLoading } = useStreakData();
   const stats = calculateCalendarStats(markedDates, currentMonth);
 
-  // Use real streak data instead of local calculation
   const currentStreak = streakData?.current_streak ?? 0;
   const isStreakDataLoading = isLoading || streakLoading;
 
-  const containerStyle = React.useMemo(
-    () => ({
-      backgroundColor: theme.colors.surface,
-      borderTopColor: theme.colors.outline + '10',
-      borderBottomColor: theme.colors.outline + '10',
-      ...getPrimaryShadow.card(theme),
-    }),
-    [theme]
-  );
-
   return (
-    <View style={[styles.container, containerStyle]}>
-      <View
-        style={[
-          styles.statsGrid,
-          {
-            paddingHorizontal: theme.spacing.md,
-            paddingVertical: theme.spacing.md,
-            gap: theme.spacing.sm,
-          },
-        ]}
-      >
-        <StatCard
+    <View style={styles.container}>
+      <View style={styles.statsRow}>
+        <StatItem
           icon="calendar-check"
           value={stats.entryCount}
           label={t('shared.calendar.stats.daysLabel')}
           color={theme.colors.primary}
           isLoading={isLoading}
+          showDivider
         />
-        <StatCard
+        <StatItem
           icon="fire"
           value={currentStreak}
           label={t('shared.calendar.stats.streakLabel')}
           color={theme.colors.tertiary}
           isLoading={isStreakDataLoading}
+          showDivider
         />
-        <StatCard
+        <StatItem
           icon="trending-up"
           value={`%${Math.round(stats.completionRate)}`}
           label={t('shared.calendar.stats.rateLabel')}
@@ -119,41 +89,48 @@ const CalendarStats: React.FC<CalendarStatsProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  // Edge-to-Edge Stats Container
-  container: {
-    borderRadius: 0,
-    borderWidth: 0,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  // Individual stat items without shadows - use background variation
-  statCard: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-    marginHorizontal: 4,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-  },
-  statContent: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  statLabel: {
-    textAlign: 'center',
-    opacity: 0.8,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      marginHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
+      paddingVertical: theme.spacing.md,
+    },
+    statItem: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+    },
+    iconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: theme.borderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    statValue: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '700',
+    },
+    statLabel: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+    },
+    divider: {
+      width: 1,
+      height: 40,
+      backgroundColor: theme.colors.outline + '20',
+    },
+  });
 
 export default CalendarStats;

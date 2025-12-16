@@ -4,9 +4,11 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../providers/ThemeProvider';
-import { getPrimaryShadow } from '@/themes/utils';
 
 import type { AppTheme } from '../../themes/types';
+
+import { useSubscription } from '@/hooks/useSubscription';
+import { ProBadge } from '@/features/subscription/components/ProBadge';
 
 interface AboutSettingsProps {
   onNavigateToPrivacyPolicy: () => void;
@@ -26,6 +28,7 @@ const AboutSettings: React.FC<AboutSettingsProps> = ({
   const { theme } = useTheme();
   const { t } = useTranslation();
   const styles = createStyles(theme);
+  const { isPro } = useSubscription();
 
   const settingItems = [
     {
@@ -33,6 +36,7 @@ const AboutSettings: React.FC<AboutSettingsProps> = ({
       icon: 'chart-arc',
       action: onNavigateToMoodAnalysis,
       description: t('settings.about.moodAnalysis.description'),
+      showProBadge: !isPro,
     },
     {
       label: t('settings.about.whyGratitude.label'),
@@ -63,23 +67,22 @@ const AboutSettings: React.FC<AboutSettingsProps> = ({
   return (
     <View style={styles.container}>
       {settingItems.map((item, index) => (
-        <View
-          key={item.label}
-          style={[styles.settingCard, index === settingItems.length - 1 && styles.lastCard]}
-        >
-          <TouchableOpacity style={styles.settingContent} onPress={item.action}>
+        <React.Fragment key={item.label}>
+          <TouchableOpacity style={styles.row} onPress={item.action} activeOpacity={0.7}>
             <View style={styles.iconContainer}>
-              <Icon name={item.icon} size={20} color={theme.colors.primary} />
+              <Icon name={item.icon} size={18} color={theme.colors.primary} />
             </View>
             <View style={styles.textContainer}>
-              <Text style={styles.settingTitle}>{item.label}</Text>
-              <Text style={styles.settingDescription}>{item.description}</Text>
+              <View style={styles.titleRow}>
+                <Text style={styles.title}>{item.label}</Text>
+                {item.showProBadge && <ProBadge size="small" style={styles.badgeMargin} />}
+              </View>
+              <Text style={styles.subtitle}>{item.description}</Text>
             </View>
-            <View style={styles.chevronContainer}>
-              <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
-            </View>
+            <Icon name="chevron-right" size={20} color={theme.colors.outline} />
           </TouchableOpacity>
-        </View>
+          {index < settingItems.length - 1 && <View style={styles.divider} />}
+        </React.Fragment>
       ))}
     </View>
   );
@@ -88,52 +91,52 @@ const AboutSettings: React.FC<AboutSettingsProps> = ({
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      // Remove container margins - let cards handle their own spacing like SettingsScreen
-    },
-    settingCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.outlineVariant,
-      marginBottom: theme.spacing.sm,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
       marginHorizontal: theme.spacing.md,
-      // 🌟 Medium primary shadow for consistency with other settings - matches SettingsScreen pattern
-      ...getPrimaryShadow.medium(theme),
+      overflow: 'hidden',
     },
-    lastCard: {
-      marginBottom: 0,
-    },
-    settingContent: {
+    row: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: theme.spacing.md,
-      borderRadius: theme.borderRadius.lg,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
     iconContainer: {
-      width: 36,
-      height: 36,
+      width: 32,
+      height: 32,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.primaryContainer,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: theme.spacing.sm,
     },
     textContainer: {
       flex: 1,
     },
-    settingTitle: {
-      ...theme.typography.bodyLarge,
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    title: {
+      ...theme.typography.bodyMedium,
       color: theme.colors.onSurface,
       fontWeight: '600',
-      marginBottom: theme.spacing.xs / 2,
     },
-    settingDescription: {
-      ...theme.typography.bodyMedium,
+    subtitle: {
+      ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      lineHeight: 20,
+      marginTop: 2,
     },
-    chevronContainer: {
-      marginLeft: theme.spacing.xs,
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.outline + '15',
+      marginLeft: theme.spacing.md + 32 + theme.spacing.sm,
+    },
+    badgeMargin: {
+      marginLeft: 8,
     },
   });
 

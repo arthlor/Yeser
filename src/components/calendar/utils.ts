@@ -1,42 +1,96 @@
 import { CalendarLocalization, CalendarStatsData, CustomMarkedDates } from './types';
 import i18n from '@/i18n';
 
-// Turkish localization constants from i18n
+// Turkish localization constants
 export const TURKISH_LOCALIZATION: CalendarLocalization = {
-  months: i18n.t('shared.calendar.months', { returnObjects: true, lng: 'tr' }) as string[],
-  days: i18n.t('shared.calendar.days', { returnObjects: true, lng: 'tr' }) as string[],
-  daysShort: i18n.t('shared.calendar.daysShort', { returnObjects: true, lng: 'tr' }) as string[],
+  months: [
+    'Ocak',
+    'Şubat',
+    'Mart',
+    'Nisan',
+    'Mayıs',
+    'Haziran',
+    'Temmuz',
+    'Ağustos',
+    'Eylül',
+    'Ekim',
+    'Kasım',
+    'Aralık',
+  ],
+  days: ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'],
+  daysShort: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
 };
 
-// English localization constants from i18n
+// English localization constants
 export const ENGLISH_LOCALIZATION: CalendarLocalization = {
-  months: i18n.t('shared.calendar.months', { returnObjects: true, lng: 'en' }) as string[],
-  days: i18n.t('shared.calendar.days', { returnObjects: true, lng: 'en' }) as string[],
-  daysShort: i18n.t('shared.calendar.daysShort', { returnObjects: true, lng: 'en' }) as string[],
+  months: [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ],
+  days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  daysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+};
+
+// Spanish localization constants
+export const SPANISH_LOCALIZATION: CalendarLocalization = {
+  months: [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ],
+  days: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+  daysShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
 };
 
 // Dynamic localization using i18n
 export const getCalendarLocalization = (): CalendarLocalization => {
-  if (!i18n.isInitialized) {
-    // Fallback to English localization if i18n is not ready
-    return ENGLISH_LOCALIZATION;
-  }
+  const resolved = i18n.isInitialized ? i18n.language : 'en';
 
-  return {
-    months: i18n.t('shared.calendar.months', { returnObjects: true }) as string[],
-    days: i18n.t('shared.calendar.days', { returnObjects: true }) as string[],
-    daysShort: i18n.t('shared.calendar.daysShort', { returnObjects: true }) as string[],
-  };
+  if (resolved === 'tr') {
+    return TURKISH_LOCALIZATION;
+  }
+  if (resolved === 'es') {
+    return SPANISH_LOCALIZATION;
+  }
+  return ENGLISH_LOCALIZATION;
 };
 
 /**
- * Format date string to Turkish locale
+ * Format date string to localized locale
  */
 export const formatDateLocalized = (dateString: string, locale?: string): string => {
   const date = new Date(dateString);
   const resolved =
     locale || (i18n.isInitialized ? i18n.language : Intl.DateTimeFormat().resolvedOptions().locale);
-  const map = resolved === 'en' ? 'en-US' : resolved === 'tr' ? 'tr-TR' : resolved;
+
+  let map = resolved;
+  if (resolved === 'en') {
+    map = 'en-US';
+  } else if (resolved === 'es') {
+    map = 'es-ES';
+  } else if (resolved === 'tr') {
+    map = 'tr-TR';
+  }
+
   return date.toLocaleDateString(map, { day: 'numeric', month: 'long', year: 'numeric' });
 };
 

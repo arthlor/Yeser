@@ -1,5 +1,4 @@
 import ActionCards from '../components/ActionCards';
-import InspirationCard from '../components/InspirationCard';
 import HomeHeader from '../components/HomeHeader';
 import StreakDetailsScreen from '@/features/streak/screens/StreakDetailsScreen';
 import { useGratitudeEntry, useRandomGratitudeEntry } from '@/features/gratitude/hooks';
@@ -16,7 +15,8 @@ import HomeGratitudeListItem from '@/features/home/components/HomeGratitudeListI
 import FloatingAddButton from '@/features/home/components/FloatingAddButton';
 import ThrowbackTeaser from '@/features/throwback/components/ThrowbackTeaser';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
-import ThemedCard from '@/shared/components/ui/ThemedCard';
+import { useSubscription } from '@/hooks/useSubscription';
+import { ProBadge } from '@/features/subscription/components/ProBadge';
 // debug logger removed (noisy)
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -73,6 +73,8 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     error: throwbackError,
     refetch: refetchThrowback,
   } = useRandomGratitudeEntry();
+
+  const { isPro, checkGate } = useSubscription();
 
   // Removed noisy total count debug logs
 
@@ -176,8 +178,13 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     analyticsService.logEvent('navigate_to_mood_analysis', {
       source: 'home_footer_card',
     });
-    navigation.getParent<StackNavigationProp<RootStackParamList>>()?.navigate('MoodAnalysis');
-  }, [navigation]);
+
+    // Hard gate: Check pro status before navigating
+    // This will trigger the paywall modal if the user is not Pro
+    if (checkGate('mood_analytics_deep_dive')) {
+      navigation.getParent<StackNavigationProp<RootStackParamList>>()?.navigate('MoodAnalysis');
+    }
+  }, [navigation, checkGate]);
 
   // Dynamic image picking without compile-time dependency
   const pickImageAndUpload = useCallback(async () => {
@@ -330,7 +337,8 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
         scrollable={false}
         edges={['top']}
         edgeToEdge={true}
-        backgroundColor={theme.colors.surface}
+        density="comfortable"
+        backgroundColor={theme.colors.background}
       >
         <Animated.FlatList
           data={listData}
@@ -381,28 +389,51 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
                 />
               </View>
               <View style={styles.section}>
-                <ThemedCard
-                  variant="elevated"
-                  density="comfortable"
-                  elevation="card"
-                  onPress={handleMoodAnalysisPress}
-                >
-                  <View style={styles.moodCardContent}>
-                    <View style={styles.moodIconContainer}>
-                      <Icon name="emoticon-happy-outline" size={24} color={theme.colors.primary} />
+                <View style={styles.insightsCard}>
+                  {/* Mood Analysis Row */}
+                  <TouchableOpacity
+                    style={styles.insightRow}
+                    onPress={handleMoodAnalysisPress}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.insightIconContainer}>
+                      <Icon name="emoticon-happy-outline" size={18} color={theme.colors.primary} />
                     </View>
-                    <View style={styles.moodTextContainer}>
-                      <Text style={styles.moodCardTitle}>{t('home.actions.mood.title')}</Text>
-                      <Text style={styles.moodCardSubtitle}>{t('home.actions.mood.subtitle')}</Text>
+                    <View style={styles.insightTextContainer}>
+                      <View style={styles.titleWithBadge}>
+                        <Text style={styles.insightTitle}>{t('home.actions.mood.title')}</Text>
+                        {!isPro && <ProBadge size="small" style={styles.badgeMargin} />}
+                      </View>
+                      <Text style={styles.insightSubtitle} numberOfLines={1}>
+                        {t('home.actions.mood.subtitle')}
+                      </Text>
                     </View>
-                    <View style={styles.moodChevronContainer}>
-                      <Icon name="chevron-right" size={24} color={theme.colors.primary} />
+                    <Icon name="chevron-right" size={20} color={theme.colors.outline} />
+                  </TouchableOpacity>
+
+                  {/* Divider */}
+                  <View style={styles.insightDivider} />
+
+                  {/* Inspiration Row */}
+                  <View style={styles.insightRow}>
+                    <View
+                      style={[
+                        styles.insightIconContainer,
+                        { backgroundColor: theme.colors.tertiaryContainer },
+                      ]}
+                    >
+                      <Icon name="lightbulb-on-outline" size={18} color={theme.colors.tertiary} />
+                    </View>
+                    <View style={styles.insightTextContainer}>
+                      <Text style={styles.insightTitle}>{t('tips.gratitude.title')}</Text>
+                      <Text style={styles.insightSubtitle} numberOfLines={2}>
+                        {todaysGratitudeCount >= dailyGoal
+                          ? t('home.inspiration.progress.complete.message')
+                          : t('tips.gratitude.simpleThings')}
+                      </Text>
                     </View>
                   </View>
-                </ThemedCard>
-              </View>
-              <View style={styles.section}>
-                <InspirationCard currentCount={todaysGratitudeCount} dailyGoal={dailyGoal} />
+                </View>
               </View>
               <View style={styles.section}>
                 <ThrowbackTeaser
@@ -457,20 +488,20 @@ export default EnhancedHomeScreen;
 const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
     stack: {
-      gap: theme.spacing.sm,
+      gap: theme.spacing.md,
     },
     section: {
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
     },
     sectionPadded: {
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
     },
     todayHeaderRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+      // Padding handled by ScreenLayout/FlatList content container to ensure alignment
     },
     todayHeaderText: {
       ...theme.typography.titleMedium,
@@ -494,13 +525,13 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       paddingHorizontal: theme.spacing.sm,
     },
     todayItemWrapper: {
-      marginBottom: 4,
+      marginBottom: theme.spacing.sm,
     },
     listContent: {
       paddingHorizontal: theme.spacing.content,
     },
     footerSpacer: {
-      height: theme.spacing.lg,
+      height: 80, // Extra space for FAB to avoid overlapping throwback content
     },
     viewAllButton: {
       alignSelf: 'center',
@@ -517,40 +548,51 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       color: theme.colors.onSurface,
       fontWeight: '700',
     },
-    moodCardContent: {
+    insightsCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
+      overflow: 'hidden',
+    },
+    insightRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
-    moodIconContainer: {
-      width: 44,
-      height: 44,
-      borderRadius: theme.borderRadius.full,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.primaryContainer,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.primary + '25',
-    },
-    moodTextContainer: {
-      flex: 1,
-    },
-    moodCardTitle: {
-      ...theme.typography.titleSmall,
-      color: theme.colors.onSurface,
-      fontWeight: '700',
-    },
-    moodCardSubtitle: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
-      marginTop: theme.spacing.xs / 2,
-    },
-    moodChevronContainer: {
+    insightIconContainer: {
       width: 32,
       height: 32,
       borderRadius: theme.borderRadius.full,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.surfaceVariant,
+      backgroundColor: theme.colors.primaryContainer,
+    },
+    insightTextContainer: {
+      flex: 1,
+    },
+    insightTitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
+    },
+    insightSubtitle: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      marginTop: 2,
+    },
+    insightDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.outline + '15',
+      marginLeft: theme.spacing.md + 32 + theme.spacing.sm,
+    },
+    titleWithBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    badgeMargin: {
+      marginLeft: 8,
     },
   });

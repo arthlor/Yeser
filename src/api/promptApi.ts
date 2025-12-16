@@ -106,7 +106,7 @@ export const getMultipleRandomActivePrompts = async (
 
 /**
  * Fetches a single random active daily prompt with localized content.
- * @param language - The target language for localization ('tr' | 'en')
+ * @param language - The target language for localization ('tr' | 'en' | 'es')
  * @returns A LocalizedDailyPrompt object or null if no prompt is found or an error occurs.
  */
 export const getLocalizedRandomActivePrompt = async (
@@ -164,7 +164,7 @@ export const getLocalizedRandomActivePrompt = async (
 /**
  * Fetches multiple random active daily prompts with localized content.
  * @param limit Number of prompts to fetch (default: 10)
- * @param language - The target language for localization ('tr' | 'en')
+ * @param language - The target language for localization ('tr' | 'en' | 'es')
  * @returns Array of LocalizedDailyPrompt objects or empty array if none found
  */
 export const getLocalizedMultipleRandomActivePrompts = async (

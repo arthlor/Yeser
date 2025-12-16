@@ -27,19 +27,11 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTranslation } from 'react-i18next';
+import { getCurrentLocale } from '@/utils/localeUtils';
+import { useSubscription } from '@/hooks/useSubscription';
 
 type PastEntryCreationScreenRouteProp = RouteProp<AppStackParamList, 'PastEntryCreation'>;
 
-/**
- * **SIMPLIFIED PAST ENTRY CREATION SCREEN**: Minimal, elegant past entry experience
- *
- * **ANIMATION SIMPLIFICATION COMPLETED**:
- * - Reduced from 2 animation instances to 1 (50% reduction)
- * - Eliminated all 5 LayoutAnimation calls that caused performance issues
- * - Removed custom heroSlideAnim for simpler unified entrance
- * - Replaced complex layout animations with coordinated transitions
- * - Maintained all functionality with cleaner, minimal animations
- */
 const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRouteProp }> = ({
   route,
 }) => {
@@ -47,7 +39,17 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
   const { showSuccess, handleMutationError, showError } = useGlobalError();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { canAccessPastEntries, checkGate } = useSubscription();
+
+  // **DOUBLE LOCK**: Secure screen access against deep links or bypasses
+  useEffect(() => {
+    // If user cannot access past entries, double check via checkGate to show paywall/redirect
+    if (!canAccessPastEntries()) {
+      checkGate('past_entry_screen_access');
+      navigation.goBack();
+    }
+  }, [canAccessPastEntries, checkGate, navigation]);
 
   // The date is passed from the calendar screen and is not user-changeable here.
   const { date: dateString } = route.params;
@@ -200,7 +202,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
   }, [refetchEntry]);
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'tr-TR', {
+    return date.toLocaleDateString(getCurrentLocale(), {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

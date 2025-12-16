@@ -1,20 +1,29 @@
 import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
+import { es, tr } from 'date-fns/locale';
 
 /**
  * Formats a date string or Date object into a specified string format.
  * @param date The date to format (string or Date object).
  * @param formatString The desired output format (e.g., 'yyyy-MM-dd', 'PPP').
- * @param localeString The locale to use (e.g., 'en-US', 'tr'). Defaults to 'tr'.
+ * @param localeString The locale to use (e.g., 'en-US', 'tr', 'es'). Defaults to 'tr'.
  * @returns The formatted date string.
  */
 export const formatDate = (
   date: string | Date,
   formatString = 'yyyy-MM-dd',
-  localeString: 'tr' | 'en-US' = 'tr'
+  localeString: 'tr' | 'en-US' | 'es' = 'tr'
 ): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  const locale = localeString === 'tr' ? tr : undefined; // date-fns uses undefined for default English
+
+  let locale;
+  if (localeString === 'tr') {
+    locale = tr;
+  } else if (localeString === 'es') {
+    locale = es;
+  } else {
+    locale = undefined;
+  } // date-fns uses undefined for default English
+
   return format(dateObj, formatString, { locale });
 };
 

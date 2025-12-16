@@ -13,7 +13,7 @@ import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import i18n from '@/i18n';
 
 // Localized static prompt texts - Centralized here
-export const getStaticDefaultPrompt = (language: 'tr' | 'en'): string => {
+export const getStaticDefaultPrompt = (language: 'tr' | 'en' | 'es'): string => {
   const t = i18n.getFixedT(language);
   return t('gratitude.prompt.fallbackText');
 };

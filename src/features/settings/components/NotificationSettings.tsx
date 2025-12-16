@@ -345,7 +345,7 @@ export const NotificationSettings: React.FC = () => {
       <View style={styles.settingRow}>
         <View style={styles.settingInfo}>
           <View style={styles.iconContainer}>
-            <Icon name="bell-outline" size={20} color={theme.colors.primary} />
+            <Icon name="bell-outline" size={18} color={theme.colors.primary} />
           </View>
           <View style={styles.textContainer}>
             <Text style={styles.settingTitle}>{t('onboarding.notifications.title')}</Text>
@@ -364,15 +364,18 @@ export const NotificationSettings: React.FC = () => {
       </View>
 
       {isEnabled && (
-        <View style={styles.scheduleRow}>
-          <View style={styles.scheduleIconContainer}>
-            <Icon name="clock-outline" size={20} color={theme.colors.primary} />
+        <>
+          <View style={styles.divider} />
+          <View style={styles.scheduleRow}>
+            <View style={styles.scheduleIconContainer}>
+              <Icon name="clock-outline" size={18} color={theme.colors.primary} />
+            </View>
+            <View style={styles.scheduleTextContainer}>
+              <Text style={styles.scheduleTitle}>{t('notifications.dailyRemindersTitle')}</Text>
+              <Text style={styles.scheduleDescription}>{scheduleDescription}</Text>
+            </View>
           </View>
-          <View style={styles.scheduleTextContainer}>
-            <Text style={styles.scheduleTitle}>{t('notifications.dailyRemindersTitle')}</Text>
-            <Text style={styles.scheduleDescription}>{scheduleDescription}</Text>
-          </View>
-        </View>
+        </>
       )}
     </View>
   );
@@ -394,8 +397,8 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
     },
     iconContainer: {
-      width: 36,
-      height: 36,
+      width: 32,
+      height: 32,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.primaryContainer,
       justifyContent: 'center',
@@ -416,17 +419,21 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       lineHeight: 20,
     },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.outline + '15',
+      marginLeft: theme.spacing.md + 32 + theme.spacing.sm,
+    },
     scheduleRow: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.outlineVariant,
+      gap: theme.spacing.sm,
     },
     scheduleIconContainer: {
-      width: 36,
-      height: 36,
+      width: 32,
+      height: 32,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.primaryContainer,
       justifyContent: 'center',
@@ -434,7 +441,6 @@ const createStyles = (theme: AppTheme) =>
     },
     scheduleTextContainer: {
       flex: 1,
-      marginLeft: theme.spacing.md,
     },
     scheduleTitle: {
       ...theme.typography.bodyLarge,

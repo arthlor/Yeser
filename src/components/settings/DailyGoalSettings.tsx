@@ -14,7 +14,6 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
-import { getPrimaryShadow } from '@/themes/utils';
 import { analyticsService } from '@/services/analyticsService';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { logger } from '@/utils/debugConfig';
@@ -458,10 +457,10 @@ const createStyles = (theme: AppTheme) =>
     settingCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.outlineVariant,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
       marginHorizontal: theme.spacing.md,
-      ...getPrimaryShadow.medium(theme),
+      overflow: 'hidden',
     } as ViewStyle,
 
     settingRow: {
@@ -479,12 +478,12 @@ const createStyles = (theme: AppTheme) =>
     } as ViewStyle,
 
     iconContainer: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: theme.spacing.md,
+      marginRight: theme.spacing.sm,
     } as ViewStyle,
 
     textContainer: {
@@ -535,9 +534,9 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.lg,
       marginHorizontal: theme.spacing.md,
       marginTop: theme.spacing.xs,
-      ...getPrimaryShadow.small(theme),
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.outline + '20',
+      overflow: 'hidden',
     } as ViewStyle,
 
     optionsGrid: {
@@ -712,7 +711,6 @@ const createStyles = (theme: AppTheme) =>
 
     submitButtonEnabled: {
       backgroundColor: theme.colors.primary,
-      ...getPrimaryShadow.small(theme),
     } as ViewStyle,
 
     submitButtonDisabled: {

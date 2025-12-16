@@ -8,6 +8,7 @@ import { useTheme } from '../../../providers/ThemeProvider';
 import { ScreenHeader, ScreenLayout } from '../../../shared/components/layout';
 import { getPrimaryShadow } from '@/themes/utils';
 import { useTranslation } from 'react-i18next';
+import { getCurrentLocale } from '@/utils/localeUtils';
 
 import type { AppTheme } from '../../../themes/types';
 
@@ -53,7 +54,7 @@ const PrivacyPolicyScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme);
   const navigation = useNavigation();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   return (
     <ScreenLayout edges={['bottom']} showsVerticalScrollIndicator={false}>
@@ -73,7 +74,7 @@ const PrivacyPolicyScreen: React.FC = () => {
           <Text style={styles.subtitle}>
             {t('settings.privacyPolicy.lastUpdated', {
               defaultValue: 'Last updated: {{date}}',
-              date: new Date().toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'tr-TR'),
+              date: new Date().toLocaleDateString(getCurrentLocale()),
             })}
           </Text>
         </View>

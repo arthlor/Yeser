@@ -414,7 +414,7 @@ export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
 
 /**
  * Fetches paginated gratitude daily entries for the current user, ordered by date.
- * Each entry contains an array of gratitude statements.
+ * Uses optimized RPC that combines count + fetch in a single database round-trip.
  *
  * @param page - Page number (0-based)
  * @param limit - Number of entries per page (default: 20)
@@ -430,39 +430,46 @@ export const getGratitudeDailyEntriesPaginated = async (
   currentPage: number;
 }> => {
   try {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData.session) {
-      throw new Error('No active session');
-    }
-    const { user } = sessionData.session;
-    if (!user) {
-      throw new Error('No user found in session');
-    }
-
-    const offset = page * limit;
-
-    // Get total count for pagination metadata using existing function
-    const totalCount = await getTotalGratitudeEntriesCount();
-
-    // Get paginated entries
-    const { data, error } = await supabase
-      .from('gratitude_entries')
-      .select('id, user_id, entry_date, statements, moods, created_at, updated_at')
-      .eq('user_id', user.id)
-      .order('entry_date', { ascending: false })
-      .range(offset, offset + limit - 1);
+    // Use optimized RPC that returns entries with pagination metadata in one query
+    const { data, error } = await supabase.rpc('get_gratitude_entries_paginated', {
+      p_page: page,
+      p_limit: limit,
+    });
 
     if (error) {
       throw handleAPIError(new Error(error.message), 'fetch paginated gratitude daily entries');
     }
 
-    const entries = data ? data.map(mapAndValidateRawEntry) : [];
-    const hasMore = totalCount ? offset + entries.length < totalCount : false;
+    if (!data || data.length === 0) {
+      return {
+        entries: [],
+        hasMore: false,
+        totalCount: 0,
+        currentPage: page,
+      };
+    }
+
+    // Extract pagination metadata from first row (all rows have same total_count and has_more)
+    const totalCount = Number(data[0].total_count) || 0;
+    const hasMore = Boolean(data[0].has_more);
+
+    // Map and validate entries
+    const entries = data.map((row: GratitudeEntryRow) =>
+      mapAndValidateRawEntry({
+        id: row.id,
+        user_id: row.user_id,
+        entry_date: row.entry_date,
+        statements: row.statements,
+        moods: row.moods,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      })
+    );
 
     return {
       entries,
       hasMore,
-      totalCount: totalCount || 0,
+      totalCount,
       currentPage: page,
     };
   } catch (err) {

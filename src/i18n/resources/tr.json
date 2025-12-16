@@ -58,7 +58,9 @@
       "progress": {
         "start": {
           "title": "Başlangıç",
-          "message": "Güne güzel bir başlangıç yap."
+          "message": "Güne güzel bir başlangıç yap.",
+          "message_afternoon": "Minnetle yeşer.",
+          "message_evening": "Günü huzurlu bir şekilde tamamla."
         },
         "complete": {
           "title": "Başarı",
@@ -102,6 +104,14 @@
         "title": "Duygu içgörüleri",
         "subtitle": "Duygusal örüntülerini incele"
       }
+    },
+    "headline": {
+      "greeting": {
+        "morning": "Günaydın",
+        "afternoon": "İyi Öğlenler",
+        "evening": "İyi Akşamlar"
+      },
+      "subtitle": "Gününe minnetle başla."
     },
     "todayList": {
       "viewMore": "Tümünü gör ({{count}} tane daha)",
@@ -172,6 +182,8 @@
     "fixedScheduleDescription": "Her gün {{firstTime}} ve {{secondTime}}'de minnettar olmanızı hatırlatacağız 🌱"
   },
   "calendar": {
+    "title": "MİNNET YOLCULUĞUN",
+    "subtitle": "Minnettarlık anlarını haritalandır.",
     "tab": { "title": "Takvim", "a11y": "Takvim görünümü" },
     "errors": {
       "dataLoadFailed": "Takvim Verileri Yüklenemedi"
@@ -194,13 +206,19 @@
     }
   },
   "settings": {
+    "label": "TERCİHLERİNİZ",
     "privacyPolicy": { "title": "Gizlilik Politikası", "lastUpdated": "Son güncellenme: {{date}}" },
     "terms": { "title": "Kullanım Koşulları" },
+    "premium": {
+      "title": "Premium Aktif",
+      "subtitle": "Tüm özelliklere erişiminiz var"
+    },
     "language": {
       "title": "Dil",
       "description": "Tercih ettiğiniz dili seçin",
       "tr": "Türkçe",
-      "en": "İngilizce"
+      "en": "İngilizce",
+      "es": "İspanyolca"
     },
     "title": "Ayarlar",
     "subtitle": "Tercihlerinizi özelleştirin",
@@ -504,6 +522,7 @@
     }
   },
   "pastEntries": {
+    "tab": { "title": "Minnetlerim", "a11y": "Geçmiş kayıtları görüntüle" },
     "title": "Minnet Kayıtlarınız",
     "item": {
       "relative": {
@@ -546,6 +565,7 @@
       "tip": "Günde 3 minnet kaydı tutmak, ilerleyen süreçte mutluluk artışı sağlar!"
     },
     "header": {
+      "label": "GEÇMİŞ",
       "lastUpdate": "Son güncelleme: {{date}}",
       "total": "Toplam Kayıt",
       "monthly": "Aylık Hedef",
@@ -588,7 +608,8 @@
   "shared": {
     "ui": {
       "badges": {
-        "new": "YENİ"
+        "new": "YENİ",
+        "pro": "PRO"
       },
       "accessibility": {
         "tapToEditDelete": "Düzenleme ve silme seçeneklerini görmek için dokunun",
@@ -677,7 +698,7 @@
       "save": "Kaydet",
       "cancel": "İptal",
       "inputPlaceholder": "Minnettarlık ifadenizi yazın...",
-      "editButton": "✏️ Düzenle",
+      "editButton": "Düzenle",
       "deleteButton": "Sil",
       "updated": "Minnet ifadesi güncellendi",
       "deleted": "Minnet ifadesi silindi",
@@ -793,6 +814,12 @@
       "actions": {
         "refresh": "İçgörüleri yenile"
       },
+      "range": {
+        "7d": "7 Gün",
+        "30d": "30 Gün",
+        "90d": "90 Gün",
+        "365d": "1 Yıl"
+      },
       "empty": {
         "title": "Henüz yeterli duygu verisi yok",
         "message": "Minnet ifadelerine duygu ekleyerek sana özel yansımaları açabilirsin.",
@@ -838,6 +865,38 @@
         "empty": "Seri bilgisi yüklenemedi.",
         "hint": "Serini canlı tutmak duygu karışımının nasıl değiştiğini görmene yardımcı olur."
       },
+      "moodStreak": {
+        "title": "Duygu Serileri 🔥",
+        "subtitle": "Her baskın duygu için en uzun ardışık günler.",
+        "currentStreak": "{{count}} günlük seri",
+        "currentStreakPlural": "{{count}} günlük seri",
+        "noStreak": "Henüz seri yok",
+        "empty": "Duygu serilerini görmek için daha fazla kayıt ekle."
+      },
+      "comparison": {
+        "title": "Haftalık Karşılaştırma 📊",
+        "subtitle": "Duygu dengen nasıl değişiyor.",
+        "improved": "%{{value}} daha dengeli",
+        "declined": "%{{value}} daha az dengeli",
+        "stable": "Duygu dengesi sabit",
+        "noData": "Trendleri görmek için daha fazla kayıt ekle.",
+        "currentPeriod": "Bu dönem",
+        "previousPeriod": "Önceki dönem",
+        "change": "Değişim"
+      },
+      "correlation": {
+        "title": "İçgörüler 💡",
+        "subtitle": "Minnettarlık pratiğinde keşfettiğimiz kalıplar.",
+        "empty": "İçgörüleri açmak için daha fazla kayıt ekle.",
+        "bestDay": "En mutlu günün {{day}}, {{mood}} ruh hali ile",
+        "consistentMood": "Son zamanlarda tutarlı bir şekilde {{mood}} hissediyorsun",
+        "varietyHigh": "Harika duygu çeşitliliği! {{count}} farklı duygu kullandın",
+        "weekendBoost": "Hafta sonları ruh halin yükseliyor",
+        "weekdayStrong": "Hafta içi bile pozitif kalıyorsun",
+        "streakPower": "Uzun seriler daha fazla {{mood}} ruh hali getiriyor",
+        "morningPerson": "Sabah kayıtların en pozitif",
+        "eveningReflector": "Akşam yansımaları minnettarlığı ortaya çıkarıyor"
+      },
       "distribution": {
         "empty": "Bir dağılım hesaplayabilmek için daha fazla duygu gerekiyor."
       },
@@ -868,7 +927,12 @@
           "addMoods": "Bugünkü minnettarlığına bir duygu ekleyerek içgörüyü derinleştir.",
           "balance": "Yarın farklı bir duygu üzerine yazıp dengeyi yakalayabilirsin.",
           "keepStreak": "Serini canlı tut; tutarlılık duygu hikayeni zenginleştirir.",
-          "writeMore": "Bu hafta birkaç kayıt daha eklemek içgörüyü keskinleştirecek."
+          "writeMore": "Bu hafta birkaç kayıt daha eklemek içgörüyü keskinleştirecek.",
+          "celebrate": "Harika gidiyorsun! Önemli anları kutlamaya devam et.",
+          "explore": "{{mood}} hissini daha sık yaşatan şeyleri keşfetmeyi dene.",
+          "variety": "Farklı duyguları karıştırmak duygusal farkındalığını zenginleştirir.",
+          "reflect": "Mevcut duygu kalıbını neyin yönlendirdiğini düşün.",
+          "milestone": "Harika ilerleme! Duygularla {{count}}'den fazla kayıt ekledin."
         }
       },
       "balance": {
@@ -881,7 +945,14 @@
         "🙏": "Minnet dolu",
         "🌟": "İlhamlı",
         "💪": "Güçlü",
-        "🧘": "Sakin"
+        "🧘": "Sakin",
+        "🥰": "Sevgi dolu",
+        "😌": "Huzurlu",
+        "🌿": "Tazelenmiş",
+        "🤔": "Düşünceli",
+        "🌅": "Umutlu",
+        "🎯": "Odaklı",
+        "🚀": "Motiveli"
       },
       "date": {
         "unknown": "Bilinmeyen tarih"
@@ -964,7 +1035,8 @@
       "showOptions": "▼ Seçenekler",
       "nextQuestion": "Sonraki soru",
       "newQuestion": "Yeni soru",
-      "delete": "🗑️ Sil"
+      "delete": "🗑️ Sil",
+      "saveHint": "Kaydetmek için lütfen ifadeyi değiştirin."
     },
     "input": {
       "label": "Neye minnettarsın?",
@@ -1038,6 +1110,7 @@
     "title": "Minnetin Gücü",
     "loadingSubtext": "Minnetin faydaları hazırlanıyor"
   },
+  "dailyEntry": { "tab": { "title": "Minnet Ekle", "a11y": "Yeni günlük kayıt oluştur" } },
   "streak": {
     "status": {
       "new": "Yeni bir seri başlatabilirsin!",
@@ -1495,6 +1568,34 @@
     "export": {
       "unknownError": "Bilinmeyen hata",
       "exportFailed": "Aktarım başarısız"
+    }
+  },
+  "subscription": {
+    "customerCenter": {
+      "title": "Aboneliğinizi yönetin",
+      "openButton": "Müşteri Merkezini Aç"
+    },
+    "upsell": {
+      "title": "Premium'a Yükselt",
+      "subtitle": "Minnet yolculuğunuzun tam potansiyelini açığa çıkarın:",
+      "features": {
+        "unlimited": "Sınırsız günlük kayıt",
+        "past": "Geçmiş tarihlere minnet ekleme",
+        "insights": "Gelişmiş duygu analizi",
+        "export": "Minnetlerini PDF olarak dışa aktar",
+        "prompts": "Çeşitli ilham soruları"
+      }
+    },
+    "paywall": {
+      "unlockInsights": "Premium İçgörüleri Aç",
+      "unlockSubtitle": "Detaylı analizlere ve trendlere erişin",
+      "upgradeToPro": "Pro'ya Yükselt"
+    },
+    "restore": {
+      "success": "Abonelik geri yüklendi!"
+    },
+    "purchase": {
+      "success": "Premium'a hoş geldiniz!"
     }
   }
 }

@@ -6,36 +6,36 @@ Yeşer, her güne minnettar başlayabilmen için tasarlanmış, sıcak ve motive
 
 ### Sunduğu Deneyimler
 
-- Günlük minnettarlık girişleri, duyguna uygun ifadeler ve esnek sıralama imkânı
-- Geçmişe dönüp yazdıklarını düzenleme, silme ve dilediğinde tamamen geri alma rahatlığı
-- Takvimde ısı haritası, aylık özetler ve tek dokunuşla geçmiş günlere dönüş
-- Geri dönüş anıları: Rastgele seçilen sıcak bir hatıra ile yeniden gülümseme fırsatı
-- Seri takibi, hedef belirleme, paylaşılabilir başarılar ve seni motive eden kilometre taşları
-- Günü kapatırken ilham veren kartlar ve rutinine uyum sağlayan küçük öneriler
+- **Günlük Minnettarlık & Duygu Takibi:** Duyguna uygun ifadeler, esnek sıralama ve detaylı duygu etiketleme.
+- **Gelişmiş Duygu Analitiği:** Ruh halinin zaman içindeki dağılımını, denge skorunu ve sana özel hazırlanan "mantıksal" ve "duygusal" içgörü hikayelerini keşfet.
+- **Takvim:** Aylık özetler, seri takibi ve tek dokunuşla geçmiş günlere dönüş.
+- **Geri Dönüş Anıları (Throwback):** Rastgele seçilen sıcak bir hatıra ile yeniden gülümseme fırsatı.
+- **Seri ve Hedefler:** Gelişmiş seri takibi, başarı kilometre taşları ve seni motive eden küçük zaferler.
+- **İlham Kartları:** Günü kapatırken ilham veren kartlar ve rutinine uyum sağlayan küçük öneriler.
 
 ### Onboarding ve Devamlılık
 
-- Kişiselleştirilmiş onboarding akışı ile hedeflerini seçer, bildirimlerden nasıl destek alacağını keşfedersin
-- Nazik hatırlatmalar, doğru zamanlama ve ilk günden itibaren gerçek bir örnek giriş ile başlama kolaylığı
-- Kararlı çalışan açılış ekranları sayesinde her seferinde sorunsuz başlangıç
+- **Kişiselleştirilmiş Akış:** Hedeflerini seç, bildirim tercihlerini ayarla.
+- **İnteraktif Demo:** Uygulamanın nasıl çalıştığını gösteren, rehberli ve canlı bir "ilk giriş" deneyimi.
+- **Akıllı Hatırlatıcılar:** Nazik bildirimler ve doğru zamanlama ile alışkanlık kazanma kolaylığı.
 
 ### İçerik ve Özelleştirme
 
-- Türkçe ve İngilizce içerik, her ekranda özenle çevrilmiş metinler
-- Minnettarlık üzerine kısa okumalar, bilimsel faydalar ve sakin bir hikâye anlatımı
-- Açık ve koyu tema seçenekleri, yumuşak animasyonlarla desteklenen dingin deneyim
+- **Türkçe ve İngilizce:** Her ekranda özenle çevrilmiş metinler ve yerelleştirme.
+- **Neden Minnettarlık?:** Bilimsel faydalar ve sakin bir hikâye anlatımı sunan kütüphane.
+- **Tema Seçenekleri:** Açık ve koyu mod, yumuşak animasyonlar ve göz yormayan renk paleti.
 
 ### Kişiselleştirme ve Güven
 
-- Profilini düzenle, avatarını seç, sevdiğin temayı ve dili anında değiştir
-- Bildirim zamanlarını, yardım içeriklerini ve gizlilik seçeneklerini tek yerden yönet
-- Verilerin koruma altında; istersen her zaman destek alabileceğin bir ekip yanında
+- **Gelişmiş Profil:** Avatar seçimi, tema ve dil değiştirme.
+- **Esnek Giriş Seçenekleri:** Google, Apple veya E-posta (Magic Link) ile güvenli ve hızlı giriş.
+- **Gizlilik:** Verilerin koruma altında; bildirim ve gizlilik ayarlarını tek yerden yönet.
 
 ### Harekete Geç
 
-- İki dakikalık minnettarlık ritüeline şimdi başla
-- İlk teşekkür notunu yaz, serini başlat ve küçük zaferlerini kutla
-- Yeşer'i indir, pozitiflik yolculuğunu sevgiyle büyüt
+- İki dakikalık minnettarlık ritüeline şimdi başla.
+- İlk teşekkür notunu yaz, serini başlat ve küçük zaferlerini kutla.
+- Yeşer'i indir, pozitiflik yolculuğunu sevgiyle büyüt.
 
 ---
 
@@ -45,33 +45,35 @@ Yeşer is the gratitude ritual that helps you greet each day with warmth, calm, 
 
 ### What You'll Experience
 
-- Daily gratitude entries with thoughtful prompts, mood tags, and easy reordering
-- Full control over past notes: revisit, refine, or roll back entire days whenever you need
-- A calendar-first journey that highlights streaks, heatmaps, and quick jumps to any date
-- Throwback memories that surface a joyful surprise and invite you to relive the moment
-- Motivation that sticks: streak tracking, progress goals, celebratory milestones, and shareable wins
-- Bite-sized inspiration cards that adjust to your progress and offer gentle guidance
+- **Daily Gratitude & Mood Tracking:** Thoughtful prompts, mood tags, and flexible reordering.
+- **Advanced Mood Analytics:** Explore mood distribution, balance scores, and personalized "logical" vs "emotional" narrative insights over time.
+- **Calendar & Heatmap:** A visual journey highlighting streaks, monthly summaries, and quick jumps to past dates.
+- **Throwback Memories:** Surface a joyful surprise from the past and relive the moment.
+- **Streaks & Milestones:** Track your progress with advanced streak milestones and celebratory achievements.
+- **Inspiration:** Bite-sized inspiration cards that adjust to your progress and offer gentle guidance.
 
 ### Onboarding and Retention
 
-- Guided onboarding that tunes itself to your goals, notification preferences, and ideal pace
-- Gentle reminders, timezone-aware scheduling, and a live demo entry that makes day one effortless
-- Reliable splash and loading states that keep every launch steady and stress-free
+- **Personalized Flow:** Set your goals and customize your experience from the start.
+- **Interactive Demo:** A guided, hands-on "first entry" experience to help you learn the app effortlessly.
+- **Smart Reminders:** Gentle notifications and timezone-aware scheduling to help build the habit.
 
 ### Content and Personalization
 
-- Complete Turkish and English localization with carefully crafted wording in both languages
-- A Why Gratitude library that shares science-backed benefits through inviting storytelling
-- Light and dark themes, coordinated animations, and reduced-motion friendly interactions
+- **Full Localization:** Complete Turkish and English support with carefully crafted wording.
+- **Why Gratitude:** A library sharing science-backed benefits through inviting storytelling.
+- **Themes:** Light and dark themes, coordinated animations, and accessible design.
 
 ### Personal Touch and Trust
 
-- Update your profile, choose your avatar, and switch appearance or language on the fly
-- Edit notification times, explore the help center, and review privacy details in one place
-- Your data stays private, secure, and ready whenever you return to reflect
+- **Profile Management:** Choose your avatar, update settings, and switch languages on the fly.
+- **Secure Authentication:** Sign in seamlessly with Google, Apple, or Magic Link.
+- **Privacy:** Your data stays private and secure, with easy access to privacy controls.
 
 ### Take the First Step
 
-- Begin your two-minute gratitude ritual today
-- Capture your first thankful moment and spark a streak worth celebrating
-- Download Yeşer to grow positivity, honor your wins, and rediscover what truly matters
+- Begin your two-minute gratitude ritual today.
+- Capture your first thankful moment and spark a streak worth celebrating.
+- Download Yeşer to grow positivity, honor your wins, and rediscover what truly matters.
+
+---

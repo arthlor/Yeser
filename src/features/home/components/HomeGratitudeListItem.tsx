@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import ThemedCard from '@/shared/components/ui/ThemedCard';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/providers/ThemeProvider';
 import type { MoodEmoji } from '@/types/mood.types';
+import { AppTheme } from '@/themes/types';
 
 interface HomeGratitudeListItemProps {
   statement: string;
@@ -16,20 +17,32 @@ const HomeGratitudeListItem: React.FC<HomeGratitudeListItemProps> = React.memo(
     const styles = useMemo(() => createStyles(theme), [theme]);
 
     return (
-      <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={styles.touch}>
-        <ThemedCard variant="outlined" density="compact" elevation="none" style={styles.card}>
-          <View style={styles.row}>
-            <View style={styles.quoteBar} />
-            <Text style={styles.text} numberOfLines={3}>
+      <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={styles.container}>
+        {/* Accent Bar */}
+        <View style={styles.accentBar} />
+
+        {/* Main Content */}
+        <View style={styles.mainContent}>
+          {/* Quote with styled background */}
+          <View style={styles.quoteWrapper}>
+            <Icon name="format-quote-open" size={14} color={theme.colors.primary} />
+            <Text style={styles.quoteText} numberOfLines={2}>
               {statement}
             </Text>
-            {moodEmoji && (
-              <View style={styles.moodPill}>
-                <Text style={styles.moodText}>{moodEmoji}</Text>
-              </View>
-            )}
           </View>
-        </ThemedCard>
+
+          {/* Footer Row */}
+          <View style={styles.footer}>
+            <View style={styles.todayBadge}>
+              <Icon name="clock-outline" size={12} color={theme.colors.primary} />
+              <Text style={styles.todayText}>TODAY</Text>
+            </View>
+            <View style={styles.rightSection}>
+              {moodEmoji && <Text style={styles.moodEmoji}>{moodEmoji}</Text>}
+              <Icon name="chevron-right" size={18} color={theme.colors.outline} />
+            </View>
+          </View>
+        </View>
       </TouchableOpacity>
     );
   }
@@ -39,40 +52,66 @@ HomeGratitudeListItem.displayName = 'HomeGratitudeListItem';
 
 export default HomeGratitudeListItem;
 
-const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
+const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    touch: { width: '100%' },
-    card: { borderRadius: theme.borderRadius.xl },
-    row: {
+    container: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
+      overflow: 'hidden',
+      marginBottom: theme.spacing.sm,
+    },
+    accentBar: {
+      width: 4,
+      backgroundColor: theme.colors.primary,
+    },
+    mainContent: {
+      flex: 1,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+    },
+    quoteWrapper: {
       flexDirection: 'row',
       alignItems: 'flex-start',
+      gap: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
+    },
+    quoteText: {
+      flex: 1,
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      lineHeight: 22,
+      fontStyle: 'italic',
+    },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    todayBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primaryContainer + '40',
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 4,
+      borderRadius: theme.borderRadius.sm,
+      gap: 4,
+    },
+    todayText: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.primary,
+      fontWeight: '700',
+      fontSize: 10,
+      letterSpacing: 0.5,
+    },
+    rightSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: theme.spacing.sm,
     },
-    quoteBar: {
-      width: 3,
-      height: '100%',
-      backgroundColor: theme.colors.primary,
-      borderRadius: 2,
-      opacity: 0.9,
-      alignSelf: 'stretch',
-    },
-    text: {
-      ...theme.typography.bodyLarge,
-      color: theme.colors.onSurface,
-      flex: 1,
-    },
-    moodPill: {
-      minWidth: 28,
-      height: 28,
-      borderRadius: 14,
-      paddingHorizontal: theme.spacing.xs,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.surfaceVariant,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '30',
-    },
-    moodText: {
-      fontSize: 16,
+    moodEmoji: {
+      fontSize: 18,
     },
   });

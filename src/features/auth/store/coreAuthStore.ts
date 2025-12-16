@@ -5,7 +5,7 @@ import { logger } from '@/utils/debugConfig';
 import { queryClient } from '@/api/queryClient';
 import { atomicOperationManager } from '../utils/atomicOperations';
 import * as authService from '@/services/authService';
-import { notificationService } from '@/services/notificationService';
+import { revenueCatService } from '@/services/revenueCatService';
 
 /**
  * Core Authentication State Interface
@@ -96,6 +96,8 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
             logger.debug('Core auth store: User authenticated on initialization', {
               userId: session.user.id,
             });
+            // Identify user in RevenueCat
+            revenueCatService.identifyUser(session.user.id);
           } else {
             set({
               isAuthenticated: false,
@@ -118,6 +120,8 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
                   isLoading: false,
                 });
                 logger.debug('Core auth store: User signed in', { userId: session.user.id });
+                // Identify user in RevenueCat
+                revenueCatService.identifyUser(session.user.id);
               } else if (event === 'SIGNED_OUT') {
                 set({
                   isAuthenticated: false,
@@ -125,44 +129,8 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
                   isLoading: false,
                 });
                 logger.debug('Core auth store: User signed out');
-                // Remove push token on sign out
-                const removePushToken = async () => {
-                  try {
-                    const token = await notificationService.getCurrentDevicePushToken();
-                    if (!token) {
-                      return;
-                    }
-
-                    const removalResult = await notificationService.removeTokenFromBackend(token);
-
-                    if (!removalResult.ok) {
-                      const message = removalResult.error?.message ?? '';
-                      const isAuthError = message.toLowerCase().includes('not authenticated');
-
-                      if (isAuthError) {
-                        logger.debug(
-                          'Core auth store: Push token removal skipped (session already cleared).'
-                        );
-                        return;
-                      }
-
-                      logger.warn('Core auth store: Failed to remove push token on sign out.', {
-                        error: message,
-                      });
-                      return;
-                    }
-
-                    logger.debug('Core auth store: Removed push token on sign out.');
-                  } catch (error) {
-                    logger.warn(
-                      'Core auth store: Failed to get or remove push token on sign out.',
-                      {
-                        error: (error as Error).message,
-                      }
-                    );
-                  }
-                };
-                removePushToken();
+                // Logout from RevenueCat
+                revenueCatService.logoutUser();
               } else if (event === 'TOKEN_REFRESHED' && session?.user) {
                 set({
                   isAuthenticated: true,
@@ -243,6 +211,8 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
             queryClient.clear();
 
             logger.debug('Core auth store: Logout successful');
+            // Logout from RevenueCat
+            revenueCatService.logoutUser();
             completeAuthTransition();
           }
         } catch (error) {

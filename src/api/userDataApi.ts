@@ -55,7 +55,13 @@ const getTranslation = (language: ExportLanguage) => {
 };
 
 const createDateFormatter = (language: ExportLanguage) => {
-  const locale = language === 'en' ? 'en-US' : 'tr-TR';
+  let locale = 'tr-TR';
+  if (language === 'en') {
+    locale = 'en-US';
+  } else if (language === 'es') {
+    locale = 'es-ES';
+  }
+
   return {
     formatDate: (dateString: string) => {
       const date = new Date(dateString);
@@ -399,17 +405,23 @@ const createPDFTemplate = ({ language, data }: CreateTemplateOptions): string =>
  * Returns the URI of the temporary PDF file and the generated filename.
  */
 const resolveExportLanguage = (requestedLanguage?: string | null): ExportLanguage => {
-  if (requestedLanguage && (requestedLanguage === 'tr' || requestedLanguage === 'en')) {
+  if (
+    requestedLanguage &&
+    (requestedLanguage === 'tr' || requestedLanguage === 'en' || requestedLanguage === 'es')
+  ) {
     return requestedLanguage;
   }
 
   const stateLanguage = useLanguageStore.getState().language;
-  if (stateLanguage === 'tr' || stateLanguage === 'en') {
+  if (stateLanguage === 'tr' || stateLanguage === 'en' || stateLanguage === 'es') {
     return stateLanguage;
   }
 
-  const i18nLanguage = i18n.language === 'en' ? 'en' : 'tr';
-  return i18nLanguage;
+  const i18nLanguage = i18n.language;
+  if (i18nLanguage === 'en' || i18nLanguage === 'es') {
+    return i18nLanguage as ExportLanguage;
+  }
+  return 'tr';
 };
 
 export const prepareUserExportFile = async (): Promise<{
@@ -425,7 +437,12 @@ export const prepareUserExportFile = async (): Promise<{
     const { data, error: invokeError } = await supabase.functions.invoke(EXPORT_FUNCTION_NAME, {
       headers: {
         'X-User-Language': exportLanguage,
-        'Accept-Language': exportLanguage === 'en' ? 'en-US,en;q=0.9' : 'tr-TR,tr;q=0.9',
+        'Accept-Language':
+          exportLanguage === 'en'
+            ? 'en-US,en;q=0.9'
+            : exportLanguage === 'es'
+              ? 'es-ES,es;q=0.9'
+              : 'tr-TR,tr;q=0.9',
       },
       body: { language: exportLanguage },
     });
@@ -460,7 +477,8 @@ export const prepareUserExportFile = async (): Promise<{
     });
 
     const languageFromResponse = (
-      typeof data.language === 'string' && (data.language === 'tr' || data.language === 'en')
+      typeof data.language === 'string' &&
+      (data.language === 'tr' || data.language === 'en' || data.language === 'es')
         ? data.language
         : exportLanguage
     ) as ExportLanguage;

@@ -37,6 +37,7 @@ export interface RootStackParamList extends Record<string, object | undefined> {
   Onboarding: undefined;
   MainApp: NavigatorScreenParams<AppStackParamList>;
   NotFound: undefined;
+  PaywallModal: { source?: string };
 }
 
 // Additional utility types

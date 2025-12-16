@@ -2,7 +2,7 @@ import { z } from 'zod';
 import i18n from '@/i18n';
 import type { SupportedLanguage } from '@/store/languageStore';
 
-const supportedLanguageSchema = z.union([z.literal('en'), z.literal('tr')]);
+const supportedLanguageSchema = z.union([z.literal('en'), z.literal('tr'), z.literal('es')]);
 
 export const rawProfileDataSchema = z.object({
   id: z.string().uuid('Invalid UUID format for id'),

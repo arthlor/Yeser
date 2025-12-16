@@ -50,6 +50,8 @@ const buildLocalizedTips = (t: (key: string) => string) =>
  * - Extended duration to prevent race conditions
  * - Educational content while users wait
  */
+const SCREEN_EDGES = ['top'] as const;
+
 const EnhancedSplashScreen: React.FC = () => {
   const { theme } = useTheme();
   const { showError } = useGlobalError();
@@ -135,7 +137,7 @@ const EnhancedSplashScreen: React.FC = () => {
   return (
     <ScreenLayout
       scrollable={false}
-      edges={['top']}
+      edges={SCREEN_EDGES}
       edgeToEdge={true}
       constrainContentWidth={false}
     >

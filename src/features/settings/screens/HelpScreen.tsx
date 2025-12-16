@@ -193,7 +193,9 @@ const EnhancedHelpScreen: React.FC = () => {
           <Text style={styles.contactButtonText}>{t('settings.help.contactCTA')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.versionText}>{t('settings.help.appVersion')}</Text>
+        <Text style={styles.versionText}>
+          {t('settings.help.appVersion', { defaultValue: 'Yeser v1.1.0' })}
+        </Text>
       </ScreenSection>
     </ScreenLayout>
   );

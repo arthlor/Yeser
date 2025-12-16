@@ -4,10 +4,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/providers/ThemeProvider';
-import i18n from '@/i18n';
 import { AppTheme } from '@/themes/types';
-import ThemedCard from '@/shared/components/ui/ThemedCard';
-import { getPrimaryShadow } from '@/themes/utils';
+import { getCurrentLocale } from '@/utils/localeUtils';
 
 interface PastEntriesHeaderProps {
   title: string;
@@ -15,21 +13,6 @@ interface PastEntriesHeaderProps {
   entryCount?: number;
 }
 
-/**
- * Enhanced Past Entries Header with Edge-to-Edge Design
- *
- * DESIGN PHILOSOPHY:
- * 1. HERO ZONE: Floating edge-to-edge header with comprehensive stats
- * 2. VISUAL DEPTH: Enhanced shadows and elevation for modern feel
- * 3. PROGRESS VISUALIZATION: Similar to DailyEntryScreen progress patterns
- * 4. TYPOGRAPHY HIERARCHY: Consistent with established design system
- *
- * UX ENHANCEMENTS:
- * - Edge-to-edge floating card design
- * - Enhanced stats visualization with progress indicators
- * - Better visual hierarchy and spacing
- * - Improved typography scale consistency
- */
 const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, entryCount }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -40,7 +23,7 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
       return subtitle;
     }
     if (entryCount !== undefined) {
-      const lastUpdate = new Date().toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'tr-TR', {
+      const lastUpdate = new Date().toLocaleDateString(getCurrentLocale(), {
         day: 'numeric',
         month: 'long',
       });
@@ -49,301 +32,195 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
     return undefined;
   };
 
-  const getEnhancedStatsData = () => {
+  const getStatsData = () => {
     if (entryCount === undefined) {
       return null;
     }
 
-    // Calculate engaging stats similar to DailyEntryScreen patterns
     const today = new Date();
-    const currentMonth = today.getMonth();
-    const daysInMonth = new Date(today.getFullYear(), currentMonth + 1, 0).getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const dayOfMonth = today.getDate();
-
-    // Monthly goal calculation
-    const monthlyGoal = Math.floor(daysInMonth * 0.8); // 80% of days in month
+    const monthlyGoal = Math.floor(daysInMonth * 0.8);
     const monthlyProgress = Math.min((entryCount / monthlyGoal) * 100, 100);
-
-    // Weekly streak calculation (simplified)
-    const weeklyGoal = 5; // 5 days per week
-    const weeklyProgress = Math.min(((entryCount % 7) / weeklyGoal) * 100, 100);
+    const isOnTrack = monthlyProgress >= (dayOfMonth / daysInMonth) * 100;
+    const remaining = Math.max(monthlyGoal - entryCount, 0);
 
     return {
       total: entryCount,
       monthlyProgress: Math.round(monthlyProgress),
-      monthlyGoal,
-      weeklyProgress: Math.round(weeklyProgress),
-      isOnTrack: monthlyProgress >= (dayOfMonth / daysInMonth) * 100,
+      isOnTrack,
+      remaining,
     };
   };
 
-  const stats = getEnhancedStatsData();
+  const stats = getStatsData();
 
   return (
-    <View style={styles.heroZone}>
-      <ThemedCard variant="elevated" density="comfortable" elevation="card" style={styles.heroCard}>
-        {/* Enhanced Main Header Section */}
-        <View style={styles.headerSection}>
-          <View style={styles.titleContainer}>
-            <View style={styles.iconContainer}>
-              <Icon name="book-outline" size={24} color={theme.colors.primary} />
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.label}>{t('pastEntries.header.label', 'HISTORY')}</Text>
+        <Text style={styles.title}>{title}</Text>
+        {getSubtitleText() && <Text style={styles.subtitle}>{getSubtitleText()}</Text>}
+      </View>
+
+      {/* Stats Row - Unified card style */}
+      {stats && (
+        <View style={styles.statsCard}>
+          {/* Total */}
+          <View style={styles.statRow}>
+            <View style={styles.statIconContainer}>
+              <Icon name="notebook-outline" size={18} color={theme.colors.primary} />
             </View>
-            <View style={styles.titleContent}>
-              <Text style={styles.title}>{title}</Text>
-              {getSubtitleText() && (
-                <View style={styles.subtitleContainer}>
-                  <Icon name="clock-outline" size={14} color={theme.colors.onSurfaceVariant} />
-                  <Text style={styles.subtitle}>{getSubtitleText()}</Text>
-                </View>
-              )}
+            <View style={styles.statTextContainer}>
+              <Text style={styles.statTitle}>{t('pastEntries.header.total')}</Text>
+              <Text style={styles.statValue}>{stats.total}</Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Monthly Progress */}
+          <View style={styles.statRow}>
+            <View
+              style={[
+                styles.statIconContainer,
+                { backgroundColor: theme.colors.secondaryContainer },
+              ]}
+            >
+              <Icon name="chart-line" size={18} color={theme.colors.secondary} />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={styles.statTitle}>{t('pastEntries.header.monthly')}</Text>
+              <Text style={styles.statValue}>{stats.monthlyProgress}%</Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${stats.monthlyProgress}%` }]} />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Status */}
+          <View style={styles.statRow}>
+            <View
+              style={[
+                styles.statIconContainer,
+                {
+                  backgroundColor: stats.isOnTrack
+                    ? theme.colors.successContainer
+                    : theme.colors.warningContainer,
+                },
+              ]}
+            >
+              <Icon
+                name={stats.isOnTrack ? 'check-circle' : 'target'}
+                size={18}
+                color={stats.isOnTrack ? theme.colors.success : theme.colors.warning}
+              />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={styles.statTitle}>
+                {stats.isOnTrack
+                  ? t('pastEntries.header.cta.onTrack')
+                  : t('pastEntries.header.cta.focus')}
+              </Text>
+              <Text style={styles.statValue}>
+                {stats.remaining > 0
+                  ? t('pastEntries.header.cta.remaining', { count: stats.remaining })
+                  : t('pastEntries.header.cta.complete')}
+              </Text>
             </View>
           </View>
         </View>
-
-        {/* Enhanced Stats Section with Progress Visualization */}
-        {stats && (
-          <View style={styles.statsSection}>
-            {/* Primary Stats Grid */}
-            <View style={styles.primaryStatsContainer}>
-              <View style={styles.statItem}>
-                <View style={styles.statBadge}>
-                  <Text style={styles.statNumber}>{stats.total}</Text>
-                </View>
-                <Text style={styles.statLabel}>{t('pastEntries.header.total')}</Text>
-              </View>
-
-              <View style={styles.statDivider} />
-
-              <View style={styles.statItem}>
-                <View style={styles.statBadge}>
-                  <Text style={styles.statNumber}>{stats.monthlyProgress}%</Text>
-                </View>
-                <Text style={styles.statLabel}>{t('pastEntries.header.monthly')}</Text>
-              </View>
-
-              <View style={styles.statDivider} />
-
-              <View style={styles.statItem}>
-                <View
-                  style={[
-                    styles.statBadge,
-                    {
-                      backgroundColor: stats.isOnTrack
-                        ? theme.colors.successContainer
-                        : theme.colors.warningContainer,
-                    },
-                  ]}
-                >
-                  <Icon
-                    name={stats.isOnTrack ? 'trending-up' : 'trending-neutral'}
-                    size={16}
-                    color={
-                      stats.isOnTrack
-                        ? theme.colors.onSuccessContainer
-                        : theme.colors.onWarningContainer
-                    }
-                  />
-                </View>
-                <Text style={styles.statLabel}>
-                  {stats.isOnTrack
-                    ? t('pastEntries.header.cta.onTrack')
-                    : t('pastEntries.header.cta.focus')}
-                </Text>
-              </View>
-            </View>
-
-            {/* Enhanced Progress Visualization */}
-            <View style={styles.progressSection}>
-              <View style={styles.progressHeader}>
-                <Text style={styles.progressTitle}>
-                  {stats.isOnTrack
-                    ? t('pastEntries.header.cta.onTrack')
-                    : t('pastEntries.header.cta.focus')}
-                </Text>
-                <Text style={styles.progressSubtitle}>
-                  {stats.monthlyGoal - stats.total > 0
-                    ? t('pastEntries.header.cta.remaining', {
-                        count: stats.monthlyGoal - stats.total,
-                      })
-                    : t('pastEntries.header.cta.complete')}
-                </Text>
-              </View>
-
-              {/* Progress Line */}
-              <View style={styles.progressLineContainer}>
-                <View style={styles.progressLine}>
-                  <View
-                    style={[
-                      styles.progressLineFill,
-                      {
-                        width: `${Math.min(stats.monthlyProgress, 100)}%`,
-                        backgroundColor: stats.isOnTrack
-                          ? theme.colors.primary
-                          : theme.colors.warning,
-                      },
-                    ]}
-                  />
-                </View>
-
-                {/* Goal Achievement Indicator */}
-                {stats.monthlyProgress >= 100 && (
-                  <View style={styles.goalCompleteIndicator}>
-                    <Icon name="check-circle" size={16} color={theme.colors.success} />
-                  </View>
-                )}
-              </View>
-            </View>
-          </View>
-        )}
-      </ThemedCard>
+      )}
     </View>
   );
 };
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    // Edge-to-Edge Hero Zone
-    heroZone: {
-      paddingBottom: theme.spacing.lg,
+    container: {
+      marginBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.xl,
     },
-    heroCard: {
-      borderRadius: 0,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 0,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.outline + '10',
-      ...getPrimaryShadow.floating(theme),
+    header: {
+      marginBottom: theme.spacing.md,
     },
-
-    // Enhanced Header Section
-    headerSection: {
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.outline + '15',
-      // Padding handled by density="comfortable"
-    },
-    titleContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.md,
-    },
-    iconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: theme.borderRadius.lg,
-      backgroundColor: theme.colors.primaryContainer,
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...getPrimaryShadow.small(theme),
-    },
-    titleContent: {
-      flex: 1,
+    label: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.primary,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      marginBottom: 4,
     },
     title: {
-      ...theme.typography.headlineMedium,
-      color: theme.colors.onSurface,
+      ...theme.typography.displaySmall,
+      color: theme.colors.onBackground,
       fontWeight: '700',
-      letterSpacing: -0.5,
-      marginBottom: theme.spacing.xs,
-    },
-    subtitleContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
+      fontFamily: 'Lora-Bold',
+      marginBottom: 4,
     },
     subtitle: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
-      fontWeight: '500',
-      letterSpacing: 0.1,
     },
-
-    // Enhanced Stats Section
-    statsSection: {
-      paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.sm,
-      // Horizontal padding handled by card density
+    statsCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
+      overflow: 'hidden',
     },
-    primaryStatsContainer: {
+    statRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: theme.spacing.lg,
-    },
-    statItem: {
-      flex: 1,
-      alignItems: 'center',
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
       gap: theme.spacing.sm,
     },
-    statBadge: {
-      backgroundColor: theme.colors.primaryContainer,
-      borderRadius: theme.borderRadius.lg,
-      width: 48,
-      height: 48,
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...getPrimaryShadow.small(theme),
-    },
-    statNumber: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onPrimaryContainer,
-      fontWeight: '800',
-      letterSpacing: -0.2,
-    },
-    statLabel: {
-      ...theme.typography.labelMedium,
-      color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      fontWeight: '500',
-      letterSpacing: 0.2,
-    },
-    statDivider: {
-      width: 1,
+    statIconContainer: {
+      width: 32,
       height: 32,
-      backgroundColor: theme.colors.outline + '25',
-      marginHorizontal: theme.spacing.sm,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-
-    // Enhanced Progress Section
-    progressSection: {
-      // Container for progress visualization
+    statTextContainer: {
+      flex: 1,
     },
-    progressHeader: {
-      marginBottom: theme.spacing.sm,
-    },
-    progressTitle: {
-      ...theme.typography.titleSmall,
+    statTitle: {
+      ...theme.typography.bodyMedium,
       color: theme.colors.onSurface,
       fontWeight: '600',
-      textAlign: 'center',
-      marginBottom: theme.spacing.xs,
     },
-    progressSubtitle: {
+    statValue: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      fontWeight: '500',
+      marginTop: 2,
     },
-    progressLineContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
+    progressBarContainer: {
+      width: 60,
     },
-    progressLine: {
-      flex: 1,
+    progressBar: {
       height: 4,
-      backgroundColor: theme.colors.primaryContainer + '40',
+      backgroundColor: theme.colors.outline + '20',
       borderRadius: theme.borderRadius.full,
       overflow: 'hidden',
     },
-    progressLineFill: {
+    progressFill: {
       height: '100%',
+      backgroundColor: theme.colors.primary,
       borderRadius: theme.borderRadius.full,
     },
-    goalCompleteIndicator: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.full,
-      padding: 2,
-      ...getPrimaryShadow.small(theme),
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.outline + '15',
+      marginLeft: theme.spacing.md + 32 + theme.spacing.sm,
     },
   });
 

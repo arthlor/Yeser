@@ -379,12 +379,14 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     [animations.heightAnim, animations.opacityAnim]
   );
 
-  // **SIMPLIFIED HEADER**: Using minimal fade and scale only
+  // **ENHANCED HEADER**: Premium branding with glow effect
   const renderHeader = () => (
     <Animated.View style={[styles.headerSection, headerAnimatedStyle]}>
       <View style={styles.brandContainer}>
-        <View style={styles.brandIcon}>
-          <Ionicons name="leaf" size={24} color={theme.colors.primary} />
+        <View style={styles.brandIconGlow}>
+          <View style={styles.brandIcon}>
+            <Ionicons name="leaf" size={28} color={theme.colors.primary} />
+          </View>
         </View>
         <Text style={styles.brandText}>{t('auth.login.brand')}</Text>
       </View>
@@ -408,14 +410,18 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
             <View style={styles.cardInner}>
               {!magicLinkSent && (
                 <>
-                  {/* Trust Indicators */}
+                  {/* Trust Indicators - Compact Glassmorphism */}
                   <View style={styles.trustSection}>
                     <View style={styles.trustBadge}>
-                      <Ionicons name="shield-checkmark" size={14} color={theme.colors.success} />
+                      <View style={styles.trustIconContainer}>
+                        <Ionicons name="shield-checkmark" size={12} color={theme.colors.success} />
+                      </View>
                       <Text style={styles.trustText}>{t('auth.login.secure.trust1')}</Text>
                     </View>
                     <View style={styles.trustBadge}>
-                      <Ionicons name="lock-closed" size={14} color={theme.colors.success} />
+                      <View style={styles.trustIconContainer}>
+                        <Ionicons name="lock-closed" size={12} color={theme.colors.success} />
+                      </View>
                       <Text style={styles.trustText}>{t('auth.login.secure.trust2')}</Text>
                     </View>
                   </View>
@@ -604,49 +610,62 @@ const createStyles = (
       paddingHorizontal: theme.spacing.lg,
     },
 
-    // Header section
+    // Header section - Enhanced with more breathing room
     headerSection: {
       alignItems: 'center',
       paddingHorizontal: theme.spacing.xl,
-      paddingTop: theme.spacing.xl,
-      paddingBottom: theme.spacing.lg,
+      paddingTop: theme.spacing.xxl,
+      paddingBottom: theme.spacing.xl,
     },
     brandContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.xl,
+    },
+    // Brand icon glow wrapper
+    brandIconGlow: {
+      padding: 4,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: `${theme.colors.primary}15`,
+      marginRight: theme.spacing.md,
+      // Glow effect
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
     },
     brandIcon: {
-      width: 36,
-      height: 36,
+      width: 44,
+      height: 44,
       borderRadius: theme.borderRadius.full,
-      backgroundColor: `${theme.colors.primary}12`,
+      backgroundColor: `${theme.colors.primary}20`,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: theme.spacing.md,
     },
     brandIconImage: {
-      width: 24,
-      height: 24,
+      width: 28,
+      height: 28,
     },
     brandText: {
       ...theme.typography.headlineMedium,
       color: theme.colors.primary,
       fontWeight: '700',
+      letterSpacing: 0.5,
     },
     welcomeTitle: {
       ...theme.typography.headlineLarge,
       color: theme.colors.onBackground,
-      fontWeight: '600',
+      fontWeight: '700',
       textAlign: 'center',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
     },
     welcomeSubtitle: {
       ...theme.typography.bodyLarge,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 22,
-      paddingHorizontal: theme.spacing.md,
+      lineHeight: 24,
+      paddingHorizontal: theme.spacing.lg,
+      opacity: 0.9,
     },
 
     // Content area
@@ -656,28 +675,35 @@ const createStyles = (
       minHeight: screenHeight * 0.5,
     },
 
-    // Main content card
+    // Main content card - Enhanced Glassmorphism
     mainContent: {
       marginBottom: theme.spacing.xl,
     },
     contentCard: {
       backgroundColor:
-        theme.name === 'dark' ? `${theme.colors.surface}95` : `${theme.colors.surface}98`,
+        theme.name === 'dark' ? `${theme.colors.surface}F2` : `${theme.colors.surface}FA`,
       borderWidth: 1,
       borderColor:
-        theme.name === 'dark' ? `${theme.colors.outline}25` : `${theme.colors.outline}30`,
-      ...getPrimaryShadow.medium(theme),
+        theme.name === 'dark' ? `${theme.colors.outline}20` : `${theme.colors.outline}25`,
+      borderRadius: theme.borderRadius.xl,
+      // Premium shadow effect
+      shadowColor: theme.name === 'dark' ? '#000' : `${theme.colors.primary}15`,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: theme.name === 'dark' ? 0.4 : 0.2,
+      shadowRadius: 24,
     },
     cardInner: {
       padding: theme.spacing.xl,
+      paddingTop: theme.spacing.lg,
     },
 
-    // Trust indicators
+    // Trust indicators - Compact Glassmorphism
     trustSection: {
       flexDirection: 'row',
       justifyContent: 'center',
-      gap: theme.spacing.lg,
+      gap: theme.spacing.sm,
       marginBottom: theme.spacing.xl,
+      flexWrap: 'wrap',
     },
     trustBadge: {
       flexDirection: 'row',
@@ -685,25 +711,44 @@ const createStyles = (
       gap: theme.spacing.xs,
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
-      backgroundColor: `${theme.colors.success}10`,
-      borderRadius: theme.borderRadius.full,
+      backgroundColor:
+        theme.name === 'dark' ? `${theme.colors.success}12` : `${theme.colors.success}08`,
+      borderRadius: theme.borderRadius.lg,
       borderWidth: 1,
-      borderColor: `${theme.colors.success}25`,
+      borderColor: `${theme.colors.success}30`,
+      // Glassmorphism effect
+      shadowColor: theme.colors.success,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+    },
+    trustIconContainer: {
+      width: 22,
+      height: 22,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: `${theme.colors.success}20`,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     trustText: {
-      ...theme.typography.labelMedium,
+      ...theme.typography.labelSmall,
       color: theme.colors.success,
       fontWeight: '600',
     },
 
     // Form elements
     inputSection: {
-      marginBottom: theme.spacing.xl,
+      marginBottom: theme.spacing.lg,
     },
     loginButton: {
-      marginTop: theme.spacing.md,
-      minHeight: 52, // Increased for better text accommodation
-      ...getPrimaryShadow.small(theme),
+      marginTop: theme.spacing.lg,
+      minHeight: 56,
+      borderRadius: theme.borderRadius.lg,
+      // Enhanced shadow for premium feel
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 12,
     },
     helpToggle: {
       marginTop: theme.spacing.lg,
@@ -783,31 +828,41 @@ const createStyles = (
 
     // Google section
     googleSection: {
-      paddingTop: theme.spacing.md,
+      paddingTop: theme.spacing.lg,
     },
     divider: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: theme.spacing.lg,
+      marginVertical: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.sm,
     },
     dividerLine: {
       flex: 1,
       height: 1,
-      backgroundColor: `${theme.colors.outline}40`,
+      backgroundColor:
+        theme.name === 'dark' ? `${theme.colors.outline}30` : `${theme.colors.outline}25`,
     },
     dividerText: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.labelMedium,
       color: theme.colors.onSurfaceVariant,
-      marginHorizontal: theme.spacing.md,
-      backgroundColor: theme.colors.background,
-      paddingHorizontal: theme.spacing.xs,
+      marginHorizontal: theme.spacing.lg,
+      textTransform: 'lowercase',
+      opacity: 0.8,
     },
     googleButton: {
       backgroundColor:
-        theme.name === 'dark' ? `${theme.colors.surface}90` : `${theme.colors.surface}95`,
-      borderColor: `${theme.colors.outline}30`,
-      minHeight: 52, // Increased for better text accommodation
-      ...getPrimaryShadow.small(theme),
+        theme.name === 'dark' ? `${theme.colors.surface}95` : `${theme.colors.surface}`,
+      borderWidth: 1.5,
+      borderColor:
+        theme.name === 'dark' ? `${theme.colors.outline}40` : `${theme.colors.outline}35`,
+      minHeight: 56,
+      borderRadius: theme.borderRadius.lg,
+      marginBottom: theme.spacing.md,
+      // Subtle elevation
+      shadowColor: theme.name === 'dark' ? '#000' : `${theme.colors.outline}50`,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
     },
     oauthCallbackIndicator: {
       flexDirection: 'row',

@@ -4,6 +4,7 @@ import * as Localization from 'expo-localization';
 
 import en from './resources/en.json';
 import tr from './resources/tr.json';
+import es from './resources/es.json';
 
 const deviceLanguage = (Localization.getLocales?.()[0]?.languageCode || 'tr').toLowerCase();
 
@@ -11,8 +12,8 @@ i18n
   .use(initReactI18next)
   .init({
     compatibilityJSON: 'v4',
-    resources: { en: { translation: en }, tr: { translation: tr } },
-    lng: deviceLanguage === 'en' ? 'en' : 'tr',
+    resources: { en: { translation: en }, tr: { translation: tr }, es: { translation: es } },
+    lng: ['en', 'es', 'tr'].includes(deviceLanguage) ? deviceLanguage : 'tr',
     fallbackLng: 'tr',
     interpolation: { escapeValue: false },
     returnNull: false,

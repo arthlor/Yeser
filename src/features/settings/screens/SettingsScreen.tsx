@@ -26,6 +26,9 @@ import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { analyticsService } from '@/services/analyticsService';
 import useAuthStore from '@/store/authStore';
+import { useSubscription } from '@/hooks/useSubscription';
+import { PremiumUpsellCard } from '@/features/subscription/components/PremiumUpsellCard';
+import { ProBadge } from '@/features/subscription/components/ProBadge';
 
 import { logger } from '@/utils/debugConfig';
 
@@ -63,6 +66,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { showError: showToastError } = useToast();
   const styles = createStyles(theme);
   const { t } = useTranslation();
+  const { isPro, checkGate } = useSubscription();
 
   // **COORDINATED ANIMATION**: Add minimal entrance animation for consistency
   const animations = useCoordinatedAnimations();
@@ -96,6 +100,10 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   const handleExportData = async () => {
+    if (!checkGate('pdf_export')) {
+      return;
+    }
+
     setIsExporting(true);
     let tempFilePath: string | undefined;
 
@@ -162,12 +170,17 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleVariedPromptsToggle = useCallback(
     (useVariedPrompts: boolean) => {
+      // If turning ON, check gate
+      if (useVariedPrompts && !checkGate('varied_prompts')) {
+        return;
+      }
+
       updateProfile({ useVariedPrompts: useVariedPrompts });
       analyticsService.logEvent('varied_prompts_toggled', {
         enabled: useVariedPrompts,
       });
     },
-    [updateProfile]
+    [updateProfile, checkGate]
   );
 
   const navigateToPrivacyPolicy = () => {
@@ -190,7 +203,13 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   const navigateToMoodAnalysis = () => {
     analyticsService.logEvent('settings_open_mood_analysis');
-    navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('MoodAnalysis');
+
+    // Hard gate: Check pro status before navigating
+    if (checkGate('mood_analytics_deep_dive')) {
+      navigation
+        .getParent<StackNavigationProp<RootStackParamListFixed>>()
+        ?.navigate('MoodAnalysis');
+    }
   };
   // Avatar helpers
   const [awaitedAvatarUrl, setAwaitedAvatarUrl] = useState<string | null>(null);
@@ -293,7 +312,12 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <ScreenLayout edges={['top']} edgeToEdge={true} backgroundColor={theme.colors.surface}>
+    <ScreenLayout
+      edges={['top']}
+      edgeToEdge={true}
+      density="comfortable"
+      backgroundColor={theme.colors.background}
+    >
       <ScreenContent
         isLoading={isLoadingProfile && !profile}
         errorObject={profileError && !profile ? profileError : null}
@@ -303,10 +327,33 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         {/* Header Section */}
         <View style={styles.headerSection}>
           <View style={styles.header}>
+            <Text style={styles.headerLabel}>{t('settings.label', 'YOUR PREFERENCES')}</Text>
             <Text style={styles.screenTitle}>{t('settings.title')}</Text>
             <Text style={styles.screenSubtitle}>{t('settings.subtitle')}</Text>
           </View>
         </View>
+
+        {/* Premium Status Section - Visible only for Pro Users */}
+        {isPro && (
+          <View style={[styles.section, { marginBottom: theme.spacing.md }]}>
+            <View style={styles.premiumCard}>
+              <View style={styles.premiumIconContainer}>
+                <Icon name="crown" size={24} color={theme.colors.onPrimary} />
+              </View>
+              <View style={styles.premiumTextContainer}>
+                <Text style={styles.premiumTitle}>
+                  {t('settings.premium.title', 'Premium Active')}
+                </Text>
+                <Text style={styles.premiumSubtitle}>
+                  {t('settings.premium.subtitle', 'You have access to all features')}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Premium Upsell for Free Users */}
+        {!isPro && <PremiumUpsellCard />}
 
         {/* User Profile Section with Avatar */}
         <View style={styles.section}>
@@ -365,9 +412,12 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                   <Icon name="lightbulb-on-outline" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={styles.textContainer}>
-                  <Text style={styles.settingTitle}>
-                    {t('settings.appearance.inspirationTitle')}
-                  </Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.settingTitle}>
+                      {t('settings.appearance.inspirationTitle')}
+                    </Text>
+                    {!isPro && <ProBadge size="small" style={styles.badgeMargin} />}
+                  </View>
                   <Text style={styles.settingDescription}>
                     {t('settings.appearance.inspirationDesc')}
                   </Text>
@@ -398,7 +448,10 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                   <Icon name="download-outline" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={styles.textContainer}>
-                  <Text style={styles.settingTitle}>{t('settings.data.exportTitle')}</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.settingTitle}>{t('settings.data.exportTitle')}</Text>
+                    {!isPro && <ProBadge size="small" style={styles.badgeMargin} />}
+                  </View>
                   <Text style={styles.settingDescription}>{t('settings.data.exportDesc')}</Text>
                 </View>
               </View>
@@ -491,32 +544,39 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: theme.spacing.sm,
     },
     header: {
-      alignItems: 'center',
+      alignItems: 'flex-start',
       paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    headerLabel: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.primary,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      marginBottom: 4,
     },
     screenTitle: {
       ...theme.typography.headlineLarge,
       color: theme.colors.onBackground,
-      marginBottom: theme.spacing.sm,
-      textAlign: 'center',
+      marginBottom: 4,
+      textAlign: 'left',
       fontWeight: '700',
+      fontFamily: 'Lora-Bold',
     },
     screenSubtitle: {
       ...theme.typography.bodyLarge,
       color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
+      textAlign: 'left',
       lineHeight: 24,
     },
     settingCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.outlineVariant,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
       marginBottom: theme.spacing.sm,
       marginHorizontal: theme.spacing.md,
-      // 🌟 Medium primary shadow for inline setting cards
-      ...getPrimaryShadow.medium(theme),
+      overflow: 'hidden',
     },
     settingRow: {
       flexDirection: 'row',
@@ -530,8 +590,8 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
     },
     iconContainer: {
-      width: 36,
-      height: 36,
+      width: 32,
+      height: 32,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.primaryContainer,
       justifyContent: 'center',
@@ -615,10 +675,45 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
     },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
     switchLabel: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurface,
       fontWeight: '500',
+    },
+    badgeMargin: {
+      marginLeft: 8,
+    },
+    premiumCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.primaryContainer + '30',
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '40',
+    },
+    premiumIconContainer: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.borderRadius.full,
+      padding: 8,
+      marginRight: theme.spacing.md,
+    },
+    premiumTextContainer: {
+      flex: 1,
+    },
+    premiumTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.primary,
+      fontWeight: 'bold',
+      marginBottom: 2,
+    },
+    premiumSubtitle: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
     },
   });
 

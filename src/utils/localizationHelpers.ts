@@ -14,16 +14,17 @@ export const localizeGratitudeBenefit = (
   benefit: GratitudeBenefit,
   language: SupportedLanguage
 ): LocalizedGratitudeBenefit => {
-  const isEnglish = language === 'en';
+  // For Spanish, fallback to English content as database doesn't have Spanish columns yet
+  const useEnglish = language === 'en' || language === 'es';
 
   return {
     id: benefit.id,
     icon: benefit.icon,
-    title: isEnglish && benefit.title_en ? benefit.title_en : benefit.title_tr,
+    title: useEnglish && benefit.title_en ? benefit.title_en : benefit.title_tr,
     description:
-      isEnglish && benefit.description_en ? benefit.description_en : benefit.description_tr,
-    stat: isEnglish && benefit.stat_en ? benefit.stat_en : benefit.stat_tr,
-    cta_prompt: isEnglish && benefit.cta_prompt_en ? benefit.cta_prompt_en : benefit.cta_prompt_tr,
+      useEnglish && benefit.description_en ? benefit.description_en : benefit.description_tr,
+    stat: useEnglish && benefit.stat_en ? benefit.stat_en : benefit.stat_tr,
+    cta_prompt: useEnglish && benefit.cta_prompt_en ? benefit.cta_prompt_en : benefit.cta_prompt_tr,
     display_order: benefit.display_order,
     is_active: benefit.is_active,
     created_at: benefit.created_at,
@@ -43,13 +44,14 @@ export const localizeDailyPrompt = (
   prompt: DailyPrompt,
   language: SupportedLanguage
 ): LocalizedDailyPrompt => {
-  const isEnglish = language === 'en';
+  // For Spanish, fallback to English content
+  const useEnglish = language === 'en' || language === 'es';
 
   // More robust language selection with better fallback logic
   let promptText: string;
 
-  if (isEnglish) {
-    // For English: use English text if available and not empty, otherwise fallback to Turkish
+  if (useEnglish) {
+    // For English/Spanish: use English text if available and not empty, otherwise fallback to Turkish
     promptText =
       prompt.prompt_text_en && prompt.prompt_text_en.trim().length > 0
         ? prompt.prompt_text_en
@@ -82,6 +84,9 @@ export const getUserLanguagePreference = (
   if (userLocale === 'en') {
     return 'en';
   }
+  if (userLocale === 'es') {
+    return 'es';
+  }
   if (userLocale === 'tr') {
     return 'tr';
   }
@@ -91,6 +96,9 @@ export const getUserLanguagePreference = (
     const normalizedHeader = acceptLanguage.toLowerCase();
     if (normalizedHeader.includes('en')) {
       return 'en';
+    }
+    if (normalizedHeader.includes('es')) {
+      return 'es';
     }
     if (normalizedHeader.includes('tr')) {
       return 'tr';

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useTranslation } from 'react-i18next';
-import i18n from '@/i18n';
 
 import CalendarDay from './CalendarDay';
 import CalendarHeader from './CalendarHeader';
@@ -11,18 +10,17 @@ import {
   ENGLISH_LOCALIZATION,
   getNextMonth,
   getPreviousMonth,
+  SPANISH_LOCALIZATION,
   TURKISH_LOCALIZATION,
 } from './utils';
 import { useTheme } from '../../providers/ThemeProvider';
 import { getPrimaryShadow } from '../../themes/utils';
 import type { AppTheme } from '../../themes/types';
 
-// Configure locales for react-native-calendars (TR and EN)
+// Initialize all locales from static constants immediately
 LocaleConfig.locales.tr = {
   monthNames: TURKISH_LOCALIZATION.months,
-  monthNamesShort: i18n.isInitialized
-    ? (i18n.t('shared.calendar.monthsShort', { returnObjects: true }) as string[])
-    : TURKISH_LOCALIZATION.months.map((m) => m.slice(0, 3)),
+  monthNamesShort: TURKISH_LOCALIZATION.months.map((m) => m.slice(0, 3)),
   dayNames: TURKISH_LOCALIZATION.days,
   dayNamesShort: TURKISH_LOCALIZATION.daysShort,
 };
@@ -45,6 +43,12 @@ LocaleConfig.locales.en = {
   dayNames: ENGLISH_LOCALIZATION.days,
   dayNamesShort: ENGLISH_LOCALIZATION.daysShort,
 };
+LocaleConfig.locales.es = {
+  monthNames: SPANISH_LOCALIZATION.months,
+  monthNamesShort: SPANISH_LOCALIZATION.months.map((m) => m.slice(0, 3)),
+  dayNames: SPANISH_LOCALIZATION.days,
+  dayNamesShort: SPANISH_LOCALIZATION.daysShort,
+};
 
 const CalendarView: React.FC<CalendarViewProps> = ({
   markedDates,
@@ -53,14 +57,38 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   onDayPress,
   isLoading = false,
   isFutureMonth = false,
+  hideHeader = false,
 }) => {
   const { i18n } = useTranslation();
   const { theme } = useTheme();
 
   // Update default locale when language changes
   useEffect(() => {
-    const lang = i18n.language === 'en' ? 'en' : 'tr';
-    LocaleConfig.defaultLocale = lang;
+    const lang = i18n.language;
+
+    if (lang === 'en' || lang === 'tr' || lang === 'es') {
+      // Explicitly re-set the locale configuration for the current language
+      // to ensure any potential race conditions are resolved
+      if (lang === 'tr') {
+        LocaleConfig.locales.tr = {
+          monthNames: TURKISH_LOCALIZATION.months,
+          monthNamesShort: TURKISH_LOCALIZATION.months.map((m) => m.slice(0, 3)),
+          dayNames: TURKISH_LOCALIZATION.days,
+          dayNamesShort: TURKISH_LOCALIZATION.daysShort,
+        };
+      } else if (lang === 'es') {
+        LocaleConfig.locales.es = {
+          monthNames: SPANISH_LOCALIZATION.months,
+          monthNamesShort: SPANISH_LOCALIZATION.months.map((m) => m.slice(0, 3)),
+          dayNames: SPANISH_LOCALIZATION.days,
+          dayNamesShort: SPANISH_LOCALIZATION.daysShort,
+        };
+      }
+
+      LocaleConfig.defaultLocale = lang;
+    } else {
+      LocaleConfig.defaultLocale = 'en';
+    }
   }, [i18n.language]);
 
   // Calendar theme configuration
@@ -84,11 +112,25 @@ const CalendarView: React.FC<CalendarViewProps> = ({
       textDayFontSize: 16,
       textMonthFontSize: 18,
       textDayHeaderFontSize: 14,
+      // Use static constants for theme prop as well
       monthNames:
-        i18n.language === 'en' ? ENGLISH_LOCALIZATION.months : TURKISH_LOCALIZATION.months,
-      dayNames: i18n.language === 'en' ? ENGLISH_LOCALIZATION.days : TURKISH_LOCALIZATION.days,
+        i18n.language === 'en'
+          ? ENGLISH_LOCALIZATION.months
+          : i18n.language === 'es'
+            ? SPANISH_LOCALIZATION.months
+            : TURKISH_LOCALIZATION.months,
+      dayNames:
+        i18n.language === 'en'
+          ? ENGLISH_LOCALIZATION.days
+          : i18n.language === 'es'
+            ? SPANISH_LOCALIZATION.days
+            : TURKISH_LOCALIZATION.days,
       dayNamesShort:
-        i18n.language === 'en' ? ENGLISH_LOCALIZATION.daysShort : TURKISH_LOCALIZATION.daysShort,
+        i18n.language === 'en'
+          ? ENGLISH_LOCALIZATION.daysShort
+          : i18n.language === 'es'
+            ? SPANISH_LOCALIZATION.daysShort
+            : TURKISH_LOCALIZATION.daysShort,
     }),
     [theme, i18n.language]
   );
@@ -121,13 +163,15 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
   return (
     <View style={styles.container}>
-      <CalendarHeader
-        currentMonth={currentMonth}
-        onPreviousMonth={handlePreviousMonth}
-        onNextMonth={handleNextMonth}
-        isLoading={isLoading}
-        isNextMonthDisabled={isFutureMonth}
-      />
+      {!hideHeader && (
+        <CalendarHeader
+          currentMonth={currentMonth}
+          onPreviousMonth={handlePreviousMonth}
+          onNextMonth={handleNextMonth}
+          isLoading={isLoading}
+          isNextMonthDisabled={isFutureMonth}
+        />
+      )}
 
       <Calendar
         key={`${currentMonth.toISOString()}-${i18n.language}`}

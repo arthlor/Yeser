@@ -58,7 +58,9 @@
       "progress": {
         "start": {
           "title": "Start",
-          "message": "Make a beautiful start by writing your first gratitude for today."
+          "message": "Make a beautiful start by writing your first gratitude for today.",
+          "message_afternoon": "Add a touch of gratitude to your afternoon.",
+          "message_evening": "End your day on a peaceful note."
         },
         "complete": {
           "title": "Success",
@@ -102,6 +104,14 @@
         "title": "Mood insights",
         "subtitle": "Review your emotional patterns"
       }
+    },
+    "headline": {
+      "greeting": {
+        "morning": "Good Morning",
+        "afternoon": "Good Afternoon",
+        "evening": "Good Evening"
+      },
+      "subtitle": "Start your day with gratitude."
     },
     "todayList": {
       "viewMore": "View all ({{count}} more)",
@@ -172,6 +182,8 @@
     "fixedScheduleDescription": "We'll remind you twice a day at {{firstTime}} and {{secondTime}} (9 PM) in your local time."
   },
   "calendar": {
+    "title": "YOUR JOURNEY",
+    "subtitle": "Map your moments of gratitude.",
     "tab": { "title": "Calendar", "a11y": "Calendar view" },
     "errors": {
       "dataLoadFailed": "Calendar Data Could Not Be Loaded"
@@ -194,13 +206,19 @@
     }
   },
   "settings": {
+    "label": "YOUR PREFERENCES",
     "privacyPolicy": { "title": "Privacy Policy", "lastUpdated": "Last updated: {{date}}" },
     "terms": { "title": "Terms of Service" },
+    "premium": {
+      "title": "Premium Active",
+      "subtitle": "You have access to all features"
+    },
     "language": {
       "title": "Language",
       "description": "Choose your preferred language",
       "tr": "Turkish",
-      "en": "English"
+      "en": "English",
+      "es": "Spanish"
     },
     "title": "Settings",
     "subtitle": "Customize your preferences",
@@ -550,6 +568,7 @@
       "tip": "Writing 3 gratitudes a day leads to increased happiness over time!"
     },
     "header": {
+      "label": "HISTORY",
       "lastUpdate": "Last updated: {{date}}",
       "total": "Total Entries",
       "monthly": "Monthly Goal",
@@ -592,7 +611,8 @@
   "shared": {
     "ui": {
       "badges": {
-        "new": "NEW"
+        "new": "NEW",
+        "pro": "PRO"
       },
       "accessibility": {
         "tapToEditDelete": "Tap to see editing and deletion options",
@@ -797,6 +817,12 @@
       "actions": {
         "refresh": "Refresh insights"
       },
+      "range": {
+        "7d": "7 Days",
+        "30d": "30 Days",
+        "90d": "90 Days",
+        "365d": "1 Year"
+      },
       "empty": {
         "title": "Not enough mood data yet",
         "message": "Add moods to your gratitude statements to unlock personalised reflections.",
@@ -842,6 +868,38 @@
         "empty": "We could not load streak data.",
         "hint": "Keeping your streak alive helps reveal how consistency changes your mood mix."
       },
+      "moodStreak": {
+        "title": "Mood Streaks 🔥",
+        "subtitle": "Your longest consecutive days with each dominant mood.",
+        "currentStreak": "{{count}} day streak",
+        "currentStreakPlural": "{{count}} day streak",
+        "noStreak": "No streak yet",
+        "empty": "Add more entries to see mood streaks."
+      },
+      "comparison": {
+        "title": "Week-Over-Week 📊",
+        "subtitle": "How your mood balance is shifting.",
+        "improved": "{{value}}% more balanced",
+        "declined": "{{value}}% less balanced",
+        "stable": "Mood balance stable",
+        "noData": "Add more entries to see trends.",
+        "currentPeriod": "This period",
+        "previousPeriod": "Last period",
+        "change": "Change"
+      },
+      "correlation": {
+        "title": "Insights 💡",
+        "subtitle": "Patterns we've discovered in your gratitude practice.",
+        "empty": "Add more entries to unlock insights.",
+        "bestDay": "Your happiest day is {{day}} with {{mood}} mood",
+        "consistentMood": "You've been consistently {{mood}} lately",
+        "varietyHigh": "Great mood diversity! You've used {{count}} different moods",
+        "weekendBoost": "Your mood improves on weekends",
+        "weekdayStrong": "You stay positive even on weekdays",
+        "streakPower": "Longer streaks bring more {{mood}} moods",
+        "morningPerson": "Your entries are most positive in the morning",
+        "eveningReflector": "Evening reflections bring out gratitude"
+      },
       "distribution": {
         "empty": "We need more moods to calculate a distribution."
       },
@@ -872,7 +930,12 @@
           "addMoods": "Tag today’s gratitude with a mood to unlock deeper reflections.",
           "balance": "Write about a different feeling tomorrow to balance things out.",
           "keepStreak": "Keep your streak alive to see how consistency shifts your mood story.",
-          "writeMore": "A few more entries this week will sharpen your insights."
+          "writeMore": "A few more entries this week will sharpen your insights.",
+          "celebrate": "You're doing great! Keep celebrating the moments that matter.",
+          "explore": "Try exploring what makes you feel {{mood}} more often.",
+          "variety": "Mixing different moods enriches your emotional awareness.",
+          "reflect": "Take a moment to reflect on what's driving your current mood pattern.",
+          "milestone": "Amazing progress! You've logged over {{count}} entries with moods."
         }
       },
       "balance": {
@@ -885,7 +948,14 @@
         "🙏": "Grateful",
         "🌟": "Inspired",
         "💪": "Empowered",
-        "🧘": "Calm"
+        "🧘": "Calm",
+        "🥰": "Loving",
+        "😌": "Content",
+        "🌿": "Refreshed",
+        "🤔": "Thoughtful",
+        "🌅": "Hopeful",
+        "🎯": "Focused",
+        "🚀": "Motivated"
       },
       "date": {
         "unknown": "Unknown date"
@@ -1498,6 +1568,34 @@
     "export": {
       "unknownError": "Unknown error",
       "exportFailed": "Export failed"
+    }
+  },
+  "subscription": {
+    "customerCenter": {
+      "title": "Manage your subscription",
+      "openButton": "Open Customer Center"
+    },
+    "upsell": {
+      "title": "Upgrade to Premium",
+      "subtitle": "Unlock the full potential of your gratitude journey:",
+      "features": {
+        "unlimited": "Unlimited daily entries",
+        "past": "Add entries for past dates",
+        "insights": "Advanced mood analytics",
+        "export": "Export data to PDF",
+        "prompts": "Varied inspiration prompts"
+      }
+    },
+    "paywall": {
+      "unlockInsights": "Unlock Premium Insights",
+      "unlockSubtitle": "Get detailed analytics & trends",
+      "upgradeToPro": "Upgrade to Pro"
+    },
+    "restore": {
+      "success": "Subscription restored!"
+    },
+    "purchase": {
+      "success": "Welcome to Premium!"
     }
   }
 }

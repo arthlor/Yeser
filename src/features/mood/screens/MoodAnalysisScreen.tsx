@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -9,9 +10,12 @@ import { ScreenHeader, ScreenLayout, ScreenSection } from '@/shared/components/l
 import ErrorState from '@/shared/components/ui/ErrorState';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import ThemedCard from '@/shared/components/ui/ThemedCard';
+import SegmentedControl from '@/shared/components/ui/SegmentedControl';
+import DonutChart from '@/shared/components/ui/DonutChart';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useMoodAnalytics } from '../hooks';
 import { useStreakData } from '@/features/streak/hooks/useStreakData';
+import { useSubscription } from '@/hooks/useSubscription';
 import { analyticsService } from '@/services/analyticsService';
 import type { AppStackParamList } from '@/types/navigation';
 import type { MoodAnalyticsRange, MoodAnalyticsResponse } from '@/types/moodAnalytics.types';
@@ -30,6 +34,23 @@ interface MoodDistributionItem {
 }
 
 const DEFAULT_RANGE: MoodAnalyticsRange = '90d';
+const RANGE_OPTIONS: MoodAnalyticsRange[] = ['7d', '30d', '90d', '365d'];
+
+// Chart color palette for mood distribution
+const CHART_COLORS = [
+  '#6366f1', // Indigo
+  '#f59e0b', // Amber
+  '#10b981', // Emerald
+  '#ef4444', // Red
+  '#8b5cf6', // Violet
+  '#ec4899', // Pink
+  '#14b8a6', // Teal
+  '#f97316', // Orange
+  '#06b6d4', // Cyan
+  '#84cc16', // Lime
+  '#a855f7', // Purple
+  '#eab308', // Yellow
+];
 
 const MoodAnalysisScreen: React.FC = () => {
   const navigation = useNavigation<MoodAnalysisNavigationProp>();
@@ -37,8 +58,19 @@ const MoodAnalysisScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const { data, error, isLoading, isRefetching, refetch, totals } = useMoodAnalytics(DEFAULT_RANGE);
+  const [selectedRange, setSelectedRange] = useState<MoodAnalyticsRange>(DEFAULT_RANGE);
+  const { data, error, isLoading, isRefetching, refetch, totals } = useMoodAnalytics(selectedRange);
+
+  const rangeOptions = useMemo(
+    () =>
+      RANGE_OPTIONS.map((value) => ({
+        value,
+        label: t(`mood.analysis.range.${value}`),
+      })),
+    [t]
+  );
   const { data: streak, isLoading: streakLoading } = useStreakData();
+  useSubscription(); // Used elsewhere, but canUseInsights not needed here
 
   const hasAnalytics = Boolean(data && data.overview.totalEntries > 0);
   const narrativeHeadings = useMemo(() => getNarrativeHeadings(t), [t]);
@@ -151,13 +183,35 @@ const MoodAnalysisScreen: React.FC = () => {
       edges={['top']}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.contentContainer}
+      backgroundColor={theme.colors.background}
+      density="comfortable"
     >
-      <ScreenHeader
-        title={t('mood.analysis.title')}
-        subtitle={t('mood.analysis.subtitle')}
-        showBackButton
-        onBackPress={handleBackPress}
-      />
+      <View style={styles.header}>
+        {/* Back Button */}
+        <TouchableOpacity
+          onPress={handleBackPress}
+          style={styles.backButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back', 'Back')}
+        >
+          <Icon name="arrow-left" size={24} color={theme.colors.onSurface} />
+        </TouchableOpacity>
+
+        <Text style={styles.headerLabel}>{t('mood.analysis.label', 'INSIGHTS')}</Text>
+        <Text style={styles.headerTitle}>{t('mood.analysis.title')}</Text>
+        <Text style={styles.headerSubtitle}>{t('mood.analysis.subtitle')}</Text>
+      </View>
+
+      {/* Date Range Selector */}
+      <View style={styles.rangeSelector}>
+        <SegmentedControl
+          options={rangeOptions}
+          selectedValue={selectedRange}
+          onValueChange={setSelectedRange}
+          disabled={isLoading || isRefetching}
+        />
+      </View>
 
       <ScreenSection spacing="large" variant="minimal">
         <OverviewSection
@@ -186,6 +240,22 @@ const MoodAnalysisScreen: React.FC = () => {
 
       <ScreenSection
         spacing="large"
+        title={t('mood.analysis.moodStreak.title')}
+        subtitle={t('mood.analysis.moodStreak.subtitle')}
+      >
+        <MoodStreakSection data={data} t={t} styles={styles} theme={theme} />
+      </ScreenSection>
+
+      <ScreenSection
+        spacing="large"
+        title={t('mood.analysis.comparison.title')}
+        subtitle={t('mood.analysis.comparison.subtitle')}
+      >
+        <ComparisonSection data={data} t={t} styles={styles} theme={theme} />
+      </ScreenSection>
+
+      <ScreenSection
+        spacing="large"
         title={t('mood.analysis.sections.distribution.title')}
         subtitle={t('mood.analysis.sections.distribution.subtitle')}
       >
@@ -198,6 +268,14 @@ const MoodAnalysisScreen: React.FC = () => {
         subtitle={t('mood.analysis.sections.trend.subtitle')}
       >
         <TrendSection data={data} styles={styles} t={t} />
+      </ScreenSection>
+
+      <ScreenSection
+        spacing="large"
+        title={t('mood.analysis.correlation.title')}
+        subtitle={t('mood.analysis.correlation.subtitle')}
+      >
+        <CorrelationSection data={data} t={t} styles={styles} theme={theme} />
       </ScreenSection>
 
       <ScreenSection
@@ -341,6 +419,395 @@ const StreakSection: React.FC<StreakSectionProps> = ({ streak, isLoading, t, sty
   );
 };
 
+// Helper to compute mood-specific streaks from trend data
+interface MoodStreakData {
+  mood: MoodEmoji;
+  longestStreak: number;
+  currentStreak: number;
+}
+
+const computeMoodStreaks = (trend: MoodAnalyticsResponse['trend']): MoodStreakData[] => {
+  // Sort trend by date ascending for streak calculation
+  const sortedTrend = [...trend].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  const moodStreaks: Record<MoodEmoji, { longest: number; current: number }> = {} as Record<
+    MoodEmoji,
+    { longest: number; current: number }
+  >;
+
+  // Initialize all moods
+  MOOD_EMOJIS.forEach((mood) => {
+    moodStreaks[mood] = { longest: 0, current: 0 };
+  });
+
+  // Calculate streaks
+  let lastMood: MoodEmoji | null = null;
+  let currentRun = 0;
+
+  for (const point of sortedTrend) {
+    if (!point.dominantMood) {
+      // Break all streaks
+      if (lastMood && currentRun > 0) {
+        moodStreaks[lastMood].longest = Math.max(moodStreaks[lastMood].longest, currentRun);
+        moodStreaks[lastMood].current = 0;
+      }
+      lastMood = null;
+      currentRun = 0;
+      continue;
+    }
+
+    if (point.dominantMood === lastMood) {
+      currentRun++;
+    } else {
+      // End previous streak
+      if (lastMood && currentRun > 0) {
+        moodStreaks[lastMood].longest = Math.max(moodStreaks[lastMood].longest, currentRun);
+        moodStreaks[lastMood].current = 0;
+      }
+      // Start new streak
+      lastMood = point.dominantMood;
+      currentRun = 1;
+    }
+  }
+
+  // Finalize last mood (this is the "current" streak for the most recent mood)
+  if (lastMood && currentRun > 0) {
+    moodStreaks[lastMood].longest = Math.max(moodStreaks[lastMood].longest, currentRun);
+    moodStreaks[lastMood].current = currentRun;
+  }
+
+  // Convert to array and filter out moods with no streaks
+  return MOOD_EMOJIS.filter((mood) => moodStreaks[mood].longest > 0)
+    .map((mood) => ({
+      mood,
+      longestStreak: moodStreaks[mood].longest,
+      currentStreak: moodStreaks[mood].current,
+    }))
+    .sort((a, b) => b.longestStreak - a.longestStreak);
+};
+
+interface MoodStreakSectionProps {
+  data: MoodAnalyticsResponse;
+  t: TFunction<'translation'>;
+  styles: ReturnType<typeof createStyles>;
+  theme: AppTheme;
+}
+
+const MoodStreakSection: React.FC<MoodStreakSectionProps> = ({ data, t, styles, theme }) => {
+  const moodStreaks = useMemo(() => computeMoodStreaks(data.trend), [data.trend]);
+
+  if (moodStreaks.length === 0) {
+    return <Text style={styles.emptyMessage}>{t('mood.analysis.moodStreak.empty')}</Text>;
+  }
+
+  return (
+    <View style={styles.moodStreakContainer}>
+      {moodStreaks.slice(0, 5).map((item) => (
+        <View key={item.mood} style={styles.moodStreakRow}>
+          <Text style={styles.moodStreakEmoji}>{item.mood}</Text>
+          <View style={styles.moodStreakInfo}>
+            <Text style={styles.moodStreakLabel}>
+              {t(`mood.analysis.moods.${item.mood}`, { defaultValue: item.mood })}
+            </Text>
+            <Text style={styles.moodStreakValue}>
+              {t('mood.analysis.moodStreak.currentStreak', { count: item.longestStreak })}
+            </Text>
+          </View>
+          {item.currentStreak > 0 && (
+            <View
+              style={[styles.moodStreakBadge, { backgroundColor: theme.colors.primary + '20' }]}
+            >
+              <Text style={[styles.moodStreakBadgeText, { color: theme.colors.primary }]}>
+                🔥 {item.currentStreak}
+              </Text>
+            </View>
+          )}
+        </View>
+      ))}
+    </View>
+  );
+};
+
+// Helper to compute period-over-period comparison from trend data
+interface ComparisonData {
+  currentBalance: number;
+  previousBalance: number;
+  change: number;
+  trend: 'improved' | 'declined' | 'stable';
+}
+
+const computePeriodComparison = (
+  trend: MoodAnalyticsResponse['trend'],
+  _moodCounts: MoodAnalyticsResponse['moodCounts']
+): ComparisonData | null => {
+  if (trend.length < 4) {
+    return null; // Need at least 4 days for meaningful comparison
+  }
+
+  // Split trend into two halves (current vs previous period)
+  const midpoint = Math.floor(trend.length / 2);
+  const sortedTrend = [...trend].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  const previousHalf = sortedTrend.slice(0, midpoint);
+  const currentHalf = sortedTrend.slice(midpoint);
+
+  // Calculate balance for each half (variance in mood counts = less balanced)
+  const calculateBalance = (periodTrend: MoodAnalyticsResponse['trend']): number => {
+    const moodTotals: Record<string, number> = {};
+    let total = 0;
+
+    periodTrend.forEach((point) => {
+      Object.entries(point.moodCounts).forEach(([mood, count]) => {
+        moodTotals[mood] = (moodTotals[mood] || 0) + count;
+        total += count;
+      });
+    });
+
+    if (total === 0) {
+      return 50;
+    } // Neutral
+
+    const values = Object.values(moodTotals);
+    const maxRatio = Math.max(...values) / total;
+    // Higher score = more balanced (lower dominant ratio)
+    return Math.round(100 - maxRatio * 100);
+  };
+
+  const previousBalance = calculateBalance(previousHalf);
+  const currentBalance = calculateBalance(currentHalf);
+  const change = currentBalance - previousBalance;
+
+  let trendLabel: 'improved' | 'declined' | 'stable';
+  if (change >= 5) {
+    trendLabel = 'improved';
+  } else if (change <= -5) {
+    trendLabel = 'declined';
+  } else {
+    trendLabel = 'stable';
+  }
+
+  return {
+    currentBalance,
+    previousBalance,
+    change,
+    trend: trendLabel,
+  };
+};
+
+interface ComparisonSectionProps {
+  data: MoodAnalyticsResponse;
+  t: TFunction<'translation'>;
+  styles: ReturnType<typeof createStyles>;
+  theme: AppTheme;
+}
+
+const ComparisonSection: React.FC<ComparisonSectionProps> = ({ data, t, styles, theme }) => {
+  const comparison = useMemo(
+    () => computePeriodComparison(data.trend, data.moodCounts),
+    [data.trend, data.moodCounts]
+  );
+
+  if (!comparison) {
+    return <Text style={styles.emptyMessage}>{t('mood.analysis.comparison.noData')}</Text>;
+  }
+
+  const getTrendColor = () => {
+    switch (comparison.trend) {
+      case 'improved':
+        return theme.colors.success || '#22c55e';
+      case 'declined':
+        return theme.colors.error || '#ef4444';
+      default:
+        return theme.colors.onSurfaceVariant;
+    }
+  };
+
+  const getTrendIcon = () => {
+    switch (comparison.trend) {
+      case 'improved':
+        return '↑';
+      case 'declined':
+        return '↓';
+      default:
+        return '→';
+    }
+  };
+
+  return (
+    <ThemedCard variant="outlined" density="comfortable" elevation="card">
+      <View style={styles.comparisonRow}>
+        <View style={styles.comparisonColumn}>
+          <Text style={styles.comparisonLabel}>{t('mood.analysis.comparison.previousPeriod')}</Text>
+          <Text style={styles.comparisonValue}>{comparison.previousBalance}%</Text>
+        </View>
+        <View style={styles.comparisonArrow}>
+          <Text style={[styles.comparisonArrowIcon, { color: getTrendColor() }]}>
+            {getTrendIcon()}
+          </Text>
+          <Text style={[styles.comparisonChange, { color: getTrendColor() }]}>
+            {Math.abs(comparison.change)}%
+          </Text>
+        </View>
+        <View style={styles.comparisonColumn}>
+          <Text style={styles.comparisonLabel}>{t('mood.analysis.comparison.currentPeriod')}</Text>
+          <Text style={styles.comparisonValue}>{comparison.currentBalance}%</Text>
+        </View>
+      </View>
+      <Text style={[styles.comparisonStatus, { color: getTrendColor() }]}>
+        {comparison.trend === 'stable'
+          ? t('mood.analysis.comparison.stable')
+          : t(`mood.analysis.comparison.${comparison.trend}`, {
+              value: Math.abs(comparison.change),
+            })}
+      </Text>
+    </ThemedCard>
+  );
+};
+
+// Day names for correlation insights
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// Helper to compute correlation insights
+interface Insight {
+  key: string;
+  params?: Record<string, string | number>;
+  emoji: string;
+}
+
+const computeInsights = (
+  trend: MoodAnalyticsResponse['trend'],
+  moodCounts: MoodAnalyticsResponse['moodCounts'],
+  t: TFunction<'translation'>
+): Insight[] => {
+  const insights: Insight[] = [];
+
+  if (trend.length < 3) {
+    return insights;
+  }
+
+  // Analyze by day of week
+  const dayStats: Record<number, { count: number; moods: Record<string, number> }> = {};
+  for (let i = 0; i < 7; i++) {
+    dayStats[i] = { count: 0, moods: {} };
+  }
+
+  trend.forEach((point) => {
+    const dayOfWeek = new Date(point.date).getDay();
+    dayStats[dayOfWeek].count++;
+    if (point.dominantMood) {
+      dayStats[dayOfWeek].moods[point.dominantMood] =
+        (dayStats[dayOfWeek].moods[point.dominantMood] || 0) + 1;
+    }
+  });
+
+  // Find best day
+  let bestDay = 0;
+  let bestDayMood: string | null = null;
+  let maxCount = 0;
+
+  Object.entries(dayStats).forEach(([day, stats]) => {
+    if (stats.count > maxCount) {
+      maxCount = stats.count;
+      bestDay = parseInt(day, 10);
+      const topMood = Object.entries(stats.moods).sort((a, b) => b[1] - a[1])[0];
+      bestDayMood = topMood ? topMood[0] : null;
+    }
+  });
+
+  if (maxCount >= 2 && bestDayMood) {
+    const dayName = t(`common.days.${DAY_NAMES[bestDay].toLowerCase()}`, {
+      defaultValue: DAY_NAMES[bestDay],
+    });
+    const moodLabel = t(`mood.analysis.moods.${bestDayMood}`, { defaultValue: bestDayMood });
+    insights.push({
+      key: 'bestDay',
+      params: { day: dayName, mood: moodLabel },
+      emoji: '📅',
+    });
+  }
+
+  // Check weekend vs weekday patterns
+  const weekendCount = dayStats[0].count + dayStats[6].count;
+  const weekdayCount =
+    dayStats[1].count +
+    dayStats[2].count +
+    dayStats[3].count +
+    dayStats[4].count +
+    dayStats[5].count;
+
+  if (weekendCount > weekdayCount * 0.5 && weekendCount >= 3) {
+    insights.push({ key: 'weekendBoost', emoji: '🌴' });
+  } else if (weekdayCount >= 5) {
+    insights.push({ key: 'weekdayStrong', emoji: '💼' });
+  }
+
+  // Check mood variety
+  const uniqueMoods = moodCounts.filter((m) => m.count > 0).length;
+  if (uniqueMoods >= 4) {
+    insights.push({
+      key: 'varietyHigh',
+      params: { count: uniqueMoods },
+      emoji: '🌈',
+    });
+  }
+
+  // Check for consistent dominant mood
+  const dominantMood = moodCounts[0];
+  const totalMoods = moodCounts.reduce((sum, m) => sum + m.count, 0);
+  if (dominantMood && totalMoods > 0 && dominantMood.count / totalMoods >= 0.5) {
+    const moodLabel = t(`mood.analysis.moods.${dominantMood.mood}`, {
+      defaultValue: dominantMood.mood,
+    });
+    insights.push({
+      key: 'consistentMood',
+      params: { mood: moodLabel },
+      emoji: dominantMood.mood,
+    });
+  }
+
+  return insights.slice(0, 4); // Max 4 insights
+};
+
+interface CorrelationSectionProps {
+  data: MoodAnalyticsResponse;
+  t: TFunction<'translation'>;
+  styles: ReturnType<typeof createStyles>;
+  theme: AppTheme;
+}
+
+const CorrelationSection: React.FC<CorrelationSectionProps> = ({
+  data,
+  t,
+  styles,
+  theme: _theme,
+}) => {
+  const insights = useMemo(
+    () => computeInsights(data.trend, data.moodCounts, t),
+    [data.trend, data.moodCounts, t]
+  );
+
+  if (insights.length === 0) {
+    return <Text style={styles.emptyMessage}>{t('mood.analysis.correlation.empty')}</Text>;
+  }
+
+  return (
+    <View style={styles.insightsContainer}>
+      {insights.map((insight, index) => (
+        <View key={`${insight.key}-${index}`} style={styles.insightCard}>
+          <Text style={styles.insightEmoji}>{insight.emoji}</Text>
+          <Text style={styles.insightText}>
+            {t(`mood.analysis.correlation.${insight.key}`, insight.params || {})}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+};
+
 interface DistributionSectionProps {
   distribution: MoodDistributionItem[];
   styles: ReturnType<typeof createStyles>;
@@ -352,16 +819,43 @@ const DistributionSection: React.FC<DistributionSectionProps> = ({
   distribution,
   styles,
   t,
-  theme,
+  theme: _theme,
 }) => {
   if (distribution.length === 0) {
     return <Text style={styles.emptyMessage}>{t('mood.analysis.distribution.empty')}</Text>;
   }
 
+  // Prepare chart data with colors
+  const chartData = distribution.map((item, index) => ({
+    value: item.count,
+    label: t(`mood.analysis.moods.${item.mood}`, { defaultValue: item.mood }),
+    color: CHART_COLORS[index % CHART_COLORS.length],
+  }));
+
+  const totalMoods = distribution.reduce((sum, item) => sum + item.count, 0);
+
   return (
     <View style={styles.distributionContainer}>
-      {distribution.map((item) => (
+      {/* Donut Chart */}
+      <View style={styles.chartContainer}>
+        <DonutChart
+          data={chartData}
+          size={140}
+          strokeWidth={20}
+          centerValue={totalMoods.toString()}
+          centerLabel={t('mood.analysis.overview.statements')}
+        />
+      </View>
+
+      {/* Legend with bars */}
+      {distribution.map((item, index) => (
         <View key={item.mood} style={styles.distributionRow}>
+          <View
+            style={[
+              styles.legendDot,
+              { backgroundColor: CHART_COLORS[index % CHART_COLORS.length] },
+            ]}
+          />
           <View style={styles.distributionLabelContainer}>
             <Text style={styles.distributionMood}>
               {t(`mood.analysis.moods.${item.mood}`, { defaultValue: item.mood })}
@@ -374,7 +868,7 @@ const DistributionSection: React.FC<DistributionSectionProps> = ({
                 styles.distributionFill,
                 {
                   width: `${Math.max(item.percentage, 4)}%`,
-                  backgroundColor: theme.colors.primary,
+                  backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
                 },
               ]}
             />
@@ -549,12 +1043,39 @@ const buildNarrativeCopy = ({
 
   if (dominantRatio >= 0.65) {
     suggestionTexts.add(t('mood.analysis.narrative.suggestionTexts.balance'));
+    // Add explore suggestion with the dominant mood
+    if (dominantMood) {
+      suggestionTexts.add(
+        t('mood.analysis.narrative.suggestionTexts.explore', {
+          mood: t(`mood.analysis.moods.${dominantMood}`, { defaultValue: dominantMood }),
+        })
+      );
+    }
+  } else if (dominantRatio <= 0.4 && totalMoods > 0) {
+    // Balanced mood - celebrate!
+    suggestionTexts.add(t('mood.analysis.narrative.suggestionTexts.variety'));
   }
 
   if (data.overview.totalEntries >= 7) {
     suggestionTexts.add(t('mood.analysis.narrative.suggestionTexts.keepStreak'));
   } else {
     suggestionTexts.add(t('mood.analysis.narrative.suggestionTexts.writeMore'));
+  }
+
+  // Add milestone celebration for high entry counts
+  if (data.overview.totalEntries >= 30) {
+    suggestionTexts.add(
+      t('mood.analysis.narrative.suggestionTexts.milestone', {
+        count: data.overview.totalEntries,
+      })
+    );
+  } else if (data.overview.totalEntries >= 10) {
+    suggestionTexts.add(t('mood.analysis.narrative.suggestionTexts.celebrate'));
+  }
+
+  // Add reflection prompt for neutral state
+  if (logicalKey === 'neutral' && totalMoods >= 5) {
+    suggestionTexts.add(t('mood.analysis.narrative.suggestionTexts.reflect'));
   }
 
   return {
@@ -608,6 +1129,39 @@ const createStyles = (theme: AppTheme) =>
       justifyContent: 'space-between',
       gap: theme.spacing.md,
       marginBottom: theme.spacing.lg,
+    },
+    header: {
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.lg,
+      paddingTop: theme.spacing.sm,
+      alignItems: 'flex-start',
+    },
+    backButton: {
+      marginBottom: theme.spacing.sm,
+      marginLeft: -theme.spacing.sm, // Align icon with text
+    },
+    headerLabel: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.primary,
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      marginBottom: 4,
+    },
+    headerTitle: {
+      ...theme.typography.headlineLarge,
+      color: theme.colors.onBackground,
+      marginBottom: 4,
+      fontWeight: '700',
+      fontFamily: 'Lora-Bold',
+    },
+    headerSubtitle: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurfaceVariant,
+      lineHeight: 24,
+    },
+    rangeSelector: {
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.md,
     },
     overviewItem: {
       flex: 1,
@@ -682,6 +1236,108 @@ const createStyles = (theme: AppTheme) =>
     streakHintText: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurface,
+    },
+    moodStreakContainer: {
+      gap: theme.spacing.sm,
+    },
+    moodStreakRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: theme.borderRadius.lg,
+      padding: theme.spacing.md,
+      gap: theme.spacing.md,
+    },
+    moodStreakEmoji: {
+      fontSize: 28,
+    },
+    moodStreakInfo: {
+      flex: 1,
+    },
+    moodStreakLabel: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '500',
+    },
+    moodStreakValue: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+    },
+    moodStreakBadge: {
+      borderRadius: theme.borderRadius.full || 999,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+    },
+    moodStreakBadgeText: {
+      ...theme.typography.labelSmall,
+      fontWeight: '600',
+    },
+    comparisonRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    comparisonColumn: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    comparisonLabel: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: theme.spacing.xs,
+    },
+    comparisonValue: {
+      ...theme.typography.headlineSmall,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
+    },
+    comparisonArrow: {
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.sm,
+    },
+    comparisonArrowIcon: {
+      fontSize: 24,
+      fontWeight: '700',
+    },
+    comparisonChange: {
+      ...theme.typography.labelSmall,
+      fontWeight: '600',
+    },
+    comparisonStatus: {
+      ...theme.typography.bodyMedium,
+      textAlign: 'center',
+      fontWeight: '500',
+    },
+    chartContainer: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.md,
+    },
+    legendDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      marginRight: theme.spacing.sm,
+    },
+    insightsContainer: {
+      gap: theme.spacing.sm,
+    },
+    insightCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: theme.borderRadius.lg,
+      padding: theme.spacing.md,
+      gap: theme.spacing.md,
+    },
+    insightEmoji: {
+      fontSize: 24,
+    },
+    insightText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurface,
+      flex: 1,
     },
     distributionContainer: {
       gap: theme.spacing.md,

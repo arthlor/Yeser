@@ -1032,6 +1032,7 @@
     },
     "detail": {
       "title": "Detalles de la Entrada",
+      "subtitle": "Reflexionando sobre tus momentos de alegría y gratitud.",
       "gratitudeCount": "{{count}} gratitudes"
     },
     "actions": {

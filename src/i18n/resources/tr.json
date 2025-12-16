@@ -1026,6 +1026,7 @@
     },
     "detail": {
       "title": "Kayıt Detayı",
+      "subtitle": "Sana neşe veren ve minnettar olduğun anların...",
       "gratitudeCount": "{{count}} minnet"
     },
     "actions": {

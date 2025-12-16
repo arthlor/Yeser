@@ -171,7 +171,17 @@
     }
   },
   "notifications": {
-    "dailyRemindersTitle": "Günlük Minnettarlık Hatırlatıcı",
+    "remindersLabel": "Günlük Hatırlatıcılar",
+    "reminders": {
+      "midday": {
+        "title": "Yeşerme Zamanı! ✨",
+        "body": "Bugün neye minnettar olduğunu yazmayı unutma."
+      },
+      "evening": {
+        "title": "Günün Nasıl Geçti? 🌙",
+        "body": "Günü kapatırken minnettar olduğun anları hatırla."
+      }
+    },
     "permissionRequiredTitle": "Bildirim İzni Gerekli",
     "dailyRemindersMessage": "Minnettarlık alışkanlığını sürdürmek için günlük hatırlatıcılar göndermek istiyoruz.\n\n✨ Faydaları:\n• Her gün aynı saatte nazik hatırlatıcı\n• Minnettarlık pratiğini unutmazsın\n• İstediğin zaman kapatabilirsin\n• Daha pozitif ve mutlu bir yaşam\n\nİzin vermek ister misin?",
     "permissionRequiredMessage": "Günlük hatırlatıcıları etkinleştirmek için bildirim izni gerekiyor.\n\n📱 Nasıl etkinleştirilir:\n1. 'Ayarlara Git' butonuna dokunun\n2. 'Bildirimler' bölümünü bulun\n3. Yeşer uygulamasını etkinleştirin\n4. Bu sayfaya geri dönün\n\nHatırlatıcılar sizi daha mutlu hissettirecek! 😊",

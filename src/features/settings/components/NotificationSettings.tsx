@@ -153,7 +153,7 @@ export const NotificationSettings: React.FC = () => {
             notificationService.showNotificationPermissionGuidance(false);
           } else if (result.status === 'denied') {
             // User denied but can ask again - show explanation
-            showToastError(t('notifications.dailyRemindersTitle'));
+            showToastError(t('notifications.remindersLabel'));
             notificationService.showNotificationPermissionGuidance(true);
           } else {
             // Other error (token generation failed)
@@ -371,7 +371,7 @@ export const NotificationSettings: React.FC = () => {
               <Icon name="clock-outline" size={18} color={theme.colors.primary} />
             </View>
             <View style={styles.scheduleTextContainer}>
-              <Text style={styles.scheduleTitle}>{t('notifications.dailyRemindersTitle')}</Text>
+              <Text style={styles.scheduleTitle}>{t('notifications.remindersLabel')}</Text>
               <Text style={styles.scheduleDescription}>{scheduleDescription}</Text>
             </View>
           </View>

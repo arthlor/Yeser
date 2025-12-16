@@ -171,7 +171,17 @@
     }
   },
   "notifications": {
-    "dailyRemindersTitle": "Recordatorios Diarios de Gratitud 🌱",
+    "remindersLabel": "Recordatorios diarios",
+    "reminders": {
+      "midday": {
+        "title": "¡Es Hora de Florecer! ✨",
+        "body": "No olvides anotar aquello por lo que te sientes agradecido hoy."
+      },
+      "evening": {
+        "title": "¿Qué tal tu día? 🌙",
+        "body": "Reflexiona sobre los momentos de gratitud al terminar el día."
+      }
+    },
     "permissionRequiredTitle": "Permiso de Notificación Requerido",
     "dailyRemindersMessage": "Nos gustaría enviar recordatorios diarios suaves para mantener tu hábito de gratitud.\n\n✨ Beneficios:\n• Un recordatorio amistoso a la misma hora todos los días\n• Mantén tu práctica constante\n• Puedes desactivarlo en cualquier momento\n• Una vida más feliz y positiva\n\n¿Te gustaría habilitarlo?",
     "permissionRequiredMessage": "Para habilitar los recordatorios diarios, se requiere permiso de notificación.\n\n📱 Cómo habilitar:\n1. Toca 'Abrir Configuración'\n2. Busca la sección 'Notificaciones'\n3. Habilita la aplicación Yeser\n4. Regresa a esta página\n\n¡Los recordatorios te ayudarán a sentirte más feliz! 😊",

@@ -171,7 +171,17 @@
     }
   },
   "notifications": {
-    "dailyRemindersTitle": "Daily Gratitude Reminders 🌱",
+    "remindersLabel": "Daily Reminders",
+    "reminders": {
+      "midday": {
+        "title": "Time to Blossom! ✨",
+        "body": "Don’t forget to note what you’re grateful for today."
+      },
+      "evening": {
+        "title": "How was your day? 🌙",
+        "body": "Reflect on the moments you are grateful for as you end the day."
+      }
+    },
     "permissionRequiredTitle": "Notification Permission Required",
     "dailyRemindersMessage": "We'd like to send gentle daily reminders to sustain your gratitude habit.\n\n✨ Benefits:\n• A friendly reminder at the same time every day\n• Keep your practice consistent\n• You can turn it off anytime\n• A happier, more positive life\n\nWould you like to enable it?",
     "permissionRequiredMessage": "To enable daily reminders, notification permission is required.\n\n📱 How to enable:\n1. Tap 'Open Settings'\n2. Find the 'Notifications' section\n3. Enable the Yeser app\n4. Return to this page\n\nReminders will help you feel happier! 😊",

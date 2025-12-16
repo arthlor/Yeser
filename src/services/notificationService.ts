@@ -70,7 +70,7 @@ async function setupAndroidChannel() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
       // Localized channel name
-      name: i18n.isInitialized ? i18n.t('notifications.dailyRemindersTitle') : 'Daily Reminders',
+      name: i18n.isInitialized ? i18n.t('notifications.reminders.midday.title') : 'Daily Reminders',
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF231F7C',
@@ -306,10 +306,9 @@ async function scheduleDailyReminderNotifications(): Promise<NotificationOperati
 
     await cancelDailyReminderNotifications();
 
-    const localizedCopy = getLocalizedReminderCopy();
-
     await Promise.all(
       DAILY_REMINDER_SCHEDULES.map(({ variant, time }) => {
+        const localizedCopy = getLocalizedReminderCopy(variant);
         const trigger = parseDailyTrigger(time);
         return Notifications.scheduleNotificationAsync({
           content: {
@@ -364,7 +363,7 @@ function showNotificationPermissionGuidance(
 ) {
   const title = canAskAgain
     ? i18n.isInitialized
-      ? i18n.t('notifications.dailyRemindersTitle')
+      ? i18n.t('notifications.reminders.midday.title')
       : 'Daily Reminders'
     : i18n.isInitialized
       ? i18n.t('notifications.permissionRequiredTitle')
@@ -481,17 +480,20 @@ async function updateNotificationPreferenceFallback(
   }
 }
 
-const getLocalizedReminderCopy = (): { title: string; body: string } => {
+const getLocalizedReminderCopy = (
+  variant: DailyReminderVariant = 'midday'
+): { title: string; body: string } => {
   if (i18n.isInitialized) {
     return {
-      title: i18n.t('notifications.dailyRemindersTitle'),
-      body: i18n.t('notifications.dailyRemindersMessage'),
+      title: i18n.t(`notifications.reminders.${variant}.title`),
+      body: i18n.t(`notifications.reminders.${variant}.body`),
     };
   }
 
+  // Fallback if i18n isn't ready (should be rare)
   return {
-    title: 'Daily Reminders',
-    body: 'Remember to record what you are grateful for.',
+    title: 'Time to Blossom! ✨',
+    body: 'Don’t forget to note what you’re grateful for today.',
   };
 };
 

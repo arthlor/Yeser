@@ -115,6 +115,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       flex: 1,
       justifyContent: 'center',
       marginLeft: theme.spacing.md,
+      paddingTop: theme.spacing.xs,
     },
     greetingText: {
       ...theme.typography.displaySmall,
@@ -122,7 +123,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       fontWeight: '700',
       fontFamily: 'Lora-Bold',
       letterSpacing: -0.5,
-      lineHeight: 38,
+      lineHeight: 44,
     },
     nameText: {
       ...theme.typography.displaySmall,

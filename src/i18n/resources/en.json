@@ -1028,7 +1028,9 @@
       "firstToday": "Add your first gratitude!",
       "firstPast": "You haven't added gratitude that day yet",
       "todayStart": "Start your day by writing down the moments you feel grateful for today.",
-      "pastStart": "No gratitude entries exist for this date yet."
+      "pastStart": "No gratitude entries exist for this date yet.",
+      "today": "Your gratitude journal is waiting.",
+      "past": "No entries for this day."
     },
     "goal": {
       "completedToday": "🎉 Today's goal completed!",
@@ -1590,22 +1592,26 @@
       "subtitle": "Unlock the full potential of your gratitude journey:",
       "features": {
         "unlimited": "Unlimited daily entries",
-        "past": "Add entries for past dates",
-        "insights": "Advanced mood analytics",
-        "export": "Export data to PDF",
-        "prompts": "Varied inspiration prompts"
+        "past": "Add gratitudes to past dates",
+        "insights": "Advanced mood analysis",
+        "export": "Export your gratitudes to PDF",
+        "prompts": "Variety of inspiring prompts"
       }
     },
     "paywall": {
       "unlockInsights": "Unlock Premium Insights",
-      "unlockSubtitle": "Get detailed analytics & trends",
-      "upgradeToPro": "Upgrade to Pro"
+      "unlockSubtitle": "Access in-depth analysis and trends",
+      "upgradeToPro": "Upgrade to Pro",
+      "loading": "Loading subscription options...",
+      "noOfferings": "Unable to load subscription options"
     },
     "restore": {
-      "success": "Subscription restored!"
+      "success": "Subscription restored!",
+      "error": "Restore failed. Please try again."
     },
     "purchase": {
-      "success": "Welcome to Premium!"
+      "success": "Welcome to Premium!",
+      "error": "Purchase failed. Please try again."
     }
   }
 }

@@ -1031,7 +1031,9 @@
       "firstToday": "¡Agrega tu primera gratitud!",
       "firstPast": "Aún no has agregado gratitud ese día",
       "todayStart": "Comienza tu día escribiendo los momentos por los que te sientes agradecido hoy.",
-      "pastStart": "Aún no existen entradas de gratitud para esta fecha."
+      "pastStart": "Aún no existen entradas de gratitud para esta fecha.",
+      "today": "Tu diario de gratitud está esperando.",
+      "past": "No hay entradas para este día."
     },
     "goal": {
       "completedToday": "🎉 ¡Meta de hoy completada!",
@@ -1607,14 +1609,18 @@
     },
     "paywall": {
       "unlockInsights": "Desbloquear Perspectivas Premium",
-      "unlockSubtitle": "Obtén análisis detallados y tendencias",
-      "upgradeToPro": "Actualizar a Pro"
+      "unlockSubtitle": "Accede a análisis y tendencias detalladas",
+      "upgradeToPro": "Actualizar a Pro",
+      "loading": "Cargando opciones de suscripción...",
+      "noOfferings": "No se pudieron cargar las opciones de suscripción"
     },
     "restore": {
-      "success": "¡Suscripción restaurada!"
+      "success": "¡Suscripción restaurada!",
+      "error": "Restauración fallida. Por favor, inténtalo de nuevo."
     },
     "purchase": {
-      "success": "¡Bienvenido a Premium!"
+      "success": "¡Bienvenido a Premium!",
+      "error": "Compra fallida. Por favor, inténtalo de nuevo."
     }
   }
 }

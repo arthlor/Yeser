@@ -11,7 +11,7 @@ class RevenueCatService {
   }
 
   /**
-   * Initialize RevenueCat SDK
+   * Initialize RevenueCat SDK with verification
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
@@ -23,12 +23,28 @@ class RevenueCatService {
         Purchases.setLogLevel(LOG_LEVEL.DEBUG);
         Purchases.configure({ apiKey: REVENUECAT_CONFIG.API_KEY });
         this.isInitialized = true;
+
+        // Verify initialization succeeded by fetching customer info
+        try {
+          const info = await Purchases.getCustomerInfo();
+          logger.debug('[RevenueCatService] Initialization verified with customer info', {
+            hasEntitlements: Object.keys(info.entitlements.active).length > 0,
+          });
+        } catch (verifyError) {
+          logger.warn('[RevenueCatService] Could not verify initialization:', {
+            error: (verifyError as Error).message,
+          });
+          // Don't throw - allow app to continue but log the issue
+        }
+
         logger.debug('[RevenueCatService] Initialized successfully');
       } else {
         logger.warn('[RevenueCatService] Skipped initialization: Not mobile platform');
       }
     } catch (error: unknown) {
       logger.error('[RevenueCatService] Initialization failed:', error as Error);
+      this.isInitialized = false; // Ensure flag is false on error
+      throw error; // Re-throw to let caller handle
     }
   }
 

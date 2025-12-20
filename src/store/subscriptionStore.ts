@@ -25,7 +25,21 @@ export const useSubscriptionStore = create<SubscriptionState>((set, _get) => ({
   initialize: async () => {
     try {
       set({ isLoading: true });
-      await revenueCatService.initialize();
+
+      // Defensive initialization
+      try {
+        await revenueCatService.initialize();
+      } catch (initError) {
+        logger.error('[SubscriptionStore] RevenueCat init failed:', initError as Error);
+        // Set safe defaults and continue
+        set({
+          currentOffering: null,
+          customerInfo: null,
+          isPro: false,
+          isLoading: false,
+        });
+        return; // Exit early on init failure
+      }
 
       // Setup real-time listeners to sync store
       revenueCatService.setupListeners((info) => {
@@ -39,6 +53,11 @@ export const useSubscriptionStore = create<SubscriptionState>((set, _get) => ({
       const offerings = await revenueCatService.getOfferings();
       const info = await revenueCatService.getCustomerInfo();
 
+      // Null safety: Warn if no offerings available
+      if (!offerings) {
+        logger.warn('[SubscriptionStore] No offerings available');
+      }
+
       set({
         currentOffering: offerings || null,
         customerInfo: info,
@@ -47,7 +66,13 @@ export const useSubscriptionStore = create<SubscriptionState>((set, _get) => ({
       });
     } catch (error) {
       logger.error('[SubscriptionStore] Init failed:', error as Error);
-      set({ isLoading: false });
+      // Set safe state on error
+      set({
+        currentOffering: null,
+        customerInfo: null,
+        isPro: false,
+        isLoading: false,
+      });
     }
   },
 

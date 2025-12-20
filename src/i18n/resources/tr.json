@@ -1025,7 +1025,9 @@
       "firstToday": "İlk minnetini ekle!",
       "firstPast": "O gün henüz minnet eklemedin",
       "todayStart": "Bugün minnettarlık hissettiğin anları yazarak güne başla.",
-      "pastStart": "Bu tarihte henüz bir minnet ifadesi bulunmuyor."
+      "pastStart": "Bu tarihte henüz bir minnet ifadesi bulunmuyor.",
+      "today": "Bugün neye minnettar olduğunu yaz.",
+      "past": "Bu güne ait kayıt bulunamadı."
     },
     "goal": {
       "completedToday": "🎉 Bugün hedef tamamlandı!",
@@ -1600,13 +1602,17 @@
     "paywall": {
       "unlockInsights": "Premium İçgörüleri Aç",
       "unlockSubtitle": "Detaylı analizlere ve trendlere erişin",
-      "upgradeToPro": "Pro'ya Yükselt"
+      "upgradeToPro": "Pro'ya Yükselt",
+      "loading": "Abonelik seçenekleri yükleniyor...",
+      "noOfferings": "Abonelik seçenekleri yüklenemedi"
     },
     "restore": {
-      "success": "Abonelik geri yüklendi!"
+      "success": "Abonelik geri yüklendi!",
+      "error": "Geri yükleme başarısız. Lütfen tekrar deneyin."
     },
     "purchase": {
-      "success": "Premium'a hoş geldiniz!"
+      "success": "Premium'a hoş geldiniz!",
+      "error": "Satın alma başarısız. Lütfen tekrar deneyin."
     }
   }
 }

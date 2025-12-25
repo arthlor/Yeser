@@ -3,8 +3,9 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { getVersion } from 'react-native-device-info';
 import { useTranslation } from 'react-i18next';
+
+import { config } from '@/utils/config';
 
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme, ThemeName } from '@/themes/types';
@@ -513,7 +514,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.footerSection}>
           <View style={styles.footer}>
             <Text style={styles.versionText}>
-              {t('settings.version', { version: getVersion() })}
+              {t('settings.version', { version: config.app.version })}
             </Text>
           </View>
         </View>

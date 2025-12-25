@@ -194,7 +194,7 @@ const EnhancedHelpScreen: React.FC = () => {
         </TouchableOpacity>
 
         <Text style={styles.versionText}>
-          {t('settings.help.appVersion', { defaultValue: 'Yeser v1.2.0' })}
+          {t('settings.help.appVersion', { defaultValue: 'Yeser v1.2.1' })}
         </Text>
       </ScreenSection>
     </ScreenLayout>

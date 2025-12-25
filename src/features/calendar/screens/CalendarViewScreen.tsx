@@ -285,6 +285,7 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
             isLoading={isLoadingDates}
             isFutureMonth={isFutureMonth}
             hideHeader={true} // HIDING DEFAULT HEADER
+            key={language}
           />
         </View>
 

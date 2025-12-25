@@ -3,12 +3,14 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { ScreenLayout } from '@/shared/components/layout';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { ZodError } from 'zod';
@@ -72,7 +74,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const finalDateString = effectiveDate.toISOString().split('T')[0];
   const isToday = finalDateString === new Date().toISOString().split('T')[0];
 
-  const { canAccessPastEntries, canAddDailyEntry, checkGate } = useSubscription();
+  const { canAccessPastEntries, canAddDailyEntry, checkGate, isPro } = useSubscription();
 
   // **PAST DATE INJECTION PROTECTION**
   useEffect(() => {
@@ -378,6 +380,23 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     }
   };
 
+  const showLimitInfo = useCallback(() => {
+    Alert.alert(
+      t('gratitude.limits.title', 'Daily Limit'),
+      t(
+        'gratitude.limits.message',
+        'On the free plan, you can only add 1 gratitude per day. Upgrade to Premium for unlimited entries.'
+      ),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('gratitude.limits.goPro', 'Go Premium'),
+          onPress: () => checkGate('limit_info_icon'),
+        },
+      ]
+    );
+  }, [t, checkGate]);
+
   if (entryError) {
     return (
       <ScreenLayout>
@@ -513,6 +532,19 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                 <Text style={styles.listTitle}>
                   {t('gratitude.sections.todaysGratitudes', 'Your Gratitudes')}
                 </Text>
+                {!isPro && (
+                  <TouchableOpacity
+                    onPress={showLimitInfo}
+                    style={styles.infoButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Icon
+                      name="help-circle-outline"
+                      size={18}
+                      color={theme.colors.onSurfaceVariant}
+                    />
+                  </TouchableOpacity>
+                )}
                 <View style={styles.lineDivider} />
               </View>
             )}
@@ -733,6 +765,10 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.bodyLarge,
       color: theme.colors.onSurfaceVariant + '80',
       fontStyle: 'italic',
+    },
+    infoButton: {
+      marginRight: 8,
+      justifyContent: 'center',
     },
   });
 

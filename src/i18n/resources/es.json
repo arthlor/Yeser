@@ -364,7 +364,7 @@
       "contactEmailLabel": "Soporte por correo",
       "contactEmailHint": "Abre la aplicación de correo para contactar a soporte",
       "contactCTA": "Contactar Soporte",
-      "appVersion": "Yeser v1.2.0",
+      "appVersion": "Yeser v1.2.1",
       "accessibility": {
         "expanded": "{{question}} expandido. {{answer}}",
         "collapsed": "{{question}} contraído.",
@@ -1015,6 +1015,11 @@
       "todaysGratitudes": "Gratitudes de hoy",
       "todaysEntries": "Gratitudes de hoy",
       "thatDaysEntries": "Gratitudes de ese día"
+    },
+    "limits": {
+      "title": "Límite Diario",
+      "message": "En el plan gratuito, solo puedes agregar 1 gratitud por día. Actualiza a Premium para entradas ilimitadas.",
+      "goPro": "Hazte Premium"
     },
     "labels": {
       "today": "Hoy",

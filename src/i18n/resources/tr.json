@@ -6,7 +6,7 @@
     "no": "Hayır",
     "back": "Geri Dön",
     "retry": "Tekrar Dene",
-    "viewAll": "Tümünü gör",
+    "viewAll": "Tümünü Gör",
     "loading": "Yükleniyor...",
     "emptyTitle": "Henüz içerik yok",
     "emptySubtitle": "İçerik eklendiğinde burada görünecek",
@@ -25,13 +25,13 @@
       "night": "İyi geceler"
     },
     "errors": {
-      "refreshError": "sayfa yenileme"
+      "refreshError": "Sayfa yenilenemedi"
     },
     "addButton": {
       "a11y": "Minnet ekle"
     },
     "header": {
-      "guest": "misafir",
+      "guest": "Misafir",
       "avatar": {
         "a11y": "{{name}} profil resmi"
       }
@@ -40,7 +40,7 @@
       "base": {
         "gratitude": {
           "title": "Minnettarlık",
-          "message": "Her minnettarlık, kalbinde yeşeren bir umut tohumudur."
+          "message": "Her minnet ifadesi, kalbinde yeşeren bir umut tohumudur."
         },
         "peace": {
           "title": "İçsel Huzur",
@@ -52,7 +52,7 @@
         },
         "growth": {
           "title": "Büyüme",
-          "message": "Her minnettarlık, kişisel gelişimin yolunda atılan sağlam bir adımdır."
+          "message": "Her minnet anı, kişisel gelişim yolunda atılan sağlam bir adımdır."
         }
       },
       "progress": {
@@ -68,7 +68,7 @@
         },
         "progress": {
           "title": "Devam Et",
-          "message": "Bugünün hedefine ulaşmak için {{remaining}} minnettarlık daha yaz."
+          "message": "Bugünün hedefine ulaşmak için {{remaining}} minnet notu daha yaz."
         }
       },
       "progressLabel": "{{current}}/{{dailyGoal}}",
@@ -83,16 +83,16 @@
       "progress": {
         "title": "Devam Et",
         "subtitle": "{{remaining}} minnettarlık daha",
-        "progress": "{{percent}}% tamamlandı"
+        "progress": "%{{percent}} tamamlandı"
       },
       "past": {
         "title": "Geçmiş Kayıtlar",
-        "subtitle": "Eski minnettarlıklarını gör",
+        "subtitle": "Eski notlarını incele",
         "extra": "Gözat"
       },
       "calendar": {
         "title": "Takvim",
-        "subtitle": "Minnet yolculuğunu takip et",
+        "subtitle": "Minnet yolculuğunu izle",
         "extra": "İncele"
       },
       "why": {
@@ -101,7 +101,7 @@
         "extra": "Öğren"
       },
       "mood": {
-        "title": "Duygu içgörüleri",
+        "title": "Duygu İçgörüleri",
         "subtitle": "Duygusal örüntülerini incele"
       }
     },
@@ -119,23 +119,23 @@
     },
     "hero": {
       "time": {
-        "early": "erken sabah",
+        "early": "erken saatler",
         "morning": "sabah",
         "noon": "öğlen",
         "afternoon": "öğleden sonra",
         "evening": "akşam",
         "night": "gece"
       },
-      "defaultName": "Arkadaş",
+      "defaultName": "Dostum",
       "goalComplete": {
         "primary": "{{icon}} Mükemmel, {{name}}!",
         "secondary": "Bugünün hedefini tamamladın!",
-        "accent": "Minnettarlığın seni daha güçlü yapıyor ✨"
+        "accent": "Minnettarlığın seni daha güçlü kılıyor ✨"
       },
       "progress": {
         "primary": "{{icon}} {{greeting}}, {{name}}!",
-        "secondary": "Bu {{timeText}} harika geçiyor",
-        "accent": "Devam etmek için minnet yaz 💫"
+        "secondary": "Bu {{timeText}} harika geçiyor.",
+        "accent": "Devam etmek için bir minnet notu yaz 💫"
       },
       "idle": {
         "primary": "{{icon}} {{greeting}}, {{name}}!",
@@ -144,11 +144,11 @@
       },
       "motivation": {
         "startMain": "Minnettarlığa başlamak için harika bir gün!",
-        "startSub": "İlk minnettarlığınla güzel bir başlangıç yapın",
-        "completeMain": "Bugünün hedefini başarıyla tamamladınız!",
-        "completeSub": "Minnettarlık alışkanlığınız güçleniyor",
-        "remaining": "{{remaining}} minnettarlık daha - {{progress}}% tamamlandı",
-        "remainingSub": "Hedefinize çok yaklaştınız, devam edin!"
+        "startSub": "İlk minnettarlığınla güzel bir başlangıç yap.",
+        "completeMain": "Bugünün hedefini başarıyla tamamladın!",
+        "completeSub": "Minnettarlık alışkanlığın güçleniyor.",
+        "remaining": "{{remaining}} minnettarlık daha - %{{progress}} tamamlandı",
+        "remainingSub": "Hedefine çok yaklaştın, devam et!"
       }
     },
     "stats": {
@@ -160,14 +160,14 @@
   "tips": {
     "gratitude": {
       "title": "Minnettarlık İpucu",
-      "detail": "Spesifik olmaya çalışın. 'Ailem' yerine, 'partnerimin bu sabahki gülümsemesi' gibi.",
-      "challenge": "Yakın zamanda karşılaştığınız bir zorluğu düşünün. Ondan ne öğrendiniz? Hangi gücünüzü keşfettiniz?",
-      "simpleThings": "Basit şeyleri fark edin. Güneşin sıcaklığı, kahvenizin tadı, rahat bir koltuk.",
-      "people": "Size yardım eden birini düşünün. Ona kısa bir teşekkür notu yazmayı değerlendirin.",
-      "selfCompassion": "Kendinize minnettar olun. Vücudunuza sağlığı için veya zihninize direnci için teşekkür edin.",
-      "nature": "Doğayla bağlantı kurun. Güzel bir ağacı, yağmurun sesini veya renkli bir gün batımını takdir edin.",
-      "body": "Vücudunuza size izin verdiği şeyler için teşekkür edin; yürümenize, görmenize veya sarılmanıza.",
-      "pastPresent": "Geçmişte aştığınız bir zorluğu yansıtın. Gelişiminiz ve şu anki yeriniz için minnettar olun."
+      "detail": "Spesifik olmaya çalış. 'Ailem' yerine, 'partnerimin bu sabahki gülümsemesi' gibi detaylar yaz.",
+      "challenge": "Yakın zamanda karşılaştığın bir zorluğu düşün. Ondan ne öğrendin? Hangi gücünü keşfettin?",
+      "simpleThings": "Basit şeyleri fark et. Güneşin sıcaklığı, kahvenin tadı veya rahat bir koltuk.",
+      "people": "Sana yardım eden birini düşün. Ona zihninden veya mesajla kısa bir teşekkür et.",
+      "selfCompassion": "Kendine minnettar ol. Vücuduna sağlığı için veya zihnine direnci için teşekkür et.",
+      "nature": "Doğayla bağlantı kur. Güzel bir ağacı, yağmurun sesini veya renkli bir gün batımını takdir et.",
+      "body": "Vücuduna sana izin verdiği şeyler için teşekkür et; yürümek, görmek veya sarılmak gibi.",
+      "pastPresent": "Geçmişte aştığın bir zorluğu anımsa. Gelişimin ve şu anki yerin için minnettar ol."
     }
   },
   "notifications": {
@@ -183,13 +183,13 @@
       }
     },
     "permissionRequiredTitle": "Bildirim İzni Gerekli",
-    "dailyRemindersMessage": "Minnettarlık alışkanlığını sürdürmek için günlük hatırlatıcılar göndermek istiyoruz.\n\n✨ Faydaları:\n• Her gün aynı saatte nazik hatırlatıcı\n• Minnettarlık pratiğini unutmazsın\n• İstediğin zaman kapatabilirsin\n• Daha pozitif ve mutlu bir yaşam\n\nİzin vermek ister misin?",
-    "permissionRequiredMessage": "Günlük hatırlatıcıları etkinleştirmek için bildirim izni gerekiyor.\n\n📱 Nasıl etkinleştirilir:\n1. 'Ayarlara Git' butonuna dokunun\n2. 'Bildirimler' bölümünü bulun\n3. Yeşer uygulamasını etkinleştirin\n4. Bu sayfaya geri dönün\n\nHatırlatıcılar sizi daha mutlu hissettirecek! 😊",
+    "dailyRemindersMessage": "Minnettarlık alışkanlığını sürdürmen için sana günlük hatırlatıcılar göndermek istiyoruz.\n\n✨ Faydaları:\n• Her gün aynı saatte nazik bir anımsatma\n• Minnettarlık pratiğini aksatmazsın\n• İstediğin zaman kapatabilirsin\n• Daha pozitif ve huzurlu bir yaşam\n\nİzin vermek ister misin?",
+    "permissionRequiredMessage": "Günlük hatırlatıcıları etkinleştirmek için bildirim izni gerekiyor.\n\n📱 Nasıl etkinleştirilir:\n1. 'Ayarlara Git' butonuna dokun\n2. 'Bildirimler' bölümünü bul\n3. Yeşer uygulamasını etkinleştir\n4. Bu sayfaya geri dön\n\nHatırlatıcılar seni motive edecek! 😊",
     "notNow": "Şimdi Değil",
     "enable": "Evet, Etkinleştir",
-    "maybeLater": "Bildirimler minnet pratiğinizi güçlendirir",
+    "maybeLater": "Bildirimler minnet pratiğini güçlendirir",
     "openSettings": "Ayarlara Git",
-    "fixedScheduleDescription": "Her gün {{firstTime}} ve {{secondTime}}'de minnettar olmanızı hatırlatacağız 🌱"
+    "fixedScheduleDescription": "Her gün {{firstTime}} ve {{secondTime}}'de minnettar olman gerektiğini hatırlatacağız 🌱"
   },
   "calendar": {
     "title": "MİNNET YOLCULUĞUN",
@@ -212,26 +212,26 @@
     "nextMonth": "Sonraki ay",
     "guide": {
       "dottedDays": "Noktalı günler minnet notları içerir",
-      "swipeToNavigate": "Aylar arası geçiş için kaydırın"
+      "swipeToNavigate": "Aylar arası geçiş için kaydır"
     }
   },
   "settings": {
-    "label": "TERCİHLERİNİZ",
-    "privacyPolicy": { "title": "Gizlilik Politikası", "lastUpdated": "Son güncellenme: {{date}}" },
+    "label": "TERCİHLERİN",
+    "privacyPolicy": { "title": "Gizlilik Politikası", "lastUpdated": "Son güncelleme: {{date}}" },
     "terms": { "title": "Kullanım Koşulları" },
     "premium": {
       "title": "Premium Aktif",
-      "subtitle": "Tüm özelliklere erişiminiz var"
+      "subtitle": "Tüm özelliklere erişimin var"
     },
     "language": {
       "title": "Dil",
-      "description": "Tercih ettiğiniz dili seçin",
+      "description": "Tercih ettiğin dili seç",
       "tr": "Türkçe",
       "en": "İngilizce",
       "es": "İspanyolca"
     },
     "title": "Ayarlar",
-    "subtitle": "Tercihlerinizi özelleştirin",
+    "subtitle": "Tercihlerini özelleştir",
     "loading": "Ayarlar yükleniyor...",
     "sections": {
       "user": "Kullanıcı",
@@ -244,7 +244,7 @@
     "goal": {
       "title": "Günlük Hedef",
       "accessibilityLabel": "Günlük hedef ayarı. Mevcut: {{label}}",
-      "accessibilityHint": "Hedef seçeneklerini açar. Hazır seçeneklerden birini seçebilir veya özel hedef belirleyebilirsiniz.",
+      "accessibilityHint": "Hedef seçeneklerini açar. Hazır seçeneklerden birini seçebilir veya özel hedef belirleyebilirsin.",
       "recommended": "Önerilen",
       "info": "Günlük minnet hedefini belirle. 1, 3, 5 arasından seç veya {{max}}'e kadar özel sayı gir.",
       "options": {
@@ -273,7 +273,7 @@
       }
     },
     "appearance": {
-      "inspirationTitle": "İlham al",
+      "inspirationTitle": "İlham Al",
       "inspirationDesc": "'Minnet Ekle' sayfasında çeşitli ilhamlar göster.",
       "title": "Görünüm",
       "lightTheme": "Açık tema",
@@ -282,32 +282,32 @@
     "about": {
       "moodAnalysis": {
         "label": "Duygu Analizi",
-        "description": "Minnet duygularındaki desenleri inceleyin"
+        "description": "Minnet duygularındaki örüntüleri incele"
       },
       "whyGratitude": {
         "label": "Minnetin Gücü",
-        "description": "Minnettarlığın faydalarını keşfedin"
+        "description": "Minnettarlığın faydalarını keşfet"
       },
       "privacyPolicy": {
         "label": "Gizlilik Politikası",
-        "description": "Verilerinizin nasıl korunduğunu öğrenin"
+        "description": "Verilerinin nasıl korunduğunu öğren"
       },
       "termsOfService": {
         "label": "Kullanım Şartları",
-        "description": "Hizmet şartlarımızı inceleyin"
+        "description": "Hizmet şartlarımızı incele"
       },
       "helpSupport": {
         "label": "Yardım & Destek",
-        "description": "Sorularınız için destek alın"
+        "description": "Soruların için destek al"
       }
     },
     "data": {
       "exportTitle": "Verileri Dışa Aktar",
-      "exportDesc": "Tüm minnet günlüğü verilerinizi PDF formatında indirin",
+      "exportDesc": "Tüm minnet günlüğü verilerini PDF formatında indir",
       "export": "Dışa Aktar",
       "exporting": "Aktarılıyor...",
       "exportError": "Veriler dışa aktarılırken bir hata oluştu.",
-      "notificationSettingsSaved": "Bildirim tercihleri onaylandı",
+      "notificationSettingsSaved": "Bildirim tercihleri kaydedildi",
       "exportFilename": "minnettarlik-verileri-{{date}}.json",
       "pdf": {
         "headerTitle": "Minnet Günlüğü Verilerim",
@@ -321,8 +321,8 @@
         "stats": {
           "title": "İstatistikler",
           "totalEntries": "Toplam Giriş",
-          "totalStatements": "Toplam Minnet",
-          "activeMonths": "Aktif Ay"
+          "totalStatements": "Toplam Minnet İfadesi",
+          "activeMonths": "Aktif Aylar"
         },
         "entries": {
           "title": "Minnet Girişlerim"
@@ -330,7 +330,7 @@
         "footer": {
           "app": "Minnet Günlüğü Uygulaması",
           "exportedOn": "Bu veriler {{date}} tarihinde dışa aktarılmıştır.",
-          "summary": "Toplam {{entries}} giriş ve {{statements}} minnet içerir."
+          "summary": "Toplam {{entries}} giriş ve {{statements}} minnet notu içerir."
         }
       }
     },
@@ -340,12 +340,12 @@
       "delete": {
         "button": "Hesabımı Sil",
         "dialogTitle": "Hesabı Sil",
-        "dialogBody": "Bu işlem kalıcıdır ve geri alınamaz. Tüm verileriniz silinecektir. Devam etmek istediğinizden emin misiniz?",
+        "dialogBody": "Bu işlem kalıcıdır ve geri alınamaz. Tüm verilerin silinecektir. Devam etmek istediğinden emin misin?",
         "cancel": "İptal",
         "confirm": "Sil",
         "deleting": "Siliniyor...",
-        "success": "Hesabınız başarıyla silindi.",
-        "error": "Hesap silme işlemi başarısız oldu. Lütfen tekrar deneyin veya destek ile iletişime geçin."
+        "success": "Hesabın başarıyla silindi.",
+        "error": "Hesap silme işlemi başarısız oldu. Lütfen tekrar dene veya destek ile iletişime geç."
       }
     },
     "user": {
@@ -357,33 +357,33 @@
       "sectionHelp": "Yardım ve SSS",
       "sectionFAQ": "Sık Sorulan Sorular",
       "sectionSupport": "Destek",
-      "supportText": "Daha fazla yardıma mı ihtiyacınız var? Destek ekibimizle iletişime geçin.",
+      "supportText": "Daha fazla yardıma mı ihtiyacın var? Destek ekibimizle iletişime geç.",
       "contactEmailLabel": "Destek ekibiyle iletişim",
       "contactEmailHint": "Destek ekibiyle iletişim kurmak için e-posta uygulamasını açar",
       "contactCTA": "Destek Ekibiyle İletişim",
-      "appVersion": "Yeşer v1.2.0",
+      "appVersion": "Yeşer v1.2.1",
       "accessibility": {
         "expanded": "{{question}} açıldı. {{answer}}",
         "collapsed": "{{question}} kapandı.",
-        "expandHint": "Cevabı görmek için dokunun",
-        "collapseHint": "Soruyu kapatmak için dokunun"
+        "expandHint": "Cevabı görmek için dokun",
+        "collapseHint": "Soruyu kapatmak için dokun"
       },
       "faq": [
         {
           "question": "Yeşer nedir?",
-          "answer": "Yeşer; günlük minnettarlıklarınızı kaydederek olumlu düşünme alışkanlığı geliştirmenize yardımcı olan bir mobil uygulamadır."
+          "answer": "Yeşer; günlük minnettarlıklarını kaydederek olumlu düşünme alışkanlığı geliştirmene yardımcı olan bir mobil uygulamadır."
         },
         {
           "question": "Verilerim güvende mi?",
-          "answer": "Evet. Verileriniz güvenli bir şekilde saklanır. Ayrıntılı bilgi için Gizlilik Politikamızı inceleyebilirsiniz."
+          "answer": "Evet. Verilerin güvenli bir şekilde saklanır. Ayrıntılı bilgi için Gizlilik Politikamızı inceleyebilirsin."
         },
         {
           "question": "Geri bildirimi nasıl iletebilirim?",
-          "answer": "Uygulama hakkındaki düşünce ve önerilerinizi yeserapp@gmail.com adresine e-posta göndererek paylaşabilirsiniz."
+          "answer": "Uygulama hakkındaki düşünce ve önerilerini yeserapp@gmail.com adresine e-posta göndererek paylaşabilirsin."
         },
         {
           "question": "Minnettarlık günlüğü tutmanın faydaları nelerdir?",
-          "answer": "Minnettarlık günlüğü tutmak; ruh hâlinizi iyileştirebilir, stres seviyenizi azaltabilir, uyku kalitenizi artırabilir ve genel yaşam memnuniyetinizi yükseltebilir. Düzenli kayıt, olumlu düşünme alışkanlığı geliştirmenize yardımcı olur."
+          "answer": "Minnettarlık günlüğü tutmak; ruh hâlini iyileştirebilir, stres seviyeni azaltabilir, uyku kaliteni artırabilir ve genel yaşam memnuniyetini yükseltebilir. Düzenli kayıt, olumlu düşünme alışkanlığı kazanmana yardımcı olur."
         }
       ]
     }
@@ -392,8 +392,8 @@
     "title": "Neden Minnet?",
     "loadingSubtext": "Minnetin gücü yükleniyor...",
     "hero": {
-      "title": "Zihinsel Sağlığınız İçin Bir Adım Atın",
-      "subtitle": "Yeşer ile her gün minnettar olduğunuz şeyleri düşünmek, zihinsel sağlığınız üzerinde kanıtlanmış güçlü etkilere sahiptir."
+      "title": "Zihinsel Sağlığın İçin Bir Adım At",
+      "subtitle": "Yeşer ile her gün minnettar olduğun şeyleri düşünmek, zihinsel sağlığın üzerinde kanıtlanmış güçlü etkilere sahiptir."
     },
     "benefits": {
       "title": "Neden minnet duymalıyız?",
@@ -460,21 +460,21 @@
       "journey": "Minnettarlık Yolculuğun...",
       "preparing": "Hazırlanıyor...",
       "loadingA11y": "Yükleniyor",
-      "version": "Yeşer • Versiyon {{version}}",
+      "version": "Yeşer • Sürüm {{version}}",
       "logoA11y": "Yeşer uygulama logosu"
     },
     "login": {
       "brand": "Yeşer",
-      "welcome": "Hoş Geldiniz!",
+      "welcome": "Hoş Geldin!",
       "magicLinkSentTitle": "Giriş Bağlantısı Gönderildi!",
-      "magicLinkSentDesc": "E-postanızı kontrol edin ve giriş bağlantısına tıklayın.",
-      "continueJourney": "Minnet yolculuğunuza devam edin",
+      "magicLinkSentDesc": "E-postanı kontrol et ve giriş bağlantısına tıkla.",
+      "continueJourney": "Minnet yolculuğuna devam et",
       "secure": {
         "trust1": "Güvenli Giriş",
         "trust2": "Şifresiz",
         "toggleHelp": { "show": "Güvenli Link Nedir?", "hide": "Yardımı Gizle" },
         "helpTitle": "🔒 Güvenli ve Kolay",
-        "helpDesc": "Güvenli link ile şifre hatırlamaya gerek yok. E-postanıza özel bir bağlantı gönderiyoruz."
+        "helpDesc": "Güvenli link ile şifre hatırlamana gerek yok. E-postana özel bir bağlantı gönderiyoruz."
       },
       "labels": {
         "email": "E-posta Adresi",
@@ -484,56 +484,56 @@
       "oauth": {
         "googleContinue": "Google ile Devam Et",
         "appleContinue": "Apple ile Devam Et",
-        "browserReturnInstruction": "Tarayıcıda giriş yapın ve bu uygulamaya geri dönün"
+        "browserReturnInstruction": "Tarayıcıda giriş yap ve bu uygulamaya geri dön"
       },
       "toasts": {
-        "loginSuccess": "Başarıyla giriş yaptınız!",
-        "rateLimit": "Lütfen bekleyin, çok fazla istek gönderdiniz.",
-        "invalidEmail": "Geçerli bir email adresi girin",
-        "googleNotReady": "Google servisleri henüz hazır değil. Lütfen bekleyin.",
+        "loginSuccess": "Başarıyla giriş yaptın!",
+        "rateLimit": "Lütfen bekle, çok fazla istek gönderdin.",
+        "invalidEmail": "Geçerli bir e-posta adresi gir",
+        "googleNotReady": "Google servisleri henüz hazır değil. Lütfen bekle.",
         "appleOnlyIOS": "Apple ile giriş sadece iOS üzerinde desteklenir.",
-        "appleNotReady": "Apple servisleri henüz hazır değil. Lütfen bekleyin."
+        "appleNotReady": "Apple servisleri henüz hazır değil. Lütfen bekle."
       },
       "buttons": {
         "send": "Giriş Bağlantısı Gönder",
         "sending": "Gönderiliyor...",
         "resend": "Tekrar Gönder",
-        "openInBrowser": "Tarayıcıda giriş yapın...",
-        "googleLoading": "Google servisleri hazırlanıyor...",
+        "openInBrowser": "Tarayıcıda giriş yap...",
+        "googleLoading": "Google servislerine bağlanılıyor...",
         "googleSigning": "Google ile giriş yapılıyor...",
-        "appleLoading": "Apple servisleri hazırlanıyor...",
+        "appleLoading": "Apple servislerine bağlanılıyor...",
         "appleSigning": "Apple ile giriş yapılıyor..."
       }
     },
     "services": {
-      "waitSeconds": "Lütfen {{seconds}} saniye bekleyin ve tekrar deneyin.",
-      "rateLimitMessage": "Lütfen {{remainingTime}} saniye bekleyin ve tekrar deneyin.",
-      "magicLinkSent": "Giriş bağlantısı email adresinize gönderildi!",
+      "waitSeconds": "Lütfen {{seconds}} saniye bekle ve tekrar dene.",
+      "rateLimitMessage": "Lütfen {{remainingTime}} saniye bekle ve tekrar dene.",
+      "magicLinkSent": "Giriş bağlantısı e-posta adresine gönderildi!",
       "appleStartFailed": "Apple ile giriş başlatılamadı.",
       "appleRedirectMissing": "Apple ile giriş için yönlendirme adresi alınamadı.",
-      "appleInProgress": "Giriş işlemi devam ediyor. Lütfen bekleyin.",
-      "appleNetwork": "İnternet bağlantısı sorunu. Lütfen tekrar deneyin.",
-      "appleFailed": "Apple ile giriş yapılamadı. Lütfen tekrar deneyin.",
+      "appleInProgress": "Giriş işlemi devam ediyor. Lütfen bekle.",
+      "appleNetwork": "İnternet bağlantısı sorunu. Lütfen tekrar dene.",
+      "appleFailed": "Apple ile giriş yapılamadı. Lütfen tekrar dene.",
       "googleStartFailed": "Google ile giriş başlatılamadı.",
       "googleRedirectMissing": "Google ile giriş için yönlendirme adresi alınamadı.",
-      "googleInProgress": "Giriş işlemi devam ediyor. Lütfen bekleyin.",
-      "googleNetwork": "İnternet bağlantısı sorunu. Lütfen tekrar deneyin.",
-      "googleFailed": "Google ile giriş yapılamadı. Lütfen tekrar deneyin.",
+      "googleInProgress": "Giriş işlemi devam ediyor. Lütfen bekle.",
+      "googleNetwork": "İnternet bağlantısı sorunu. Lütfen tekrar dene.",
+      "googleFailed": "Google ile giriş yapılamadı. Lütfen tekrar dene.",
       "magicLink": {
-        "inProgress": "Giriş işlemi devam ediyor. Lütfen bekleyin.",
-        "linkSent": "Giriş bağlantısı email adresinize gönderildi!",
-        "invalidLink": "Geçersiz giriş bağlantısı. Lütfen yeni bir bağlantı talep edin."
+        "inProgress": "Giriş işlemi devam ediyor. Lütfen bekle.",
+        "linkSent": "Giriş bağlantısı e-posta adresine gönderildi!",
+        "invalidLink": "Geçersiz giriş bağlantısı. Lütfen yeni bir bağlantı talep et."
       }
     },
     "validation": {
-      "emailRequired": "Email adresi gereklidir",
-      "emailInvalid": "Geçerli bir email adresi girin",
-      "emailTooLong": "Email adresi çok uzun"
+      "emailRequired": "E-posta adresi gereklidir",
+      "emailInvalid": "Geçerli bir e-posta adresi gir",
+      "emailTooLong": "E-posta adresi çok uzun"
     }
   },
   "pastEntries": {
     "tab": { "title": "Minnetlerim", "a11y": "Geçmiş kayıtları görüntüle" },
-    "title": "Minnet Kayıtlarınız",
+    "title": "Minnet Kayıtların",
     "item": {
       "relative": {
         "today": "Bugün",
@@ -557,7 +557,7 @@
       "a11yLoadMore": "Daha fazla kayıt yükle"
     },
     "empty": {
-      "title": "Minnet yolculuğuna başla",
+      "title": "Minnet Yolculuğuna Başla",
       "subtitle": "İlk minnet kaydını oluşturup hayatındaki güzel anları keşfetmeye başla. Her gün küçük mutlulukları fark etmek seni daha pozitif kılacak.",
       "how": "Nasıl Başlarım?",
       "step1": "Günlük kayıt sayfasına git",
@@ -588,19 +588,19 @@
     },
     "error": {
       "networkTitle": "Bağlantı Sorunu",
-      "networkMessage": "İnternet bağlantınızı kontrol edin ve tekrar deneyin.",
+      "networkMessage": "İnternet bağlantını kontrol et ve tekrar dene.",
       "timeoutTitle": "Zaman Aşımı",
       "timeoutMessage": "İstek çok uzun sürdü. Sunucu yavaş yanıt veriyor olabilir.",
       "authTitle": "Kimlik Doğrulama Hatası",
-      "authMessage": "Oturumunuz sona ermiş olabilir. Lütfen yeniden giriş yapın.",
-      "generic": "Minnet kayıtları yüklenirken bir sorun oluştu. Tekrar deneyebilirsiniz.",
+      "authMessage": "Oturumun sona ermiş olabilir. Lütfen yeniden giriş yap.",
+      "generic": "Minnet kayıtları yüklenirken bir sorun oluştu. Tekrar deneyebilirsin.",
       "devDetail": "Geliştirici Detayı",
       "help": {
         "troubleshootingTitle": "Sorun Giderme",
-        "tryLater": "Sorun devam ederse daha sonra tekrar deneyin",
-        "restart": "Uygulamayı kapatıp yeniden açmayı deneyin",
-        "checkConnection": "Wi‑Fi veya mobil veri bağlantınızı kontrol edin",
-        "relogin": "Çıkış yapıp tekrar giriş yapmayı deneyin"
+        "tryLater": "Sorun devam ederse daha sonra tekrar dene",
+        "restart": "Uygulamayı kapatıp yeniden açmayı dene",
+        "checkConnection": "Wi‑Fi veya mobil veri bağlantını kontrol et",
+        "relogin": "Çıkış yapıp tekrar giriş yapmayı dene"
       },
       "statusTitle": "Sistem Durumu",
       "status": {
@@ -622,7 +622,7 @@
         "pro": "PRO"
       },
       "accessibility": {
-        "tapToEditDelete": "Düzenleme ve silme seçeneklerini görmek için dokunun",
+        "tapToEditDelete": "Düzenleme ve silme seçeneklerini görmek için dokun",
         "errorIcon": "Hata simgesi",
         "clearText": "Metni temizle",
         "required": ", zorunlu",
@@ -641,7 +641,7 @@
       }
     },
     "emoji": {
-      "openPicker": "Emoji seçici aç"
+      "openPicker": "Emoji seçiciyi aç"
     },
     "calendar": {
       "stats": {
@@ -693,34 +693,34 @@
       "a11y": {
         "memoryLabel": "Minnet anısı: {{text}}",
         "preview": "Minnet önizleme: {{text}}",
-        "tapToView": "Detayları görüntülemek için dokunun",
-        "tapToViewOrExpand": "Detayları görüntülemek veya genişletmek için dokunun"
+        "tapToView": "Detayları görüntülemek için dokun",
+        "tapToViewOrExpand": "Detayları görüntülemek veya genişletmek için dokun"
       },
       "edit": {
         "placeholder": "Bugün hangi güzellik için minnettarsın? 🌟",
         "a11yLabel": "Minnet girişi",
-        "a11yHint": "Bugünkü minnettarlığınızı yazın",
+        "a11yHint": "Bugünkü minnettarlığını yaz",
         "remaining": "{{count}} karakter kaldı"
       },
-      "confirmDelete": "Bu minnet ifadesini silmek istediğinizden emin misiniz?",
+      "confirmDelete": "Bu minnet ifadesini silmek istediğinden emin misin?",
       "confirmDeleteAction": "Sil",
       "saveError": "Minnet kaydedilirken bir hata oluştu.",
       "save": "Kaydet",
       "cancel": "İptal",
-      "inputPlaceholder": "Minnettarlık ifadenizi yazın...",
+      "inputPlaceholder": "Minnettarlık ifadeni yaz...",
       "editButton": "Düzenle",
       "deleteButton": "Sil",
       "updated": "Minnet ifadesi güncellendi",
       "deleted": "Minnet ifadesi silindi",
       "undoAction": "Geri Al",
       "undoSuccess": "Geri alındı",
-      "nearLimit": "Yakında limit",
+      "nearLimit": "Limite yaklaşıldı",
       "newBadge": "YENİ"
     },
     "layout": {
       "errorBoundary": {
         "title": "Bir şeyler ters gitti",
-        "subtitle": "Beklenmeyen bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı deneyin.",
+        "subtitle": "Beklenmeyen bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı dene.",
         "debugInfoTitle": "Hata Ayıklama Bilgisi:",
         "technicalLabel": "Teknik:",
         "translatedLabel": "Çevrilmiş:"
@@ -730,34 +730,34 @@
         "emptyTitle": "Henüz içerik yok",
         "emptySubtitle": "İçerik eklendiğinde burada görünecek",
         "errorTitle": "Bir hata oluştu",
-        "errorSubtitle": "Lütfen tekrar deneyin"
+        "errorSubtitle": "Lütfen tekrar dene"
       },
       "errorState": {
         "back": "Geri Dön",
         "cases": {
           "network": {
             "title": "Bağlantı Sorunu",
-            "message": "İnternet bağlantınızı kontrol edip tekrar deneyin."
+            "message": "İnternet bağlantını kontrol edip tekrar dene."
           },
           "server": {
             "title": "Sunucu Hatası",
-            "message": "Şu anda bir teknik sorun yaşıyoruz. Lütfen daha sonra tekrar deneyin."
+            "message": "Şu anda bir teknik sorun yaşıyoruz. Lütfen daha sonra tekrar dene."
           },
           "notFound": {
             "title": "Sayfa Bulunamadı",
-            "message": "Aradığınız sayfa mevcut değil veya taşınmış olabilir."
+            "message": "Aradığın sayfa mevcut değil veya taşınmış olabilir."
           },
           "forbidden": {
             "title": "Erişim Yetkisi Yok",
-            "message": "Bu içeriği görüntülemek için gerekli izniniz bulunmuyor."
+            "message": "Bu içeriği görüntülemek için gerekli iznin bulunmuyor."
           },
           "validation": {
             "title": "Geçersiz Veri",
-            "message": "Girdiğiniz bilgileri kontrol edip tekrar deneyin."
+            "message": "Girdiğin bilgileri kontrol edip tekrar dene."
           },
           "generic": {
             "title": "Bir Hata Oluştu",
-            "message": "Beklenmedik bir sorun oluştu. Lütfen tekrar deneyin."
+            "message": "Beklenmedik bir sorun oluştu. Lütfen tekrar dene."
           }
         }
       }
@@ -775,7 +775,7 @@
       "permissions": {
         "photos": {
           "title": "İzin gerekli",
-          "message": "Avatar yüklemek için fotoğraf kitaplığı iznine izin verin."
+          "message": "Avatar yüklemek için fotoğraf galerisi erişimine izin ver."
         }
       },
       "actions": {
@@ -787,7 +787,7 @@
       "avatar": {
         "title": "Avatar",
         "profilePhotoLabel": "Profil Fotoğrafı",
-        "profilePhotoSubtitle": "Fotoğraf eklemek veya değiştirmek için dokunun"
+        "profilePhotoSubtitle": "Fotoğraf eklemek veya değiştirmek için dokun"
       }
     }
   },
@@ -819,7 +819,7 @@
   "mood": {
     "analysis": {
       "title": "Duygu Analizi",
-      "subtitle": "Minnet pratiğin duygusal dünyanı nasıl şekillendiriyor, keşfet.",
+      "subtitle": "Minnet pratiğinin duygusal dünyanı nasıl şekillendirdiğini keşfet.",
       "loading": "Duygu içgörüleri hazırlanıyor…",
       "actions": {
         "refresh": "İçgörüleri yenile"
@@ -832,7 +832,7 @@
       },
       "empty": {
         "title": "Henüz yeterli duygu verisi yok",
-        "message": "Minnet ifadelerine duygu ekleyerek sana özel yansımaları açabilirsin.",
+        "message": "Minnet ifadelerine duygu ekleyerek sana özel analizleri açabilirsin.",
         "cta": "Bir duygu ekle"
       },
       "overview": {
@@ -846,24 +846,24 @@
       },
       "sections": {
         "streak": {
-          "title": "Tutarlılık nabzı",
-          "subtitle": "Serin son dönem duygu dağılımına anlam katıyor."
+          "title": "Tutarlılık Durumu",
+          "subtitle": "Serin, son dönemdeki duygu dağılımını anlamlandırır."
         },
         "distribution": {
-          "title": "Duygu dağılımı",
+          "title": "Duygu Dağılımı",
           "subtitle": "Her duygunun görülme sıklığı."
         },
         "trend": {
-          "title": "Duygu eğrisi",
+          "title": "Duygu Değişimi",
           "subtitle": "Zaman içindeki baskın duygular."
         },
         "highlighted": {
-          "title": "Öne çıkan kayıtlar",
+          "title": "Öne Çıkan Kayıtlar",
           "subtitle": "Duygusal olarak parlayan ifadeler."
         },
         "narrative": {
           "title": "Yorum",
-          "subtitle": "Son kayıtlarına nazik bir yansıma."
+          "subtitle": "Son kayıtlarına dair nazik bir yansıma."
         }
       },
       "streak": {
@@ -873,7 +873,7 @@
         "lastEntry": "Son kayıt",
         "noLastEntry": "Henüz kayıt yok",
         "empty": "Seri bilgisi yüklenemedi.",
-        "hint": "Serini canlı tutmak duygu karışımının nasıl değiştiğini görmene yardımcı olur."
+        "hint": "Serini canlı tutmak, duygu karışımının nasıl değiştiğini görmene yardımcı olur."
       },
       "moodStreak": {
         "title": "Duygu Serileri 🔥",
@@ -885,7 +885,7 @@
       },
       "comparison": {
         "title": "Haftalık Karşılaştırma 📊",
-        "subtitle": "Duygu dengen nasıl değişiyor.",
+        "subtitle": "Duygu dengen nasıl değişiyor?",
         "improved": "%{{value}} daha dengeli",
         "declined": "%{{value}} daha az dengeli",
         "stable": "Duygu dengesi sabit",
@@ -898,17 +898,17 @@
         "title": "İçgörüler 💡",
         "subtitle": "Minnettarlık pratiğinde keşfettiğimiz kalıplar.",
         "empty": "İçgörüleri açmak için daha fazla kayıt ekle.",
-        "bestDay": "En mutlu günün {{day}}, {{mood}} ruh hali ile",
+        "bestDay": "En mutlu günün {{mood}} ruh hali ile {{day}}",
         "consistentMood": "Son zamanlarda tutarlı bir şekilde {{mood}} hissediyorsun",
         "varietyHigh": "Harika duygu çeşitliliği! {{count}} farklı duygu kullandın",
         "weekendBoost": "Hafta sonları ruh halin yükseliyor",
         "weekdayStrong": "Hafta içi bile pozitif kalıyorsun",
         "streakPower": "Uzun seriler daha fazla {{mood}} ruh hali getiriyor",
-        "morningPerson": "Sabah kayıtların en pozitif",
+        "morningPerson": "Sabah kayıtların en pozitif olanlar",
         "eveningReflector": "Akşam yansımaları minnettarlığı ortaya çıkarıyor"
       },
       "distribution": {
-        "empty": "Bir dağılım hesaplayabilmek için daha fazla duygu gerekiyor."
+        "empty": "Bir dağılım hesaplayabilmek için daha fazla duygu verisi gerekiyor."
       },
       "trend": {
         "empty": "Zaman içindeki değişimi görmek için daha fazla duygu ekle.",
@@ -920,7 +920,7 @@
         "meta": "{{date}} tarihinde kaydedildi"
       },
       "narrative": {
-        "logical": "Mantıksal çıkarım",
+        "logical": "Mantıksal analiz",
         "emotional": "Duygusal okuma",
         "suggestions": "Önerilen adımlar",
         "logicalStates": {
@@ -986,29 +986,34 @@
       }
     },
     "success": {
-      "goalCompleted": "Tebrikler! Günlük hedefinizi tamamladınız! 🎉",
+      "goalCompleted": "Tebrikler! Günlük hedefini tamamladın! 🎉",
       "firstEntryToday": "Günün ilk minnettarlığı! Harika bir başlangıç ✨",
       "firstEntryThisDate": "Bu tarihin ilk minnettarlığı! Harika bir başlangıç ✨",
       "goalCompletedPastEntry": "Hedef tamamlandı!",
       "entryUpdated": "Minnet kaydın başarıyla güncellendi",
-      "goalNearCompletion": "Hedefinize çok yaklaştınız! Devam edin 🎯",
-      "statementAdded": "Minnet ifadeniz eklendi! ✨"
+      "goalNearCompletion": "Hedefine çok yaklaştın! Devam et 🎯",
+      "statementAdded": "Minnet ifaden eklendi! ✨"
     },
     "validation": {
-      "invalidEntry": "Lütfen geçerli bir minnet ifadesi girin",
+      "invalidEntry": "Lütfen geçerli bir minnet ifadesi gir",
       "invalidStatement": "Geçersiz minnet ifadesi"
     },
     "errors": {
-      "editFailed": "Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.",
+      "editFailed": "Düzenleme işlemi başarısız oldu. Lütfen tekrar dene.",
       "dataLoadFailed": "Veriler Yüklenemedi",
-      "deleteFailed": "Silme işlemi başarısız oldu. Lütfen tekrar deneyin.",
-      "editOperationFailed": "Düzenleme işlemi başarısız oldu. Lütfen tekrar deneyin.",
+      "deleteFailed": "Silme işlemi başarısız oldu. Lütfen tekrar dene.",
+      "editOperationFailed": "Düzenleme işlemi başarısız oldu. Lütfen tekrar dene.",
       "connectionProblem": "Bağlantı sorunu"
     },
     "sections": {
       "todaysGratitudes": "Bugünün Minnettarlıkları",
-      "todaysEntries": "Bugünkü minnetleriniz",
-      "thatDaysEntries": "O günkü minnetleriniz"
+      "todaysEntries": "Bugünkü minnetlerin",
+      "thatDaysEntries": "O günkü minnetlerin"
+    },
+    "limits": {
+      "title": "Günlük Limit",
+      "message": "Ücretsiz planda günde sadece 1 minnet girişi yapabilirsin. Sınırsız minnet için Premium'a geç.",
+      "goPro": "Premium'a Geç"
     },
     "labels": {
       "today": "Bugün",
@@ -1018,8 +1023,8 @@
       "dailyOpportunity": "Her gün, minnettarlık için\nyeni fırsatlar sunar."
     },
     "empty": {
-      "title": "Bu günün hikayesi henüz yazılmamış",
-      "subtitle": "Bu özel güne ait minnet kayıtları henüz yok.",
+      "title": "Bugünün hikayesi henüz yazılmamış",
+      "subtitle": "Bu özel güne ait minnet kaydı henüz yok.",
       "todayMessage": "Bugün yaşadığın güzel anları kaydedebilirsin!",
       "pastMessage": "Geri dönüp o günün güzel anılarını paylaşabilirsin!",
       "firstToday": "İlk minnetini ekle!",
@@ -1034,11 +1039,11 @@
       "completedPast": "🎉 O gün hedef tamamlanmıştı!",
       "remainingToday": "Hedefe {{remaining}} kaldı",
       "remainingPast": "O gün hedefe {{remaining}} minnet kalmıştı",
-      "progressCompleted": "{{percentage}}% tamamlandı"
+      "progressCompleted": "%{{percentage}} tamamlandı"
     },
     "detail": {
       "title": "Kayıt Detayı",
-      "subtitle": "Sana neşe veren ve minnettar olduğun anların...",
+      "subtitle": "Sana neşe veren ve minnettar olduğun anlar...",
       "gratitudeCount": "{{count}} minnet"
     },
     "actions": {
@@ -1049,7 +1054,7 @@
       "nextQuestion": "Sonraki soru",
       "newQuestion": "Yeni soru",
       "delete": "🗑️ Sil",
-      "saveHint": "Kaydetmek için lütfen ifadeyi değiştirin."
+      "saveHint": "Kaydetmek için lütfen ifadeyi değiştir."
     },
     "input": {
       "label": "Neye minnettarsın?",
@@ -1058,7 +1063,7 @@
       "revisitMotto": "Minnetle Yeşer 🌱",
       "progressToday": "{{current}}/{{goal}} bugün",
       "a11y": {
-        "writeHint": "Minnettarlık ifadenizi yazın ve gönder tuşuna basın",
+        "writeHint": "Minnettarlık ifadeni yaz ve gönder tuşuna bas",
         "sendEnabled": "Minnet ifadesini gönder",
         "sendDisabled": "Gönderme devre dışı",
         "addFirstGratitude": "İlk minnettarlığını ekle",
@@ -1100,15 +1105,15 @@
       "loading": "Güzel bir anı yükleniyor...",
       "errorTitle": "Anı Yüklenemedi",
       "errorSubtitle": "Bir sorun oluştu",
-      "errorRetry": "Tekrar denemek için dokunun",
-      "placeholderTitle": "Anılarınız Birikiyor",
-      "placeholderSubtitle": "Minnet kayıtlarınız arttıkça, burada geçmişten güzel anılarınızı keşfedeceksiniz.",
-      "placeholderHint": "Keşfetmeye başlamak için dokunun",
+      "errorRetry": "Tekrar denemek için dokun",
+      "placeholderTitle": "Anıların Birikiyor",
+      "placeholderSubtitle": "Minnet kayıtların arttıkça, burada geçmişten güzel anılarını keşfedeceksin.",
+      "placeholderHint": "Keşfetmeye başlamak için dokun",
       "cardTitle": "Geçmişten Bir Anı",
-      "cardSubtitle": "Geçmiş minnettarlıklarınızdan",
+      "cardSubtitle": "Geçmiş minnettarlıklarından",
       "newA11y": "Yeni anı getir",
       "newHint": "Başka bir geçmiş minnettarlık anısı yükler",
-      "fallbackStatement": "Geçmişten bir minnet ifadeniz var."
+      "fallbackStatement": "Geçmişten bir minnet ifaden var."
     },
     "modal": {
       "errorTitle": "Bir Hata Oluştu",
@@ -1130,7 +1135,7 @@
       "active": "Harika! {{days}} günlük serin devam ediyor.",
       "grace": "Serinin devam etmesi için bugün bir giriş yapman gerek! ({{hours}}s {{minutes}}dk kaldı)",
       "reset": "Serin sıfırlandı. Yeni bir başlangıç için bugün bir giriş yap!",
-      "atRisk": "Serin tehlikede! Bugün bir giriş yapmazsan {{days}} günlük serin sıfırlanacak."
+      "atRisk": "Serin bozulmak üzere! Bugün bir giriş yapmazsan {{days}} günlük serin sıfırlanacak."
     },
     "motivation": {
       "beginning": "Her büyük yolculuk tek bir adımla başlar! 🌱",
@@ -1143,14 +1148,14 @@
       "dailyStreakLabel": "günlük seri",
       "explain": {
         "new": "Seri, art arda günlerde minnet girişi yaparak başlar. Günlük pratiğin güçlü alışkanlıklar oluşturur.",
-        "beginner": "Mükemmel başlangıç! Her gün devam ettiğin sürece serin güçlenir ve daha büyük başarılar açar.",
+        "beginner": "Mükemmel başlangıç! Her gün devam ettiğin sürece serin güçlenir ve daha büyük başarılar açılır.",
         "developing": "Serin momentum kazanıyor! Bu ritim zihinsel sağlığını destekler ve pozitif düşünce alışkanlığı oluşturur.",
         "established": "Güçlü bir alışkanlık oluşturdun! Araştırmalar günlük minnettarlığın stresi azalttığını ve mutluluğu artırdığını gösteriyor."
       },
       "longestRecord": "En uzun rekor: {{days}} gün",
       "nextTarget": "Sonraki Hedef",
       "daysLeft": "gün kaldı",
-      "progressPercent": "{{percent}}% tamamlandı",
+      "progressPercent": "%{{percent}} tamamlandı",
       "tip": "💡 İpucu: Serini korumak için her gün en az bir minnet girişi yap. Geç saatlerde unutursan 23:59'a kadar girişin sayılır!",
       "stats": {
         "current": "Mevcut Seri",
@@ -1272,7 +1277,7 @@
       },
       "newRecord": "YENİ REKOR!",
       "next": "Sonraki: {{title}} ({{days}} gün)",
-      "tapHint": "Detayları görmek için dokunun"
+      "tapHint": "Detayları görmek için dokun"
     }
   },
   "onboarding": {
@@ -1309,7 +1314,7 @@
       "sectionNameTitle": "Adın Ne?",
       "placeholderName": "Örneğin: Ayşe",
       "a11yLabelName": "Kullanıcı adı",
-      "a11yHintName": "Minnettarlık günlüğünde seni nasıl çağıralım",
+      "a11yHintName": "Minnettarlık günlüğünde sana nasıl seslenelim",
       "errorTaken": "Bu kullanıcı adı zaten kullanılıyor",
       "successAvailable": "✅ Kullanıcı adı kullanılabilir",
       "hintUsage": "Bu isim günlük hatırlatıcılarda ve kişiselleştirilmiş mesajlarda kullanılacak.",
@@ -1330,7 +1335,7 @@
       "benefit2Title": "Alışkanlık Oluşturma",
       "benefit2Desc": "Günlük minnet pratiğini unutmana engel olur",
       "benefit3Title": "Tam Kontrol",
-      "benefit3Desc": "İstediğin zaman ayarlarından değiştirebilirsin",
+      "benefit3Desc": "İstediğin zaman ayarlardan değiştirebilirsin",
       "statusSuccess": "Harika! Hatırlatıcılar etkinleştirildi ✨",
       "statusSkip": "Şimdilik atlayabilirsin, sonra ayarlardan etkinleştirebilirsin",
       "enable": "Hatırlatıcıları Etkinleştir",
@@ -1343,8 +1348,8 @@
     "goal": {
       "options": {
         "one": { "label": "Bir Minnet", "desc": "Küçük adımlarla başlayalım" },
-        "three": { "label": "Üç Minnet", "desc": "Ideal günlük hedef" },
-        "five": { "label": "Beş Minnet", "desc": "Motive olduğunuzda" },
+        "three": { "label": "Üç Minnet", "desc": "İdeal günlük hedef" },
+        "five": { "label": "Beş Minnet", "desc": "Motive olduğunda" },
         "custom": { "label": "Özel", "desc": "Kendim belirleyeceğim" },
         "recommended": "Önerilen"
       },
@@ -1366,10 +1371,10 @@
       "encouragementText": "Küçük adımlar, büyük değişimler.",
       "startJourney": "Yolculuğa Başla",
       "startJourneyA11y": "Minnettarlık yolculuğuna başla",
-      "footer": "İstediğin zaman ayarlarından tercihlerini değiştirebilirsin."
+      "footer": "İstediğin zaman ayarlardan tercihlerini değiştirebilirsin."
     },
     "flow": {
-      "defaultUsername": "Kullanıcı",
+      "defaultUsername": "Dostum",
       "featuresEnabled": ["Çeşitli İlham Soruları", "Anı Pırıltıları"]
     }
   },
@@ -1561,7 +1566,7 @@
     "auth": {
       "noPermission": "Bu işlem için yetkiniz bulunmuyor. Lütfen çıkış yapıp tekrar giriş yapın.",
       "googleSigninFailed": "Google ile giriş işlemi tamamlanamadı. Lütfen tekrar deneyin.",
-      "sessionExpired": "Giriş bağlantınızın süresi dolmuş. Lütfen yeni bir bağlantı talep edin.",
+      "sessionExpired": "Giriş bağlantısının süresi dolmuş. Lütfen yeni bir bağlantı talep edin.",
       "rateLimited": "Çok fazla deneme yapıldı. Lütfen bir süre bekleyip tekrar deneyin.",
       "notAuthenticated": "Kimlik doğrulaması gerekli.",
       "noActiveSession": "Aktif oturum bulunamadı"
@@ -1571,7 +1576,7 @@
       "recordNotFound": "Kayıt bulunamadı.",
       "access": "Veritabanı erişim hatası. Lütfen tekrar deneyin.",
       "security": "Güvenlik kısıtlaması nedeniyle işlem gerçekleştirilemedi. Lütfen çıkış yapıp tekrar giriş yapın.",
-      "notificationSchedule": "Bildirim ayarlarınızı kaydedemedik. Lütfen biraz sonra tekrar deneyin."
+      "notificationSchedule": "Bildirim ayarlarını kaydedemedik. Lütfen biraz sonra tekrar deneyin."
     },
     "network": { "generic": "İnternet bağlantınızı kontrol edin." },
     "server": { "generic": "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin." },
@@ -1590,7 +1595,7 @@
     },
     "upsell": {
       "title": "Premium'a Yükselt",
-      "subtitle": "Minnet yolculuğunuzun tam potansiyelini açığa çıkarın:",
+      "subtitle": "Minnet yolculuğunun tam potansiyelini açığa çıkar:",
       "features": {
         "unlimited": "Sınırsız günlük kayıt",
         "past": "Geçmiş tarihlere minnet ekleme",
@@ -1601,18 +1606,18 @@
     },
     "paywall": {
       "unlockInsights": "Premium İçgörüleri Aç",
-      "unlockSubtitle": "Detaylı analizlere ve trendlere erişin",
+      "unlockSubtitle": "Detaylı analizlere ve trendlere eriş",
       "upgradeToPro": "Pro'ya Yükselt",
       "loading": "Abonelik seçenekleri yükleniyor...",
       "noOfferings": "Abonelik seçenekleri yüklenemedi"
     },
     "restore": {
       "success": "Abonelik geri yüklendi!",
-      "error": "Geri yükleme başarısız. Lütfen tekrar deneyin."
+      "error": "Geri yükleme başarısız. Lütfen tekrar dene."
     },
     "purchase": {
-      "success": "Premium'a hoş geldiniz!",
-      "error": "Satın alma başarısız. Lütfen tekrar deneyin."
+      "success": "Premium'a hoş geldin!",
+      "error": "Satın alma başarısız. Lütfen tekrar dene."
     }
   }
 }

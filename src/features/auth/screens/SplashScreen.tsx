@@ -4,6 +4,8 @@ import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useTranslation } from 'react-i18next';
 
+import { config } from '@/utils/config';
+
 import splashAnimation from '@/assets/animations/splash.json';
 
 import { ScreenLayout } from '@/shared/components/layout';
@@ -202,7 +204,9 @@ const EnhancedSplashScreen: React.FC = () => {
           </View>
 
           {/* Version Info */}
-          <Text style={styles.versionText}>{t('auth.splash.version', { version: '1.0' })}</Text>
+          <Text style={styles.versionText}>
+            {t('auth.splash.version', { version: config.app.version })}
+          </Text>
         </View>
       </Animated.View>
     </ScreenLayout>

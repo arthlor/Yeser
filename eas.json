@@ -52,6 +52,16 @@
         "distribution": "store"
       }
     },
+    "production-internal": {
+      "extends": "production",
+      "ios": {
+        "distribution": "internal"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
     "production-aab": {
       "autoIncrement": true,
       "channel": "production",

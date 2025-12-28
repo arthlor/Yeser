@@ -599,14 +599,14 @@ const createStyles = (
     // **SAFE CONTENT CONTAINER**: Applies safe area insets and spacing
     safeContainer: {
       flexGrow: 1,
-      paddingTop: insets.top + theme.spacing.lg,
-      paddingBottom: insets.bottom + theme.spacing.lg,
+      paddingTop: insets.top + theme.spacing.md,
+      paddingBottom: insets.bottom + theme.spacing.md,
       paddingHorizontal: theme.spacing.lg,
     },
     container: {
       flex: 1,
-      paddingTop: insets.top + theme.spacing.lg,
-      paddingBottom: insets.bottom + theme.spacing.lg,
+      paddingTop: insets.top + theme.spacing.md,
+      paddingBottom: insets.bottom + theme.spacing.md,
       paddingHorizontal: theme.spacing.lg,
     },
 
@@ -614,13 +614,13 @@ const createStyles = (
     headerSection: {
       alignItems: 'center',
       paddingHorizontal: theme.spacing.xl,
-      paddingTop: theme.spacing.xxl,
-      paddingBottom: theme.spacing.xl,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.sm,
     },
     brandContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: theme.spacing.xl,
+      marginBottom: theme.spacing.sm,
     },
     // Brand icon glow wrapper
     brandIconGlow: {
@@ -677,7 +677,7 @@ const createStyles = (
 
     // Main content card - Enhanced Glassmorphism
     mainContent: {
-      marginBottom: theme.spacing.xl,
+      marginBottom: theme.spacing.lg,
     },
     contentCard: {
       backgroundColor:
@@ -693,8 +693,8 @@ const createStyles = (
       shadowRadius: 24,
     },
     cardInner: {
-      padding: theme.spacing.xl,
-      paddingTop: theme.spacing.lg,
+      padding: theme.spacing.lg,
+      paddingTop: theme.spacing.md,
     },
 
     // Trust indicators - Compact Glassmorphism
@@ -702,7 +702,7 @@ const createStyles = (
       flexDirection: 'row',
       justifyContent: 'center',
       gap: theme.spacing.sm,
-      marginBottom: theme.spacing.xl,
+      marginBottom: theme.spacing.md,
       flexWrap: 'wrap',
     },
     trustBadge: {
@@ -738,11 +738,11 @@ const createStyles = (
 
     // Form elements
     inputSection: {
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.sm,
     },
     loginButton: {
-      marginTop: theme.spacing.lg,
-      minHeight: 56,
+      marginTop: theme.spacing.md,
+      minHeight: 48,
       borderRadius: theme.borderRadius.lg,
       // Enhanced shadow for premium feel
       shadowColor: theme.colors.primary,
@@ -751,7 +751,7 @@ const createStyles = (
       shadowRadius: 12,
     },
     helpToggle: {
-      marginTop: theme.spacing.lg,
+      marginTop: theme.spacing.md,
       alignSelf: 'center',
       minWidth: 200, // Ensure enough width for Turkish text
       paddingHorizontal: theme.spacing.md,
@@ -833,7 +833,7 @@ const createStyles = (
     divider: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginVertical: theme.spacing.lg,
+      marginVertical: theme.spacing.md,
       paddingHorizontal: theme.spacing.sm,
     },
     dividerLine: {
@@ -855,7 +855,7 @@ const createStyles = (
       borderWidth: 1.5,
       borderColor:
         theme.name === 'dark' ? `${theme.colors.outline}40` : `${theme.colors.outline}35`,
-      minHeight: 56,
+      minHeight: 48,
       borderRadius: theme.borderRadius.lg,
       marginBottom: theme.spacing.md,
       // Subtle elevation

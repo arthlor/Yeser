@@ -14,7 +14,9 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { formatStatementDate, InteractiveStatementCardProps } from './StatementCardBase';
 import type { MoodEmoji } from '@/types/mood.types';
+import { MOOD_EMOJIS } from '@/types/mood.types';
 import { useTranslation } from 'react-i18next';
+import { Animated, Easing, Modal } from 'react-native';
 
 interface StatementEditCardProps extends InteractiveStatementCardProps {
   variant?: 'primary' | 'secondary' | 'minimal';
@@ -25,6 +27,7 @@ interface StatementEditCardProps extends InteractiveStatementCardProps {
   edgeToEdge?: boolean;
   moodEmoji?: MoodEmoji | null;
   onChangeMood?: (mood: MoodEmoji | null) => void;
+  onSave?: (statement: string, mood?: MoodEmoji | null) => Promise<void>;
   showSaveHint?: boolean;
 }
 
@@ -49,12 +52,20 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [localStatement, setLocalStatement] = useState(statement);
+  const [localMood, setLocalMood] = useState<MoodEmoji | null>(moodEmoji ?? null);
   const [showActions, setShowActions] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+
+  const emojiAnim = useRef(new Animated.Value(0)).current;
   const textInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     setLocalStatement(statement);
   }, [statement]);
+
+  useEffect(() => {
+    setLocalMood(moodEmoji ?? null);
+  }, [moodEmoji]);
 
   const { relativeTime } = formatStatementDate(date);
 
@@ -63,11 +74,42 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
       return;
     }
     try {
-      await onSave?.(localStatement.trim());
+      // @ts-ignore - backward compatibility for onSave that doesn't accept mood yet
+      await onSave?.(localStatement.trim(), localMood);
     } catch {
       // Error handled by parent
     }
-  }, [localStatement, onSave]);
+  }, [localStatement, localMood, onSave]);
+
+  const toggleEmoji = useCallback(() => {
+    if (emojiOpen) {
+      Animated.timing(emojiAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() =>
+        setEmojiOpen(false)
+      );
+    } else {
+      setEmojiOpen(true);
+      Animated.timing(emojiAnim, {
+        toValue: 1,
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [emojiOpen, emojiAnim]);
+
+  const handleSelectMood = useCallback(
+    (mood: MoodEmoji | null) => {
+      setLocalMood(mood);
+      // Automatically close modal after selection if it's not null (or keep open? InputBar closes?)
+      // InputBar toggles.
+      if (emojiOpen) {
+        Animated.timing(emojiAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() =>
+          setEmojiOpen(false)
+        );
+      }
+    },
+    [emojiOpen, emojiAnim]
+  );
 
   const handleCancel = useCallback(() => {
     setLocalStatement(statement);
@@ -81,7 +123,8 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
     ]);
   }, [onDelete, t]);
 
-  const isDirty = localStatement.trim() !== (statement ?? '').trim();
+  const isDirty =
+    localStatement.trim() !== (statement ?? '').trim() || localMood !== (moodEmoji ?? null);
 
   // Editing mode
   if (isEditing) {
@@ -93,6 +136,18 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
             <Icon name="pencil" size={16} color={theme.colors.primary} />
           </View>
           <Text style={styles.editTitle}>{t('shared.statement.editingLabel')}</Text>
+          <View style={styles.spacer} />
+          {/* Mood Selector Button in Header */}
+          <TouchableOpacity
+            onPress={toggleEmoji}
+            style={[styles.moodSelectorButton, localMood ? styles.moodSelectorActive : null]}
+          >
+            {localMood ? (
+              <Text style={styles.moodSelectorEmoji}>{localMood}</Text>
+            ) : (
+              <Icon name="emoticon-outline" size={20} color={theme.colors.onSurfaceVariant} />
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Text Input */}
@@ -131,6 +186,50 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
             <Text style={styles.saveText}>{t('shared.statement.save')}</Text>
           </TouchableOpacity>
         </View>
+
+        {/* EMOJI MODAL (Inline implementation to keep component self-contained) */}
+        <Modal visible={emojiOpen} transparent animationType="none" onRequestClose={toggleEmoji}>
+          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={toggleEmoji}>
+            <Animated.View
+              style={[
+                styles.emojiSheet,
+                {
+                  transform: [
+                    {
+                      translateY: emojiAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [300, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <View style={styles.emojiHandle} />
+              <Text style={styles.emojiTitle}>
+                {t('gratitude.input.moods.primary', 'How does this make you feel?')}
+              </Text>
+
+              <View style={styles.emojiGrid}>
+                {MOOD_EMOJIS.map((emoji) => (
+                  <TouchableOpacity
+                    key={emoji}
+                    onPress={() => handleSelectMood(emoji)}
+                    style={[styles.emojiItem, localMood === emoji && styles.emojiItemActive]}
+                  >
+                    <Text style={styles.emojiText}>{emoji}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity onPress={() => handleSelectMood(null)} style={styles.clearMoodBtn}>
+                <Text style={styles.clearMoodText}>
+                  {t('gratitude.input.moods.clear', 'Clear mood')}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </TouchableOpacity>
+        </Modal>
       </View>
     );
   }
@@ -409,6 +508,80 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       justifyContent: 'center',
     } as ViewStyle,
+    moodSelectorButton: {
+      width: 36,
+      height: 36,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.surfaceVariant + '40',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.surface,
+    },
+    moodSelectorActive: {
+      backgroundColor: theme.colors.primaryContainer,
+      borderColor: theme.colors.primary,
+    },
+    moodSelectorEmoji: {
+      fontSize: 18,
+    },
+    // Emoji Sheet Styles (Copied/Adapted from GratitudeInputBar)
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: theme.colors.scrim + '66',
+      justifyContent: 'flex-end',
+    },
+    emojiSheet: {
+      backgroundColor: theme.colors.surface,
+      borderTopLeftRadius: theme.borderRadius.xl,
+      borderTopRightRadius: theme.borderRadius.xl,
+      padding: theme.spacing.lg,
+      paddingBottom: 40,
+    },
+    emojiHandle: {
+      width: 40,
+      height: 4,
+      backgroundColor: theme.colors.outline + '40',
+      alignSelf: 'center',
+      borderRadius: 2,
+      marginBottom: theme.spacing.lg,
+    },
+    emojiTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      textAlign: 'center',
+      marginBottom: theme.spacing.lg,
+    },
+    emojiGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: theme.spacing.md,
+    },
+    emojiItem: {
+      width: 44,
+      height: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceVariant + '40',
+      borderRadius: theme.borderRadius.full,
+    },
+    emojiItemActive: {
+      backgroundColor: theme.colors.primaryContainer,
+      borderWidth: 1,
+      borderColor: theme.colors.primary,
+    },
+    emojiText: {
+      fontSize: 24,
+    },
+    clearMoodBtn: {
+      marginTop: theme.spacing.lg,
+      alignItems: 'center',
+    },
+    clearMoodText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.onSurfaceVariant,
+    },
   });
 
 export default React.memo(StatementEditCard);

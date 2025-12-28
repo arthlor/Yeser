@@ -296,12 +296,19 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   );
 
   const handleSaveEditedStatement = useCallback(
-    async (index: number, updatedStatement: string) => {
+    async (index: number, updatedStatement: string, updatedMood?: MoodEmoji | null) => {
       const originalStatement = statements[statements.length - 1 - index];
+      const originalMood = (currentEntry?.moods as Record<string, string> | undefined)?.[
+        String(statements.length - 1 - index)
+      ] as MoodEmoji | undefined;
+
       try {
         gratitudeStatementSchema.parse(updatedStatement);
 
-        if (updatedStatement.trim() === originalStatement.trim()) {
+        if (
+          updatedStatement.trim() === originalStatement.trim() &&
+          updatedMood === (originalMood ?? null)
+        ) {
           animations.animateLayoutTransition(false, 0, { duration: 200 });
           setEditingStatementIndex(null);
           setShowSaveHint(false);
@@ -309,7 +316,12 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         }
 
         await editStatement(
-          { entryDate: finalDateString, statementIndex: index, updatedStatement },
+          {
+            entryDate: finalDateString,
+            statementIndex: index,
+            updatedStatement,
+            moodEmoji: updatedMood,
+          },
           {
             onSuccess: () => {
               animations.animateLayoutTransition(false, 0, { duration: 200 });
@@ -325,7 +337,16 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         }
       }
     },
-    [finalDateString, editStatement, showSuccess, showError, animations, t, statements]
+    [
+      finalDateString,
+      editStatement,
+      showSuccess,
+      showError,
+      animations,
+      t,
+      statements,
+      currentEntry?.moods,
+    ]
   );
 
   const handleCancelEditing = useCallback(() => {
@@ -567,7 +588,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                       entryId: '',
                     });
                   }}
-                  onSave={(updated) => handleSaveEditedStatement(index, updated)}
+                  onSave={(updated, mood) => handleSaveEditedStatement(index, updated, mood)}
                   onCancel={handleCancelEditing}
                   onDelete={() => handleDeleteStatement(index)}
                   serverMood={
@@ -607,7 +628,7 @@ const DailyEntryStatementItem = React.memo<{
   isEditing: boolean;
   isLoading: boolean;
   onEdit: () => void;
-  onSave: (updated: string) => Promise<void>;
+  onSave: (updated: string, mood?: MoodEmoji | null) => Promise<void>;
   onCancel: () => void;
   onDelete: () => void;
   serverMood?: MoodEmoji | null;

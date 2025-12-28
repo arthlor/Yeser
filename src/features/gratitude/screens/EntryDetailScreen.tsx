@@ -51,7 +51,7 @@ const EntryDetailStatementItem = React.memo<{
   isEditing: boolean;
   isLoading: boolean;
   onEdit: () => void;
-  onSave: (updated: string) => Promise<void>;
+  onSave: (updated: string, mood?: MoodEmoji | null) => Promise<void>;
   onCancel: () => void;
   onDelete: () => void;
   serverMood?: MoodEmoji | null;
@@ -71,7 +71,6 @@ const EntryDetailStatementItem = React.memo<{
     theme: _theme,
   }) => {
     const { moodEmoji, setMoodEmoji } = useMoodEmoji({ entryDate, index });
-    const { setStatementMood } = useGratitudeMutations();
 
     useEffect(() => {
       if (serverMood !== null && serverMood !== undefined && serverMood !== moodEmoji) {
@@ -82,7 +81,6 @@ const EntryDetailStatementItem = React.memo<{
 
     const handleChangeMood = (mood: MoodEmoji | null) => {
       setMoodEmoji(mood);
-      setStatementMood({ entryDate, statementIndex: index, moodEmoji: mood });
       if (mood) {
         analyticsService.logEvent('mood_selected', { entry_date: entryDate, index, emoji: mood });
       }
@@ -94,7 +92,7 @@ const EntryDetailStatementItem = React.memo<{
         date={entryDate} // Passing raw date string usually works if StatementEditCard handles it, or use new Date().toISOString() if needed
         isEditing={isEditing}
         onEdit={onEdit}
-        onSave={onSave}
+        onSave={(updated, mood) => onSave(updated, mood)}
         onCancel={onCancel}
         onDelete={onDelete}
         isLoading={isLoading}
@@ -167,11 +165,18 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const monthYear = format(effectiveDate, 'MMMM yyyy', { locale: getDateLocale() });
 
   const handleSaveEditedStatement = useCallback(
-    async (index: number, updatedText: string) => {
+    async (index: number, updatedText: string, updatedMood?: MoodEmoji | null) => {
       try {
         // Logic similar to DailyEntryScreen
         const originalIndex = statements.length - 1 - index; // Reverse index
-        if (updatedText.trim() === displayStatements[index].trim()) {
+        const originalMood = (currentEntry?.moods as Record<string, string> | undefined)?.[
+          String(originalIndex)
+        ] as MoodEmoji | undefined;
+
+        if (
+          updatedText.trim() === displayStatements[index].trim() &&
+          updatedMood === (originalMood ?? null)
+        ) {
           setEditingStatementIndex(null);
           return;
         }
@@ -179,6 +184,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           entryDate,
           statementIndex: originalIndex,
           updatedStatement: updatedText,
+          moodEmoji: updatedMood,
         });
         setEditingStatementIndex(null);
         showSuccess(t('gratitude.success.entryUpdated'));
@@ -186,7 +192,16 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         showError(t('gratitude.errors.editFailed'));
       }
     },
-    [statements.length, displayStatements, editStatement, entryDate, showSuccess, showError, t]
+    [
+      statements.length,
+      displayStatements,
+      editStatement,
+      entryDate,
+      showSuccess,
+      showError,
+      t,
+      currentEntry?.moods,
+    ]
   );
 
   const handleDeleteStatement = useCallback(
@@ -282,7 +297,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   isEditing={editingStatementIndex === index}
                   isLoading={isDeletingStatement}
                   onEdit={() => setEditingStatementIndex(index)}
-                  onSave={(updated) => handleSaveEditedStatement(index, updated)}
+                  onSave={(updated, mood) => handleSaveEditedStatement(index, updated, mood)}
                   onCancel={() => setEditingStatementIndex(null)}
                   onDelete={() => handleDeleteStatement(index)}
                   serverMood={

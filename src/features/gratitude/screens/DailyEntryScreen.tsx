@@ -39,6 +39,8 @@ import { analyticsService } from '@/services/analyticsService';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import GratitudeInputBar, { GratitudeInputBarRef } from '../components/GratitudeInputBar';
+import { AICoachPrompt } from '@/shared/components/ui/AICoachPrompt';
+import { AIChatModal } from '@/shared/components/ui/AIChatModal';
 
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { useTranslation } from 'react-i18next';
@@ -108,6 +110,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
   const [showSaveHint, setShowSaveHint] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
 
   const inputBarRef = useRef<GratitudeInputBarRef>(null);
 
@@ -546,6 +549,19 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             />
           </View>
 
+          {/* AI COACH PROMPT (PRO only, today only) */}
+          {isToday && (
+            <View style={styles.coachSection}>
+              <AICoachPrompt
+                recentEntries={statements.slice(0, 5)}
+                onSelectPrompt={(_prompt) => {
+                  inputBarRef.current?.focus();
+                  // The prompt will be shown as a hint
+                }}
+              />
+            </View>
+          )}
+
           {/* STATEMENTS LIST SECTION */}
           <View style={styles.listSection}>
             {statements.length > 0 && (
@@ -615,6 +631,24 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           </View>
         </Animated.View>
       </ScreenLayout>
+
+      {/* AI Chat FAB (PRO only, today only) */}
+      {isPro && isToday && (
+        <TouchableOpacity
+          style={styles.chatFab}
+          onPress={() => setShowAIChat(true)}
+          activeOpacity={0.8}
+        >
+          <Icon name="chat-processing-outline" size={24} color={theme.colors.onPrimary} />
+        </TouchableOpacity>
+      )}
+
+      {/* AI Chat Modal */}
+      <AIChatModal
+        visible={showAIChat}
+        onClose={() => setShowAIChat(false)}
+        recentEntries={statements.slice(0, 5)}
+      />
     </>
   );
 };
@@ -657,8 +691,7 @@ const DailyEntryStatementItem = React.memo<{
       if (serverMood !== null && serverMood !== undefined && serverMood !== moodEmoji) {
         void setMoodEmoji(serverMood);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [serverMood]);
+    }, [serverMood, moodEmoji, setMoodEmoji]);
 
     const handleChangeMood = (mood: MoodEmoji | null) => {
       setMoodEmoji(mood);
@@ -753,6 +786,10 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing.md,
       marginVertical: theme.spacing.md,
     },
+    coachSection: {
+      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
     listSection: {
       marginTop: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
@@ -790,6 +827,22 @@ const createStyles = (theme: AppTheme) =>
     infoButton: {
       marginRight: 8,
       justifyContent: 'center',
+    },
+    chatFab: {
+      position: 'absolute',
+      bottom: 24, // Optimized position
+      right: theme.spacing.lg,
+      width: 56,
+      height: 56,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
     },
   });
 

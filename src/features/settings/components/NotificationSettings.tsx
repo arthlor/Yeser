@@ -33,103 +33,84 @@ export const NotificationSettings: React.FC = () => {
   // Refs for cleanup and race condition prevention
   const isMountedRef = useRef(true);
   const operationInProgressRef = useRef(false);
-  const hasSyncedPermissionMismatchRef = useRef(false);
-
-  // Effect to get the current push token on mount with proper cleanup
-  useEffect(() => {
-    let isCancelled = false;
-
-    const fetchToken = async (): Promise<void> => {
-      try {
-        const token = await notificationService.getCurrentDevicePushToken();
-        if (!isCancelled && isMountedRef.current) {
-          setPushToken(token);
-        }
-      } catch (error) {
-        if (!isCancelled && isMountedRef.current) {
-          logger.warn('Could not get push token on initial load.', { error });
-        }
-      }
-    };
-
-    void fetchToken();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
 
   // Effect to sync component state with user profile and check permissions
   useEffect(() => {
     let isCancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (!isCancelled && isMountedRef.current) {
+        setIsInitializing(false);
+        logger.warn('Notification initialization timed out - forcing clear');
+      }
+    }, 5000); // 5s safety timeout
 
-    const syncProfileState = async () => {
-      if (!isMountedRef.current) {
+    const syncState = async () => {
+      // Prevent concurrent executions and redundant runs
+      if (operationInProgressRef.current || !isMountedRef.current) {
         return;
       }
 
+      operationInProgressRef.current = true;
       setIsInitializing(true);
 
       try {
+        // 1. Ensure we have the latest token
+        let currentToken = pushToken;
+        if (!currentToken) {
+          currentToken = await notificationService.getCurrentDevicePushToken();
+          if (!isCancelled && isMountedRef.current && currentToken) {
+            setPushToken(currentToken);
+          }
+        }
+
+        // 2. Check permissions
         const permissions = await Notifications.getPermissionsAsync();
 
-        if (!isCancelled && isMountedRef.current) {
-          const hasBackendPreference = Boolean(profile?.notification_time);
-          const isPermissionGranted = permissions.granted;
+        if (isCancelled || !isMountedRef.current) {
+          return;
+        }
 
-          if (hasBackendPreference) {
-            if (isPermissionGranted) {
-              // Backend ON + Permission ON = Ensure Enabled & Scheduled
-              setIsEnabled(true);
-              // Idempotent call to ensure schedules are active
-              await notificationService.scheduleDailyReminderNotifications();
+        const hasBackendPreference = Boolean(profile?.notification_time);
+        const isPermissionGranted =
+          permissions.granted || (permissions.status as string) === 'provisional';
 
-              // Ensure token is fresh if missing
-              if (!pushToken) {
-                const token = await notificationService.getCurrentDevicePushToken();
-                if (token) {
-                  setPushToken(token);
-                }
-              }
-            } else {
-              // Backend ON + Permission OFF = Mismatch
-              setIsEnabled(false);
-              logger.warn(
-                'Notification settings out of sync - profile enabled but no device permission'
-              );
-
-              // Ensure no local notifications are scheduled if we don't have permission
-              await notificationService.cancelDailyReminderNotifications();
-
-              if (!hasSyncedPermissionMismatchRef.current) {
-                hasSyncedPermissionMismatchRef.current = true;
-                // We no longer automatically disable notifications on the backend
-                // to avoid affecting other devices where the user might have permissions.
-              }
-            }
+        if (hasBackendPreference) {
+          if (isPermissionGranted) {
+            // Backend ON + Permission ON = Ensure Enabled & Scheduled
+            setIsEnabled(true);
+            await notificationService.scheduleDailyReminderNotifications();
           } else {
-            // Backend OFF = Ensure Disabled & Cancelled
+            // Backend ON + Permission OFF = Mismatch
             setIsEnabled(false);
+            logger.warn('Notification mismatch - profile enabled but no device permission');
             await notificationService.cancelDailyReminderNotifications();
           }
+        } else {
+          // Backend OFF = Ensure Disabled & Cancelled
+          setIsEnabled(false);
+          await notificationService.cancelDailyReminderNotifications();
         }
       } catch (error) {
         if (!isCancelled && isMountedRef.current) {
-          logger.error('Error syncing profile state:', error as Error);
+          logger.error('Error in notification initialization:', error as Error);
         }
       } finally {
         if (!isCancelled && isMountedRef.current) {
           setIsInitializing(false);
+          setIsLoading(false); // Ensure loading is also cleared
+          clearTimeout(timeoutId);
         }
+        operationInProgressRef.current = false;
       }
     };
 
-    syncProfileState();
+    void syncState();
 
     return () => {
       isCancelled = true;
+      clearTimeout(timeoutId);
     };
-  }, [profile, pushToken]);
+  }, [profile?.notification_time, pushToken]); // Only re-sync when the preference actually changes or token is updated
 
   const enableNotifications = useCallback(async () => {
     // Prevent concurrent operations

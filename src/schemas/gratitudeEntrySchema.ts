@@ -113,6 +113,7 @@ export const dailyPromptSchema = z.object({
         : 'Turkish prompt text is required'
     ),
   prompt_text_en: z.string().nullable().optional(),
+  prompt_text_es: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
 });
 

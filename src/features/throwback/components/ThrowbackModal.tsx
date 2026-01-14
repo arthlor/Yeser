@@ -35,7 +35,11 @@ interface EnhancedThrowbackModalProps {
 const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisible, onClose }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // Map app language to date utility locales
+  const currentLanguage =
+    (i18n.language === 'en' ? 'en-US' : (i18n.language as 'tr' | 'es')) || 'en-US';
 
   // TanStack Query hook replaces the old throwback store
   const { randomEntry, isLoading, error, hideThrowback, refreshThrowback, hasRandomEntry } =
@@ -141,10 +145,11 @@ const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisib
                 <ScrollView
                   style={styles.entryScrollView}
                   contentContainerStyle={styles.entryScrollContentContainer}
+                  showsVerticalScrollIndicator={false}
                 >
                   <View style={styles.entryContainer}>
                     <Text style={styles.entryDate}>
-                      {formatUtilityDate(randomEntry.entry_date, 'PPP', 'tr')}
+                      {formatUtilityDate(randomEntry.entry_date, 'PPP', currentLanguage)}
                     </Text>
                     <Text style={styles.entryContent}>{randomEntry.statements[0]}</Text>
                   </View>
@@ -188,28 +193,31 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: alpha(theme.colors.onSurface, 0.6),
+      backgroundColor: theme.colors.scrim, // Using scrim for darker tint
     },
     modalView: {
       minHeight: 150,
       justifyContent: 'center',
       margin: theme.spacing.lg,
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
+      backgroundColor: theme.colors.surfaceElevated || theme.colors.surface, // Darker surface
+      borderRadius: theme.borderRadius.xl,
       padding: theme.spacing.xl,
       alignItems: 'center',
       width: '90%',
       maxHeight: '80%',
+      borderWidth: 1,
+      borderColor: theme.colors.borderLight || theme.colors.outlineVariant,
       // 🌟 Beautiful primary shadow for modal
       ...getPrimaryShadow.overlay(theme),
     },
     modalTitle: {
-      fontSize: 20,
+      fontSize: 22,
       fontWeight: '700',
       color: theme.colors.primary,
       marginBottom: theme.spacing.lg,
       textAlign: 'center',
-      letterSpacing: -0.2,
+      letterSpacing: -0.5,
+      fontFamily: theme.typography.fontFamilySerifBold,
     },
     entryScrollView: {
       width: '100%',
@@ -220,30 +228,32 @@ const createStyles = (theme: AppTheme) =>
       justifyContent: 'center',
     },
     entryContainer: {
-      padding: theme.spacing.lg,
-      backgroundColor: theme.colors.background,
-      borderRadius: theme.borderRadius.md,
+      padding: theme.spacing.xl,
+      backgroundColor: alpha(theme.colors.background, 0.5), // Semi-transparent dark background
+      borderRadius: theme.borderRadius.lg,
       width: '100%',
+      borderWidth: 1,
+      borderColor: alpha(theme.colors.outline, 0.1),
       // 🌟 Beautiful primary shadow for entry container
       ...getPrimaryShadow.card(theme),
     },
     entryDate: {
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: '500',
-      color: theme.colors.onSurfaceVariant,
-      marginBottom: theme.spacing.sm,
+      color: theme.colors.primary, // Highlight date with primary
+      marginBottom: theme.spacing.md,
       textAlign: 'center',
       fontStyle: 'italic',
-      opacity: 0.8,
+      opacity: 0.9,
     },
     entryContent: {
-      fontSize: 16,
+      fontSize: 18,
       fontWeight: '400',
       color: theme.colors.onSurface,
       textAlign: 'center',
-      marginBottom: theme.spacing.lg,
-      lineHeight: 24,
-      letterSpacing: 0.1,
+      lineHeight: 28,
+      letterSpacing: 0.2,
+      fontFamily: theme.typography.fontFamilySerif, // Use serif for better journal feel
     },
     errorText: {
       fontSize: 14,
@@ -260,33 +270,34 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       gap: theme.spacing.md,
       marginTop: theme.spacing.sm,
+      width: '100%',
     },
     button: {
-      borderRadius: theme.borderRadius.lg,
+      borderRadius: theme.borderRadius.full, // Standardized pill buttons
       paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.xl,
-      minWidth: 120,
+      paddingHorizontal: theme.spacing.lg,
+      minWidth: 100,
       flex: 1,
     },
     buttonClose: {
       backgroundColor: theme.colors.primary,
     },
     buttonSecondary: {
-      backgroundColor: theme.colors.surfaceVariant,
+      backgroundColor: alpha(theme.colors.surfaceVariant, 0.5),
       borderWidth: 1,
-      borderColor: theme.colors.outline,
+      borderColor: theme.colors.outlineVariant,
     },
     textStyle: {
       color: theme.colors.onPrimary,
       fontWeight: '600',
       textAlign: 'center',
-      fontSize: 15,
+      fontSize: 14, // Reduced from 15
     },
     textStyleSecondary: {
       color: theme.colors.onSurfaceVariant,
       fontWeight: '600',
       textAlign: 'center',
-      fontSize: 15,
+      fontSize: 14, // Reduced from 15
     },
   });
 

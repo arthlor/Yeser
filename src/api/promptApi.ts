@@ -118,7 +118,7 @@ export const getLocalizedRandomActivePrompt = async (
     // Fetch raw prompt data with BOTH language columns directly from table
     const { data, error } = await supabase
       .from('daily_prompts')
-      .select('id, prompt_text_tr, prompt_text_en, category')
+      .select('id, prompt_text_tr, prompt_text_en, prompt_text_es, category')
       .eq('is_active', true)
       .limit(20); // Fetch multiple to randomize on client side
 
@@ -140,7 +140,7 @@ export const getLocalizedRandomActivePrompt = async (
     const selectedPrompt = data[randomIndex];
 
     // Transform to localized format using both language columns
-    const localizedPrompt = localizeDailyPrompt(selectedPrompt as DailyPrompt, language);
+    const localizedPrompt = localizeDailyPrompt(selectedPrompt as unknown as DailyPrompt, language);
 
     // Validate the localized prompt
     const validatedPrompt = localizedDailyPromptSchema.parse(localizedPrompt);
@@ -177,7 +177,7 @@ export const getLocalizedMultipleRandomActivePrompts = async (
     // Fetch raw prompt data with BOTH language columns directly from table
     const { data, error } = await supabase
       .from('daily_prompts')
-      .select('id, prompt_text_tr, prompt_text_en, category')
+      .select('id, prompt_text_tr, prompt_text_en, prompt_text_es, category')
       .eq('is_active', true)
       .limit(Math.max(limit * 2, 20)); // Fetch more to randomize on client side
 
@@ -199,7 +199,7 @@ export const getLocalizedMultipleRandomActivePrompts = async (
 
     // Transform to localized format using both language columns
     const localizedPrompts = selectedPrompts.map((prompt) =>
-      localizeDailyPrompt(prompt as DailyPrompt, language)
+      localizeDailyPrompt(prompt as unknown as DailyPrompt, language)
     );
 
     // Validate each localized prompt

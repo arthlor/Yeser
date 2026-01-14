@@ -7,7 +7,7 @@ import type { MoodAnalyticsRange, MoodAnalyticsResponse } from '@/types/moodAnal
 import useAuthStore, { shouldEnableQueries } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
 
-const DEFAULT_RANGE: MoodAnalyticsRange = '90d';
+const DEFAULT_RANGE: MoodAnalyticsRange = '30d';
 
 export interface UseMoodAnalyticsResult {
   data: MoodAnalyticsResponse | undefined;

@@ -687,7 +687,7 @@ const createStyles = (
         theme.name === 'dark' ? `${theme.colors.outline}20` : `${theme.colors.outline}25`,
       borderRadius: theme.borderRadius.xl,
       // Premium shadow effect
-      shadowColor: theme.name === 'dark' ? '#000' : `${theme.colors.primary}15`,
+      shadowColor: theme.name === 'dark' ? theme.colors.shadow : `${theme.colors.primary}15`,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: theme.name === 'dark' ? 0.4 : 0.2,
       shadowRadius: 24,
@@ -859,7 +859,7 @@ const createStyles = (
       borderRadius: theme.borderRadius.lg,
       marginBottom: theme.spacing.md,
       // Subtle elevation
-      shadowColor: theme.name === 'dark' ? '#000' : `${theme.colors.outline}50`,
+      shadowColor: theme.name === 'dark' ? theme.colors.shadow : `${theme.colors.outline}50`,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.15,
       shadowRadius: 6,

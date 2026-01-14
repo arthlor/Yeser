@@ -1,6 +1,22 @@
 import type { MoodEmoji } from './mood.types';
 
-export type MoodAnalyticsRange = '7d' | '30d' | '90d' | '365d';
+export type MoodAnalyticsRange = '7d' | '15d' | '30d';
+
+export interface AIInsightResponse {
+  narrative: {
+    logical: string;
+    emotional: string;
+    suggestions: string[];
+  };
+  highlighted_insight: {
+    title: string;
+    description: string;
+    emoji: string;
+  } | null;
+  remaining?: number;
+  resetInSeconds?: number;
+  error?: string;
+}
 
 export interface MoodCount {
   mood: MoodEmoji;
@@ -48,4 +64,7 @@ export interface MoodAnalyticsResponse {
   trend: MoodTrendPoint[];
   highlightedStatements: HighlightedStatement[];
   narrative: MoodNarrativeInsight;
+  remaining?: number;
+  resetInSeconds?: number;
+  error?: string;
 }

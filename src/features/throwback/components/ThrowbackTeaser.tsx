@@ -18,10 +18,11 @@ interface ThrowbackTeaserProps {
   isLoading: boolean;
   error: string | null;
   onRefresh?: () => void;
+  onPress?: () => void;
 }
 
 const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
-  ({ throwbackEntry, isLoading, error, onRefresh }) => {
+  ({ throwbackEntry, isLoading, error, onRefresh, onPress }) => {
     const { theme } = useTheme();
     const { t } = useTranslation();
     const language = useLanguageStore((state) => state.language);
@@ -88,7 +89,12 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
     const statement = throwbackEntry.statements?.[0] || '';
 
     return (
-      <View style={styles.container}>
+      <TouchableOpacity
+        style={styles.container}
+        onPress={onPress}
+        activeOpacity={0.7}
+        disabled={!onPress}
+      >
         {/* Header Row */}
         <View style={styles.row}>
           <View style={styles.iconContainer}>
@@ -120,7 +126,7 @@ const ThrowbackTeaser: React.FC<ThrowbackTeaserProps> = React.memo(
             {statement}
           </Text>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 );

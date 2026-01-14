@@ -1,4 +1,72 @@
 {
+  "ai": {
+    "mood": {
+      "analyzing": "✨ Analyzing...",
+      "suggests": "✨ AI suggests:"
+    },
+    "usage": {
+      "remaining": "✨ {{remaining}}/25 AI assists left",
+      "indicator": "✨ {{used}}/25 used ({{remaining}} left)",
+      "exhausted": "Daily limit reached. Resets tomorrow!",
+      "resets_in": "Daily limit exhausted. Resets in {{time}}",
+      "limit_reached": "Daily AI Limit Reached",
+      "limit_desc": "You have used all your AI interactions for today."
+    },
+    "enhance": {
+      "title": "✨ Enhance Entry",
+      "button": "Enhance with AI",
+      "loading": "Enhancing...",
+      "styles": {
+        "poetic": "Poetic",
+        "detailed": "Detailed",
+        "mindful": "Mindful"
+      },
+      "success": "Entry enhanced!",
+      "apply": "Apply",
+      "discard": "Discard",
+      "failed": "Failed to enhance entry. Please try again."
+    },
+    "coach": {
+      "title": "What can I be grateful for?",
+      "generatePrompt": "Get a Personalized Prompt",
+      "loading": "Thinking...",
+      "focusAreas": {
+        "relationships": "Relationships",
+        "growth": "Personal Growth",
+        "nature": "Nature & Beauty",
+        "health": "Health & Well-being",
+        "achievements": "Victories & Achievements",
+        "general": "Everyday Moments"
+      },
+      "tip": "Tip"
+    },
+
+    "chat": {
+      "title": "Yeşer Companion",
+      "placeholder": "Share your thoughts...",
+      "send": "Send",
+      "greeting": "Hi! I'm Yeşer, your gratitude companion. How can I help you reflect today?",
+      "loading": "Thinking...",
+      "clearHistory": "Clear Chat",
+      "suggests": "✨ Suggestions",
+      "suggestions": {
+        "gratitude": "Why am I not grateful?",
+        "find": "Help me find gratitude",
+        "pattern": "Analyze my patterns",
+        "reflect": "Give me a reflection"
+      },
+      "context": {
+        "streak": "🔥 You're on a {{count}}-day streak! How does it feel?",
+        "missing": "I missed you yesterday. What's on your mind?",
+        "default": "Hi! I'm Yeşer, your gratitude companion. What shall we reflect on today?"
+      }
+    },
+    "errors": {
+      "proRequired": "PRO subscription required",
+      "limitReached": "Daily AI limit reached",
+      "failed": "Something went wrong. Please try again."
+    }
+  },
   "common": {
     "ok": "OK",
     "cancel": "Cancel",
@@ -11,7 +79,8 @@
     "emptyTitle": "Nothing here yet",
     "emptySubtitle": "Content will appear here when added",
     "errorTitle": "An error occurred",
-    "errorSubtitle": "Please try again"
+    "errorSubtitle": "Please try again",
+    "error": "Something went wrong"
   },
   "home": {
     "tab": {
@@ -67,8 +136,8 @@
           "message": "You completed today's goal! Your gratitude colors your life."
         },
         "progress": {
-          "title": "Keep Going",
-          "message": "{{remaining}} more gratitude to reach today's goal."
+          "title": "Keep it Up",
+          "message": "Write {{remaining}} more gratitude notes to reach your goal."
         }
       },
       "progressLabel": "{{current}}/{{dailyGoal}}",
@@ -139,8 +208,8 @@
       },
       "idle": {
         "primary": "{{icon}} {{greeting}}, {{name}}!",
-        "secondary": "How is this {{timeText}} going?",
-        "accent": "Perfect moment for gratitude ⭐"
+        "secondary": "How is your {{timeText}} going?",
+        "accent": "A perfect moment for gratitude ⭐"
       },
       "motivation": {
         "startMain": "Great day to start gratitude!",
@@ -282,7 +351,7 @@
     "about": {
       "moodAnalysis": {
         "label": "Mood Insights",
-        "description": "Analyse patterns in your gratitude moods"
+        "description": "Analyze patterns in your gratitude journal"
       },
       "whyGratitude": {
         "label": "The Power of Gratitude",
@@ -619,6 +688,9 @@
     }
   },
   "shared": {
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Something went wrong",
     "ui": {
       "badges": {
         "new": "NEW",
@@ -819,159 +891,6 @@
       }
     }
   },
-  "mood": {
-    "analysis": {
-      "title": "Mood Insights",
-      "subtitle": "See how your gratitude practice shapes your emotional landscape.",
-      "loading": "Getting your mood insights…",
-      "actions": {
-        "refresh": "Refresh insights"
-      },
-      "range": {
-        "7d": "7 Days",
-        "30d": "30 Days",
-        "90d": "90 Days",
-        "365d": "1 Year"
-      },
-      "empty": {
-        "title": "Not enough mood data yet",
-        "message": "Add moods to your gratitude statements to unlock personalised reflections.",
-        "cta": "Add a gratitude mood"
-      },
-      "overview": {
-        "entries": "Entries analysed",
-        "statements": "Statements",
-        "dominantMood": "Dominant mood",
-        "balanceScore": "Balance score",
-        "statementsPerEntry": "{{value}} statements per entry on average",
-        "generatedAt": "Updated {{date}}",
-        "noDominantMood": "No single mood"
-      },
-      "sections": {
-        "streak": {
-          "title": "Consistency pulse",
-          "subtitle": "Your streak adds context to recent moods."
-        },
-        "distribution": {
-          "title": "Mood distribution",
-          "subtitle": "How often each mood appears."
-        },
-        "trend": {
-          "title": "Mood trend",
-          "subtitle": "Dominant moods over time."
-        },
-        "highlighted": {
-          "title": "Highlighted entries",
-          "subtitle": "Statements that stand out emotionally."
-        },
-        "narrative": {
-          "title": "Narrative insight",
-          "subtitle": "A gentle reflection on your recent entries."
-        }
-      },
-      "streak": {
-        "loading": "Fetching streak context…",
-        "current": "Current streak",
-        "longest": "Longest streak",
-        "lastEntry": "Last entry",
-        "noLastEntry": "No entries yet",
-        "empty": "We could not load streak data.",
-        "hint": "Keeping your streak alive helps reveal how consistency changes your mood mix."
-      },
-      "moodStreak": {
-        "title": "Mood Streaks 🔥",
-        "subtitle": "Your longest consecutive days with each dominant mood.",
-        "currentStreak": "{{count}} day streak",
-        "currentStreakPlural": "{{count}} day streak",
-        "noStreak": "No streak yet",
-        "empty": "Add more entries to see mood streaks."
-      },
-      "comparison": {
-        "title": "Week-Over-Week 📊",
-        "subtitle": "How your mood balance is shifting.",
-        "improved": "{{value}}% more balanced",
-        "declined": "{{value}}% less balanced",
-        "stable": "Mood balance stable",
-        "noData": "Add more entries to see trends.",
-        "currentPeriod": "This period",
-        "previousPeriod": "Last period",
-        "change": "Change"
-      },
-      "correlation": {
-        "title": "Insights 💡",
-        "subtitle": "Patterns we've discovered in your gratitude practice.",
-        "empty": "Add more entries to unlock insights.",
-        "bestDay": "Your happiest day is {{day}} with {{mood}} mood",
-        "consistentMood": "You've been consistently {{mood}} lately",
-        "varietyHigh": "Great mood diversity! You've used {{count}} different moods",
-        "weekendBoost": "Your mood improves on weekends",
-        "weekdayStrong": "You stay positive even on weekdays",
-        "streakPower": "Longer streaks bring more {{mood}} moods",
-        "morningPerson": "Your entries are most positive in the morning",
-        "eveningReflector": "Evening reflections bring out gratitude"
-      },
-      "distribution": {
-        "empty": "We need more moods to calculate a distribution."
-      },
-      "trend": {
-        "empty": "Add more moods to see how they shift over time.",
-        "entries": "{{count}} entries",
-        "mixed": "Mixed moods"
-      },
-      "highlighted": {
-        "empty": "We could not surface standout entries yet.",
-        "meta": "Captured on {{date}}"
-      },
-      "narrative": {
-        "logical": "Logical takeaway",
-        "emotional": "Emotional reading",
-        "suggestions": "Suggested next steps",
-        "logicalStates": {
-          "empty": "Add a few more moods to unlock deeper insights.",
-          "imbalanced": "One feeling has been leading your recent reflections.",
-          "balanced": "Your gratitude moods are beautifully balanced.",
-          "neutral": "You are mixing different moods in a healthy way."
-        },
-        "emotionalStates": {
-          "none": "We need a few more mood tags to spot an emotional trend.",
-          "dominant": "The latest entries feel mostly {{mood}}."
-        },
-        "suggestionTexts": {
-          "addMoods": "Tag today’s gratitude with a mood to unlock deeper reflections.",
-          "balance": "Write about a different feeling tomorrow to balance things out.",
-          "keepStreak": "Keep your streak alive to see how consistency shifts your mood story.",
-          "writeMore": "A few more entries this week will sharpen your insights.",
-          "celebrate": "You're doing great! Keep celebrating the moments that matter.",
-          "explore": "Try exploring what makes you feel {{mood}} more often.",
-          "variety": "Mixing different moods enriches your emotional awareness.",
-          "reflect": "Take a moment to reflect on what's driving your current mood pattern.",
-          "milestone": "Amazing progress! You've logged over {{count}} entries with moods."
-        }
-      },
-      "balance": {
-        "imbalanced": "Needs variety",
-        "neutral": "Even mix",
-        "balanced": "Healthy balance"
-      },
-      "moods": {
-        "😊": "Joyful",
-        "🙏": "Grateful",
-        "🌟": "Inspired",
-        "💪": "Empowered",
-        "🧘": "Calm",
-        "🥰": "Loving",
-        "😌": "Content",
-        "🌿": "Refreshed",
-        "🤔": "Thoughtful",
-        "🌅": "Hopeful",
-        "🎯": "Focused",
-        "🚀": "Motivated"
-      },
-      "date": {
-        "unknown": "Unknown date"
-      }
-    }
-  },
   "gratitude": {
     "hero": {
       "greeting": {
@@ -1046,6 +965,7 @@
     },
     "detail": {
       "title": "Entry Details",
+      "subtitle": "Reflect on your journey",
       "gratitudeCount": "{{count}} gratitudes"
     },
     "actions": {
@@ -1115,12 +1035,13 @@
       "cardSubtitle": "From your past gratitudes",
       "newA11y": "Fetch a new memory",
       "newHint": "Loads another throwback gratitude memory",
-      "fallbackStatement": "You have a gratitude statement from the past."
+      "fallbackStatement": "You have a gratitude statement from the past.",
+      "subtitle": "Look back at your beautiful memories."
     },
     "modal": {
       "errorTitle": "An Error Occurred",
       "unexpected": "An unexpected error occurred",
-      "shardTitle": "✨ A Memory Shard ✨",
+      "shardTitle": "A Memory Shard",
       "another": "Another Memory",
       "ok": "Got it!",
       "empty": "No memory found to display."
@@ -1283,6 +1204,7 @@
     }
   },
   "onboarding": {
+    "backHint": "Go back to previous step",
     "welcome": {
       "title": "Welcome! 🌱",
       "subtitle": "Let's begin gratitude.",
@@ -1480,6 +1402,9 @@
   },
   "termsOfService": {
     "lastUpdated": "Last Updated: 12 June 2025",
+    "iconLabel": "Terms icon",
+    "contactEmailLabel": "Contact via email",
+    "contactEmailHint": "Send email about terms",
     "sections": {
       "introduction": {
         "title": "Introduction and Acceptance",
@@ -1600,7 +1525,10 @@
         "past": "Add gratitudes to past dates",
         "insights": "Advanced mood analysis",
         "export": "Export your gratitudes to PDF",
-        "prompts": "Variety of inspiring prompts"
+        "prompts": "Variety of inspiring prompts",
+        "aiCoach": "AI Coach & Personalized Guidance",
+        "aiChat": "Gratitude Chat & Companion",
+        "moodEditing": "Edit mood of past entries"
       }
     },
     "paywall": {
@@ -1617,6 +1545,76 @@
     "purchase": {
       "success": "Welcome to Premium!",
       "error": "Purchase failed. Please try again."
+    }
+  },
+  "mood": {
+    "analysis": {
+      "label": "INSIGHTS",
+      "title": "Mood Analysis",
+      "subtitle": "Discover how gratitude shapes your emotional world.",
+      "range": {
+        "7d": "7 Days",
+        "15d": "15 Days",
+        "30d": "30 Days"
+      },
+      "overview": {
+        "entries": "Entries analyzed",
+        "statements": "Statements",
+        "dominantMood": "Dominant mood",
+        "balanceScore": "Balance score",
+        "noDominantMood": "None",
+        "statementsPerEntry": "Avg {{value}} statements per entry",
+        "generatedAt": "Updated on {{date}}",
+        "entriesExplanation": "This overview summarizes your emotional trends based on {{count}} entries from the last {{days}} days."
+      },
+      "balance": {
+        "imbalanced": "Imbalanced",
+        "neutral": "Neutral",
+        "balanced": "Balanced"
+      },
+      "sections": {
+        "narrative": {
+          "title": "AI Insights",
+          "subtitle": "Understand your well-being"
+        }
+      },
+      "ai": {
+        "remaining": "{{count}} AI assists remaining today"
+      },
+      "banner": {
+        "title": "Unlock AI Insights",
+        "subtitle": "Get personalized analysis of your mood patterns.",
+        "button": "Analyze My Mood"
+      },
+      "narrative": {
+        "loading": "Analyzing your gratitude patterns...",
+        "logical": "Logical Deduction",
+        "emotional": "Emotional Reading",
+        "suggestions": "Next Steps",
+        "empty": "Unlock insights by adding more entries."
+      },
+      "actions": {
+        "refresh": "Refresh"
+      },
+      "date": {
+        "unknown": "Unknown"
+      },
+      "empty": {
+        "title": "No data yet",
+        "message": "Add some gratitude entries to see analysis.",
+        "cta": "Add Entry"
+      },
+      "loading": "Loading...",
+      "moods": {
+        "🤩": "Excited",
+        "💪": "Proud",
+        "😌": "Peaceful",
+        "🥰": "Loved",
+        "😊": "Happy",
+        "🤔": "Thoughtful",
+        "🥲": "Touched",
+        "🙏": "Grateful"
+      }
     }
   }
 }

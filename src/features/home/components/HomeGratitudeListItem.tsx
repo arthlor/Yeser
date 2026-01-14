@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/providers/ThemeProvider';
 import type { MoodEmoji } from '@/types/mood.types';
 import { AppTheme } from '@/themes/types';
@@ -14,6 +15,7 @@ interface HomeGratitudeListItemProps {
 const HomeGratitudeListItem: React.FC<HomeGratitudeListItemProps> = React.memo(
   ({ statement, moodEmoji, onPress }) => {
     const { theme } = useTheme();
+    const { t } = useTranslation();
     const styles = useMemo(() => createStyles(theme), [theme]);
 
     return (
@@ -35,7 +37,7 @@ const HomeGratitudeListItem: React.FC<HomeGratitudeListItemProps> = React.memo(
           <View style={styles.footer}>
             <View style={styles.todayBadge}>
               <Icon name="clock-outline" size={12} color={theme.colors.primary} />
-              <Text style={styles.todayText}>TODAY</Text>
+              <Text style={styles.todayText}>{t('pastEntries.item.relative.today')}</Text>
             </View>
             <View style={styles.rightSection}>
               {moodEmoji && <Text style={styles.moodEmoji}>{moodEmoji}</Text>}

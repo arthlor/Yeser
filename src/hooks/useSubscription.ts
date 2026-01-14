@@ -26,7 +26,7 @@ export const useSubscription = () => {
       }
       // Navigate to Paywall by default if check fails
       // We use the root navigator to ensure it overlays everything
-      // @ts-ignore - The navigation structure might be nested, ensuring safety
+      // The navigation structure might be nested, ensuring safety
       navigation.navigate('PaywallModal', { source: featureName });
       return false;
     },

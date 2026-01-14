@@ -14,17 +14,37 @@ export const localizeGratitudeBenefit = (
   benefit: GratitudeBenefit,
   language: SupportedLanguage
 ): LocalizedGratitudeBenefit => {
-  // For Spanish, fallback to English content as database doesn't have Spanish columns yet
-  const useEnglish = language === 'en' || language === 'es';
+  // Column selection logic
+  const isSpanish = language === 'es';
+  const isEnglish = language === 'en';
 
   return {
     id: benefit.id,
     icon: benefit.icon,
-    title: useEnglish && benefit.title_en ? benefit.title_en : benefit.title_tr,
+    title:
+      isSpanish && benefit.title_es
+        ? benefit.title_es
+        : isEnglish && benefit.title_en
+          ? benefit.title_en
+          : benefit.title_tr,
     description:
-      useEnglish && benefit.description_en ? benefit.description_en : benefit.description_tr,
-    stat: useEnglish && benefit.stat_en ? benefit.stat_en : benefit.stat_tr,
-    cta_prompt: useEnglish && benefit.cta_prompt_en ? benefit.cta_prompt_en : benefit.cta_prompt_tr,
+      isSpanish && benefit.description_es
+        ? benefit.description_es
+        : isEnglish && benefit.description_en
+          ? benefit.description_en
+          : benefit.description_tr,
+    stat:
+      isSpanish && benefit.stat_es
+        ? benefit.stat_es
+        : isEnglish && benefit.stat_en
+          ? benefit.stat_en
+          : benefit.stat_tr,
+    cta_prompt:
+      isSpanish && benefit.cta_prompt_es
+        ? benefit.cta_prompt_es
+        : isEnglish && benefit.cta_prompt_en
+          ? benefit.cta_prompt_en
+          : benefit.cta_prompt_tr,
     display_order: benefit.display_order,
     is_active: benefit.is_active,
     created_at: benefit.created_at,
@@ -44,20 +64,24 @@ export const localizeDailyPrompt = (
   prompt: DailyPrompt,
   language: SupportedLanguage
 ): LocalizedDailyPrompt => {
-  // For Spanish, fallback to English content
-  const useEnglish = language === 'en' || language === 'es';
-
-  // More robust language selection with better fallback logic
   let promptText: string;
 
-  if (useEnglish) {
-    // For English/Spanish: use English text if available and not empty, otherwise fallback to Turkish
+  if (language === 'es') {
+    // For Spanish: use Spanish text if available, otherwise fallback to English, then Turkish
+    promptText =
+      prompt.prompt_text_es && prompt.prompt_text_es.trim().length > 0
+        ? prompt.prompt_text_es
+        : prompt.prompt_text_en && prompt.prompt_text_en.trim().length > 0
+          ? prompt.prompt_text_en
+          : prompt.prompt_text_tr;
+  } else if (language === 'en') {
+    // For English: use English text if available, otherwise fallback to Turkish
     promptText =
       prompt.prompt_text_en && prompt.prompt_text_en.trim().length > 0
         ? prompt.prompt_text_en
         : prompt.prompt_text_tr;
   } else {
-    // For Turkish: use Turkish text (should always be available)
+    // For Turkish: use Turkish text
     promptText = prompt.prompt_text_tr;
   }
 

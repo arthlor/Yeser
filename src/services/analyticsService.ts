@@ -7,8 +7,8 @@
  * @param screenName Raw screen name from navigation or individual tracking
  * @returns Standardized screen name for analytics
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const normalizeScreenName = (screenName: string): string => screenName;
+
+// const normalizeScreenName = (screenName: string): string => screenName;
 
 /**
  * NO-OP: Logs a screen view event (disabled).

@@ -896,8 +896,7 @@ export const useReducedMotion = () => {
 
     // Listener compatibility across RN versions
     const handler = (value: boolean) => setReducedMotion(Boolean(value));
-    const subscription: { remove?: () => void } | undefined = // @ts-ignore - older RN types
-      AccessibilityInfo.addEventListener?.('reduceMotionChanged', handler);
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', handler);
 
     return () => {
       isMounted = false;

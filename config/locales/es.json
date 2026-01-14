@@ -1,0 +1,6 @@
+{
+  "CFBundleDisplayName": "Yeser",
+  "NSCameraUsageDescription": "Se necesita acceso a la cámara para agregar fotos a tus entradas de gratitud.",
+  "NSPhotoLibraryUsageDescription": "Se necesita acceso a la biblioteca de fotos para seleccionar fotos para tus entradas de gratitud.",
+  "NSUserTrackingUsageDescription": "Esto nos permite ofrecer perspectivas de gratitud personalizadas y mejorar tu experiencia."
+}

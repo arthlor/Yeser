@@ -28,14 +28,19 @@ export const PremiumUpsellCard: React.FC<Props> = ({ style }) => {
     <TouchableOpacity activeOpacity={0.95} onPress={handlePress} style={[styles.container, style]}>
       <LinearGradient
         // Dark premium gradient background
-        colors={[theme.colors.primary, '#4A3AFF']}
+        colors={[theme.colors.primary, theme.colors.primaryVariant]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
         <View style={styles.content}>
           <View style={styles.headerRow}>
-            <Icon name="crown" size={28} color="#FFD700" style={styles.icon} />
+            <Icon
+              name="crown"
+              size={28}
+              color={theme.colors.accent || '#FFD700'}
+              style={styles.icon}
+            />
             <Text style={styles.title}>{t('subscription.upsell.title', 'Upgrade to Premium')}</Text>
           </View>
 
@@ -45,13 +50,22 @@ export const PremiumUpsellCard: React.FC<Props> = ({ style }) => {
 
           <View style={styles.featureList}>
             {[
-              t('subscription.upsell.features.unlimited', 'Unlimited daily entries'),
-              t('subscription.upsell.features.past', 'Add entries for past dates'),
-              t('subscription.upsell.features.insights', 'Advanced mood analytics'),
-              t('subscription.upsell.features.export', 'Export data to PDF'),
+              t('subscription.upsell.features.unlimited'),
+              t('subscription.upsell.features.past'),
+              t('subscription.upsell.features.insights'),
+              t('subscription.upsell.features.export'),
+              t('subscription.upsell.features.prompts'),
+              t('subscription.upsell.features.aiCoach'),
+              t('subscription.upsell.features.aiChat'),
+              t('subscription.upsell.features.moodEditing'),
             ].map((feature, index) => (
               <View key={index} style={styles.featureItem}>
-                <Icon name="check-circle" size={16} color="#FFD700" style={styles.checkIcon} />
+                <Icon
+                  name="check-circle"
+                  size={16}
+                  color={theme.colors.accent || '#FFD700'}
+                  style={styles.checkIcon}
+                />
                 <Text style={styles.featureText}>{feature}</Text>
               </View>
             ))}
@@ -59,7 +73,7 @@ export const PremiumUpsellCard: React.FC<Props> = ({ style }) => {
 
           <View style={styles.ctaRow}>
             <View style={styles.arrowContainer}>
-              <Icon name="arrow-right" size={24} color="#FFF" />
+              <Icon name="arrow-right" size={24} color={theme.colors.onPrimary} />
             </View>
           </View>
         </View>
@@ -96,7 +110,7 @@ const createStyles = (theme: AppTheme) =>
     },
     icon: {
       marginRight: theme.spacing.sm,
-      shadowColor: '#000',
+      shadowColor: theme.colors.shadow,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.3,
       shadowRadius: 2,
@@ -104,12 +118,12 @@ const createStyles = (theme: AppTheme) =>
     title: {
       fontSize: 20,
       fontWeight: '800',
-      color: '#FFFFFF',
+      color: theme.colors.onPrimary,
       letterSpacing: 0.5,
     },
     subtitle: {
       fontSize: 14,
-      color: 'rgba(255, 255, 255, 0.9)',
+      color: theme.colors.onPrimary + 'E6', // 0.9 opacity
       marginBottom: theme.spacing.md,
       fontWeight: '600',
     },
@@ -127,7 +141,7 @@ const createStyles = (theme: AppTheme) =>
     },
     featureText: {
       fontSize: 14,
-      color: 'rgba(255, 255, 255, 0.95)',
+      color: theme.colors.onPrimary + 'F2', // 0.95 opacity
       fontWeight: '500',
       lineHeight: 20,
     },
@@ -141,7 +155,7 @@ const createStyles = (theme: AppTheme) =>
       width: 44,
       height: 44,
       borderRadius: 22,
-      backgroundColor: 'rgba(255,255,255,0.2)',
+      backgroundColor: theme.colors.onPrimary + '33', // 0.2 opacity
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -153,7 +167,7 @@ const createStyles = (theme: AppTheme) =>
       width: 140,
       height: 140,
       borderRadius: 70,
-      backgroundColor: 'rgba(255,255,255,0.1)',
+      backgroundColor: theme.colors.onPrimary + '1A', // 0.1 opacity
       zIndex: 1,
     },
     circle2: {
@@ -163,7 +177,7 @@ const createStyles = (theme: AppTheme) =>
       width: 180,
       height: 180,
       borderRadius: 90,
-      backgroundColor: 'rgba(255,255,255,0.05)',
+      backgroundColor: theme.colors.onPrimary + '0D', // 0.05 opacity
       zIndex: 1,
     },
   });

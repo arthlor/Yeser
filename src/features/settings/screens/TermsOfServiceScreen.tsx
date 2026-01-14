@@ -86,7 +86,7 @@ const TermsOfServiceScreen: React.FC = () => {
     <ScreenLayout edges={['top']} edgeToEdge={true}>
       <ScreenHeader
         showBackButton
-        title={t('settings.terms.title') || 'Terms of Service'}
+        title={t('settings.terms.title')}
         onBackPress={() => navigation.goBack()}
         variant="default"
       />
@@ -97,14 +97,14 @@ const TermsOfServiceScreen: React.FC = () => {
             name="document-text-outline"
             size={40}
             color={theme.colors.primary}
-            accessibilityLabel={t('settings.terms.iconLabel') || 'Terms icon'}
+            accessibilityLabel={t('settings.terms.iconLabel')}
           />
           <Text
             style={styles.title}
             accessibilityRole="header"
-            accessibilityLabel={t('settings.terms.title') || 'Terms of Service'}
+            accessibilityLabel={t('settings.terms.title')}
           >
-            {t('settings.terms.title') || 'Terms of Service'}
+            {t('settings.terms.title')}
           </Text>
           <Text
             style={styles.lastUpdated}

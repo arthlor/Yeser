@@ -100,40 +100,6 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
               </View>
             </View>
           </View>
-
-          <View style={styles.divider} />
-
-          {/* Status */}
-          <View style={styles.statRow}>
-            <View
-              style={[
-                styles.statIconContainer,
-                {
-                  backgroundColor: stats.isOnTrack
-                    ? theme.colors.successContainer
-                    : theme.colors.warningContainer,
-                },
-              ]}
-            >
-              <Icon
-                name={stats.isOnTrack ? 'check-circle' : 'target'}
-                size={18}
-                color={stats.isOnTrack ? theme.colors.success : theme.colors.warning}
-              />
-            </View>
-            <View style={styles.statTextContainer}>
-              <Text style={styles.statTitle}>
-                {stats.isOnTrack
-                  ? t('pastEntries.header.cta.onTrack')
-                  : t('pastEntries.header.cta.focus')}
-              </Text>
-              <Text style={styles.statValue}>
-                {stats.remaining > 0
-                  ? t('pastEntries.header.cta.remaining', { count: stats.remaining })
-                  : t('pastEntries.header.cta.complete')}
-              </Text>
-            </View>
-          </View>
         </View>
       )}
     </View>

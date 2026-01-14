@@ -14,6 +14,7 @@ import StatsRow from '@/features/home/components/StatsRow';
 import HomeGratitudeListItem from '@/features/home/components/HomeGratitudeListItem';
 import FloatingAddButton from '@/features/home/components/FloatingAddButton';
 import ThrowbackTeaser from '@/features/throwback/components/ThrowbackTeaser';
+import EnhancedThrowbackModal from '@/features/throwback/components/ThrowbackModal';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
 import { useSubscription } from '@/hooks/useSubscription';
 import { ProBadge } from '@/features/subscription/components/ProBadge';
@@ -98,6 +99,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
   const [refreshing, setRefreshing] = useState(false);
   const [streakDetailsVisible, setStreakDetailsVisible] = useState(false);
+  const [throwbackModalVisible, setThrowbackModalVisible] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // **MINIMAL ENTRANCE**: Simple screen entrance animation
@@ -441,6 +443,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
                   isLoading={throwbackLoading}
                   error={translatedThrowbackError}
                   onRefresh={handleThrowbackRefresh}
+                  onPress={() => setThrowbackModalVisible(true)}
                 />
               </View>
               <View style={styles.footerSpacer} />
@@ -477,6 +480,12 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
           }}
         />
       </Modal>
+
+      {/* Throwback Modal */}
+      <EnhancedThrowbackModal
+        isVisible={throwbackModalVisible}
+        onClose={() => setThrowbackModalVisible(false)}
+      />
     </>
   );
 });

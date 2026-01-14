@@ -136,7 +136,8 @@ const EnhancedHelpScreen: React.FC = () => {
     // Log analytics event
     analyticsService.logEvent('contact_support_clicked');
 
-    Linking.openURL('mailto:yeserapp@gmail.com?subject=Yeser Destek Talebi');
+    const subject = t('settings.help.contactEmailSubject');
+    Linking.openURL(`mailto:yeserapp@gmail.com?subject=${encodeURIComponent(subject)}`);
   };
 
   const styles = createStyles(theme);

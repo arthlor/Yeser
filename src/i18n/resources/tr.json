@@ -1,4 +1,72 @@
 {
+  "ai": {
+    "mood": {
+      "analyzing": "✨ Analiz ediliyor...",
+      "suggests": "✨ AI öneriyor:"
+    },
+    "usage": {
+      "remaining": "✨ Bugün {{remaining}}/25 AI kullanımı kaldı",
+      "indicator": "✨ {{used}}/25 kullanıldı ({{remaining}} kaldı)",
+      "exhausted": "Günlük limit doldu. Yarın yenilenir!",
+      "resets_in": "Günlük limit doldu. {{time}} sonra yenilenir",
+      "limit_reached": "Günlük AI Limiti Doldu",
+      "limit_desc": "Bugünkü tüm AI kullanım hakkını doldurdun."
+    },
+    "enhance": {
+      "title": "✨ Geliştir",
+      "button": "AI ile Geliştir",
+      "loading": "Geliştiriliyor...",
+      "styles": {
+        "poetic": "Şiirsel",
+        "detailed": "Detaylı",
+        "mindful": "Bilinçli"
+      },
+      "success": "Yardım alındı!",
+      "apply": "Uygula",
+      "discard": "İptal",
+      "failed": "Giriş geliştirilemedi. Lütfen tekrar deneyin."
+    },
+    "coach": {
+      "title": "Neye minnettar olabilirim?",
+      "generatePrompt": "Kişisel Öneri Al",
+      "loading": "Düşünüyor...",
+      "focusAreas": {
+        "relationships": "İlişkiler",
+        "growth": "Gelişim",
+        "nature": "Doğa",
+        "health": "Sağlık",
+        "achievements": "Başarılar",
+        "general": "Genel"
+      },
+      "tip": "💡 İpucu"
+    },
+
+    "chat": {
+      "title": "💬 Yeşer AI",
+      "placeholder": "Düşüncelerini paylaş...",
+      "send": "Gönder",
+      "greeting": "Merhaba! Ben Yeşer, minnet yolculuğunda yoldaşınım. Seninle bugün neler keşfedebiliriz?",
+      "loading": "Düşünüyor...",
+      "clearHistory": "Sohbeti Temizle",
+      "suggests": "✨ Öneriler",
+      "suggestions": {
+        "gratitude": "Neden minnet hissetmiyorum?",
+        "find": "Bugün minnet duyacak bir şey bul",
+        "pattern": "Modumu analiz et",
+        "reflect": "Bana bir düşünme sorusu sor"
+      },
+      "context": {
+        "streak": "🔥 {{count}} günlük seridesin! Nasıl hissediyorsun?",
+        "missing": "Dün seni göremedim. Aklında neler var?",
+        "default": "Selam! Ben Yeşer, minnet yolculuğunda yanındayım. Bugün neleri fark edebiliriz?"
+      }
+    },
+    "errors": {
+      "proRequired": "PRO abonelik gerekli",
+      "limitReached": "Günlük AI limiti doldu",
+      "failed": "Bir şeyler ters gitti. Lütfen tekrar dene."
+    }
+  },
   "common": {
     "ok": "Tamam",
     "cancel": "İptal",
@@ -11,7 +79,8 @@
     "emptyTitle": "Henüz içerik yok",
     "emptySubtitle": "İçerik eklendiğinde burada görünecek",
     "errorTitle": "Bir hata oluştu",
-    "errorSubtitle": "Lütfen tekrar deneyin"
+    "errorSubtitle": "Lütfen tekrar deneyin",
+    "error": "Bir hata oluştu"
   },
   "home": {
     "tab": {
@@ -335,7 +404,7 @@
       }
     },
     "account": {
-      "signOut": "Hesaptan Çık",
+      "signOut": "Çıkış Yap",
       "signOutError": "Çıkış işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.",
       "delete": {
         "button": "Hesabımı Sil",
@@ -616,6 +685,9 @@
     }
   },
   "shared": {
+    "close": "Kapat",
+    "loading": "Yükleniyor...",
+    "error": "Bir hata oluştu",
     "ui": {
       "badges": {
         "new": "YENİ",
@@ -816,159 +888,6 @@
       }
     }
   },
-  "mood": {
-    "analysis": {
-      "title": "Duygu Analizi",
-      "subtitle": "Minnet pratiğinin duygusal dünyanı nasıl şekillendirdiğini keşfet.",
-      "loading": "Duygu içgörüleri hazırlanıyor…",
-      "actions": {
-        "refresh": "İçgörüleri yenile"
-      },
-      "range": {
-        "7d": "7 Gün",
-        "30d": "30 Gün",
-        "90d": "90 Gün",
-        "365d": "1 Yıl"
-      },
-      "empty": {
-        "title": "Henüz yeterli duygu verisi yok",
-        "message": "Minnet ifadelerine duygu ekleyerek sana özel analizleri açabilirsin.",
-        "cta": "Bir duygu ekle"
-      },
-      "overview": {
-        "entries": "Analiz edilen kayıt",
-        "statements": "İfade",
-        "dominantMood": "Baskın duygu",
-        "balanceScore": "Denge puanı",
-        "statementsPerEntry": "Kayıt başına ortalama {{value}} ifade",
-        "generatedAt": "{{date}} tarihinde güncellendi",
-        "noDominantMood": "Tek baskın duygu yok"
-      },
-      "sections": {
-        "streak": {
-          "title": "Tutarlılık Durumu",
-          "subtitle": "Serin, son dönemdeki duygu dağılımını anlamlandırır."
-        },
-        "distribution": {
-          "title": "Duygu Dağılımı",
-          "subtitle": "Her duygunun görülme sıklığı."
-        },
-        "trend": {
-          "title": "Duygu Değişimi",
-          "subtitle": "Zaman içindeki baskın duygular."
-        },
-        "highlighted": {
-          "title": "Öne Çıkan Kayıtlar",
-          "subtitle": "Duygusal olarak parlayan ifadeler."
-        },
-        "narrative": {
-          "title": "Yorum",
-          "subtitle": "Son kayıtlarına dair nazik bir yansıma."
-        }
-      },
-      "streak": {
-        "loading": "Seri bilgisi alınıyor…",
-        "current": "Güncel seri",
-        "longest": "En uzun seri",
-        "lastEntry": "Son kayıt",
-        "noLastEntry": "Henüz kayıt yok",
-        "empty": "Seri bilgisi yüklenemedi.",
-        "hint": "Serini canlı tutmak, duygu karışımının nasıl değiştiğini görmene yardımcı olur."
-      },
-      "moodStreak": {
-        "title": "Duygu Serileri 🔥",
-        "subtitle": "Her baskın duygu için en uzun ardışık günler.",
-        "currentStreak": "{{count}} günlük seri",
-        "currentStreakPlural": "{{count}} günlük seri",
-        "noStreak": "Henüz seri yok",
-        "empty": "Duygu serilerini görmek için daha fazla kayıt ekle."
-      },
-      "comparison": {
-        "title": "Haftalık Karşılaştırma 📊",
-        "subtitle": "Duygu dengen nasıl değişiyor?",
-        "improved": "%{{value}} daha dengeli",
-        "declined": "%{{value}} daha az dengeli",
-        "stable": "Duygu dengesi sabit",
-        "noData": "Trendleri görmek için daha fazla kayıt ekle.",
-        "currentPeriod": "Bu dönem",
-        "previousPeriod": "Önceki dönem",
-        "change": "Değişim"
-      },
-      "correlation": {
-        "title": "İçgörüler 💡",
-        "subtitle": "Minnettarlık pratiğinde keşfettiğimiz kalıplar.",
-        "empty": "İçgörüleri açmak için daha fazla kayıt ekle.",
-        "bestDay": "En mutlu günün {{mood}} ruh hali ile {{day}}",
-        "consistentMood": "Son zamanlarda tutarlı bir şekilde {{mood}} hissediyorsun",
-        "varietyHigh": "Harika duygu çeşitliliği! {{count}} farklı duygu kullandın",
-        "weekendBoost": "Hafta sonları ruh halin yükseliyor",
-        "weekdayStrong": "Hafta içi bile pozitif kalıyorsun",
-        "streakPower": "Uzun seriler daha fazla {{mood}} ruh hali getiriyor",
-        "morningPerson": "Sabah kayıtların en pozitif olanlar",
-        "eveningReflector": "Akşam yansımaları minnettarlığı ortaya çıkarıyor"
-      },
-      "distribution": {
-        "empty": "Bir dağılım hesaplayabilmek için daha fazla duygu verisi gerekiyor."
-      },
-      "trend": {
-        "empty": "Zaman içindeki değişimi görmek için daha fazla duygu ekle.",
-        "entries": "{{count}} kayıt",
-        "mixed": "Karışık duygular"
-      },
-      "highlighted": {
-        "empty": "Öne çıkan ifadeleri henüz belirleyemedik.",
-        "meta": "{{date}} tarihinde kaydedildi"
-      },
-      "narrative": {
-        "logical": "Mantıksal analiz",
-        "emotional": "Duygusal okuma",
-        "suggestions": "Önerilen adımlar",
-        "logicalStates": {
-          "empty": "Daha fazla duygu ekleyerek derin içgörüler açabilirsin.",
-          "imbalanced": "Son dönemde tek bir duygu öne çıkıyor.",
-          "balanced": "Minnet duyguların dengeli bir karışım sunuyor.",
-          "neutral": "Farklı duyguları sağlıklı şekilde harmanlıyorsun."
-        },
-        "emotionalStates": {
-          "none": "Duygusal bir eğilim görebilmek için birkaç duygu etiketi daha gerekiyor.",
-          "dominant": "Son kayıtlar çoğunlukla {{mood}} hissi taşıyor."
-        },
-        "suggestionTexts": {
-          "addMoods": "Bugünkü minnettarlığına bir duygu ekleyerek içgörüyü derinleştir.",
-          "balance": "Yarın farklı bir duygu üzerine yazıp dengeyi yakalayabilirsin.",
-          "keepStreak": "Serini canlı tut; tutarlılık duygu hikayeni zenginleştirir.",
-          "writeMore": "Bu hafta birkaç kayıt daha eklemek içgörüyü keskinleştirecek.",
-          "celebrate": "Harika gidiyorsun! Önemli anları kutlamaya devam et.",
-          "explore": "{{mood}} hissini daha sık yaşatan şeyleri keşfetmeyi dene.",
-          "variety": "Farklı duyguları karıştırmak duygusal farkındalığını zenginleştirir.",
-          "reflect": "Mevcut duygu kalıbını neyin yönlendirdiğini düşün.",
-          "milestone": "Harika ilerleme! Duygularla {{count}}'den fazla kayıt ekledin."
-        }
-      },
-      "balance": {
-        "imbalanced": "Daha fazla çeşit gerekli",
-        "neutral": "Dengeli karışım",
-        "balanced": "Sağlıklı denge"
-      },
-      "moods": {
-        "😊": "Neşeli",
-        "🙏": "Minnet dolu",
-        "🌟": "İlhamlı",
-        "💪": "Güçlü",
-        "🧘": "Sakin",
-        "🥰": "Sevgi dolu",
-        "😌": "Huzurlu",
-        "🌿": "Tazelenmiş",
-        "🤔": "Düşünceli",
-        "🌅": "Umutlu",
-        "🎯": "Odaklı",
-        "🚀": "Motiveli"
-      },
-      "date": {
-        "unknown": "Bilinmeyen tarih"
-      }
-    }
-  },
   "gratitude": {
     "hero": {
       "greeting": {
@@ -1113,12 +1032,13 @@
       "cardSubtitle": "Geçmiş minnettarlıklarından",
       "newA11y": "Yeni anı getir",
       "newHint": "Başka bir geçmiş minnettarlık anısı yükler",
-      "fallbackStatement": "Geçmişten bir minnet ifaden var."
+      "fallbackStatement": "Geçmişten bir minnet ifaden var.",
+      "subtitle": "Güzel anılarına dönüp bak."
     },
     "modal": {
       "errorTitle": "Bir Hata Oluştu",
       "unexpected": "Beklenmeyen bir hata oluştu",
-      "shardTitle": "✨ Bir Anı Parçacığı ✨",
+      "shardTitle": "Bir Anı Parçacığı",
       "another": "Başka Anı",
       "ok": "Anladım!",
       "empty": "Görünecek bir anı bulunamadı."
@@ -1281,6 +1201,7 @@
     }
   },
   "onboarding": {
+    "backHint": "Önceki adıma geri dön",
     "welcome": {
       "title": "Hoş Geldin! 🌱",
       "subtitle": "Minnettarlığa başlayalım.",
@@ -1382,7 +1303,7 @@
     "sections": {
       "dataController": {
         "title": "Veri Sorumlusu",
-        "content": "Yeşer uygulaması olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında veri sorumlusu sıfatıyla kişisel verilerinizi işlemekteyiz."
+        "content": "Yeser ekibi olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) uyarınca kişisel verilerinizin güvenliğine ve gizliliğine en üst düzeyde önem veriyoruz."
       },
       "collectedData": {
         "title": "Toplanan Veriler",
@@ -1481,6 +1402,9 @@
   },
   "termsOfService": {
     "lastUpdated": "Son Güncelleme: 12 Haziran 2025",
+    "iconLabel": "Şartlar simgesi",
+    "contactEmailLabel": "E-posta ile iletişime geç",
+    "contactEmailHint": "Şartlar hakkında e-posta gönder",
     "sections": {
       "introduction": {
         "title": "Giriş ve Kabul",
@@ -1601,7 +1525,10 @@
         "past": "Geçmiş tarihlere minnet ekleme",
         "insights": "Gelişmiş duygu analizi",
         "export": "Minnetlerini PDF olarak dışa aktar",
-        "prompts": "Çeşitli ilham soruları"
+        "prompts": "Çeşitli ilham soruları",
+        "aiCoach": "AI Koçu ve Kişiselleştirilmiş Rehberlik",
+        "aiChat": "Minnettarlık Sohbeti ve Arkadaşı",
+        "moodEditing": "Geçmiş kayıtların duygu durumunu düzenle"
       }
     },
     "paywall": {
@@ -1618,6 +1545,76 @@
     "purchase": {
       "success": "Premium'a hoş geldin!",
       "error": "Satın alma başarısız. Lütfen tekrar dene."
+    }
+  },
+  "mood": {
+    "analysis": {
+      "label": "İÇGÖRÜLER",
+      "title": "Duygu Analizi",
+      "subtitle": "Minnet pratiğinin duygusal dünyanı nasıl şekillendirdiğini keşfet.",
+      "range": {
+        "7d": "7 Gün",
+        "15d": "15 Gün",
+        "30d": "30 Gün"
+      },
+      "overview": {
+        "entries": "Analiz edilen kayıt",
+        "statements": "İfade",
+        "dominantMood": "Baskın duygu",
+        "balanceScore": "Denge puanı",
+        "noDominantMood": "Yok",
+        "statementsPerEntry": "Kayıt başına ortalama {{value}} ifade",
+        "generatedAt": "{{date}} tarihinde güncellendi",
+        "entriesExplanation": "Bu özet, son {{days}} gündeki {{count}} kayda dayalı duygusal yönelimlerini gösterir."
+      },
+      "balance": {
+        "imbalanced": "Dengesiz",
+        "neutral": "Nötr",
+        "balanced": "Dengeli"
+      },
+      "sections": {
+        "narrative": {
+          "title": "AI İçgörüleri",
+          "subtitle": "Duygusal durumunu anla"
+        }
+      },
+      "ai": {
+        "remaining": "Bugünlük {{count}} AI hakkın kaldı"
+      },
+      "banner": {
+        "title": "AI İçgörülerini Aç",
+        "subtitle": "Duygu durumun hakkında kişiselleştirilmiş analiz al.",
+        "button": "Duygularımı Analiz Et"
+      },
+      "narrative": {
+        "loading": "Minnet örüntülerin analiz ediliyor...",
+        "logical": "Mantıksal Çıkarım",
+        "emotional": "Duygusal Okuma",
+        "suggestions": "Önerilen Adımlar",
+        "empty": "Daha fazla kayıt ekleyerek içgörüleri aç."
+      },
+      "actions": {
+        "refresh": "Yenile"
+      },
+      "date": {
+        "unknown": "Bilinmiyor"
+      },
+      "empty": {
+        "title": "Henüz veri yok",
+        "message": "Analiz için biraz minnet kaydı girmelisin.",
+        "cta": "İlk Kaydı Gir"
+      },
+      "loading": "Yükleniyor...",
+      "moods": {
+        "🤩": "Heyecanlı",
+        "💪": "Gururlu",
+        "😌": "Huzurlu",
+        "🥰": "Sevilmiş",
+        "😊": "Mutlu",
+        "🤔": "Düşünceli",
+        "🥲": "Duygulanmış",
+        "🙏": "Minnettar"
+      }
     }
   }
 }

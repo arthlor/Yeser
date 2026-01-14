@@ -32,6 +32,6 @@ export const queryKeys = {
   currentPrompt: (userId?: string) => [...queryKeys.all, 'currentPrompt', userId] as const,
 
   // Mood analytics queries
-  moodAnalytics: (userId?: string, range: MoodAnalyticsRange = '90d') =>
+  moodAnalytics: (userId?: string, range: MoodAnalyticsRange = '30d') =>
     [...queryKeys.all, 'moodAnalytics', userId, range] as const,
 } as const;

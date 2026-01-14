@@ -17,8 +17,12 @@ import type { MoodEmoji } from '@/types/mood.types';
 import { MOOD_EMOJIS } from '@/types/mood.types';
 import { useTranslation } from 'react-i18next';
 import { Animated, Easing, Modal } from 'react-native';
+import { useMoodSuggestion } from '@/features/mood/hooks/useMoodSuggestion';
+import { AIMoodSuggestions } from './AIMoodSuggestions';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useLanguageStore } from '@/store/languageStore';
 
-interface StatementEditCardProps extends InteractiveStatementCardProps {
+interface StatementEditCardProps extends Omit<InteractiveStatementCardProps, 'onSave'> {
   variant?: 'primary' | 'secondary' | 'minimal';
   showQuotes?: boolean;
   numberOfLines?: number;
@@ -50,6 +54,8 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
   const { theme } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { isPro } = useSubscription();
+  const language = useLanguageStore((state) => state.language);
 
   const [localStatement, setLocalStatement] = useState(statement);
   const [localMood, setLocalMood] = useState<MoodEmoji | null>(moodEmoji ?? null);
@@ -58,6 +64,16 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
 
   const emojiAnim = useRef(new Animated.Value(0)).current;
   const textInputRef = useRef<TextInput>(null);
+
+  // AI Mood Suggestion hook (only for PRO users)
+  const {
+    suggestedMoods,
+    primaryMood: suggestedPrimaryMood,
+    remaining: aiRemaining,
+    isLoading: aiLoading,
+    suggestMood,
+    clearSuggestions,
+  } = useMoodSuggestion({ language: language === 'tr' ? 'tr' : 'en' });
 
   useEffect(() => {
     setLocalStatement(statement);
@@ -74,7 +90,7 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
       return;
     }
     try {
-      // @ts-ignore - backward compatibility for onSave that doesn't accept mood yet
+      // backward compatibility for onSave that doesn't accept mood yet
       await onSave?.(localStatement.trim(), localMood);
     } catch {
       // Error handled by parent
@@ -155,7 +171,13 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
           ref={textInputRef}
           style={styles.textInput}
           value={localStatement}
-          onChangeText={setLocalStatement}
+          onChangeText={(text) => {
+            setLocalStatement(text);
+            // Trigger AI mood suggestion for PRO users
+            if (isPro) {
+              suggestMood(text);
+            }
+          }}
           multiline
           maxLength={maxLength}
           placeholder={t('shared.statement.edit.placeholder')}
@@ -164,6 +186,20 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
           selectionColor={theme.colors.primary}
           textAlignVertical="top"
         />
+
+        {/* AI Mood Suggestions (PRO only) */}
+        {isPro && (suggestedMoods.length > 0 || aiLoading) && (
+          <AIMoodSuggestions
+            suggestedMoods={suggestedMoods}
+            primaryMood={suggestedPrimaryMood}
+            remaining={aiRemaining}
+            isLoading={aiLoading}
+            onSelectMood={(mood) => {
+              setLocalMood(mood);
+              clearSuggestions();
+            }}
+          />
+        )}
 
         {/* Character Count */}
         <Text style={styles.charCount}>

@@ -1,5 +1,9 @@
 import { rawMoodAnalyticsSchema } from '@/schemas/moodAnalyticsSchema';
-import type { MoodAnalyticsRange, MoodAnalyticsResponse } from '@/types/moodAnalytics.types';
+import type {
+  AIInsightResponse,
+  MoodAnalyticsRange,
+  MoodAnalyticsResponse,
+} from '@/types/moodAnalytics.types';
 import { MOOD_EMOJIS } from '@/types/mood.types';
 import { handleAPIError } from '@/utils/apiHelpers';
 import { logger } from '@/utils/debugConfig';
@@ -8,7 +12,32 @@ import { supabase } from '@/utils/supabaseClient';
 import type { RawMoodAnalytics } from '@/schemas/moodAnalyticsSchema';
 import type { MoodEmoji } from '@/types/mood.types';
 
-const DEFAULT_RANGE: MoodAnalyticsRange = '90d';
+const DEFAULT_RANGE: MoodAnalyticsRange = '30d';
+
+export const analyzeMoodInsights = async (
+  range: MoodAnalyticsRange = '7d',
+  language: 'en' | 'tr' | 'es' = 'en'
+): Promise<AIInsightResponse> => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+
+  if (!token) {
+    throw new Error('No active session');
+  }
+
+  const { data, error } = await supabase.functions.invoke('analyze-mood-insights', {
+    body: { range, language },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (error) {
+    throw handleAPIError(new Error(error.message), 'analyze mood insights');
+  }
+
+  return data as AIInsightResponse;
+};
 
 const buildEmptyMoodCounts = (): Record<MoodEmoji, number> => {
   return MOOD_EMOJIS.reduce<Record<MoodEmoji, number>>(

@@ -36,7 +36,7 @@ export const ProBadge: React.FC<ProBadgeProps> = ({ size = 'small', style }) => 
   );
 };
 
-const createStyles = (_theme: AppTheme) =>
+const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
       // Container just to hold position
@@ -57,7 +57,7 @@ const createStyles = (_theme: AppTheme) =>
       paddingHorizontal: 8,
     },
     text: {
-      color: '#000000', // Black text on Gold usually looks best/premium
+      color: theme.colors.shadow, // Black text on Gold usually looks best/premium
       fontWeight: '900',
       letterSpacing: 0.5,
     },

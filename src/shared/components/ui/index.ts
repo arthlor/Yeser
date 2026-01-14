@@ -42,3 +42,7 @@ export type {
 } from './ThemedCard';
 
 export type { StatementCardProps } from './StatementCard';
+
+// AI Features (PRO)
+export { default as AICoachPrompt } from './AICoachPrompt';
+export { default as AIChatModal } from './AIChatModal';

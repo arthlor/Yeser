@@ -41,6 +41,16 @@ export const useCoordinatedAnimations = () => {
     state.currentAnimation = null;
   }, []);
 
+  // **SAFE RESET**: Force values to visible state
+  const safeReset = useCallback(() => {
+    stopCurrentAnimation();
+    fadeAnim.setValue(1);
+    scaleAnim.setValue(1);
+    opacityAnim.setValue(1);
+    layoutOpacityAnim.setValue(1);
+    heightAnim.setValue(0);
+  }, [stopCurrentAnimation, fadeAnim, scaleAnim, opacityAnim, layoutOpacityAnim, heightAnim]);
+
   // **MINIMAL ENTRANCE**: Subtle fade-in only
   const animateEntrance = useCallback(
     (config: MinimalAnimationConfig = {}) => {
@@ -213,6 +223,7 @@ export const useCoordinatedAnimations = () => {
       // Control
       stopAllAnimations: stopCurrentAnimation,
       isAnimating: () => animationState.current.isRunning,
+      safeReset,
 
       // **DEPRECATED**: Simplified aliases for backward compatibility
       animateSettingsExpansion: animateLayoutTransition, // Keep for existing code
@@ -239,6 +250,7 @@ export const useCoordinatedAnimations = () => {
       pressTransform,
       entranceTransform,
       stopCurrentAnimation,
+      safeReset,
     ]
   );
 };

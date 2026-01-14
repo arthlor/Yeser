@@ -95,6 +95,7 @@ module.exports = {
   locales: {
     en: './config/locales/en.json',
     tr: './config/locales/tr.json',
+    es: './config/locales/es.json',
   },
   ios: {
     bundleIdentifier: appId,
@@ -107,7 +108,7 @@ module.exports = {
     },
 
     infoPlist: {
-      CFBundleLocalizations: ['en', 'tr'],
+      CFBundleLocalizations: ['en', 'tr', 'es'],
       NSUserTrackingUsageDescription:
         'This allows us to provide personalized gratitude insights and improve your experience.',
       CFBundleURLTypes: [

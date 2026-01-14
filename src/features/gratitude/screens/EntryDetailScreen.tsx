@@ -76,8 +76,7 @@ const EntryDetailStatementItem = React.memo<{
       if (serverMood !== null && serverMood !== undefined && serverMood !== moodEmoji) {
         void setMoodEmoji(serverMood);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [serverMood]);
+    }, [serverMood, moodEmoji, setMoodEmoji]);
 
     const handleChangeMood = (mood: MoodEmoji | null) => {
       setMoodEmoji(mood);
@@ -280,9 +279,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               <Text style={styles.headerTitle}>
                 {isToday ? t('home.headline.greeting.morning', 'Your Day') : monthYear}
               </Text>
-              <Text style={styles.headerSubtitle}>
-                {t('gratitude.detail.subtitle', 'Reflecting on your moments of joy and gratitude.')}
-              </Text>
+              <Text style={styles.headerSubtitle}>{t('gratitude.detail.subtitle')}</Text>
             </View>
           </View>
 
@@ -317,9 +314,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   size={32}
                   color={theme.colors.onSurfaceVariant + '40'}
                 />
-                <Text style={styles.emptyText}>
-                  {t('gratitude.empty.past', 'No entries found for this day.')}
-                </Text>
+                <Text style={styles.emptyText}>{t('gratitude.empty.past')}</Text>
               </View>
             )}
           </View>

@@ -430,7 +430,7 @@
       "contactEmailLabel": "Destek ekibiyle iletişim",
       "contactEmailHint": "Destek ekibiyle iletişim kurmak için e-posta uygulamasını açar",
       "contactCTA": "Destek Ekibiyle İletişim",
-      "appVersion": "Yeşer v1.2.1",
+      "appVersion": "Yeşer v1.2.2",
       "accessibility": {
         "expanded": "{{question}} açıldı. {{answer}}",
         "collapsed": "{{question}} kapandı.",

@@ -430,7 +430,7 @@
       "contactEmailLabel": "Email support",
       "contactEmailHint": "Opens email app to contact support",
       "contactCTA": "Contact Support",
-      "appVersion": "Yeser v1.2.1",
+      "appVersion": "Yeser v1.2.2",
       "accessibility": {
         "expanded": "{{question}} expanded. {{answer}}",
         "collapsed": "{{question}} collapsed.",

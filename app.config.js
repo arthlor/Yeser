@@ -100,6 +100,7 @@ module.exports = {
   ios: {
     bundleIdentifier: appId,
     supportsTablet: true,
+    usesAppleSignIn: true,
     config: {
       usesNonExemptEncryption: false,
       googleSignIn: {

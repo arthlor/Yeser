@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -55,6 +55,14 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const styles = createStyles(theme);
   const { t } = useTranslation();
   const { isPro, checkGate } = useSubscription();
+  const isDarkTheme = theme.name === 'dark';
+  const premiumGradientColors = useMemo<[string, string]>(
+    () => (isDarkTheme ? ['#4D3500', '#6B4A00'] : ['#FFF4CC', '#FFE29A']),
+    [isDarkTheme]
+  );
+  const premiumTitleColor = isDarkTheme ? '#FFF3D1' : '#2F2100';
+  const premiumSubtitleColor = isDarkTheme ? '#F4DEAF' : '#6A4A00';
+  const premiumIconColor = isDarkTheme ? '#FFE29A' : '#7A5300';
 
   // **COORDINATED ANIMATION**: Add minimal entrance animation for consistency
   const animations = useCoordinatedAnimations();
@@ -326,26 +334,31 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={navigateToCustomerCenter}
-            style={[styles.section, { marginBottom: theme.spacing.md }]}
+            style={[styles.section, styles.premiumSection]}
           >
             <LinearGradient
-              colors={['#FCC201', '#F5A623']} // Gold gradient like ProBadge
+              colors={premiumGradientColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.premiumCard}
             >
               <View style={styles.premiumIconContainer}>
-                <Icon name="crown" size={24} color={theme.colors.onPrimary} />
+                <Icon name="crown" size={20} color={premiumIconColor} />
               </View>
               <View style={styles.premiumTextContainer}>
-                <Text style={styles.premiumTitle}>
+                <Text style={[styles.premiumTitle, { color: premiumTitleColor }]}>
                   {t('settings.premium.title', 'Premium Active')}
                 </Text>
-                <Text style={styles.premiumSubtitle}>
+                <Text style={[styles.premiumSubtitle, { color: premiumSubtitleColor }]}>
                   {t('settings.premium.subtitle', 'You have access to all features')}
                 </Text>
               </View>
-              <Icon name="chevron-right" size={24} color={theme.colors.onPrimary} />
+              <Icon
+                name="chevron-right"
+                size={22}
+                color={premiumIconColor}
+                style={styles.premiumChevron}
+              />
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -695,39 +708,51 @@ const createStyles = (theme: AppTheme) =>
     badgeMargin: {
       // Using gap in titleRow for consistent spacing
     },
+    premiumSection: {
+      marginBottom: theme.spacing.md,
+      marginHorizontal: theme.spacing.md,
+    },
     premiumCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: theme.spacing.md,
+      minHeight: 82,
+      paddingHorizontal: theme.spacing.md + 2,
+      paddingVertical: theme.spacing.md,
       borderRadius: theme.borderRadius.lg,
-      // No border for the gradient look
-      elevation: 2,
-      shadowColor: theme.colors.secondary,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '55',
+      shadowColor: theme.colors.scrim,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.18,
+      shadowRadius: 8,
+      elevation: 3,
     },
     premiumIconContainer: {
-      backgroundColor: theme.colors.onPrimary + '33',
+      backgroundColor: theme.colors.surface + '2E',
       borderRadius: theme.borderRadius.full,
-      padding: 8,
-      marginRight: theme.spacing.md,
+      width: 40,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: theme.spacing.sm,
     },
     premiumTextContainer: {
       flex: 1,
     },
     premiumTitle: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onPrimary,
-      fontWeight: 'bold',
+      ...theme.typography.headlineSmall,
+      fontSize: 17,
+      lineHeight: 22,
+      fontWeight: '700',
       marginBottom: 2,
-      textShadowColor: theme.colors.scrim,
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 2,
     },
     premiumSubtitle: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onPrimary + 'E6',
+      ...theme.typography.bodyMedium,
+      fontWeight: '500',
+      lineHeight: 19,
+    },
+    premiumChevron: {
+      marginLeft: theme.spacing.sm,
     },
   });
 

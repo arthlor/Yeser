@@ -1,36 +1,33 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { useAssets } from 'expo-asset';
+import { MotiView } from 'moti';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Animated, Dimensions, Platform, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Image, Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import ThemedButton from '@/shared/components/ui/ThemedButton';
-import ThemedCard from '@/shared/components/ui/ThemedCard';
-import ThemedInput from '@/shared/components/ui/ThemedInput';
 import ScreenLayout from '@/shared/components/layout/ScreenLayout';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useToast } from '@/providers/ToastProvider';
-import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
-import { getPrimaryShadow } from '@/themes/utils';
-import { magicLinkSchema } from '@/schemas/authSchemas';
-// Analytics disabled
 import { logger } from '@/utils/debugConfig';
 import {
   useAppleAuthState,
   useAppleOAuth,
-  useAuthActions,
   useCoreAuth,
   useGoogleAuthState,
   useGoogleOAuth,
-  useMagicLink,
-  useMagicLinkState,
 } from '@/features/auth';
 import { AppTheme } from '@/themes/types';
+import { alpha, blend } from '@/themes/utils';
 import { AuthStackParamList } from '@/types/navigation';
 import { supabaseService } from '@/utils/supabaseClient';
+import LoginBackgroundVideo from '@/assets/videos/login-background.mp4';
+import AppIcon from '@/assets/assets/icon.png';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -41,27 +38,68 @@ interface Props {
 }
 
 /**
- * 🌟 POLISHED EDGE-TO-EDGE LOGIN SCREEN
- * Clean, spacious authentication experience with proper text sizing and layout
- *
- * **REFACTORED**: Now uses unified modern auth hooks for consistent state management
- *
- * **SIMPLIFIED ANIMATION SYSTEM**: Using minimal, non-intrusive animations
- * with 4 essential values: fadeAnim, scaleAnim, opacityAnim, heightAnim
- *
- * **TOAST INTEGRATION**: Auth errors now show as toasts instead of inline display.
- * Only field validation errors (emailError) show inline for immediate feedback.
+ * 🌟 PROFESSIONAL LOGIN SCREEN
+ * Minimal, subtle authentication experience
  */
 const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) => {
-  const { theme } = useTheme();
-  const { showWarning, showError, showSuccess } = useToast();
+  const { theme, colorMode } = useTheme();
+  const { showWarning, showSuccess } = useToast();
   const insets = useSafeAreaInsets();
-  const styles = createStyles(theme, insets);
+  const styles = createStyles(theme, insets, colorMode);
   const { t } = useTranslation();
+  const isDark = colorMode === 'dark';
 
-  // Modern selective auth state for better performance
+  // Video assets
+  const [assets] = useAssets([LoginBackgroundVideo]);
+  const [videoReady, setVideoReady] = useState(false);
+
+  const videoSource = assets ? assets[0] : null;
+
+  const player = useVideoPlayer(videoSource, (player) => {
+    player.loop = true;
+    player.muted = true;
+    player.play();
+  });
+
+  useEffect(() => {
+    const subscription = player.addListener('statusChange', (status) => {
+      // status: 'idle' | 'loading' | 'readyToPlay' | 'error'
+      if (status.status === 'readyToPlay') {
+        setVideoReady(true);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [player]);
+
+  const gradientColors = useMemo<readonly [string, string, string]>(() => {
+    if (isDark) {
+      return [
+        alpha(theme.colors.surface, 0.95),
+        alpha(theme.colors.background, 0.98),
+        alpha(theme.colors.primary, 0.18),
+      ] as const;
+    }
+
+    const midTone = blend(theme.colors.gradientStart, theme.colors.gradientEnd, 0.5);
+    return [
+      alpha(theme.colors.gradientStart, 0.14),
+      alpha(midTone, 0.12),
+      theme.colors.background,
+    ] as const;
+  }, [
+    isDark,
+    theme.colors.background,
+    theme.colors.gradientEnd,
+    theme.colors.gradientStart,
+    theme.colors.primary,
+    theme.colors.surface,
+  ]);
+
+  // Core auth state
   const { isAuthenticated, isLoading: coreLoading } = useCoreAuth();
-  const { isLoading: magicLinkLoading } = useMagicLinkState();
   const {
     isLoading: googleOAuthLoading,
     isInitialized: googleOAuthReady,
@@ -73,19 +111,11 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     canAttemptSignIn: canAttemptAppleSignIn,
   } = useAppleAuthState();
 
-  // Modern unified auth actions
-  const { sendMagicLink, signInWithGoogle, signInWithApple, resetMagicLink } = useAuthActions();
-
-  // Magic link specific state and actions
-  const { lastSentEmail, lastSentAt, canSendMagicLink } = useMagicLink();
-
-  // Google OAuth specific state and actions
+  // OAuth specific state and actions
   const { initialize: initializeGoogle } = useGoogleOAuth();
   const { initialize: initializeApple } = useAppleOAuth();
 
-  // Derive magic link sent state (matches legacy behavior)
-  const magicLinkSent = !!(lastSentEmail && lastSentAt);
-  const isLoading = coreLoading || magicLinkLoading;
+  const isLoading = coreLoading;
 
   // Track OAuth callback state
   const [isWaitingForOAuthCallback, setIsWaitingForOAuthCallback] = useState(false);
@@ -96,7 +126,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       const timeout = setTimeout(() => {
         setIsWaitingForOAuthCallback(false);
         logger.debug('OAuth callback timeout - resetting state');
-      }, 60000); // 1 minute timeout
+      }, 60000);
 
       return () => clearTimeout(timeout);
     }
@@ -107,101 +137,20 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     if (isAuthenticated && isWaitingForOAuthCallback) {
       setIsWaitingForOAuthCallback(false);
       logger.debug('OAuth callback successful - resetting state');
-      // Show success message for OAuth completion (provider-agnostic)
       setTimeout(() => {
         showSuccess?.(t('auth.login.toasts.loginSuccess'));
       }, 100);
     }
   }, [isAuthenticated, isWaitingForOAuthCallback, showSuccess, t]);
 
-  // Form state
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState<string | undefined>(undefined);
-  const [isEmailValid, setIsEmailValid] = useState(false);
-  const [showHelpSection, setShowHelpSection] = useState(false);
-
-  // **SIMPLIFIED ANIMATION SYSTEM**: Single minimal hook with 4 essential values
-  const animations = useCoordinatedAnimations();
-
-  // Lightweight internal debounced callback to avoid external dependency
-  const useDebouncedCallbackString = (
-    callback: (value: string) => void,
-    delay: number
-  ): ((value: string) => void) => {
-    const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const debouncedFn = React.useCallback(
-      (value: string) => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-        timeoutRef.current = setTimeout(() => {
-          callback(value);
-        }, delay);
-      },
-      [callback, delay]
-    );
-
-    // Clear on unmount
-    React.useEffect(() => {
-      return () => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-      };
-    }, []);
-
-    return debouncedFn;
-  };
-
-  // Debounced validator to avoid validation on every keystroke (300 ms after user stops typing)
-  const debouncedValidateEmail = useDebouncedCallbackString((text: string) => {
-    if (text.length > 0) {
-      const isValid = magicLinkSchema.safeParse({ email: text }).success;
-      setIsEmailValid(isValid);
-    } else {
-      setIsEmailValid(false);
-    }
-  }, 300);
-
-  // **MINIMAL ENTRANCE**: Simple 400ms fade-in instead of complex sequence
-  const triggerEntranceAnimations = useCallback(() => {
-    animations.animateEntrance({ duration: 400 });
-  }, [animations]);
-
-  // **OPTIMIZED SUCCESS FEEDBACK**: Immediate and smooth transition
-  useEffect(() => {
-    if (magicLinkSent) {
-      if (Platform.OS === 'ios') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      // OPTIMIZED: Immediate smooth transition without artificial delay
-      animations.animateFade(1, { duration: 150 }); // Faster, smoother transition
-    }
-  }, [magicLinkSent, animations]);
-
-  // **LAYOUT TRANSITION**: Using animateLayoutTransition instead of LayoutAnimation
-  const toggleHelpSection = useCallback(() => {
-    setShowHelpSection(!showHelpSection);
-    // Use layout transition animation (replaces LayoutAnimation)
-    animations.animateLayoutTransition(!showHelpSection, 120, { duration: 250 });
-  }, [showHelpSection, animations]);
-
-  // Start entrance animation on mount
-  useEffect(() => {
-    triggerEntranceAnimations();
-  }, [triggerEntranceAnimations]);
-
   // Initialize Google OAuth after database is ready
   useEffect(() => {
     const initGoogle = async () => {
       try {
-        // Only initialize if Supabase is ready (proper database readiness check)
         if (supabaseService.isInitialized()) {
           await initializeGoogle();
           logger.debug('Google OAuth initialized after database ready');
         } else {
-          // Wait for database to be ready
           const checkReady = setInterval(async () => {
             if (supabaseService.isInitialized()) {
               clearInterval(checkReady);
@@ -210,7 +159,6 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
             }
           }, 500);
 
-          // Cleanup after 10 seconds to prevent infinite waiting
           setTimeout(() => clearInterval(checkReady), 10000);
         }
       } catch (error) {
@@ -253,69 +201,6 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     initApple();
   }, [initializeApple]);
 
-  // Real-time email validation
-  const handleEmailChange = useCallback(
-    (text: string) => {
-      setEmail(text);
-      setEmailError(undefined);
-
-      // Trigger debounced validation
-      debouncedValidateEmail(text);
-    },
-    [debouncedValidateEmail]
-  );
-
-  // Clear errors when component unmounts
-  useEffect(
-    () => () => {
-      resetMagicLink();
-    },
-    [resetMagicLink]
-  );
-
-  // Log screen view
-  useEffect(() => {
-    // Analytics disabled
-  }, []);
-
-  // 🚀 TOAST INTEGRATION: Enhanced magic link login with complementary toast notifications
-  const handleSendMagicLink = useCallback(async () => {
-    if (!canSendMagicLink()) {
-      showWarning(t('auth.login.toasts.rateLimit'));
-      return;
-    }
-
-    // Simple email validation
-    if (!email || !email.includes('@')) {
-      showError(t('auth.login.toasts.invalidEmail'));
-      return;
-    }
-
-    try {
-      await sendMagicLink(
-        {
-          email: email.trim().toLowerCase(),
-          options: {
-            shouldCreateUser: true,
-          },
-        },
-        // Success callback - this will be called when magic link is sent successfully
-        (message: string) => {
-          showSuccess(message);
-          logger.debug('Magic link sent successfully with UI feedback');
-        },
-        // Error callback - this will be called if there's an error
-        (error: Error) => {
-          showError(error.message);
-          logger.error('Magic link send failed with UI feedback:', error);
-        }
-      );
-    } catch (error) {
-      // This catch is for any remaining unhandled errors
-      logger.error('Magic link send failed in UI catch block:', error as Error);
-    }
-  }, [email, canSendMagicLink, sendMagicLink, showWarning, showError, showSuccess, t]);
-
   const handleGoogleLogin = useCallback(async (): Promise<void> => {
     if (!canAttemptGoogleSignIn) {
       showWarning(t('auth.login.toasts.googleNotReady'));
@@ -323,22 +208,17 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     }
 
     try {
-      // Analytics disabled
       setIsWaitingForOAuthCallback(true);
-
-      // Use the unified auth actions
-      await signInWithGoogle();
-
-      // The result handling is done in the store, but we need to manage UI state
+      const { useGoogleOAuthStore } = await import('@/features/auth');
+      await useGoogleOAuthStore.getState().signIn();
       setIsWaitingForOAuthCallback(false);
     } catch (error) {
       setIsWaitingForOAuthCallback(false);
-      // Only log actual errors, not the normal OAuth callback flow
       if (error instanceof Error && error.message !== 'OAUTH_CALLBACK_REQUIRED') {
         logger.error('Google OAuth error in UI:', error as Error);
       }
     }
-  }, [canAttemptGoogleSignIn, signInWithGoogle, showWarning, t]);
+  }, [canAttemptGoogleSignIn, showWarning, t]);
 
   const handleAppleLogin = useCallback(async (): Promise<void> => {
     if (Platform.OS !== 'ios') {
@@ -352,9 +232,9 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     }
 
     try {
-      // Analytics disabled
       setIsWaitingForOAuthCallback(true);
-      await signInWithApple();
+      const { useAppleOAuthStore } = await import('@/features/auth');
+      await useAppleOAuthStore.getState().signIn();
       setIsWaitingForOAuthCallback(false);
     } catch (error) {
       setIsWaitingForOAuthCallback(false);
@@ -362,525 +242,418 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
         logger.error('Apple OAuth error in UI:', error as Error);
       }
     }
-  }, [canAttemptAppleSignIn, signInWithApple, showWarning, t]);
+  }, [canAttemptAppleSignIn, showWarning, t]);
 
-  // Animated styles
-  const headerAnimatedStyle = useMemo(
-    () => ({ opacity: animations.fadeAnim, transform: animations.entranceTransform }),
-    [animations.fadeAnim, animations.entranceTransform]
-  );
-  const mainFadeStyle = useMemo(() => ({ opacity: animations.fadeAnim }), [animations.fadeAnim]);
-  const pressTransformStyle = useMemo(
-    () => ({ transform: animations.pressTransform }),
-    [animations.pressTransform]
-  );
-  const helpSectionAnimatedStyle = useMemo(
-    () => ({ height: animations.heightAnim, opacity: animations.opacityAnim }),
-    [animations.heightAnim, animations.opacityAnim]
-  );
+  return (
+    <View style={styles.root}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+      />
 
-  // **ENHANCED HEADER**: Premium branding with glow effect
-  const renderHeader = () => (
-    <Animated.View style={[styles.headerSection, headerAnimatedStyle]}>
-      <View style={styles.brandContainer}>
-        <View style={styles.brandIconGlow}>
-          <View style={styles.brandIcon}>
-            <Ionicons name="leaf" size={28} color={theme.colors.primary} />
-          </View>
-        </View>
-        <Text style={styles.brandText}>{t('auth.login.brand')}</Text>
+      {/* Subtle Background */}
+      <View pointerEvents="none" style={styles.backgroundLayer}>
+        {/* Video Background */}
+        {assets && (
+          <VideoView
+            player={player}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            nativeControls={false}
+          />
+        )}
+
+        {/* Fallback & Loading State (Fades out when video is ready) */}
+        <MotiView
+          from={{ opacity: 1 }}
+          animate={{ opacity: videoReady ? 0 : 1 }}
+          transition={{ type: 'timing', duration: 800 }}
+          style={StyleSheet.absoluteFill}
+        >
+          <LinearGradient
+            colors={gradientColors}
+            style={styles.backgroundGradient}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 0.8, y: 1 }}
+          />
+          <View style={styles.orbTopRight} />
+          <View style={styles.orbBottomLeft} />
+          <View style={styles.orbCenter} />
+        </MotiView>
+
+        {/* Dark Overlay for readability */}
+        <View style={styles.videoOverlay} />
       </View>
-      <Text style={styles.welcomeTitle}>
-        {magicLinkSent ? t('auth.login.magicLinkSentTitle') : t('auth.login.welcome')}
-      </Text>
-      <Text style={styles.welcomeSubtitle}>
-        {magicLinkSent ? t('auth.login.magicLinkSentDesc') : t('auth.login.continueJourney')}
-      </Text>
-    </Animated.View>
-  );
 
-  // **SIMPLIFIED MAIN CONTENT**: Separated transform and layout animations
-  const renderMainContent = () => (
-    <View style={styles.mainContent}>
-      {/* Outer wrapper for layout animations */}
-      <Animated.View style={mainFadeStyle}>
-        {/* Inner wrapper for transform animations */}
-        <Animated.View style={pressTransformStyle}>
-          <ThemedCard style={styles.contentCard}>
-            <View style={styles.cardInner}>
-              {!magicLinkSent && (
-                <>
-                  {/* Trust Indicators - Compact Glassmorphism */}
-                  <View style={styles.trustSection}>
-                    <View style={styles.trustBadge}>
-                      <View style={styles.trustIconContainer}>
-                        <Ionicons name="shield-checkmark" size={12} color={theme.colors.success} />
-                      </View>
-                      <Text style={styles.trustText}>{t('auth.login.secure.trust1')}</Text>
-                    </View>
-                    <View style={styles.trustBadge}>
-                      <View style={styles.trustIconContainer}>
-                        <Ionicons name="lock-closed" size={12} color={theme.colors.success} />
-                      </View>
-                      <Text style={styles.trustText}>{t('auth.login.secure.trust2')}</Text>
-                    </View>
-                  </View>
+      <ScreenLayout
+        scrollable={true}
+        keyboardAware={true}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        backgroundColor="transparent"
+        showStatusBar={false}
+        edges={['top', 'bottom']}
+        contentContainerStyle={styles.safeContainer}
+      >
+        {/* Content Container */}
+        <View style={styles.contentContainer}>
+          <View style={styles.heroCard}>
+            {/* Brand Section */}
+            <View style={styles.brandSection}>
+              <View style={styles.brandIcon}>
+                <Image source={AppIcon} style={styles.brandLogo} resizeMode="contain" />
+              </View>
+              <Text style={styles.brandName}>{t('auth.login.brand')}</Text>
+            </View>
 
-                  {/* Email Input */}
-                  <View style={styles.inputSection}>
-                    <ThemedInput
-                      label={t('auth.login.labels.email')}
-                      value={email}
-                      onChangeText={handleEmailChange}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoComplete="email"
-                      autoCorrect={false}
-                      errorText={emailError}
-                      leftIcon="mail"
-                      editable={!isLoading}
-                      validationState={isEmailValid ? 'success' : 'default'}
-                      showValidationIcon={email.length > 0}
-                      placeholder={t('auth.login.labels.emailPlaceholder')}
-                    />
-                  </View>
+            {/* Welcome Text */}
+            <View style={styles.welcomeSection}>
+              <Text style={styles.welcomeTitle}>{t('auth.login.welcome')}</Text>
+              <Text style={styles.welcomeSubtitle}>{t('auth.login.continueJourney')}</Text>
+            </View>
 
-                  {/* Login Button */}
-                  <ThemedButton
-                    title={
-                      isLoading ? t('auth.login.buttons.sending') : t('auth.login.buttons.send')
-                    }
-                    onPress={handleSendMagicLink}
-                    variant="primary"
-                    isLoading={isLoading}
-                    disabled={isLoading || !email.trim() || !canSendMagicLink() || !isEmailValid}
-                    style={styles.loginButton}
-                    fullWidth
-                  />
+            {/* Trust Chips */}
+            <View style={styles.trustRow}>
+              <View style={styles.trustChip}>
+                <Ionicons name="shield-checkmark" size={14} color={theme.colors.onSurfaceVariant} />
+                <Text style={styles.trustText}>{t('auth.login.secure.trust1')}</Text>
+              </View>
+              <View style={styles.trustChip}>
+                <Ionicons name="key-outline" size={14} color={theme.colors.onSurfaceVariant} />
+                <Text style={styles.trustText}>{t('auth.login.secure.trust2')}</Text>
+              </View>
+            </View>
 
-                  {/* Social OAuth Section */}
-                  <View style={styles.divider}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>{t('auth.login.divider.or')}</Text>
-                    <View style={styles.dividerLine} />
-                  </View>
+            {/* OAuth Buttons Container */}
+            <View style={styles.authContainer}>
+              {/* Google Button */}
+              <ThemedButton
+                title={
+                  !googleOAuthReady
+                    ? t('auth.login.buttons.googleLoading')
+                    : isWaitingForOAuthCallback
+                      ? t('auth.login.buttons.openInBrowser')
+                      : googleOAuthLoading
+                        ? t('auth.login.buttons.googleSigning')
+                        : t('auth.login.oauth.googleContinue')
+                }
+                onPress={handleGoogleLogin}
+                variant="secondary"
+                iconLeft="google"
+                disabled={
+                  isLoading ||
+                  googleOAuthLoading ||
+                  !googleOAuthReady ||
+                  !canAttemptGoogleSignIn ||
+                  isWaitingForOAuthCallback
+                }
+                style={styles.googleButton}
+                textStyle={styles.googleButtonText}
+                fullWidth
+              />
 
-                  <ThemedButton
-                    title={
-                      !googleOAuthReady
-                        ? t('auth.login.buttons.googleLoading')
-                        : isWaitingForOAuthCallback
-                          ? t('auth.login.buttons.openInBrowser')
-                          : googleOAuthLoading
-                            ? t('auth.login.buttons.googleSigning')
-                            : t('auth.login.oauth.googleContinue')
-                    }
-                    onPress={handleGoogleLogin}
-                    variant="secondary"
-                    iconLeft="google"
-                    disabled={
-                      isLoading ||
-                      googleOAuthLoading ||
-                      !googleOAuthReady ||
-                      !canAttemptGoogleSignIn ||
-                      isWaitingForOAuthCallback
-                    }
-                    style={styles.googleButton}
-                    fullWidth
-                  />
-
-                  {Platform.OS === 'ios' && (
-                    <ThemedButton
-                      title={
-                        !appleOAuthReady
-                          ? t('auth.login.buttons.appleLoading')
-                          : isWaitingForOAuthCallback
-                            ? t('auth.login.buttons.openInBrowser')
-                            : appleOAuthLoading
-                              ? t('auth.login.buttons.appleSigning')
-                              : t('auth.login.oauth.appleContinue')
-                      }
-                      onPress={handleAppleLogin}
-                      variant="secondary"
-                      iconLeft="apple"
-                      disabled={
-                        isLoading ||
-                        appleOAuthLoading ||
-                        !appleOAuthReady ||
-                        !canAttemptAppleSignIn ||
-                        isWaitingForOAuthCallback
-                      }
-                      style={styles.googleButton}
-                      fullWidth
-                    />
-                  )}
-
-                  {/* OAuth Callback Waiting Indicator */}
-                  {isWaitingForOAuthCallback && (
-                    <View style={styles.oauthCallbackIndicator}>
-                      <Ionicons name="open-outline" size={16} color={theme.colors.primary} />
-                      <Text style={styles.oauthCallbackText}>
-                        {t('auth.login.oauth.browserReturnInstruction')}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Help Section Toggle */}
-                  <ThemedButton
-                    title={
-                      showHelpSection
-                        ? t('auth.login.secure.toggleHelp.hide')
-                        : t('auth.login.secure.toggleHelp.show')
-                    }
-                    variant="ghost"
-                    onPress={toggleHelpSection}
-                    style={styles.helpToggle}
-                    iconLeft={showHelpSection ? 'chevron-up' : 'help-circle-outline'}
-                    size="compact"
-                  />
-
-                  {/* **SIMPLIFIED HELP SECTION**: Using layout transition animation */}
-                  <Animated.View style={[styles.helpSection, helpSectionAnimatedStyle]}>
-                    <View style={styles.helpContent}>
-                      <Text style={styles.helpTitle}>{t('auth.login.secure.helpTitle')}</Text>
-                      <Text style={styles.helpText}>{t('auth.login.secure.helpDesc')}</Text>
-                    </View>
-                  </Animated.View>
-                </>
+              {/* Apple Button (iOS only) */}
+              {Platform.OS === 'ios' && (
+                <ThemedButton
+                  title={
+                    !appleOAuthReady
+                      ? t('auth.login.buttons.appleLoading')
+                      : isWaitingForOAuthCallback
+                        ? t('auth.login.buttons.openInBrowser')
+                        : appleOAuthLoading
+                          ? t('auth.login.buttons.appleSigning')
+                          : t('auth.login.oauth.appleContinue')
+                  }
+                  onPress={handleAppleLogin}
+                  variant="secondary"
+                  iconLeft="apple"
+                  disabled={
+                    isLoading ||
+                    appleOAuthLoading ||
+                    !appleOAuthReady ||
+                    !canAttemptAppleSignIn ||
+                    isWaitingForOAuthCallback
+                  }
+                  style={styles.appleButton}
+                  textStyle={styles.appleButtonText}
+                  fullWidth
+                />
               )}
 
-              {/* Success State */}
-              {magicLinkSent && (
-                <View style={styles.successSection}>
-                  <View style={styles.successIcon}>
-                    <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
-                  </View>
-                  <Text style={styles.successTitle}>{t('auth.login.magicLinkSentTitle')}</Text>
-                  <Text style={styles.successMessage}>{t('auth.login.magicLinkSentDesc')}</Text>
-                  <ThemedButton
-                    title={t('auth.login.buttons.resend')}
-                    variant="secondary"
-                    onPress={handleSendMagicLink}
-                    disabled={!canSendMagicLink()}
-                    style={styles.resendButton}
-                  />
+              {/* OAuth Callback Indicator */}
+              {isWaitingForOAuthCallback && (
+                <View style={styles.callbackIndicator}>
+                  <Ionicons name="open-outline" size={16} color={theme.colors.onSurfaceVariant} />
+                  <Text style={styles.callbackText}>
+                    {t('auth.login.oauth.browserReturnInstruction')}
+                  </Text>
                 </View>
               )}
             </View>
-          </ThemedCard>
-        </Animated.View>
-      </Animated.View>
+
+            {/* Privacy Note */}
+            <View style={styles.privacySection}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={14}
+                color={theme.colors.onSurfaceVariant}
+              />
+              <Text style={styles.privacyText}>{t('auth.login.privacyNote')}</Text>
+            </View>
+          </View>
+        </View>
+      </ScreenLayout>
     </View>
-  );
-
-  return (
-    <ScreenLayout
-      scrollable={true}
-      keyboardAware={true}
-      keyboardDismissMode="on-drag"
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      backgroundColor={theme.colors.background}
-      statusBarStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
-      contentContainerStyle={styles.safeContainer}
-    >
-      {renderHeader()}
-
-      <View style={styles.contentArea}>{renderMainContent()}</View>
-    </ScreenLayout>
   );
 });
 
 const createStyles = (
   theme: AppTheme,
-  insets: { top: number; bottom: number; left: number; right: number }
+  insets: { top: number; bottom: number; left: number; right: number },
+  colorMode: string
 ) =>
   StyleSheet.create({
-    // **SAFE CONTENT CONTAINER**: Applies safe area insets and spacing
+    root: {
+      flex: 1,
+      // backgroundColor: theme.colors.background, // Removed to let video show through
+    },
     safeContainer: {
       flexGrow: 1,
-      paddingTop: insets.top + theme.spacing.md,
-      paddingBottom: insets.bottom + theme.spacing.md,
-      paddingHorizontal: theme.spacing.lg,
+      // Padding removed to rely on ScreenLayout's safe area handling
+      // but keeping bottom spacing for aesthetic balance
+      paddingBottom: theme.spacing.lg,
     },
-    container: {
-      flex: 1,
-      paddingTop: insets.top + theme.spacing.md,
-      paddingBottom: insets.bottom + theme.spacing.md,
-      paddingHorizontal: theme.spacing.lg,
+    backgroundLayer: {
+      ...StyleSheet.absoluteFillObject,
+      // zIndex: -1, // Removed to prevent video from being hidden behind root background
+    },
+    backgroundGradient: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    orbTopRight: {
+      position: 'absolute',
+      top: -120,
+      right: -80,
+      width: 240,
+      height: 240,
+      borderRadius: 120,
+      backgroundColor:
+        colorMode === 'dark'
+          ? alpha(theme.colors.primary, 0.25)
+          : alpha(theme.colors.primary, 0.18),
+    },
+    orbBottomLeft: {
+      position: 'absolute',
+      bottom: -140,
+      left: -90,
+      width: 260,
+      height: 260,
+      borderRadius: 130,
+      backgroundColor:
+        colorMode === 'dark'
+          ? alpha(theme.colors.secondary, 0.22)
+          : alpha(theme.colors.secondary, 0.16),
+    },
+    orbCenter: {
+      position: 'absolute',
+      top: screenHeight * 0.32,
+      right: -40,
+      width: 160,
+      height: 160,
+      borderRadius: 80,
+      backgroundColor:
+        colorMode === 'dark'
+          ? alpha(theme.colors.tertiary, 0.18)
+          : alpha(theme.colors.tertiary, 0.12),
+    },
+    videoOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: alpha(theme.colors.scrim, 0.3),
     },
 
-    // Header section - Enhanced with more breathing room
-    headerSection: {
-      alignItems: 'center',
+    // Content layout
+    contentContainer: {
+      flex: 1,
+      justifyContent: 'center',
       paddingHorizontal: theme.spacing.xl,
-      paddingTop: theme.spacing.lg,
-      paddingBottom: theme.spacing.sm,
+      minHeight: screenHeight * 0.7,
     },
-    brandContainer: {
-      flexDirection: 'row',
+    heroCard: {
+      backgroundColor:
+        colorMode === 'dark' ? alpha(theme.colors.surface, 0.7) : alpha(theme.colors.surface, 0.75),
+      borderRadius: 24,
+      padding: theme.spacing.xl,
+      borderWidth: 1,
+      borderColor: alpha(theme.colors.outlineVariant, 0.4),
+      shadowColor: theme.colors.scrim,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: colorMode === 'dark' ? 0.28 : 0.12,
+      shadowRadius: 18,
+      elevation: 10,
+    },
+
+    // Brand section
+    brandSection: {
       alignItems: 'center',
-      marginBottom: theme.spacing.sm,
-    },
-    // Brand icon glow wrapper
-    brandIconGlow: {
-      padding: 4,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: `${theme.colors.primary}15`,
-      marginRight: theme.spacing.md,
-      // Glow effect
-      shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.3,
-      shadowRadius: 12,
+      marginBottom: theme.spacing.xl,
     },
     brandIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: `${theme.colors.primary}20`,
+      width: 68,
+      height: 68,
+      borderRadius: 20,
+      backgroundColor:
+        colorMode === 'dark' ? alpha(theme.colors.primary, 0.2) : alpha(theme.colors.primary, 0.14),
+      borderWidth: 1,
+      borderColor: alpha(theme.colors.primary, 0.2),
       justifyContent: 'center',
       alignItems: 'center',
-    },
-    brandIconImage: {
-      width: 28,
-      height: 28,
-    },
-    brandText: {
-      ...theme.typography.headlineMedium,
-      color: theme.colors.primary,
-      fontWeight: '700',
-      letterSpacing: 0.5,
-    },
-    welcomeTitle: {
-      ...theme.typography.headlineLarge,
-      color: theme.colors.onBackground,
-      fontWeight: '700',
-      textAlign: 'center',
       marginBottom: theme.spacing.md,
     },
-    welcomeSubtitle: {
-      ...theme.typography.bodyLarge,
-      color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      lineHeight: 24,
-      paddingHorizontal: theme.spacing.lg,
-      opacity: 0.9,
+    brandLogo: {
+      width: 40,
+      height: 40,
+      borderRadius: 8,
+    },
+    brandName: {
+      fontSize: 30,
+      fontWeight: '700',
+      color: theme.colors.onBackground,
+      letterSpacing: 0.4,
+      fontFamily: theme.typography.fontFamilySerifBold || 'Lora-Bold',
     },
 
-    // Content area
-    contentArea: {
-      flex: 1,
-      justifyContent: 'center',
-      minHeight: screenHeight * 0.5,
-    },
-
-    // Main content card - Enhanced Glassmorphism
-    mainContent: {
+    // Welcome section
+    welcomeSection: {
+      alignItems: 'center',
       marginBottom: theme.spacing.lg,
     },
-    contentCard: {
-      backgroundColor:
-        theme.name === 'dark' ? `${theme.colors.surface}F2` : `${theme.colors.surface}FA`,
-      borderWidth: 1,
-      borderColor:
-        theme.name === 'dark' ? `${theme.colors.outline}20` : `${theme.colors.outline}25`,
-      borderRadius: theme.borderRadius.xl,
-      // Premium shadow effect
-      shadowColor: theme.name === 'dark' ? theme.colors.shadow : `${theme.colors.primary}15`,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: theme.name === 'dark' ? 0.4 : 0.2,
-      shadowRadius: 24,
+    welcomeTitle: {
+      fontSize: 26,
+      fontWeight: '600',
+      color: theme.colors.onBackground,
+      textAlign: 'center',
+      marginBottom: theme.spacing.xs,
+      letterSpacing: -0.4,
+      fontFamily: theme.typography.fontFamilySerif || theme.typography.fontFamilyMedium,
     },
-    cardInner: {
-      padding: theme.spacing.lg,
-      paddingTop: theme.spacing.md,
+    welcomeSubtitle: {
+      fontSize: 15,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      opacity: 0.7,
+      fontFamily: theme.typography.fontFamilyRegular || 'Inter-Regular',
+      maxWidth: 260,
+      lineHeight: 20,
     },
 
-    // Trust indicators - Compact Glassmorphism
-    trustSection: {
+    trustRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       justifyContent: 'center',
       gap: theme.spacing.sm,
-      marginBottom: theme.spacing.md,
-      flexWrap: 'wrap',
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
     },
-    trustBadge: {
+    trustChip: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: 999,
       backgroundColor:
-        theme.name === 'dark' ? `${theme.colors.success}12` : `${theme.colors.success}08`,
-      borderRadius: theme.borderRadius.lg,
+        colorMode === 'dark'
+          ? alpha(theme.colors.surfaceVariant, 0.6)
+          : alpha(theme.colors.surfaceVariant, 0.8),
       borderWidth: 1,
-      borderColor: `${theme.colors.success}30`,
-      // Glassmorphism effect
-      shadowColor: theme.colors.success,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 6,
-    },
-    trustIconContainer: {
-      width: 22,
-      height: 22,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: `${theme.colors.success}20`,
-      justifyContent: 'center',
-      alignItems: 'center',
+      borderColor: alpha(theme.colors.outlineVariant, 0.35),
     },
     trustText: {
-      ...theme.typography.labelSmall,
-      color: theme.colors.success,
-      fontWeight: '600',
+      fontSize: 12,
+      color: theme.colors.onSurfaceVariant,
+      fontFamily: theme.typography.fontFamilyMedium || 'Inter-Medium',
     },
 
-    // Form elements
-    inputSection: {
-      marginBottom: theme.spacing.sm,
-    },
-    loginButton: {
-      marginTop: theme.spacing.md,
-      minHeight: 48,
-      borderRadius: theme.borderRadius.lg,
-      // Enhanced shadow for premium feel
-      shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 12,
-    },
-    helpToggle: {
-      marginTop: theme.spacing.md,
+    // Auth container
+    authContainer: {
+      width: '100%',
+      maxWidth: 340,
       alignSelf: 'center',
-      minWidth: 200, // Ensure enough width for Turkish text
-      paddingHorizontal: theme.spacing.md,
-    },
-    helpSection: {
-      overflow: 'hidden',
-      marginTop: theme.spacing.md,
-    },
-    helpContent: {
-      padding: theme.spacing.md,
-      backgroundColor: `${theme.colors.primary}06`,
-      borderRadius: theme.borderRadius.md,
-      borderWidth: 1,
-      borderColor: `${theme.colors.primary}15`,
-    },
-    helpTitle: {
-      ...theme.typography.labelLarge,
-      color: theme.colors.primary,
-      marginBottom: theme.spacing.xs,
-      fontWeight: '600',
-    },
-    helpText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
-      lineHeight: 18,
+      marginTop: theme.spacing.sm,
     },
 
-    // Success state
-    successSection: {
-      alignItems: 'center',
-      paddingVertical: theme.spacing.lg,
-    },
-    successIcon: {
-      marginBottom: theme.spacing.lg,
-    },
-    successTitle: {
-      ...theme.typography.headlineMedium,
-      color: theme.colors.success,
-      fontWeight: '700',
+    // Google button - clean white
+    googleButton: {
+      backgroundColor: theme.colors.surfaceBright,
+      borderWidth: 1,
+      borderColor: alpha(theme.colors.outline, 0.28),
+      minHeight: 54,
+      borderRadius: 14,
       marginBottom: theme.spacing.md,
+      shadowColor: theme.colors.scrim,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: colorMode === 'dark' ? 0.3 : 0.06,
+      shadowRadius: 6,
+      elevation: 2,
     },
-    successMessage: {
-      ...theme.typography.bodyLarge,
+    googleButtonText: {
       color: theme.colors.onSurface,
-      textAlign: 'center',
-      marginBottom: theme.spacing.sm,
       fontWeight: '500',
-    },
-    resendButton: {
-      ...getPrimaryShadow.small(theme),
+      fontSize: 15,
+      letterSpacing: 0.1,
     },
 
-    // Error state
-    errorContainer: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: theme.spacing.sm,
-      marginTop: theme.spacing.md,
-      padding: theme.spacing.md,
-      backgroundColor: theme.colors.errorContainer,
-      borderRadius: theme.borderRadius.md,
+    // Apple button - matching theme style
+    appleButton: {
+      backgroundColor: colorMode === 'dark' ? theme.colors.surfaceContainer : theme.colors.surface,
       borderWidth: 1,
-      borderColor: theme.colors.error,
+      borderColor: alpha(theme.colors.outline, 0.28),
+      minHeight: 54,
+      borderRadius: 14,
+      marginBottom: theme.spacing.sm,
+      shadowColor: theme.colors.scrim,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: colorMode === 'dark' ? 0.3 : 0.06,
+      shadowRadius: 6,
+      elevation: 2,
     },
-    errorIconContainer: {
-      marginTop: 1,
-    },
-    errorText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onErrorContainer,
-      flex: 1,
-      lineHeight: 18,
+    appleButtonText: {
+      color: theme.colors.onSurface,
+      fontWeight: '500',
+      fontSize: 15,
+      letterSpacing: 0.1,
     },
 
-    // Google section
-    googleSection: {
-      paddingTop: theme.spacing.lg,
-    },
-    divider: {
+    // Callback indicator
+    callbackIndicator: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.sm,
+      justifyContent: 'center',
+      gap: theme.spacing.xs,
+      marginTop: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
     },
-    dividerLine: {
-      flex: 1,
-      height: 1,
-      backgroundColor:
-        theme.name === 'dark' ? `${theme.colors.outline}30` : `${theme.colors.outline}25`,
-    },
-    dividerText: {
-      ...theme.typography.labelMedium,
+    callbackText: {
+      fontSize: 13,
       color: theme.colors.onSurfaceVariant,
-      marginHorizontal: theme.spacing.lg,
-      textTransform: 'lowercase',
       opacity: 0.8,
     },
-    googleButton: {
-      backgroundColor:
-        theme.name === 'dark' ? `${theme.colors.surface}95` : `${theme.colors.surface}`,
-      borderWidth: 1.5,
-      borderColor:
-        theme.name === 'dark' ? `${theme.colors.outline}40` : `${theme.colors.outline}35`,
-      minHeight: 48,
-      borderRadius: theme.borderRadius.lg,
-      marginBottom: theme.spacing.md,
-      // Subtle elevation
-      shadowColor: theme.name === 'dark' ? theme.colors.shadow : `${theme.colors.outline}50`,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 6,
-    },
-    oauthCallbackIndicator: {
+
+    // Privacy section
+    privacySection: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
-      marginTop: theme.spacing.md,
-      padding: theme.spacing.md,
-      backgroundColor: `${theme.colors.primary}08`,
-      borderRadius: theme.borderRadius.md,
-      borderWidth: 1,
-      borderColor: `${theme.colors.primary}20`,
+      justifyContent: 'center',
+      gap: theme.spacing.xs,
+      marginTop: theme.spacing.lg,
     },
-    oauthCallbackText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.primary,
-      flex: 1,
-      lineHeight: 18,
-      fontWeight: '500',
+    privacyText: {
+      fontSize: 12,
+      color: theme.colors.onSurfaceVariant,
+      opacity: 0.5,
+      fontFamily: theme.typography.fontFamilyRegular || 'Inter-Regular',
     },
   });
 

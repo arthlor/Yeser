@@ -5,16 +5,16 @@ import {
   getGratitudeDailyEntryByDate,
   getRandomGratitudeEntry,
   getTotalGratitudeEntriesCount,
-} from '@/api/gratitudeApi';
-import { queryKeys } from '@/api/queryKeys';
-import { QUERY_STALE_TIMES } from '@/api/queryClient';
+} from '@/features/gratitude/api';
+import { queryKeys } from '@/shared/query/queryKeys';
+import { QUERY_STALE_TIMES } from '@/shared/query/queryClient';
 import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
-import useAuthStore, { shouldEnableQueries } from '@/store/authStore';
+import { shouldEnableQueries, useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { logger } from '@/utils/debugConfig';
 
 export const useGratitudeEntries = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
 
   return useQuery<GratitudeEntry[], Error>({
     queryKey: queryKeys.gratitudeEntries(user?.id),
@@ -26,7 +26,7 @@ export const useGratitudeEntries = () => {
 };
 
 export const useGratitudeEntriesPaginated = (pageSize: number = 20) => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
 
   return useInfiniteQuery({
     queryKey: queryKeys.gratitudeEntriesPaginated(user?.id, pageSize),
@@ -42,7 +42,7 @@ export const useGratitudeEntriesPaginated = (pageSize: number = 20) => {
 };
 
 export const useGratitudeEntry = (entryDate: string) => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
 
   return useQuery<GratitudeEntry | null, Error>({
     queryKey: queryKeys.gratitudeEntry(user?.id, entryDate),
@@ -54,7 +54,7 @@ export const useGratitudeEntry = (entryDate: string) => {
 };
 
 export const useEntryDatesForMonth = (year: number, month: number) => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
 
   return useQuery<string[], Error>({
     queryKey: queryKeys.gratitudeEntriesByMonth(user?.id, year, month),
@@ -66,7 +66,7 @@ export const useEntryDatesForMonth = (year: number, month: number) => {
 };
 
 export const useGratitudeTotalCount = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
 
   return useQuery<number, Error>({
     queryKey: queryKeys.gratitudeTotalCount(user?.id),
@@ -78,7 +78,7 @@ export const useGratitudeTotalCount = () => {
 };
 
 export const useRandomGratitudeEntry = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
 
   const query = useQuery<GratitudeEntry | null, Error>({
     queryKey: queryKeys.randomGratitudeEntry(user?.id),

@@ -501,7 +501,7 @@ const createStyles = (theme: AppTheme) => {
       textAlign: 'center',
       marginBottom: 6,
       // Enhanced text shadow for depth
-      textShadowColor: alpha(theme.colors.shadow, 0.1),
+      textShadowColor: alpha(theme.colors.scrim, 0.1),
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 2,
     } as TextStyle,

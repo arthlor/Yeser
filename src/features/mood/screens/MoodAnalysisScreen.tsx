@@ -45,7 +45,7 @@ const MoodAnalysisScreen: React.FC = () => {
     [t]
   );
   useStreakData();
-  useSubscription(); // Used elsewhere, but canUseInsights not needed here
+  const { isPro, checkGate } = useSubscription();
 
   // Fetch AI Insights
   const {
@@ -73,6 +73,110 @@ const MoodAnalysisScreen: React.FC = () => {
     analyticsService.logEvent('mood_analysis_refetch');
     void refetch();
   }, [refetch]);
+
+  const handleUnlockInsights = useCallback(() => {
+    checkGate('mood_analytics_deep_dive');
+  }, [checkGate]);
+
+  if (!isPro) {
+    return (
+      <ScreenLayout
+        edges={['top']}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+        backgroundColor={theme.colors.background}
+        density="comfortable"
+      >
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={handleBackPress}
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.back', 'Back')}
+          >
+            <Icon name="arrow-left" size={24} color={theme.colors.onSurface} />
+          </TouchableOpacity>
+
+          <Text style={styles.headerLabel}>{t('mood.analysis.label', 'INSIGHTS')}</Text>
+          <Text style={styles.headerTitle}>{t('mood.analysis.title')}</Text>
+          <Text style={styles.headerSubtitle}>{t('mood.analysis.subtitle')}</Text>
+        </View>
+
+        <View style={styles.rangeSelector}>
+          <SegmentedControl
+            options={rangeOptions}
+            selectedValue={selectedRange}
+            onValueChange={setSelectedRange}
+            disabled
+          />
+        </View>
+
+        <ScreenSection
+          spacing="large"
+          title={t('subscription.paywall.context.insights.title', 'Unlock Premium Insights')}
+          subtitle={t(
+            'subscription.paywall.context.insights.subtitle',
+            'Access in-depth analysis and trends over time.'
+          )}
+        >
+          <ThemedCard style={styles.previewCard} variant="filled" density="comfortable">
+            <View style={styles.previewHeaderRow}>
+              <View style={styles.previewChip}>
+                <Text style={styles.previewChipText}>
+                  {t('subscription.paywall.upgradeToPro', 'Upgrade to Pro')}
+                </Text>
+              </View>
+              <Text style={styles.previewTitle}>{t('mood.analysis.title')}</Text>
+            </View>
+
+            <View style={styles.previewStatsRow}>
+              <View style={styles.previewStatBlock}>
+                <View style={styles.previewStatBar} />
+                <Text style={styles.previewStatLabel}>
+                  {t('mood.analysis.overview.entries', 'Entries analyzed')}
+                </Text>
+              </View>
+              <View style={styles.previewStatBlock}>
+                <View style={styles.previewStatBar} />
+                <Text style={styles.previewStatLabel}>
+                  {t('mood.analysis.overview.balanceScore', 'Balance score')}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.previewChart}>
+              <View style={styles.previewChartBar} />
+              <View style={[styles.previewChartBar, styles.previewChartBarMid]} />
+              <View style={styles.previewChartBar} />
+            </View>
+
+            <View style={styles.previewOverlay}>
+              <View style={styles.previewOverlayContent}>
+                <View style={styles.previewLock}>
+                  <Icon name="lock" size={20} color={theme.colors.onPrimary} />
+                </View>
+                <Text style={styles.previewOverlayTitle}>
+                  {t('subscription.paywall.context.insights.title', 'Unlock Premium Insights')}
+                </Text>
+                <Text style={styles.previewOverlaySubtitle}>
+                  {t(
+                    'subscription.paywall.context.insights.subtitle',
+                    'Access in-depth analysis and trends over time.'
+                  )}
+                </Text>
+                <ThemedButton
+                  title={t('subscription.paywall.upgradeToPro', 'Upgrade to Pro')}
+                  onPress={handleUnlockInsights}
+                  style={styles.previewCta}
+                />
+              </View>
+            </View>
+          </ThemedCard>
+        </ScreenSection>
+      </ScreenLayout>
+    );
+  }
 
   if (isLoading && !data) {
     return (
@@ -444,6 +548,104 @@ function createStyles(theme: AppTheme) {
     rangeSelector: {
       paddingHorizontal: theme.spacing.md,
       paddingBottom: theme.spacing.md,
+    },
+    previewCard: {
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    previewHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: theme.spacing.md,
+    },
+    previewChip: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 4,
+      borderRadius: theme.borderRadius.full || 999,
+      backgroundColor: theme.colors.primary + '20',
+    },
+    previewChipText: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.primary,
+      fontWeight: '700',
+      letterSpacing: 0.4,
+    },
+    previewTitle: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '600',
+    },
+    previewStatsRow: {
+      flexDirection: 'row',
+      gap: theme.spacing.md,
+    },
+    previewStatBlock: {
+      flex: 1,
+      gap: theme.spacing.xs,
+    },
+    previewStatBar: {
+      height: 14,
+      borderRadius: 7,
+      backgroundColor: theme.colors.outline + '40',
+    },
+    previewStatLabel: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+    },
+    previewChart: {
+      marginTop: theme.spacing.md,
+      height: 120,
+      borderRadius: theme.borderRadius.lg,
+      backgroundColor: theme.colors.surfaceVariant,
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    previewChartBar: {
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: theme.colors.outline + '50',
+    },
+    previewChartBarMid: {
+      width: '70%',
+      backgroundColor: theme.colors.outline + '70',
+    },
+    previewOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: theme.colors.surface + 'E6',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: theme.spacing.lg,
+    },
+    previewOverlayContent: {
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    previewLock: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    previewOverlayTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      textAlign: 'center',
+    },
+    previewOverlaySubtitle: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+    },
+    previewCta: {
+      marginTop: theme.spacing.xs,
     },
     inlineLoader: {
       alignItems: 'center',

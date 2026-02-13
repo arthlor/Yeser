@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from 'react';
 
-import { getMoodAnalytics } from '@/api/moodAnalyticsApi';
-import { queryKeys } from '@/api/queryKeys';
-import { QUERY_STALE_TIMES } from '@/api/queryClient';
+import { getMoodAnalytics } from '@/features/mood/api';
+import { queryKeys } from '@/shared/query/queryKeys';
+import { QUERY_STALE_TIMES } from '@/shared/query/queryClient';
 import type { MoodAnalyticsRange, MoodAnalyticsResponse } from '@/types/moodAnalytics.types';
-import useAuthStore, { shouldEnableQueries } from '@/store/authStore';
+import { shouldEnableQueries, useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import { useQuery } from '@tanstack/react-query';
 
 const DEFAULT_RANGE: MoodAnalyticsRange = '30d';
@@ -24,7 +24,7 @@ export interface UseMoodAnalyticsResult {
 export const useMoodAnalytics = (
   range: MoodAnalyticsRange = DEFAULT_RANGE
 ): UseMoodAnalyticsResult => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
 
   const query = useQuery<MoodAnalyticsResponse, Error>({
     queryKey: queryKeys.moodAnalytics(user?.id, range),

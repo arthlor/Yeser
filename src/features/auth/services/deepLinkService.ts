@@ -1,8 +1,7 @@
 import { logger } from '@/utils/debugConfig';
-// Analytics disabled
-import { AUTH_CONSTANTS, QueuedOTPToken, UrlProcessingState } from '../utils/authConstants';
+import { AUTH_CONSTANTS, UrlProcessingState } from '../utils/authConstants';
 
-// Add OAuth token interface with security improvements
+// OAuth token interface with security improvements
 interface QueuedOAuthToken {
   accessToken: string;
   refreshToken: string;
@@ -18,15 +17,13 @@ const PERIODIC_CLEANUP_INTERVAL = 60000; // 1 minute
 /**
  * Deep Link Service
  * Handles all auth-related deep link processing including:
- * - Magic link confirmation
- * - OTP token queuing for cold start scenarios
+ * - OAuth token handling for Google and Apple login
  * - OAuth token queuing for cold start scenarios
  * - URL processing state management
  * - Race condition prevention
  * - Enhanced memory leak prevention
  */
 export class DeepLinkService {
-  private otpTokenQueue: QueuedOTPToken[] = [];
   private oAuthTokenQueue: QueuedOAuthToken[] = [];
   private isProcessingQueue = false;
 
@@ -123,12 +120,6 @@ export class DeepLinkService {
    * Enforce maximum token queue sizes to prevent unbounded growth
    */
   private enforceTokenQueueLimits(): void {
-    if (this.otpTokenQueue.length > MAX_TOKEN_QUEUE_SIZE) {
-      // Keep only the most recent tokens
-      this.otpTokenQueue = this.otpTokenQueue.slice(-MAX_TOKEN_QUEUE_SIZE);
-      logger.warn('[CLEANUP] OTP token queue size exceeded limit, trimmed to recent tokens');
-    }
-
     if (this.oAuthTokenQueue.length > MAX_TOKEN_QUEUE_SIZE) {
       // Clear older OAuth tokens immediately for security
       this.clearOAuthTokens(this.oAuthTokenQueue.slice(0, -MAX_TOKEN_QUEUE_SIZE));
@@ -163,12 +154,12 @@ export class DeepLinkService {
       // Parse the URL with error protection
       const parsedUrl = new URL(url);
 
-      // Check if it's a magic link confirmation
-      if (this.isMagicLinkPath(parsedUrl.pathname)) {
-        logger.debug('Magic link path detected');
-        await this.processMagicLinkCallback(parsedUrl, url, databaseReady);
+      // Check if it's an OAuth callback
+      if (this.isAuthCallbackPath(parsedUrl.pathname)) {
+        logger.debug('OAuth callback path detected');
+        await this.processOAuthCallback(parsedUrl, url, databaseReady);
       } else {
-        logger.debug('Not a magic link path:', { pathname: parsedUrl.pathname });
+        logger.debug('Not an auth callback path:', { pathname: parsedUrl.pathname });
       }
     } catch (error) {
       logger.error('Error processing auth callback:', error as Error);
@@ -179,7 +170,6 @@ export class DeepLinkService {
 
   /**
    * Process queued tokens when database becomes ready
-   * Now handles both OTP and OAuth tokens with consistent queueing
    */
   async processQueuedTokens(): Promise<void> {
     if (this.isProcessingQueue) {
@@ -192,37 +182,8 @@ export class DeepLinkService {
 
     try {
       logger.debug('[TOKEN QUEUE] Processing queued tokens', {
-        otpTokens: this.otpTokenQueue.length,
         oAuthTokens: this.oAuthTokenQueue.length,
       });
-
-      // Process OTP tokens first
-      while (this.otpTokenQueue.length > 0) {
-        const token = this.otpTokenQueue.shift();
-        if (!token) {
-          break;
-        }
-
-        // Check if token has expired
-        if (now - token.timestamp > AUTH_CONSTANTS.TOKEN_EXPIRY_MS) {
-          logger.warn('[OTP QUEUE] OTP token expired, skipping', {
-            age: now - token.timestamp,
-            url: token.url,
-          });
-          continue;
-        }
-
-        try {
-          logger.debug('[OTP QUEUE] Processing OTP token from queue');
-          const { useMagicLinkStore } = await import('../store/magicLinkStore');
-          const magicLinkStore = useMagicLinkStore.getState();
-          await magicLinkStore.confirmMagicLink(token.tokenHash, token.type);
-          logger.debug('[OTP QUEUE] OTP token processed successfully');
-          break; // Only process one token at a time
-        } catch (error) {
-          logger.error('[OTP QUEUE] Failed to process OTP token:', error as Error);
-        }
-      }
 
       // Process OAuth tokens
       while (this.oAuthTokenQueue.length > 0) {
@@ -271,37 +232,31 @@ export class DeepLinkService {
    * Get current queue status (for debugging/monitoring)
    */
   getQueueStatus(): {
-    otpTokens: number;
-    oAuthTokens: number;
+    oauthTokens: number;
     isProcessing: boolean;
     oldestToken?: number;
   } {
-    const allTokenTimestamps = [
-      ...this.otpTokenQueue.map((t) => t.timestamp),
-      ...this.oAuthTokenQueue.map((t) => t.timestamp),
-    ];
-
+    const allTokenTimestamps = this.oAuthTokenQueue.map((t) => t.timestamp);
     const oldestToken = allTokenTimestamps.length > 0 ? Math.min(...allTokenTimestamps) : undefined;
 
     return {
-      otpTokens: this.otpTokenQueue.length,
-      oAuthTokens: this.oAuthTokenQueue.length,
+      oauthTokens: this.oAuthTokenQueue.length,
       isProcessing: this.isProcessingQueue,
       oldestToken,
     };
   }
 
   /**
-   * Check if a pathname indicates a magic link callback
+   * Check if a pathname indicates an auth callback
    */
-  private isMagicLinkPath(pathname: string): boolean {
+  private isAuthCallbackPath(pathname: string): boolean {
     return ['/auth/callback', '/auth/confirm', '/confirm', '/callback'].includes(pathname);
   }
 
   /**
-   * Process magic link callback and extract tokens
+   * Process OAuth callback and extract tokens
    */
-  private async processMagicLinkCallback(
+  private async processOAuthCallback(
     parsedUrl: URL,
     originalUrl: string,
     databaseReady: boolean
@@ -324,16 +279,13 @@ export class DeepLinkService {
           const coreAuthStore = useCoreAuthStore.getState();
           await coreAuthStore.setSessionFromTokens(accessToken, refreshToken);
           logger.debug('OAuth token authentication completed successfully');
-
-          // SECURITY: Clear tokens from URL parameters after successful processing
-          // Note: We can't modify the original URL, but we avoid storing it longer than necessary
         } catch (error) {
           logger.error('OAuth token authentication failed:', {
             error: (error as Error).message,
           });
         }
       } else {
-        // Database not ready - queue OAuth tokens (consistent with OTP handling)
+        // Database not ready - queue OAuth tokens
         logger.debug('[OAUTH QUEUE] Database not ready, queueing OAuth tokens');
         const queuedToken = {
           accessToken,
@@ -355,47 +307,8 @@ export class DeepLinkService {
 
         logger.debug('[OAUTH QUEUE] OAuth tokens queued for processing when database ready');
       }
-      return;
-    }
-
-    // Handle OTP-style tokens (fallback for traditional magic links)
-    const tokenHash =
-      fragmentParams.get('token_hash') ||
-      fragmentParams.get('token') ||
-      queryParams.get('token_hash') ||
-      queryParams.get('token');
-
-    const type = fragmentParams.get('type') || queryParams.get('type') || 'magiclink';
-
-    if (tokenHash) {
-      if (databaseReady) {
-        // Database is ready, process immediately using MODERN STORE for consistency
-        try {
-          // 🔥 CRITICAL FIX: Use modern magicLinkStore instead of legacy authStore
-          const { useMagicLinkStore } = await import('../store/magicLinkStore');
-          const magicLinkStore = useMagicLinkStore.getState();
-
-          await magicLinkStore.confirmMagicLink(tokenHash, type);
-          logger.debug('OTP magic link authentication completed successfully via modern store');
-        } catch (error) {
-          logger.error('OTP magic link authentication failed:', {
-            error: (error as Error).message,
-          });
-        }
-      } else {
-        // Database not ready, queue the token
-        logger.debug('[OTP QUEUE] Database not ready, queueing OTP token');
-        this.otpTokenQueue.push({
-          tokenHash,
-          type,
-          timestamp: Date.now(),
-          url: originalUrl,
-        });
-
-        logger.debug('[OTP QUEUE] OTP token queued for processing when database ready');
-      }
     } else {
-      logger.error('No valid tokens found in magic link URL');
+      logger.error('No valid OAuth tokens found in callback URL');
     }
   }
 
@@ -466,20 +379,10 @@ export class DeepLinkService {
   }
 
   /**
-   * Clean up expired tokens from both queues with security enhancements
+   * Clean up expired tokens with security enhancements
    */
   private cleanupExpiredTokens(): void {
     const now = Date.now();
-
-    // Clean OTP tokens
-    const expiredOTPTokens = this.otpTokenQueue.filter(
-      (token) => now - token.timestamp > AUTH_CONSTANTS.TOKEN_EXPIRY_MS
-    );
-    const validOTPTokens = this.otpTokenQueue.filter(
-      (token) => now - token.timestamp <= AUTH_CONSTANTS.TOKEN_EXPIRY_MS
-    );
-    this.otpTokenQueue.length = 0;
-    this.otpTokenQueue.push(...validOTPTokens);
 
     // Clean OAuth tokens with security clearing
     const expiredOAuthTokens = this.oAuthTokenQueue.filter(
@@ -495,9 +398,8 @@ export class DeepLinkService {
     this.oAuthTokenQueue.length = 0;
     this.oAuthTokenQueue.push(...validOAuthTokens);
 
-    if (expiredOTPTokens.length > 0 || expiredOAuthTokens.length > 0) {
+    if (expiredOAuthTokens.length > 0) {
       logger.debug('[CLEANUP] Expired tokens cleaned up', {
-        expiredOTP: expiredOTPTokens.length,
         expiredOAuth: expiredOAuthTokens.length,
       });
     }
@@ -510,7 +412,6 @@ export class DeepLinkService {
     // Securely clear OAuth tokens before removing
     this.clearOAuthTokens(this.oAuthTokenQueue);
 
-    this.otpTokenQueue.length = 0;
     this.oAuthTokenQueue.length = 0;
     this.isProcessingQueue = false;
     this.urlProcessingMap.clear();

@@ -1,14 +1,14 @@
-import { queryKeys } from '@/api/queryKeys';
-import { QUERY_STALE_TIMES } from '@/api/queryClient';
-import { getStreakData } from '@/api/streakApi';
+import { queryKeys } from '@/shared/query/queryKeys';
+import { QUERY_STALE_TIMES } from '@/shared/query/queryClient';
+import { getStreakData } from '@/features/streak/api';
 import { Streak } from '@/schemas/streakSchema';
-import useAuthStore from '@/store/authStore';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const useStreakData = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
 
   return useQuery<Streak | null, Error>({
     queryKey: queryKeys.streaks(user?.id),

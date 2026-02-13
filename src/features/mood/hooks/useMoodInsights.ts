@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { analyzeMoodInsights } from '@/api/moodAnalyticsApi';
-import useAuthStore from '@/store/authStore';
+import { analyzeMoodInsights } from '@/features/mood/api';
+import { queryKeys } from '@/shared/query/queryKeys';
+import { QUERY_STALE_TIMES } from '@/shared/query/queryClient';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import { useTranslation } from 'react-i18next';
 import { AIInsightResponse, MoodAnalyticsRange } from '@/types/moodAnalytics.types';
 
 export const useMoodInsights = (range: MoodAnalyticsRange) => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
   const { i18n } = useTranslation();
   const language = (['tr', 'es'].includes(i18n.language) ? i18n.language : 'en') as
     | 'tr'
@@ -13,10 +15,10 @@ export const useMoodInsights = (range: MoodAnalyticsRange) => {
     | 'en';
 
   const query = useQuery<AIInsightResponse, Error>({
-    queryKey: ['mood-insights', user?.id, range, language],
+    queryKey: queryKeys.moodInsights(user?.id, range, language),
     queryFn: () => analyzeMoodInsights(range, language),
     enabled: false, // On-demand only
-    staleTime: 1000 * 60 * 60,
+    staleTime: QUERY_STALE_TIMES.moodInsights,
     gcTime: 1000 * 60 * 60 * 24,
     retry: false,
   });

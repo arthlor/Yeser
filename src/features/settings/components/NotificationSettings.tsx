@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ToggleSwitch from 'toggle-switch-react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Notifications from 'expo-notifications';
@@ -10,62 +10,107 @@ import { useUserProfile } from '@/shared/hooks';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { notificationService } from '@/services/notificationService';
-import LoadingState from '@/components/states/LoadingState';
 import { logger } from '@/utils/logger';
 import { useTranslation } from 'react-i18next';
+import { UpdateProfilePayload } from '@/schemas/profileSchema';
 
 const FIRST_REMINDER_TIME = '12:30';
 const SECOND_REMINDER_TIME = '21:00';
+const REMINDER_TIME_PRESETS = ['08:00', '12:30', '18:00', '21:00'] as const;
 
+const normalizeReminderTime = (raw: string | null | undefined): string => {
+  if (!raw) {
+    return FIRST_REMINDER_TIME;
+  }
+
+  const match = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) {
+    return FIRST_REMINDER_TIME;
+  }
+
+  const hour = Number.parseInt(match[1], 10);
+  const minute = Number.parseInt(match[2], 10);
+  if (
+    Number.isNaN(hour) ||
+    Number.isNaN(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return FIRST_REMINDER_TIME;
+  }
+
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+};
+
+/**
+ * NotificationSettings
+ * Renders instantly from profile state, then syncs permissions/tokens in the background.
+ */
 export const NotificationSettings: React.FC = () => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { t } = useTranslation();
-  const { profile } = useUserProfile();
+  const { profile, updateProfile } = useUserProfile();
   const { handleMutationError } = useGlobalError();
   const { showError: showToastError, showSuccess: showToastSuccess } = useToast();
 
-  const [isEnabled, setIsEnabled] = useState(false);
+  const hasNotificationPreference = Boolean(profile?.notification_time);
+  const selectedReminderTime = useMemo(
+    () => normalizeReminderTime(profile?.notification_time),
+    [profile?.notification_time]
+  );
+
+  const [isEnabled, setIsEnabled] = useState(hasNotificationPreference);
   const [pushToken, setPushToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Refs for cleanup and race condition prevention
   const isMountedRef = useRef(true);
   const operationInProgressRef = useRef(false);
+  const hasSyncedRef = useRef(false);
 
-  // Effect to sync component state with user profile and check permissions
+  const updateProfileAsync = useCallback(
+    (payload: UpdateProfilePayload): Promise<void> =>
+      new Promise((resolve, reject) => {
+        updateProfile(payload, {
+          onSuccess: () => resolve(),
+          onError: (error) => reject(error),
+        });
+      }),
+    [updateProfile]
+  );
+
   useEffect(() => {
-    let isCancelled = false;
-    const timeoutId = setTimeout(() => {
-      if (!isCancelled && isMountedRef.current) {
-        setIsInitializing(false);
-        logger.warn('Notification initialization timed out - forcing clear');
-      }
-    }, 5000); // 5s safety timeout
+    if (profile?.notification_time !== undefined) {
+      setIsEnabled(Boolean(profile.notification_time));
+    }
+  }, [profile?.notification_time]);
 
-    const syncState = async () => {
-      // Prevent concurrent executions and redundant runs
+  // Background sync - runs once without blocking UI
+  useEffect(() => {
+    if (hasSyncedRef.current) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const syncInBackground = async () => {
       if (operationInProgressRef.current || !isMountedRef.current) {
         return;
       }
 
-      operationInProgressRef.current = true;
-      setIsInitializing(true);
+      hasSyncedRef.current = true;
+      setIsSyncing(true);
 
       try {
-        // 1. Ensure we have the latest token
-        let currentToken = pushToken;
-        if (!currentToken) {
-          currentToken = await notificationService.getCurrentDevicePushToken();
-          if (!isCancelled && isMountedRef.current && currentToken) {
-            setPushToken(currentToken);
-          }
+        const currentToken = await notificationService.getCurrentDevicePushToken();
+        if (!isCancelled && isMountedRef.current && currentToken) {
+          setPushToken(currentToken);
         }
 
-        // 2. Check permissions
         const permissions = await Notifications.getPermissionsAsync();
-
         if (isCancelled || !isMountedRef.current) {
           return;
         }
@@ -74,46 +119,35 @@ export const NotificationSettings: React.FC = () => {
         const isPermissionGranted =
           permissions.granted || (permissions.status as string) === 'provisional';
 
-        if (hasBackendPreference) {
-          if (isPermissionGranted) {
-            // Backend ON + Permission ON = Ensure Enabled & Scheduled
-            setIsEnabled(true);
-            await notificationService.scheduleDailyReminderNotifications();
-          } else {
-            // Backend ON + Permission OFF = Mismatch
+        if (hasBackendPreference && isPermissionGranted) {
+          await notificationService.scheduleDailyReminderNotifications(profile?.notification_time);
+        } else if (hasBackendPreference && !isPermissionGranted) {
+          if (isMountedRef.current) {
             setIsEnabled(false);
-            logger.warn('Notification mismatch - profile enabled but no device permission');
-            await notificationService.cancelDailyReminderNotifications();
           }
-        } else {
-          // Backend OFF = Ensure Disabled & Cancelled
-          setIsEnabled(false);
+          await notificationService.cancelDailyReminderNotifications();
+        } else if (!hasBackendPreference) {
           await notificationService.cancelDailyReminderNotifications();
         }
       } catch (error) {
         if (!isCancelled && isMountedRef.current) {
-          logger.error('Error in notification initialization:', error as Error);
+          logger.error('Error in notification sync:', error as Error);
         }
       } finally {
         if (!isCancelled && isMountedRef.current) {
-          setIsInitializing(false);
-          setIsLoading(false); // Ensure loading is also cleared
-          clearTimeout(timeoutId);
+          setIsSyncing(false);
         }
-        operationInProgressRef.current = false;
       }
     };
 
-    void syncState();
+    void syncInBackground();
 
     return () => {
       isCancelled = true;
-      clearTimeout(timeoutId);
     };
-  }, [profile?.notification_time, pushToken]); // Only re-sync when the preference actually changes or token is updated
+  }, [profile?.notification_time]);
 
   const enableNotifications = useCallback(async () => {
-    // Prevent concurrent operations
     if (operationInProgressRef.current || !isMountedRef.current) {
       return;
     }
@@ -127,18 +161,22 @@ export const NotificationSettings: React.FC = () => {
         const result = await notificationService.registerForPushNotificationsAsync();
 
         if (!result.token) {
-          // Handle different permission scenarios with helpful guidance
           if (result.status === 'denied' && result.canAskAgain === false) {
-            // User permanently denied - guide to settings
             showToastError(t('notifications.permissionRequiredMessage'));
             notificationService.showNotificationPermissionGuidance(false);
           } else if (result.status === 'denied') {
-            // User denied but can ask again - show explanation
-            showToastError(t('notifications.remindersLabel'));
+            showToastError(
+              t('notifications.errors.permissionDenied', {
+                defaultValue: 'Notification permission is required to enable reminders.',
+              })
+            );
             notificationService.showNotificationPermissionGuidance(true);
           } else {
-            // Other error (token generation failed)
-            showToastError(t('settings.data.exportError'));
+            showToastError(
+              t('notifications.errors.enableFailed', {
+                defaultValue: 'Could not enable notifications. Please try again.',
+              })
+            );
           }
           throw new Error('Permission not granted');
         }
@@ -149,18 +187,25 @@ export const NotificationSettings: React.FC = () => {
         }
       }
 
-      // Save token and check for errors
       const saveResult = await notificationService.saveTokenToBackend(token);
       if (!saveResult.ok) {
         logger.error('Failed to save push token:', saveResult.error);
-        showToastError(t('settings.data.exportError'));
+        showToastError(
+          t('notifications.errors.enableFailed', {
+            defaultValue: 'Could not enable notifications. Please try again.',
+          })
+        );
         throw saveResult.error ?? new Error('Failed to save push token');
       }
 
       const preferenceResult = await notificationService.setNotificationsEnabled(true);
       if (!preferenceResult.ok) {
         logger.error('Failed to enable notifications:', preferenceResult.error);
-        showToastError(t('settings.data.exportError'));
+        showToastError(
+          t('notifications.errors.enableFailed', {
+            defaultValue: 'Could not enable notifications. Please try again.',
+          })
+        );
         throw preferenceResult.error ?? new Error('Failed to enable notifications');
       }
 
@@ -176,7 +221,6 @@ export const NotificationSettings: React.FC = () => {
   }, [pushToken, showToastError, showToastSuccess, t]);
 
   const disableNotifications = useCallback(async () => {
-    // Prevent concurrent operations
     if (operationInProgressRef.current || !isMountedRef.current) {
       return;
     }
@@ -187,7 +231,6 @@ export const NotificationSettings: React.FC = () => {
     try {
       if (pushToken) {
         const removalResult = await notificationService.removeTokenFromBackend(pushToken);
-
         if (!removalResult.ok) {
           logger.warn('Failed to remove push token when disabling notifications', {
             error: removalResult.error?.message,
@@ -198,7 +241,11 @@ export const NotificationSettings: React.FC = () => {
       const preferenceResult = await notificationService.setNotificationsEnabled(false);
       if (!preferenceResult.ok) {
         logger.error('Failed to disable notifications:', preferenceResult.error);
-        showToastError(t('settings.data.exportError'));
+        showToastError(
+          t('notifications.errors.disableFailed', {
+            defaultValue: 'Could not disable notifications. Please try again.',
+          })
+        );
         throw preferenceResult.error ?? new Error('Failed to disable notifications');
       }
 
@@ -215,18 +262,14 @@ export const NotificationSettings: React.FC = () => {
 
   const handleToggleSwitch = useCallback(
     async (isOn: boolean) => {
-      // Prevent toggling during operations or initialization
-      if (operationInProgressRef.current || isLoading || isInitializing || !isMountedRef.current) {
+      if (operationInProgressRef.current || isLoading || !isMountedRef.current) {
         return;
       }
 
-      // Store previous state for rollback
       const previousState = isEnabled;
 
       if (isOn) {
-        // Optimistically turn on
         setIsEnabled(true);
-
         const permissions = await Notifications.getPermissionsAsync();
 
         if (!permissions.granted && permissions.canAskAgain) {
@@ -271,7 +314,6 @@ export const NotificationSettings: React.FC = () => {
         return;
       }
 
-      // Turning off
       setIsEnabled(false);
       try {
         await disableNotifications();
@@ -285,7 +327,6 @@ export const NotificationSettings: React.FC = () => {
     [
       isEnabled,
       isLoading,
-      isInitializing,
       enableNotifications,
       disableNotifications,
       showToastError,
@@ -294,35 +335,79 @@ export const NotificationSettings: React.FC = () => {
     ]
   );
 
+  const handleReminderTimeSelect = useCallback(
+    async (time: string) => {
+      if (operationInProgressRef.current || isLoading || isSyncing || !isMountedRef.current) {
+        return;
+      }
+
+      if (time === selectedReminderTime) {
+        return;
+      }
+
+      setIsSyncing(true);
+
+      try {
+        await updateProfileAsync({ notification_time: `${time}:00` });
+
+        if (isEnabled) {
+          const scheduleResult = await notificationService.scheduleDailyReminderNotifications(
+            `${time}:00`
+          );
+          if (!scheduleResult.ok) {
+            throw scheduleResult.error ?? new Error('Failed to reschedule reminder notifications');
+          }
+        }
+
+        showToastSuccess(
+          t('notifications.timeUpdatedSuccess', {
+            defaultValue: 'Reminder time updated to {{time}}.',
+            time,
+          })
+        );
+      } catch (error) {
+        showToastError(
+          t('notifications.errors.timeUpdateFailed', {
+            defaultValue: 'Could not update reminder time. Please try again.',
+          })
+        );
+        handleMutationError(error, 'update notification reminder time');
+      } finally {
+        if (isMountedRef.current) {
+          setIsSyncing(false);
+        }
+      }
+    },
+    [
+      isEnabled,
+      isLoading,
+      isSyncing,
+      selectedReminderTime,
+      showToastError,
+      showToastSuccess,
+      handleMutationError,
+      t,
+      updateProfileAsync,
+    ]
+  );
+
   const scheduleDescription = useMemo(
     () =>
       t('notifications.fixedScheduleDescription', {
-        firstTime: FIRST_REMINDER_TIME,
+        firstTime: selectedReminderTime,
         secondTime: SECOND_REMINDER_TIME,
       }),
-    [t]
+    [selectedReminderTime, t]
   );
 
-  // Cleanup effect for component unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
     };
   }, []);
 
-  // Show loading state during initialization
-  if (isInitializing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <LoadingState size="small" />
-        <Text style={styles.loadingText}>{t('settings.loading')}</Text>
-      </View>
-    );
-  }
-
   return (
     <View>
-      {/* Main Toggle Row */}
       <View style={styles.settingRow}>
         <View style={styles.settingInfo}>
           <View style={styles.iconContainer}>
@@ -333,15 +418,24 @@ export const NotificationSettings: React.FC = () => {
             <Text style={styles.settingDescription}>{t('onboarding.notifications.info')}</Text>
           </View>
         </View>
-        <ToggleSwitch
-          isOn={isEnabled}
-          onColor={theme.colors.primary}
-          offColor={theme.colors.outline}
-          size="medium"
-          onToggle={handleToggleSwitch}
-          animationSpeed={200}
-          disabled={isLoading || isInitializing}
-        />
+        <View style={styles.toggleContainer}>
+          {(isLoading || isSyncing) && (
+            <ActivityIndicator
+              size="small"
+              color={theme.colors.primary}
+              style={styles.loadingIndicator}
+            />
+          )}
+          <ToggleSwitch
+            isOn={isEnabled}
+            onColor={theme.colors.primary}
+            offColor={theme.colors.outline}
+            size="medium"
+            onToggle={handleToggleSwitch}
+            animationSpeed={200}
+            disabled={isLoading || isSyncing}
+          />
+        </View>
       </View>
 
       {isEnabled && (
@@ -354,6 +448,37 @@ export const NotificationSettings: React.FC = () => {
             <View style={styles.scheduleTextContainer}>
               <Text style={styles.scheduleTitle}>{t('notifications.remindersLabel')}</Text>
               <Text style={styles.scheduleDescription}>{scheduleDescription}</Text>
+              <Text style={styles.timeSelectionTitle}>
+                {t('notifications.reminderTimeTitle', { defaultValue: 'Primary reminder time' })}
+              </Text>
+              <View style={styles.timeChipRow}>
+                {REMINDER_TIME_PRESETS.map((time) => {
+                  const isSelected = selectedReminderTime === time;
+                  return (
+                    <TouchableOpacity
+                      key={time}
+                      style={[styles.timeChip, isSelected && styles.timeChipSelected]}
+                      onPress={() => void handleReminderTimeSelect(time)}
+                      disabled={isLoading || isSyncing}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('notifications.reminderTimeA11y', {
+                        defaultValue: 'Set reminder time to {{time}}',
+                        time,
+                      })}
+                      accessibilityState={{
+                        selected: isSelected,
+                        disabled: isLoading || isSyncing,
+                      }}
+                    >
+                      <Text
+                        style={[styles.timeChipText, isSelected && styles.timeChipTextSelected]}
+                      >
+                        {time}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           </View>
         </>
@@ -370,7 +495,6 @@ const createStyles = (theme: AppTheme) =>
       justifyContent: 'space-between',
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
-      // Removed borderBottomWidth here to allow for more cohesive grouping
     },
     settingInfo: {
       flex: 1,
@@ -400,6 +524,13 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       lineHeight: 20,
     },
+    toggleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    loadingIndicator: {
+      marginRight: theme.spacing.sm,
+    },
     divider: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: theme.colors.outline + '15',
@@ -419,6 +550,7 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.primaryContainer,
       justifyContent: 'center',
       alignItems: 'center',
+      alignSelf: 'flex-start',
     },
     scheduleTextContainer: {
       flex: 1,
@@ -433,16 +565,37 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
       lineHeight: 20,
+      marginBottom: theme.spacing.sm,
     },
-    loadingContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.lg,
-    },
-    loadingText: {
-      ...theme.typography.bodyMedium,
+    timeSelectionTitle: {
+      ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      marginLeft: theme.spacing.sm,
+      fontWeight: '600',
+      marginBottom: theme.spacing.xs,
+    },
+    timeChipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: theme.spacing.xs,
+    },
+    timeChip: {
+      borderRadius: theme.borderRadius.full,
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '40',
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      backgroundColor: theme.colors.surface,
+    },
+    timeChipSelected: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.primaryContainer,
+    },
+    timeChipText: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurface,
+      fontWeight: '700',
+    },
+    timeChipTextSelected: {
+      color: theme.colors.onPrimaryContainer,
     },
   });

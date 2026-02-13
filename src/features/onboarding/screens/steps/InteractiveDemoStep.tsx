@@ -11,10 +11,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
 import type { MoodEmoji } from '@/types/mood.types';
 
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingLayout } from '@/features/onboarding/components/OnboardingLayout';
 import { ScreenSection } from '@/shared/components/layout';
-import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
-import OnboardingGratitudeInput from '@/components/onboarding/OnboardingGratitudeInput';
+import OnboardingNavHeader from '@/features/onboarding/components/OnboardingNavHeader';
+import OnboardingGratitudeInput from '@/features/onboarding/components/OnboardingGratitudeInput';
 import { useGratitudeMutations } from '@/features/gratitude/hooks';
 import { useCurrentPrompt } from '@/features/gratitude/hooks';
 
@@ -232,13 +232,13 @@ const createStyles = (theme: AppTheme) =>
     },
     title: {
       ...theme.typography.headlineLarge,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.sm,
     },
     subtitle: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 24,
     },
@@ -272,7 +272,7 @@ const createStyles = (theme: AppTheme) =>
     },
     promptText: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       fontStyle: 'italic',
       lineHeight: 22,
     },
@@ -298,12 +298,12 @@ const createStyles = (theme: AppTheme) =>
     },
     successTitle: {
       ...theme.typography.headlineMedium,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       marginBottom: theme.spacing.sm,
     },
     successText: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 22,
     },
@@ -313,7 +313,7 @@ const createStyles = (theme: AppTheme) =>
     },
     encouragement: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       fontStyle: 'italic',
       textAlign: 'center',
     },
@@ -325,7 +325,7 @@ const createStyles = (theme: AppTheme) =>
     },
     savingText: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
     },
   });
 

@@ -14,7 +14,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { AppTheme } from '@/themes/types';
-// Removed unused alpha import
+import { alpha } from '@/themes/utils';
 import {
   createSharedStyles,
   formatStatementDate,
@@ -515,7 +515,7 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       textAlign: 'left',
       lineHeight: sharedStyles.layout.isCompact ? 24 : 26,
       marginBottom: sharedStyles.spacing.elementGap,
-      textShadowColor: theme.colors.shadow + '05',
+      textShadowColor: alpha(theme.colors.scrim, 0.05),
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 1,
     },
@@ -557,7 +557,7 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       marginBottom: theme.spacing.sm,
       overflow: 'visible', // CRITICAL: Allow menu to overflow
       // Subtle shadow for depth
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.04,
       shadowRadius: 6,
@@ -583,7 +583,7 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       letterSpacing: 0.3,
       fontFamily: 'Lora-Medium',
       // Enhanced text attractiveness
-      textShadowColor: theme.colors.shadow + '08',
+      textShadowColor: alpha(theme.colors.scrim, 0.08),
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 2,
     },
@@ -605,7 +605,7 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       alignItems: 'center',
       justifyContent: 'center',
       // Minimal shadow
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.1,
       shadowRadius: 2,
@@ -640,7 +640,7 @@ const createStyles = (theme: AppTheme, sharedStyles: ReturnType<typeof createSha
       maxHeight: 120,
       backgroundColor: theme.colors.surface,
       // Simple shadow
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,
       shadowRadius: 2,

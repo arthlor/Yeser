@@ -12,6 +12,7 @@ import DailyEntryScreen from '../features/gratitude/screens/DailyEntryScreen';
 import EntryDetailScreen from '../features/gratitude/screens/EntryDetailScreen';
 import PastEntryCreationScreen from '../features/gratitude/screens/PastEntryCreationScreen';
 import MoodAnalysisScreen from '../features/mood/screens/MoodAnalysisScreen';
+import { CustomerCenterScreen } from '../features/subscription/screens/CustomerCenterScreen';
 import HelpScreen from '../features/settings/screens/HelpScreen';
 import HomeScreen from '../features/home/screens/HomeScreen';
 import PastEntriesScreen from '../features/calendar/screens/PastEntriesScreen';
@@ -61,7 +62,7 @@ const createTabBarStyles = (theme: AppTheme, insets: { bottom: number }) =>
       flex: 1,
     },
     tabBarLabel: {
-      fontSize: 10,
+      fontSize: 11,
       fontWeight: '600',
       marginTop: 2,
       marginBottom: Platform.OS === 'ios' ? 0 : 4,
@@ -86,7 +87,7 @@ const MainAppTabNavigator: React.FC = () => {
           } else if (route.name === 'DailyEntryTab') {
             iconName = focused ? 'plus-circle' : 'plus-circle-outline';
           } else if (route.name === 'PastEntriesTab') {
-            iconName = focused ? 'history' : 'history';
+            iconName = focused ? 'history' : 'clock-outline';
           } else if (route.name === 'CalendarTab') {
             iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'SettingsTab') {
@@ -270,6 +271,14 @@ const AppNavigator: React.FC = () => {
           presentation: 'modal',
         }}
         initialParams={{ date: new Date().toISOString() }}
+      />
+      <AppStack.Screen
+        name="CustomerCenter"
+        component={CustomerCenterScreen}
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
       />
       <AppStack.Screen
         name="PrivacyPolicy"

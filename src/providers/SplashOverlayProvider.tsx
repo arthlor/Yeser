@@ -8,7 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import EnhancedSplashScreen from '@/features/auth/screens/SplashScreen';
-import useAuthStore from '@/store/authStore';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import { useUserProfile } from '@/hooks';
 
 interface SplashOverlayProviderProps {
@@ -19,8 +19,8 @@ interface SplashOverlayProviderProps {
 // authentication & initial profile loading are finished. It fades out smoothly and unmounts
 // itself to avoid leaving an extra view in the hierarchy.
 const SplashOverlayProvider: React.FC<SplashOverlayProviderProps> = ({ children }) => {
-  const authIsLoading = useAuthStore((state) => state.isLoading);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authIsLoading = useCoreAuthStore((state) => state.isLoading);
+  const isAuthenticated = useCoreAuthStore((state) => state.isAuthenticated);
 
   // We purposefully call the hook only if the user is authenticated to avoid an extra request
   const { isLoadingProfile, isProfileError } = useUserProfile();

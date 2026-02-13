@@ -1,9 +1,9 @@
 import React from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { queryClient } from '@/api/queryClient';
+import { queryClient } from '@/shared/query/queryClient';
 import { logger } from '@/utils/debugConfig';
-import useAuthStore from '@/store/authStore';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import type { UpdateProfilePayload } from '@/schemas/profileSchema';
 import { supabaseService } from '@/utils/supabaseClient';
 
@@ -38,6 +38,7 @@ class BackgroundSyncService implements InitializableService {
   private syncInterval: ReturnType<typeof setInterval> | null = null;
   private initialized: boolean = false;
   private databaseReady: boolean = false;
+  private queueLock: Promise<void> = Promise.resolve();
 
   constructor() {
     // 🚨 COLD START FIX: No immediate operations in constructor
@@ -105,6 +106,24 @@ class BackgroundSyncService implements InitializableService {
         error as Error
       );
       throw new Error('Database connection required for background sync');
+    }
+  }
+
+  /**
+   * Serialize queue read/write operations to prevent race conditions.
+   */
+  private async withQueueLock<T>(operation: () => Promise<T>): Promise<T> {
+    const previousLock = this.queueLock;
+    let release: () => void = () => {};
+    this.queueLock = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    await previousLock;
+    try {
+      return await operation();
+    } finally {
+      release();
     }
   }
 
@@ -215,15 +234,15 @@ class BackgroundSyncService implements InitializableService {
         retryCount: 0,
       };
 
-      const queueData = await this.getSyncQueue();
-      queueData.mutations.push(mutation);
-
-      await AsyncStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queueData));
-
-      logger.debug('Mutation queued for sync', {
-        mutationId: mutation.id,
-        type: mutation.type,
-        queueLength: queueData.mutations.length,
+      await this.withQueueLock(async () => {
+        const queueData = await this.getSyncQueue();
+        queueData.mutations.push(mutation);
+        await AsyncStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queueData));
+        logger.debug('Mutation queued for sync', {
+          mutationId: mutation.id,
+          type: mutation.type,
+          queueLength: queueData.mutations.length,
+        });
       });
     } catch (error) {
       logger.error('Failed to queue mutation for sync', { error, type, data });
@@ -247,7 +266,7 @@ class BackgroundSyncService implements InitializableService {
     this.isSyncing = true;
 
     try {
-      const queueData = await this.getSyncQueue();
+      const queueData = await this.withQueueLock(() => this.getSyncQueue());
 
       if (queueData.mutations.length === 0) {
         this.isSyncing = false;
@@ -287,13 +306,29 @@ class BackgroundSyncService implements InitializableService {
         }
       }
 
-      // Update queue with only failed mutations
-      const updatedQueueData: SyncQueueData = {
-        mutations: failedSyncs,
-        lastSyncAttempt: Date.now(),
-      };
+      // Update queue with failed mutations + any newly queued items
+      const successfulIds = new Set(successfulSyncs);
+      await this.withQueueLock(async () => {
+        const currentQueueData = await this.getSyncQueue();
+        const mergedMap = new Map<string, PendingMutation>();
 
-      await AsyncStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(updatedQueueData));
+        currentQueueData.mutations.forEach((mutation) => {
+          if (!successfulIds.has(mutation.id)) {
+            mergedMap.set(mutation.id, mutation);
+          }
+        });
+
+        failedSyncs.forEach((mutation) => {
+          mergedMap.set(mutation.id, mutation);
+        });
+
+        const updatedQueueData: SyncQueueData = {
+          mutations: Array.from(mergedMap.values()),
+          lastSyncAttempt: Date.now(),
+        };
+
+        await AsyncStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(updatedQueueData));
+      });
 
       logger.debug('Sync completed', {
         successful: successfulSyncs.length,
@@ -316,7 +351,7 @@ class BackgroundSyncService implements InitializableService {
    * Execute a specific mutation
    */
   private async executeMutation(mutation: PendingMutation): Promise<void> {
-    const user = useAuthStore.getState().user;
+    const user = useCoreAuthStore.getState().user;
     if (!user?.id) {
       throw new Error('User not authenticated for sync');
     }
@@ -328,12 +363,12 @@ class BackgroundSyncService implements InitializableService {
 
     switch (mutation.type) {
       case 'add_statement': {
-        const { addStatement } = await import('@/api/gratitudeApi');
+        const { addStatement } = await import('@/features/gratitude/api');
         await addStatement(mutation.data.entryDate as string, mutation.data.statement as string);
 
         // 🔧 FIX: Recalculate streak after offline gratitude operations
         try {
-          const { recalculateUserStreak } = await import('@/api/streakApi');
+          const { recalculateUserStreak } = await import('@/features/streak/api');
           await recalculateUserStreak();
         } catch (error) {
           // Non-blocking: Log streak error but don't fail the sync operation
@@ -347,7 +382,7 @@ class BackgroundSyncService implements InitializableService {
       }
 
       case 'edit_statement': {
-        const { editStatement } = await import('@/api/gratitudeApi');
+        const { editStatement } = await import('@/features/gratitude/api');
         await editStatement(
           mutation.data.entryDate as string,
           mutation.data.statementIndex as number,
@@ -356,7 +391,7 @@ class BackgroundSyncService implements InitializableService {
 
         // 🔧 FIX: Recalculate streak after offline gratitude operations
         try {
-          const { recalculateUserStreak } = await import('@/api/streakApi');
+          const { recalculateUserStreak } = await import('@/features/streak/api');
           await recalculateUserStreak();
         } catch (error) {
           // Non-blocking: Log streak error but don't fail the sync operation
@@ -370,7 +405,7 @@ class BackgroundSyncService implements InitializableService {
       }
 
       case 'delete_statement': {
-        const { deleteStatement } = await import('@/api/gratitudeApi');
+        const { deleteStatement } = await import('@/features/gratitude/api');
         await deleteStatement(
           mutation.data.entryDate as string,
           mutation.data.statementIndex as number
@@ -378,7 +413,7 @@ class BackgroundSyncService implements InitializableService {
 
         // 🔧 FIX: Recalculate streak after offline gratitude operations
         try {
-          const { recalculateUserStreak } = await import('@/api/streakApi');
+          const { recalculateUserStreak } = await import('@/features/streak/api');
           await recalculateUserStreak();
         } catch (error) {
           // Non-blocking: Log streak error but don't fail the sync operation
@@ -392,7 +427,7 @@ class BackgroundSyncService implements InitializableService {
       }
 
       case 'update_profile': {
-        const { updateProfile } = await import('@/api/profileApi');
+        const { updateProfile } = await import('@/features/settings/profileApi');
         await updateProfile(mutation.data as UpdateProfilePayload);
         break;
       }

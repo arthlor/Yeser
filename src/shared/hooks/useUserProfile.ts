@@ -1,7 +1,7 @@
-import { deleteUserAccount, getProfile, updateProfile } from '@/api/profileApi';
+import { deleteUserAccount, getProfile, updateProfile } from '@/features/settings/profileApi';
 import { useEffect } from 'react';
-import { queryKeys } from '@/api/queryKeys';
-import { QUERY_STALE_TIMES } from '@/api/queryClient';
+import { queryKeys } from '@/shared/query/queryKeys';
+import { QUERY_STALE_TIMES } from '@/shared/query/queryClient';
 import { Profile, UpdateProfilePayload } from '@/schemas/profileSchema';
 import {
   clearAvatarSignedUrlSizedCacheForPath,
@@ -9,14 +9,14 @@ import {
   createAvatarSignedUrlSized,
   deleteAvatarAtPath,
   uploadAvatarFromUri,
-} from '@/api/avatarApi';
-import useAuthStore from '@/store/authStore';
+} from '@/features/settings/avatarApi';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { logger } from '@/utils/debugConfig';
 
 export const useUserProfile = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
   const queryClient = useQueryClient();
   const { handleMutationError } = useGlobalError();
 
@@ -97,10 +97,11 @@ export const useUserProfile = () => {
   // Prefetch a couple of common avatar sizes to reduce perceived latency
   useEffect(() => {
     const run = async (): Promise<void> => {
-      const path = profile?.avatar_path ?? null;
-      if (!path) {
+      // Don't attempt to fetch if there's no user session or avatar path
+      if (!user?.id || !profile?.avatar_path) {
         return;
       }
+      const path = profile.avatar_path;
       try {
         await Promise.all([
           createAvatarSignedUrlSized(path, 64),
@@ -111,7 +112,7 @@ export const useUserProfile = () => {
       }
     };
     void run();
-  }, [profile?.avatar_path]);
+  }, [profile?.avatar_path, user?.id]);
 
   const {
     mutate: deleteAccountMutation,
@@ -124,7 +125,7 @@ export const useUserProfile = () => {
       queryClient.clear();
 
       // Force logout after successful deletion
-      useAuthStore.getState().logout();
+      useCoreAuthStore.getState().logout();
 
       logger.debug('Account deletion successful:', data);
     },

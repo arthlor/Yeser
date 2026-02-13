@@ -3,8 +3,8 @@ import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
-import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
+import { OnboardingLayout } from '@/features/onboarding/components/OnboardingLayout';
+import { OnboardingButton } from '@/features/onboarding/components/OnboardingButton';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { hapticFeedback } from '@/utils/hapticFeedback';
@@ -14,7 +14,7 @@ import { getPrimaryShadow } from '@/themes/utils';
 import type { AppTheme } from '@/themes/types';
 import { logger } from '@/utils/debugConfig';
 import { ScreenSection } from '@/shared/components/layout';
-import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
+import OnboardingNavHeader from '@/features/onboarding/components/OnboardingNavHeader';
 
 interface NotificationPermissionStepProps {
   onNext: () => void;

@@ -95,7 +95,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       backgroundColor: theme.colors.surfaceVariant,
       borderWidth: 2,
       borderColor: theme.colors.primary + '40',
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 3 },
       shadowOpacity: 0.15,
       shadowRadius: 6,

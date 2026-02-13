@@ -257,7 +257,17 @@
     "enable": "Habilitar",
     "maybeLater": "Quizás más tarde",
     "openSettings": "Abrir Configuración",
-    "fixedScheduleDescription": "Te recordaremos dos veces al día a las {{firstTime}} y {{secondTime}} (9 PM) en tu hora local."
+    "fixedScheduleDescription": "Te recordaremos dos veces al día a las {{firstTime}} y {{secondTime}} en tu hora local.",
+    "reminderTimeTitle": "Hora principal del recordatorio",
+    "timeUpdatedSuccess": "La hora del recordatorio se actualizó a las {{time}}.",
+    "reminderTimeA11y": "Configurar recordatorio para las {{time}}",
+    "errors": {
+      "generic": "Ocurrió un problema con las notificaciones.",
+      "permissionDenied": "Se requiere permiso de notificaciones para activar recordatorios.",
+      "enableFailed": "No se pudieron activar las notificaciones. Inténtalo de nuevo.",
+      "disableFailed": "No se pudieron desactivar las notificaciones. Inténtalo de nuevo.",
+      "timeUpdateFailed": "No se pudo actualizar la hora del recordatorio. Inténtalo de nuevo."
+    }
   },
   "calendar": {
     "title": "TU VIAJE",
@@ -506,7 +516,8 @@
     },
     "gratitude": {
       "empty": "La declaración de gratitud no puede estar vacía.",
-      "required": "Se requiere al menos una declaración de gratitud."
+      "required": "Se requiere al menos una declaración de gratitud.",
+      "tooLong": "La declaración de gratitud debe tener 500 caracteres o menos."
     },
     "streak": {
       "negativeStreak": "La racha actual no puede ser negativa",
@@ -551,25 +562,10 @@
     "login": {
       "brand": "Yeser",
       "welcome": "¡Bienvenido!",
-      "magicLinkSentTitle": "¡Enlace de inicio de sesión enviado!",
-      "magicLinkSentDesc": "Revisa tu correo electrónico y haz clic en el enlace de inicio de sesión.",
       "continueJourney": "Continúa tu viaje de gratitud",
       "secure": {
         "trust1": "Inicio de Sesión Seguro",
-        "trust2": "Sin contraseña",
-        "toggleHelp": {
-          "show": "¿Qué es un Enlace Seguro?",
-          "hide": "Ocultar Ayuda"
-        },
-        "helpTitle": "🔒 Seguro y Fácil",
-        "helpDesc": "Con un enlace seguro, no hay necesidad de recordar una contraseña. Enviamos un enlace único a tu correo electrónico."
-      },
-      "labels": {
-        "email": "Dirección de Correo Electrónico",
-        "emailPlaceholder": "nombre@ejemplo.com"
-      },
-      "divider": {
-        "or": "o"
+        "trust2": "Sin contraseña"
       },
       "oauth": {
         "googleContinue": "Continuar con Google",
@@ -578,16 +574,11 @@
       },
       "toasts": {
         "loginSuccess": "¡Has iniciado sesión exitosamente!",
-        "rateLimit": "Por favor espera, has enviado demasiadas solicitudes.",
-        "invalidEmail": "Ingresa una dirección de correo electrónico válida",
         "googleNotReady": "Los servicios de Google no están listos aún. Por favor espera.",
         "appleOnlyIOS": "El inicio de sesión con Apple solo es compatible con iOS.",
         "appleNotReady": "Los servicios de Apple no están listos aún. Por favor espera."
       },
       "buttons": {
-        "send": "Enviar Enlace de Inicio de Sesión",
-        "sending": "Enviando...",
-        "resend": "Reenviar",
         "openInBrowser": "Iniciar sesión en el navegador...",
         "googleLoading": "Preparando servicios de Google...",
         "googleSigning": "Iniciando sesión con Google...",
@@ -597,8 +588,6 @@
     },
     "services": {
       "waitSeconds": "Por favor espera {{seconds}} segundos e inténtalo de nuevo.",
-      "rateLimitMessage": "Por favor espera {{remainingTime}} segundos e inténtalo de nuevo.",
-      "magicLinkSent": "¡El enlace de inicio de sesión ha sido enviado a tu correo electrónico!",
       "appleStartFailed": "No se pudo iniciar sesión con Apple.",
       "appleRedirectMissing": "No se pudo obtener la URL de redireccionamiento para el inicio de sesión con Apple.",
       "appleInProgress": "Inicio de sesión en progreso. Por favor espera.",
@@ -608,12 +597,7 @@
       "googleRedirectMissing": "No se pudo obtener la URL de redireccionamiento para el inicio de sesión con Google.",
       "googleInProgress": "Inicio de sesión en progreso. Por favor espera.",
       "googleNetwork": "Problema de conexión a Internet. Por favor inténtalo de nuevo.",
-      "googleFailed": "El inicio de sesión con Google falló. Por favor inténtalo de nuevo.",
-      "magicLink": {
-        "inProgress": "Inicio de sesión en progreso. Por favor espera.",
-        "linkSent": "¡El enlace de inicio de sesión ha sido enviado a tu correo electrónico!",
-        "invalidLink": "Enlace de inicio de sesión inválido. Por favor solicita uno nuevo."
-      }
+      "googleFailed": "El inicio de sesión con Google falló. Por favor inténtalo de nuevo."
     },
     "validation": {
       "emailRequired": "El correo electrónico es obligatorio",
@@ -1536,12 +1520,13 @@
       },
       "premiumPayment": {
         "title": "Aplicación Premium y Términos de Pago",
-        "content": "Yeser es una aplicación premium de pago. La aplicación se compra con un pago único de 39.99 TL y proporciona acceso ilimitado a todas las funciones. Términos de pago:",
+        "content": "Yeser ofrece una suscripción premium que desbloquea todas las funciones. Términos de pago:",
         "items": [
-          "Pago Único: No hay sistema de suscripción, solo paga una vez",
+          "Suscripción de Renovación Automática: Tu suscripción se renueva automáticamente a menos que se cancele al menos 24 horas antes del final del periodo actual",
           "App Store/Google Play: Todos los pagos se procesan a través de las tiendas de aplicaciones relevantes",
-          "Política de Reembolso: Las solicitudes de reembolso están sujetas a las políticas de Apple/Google",
-          "IVA Incluido: El precio indicado incluye IVA"
+          "Gestionar o Cancelar: Puedes gestionar o cancelar desde la configuración de tu cuenta en la tienda",
+          "Precio e Impuestos: Los precios se muestran antes de la compra y pueden variar según la región; los impuestos se incluyen cuando corresponda",
+          "Restaurar Compras: Puedes restaurar compras anteriores desde la aplicación"
         ]
       },
       "usage": {
@@ -1649,7 +1634,20 @@
   "subscription": {
     "customerCenter": {
       "title": "Administra tu suscripción",
-      "openButton": "Abrir Centro de Clientes"
+      "openButton": "Abrir Centro de Clientes",
+      "description": "Administra, actualiza o restaura tu suscripción."
+    },
+    "locked": {
+      "aiCoach": {
+        "title": "Desbloquear Entrenador de IA",
+        "subtitle": "Preguntas y guía personalizadas para profundizar tu práctica.",
+        "cta": "Pasar a Premium"
+      },
+      "aiChat": {
+        "title": "Desbloquear Chat de IA",
+        "subtitle": "Reflexiona cuando quieras con tu compañero de gratitud.",
+        "cta": "Pasar a Premium"
+      }
     },
     "upsell": {
       "title": "Actualizar a Premium",
@@ -1670,7 +1668,41 @@
       "unlockSubtitle": "Accede a análisis y tendencias detalladas",
       "upgradeToPro": "Actualizar a Pro",
       "loading": "Cargando opciones de suscripción...",
-      "noOfferings": "No se pudieron cargar las opciones de suscripción"
+      "noOfferings": "No se pudieron cargar las opciones de suscripción",
+      "context": {
+        "default": {
+          "title": "Actualizar a Premium",
+          "subtitle": "Desbloquea todas las funciones premium y profundiza tu práctica."
+        },
+        "aiCoach": {
+          "title": "Desbloquear Entrenador de IA",
+          "subtitle": "Obtén preguntas y guía personalizadas para tu camino."
+        },
+        "aiChat": {
+          "title": "Desbloquear Chat de IA",
+          "subtitle": "Reflexiona cuando quieras con tu compañero de gratitud."
+        },
+        "insights": {
+          "title": "Desbloquear Perspectivas Premium",
+          "subtitle": "Accede a análisis y tendencias con mayor profundidad."
+        },
+        "pastEntries": {
+          "title": "Desbloquear Entradas Pasadas",
+          "subtitle": "Agrega y edita gratitudes en cualquier fecha anterior."
+        },
+        "dailyLimit": {
+          "title": "Entradas Diarias Ilimitadas",
+          "subtitle": "Supera el límite gratuito y escribe cuanto quieras."
+        },
+        "pdfExport": {
+          "title": "Exporta tus Gratitudes",
+          "subtitle": "Crea hermosos PDF de tus entradas en cualquier momento."
+        },
+        "variedPrompts": {
+          "title": "Desbloquear Preguntas Variadas",
+          "subtitle": "Obtén más inspiración con un rango más amplio de preguntas."
+        }
+      }
     },
     "restore": {
       "success": "¡Suscripción restaurada!",

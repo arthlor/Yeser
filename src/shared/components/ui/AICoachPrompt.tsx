@@ -9,6 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { useTranslation } from 'react-i18next';
@@ -46,7 +47,7 @@ export const AICoachPrompt: React.FC<AICoachPromptProps> = ({
   const { theme } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { isPro } = useSubscription();
+  const { isPro, checkGate } = useSubscription();
   const language = useLanguageStore((state) => state.language);
 
   const { coachPrompt, isLoading, generatePrompt, remaining, resetInSeconds } = useCoachPrompt({
@@ -68,8 +69,59 @@ export const AICoachPrompt: React.FC<AICoachPromptProps> = ({
     setIsExpanded(true);
   }, [generatePrompt, recentEntries, selectedFocus, remaining]);
 
+  const handleUnlock = React.useCallback(() => {
+    checkGate('ai_coach_prompt');
+  }, [checkGate]);
+
   if (!isPro) {
-    return null;
+    return (
+      <TouchableOpacity
+        style={[styles.container, styles.lockedWrapper, style]}
+        onPress={handleUnlock}
+        activeOpacity={0.9}
+        accessibilityRole="button"
+        accessibilityLabel={t('subscription.locked.aiCoach.title', 'Unlock AI Coach')}
+        accessibilityHint={t('subscription.locked.aiCoach.cta', 'Go Premium')}
+      >
+        <LinearGradient
+          colors={[theme.colors.primaryContainer, theme.colors.surface]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.lockedGradient}
+        >
+          <View style={styles.lockedHeader}>
+            <View style={styles.lockedIconCircle}>
+              <Icon name="lock-outline" size={18} color={theme.colors.primary} />
+            </View>
+            <View style={styles.lockedTitleBlock}>
+              <Text style={styles.lockedTitle}>
+                {t('subscription.locked.aiCoach.title', 'Unlock AI Coach')}
+              </Text>
+              <Text style={styles.lockedSubtitle}>
+                {t(
+                  'subscription.locked.aiCoach.subtitle',
+                  'Personalized prompts and guidance to deepen your practice.'
+                )}
+              </Text>
+            </View>
+            <View style={styles.lockedBadge}>
+              <Text style={styles.lockedBadgeText}>{t('shared.ui.badges.pro', 'PRO')}</Text>
+            </View>
+          </View>
+
+          <View style={styles.lockedCtaRow}>
+            <View style={styles.lockedCtaPill}>
+              <Text style={styles.lockedCtaText}>
+                {t('subscription.locked.aiCoach.cta', 'Go Premium')}
+              </Text>
+              <Icon name="arrow-right" size={16} color={theme.colors.onPrimary} />
+            </View>
+          </View>
+
+          <View style={styles.lockedGlow} />
+        </LinearGradient>
+      </TouchableOpacity>
+    );
   }
 
   return (
@@ -196,6 +248,88 @@ const createStyles = (theme: AppTheme) =>
       borderWidth: 1,
       borderColor: theme.colors.outline + '20',
       overflow: 'hidden',
+    },
+    lockedWrapper: {
+      borderColor: theme.colors.primary + '30',
+    },
+    lockedGradient: {
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.lg,
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    lockedHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: theme.spacing.sm,
+    },
+    lockedIconCircle: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: theme.colors.primary + '1A',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    lockedTitleBlock: {
+      flex: 1,
+      gap: 2,
+    },
+    lockedTitle: {
+      ...theme.typography.labelLarge,
+      color: theme.colors.onSurface,
+      fontWeight: '700',
+    },
+    lockedSubtitle: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+    },
+    lockedBadge: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 999,
+      alignSelf: 'flex-start',
+    },
+    lockedBadgeText: {
+      color: theme.colors.onPrimary,
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 0.4,
+    },
+    lockedCtaRow: {
+      marginTop: theme.spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+    },
+    lockedCtaPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 999,
+      shadowColor: theme.colors.primary,
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 4,
+    },
+    lockedCtaText: {
+      ...theme.typography.labelLarge,
+      color: theme.colors.onPrimary,
+      fontWeight: '700',
+    },
+    lockedGlow: {
+      position: 'absolute',
+      right: -30,
+      top: -30,
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: theme.colors.primary + '12',
     },
     header: {
       flexDirection: 'row',

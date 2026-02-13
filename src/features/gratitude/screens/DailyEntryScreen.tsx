@@ -47,6 +47,7 @@ import { useTranslation } from 'react-i18next';
 import { useSubscription } from '@/hooks/useSubscription';
 import { format } from 'date-fns';
 import { enUS, es, tr } from 'date-fns/locale';
+import { getStaticDefaultPrompt } from '@/features/gratitude/hooks/usePrompts';
 
 type DailyEntryScreenRouteProp = RouteProp<MainTabParamList, 'DailyEntryTab'>;
 
@@ -117,7 +118,10 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const { fetchNewPrompt } = usePromptMutations();
 
   const { daily_gratitude_goal } = profile || {};
-  const showInspirationPrompts = profile?.useVariedPrompts ?? profile?.use_varied_prompts ?? true;
+  const wantsVariedPrompts =
+    isPro && (profile?.useVariedPrompts ?? profile?.use_varied_prompts ?? true);
+  const canUseVariedPrompts = wantsVariedPrompts;
+  const showInspirationPrompts = wantsVariedPrompts;
 
   const animations = useCoordinatedAnimations();
 
@@ -304,13 +308,19 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       const originalMood = (currentEntry?.moods as Record<string, string> | undefined)?.[
         String(statements.length - 1 - index)
       ] as MoodEmoji | undefined;
+      let finalMood = updatedMood ?? null;
+
+      if (!isPro && finalMood !== (originalMood ?? null)) {
+        checkGate('mood_editing');
+        finalMood = originalMood ?? null;
+      }
 
       try {
         gratitudeStatementSchema.parse(updatedStatement);
 
         if (
           updatedStatement.trim() === originalStatement.trim() &&
-          updatedMood === (originalMood ?? null)
+          finalMood === (originalMood ?? null)
         ) {
           animations.animateLayoutTransition(false, 0, { duration: 200 });
           setEditingStatementIndex(null);
@@ -323,7 +333,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             entryDate: finalDateString,
             statementIndex: index,
             updatedStatement,
-            moodEmoji: updatedMood,
+            moodEmoji: finalMood,
           },
           {
             onSuccess: () => {
@@ -349,6 +359,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       t,
       statements,
       currentEntry?.moods,
+      isPro,
+      checkGate,
     ]
   );
 
@@ -387,11 +399,19 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     await refetchEntry();
   };
 
+  const effectivePromptText = canUseVariedPrompts
+    ? currentPrompt
+    : getStaticDefaultPrompt(language === 'tr' ? 'tr' : language === 'es' ? 'es' : 'en');
+  const effectivePromptLoading = canUseVariedPrompts ? promptLoading : false;
+  const effectivePromptError = canUseVariedPrompts ? promptError?.message || null : null;
+
   const handlePromptRefresh = useCallback(() => {
-    if (profile?.useVariedPrompts) {
-      fetchNewPrompt();
+    if (!canUseVariedPrompts) {
+      checkGate('varied_prompts');
+      return;
     }
-  }, [fetchNewPrompt, profile?.useVariedPrompts]);
+    fetchNewPrompt();
+  }, [canUseVariedPrompts, checkGate, fetchNewPrompt]);
 
   const getDateLocale = () => {
     switch (language) {
@@ -420,6 +440,14 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       ]
     );
   }, [t, checkGate]);
+
+  const handleChatFabPress = useCallback(() => {
+    if (isPro) {
+      setShowAIChat(true);
+      return;
+    }
+    checkGate('ai_chat');
+  }, [isPro, checkGate]);
 
   if (entryError) {
     return (
@@ -468,9 +496,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     return t('home.inspiration.progress.start.message_evening', 'End your day on a peaceful note.');
   };
 
-  const subtitle = isToday
-    ? getDynamicSubtitle()
-    : t('throwback.subtitle', 'Look back at your beautiful memories.');
+  const subtitle = isToday ? getDynamicSubtitle() : t('throwback.teaser.subtitle');
 
   return (
     <>
@@ -533,7 +559,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           <View style={styles.inputSection}>
             <GratitudeInputBar
               ref={inputBarRef}
-              promptText={currentPrompt}
+              promptText={effectivePromptText}
               onSubmit={handleAddStatement}
               onSubmitWithMood={(text, mood) => {
                 handleAddStatement(text, mood ?? null);
@@ -541,8 +567,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               disabled={isAddingStatement}
               error={null}
               onRefreshPrompt={handlePromptRefresh}
-              promptLoading={promptLoading || isLoadingEntry}
-              promptError={promptError?.message || null}
+              promptLoading={effectivePromptLoading || isLoadingEntry}
+              promptError={effectivePromptError}
               showPrompt={showInspirationPrompts}
               currentCount={statements.length} // Pass to input bar for visual feedback
               goal={dailyGoal}
@@ -614,6 +640,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                   }
                   showSaveHint={editingStatementIndex === index && showSaveHint}
                   theme={theme}
+                  canEditMood={isPro}
+                  onLockedMoodEdit={() => checkGate('mood_editing')}
                 />
               </View>
             ))}
@@ -632,14 +660,37 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
         </Animated.View>
       </ScreenLayout>
 
-      {/* AI Chat FAB (PRO only, today only) */}
-      {isPro && isToday && (
+      {/* AI Chat FAB (today only) */}
+      {isToday && (
         <TouchableOpacity
-          style={styles.chatFab}
-          onPress={() => setShowAIChat(true)}
+          style={[styles.chatFab, !isPro && styles.chatFabLocked]}
+          onPress={handleChatFabPress}
           activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isPro
+              ? t('ai.chat.title', 'AI Chat')
+              : t('subscription.locked.aiChat.title', 'Unlock AI Chat')
+          }
+          accessibilityHint={
+            isPro
+              ? t('ai.chat.openHint', 'Open your AI chat companion')
+              : t('subscription.locked.aiChat.cta', 'Go Premium')
+          }
         >
-          <Icon name="chat-processing-outline" size={24} color={theme.colors.onPrimary} />
+          {!isPro && <View style={styles.chatFabRing} pointerEvents="none" />}
+          <View style={[styles.chatFabInner, !isPro && styles.chatFabInnerLocked]}>
+            <Icon
+              name="chat-processing-outline"
+              size={22}
+              color={isPro ? theme.colors.onPrimary : theme.colors.primary}
+            />
+          </View>
+          {!isPro && (
+            <View style={styles.chatFabBadge}>
+              <Icon name="lock" size={11} color={theme.colors.onPrimary} />
+            </View>
+          )}
         </TouchableOpacity>
       )}
 
@@ -667,6 +718,8 @@ const DailyEntryStatementItem = React.memo<{
   onDelete: () => void;
   serverMood?: MoodEmoji | null;
   showSaveHint?: boolean;
+  canEditMood: boolean;
+  onLockedMoodEdit: () => void;
   theme: AppTheme;
 }>(
   ({
@@ -682,6 +735,8 @@ const DailyEntryStatementItem = React.memo<{
     onDelete,
     serverMood,
     showSaveHint,
+    canEditMood,
+    onLockedMoodEdit,
     theme: _theme,
   }) => {
     const { moodEmoji, setMoodEmoji } = useMoodEmoji({ entryDate, index });
@@ -694,6 +749,10 @@ const DailyEntryStatementItem = React.memo<{
     }, [serverMood, moodEmoji, setMoodEmoji]);
 
     const handleChangeMood = (mood: MoodEmoji | null) => {
+      if (!canEditMood) {
+        onLockedMoodEdit();
+        return;
+      }
       setMoodEmoji(mood);
       setStatementMood({ entryDate, statementIndex: index, moodEmoji: mood });
       if (mood) {
@@ -838,11 +897,52 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
+      overflow: 'visible',
       shadowColor: theme.colors.primary,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 8,
       elevation: 6,
+    },
+    chatFabLocked: {
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '80',
+      shadowColor: theme.colors.primary,
+      shadowOpacity: 0.2,
+    },
+    chatFabInner: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    chatFabInnerLocked: {
+      backgroundColor: theme.colors.primary + '12',
+    },
+    chatFabRing: {
+      position: 'absolute',
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '33',
+    },
+    chatFabBadge: {
+      position: 'absolute',
+      top: -2,
+      right: -2,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: theme.colors.primary,
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
     },
   });
 

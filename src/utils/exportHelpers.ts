@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useLanguageStore } from '@/store/languageStore';
-import { supabase } from '@/utils/supabaseClient';
+import { getAuthedClient } from '@/services/session';
 import { logger } from '@/utils/debugConfig';
 import i18n from '@/i18n';
 
@@ -56,16 +56,7 @@ export const exportUserDataWithLocalization = async (): Promise<ExportData> => {
     logger.debug('Exporting user data with language:', { language });
 
     // Get current session for auth token
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      throw new Error(
-        i18n.isInitialized ? i18n.t('errors.auth.noActiveSession') : 'No active session found'
-      );
-    }
+    const { session } = await getAuthedClient();
 
     // Prepare the request with language information
     const requestBody = {

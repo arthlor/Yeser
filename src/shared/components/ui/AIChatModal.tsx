@@ -452,7 +452,7 @@ const createStyles = (theme: AppTheme, insets: { top: number; bottom: number }) 
       borderTopRightRadius: 28,
       height: '85%',
       paddingBottom: Math.max(insets.bottom, 20),
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: -2 },
       shadowOpacity: 0.1,
       shadowRadius: 10,

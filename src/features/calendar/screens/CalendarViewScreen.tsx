@@ -14,7 +14,7 @@ import {
   CustomMarkedDates,
   DayPreview,
   updateMarkedDatesWithSelection,
-} from '@/components/calendar';
+} from '@/features/calendar/components';
 import { useEntryDatesForMonth, useGratitudeEntry } from '@/features/gratitude/hooks';
 import { ScreenLayout } from '@/shared/components/layout';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
@@ -259,6 +259,8 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
               onPress={handlePreviousMonth}
               style={styles.navButton}
               disabled={isLoadingDates}
+              accessibilityRole="button"
+              accessibilityLabel={t('calendar.previousMonth')}
             >
               <Icon name="chevron-left" size={28} color={theme.colors.onSurface} />
             </TouchableOpacity>
@@ -266,6 +268,8 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
               onPress={handleNextMonth}
               style={[styles.navButton, isFutureMonth && styles.navButtonDisabled]}
               disabled={isFutureMonth || isLoadingDates}
+              accessibilityRole="button"
+              accessibilityLabel={t('calendar.nextMonth')}
             >
               <Icon
                 name="chevron-right"

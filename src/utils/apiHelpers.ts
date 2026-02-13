@@ -1,4 +1,13 @@
 import { logger } from '@/utils/debugConfig';
+import {
+  AppError,
+  AuthError,
+  NetworkError,
+  PermissionError,
+  ServerError,
+  UnknownError,
+  ValidationError,
+} from '@/shared/errors';
 
 interface APIError extends Error {
   code?: string;
@@ -14,23 +23,34 @@ export const handleAPIError = (error: Error, operation: string): Error => {
 
   const errorWithExtras = error as APIError;
 
+  if (error instanceof AppError) {
+    return error;
+  }
+
+  if (isNetworkError(error)) {
+    return new NetworkError('Network error', { operation });
+  }
+
   if (errorWithExtras?.code === 'PGRST116') {
-    return new Error('Resource not found');
+    return new ValidationError('Resource not found', { operation, code: errorWithExtras.code });
   }
 
   if (errorWithExtras?.status === 401) {
-    return new Error('Authentication required');
+    return new AuthError('Authentication required', { operation, status: errorWithExtras.status });
   }
 
   if (errorWithExtras?.status === 403) {
-    return new Error('Access denied');
+    return new PermissionError('Access denied', { operation, status: errorWithExtras.status });
   }
 
   if (errorWithExtras?.status && errorWithExtras.status >= 500) {
-    return new Error('Server error occurred. Please try again.');
+    return new ServerError('Server error occurred. Please try again.', {
+      operation,
+      status: errorWithExtras.status,
+    });
   }
 
-  return new Error(error?.message || `Failed to ${operation}`);
+  return new UnknownError(error?.message || `Failed to ${operation}`, { operation });
 };
 
 /**

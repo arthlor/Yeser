@@ -165,7 +165,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
       case 'error':
         return theme.colors.error;
       default:
-        return theme.colors.textSecondary;
+        return theme.colors.onSurfaceVariant;
     }
   };
 
@@ -211,7 +211,7 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
           onBlur={handleBlur}
           editable={editable}
           value={value}
-          placeholderTextColor={theme.colors.textSecondary}
+          placeholderTextColor={theme.colors.onSurfaceVariant}
           selectionColor={theme.colors.primary}
           accessibilityLabel={label}
           accessibilityHint={helperText}
@@ -248,7 +248,11 @@ const ThemedInput: React.FC<ThemedInputProps> = ({
             accessibilityLabel={t('shared.ui.accessibility.clearText')}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Icon name="close-circle" size={getIconSize(size)} color={theme.colors.textSecondary} />
+            <Icon
+              name="close-circle"
+              size={getIconSize(size)}
+              color={theme.colors.onSurfaceVariant}
+            />
           </TouchableOpacity>
         )}
 
@@ -373,7 +377,7 @@ const createStyles = (
     if (isDisabled) {
       return theme.colors.disabled;
     }
-    return theme.colors.text;
+    return theme.colors.onBackground;
   };
 
   return StyleSheet.create({
@@ -385,7 +389,11 @@ const createStyles = (
       fontSize: 14,
       fontWeight: '600', // Slightly bolder for better hierarchy
       fontFamily: theme.typography.fontFamilyMedium,
-      color: hasError ? theme.colors.error : isFocused ? theme.colors.primary : theme.colors.text,
+      color: hasError
+        ? theme.colors.error
+        : isFocused
+          ? theme.colors.primary
+          : theme.colors.onBackground,
       marginBottom: spacing.labelGap,
       letterSpacing: 0.1,
     } as TextStyle,
@@ -459,7 +467,7 @@ const createStyles = (
           ? theme.colors.error
           : isFocused
             ? theme.colors.primary
-            : theme.colors.textSecondary,
+            : theme.colors.onSurfaceVariant,
     },
 
     messageContainer: {
@@ -486,7 +494,7 @@ const createStyles = (
       flex: 1,
       fontSize: 12,
       fontFamily: theme.typography.fontFamilyRegular,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       lineHeight: 16,
       includeFontPadding: false,
     } as TextStyle,
@@ -517,7 +525,7 @@ const createStyles = (
     characterCount: {
       fontSize: 12,
       fontFamily: theme.typography.fontFamilyRegular,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       marginLeft: spacing.elementGap,
     } as TextStyle,
 
@@ -535,7 +543,7 @@ const getVariantStyles = (theme: AppTheme, variant: 'outlined' | 'filled') => {
   switch (variant) {
     case 'filled':
       return {
-        backgroundColor: theme.colors.inputBackground,
+        backgroundColor: theme.colors.surfaceVariant,
         borderColor: 'transparent',
       };
 

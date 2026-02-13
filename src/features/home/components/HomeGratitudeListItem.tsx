@@ -19,7 +19,19 @@ const HomeGratitudeListItem: React.FC<HomeGratitudeListItemProps> = React.memo(
     const styles = useMemo(() => createStyles(theme), [theme]);
 
     return (
-      <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={styles.container}>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onPress}
+        style={styles.container}
+        accessibilityRole="button"
+        accessibilityLabel={t('home.todayList.itemA11y', {
+          defaultValue: 'Today gratitude entry. {{statement}}',
+          statement,
+        })}
+        accessibilityHint={t('home.todayList.itemHint', {
+          defaultValue: 'Opens today entry details',
+        })}
+      >
         {/* Accent Bar */}
         <View style={styles.accentBar} />
 

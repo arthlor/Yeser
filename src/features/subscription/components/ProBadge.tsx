@@ -1,9 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '@/providers/ThemeProvider';
-import { AppTheme } from '@/themes/types';
 import { useTranslation } from 'react-i18next';
+
+const PRO_TEXT_COLOR = '#1A1A1A';
 
 interface ProBadgeProps {
   size?: 'small' | 'medium';
@@ -11,9 +11,8 @@ interface ProBadgeProps {
 }
 
 export const ProBadge: React.FC<ProBadgeProps> = ({ size = 'small', style }) => {
-  const { theme } = useTheme();
   const { t } = useTranslation();
-  const styles = createStyles(theme);
+  const styles = createStyles();
 
   // A golden gradient for "Pro" badge - colors defined inline in LinearGradient
   // for maximum contrast with white text.
@@ -36,7 +35,7 @@ export const ProBadge: React.FC<ProBadgeProps> = ({ size = 'small', style }) => 
   );
 };
 
-const createStyles = (theme: AppTheme) =>
+const createStyles = () =>
   StyleSheet.create({
     container: {
       // Container just to hold position
@@ -57,7 +56,7 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: 8,
     },
     text: {
-      color: theme.colors.shadow, // Black text on Gold usually looks best/premium
+      color: PRO_TEXT_COLOR, // Fixed dark text for legibility on gold in all themes
       fontWeight: '900',
       letterSpacing: 0.5,
     },

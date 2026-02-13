@@ -1,8 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/api/queryKeys';
-import { queryKeyHelpers } from '@/api/queryKeyHelpers';
+import { queryKeys } from '@/shared/query/queryKeys';
+import { queryKeyHelpers } from '@/shared/query/queryKeyHelpers';
 import { logger } from '@/utils/debugConfig';
-import { queryClient } from '@/api/queryClient';
+import { queryClient } from '@/shared/query/queryClient';
 
 interface MutationData {
   entryDate?: string;
@@ -54,13 +54,13 @@ export class CacheService {
     await this.queryClient.prefetchQuery({
       queryKey: queryKeys.gratitudeEntry(userId, today),
       queryFn: () =>
-        import('@/api/gratitudeApi').then((api) => api.getGratitudeDailyEntryByDate(today)),
+        import('@/features/gratitude/api').then((api) => api.getGratitudeDailyEntryByDate(today)),
     });
 
     // Prefetch user profile
     await this.queryClient.prefetchQuery({
       queryKey: queryKeys.profile(userId),
-      queryFn: () => import('@/api/profileApi').then((api) => api.getProfile()),
+      queryFn: () => import('@/features/settings/profileApi').then((api) => api.getProfile()),
     });
   }
 

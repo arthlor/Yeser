@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { serviceManager } from '@/services/ServiceManager';
 import type { InitializationPhase } from '@/services/ServiceManager';
 import { logger } from '@/utils/debugConfig';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 
 interface InitializationState {
   phase: InitializationPhase;
@@ -74,6 +75,17 @@ export const useInitialization = () => {
 
         // Phase 2: Core (parallel async services)
         await serviceManager.initializeCore();
+
+        // Initialize auth once core services (AsyncStorage + Supabase) are ready
+        try {
+          await useCoreAuthStore.getState().initializeAuth();
+          logger.debug('[COLD START v2] Auth initialized in core phase');
+        } catch (authError) {
+          logger.warn('[COLD START v2] Auth initialization failed in core phase', {
+            error: authError instanceof Error ? authError.message : String(authError),
+          });
+          // Do not block app startup on auth init failures.
+        }
 
         if (isMounted) {
           const metrics = serviceManager.getPerformanceMetrics();
@@ -163,22 +175,6 @@ export const useInitialization = () => {
     isPhaseComplete: (phase: InitializationPhase) => serviceManager.isPhaseComplete(phase),
     serviceStatus: serviceManager.getPhaseState().serviceStatus,
     currentPhase: serviceManager.getPhase(),
-
-    // Legacy compatibility helpers
-    isStageComplete: (stage: number) => {
-      // Map old stages to new phases for backward compatibility
-      switch (stage) {
-        case 1:
-          return initState.phase !== 'critical';
-        case 2:
-          return initState.coreReady;
-        case 3:
-        case 4:
-          return initState.enhancementReady;
-        default:
-          return false;
-      }
-    },
 
     // Performance insights
     getTimeToInteractive: () => initState.performanceMetrics.corePhaseTime,

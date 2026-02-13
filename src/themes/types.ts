@@ -102,17 +102,6 @@ export interface ThemeColors {
   // Gradient colors
   gradientStart: string;
   gradientEnd: string;
-
-  // Legacy support (keeping for compatibility)
-  text: string;
-  textSecondary: string;
-  border: string;
-  inputBackground: string;
-  inputText: string;
-  danger: string;
-  onDanger: string;
-  shadow: string;
-  surfaceDisabled: string;
 }
 
 // Typography - keeping existing structure

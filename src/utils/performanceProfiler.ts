@@ -112,14 +112,6 @@ export class PerformanceProfiler {
 
     logger.info('Performance Report:', allStats);
 
-    // Log specific magic link performance
-    const magicLinkStats = this.getStats('magic_link_total');
-    if (magicLinkStats) {
-      logger.info('Magic Link Performance:', {
-        avgTime: `${magicLinkStats.avg.toFixed(2)}ms`,
-        p95Time: `${magicLinkStats.p95.toFixed(2)}ms`,
-        samples: magicLinkStats.count,
-      });
-    }
+    // Additional per-operation summaries can be added here if needed.
   }
 }

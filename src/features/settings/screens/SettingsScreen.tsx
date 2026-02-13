@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -7,13 +8,16 @@ import { useTranslation } from 'react-i18next';
 
 import { config } from '@/utils/config';
 
-import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme, ThemeName } from '@/themes/types';
 
-import { cleanupTemporaryFile, prepareUserExportFile, shareExportedFile } from '@/api/userDataApi';
-import AboutSettings from '@/components/settings/AboutSettings';
-import AppearanceSettings from '@/components/settings/AppearanceSettings';
-import DailyGoalSettings from '@/components/settings/DailyGoalSettings';
+import {
+  cleanupTemporaryFile,
+  prepareUserExportFile,
+  shareExportedFile,
+} from '@/features/settings/userDataApi';
+import AboutSettings from '@/features/settings/components/AboutSettings';
+import AppearanceSettings from '@/features/settings/components/AppearanceSettings';
+import DailyGoalSettings from '@/features/settings/components/DailyGoalSettings';
 import { NotificationSettings } from '../components/NotificationSettings';
 import AvatarPickerRow from '../components/AvatarPickerRow';
 import { LanguageSettings } from '../components/LanguageSettings';
@@ -26,32 +30,15 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { analyticsService } from '@/services/analyticsService';
-import useAuthStore from '@/store/authStore';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import { useSubscription } from '@/hooks/useSubscription';
 import { PremiumUpsellCard } from '@/features/subscription/components/PremiumUpsellCard';
 import { ProBadge } from '@/features/subscription/components/ProBadge';
+import { AppStackParamList, MainTabParamList } from '@/types/navigation';
 
 import { logger } from '@/utils/debugConfig';
 
-// Fix navigation types by extending the base interfaces
-interface MainAppTabParamListFixed extends Record<string, object | undefined> {
-  SettingsTab: undefined;
-  DailyEntryTab: { date?: string };
-  CalendarView: undefined;
-}
-
-interface RootStackParamListFixed extends Record<string, object | undefined> {
-  PrivacyPolicy: undefined;
-  TermsOfService: undefined;
-  Help: undefined;
-  WhyGratitude: undefined;
-  MoodAnalysis: { focusMood?: string } | undefined;
-}
-
-type SettingsScreenNavigationProp = BottomTabNavigationProp<
-  MainAppTabParamListFixed,
-  'SettingsTab'
->;
+type SettingsScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'SettingsTab'>;
 
 interface Props {
   navigation: SettingsScreenNavigationProp;
@@ -88,7 +75,10 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     getSizedAvatarUrl,
   } = useUserProfile();
 
-  const { logout } = useAuthStore();
+  const variedPromptsEnabled =
+    isPro && (profile?.useVariedPrompts ?? profile?.use_varied_prompts ?? true);
+
+  const logout = useCoreAuthStore((state) => state.logout);
 
   // **MINIMAL ENTRANCE**: Simple screen entrance animation
   useEffect(() => {
@@ -185,32 +175,29 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   const navigateToPrivacyPolicy = () => {
-    navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('PrivacyPolicy');
+    navigation.getParent<StackNavigationProp<AppStackParamList>>()?.navigate('PrivacyPolicy');
   };
 
   const navigateToTermsOfService = () => {
-    navigation
-      .getParent<StackNavigationProp<RootStackParamListFixed>>()
-      ?.navigate('TermsOfService');
+    navigation.getParent<StackNavigationProp<AppStackParamList>>()?.navigate('TermsOfService');
   };
 
   const navigateToHelp = () => {
-    navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('Help');
+    navigation.getParent<StackNavigationProp<AppStackParamList>>()?.navigate('Help');
   };
 
   const navigateToWhyGratitude = () => {
-    navigation.getParent<StackNavigationProp<RootStackParamListFixed>>()?.navigate('WhyGratitude');
+    navigation.getParent<StackNavigationProp<AppStackParamList>>()?.navigate('WhyGratitude');
+  };
+
+  const navigateToCustomerCenter = () => {
+    navigation.getParent<StackNavigationProp<AppStackParamList>>()?.navigate('CustomerCenter');
   };
 
   const navigateToMoodAnalysis = () => {
     analyticsService.logEvent('settings_open_mood_analysis');
 
-    // Hard gate: Check pro status before navigating
-    if (checkGate('mood_analytics_deep_dive')) {
-      navigation
-        .getParent<StackNavigationProp<RootStackParamListFixed>>()
-        ?.navigate('MoodAnalysis');
-    }
+    navigation.getParent<StackNavigationProp<AppStackParamList>>()?.navigate('MoodAnalysis');
   };
   // Avatar helpers
   const [awaitedAvatarUrl, setAwaitedAvatarUrl] = useState<string | null>(null);
@@ -279,9 +266,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   }, [deleteAvatar, profile?.avatar_path, refetchProfile]);
 
   // Account management handlers
-  const handleLogoutPress = () => {
+  const handleLogoutPress = async () => {
     try {
-      logout();
+      await logout();
     } catch {
       showToastError(t('settings.account.signOutError'));
     }
@@ -336,8 +323,17 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Premium Status Section - Visible only for Pro Users */}
         {isPro && (
-          <View style={[styles.section, { marginBottom: theme.spacing.md }]}>
-            <View style={styles.premiumCard}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={navigateToCustomerCenter}
+            style={[styles.section, { marginBottom: theme.spacing.md }]}
+          >
+            <LinearGradient
+              colors={['#FCC201', '#F5A623']} // Gold gradient like ProBadge
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.premiumCard}
+            >
               <View style={styles.premiumIconContainer}>
                 <Icon name="crown" size={24} color={theme.colors.onPrimary} />
               </View>
@@ -349,8 +345,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                   {t('settings.premium.subtitle', 'You have access to all features')}
                 </Text>
               </View>
-            </View>
-          </View>
+              <Icon name="chevron-right" size={24} color={theme.colors.onPrimary} />
+            </LinearGradient>
+          </TouchableOpacity>
         )}
 
         {/* Premium Upsell for Free Users */}
@@ -426,7 +423,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
               </View>
               <View style={styles.actionContainer}>
                 <ThemedSwitch
-                  value={profile?.use_varied_prompts ?? true}
+                  value={variedPromptsEnabled}
                   onValueChange={handleVariedPromptsToggle}
                 />
               </View>
@@ -473,6 +470,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.sections.about')}</Text>
           <AboutSettings
+            onNavigateToCustomerCenter={navigateToCustomerCenter}
             onNavigateToPrivacyPolicy={navigateToPrivacyPolicy}
             onNavigateToTermsOfService={navigateToTermsOfService}
             onNavigateToHelp={navigateToHelp}
@@ -485,8 +483,13 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.compactAccountActions}>
             {/* Sign Out Button - Compact */}
-            <TouchableOpacity style={styles.compactActionButton} onPress={handleLogoutPress}>
-              <Icon name="logout" size={18} color={theme.colors.error} />
+            <TouchableOpacity
+              style={styles.compactActionButton}
+              onPress={handleLogoutPress}
+              accessibilityRole="button"
+              accessibilityLabel={t('settings.account.signOut')}
+            >
+              <Icon name="logout" size={16} color={theme.colors.onSurfaceVariant} />
               <Text style={styles.compactActionText}>{t('settings.account.signOut')}</Text>
             </TouchableOpacity>
 
@@ -495,13 +498,15 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
               style={[styles.compactActionButton, styles.deleteActionButton]}
               onPress={handleDeleteAccountPress}
               disabled={isDeletingAccount}
+              accessibilityRole="button"
+              accessibilityLabel={t('settings.account.delete.button')}
             >
               <Icon
                 name={isDeletingAccount ? 'loading' : 'delete-forever'}
-                size={18}
+                size={16}
                 color={theme.colors.error}
               />
-              <Text style={styles.compactActionText}>
+              <Text style={[styles.compactActionText, styles.deleteActionText]}>
                 {isDeletingAccount
                   ? t('settings.account.delete.deleting')
                   : t('settings.account.delete.button')}
@@ -532,14 +537,11 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: theme.spacing.lg,
     },
     sectionTitle: {
-      fontFamily: 'Lora-Medium',
-      fontSize: 20,
-      fontWeight: '600',
+      ...theme.typography.titleMedium,
       color: theme.colors.onBackground,
       marginBottom: theme.spacing.sm,
       marginHorizontal: theme.spacing.md,
-      letterSpacing: -0.3,
-      lineHeight: 24,
+      fontWeight: '600',
     },
     footerSection: {
       marginBottom: theme.spacing.sm,
@@ -636,34 +638,37 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-around',
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.outlineVariant,
+      backgroundColor: theme.colors.surfaceVariant + '80',
+      borderRadius: theme.borderRadius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outlineVariant + '40',
       marginHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      ...getPrimaryShadow.small(theme),
+      paddingVertical: theme.spacing.xs,
     },
     compactActionButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.md,
-      borderRadius: theme.borderRadius.md,
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.borderRadius.sm,
       flex: 1,
       justifyContent: 'center',
       marginHorizontal: theme.spacing.xs,
+      minHeight: 36,
     },
     compactActionText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.error,
-      marginLeft: theme.spacing.sm,
-      fontWeight: '500',
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      marginLeft: theme.spacing.xs,
+      fontWeight: '600',
     },
     deleteActionButton: {
-      backgroundColor: theme.colors.errorContainer + '20',
+      backgroundColor: theme.colors.surface + '00',
       borderWidth: 1,
       borderColor: theme.colors.error + '30',
+    },
+    deleteActionText: {
+      color: theme.colors.error,
     },
     divider: {
       height: 1,
@@ -679,6 +684,8 @@ const createStyles = (theme: AppTheme) =>
     titleRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 6,
     },
     switchLabel: {
       ...theme.typography.bodyMedium,
@@ -686,19 +693,22 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '500',
     },
     badgeMargin: {
-      marginLeft: 8,
+      // Using gap in titleRow for consistent spacing
     },
     premiumCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.primaryContainer + '30',
       padding: theme.spacing.md,
       borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.primary + '40',
+      // No border for the gradient look
+      elevation: 2,
+      shadowColor: theme.colors.secondary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
     },
     premiumIconContainer: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.onPrimary + '33',
       borderRadius: theme.borderRadius.full,
       padding: 8,
       marginRight: theme.spacing.md,
@@ -708,13 +718,16 @@ const createStyles = (theme: AppTheme) =>
     },
     premiumTitle: {
       ...theme.typography.titleMedium,
-      color: theme.colors.primary,
+      color: theme.colors.onPrimary,
       fontWeight: 'bold',
       marginBottom: 2,
+      textShadowColor: theme.colors.scrim,
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
     },
     premiumSubtitle: {
       ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
+      color: theme.colors.onPrimary + 'E6',
     },
   });
 

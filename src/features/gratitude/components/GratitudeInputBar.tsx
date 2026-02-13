@@ -312,8 +312,14 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
             <TouchableOpacity
               onPress={handlePromptRefresh}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              disabled={!isPro}
+              style={!isPro ? styles.promptRefreshLocked : undefined}
             >
-              <Icon name="refresh" size={14} color={theme.colors.onSurfaceVariant} />
+              <Icon
+                name={!isPro ? 'lock-outline' : 'refresh'}
+                size={14}
+                color={theme.colors.onSurfaceVariant}
+              />
             </TouchableOpacity>
           </View>
         )}
@@ -549,6 +555,9 @@ const createStyles = (theme: AppTheme, disabled: boolean) =>
       fontStyle: 'italic',
       fontSize: 13,
     },
+    promptRefreshLocked: {
+      opacity: 0.45,
+    },
     inputCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.xl,
@@ -557,7 +566,7 @@ const createStyles = (theme: AppTheme, disabled: boolean) =>
       // minHeight removed to allow wrapping
       borderWidth: 1,
       borderColor: theme.colors.outline + '30',
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
       shadowRadius: 12,

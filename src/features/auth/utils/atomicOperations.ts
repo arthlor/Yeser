@@ -1,16 +1,7 @@
 import { logger } from '@/utils/debugConfig';
 
 export interface AtomicOperation {
-  type:
-    | 'magic_link'
-    | 'auth_init'
-    | 'logout'
-    | 'session_tokens'
-    | 'confirm_magic_link'
-    | 'magic_link_send'
-    | 'magic_link_confirm'
-    | 'google_oauth'
-    | 'apple_oauth';
+  type: 'auth_init' | 'logout' | 'session_tokens' | 'google_oauth' | 'apple_oauth';
   timestamp: number;
   promise: Promise<unknown>;
 }

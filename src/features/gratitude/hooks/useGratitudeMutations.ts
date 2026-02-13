@@ -4,13 +4,13 @@ import {
   deleteStatement,
   editStatement,
   setStatementMood as setStatementMoodRpc,
-} from '@/api/gratitudeApi';
+} from '@/features/gratitude/api';
 // 🔧 FIX: Import streak recalculation function
-import { recalculateUserStreak } from '@/api/streakApi';
-import { queryKeys } from '@/api/queryKeys';
+import { recalculateUserStreak } from '@/features/streak/api';
+import { queryKeys } from '@/shared/query/queryKeys';
 import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 import { cacheService } from '@/services/cacheService';
-import useAuthStore from '@/store/authStore';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 // 🔧 FIX: Import logger for streak error logging
@@ -143,7 +143,7 @@ interface SetMoodContext {
 }
 
 export const useGratitudeMutations = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
   const queryClient = useQueryClient();
   const { handleMutationError } = useGlobalError();
 

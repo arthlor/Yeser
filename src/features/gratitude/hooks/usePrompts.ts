@@ -1,11 +1,11 @@
 import {
   getLocalizedMultipleRandomActivePrompts,
   getLocalizedRandomActivePrompt,
-} from '@/api/promptApi';
+} from '@/features/gratitude/promptsApi';
 import type { LocalizedDailyPrompt } from '@/schemas/gratitudeEntrySchema';
-import { queryKeys } from '@/api/queryKeys';
-import { QUERY_STALE_TIMES } from '@/api/queryClient';
-import useAuthStore from '@/store/authStore';
+import { queryKeys } from '@/shared/query/queryKeys';
+import { QUERY_STALE_TIMES } from '@/shared/query/queryClient';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/debugConfig';
@@ -26,7 +26,7 @@ export const STATIC_DEFAULT_PROMPT = getStaticDefaultPrompt('tr');
  * **NETWORK RESILIENCE**: Enhanced error handling and fallback strategies
  */
 export const useCurrentPrompt = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
   const language = useLanguageStore((state) => state.language);
 
   return useQuery({
@@ -65,7 +65,7 @@ export const useCurrentPrompt = () => {
  * **NETWORK RESILIENCE**: Enhanced with graceful fallback to empty array
  */
 export const useMultiplePrompts = (limit: number = 10) => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
   const language = useLanguageStore((state) => state.language);
 
   return useQuery({
@@ -107,7 +107,7 @@ export const useMultiplePrompts = (limit: number = 10) => {
  * Use this when user wants a new prompt
  */
 export const usePromptMutations = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
   const queryClient = useQueryClient();
   const { handleMutationError } = useGlobalError();
 

@@ -17,6 +17,7 @@ interface PaywallScreenProps {
 export const PaywallScreen = ({ onDismiss }: PaywallScreenProps) => {
   const { checkStatus, currentOffering, isLoading } = useSubscriptionStore();
   const navigation = useNavigation();
+
   const { showSuccess, showError } = useToast();
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -142,6 +143,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

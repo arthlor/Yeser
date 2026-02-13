@@ -19,6 +19,7 @@ export const PremiumUpsellCard: React.FC<Props> = ({ style }) => {
   const styles = createStyles(theme);
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const highlightedFeatures = new Set(['prompts', 'moodEditing']);
 
   const handlePress = () => {
     navigation.navigate('PaywallModal', { source: 'settings_upsell' });
@@ -50,25 +51,30 @@ export const PremiumUpsellCard: React.FC<Props> = ({ style }) => {
 
           <View style={styles.featureList}>
             {[
-              t('subscription.upsell.features.unlimited'),
-              t('subscription.upsell.features.past'),
-              t('subscription.upsell.features.insights'),
-              t('subscription.upsell.features.export'),
-              t('subscription.upsell.features.prompts'),
-              t('subscription.upsell.features.aiCoach'),
-              t('subscription.upsell.features.aiChat'),
-              t('subscription.upsell.features.moodEditing'),
-            ].map((feature, index) => (
-              <View key={index} style={styles.featureItem}>
-                <Icon
-                  name="check-circle"
-                  size={16}
-                  color={theme.colors.accent || '#FFD700'}
-                  style={styles.checkIcon}
-                />
-                <Text style={styles.featureText}>{feature}</Text>
-              </View>
-            ))}
+              { key: 'unlimited', label: t('subscription.upsell.features.unlimited') },
+              { key: 'past', label: t('subscription.upsell.features.past') },
+              { key: 'insights', label: t('subscription.upsell.features.insights') },
+              { key: 'export', label: t('subscription.upsell.features.export') },
+              { key: 'prompts', label: t('subscription.upsell.features.prompts') },
+              { key: 'aiCoach', label: t('subscription.upsell.features.aiCoach') },
+              { key: 'aiChat', label: t('subscription.upsell.features.aiChat') },
+              { key: 'moodEditing', label: t('subscription.upsell.features.moodEditing') },
+            ].map((feature, index) => {
+              const isHighlight = highlightedFeatures.has(feature.key);
+              return (
+                <View key={index} style={styles.featureItem}>
+                  <Icon
+                    name={isHighlight ? 'star-four-points' : 'check-circle'}
+                    size={16}
+                    color={theme.colors.accent || '#FFD700'}
+                    style={styles.checkIcon}
+                  />
+                  <Text style={[styles.featureText, isHighlight && styles.featureTextHighlight]}>
+                    {feature.label}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
 
           <View style={styles.ctaRow}>
@@ -110,7 +116,7 @@ const createStyles = (theme: AppTheme) =>
     },
     icon: {
       marginRight: theme.spacing.sm,
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.3,
       shadowRadius: 2,
@@ -144,6 +150,10 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onPrimary + 'F2', // 0.95 opacity
       fontWeight: '500',
       lineHeight: 20,
+    },
+    featureTextHighlight: {
+      fontWeight: '700',
+      color: theme.colors.onPrimary,
     },
     ctaRow: {
       flexDirection: 'row',

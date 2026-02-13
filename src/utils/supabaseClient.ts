@@ -36,7 +36,12 @@ class SupabaseService {
       return this.initializationPromise;
     }
 
-    this.initializationPromise = this.createClient();
+    this.initializationPromise = this.createClient().catch((error) => {
+      // Allow retry after transient failures (e.g., AsyncStorage deadlock)
+      this.initializationPromise = null;
+      this.client = null;
+      throw error;
+    });
     return this.initializationPromise;
   }
 

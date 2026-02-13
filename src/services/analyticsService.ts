@@ -1,73 +1,87 @@
-// 🚫 NO-OP ANALYTICS: Analytics disabled - Firebase removed
+import { logger } from '@/utils/debugConfig';
 
-// Mapping removed for no-op analytics
+type AnalyticsValue = string | number | boolean | null;
+type AnalyticsParams = Record<string, AnalyticsValue>;
+type AnalyticsEventType = 'event' | 'screen';
+
+interface AnalyticsEvent {
+  type: AnalyticsEventType;
+  name: string;
+  params?: AnalyticsParams;
+  timestamp: string;
+}
+
+const MAX_BUFFERED_EVENTS = 200;
 
 /**
- * Normalize screen name to ensure consistency across the app
- * @param screenName Raw screen name from navigation or individual tracking
- * @returns Standardized screen name for analytics
+ * Local analytics fallback.
+ * Remote analytics is currently disabled, but we still keep event telemetry
+ * for debugging, QA, and future provider re-enablement.
  */
+class LocalAnalyticsService {
+  private readonly eventBuffer: AnalyticsEvent[] = [];
 
-// const normalizeScreenName = (screenName: string): string => screenName;
+  record(type: AnalyticsEventType, name: string, params?: AnalyticsParams): void {
+    const event: AnalyticsEvent = {
+      type,
+      name,
+      params,
+      timestamp: new Date().toISOString(),
+    };
 
-/**
- * NO-OP: Logs a screen view event (disabled).
- * @param screenName The name of the screen to track.
- * @param additionalParams Optional additional parameters for screen context
- */
+    this.eventBuffer.push(event);
+    if (this.eventBuffer.length > MAX_BUFFERED_EVENTS) {
+      this.eventBuffer.splice(0, this.eventBuffer.length - MAX_BUFFERED_EVENTS);
+    }
+
+    if (__DEV__) {
+      logger.debug(`[ANALYTICS:${type.toUpperCase()}] ${name}`, {
+        extra: params ?? {},
+      });
+    }
+  }
+
+  getRecentEvents(limit: number = 50): ReadonlyArray<AnalyticsEvent> {
+    return this.eventBuffer.slice(-limit);
+  }
+
+  clearBuffer(): void {
+    this.eventBuffer.length = 0;
+  }
+}
+
+const localAnalytics = new LocalAnalyticsService();
+
 const logScreenView = async (
   screenName: string,
   additionalParams?: Record<string, string | number | boolean>
 ): Promise<void> => {
-  void screenName;
-  void additionalParams;
+  localAnalytics.record('screen', screenName, additionalParams);
 };
 
-/**
- * NO-OP: Logs a custom event (disabled).
- * @param eventName The name of the event (e.g., 'button_click', 'item_shared').
- * @param params Optional parameters associated with the event.
- */
 const logEvent = async (
   eventName: string,
   params?: Record<string, string | number | boolean | null>
 ): Promise<void> => {
-  void eventName;
-  void params;
+  localAnalytics.record('event', eventName, params);
 };
 
-/**
- * NO-OP: Logs an 'app_open' event (disabled).
- */
-const logAppOpen = async (): Promise<void> => {};
+const logAppOpen = async (): Promise<void> => {
+  localAnalytics.record('event', 'app_open');
+};
 
-/**
- * NO-OP: Sets user properties (disabled).
- * @param properties User properties to set
- */
 const setUserProperties = async (properties: Record<string, string | null>): Promise<void> => {
-  void properties;
+  localAnalytics.record('event', 'set_user_properties', properties);
 };
 
-/**
- * NO-OP: Sets the user ID (disabled).
- * @param userId The user's unique identifier (or null to clear)
- */
 const setUserId = async (userId: string | null): Promise<void> => {
-  void userId;
+  localAnalytics.record('event', 'set_user_id', { userId });
 };
 
-/**
- * NO-OP: Enables or disables analytics collection (disabled).
- * @param enabled Whether to enable analytics collection
- */
 const setAnalyticsCollectionEnabled = async (enabled: boolean): Promise<void> => {
-  void enabled;
+  localAnalytics.record('event', 'set_analytics_collection', { enabled });
 };
 
-/**
- * NO-OP: Track user journey (disabled).
- */
 const trackUserJourney = async (
   journeyName: string,
   step: string,
@@ -75,66 +89,55 @@ const trackUserJourney = async (
   totalSteps: number,
   additionalData?: Record<string, string | number | boolean>
 ): Promise<void> => {
-  void journeyName;
-  void step;
-  void stepIndex;
-  void totalSteps;
-  void additionalData;
+  localAnalytics.record('event', 'user_journey', {
+    journeyName,
+    step,
+    stepIndex,
+    totalSteps,
+    ...(additionalData ?? {}),
+  });
 };
 
-/**
- * NO-OP: Track performance metrics (disabled).
- */
 const trackPerformance = async (
   metricName: string,
   value: number,
   unit: 'ms' | 'seconds' | 'count' | 'percentage' = 'ms',
   additionalContext?: Record<string, string | number | boolean>
 ): Promise<void> => {
-  void metricName;
-  void value;
-  void unit;
-  void additionalContext;
+  localAnalytics.record('event', 'performance_metric', {
+    metricName,
+    value,
+    unit,
+    ...(additionalContext ?? {}),
+  });
 };
 
-/**
- * NO-OP: Track engagement patterns (disabled).
- */
 const trackEngagement = async (
   engagementType: 'content_interaction' | 'feature_usage' | 'time_spent' | 'achievement_unlocked',
   details: Record<string, string | number | boolean>
 ): Promise<void> => {
-  void engagementType;
-  void details;
+  localAnalytics.record('event', `engagement_${engagementType}`, details);
 };
 
-/**
- * NO-OP: Track gamification elements (disabled).
- */
 const trackGamification = async (
   actionType: 'streak_continued' | 'milestone_achieved' | 'goal_completed' | 'challenge_started',
   gameData: Record<string, string | number | boolean>
 ): Promise<void> => {
-  void actionType;
-  void gameData;
+  localAnalytics.record('event', `gamification_${actionType}`, gameData);
 };
 
-/**
- * NO-OP: Track content creation and consumption (disabled).
- */
 const trackContentAnalytics = async (
   contentType: 'gratitude_entry' | 'statement_edit' | 'prompt_usage',
   action: 'created' | 'edited' | 'deleted' | 'viewed' | 'shared',
   contentData: Record<string, string | number | boolean>
 ): Promise<void> => {
-  void contentType;
-  void action;
-  void contentData;
+  localAnalytics.record('event', 'content_analytics', {
+    contentType,
+    action,
+    ...contentData,
+  });
 };
 
-/**
- * NO-OP: Track detailed errors (disabled).
- */
 const trackDetailedError = async (
   error: Error,
   context: {
@@ -146,35 +149,37 @@ const trackDetailedError = async (
     customKeys?: Record<string, string | number | boolean>;
   } = {}
 ): Promise<void> => {
-  void error;
-  void context;
+  localAnalytics.record('event', 'detailed_error', {
+    errorName: error.name,
+    errorMessage: error.message,
+    hasErrorBoundary: Boolean(context.errorBoundary),
+    userId: context.userId ?? null,
+    screenName: context.screenName ?? null,
+    actionTaken: context.actionTaken ?? null,
+    deviceInfo: context.deviceInfo ? JSON.stringify(context.deviceInfo) : null,
+    customKeys: context.customKeys ? JSON.stringify(context.customKeys) : null,
+  });
 };
 
 export const analyticsService = {
-  // Core Analytics (all no-op)
   logScreenView,
   logEvent,
   logAppOpen,
   setUserProperties,
   setUserId,
   setAnalyticsCollectionEnabled,
-
-  // Enhanced Analytics (all no-op)
   trackUserJourney,
   trackPerformance,
   trackEngagement,
   trackGamification,
   trackContentAnalytics,
   trackDetailedError,
-  // Convenience wrappers (still no-op under the hood)
-  trackMoodSelected: async (params: {
-    entryDate: string;
-    index: number;
-    emoji: string;
-  }): Promise<void> => {
+  trackMoodSelected: async (params: { entryDate: string; index: number; emoji: string }) => {
     await logEvent('mood_selected', params);
   },
-  trackMoodCleared: async (params: { entryDate: string; index: number }): Promise<void> => {
+  trackMoodCleared: async (params: { entryDate: string; index: number }) => {
     await logEvent('mood_cleared', params);
   },
+  getRecentEvents: (limit?: number) => localAnalytics.getRecentEvents(limit),
+  clearBufferedEvents: () => localAnalytics.clearBuffer(),
 };

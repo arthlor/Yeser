@@ -132,7 +132,7 @@ const ThemedList = <T extends ListItemProps>({
             <MaterialCommunityIcons
               name={item.rightIcon}
               size={20}
-              color={theme.colors.textSecondary}
+              color={theme.colors.onSurfaceVariant}
               accessibilityElementsHidden
               importantForAccessibility="no"
             />
@@ -228,12 +228,12 @@ const createStyles = (theme: AppTheme, variant: 'default' | 'compact' | 'card') 
       fontWeight: '500',
       lineHeight: theme.typography.bodyLarge.lineHeight,
       letterSpacing: -0.1,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       marginBottom: theme.spacing.xs,
     },
     subtitle: {
       ...theme.typography.bodySmall,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
     },
     iconContainer: {
       marginHorizontal: theme.spacing.sm, // 8px modern standard icon spacing
@@ -252,7 +252,7 @@ const createStyles = (theme: AppTheme, variant: 'default' | 'compact' | 'card') 
     },
     emptyText: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
     },
   });

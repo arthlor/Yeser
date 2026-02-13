@@ -6,7 +6,6 @@
 
 export { AuthCoordinator, authCoordinator } from './authCoordinator';
 export { DeepLinkService, deepLinkService } from './deepLinkService';
-export { MagicLinkService, magicLinkService } from './magicLinkService';
 export {
   ExpoGoogleOAuthService as GoogleOAuthService,
   expoGoogleOAuthService as googleOAuthService,

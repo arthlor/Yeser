@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { enUS, es, tr } from 'date-fns/locale';
 
-import LoadingState from '@/components/states/LoadingState';
+import LoadingState from '@/shared/components/states/LoadingState';
 import StatementEditCard from '@/shared/components/ui/StatementEditCard';
 import { ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';

@@ -11,19 +11,22 @@ export const gratitudeStatementSchema = z
     message: i18n.isInitialized
       ? i18n.t('validation.gratitude.empty')
       : 'Gratitude statement cannot be empty.',
+  })
+  .max(500, {
+    message: i18n.isInitialized
+      ? i18n.t('validation.gratitude.tooLong')
+      : 'Gratitude statement must be 500 characters or less.',
   });
 
 export type GratitudeStatementFormData = z.infer<typeof gratitudeStatementSchema>;
 
 // If we need to validate an array of statements (e.g., for a form that submits multiple at once):
 export const gratitudeEntrySchema = z.object({
-  statements: z
-    .array(gratitudeStatementSchema)
-    .min(1, {
-      message: i18n.isInitialized
-        ? i18n.t('validation.gratitude.required')
-        : 'At least one gratitude statement is required.',
-    }),
+  statements: z.array(gratitudeStatementSchema).min(1, {
+    message: i18n.isInitialized
+      ? i18n.t('validation.gratitude.required')
+      : 'At least one gratitude statement is required.',
+  }),
 });
 
 export type GratitudeEntryFormData = z.infer<typeof gratitudeEntrySchema>;

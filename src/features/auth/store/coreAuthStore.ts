@@ -2,7 +2,7 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
 import { logger } from '@/utils/debugConfig';
-import { queryClient } from '@/api/queryClient';
+import { queryClient } from '@/shared/query/queryClient';
 import { atomicOperationManager } from '../utils/atomicOperations';
 import * as authService from '@/services/authService';
 import { revenueCatService } from '@/services/revenueCatService';
@@ -16,6 +16,7 @@ export interface CoreAuthState {
   isAuthenticated: boolean;
   user: SupabaseUser | null;
   isLoading: boolean;
+  isInitialized: boolean; // Track if auth has been initialized
 
   // Auth Listener State (moved from module level to prevent global mutation)
   authListenerSubscription: { unsubscribe: () => void } | null;
@@ -61,7 +62,6 @@ export const shouldEnableQueries = (user: SupabaseUser | null): boolean => {
  * Core Auth Store
  *
  * Handles only the essential authentication state and operations.
- * Magic link operations are handled by magicLinkStore.
  * Session management is handled by sessionStore.
  */
 export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
@@ -69,6 +69,7 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
   isAuthenticated: false,
   user: null,
   isLoading: true, // Start with loading true during initialization
+  isInitialized: false, // Not yet initialized
 
   // Auth Listener State (previously global variables)
   authListenerSubscription: null,
@@ -76,10 +77,22 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
 
   // Core Actions
   initializeAuth: async () => {
+    // Idempotency check: skip if already initialized
+    if (get().isInitialized) {
+      logger.debug('Core auth store: Already initialized, skipping');
+      return;
+    }
+
     const operationKey = 'auth_init';
 
     try {
       await atomicOperationManager.ensureAtomicOperation(operationKey, 'auth_init', async () => {
+        // Double-check inside atomic operation
+        if (get().isInitialized) {
+          logger.debug('Core auth store: Already initialized (atomic check), skipping');
+          return;
+        }
+
         logger.debug('Core auth store: Initializing authentication');
 
         try {
@@ -92,6 +105,7 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
               isAuthenticated: true,
               user: session.user,
               isLoading: false,
+              isInitialized: true,
             });
             logger.debug('Core auth store: User authenticated on initialization', {
               userId: session.user.id,
@@ -103,6 +117,7 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
               isAuthenticated: false,
               user: null,
               isLoading: false,
+              isInitialized: true,
             });
             logger.debug('Core auth store: No authenticated user on initialization');
           }
@@ -157,6 +172,7 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
             isAuthenticated: false,
             user: null,
             isLoading: false,
+            isInitialized: true, // Mark as initialized even on error to prevent retry loops
           });
         }
       });

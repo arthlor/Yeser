@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { checkUsernameAvailability } from '@/api/profileApi';
+import { checkUsernameAvailability } from '@/features/settings/profileApi';
 import { logger } from '@/utils/debugConfig';
 
 interface UseUsernameValidationResult {

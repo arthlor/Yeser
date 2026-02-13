@@ -1,23 +1,11 @@
-import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
-import { logger } from '@/utils/debugConfig';
-import { atomicOperationManager } from '../utils/atomicOperations';
 import { config } from '@/utils/config';
-import { supabaseService } from '@/utils/supabaseClient';
-import { deepLinkService } from './deepLinkService';
-import i18n from '@/i18n';
+import { BaseExpoOAuthService, type OAuthResult } from './expoOAuthBase';
 
 /**
  * Google OAuth Result Interface (same as existing)
  */
-export interface GoogleOAuthResult {
-  success: boolean;
-  error?: string;
-  user?: unknown;
-  session?: unknown;
-  userCancelled?: boolean;
-  requiresCallback?: boolean;
-}
+export type GoogleOAuthResult = OAuthResult;
 
 /**
  * Google OAuth Service (Supabase-hosted OAuth flow)
@@ -25,219 +13,36 @@ export interface GoogleOAuthResult {
  * Uses Supabase's hosted OAuth for Google and deep link handling. This approach
  * avoids Android custom scheme fragility and works reliably across builds.
  */
-export class ExpoGoogleOAuthService {
-  private isInitialized = false;
-  private initializationPromise: Promise<void> | null = null;
-  private lastSignInAttempt: number | null = null;
-  private readonly RATE_LIMIT_MS = 3000;
+export class ExpoGoogleOAuthService extends BaseExpoOAuthService {
+  constructor() {
+    super({
+      provider: 'google',
+      operationKeyPrefix: 'expo_google_oauth',
+      operationType: 'google_oauth',
+      scopes: 'openid email profile',
+      startFailedKey: 'auth.services.googleStartFailed',
+      redirectMissingKey: 'auth.services.googleRedirectMissing',
+      inProgressKey: 'auth.services.googleInProgress',
+      networkErrorKey: 'auth.services.googleNetwork',
+      genericErrorKey: 'auth.services.googleFailed',
+      validateConfig: () => {
+        const clientIdIOS = config.google.clientIdIOS;
+        const clientIdAndroid = config.google.clientIdAndroid;
 
-  /**
-   * Initialize service - no more Google Sign-In SDK dependency
-   */
-  async initialize(): Promise<void> {
-    if (this.initializationPromise) {
-      return this.initializationPromise;
-    }
-
-    this.initializationPromise = this.performInitialization();
-    return this.initializationPromise;
-  }
-
-  private async performInitialization(): Promise<void> {
-    const operationKey = 'expo_google_oauth_init';
-
-    return await atomicOperationManager.ensureAtomicOperation(
-      operationKey,
-      'google_oauth',
-      async () => {
-        try {
-          // Minimize initialization noise
-          // Complete any pending web-browser auth sessions (no-op if none)
-          type MaybeCompleteAuthSession = { maybeCompleteAuthSession?: () => void };
-          const maybeComplete = (WebBrowser as unknown as MaybeCompleteAuthSession)
-            .maybeCompleteAuthSession;
-          if (typeof maybeComplete === 'function') {
-            maybeComplete();
-          }
-
-          // Validate Google OAuth configuration (platform-specific client IDs)
-          const clientIdIOS = config.google.clientIdIOS;
-          const clientIdAndroid = config.google.clientIdAndroid;
-
-          if (Platform.OS === 'ios' && !clientIdIOS) {
-            throw new Error(
-              'Missing EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS in environment for iOS platform.'
-            );
-          }
-          if (Platform.OS === 'android' && !clientIdAndroid) {
-            throw new Error(
-              'Missing EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID in environment for Android platform.'
-            );
-          }
-          // Web client is optional here; no debug spam if missing
-
-          this.isInitialized = true;
-          // Initialized
-        } catch (error) {
-          logger.error('Failed to initialize Expo Google OAuth service:', { error });
-          throw error;
+        if (Platform.OS === 'ios' && !clientIdIOS) {
+          throw new Error(
+            'Missing EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS in environment for iOS platform.'
+          );
         }
-      }
-    );
-  }
-
-  /**
-   * Sign in using Supabase-hosted OAuth; tokens return via deep link
-   */
-  async signIn(): Promise<GoogleOAuthResult> {
-    const operationKey = 'expo_google_oauth_signin';
-
-    try {
-      return await atomicOperationManager.ensureAtomicOperation(
-        operationKey,
-        'google_oauth',
-        async () => {
-          // Rate limiting check
-          if (!this.canAttemptSignIn()) {
-            const remainingTime = this.getRemainingCooldown();
-            return {
-              success: false,
-              error: i18n.t('auth.services.waitSeconds', {
-                seconds: Math.ceil(remainingTime / 1000),
-              }),
-            };
-          }
-
-          this.lastSignInAttempt = Date.now();
-          // Starting Supabase-hosted OAuth flow
-          // Analytics disabled
-
-          try {
-            const supabase = supabaseService.getClient();
-            const redirectUri = config.google.redirectUri;
-            if (!redirectUri) {
-              throw new Error('Redirect URI is not configured.');
-            }
-
-            const { data, error } = await supabase.auth.signInWithOAuth({
-              provider: 'google',
-              options: {
-                redirectTo: redirectUri,
-                skipBrowserRedirect: true,
-                scopes: 'openid email profile',
-              },
-            });
-
-            if (error) {
-              logger.error('Expo Google OAuth: signInWithOAuth failed', { error: error.message });
-              return { success: false, error: i18n.t('auth.services.googleStartFailed') };
-            }
-
-            const authUrl = data?.url;
-            if (!authUrl) {
-              return {
-                success: false,
-                error: i18n.t('auth.services.googleRedirectMissing'),
-              };
-            }
-
-            const webResult = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-            if (webResult.type === 'cancel') {
-              return { success: false, userCancelled: true };
-            }
-
-            // iOS often returns the callback URL directly via AuthSession result instead of
-            // emitting a Linking event. Process it immediately if present for reliability.
-            if (webResult.type === 'success' && 'url' in webResult && webResult.url) {
-              // Received success URL from AuthSession, process via deep link handler
-              // Database is initialized at this point (we already created the client above)
-              await deepLinkService.handleAuthCallback(webResult.url, true);
-            }
-
-            // Also signal that a callback may occur via Linking for Android/other cases
-            return { success: true, requiresCallback: true };
-          } catch (oauthError) {
-            const err = oauthError as Error;
-            logger.error('Expo Google OAuth: OAuth flow failed', err);
-            return {
-              success: false,
-              error: this.formatError(err),
-            };
-          }
+        if (Platform.OS === 'android' && !clientIdAndroid) {
+          throw new Error(
+            'Missing EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID in environment for Android platform.'
+          );
         }
-      );
-    } catch {
-      // Operation already in progress
-      return {
-        success: false,
-        error: i18n.t('auth.services.googleInProgress'),
-      };
-    }
+      },
+      getRedirectUri: () => config.google.redirectUri,
+    });
   }
-
-  /**
-   * Format error messages for user display
-   */
-  private formatError(error: Error): string {
-    const message = error.message.toLowerCase();
-
-    if (message.includes('network')) {
-      return i18n.t('auth.services.googleNetwork');
-    }
-
-    return i18n.t('auth.services.googleFailed');
-  }
-
-  /**
-   * Rate limiting helpers (same as existing)
-   */
-  private canAttemptSignIn(): boolean {
-    if (!this.lastSignInAttempt) {
-      return true;
-    }
-    return Date.now() - this.lastSignInAttempt > this.RATE_LIMIT_MS;
-  }
-
-  private getRemainingCooldown(): number {
-    if (!this.lastSignInAttempt) {
-      return 0;
-    }
-    const elapsed = Date.now() - this.lastSignInAttempt;
-    return Math.max(0, this.RATE_LIMIT_MS - elapsed);
-  }
-
-  /**
-   * Check if service is ready
-   */
-  isReady(): boolean {
-    return this.isInitialized;
-  }
-
-  /**
-   * Get current status
-   */
-  getStatus(): {
-    isInitialized: boolean;
-    canSignIn: boolean;
-    remainingCooldown: number;
-  } {
-    return {
-      isInitialized: this.isInitialized,
-      canSignIn: this.canAttemptSignIn(),
-      remainingCooldown: this.getRemainingCooldown(),
-    };
-  }
-
-  /**
-   * Cleanup method
-   */
-  async cleanup(): Promise<void> {
-    this.isInitialized = false;
-    this.initializationPromise = null;
-    this.lastSignInAttempt = null;
-  }
-
-  // PKCE helpers removed in hosted OAuth approach
 }
 
 // Export singleton instance

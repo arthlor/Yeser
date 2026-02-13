@@ -12,6 +12,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
+import { alpha } from '@/themes/utils';
 import { formatStatementDate, InteractiveStatementCardProps } from './StatementCardBase';
 import type { MoodEmoji } from '@/types/mood.types';
 import { MOOD_EMOJIS } from '@/types/mood.types';
@@ -564,7 +565,7 @@ const createStyles = (theme: AppTheme) =>
     // Emoji Sheet Styles (Copied/Adapted from GratitudeInputBar)
     modalBackdrop: {
       flex: 1,
-      backgroundColor: theme.colors.scrim + '66',
+      backgroundColor: alpha(theme.colors.scrim, 0.4),
       justifyContent: 'flex-end',
     },
     emojiSheet: {

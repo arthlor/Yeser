@@ -51,7 +51,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       alignItems: 'center',
       justifyContent: 'center',
       elevation: 4,
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.25,
       shadowRadius: 6,

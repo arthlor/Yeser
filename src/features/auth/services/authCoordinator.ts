@@ -1,8 +1,5 @@
 import { logger } from '@/utils/debugConfig';
-import { magicLinkService } from './magicLinkService';
 import { deepLinkService } from './deepLinkService';
-
-import type { MagicLinkCredentials } from '@/services/authService';
 
 /**
  * Auth Coordinator Service
@@ -10,59 +7,6 @@ import type { MagicLinkCredentials } from '@/services/authService';
  * Acts as a facade for different auth services and provides a unified API.
  */
 export class AuthCoordinator {
-  /**
-   * Send magic link using the magic link service
-   */
-  async sendMagicLink(
-    credentials: MagicLinkCredentials,
-    callbacks: {
-      onSuccess: (message: string) => void;
-      onError: (error: Error) => void;
-      setLoading: (loading: boolean) => void;
-      setMagicLinkSent: (sent: boolean) => void;
-    }
-  ): Promise<void> {
-    logger.debug('Auth coordinator: Initiating magic link send', {
-      email: credentials.email.charAt(0) + '***',
-    });
-
-    return magicLinkService.sendMagicLink(
-      credentials,
-      callbacks.onSuccess,
-      callbacks.onError,
-      callbacks.setLoading,
-      callbacks.setMagicLinkSent
-    );
-  }
-
-  /**
-   * Confirm magic link using the magic link service
-   */
-  async confirmMagicLink(
-    tokenHash: string,
-    type: string = 'magiclink',
-    callbacks: {
-      onSuccess: (message: string) => void;
-      onError: (error: Error) => void;
-      setLoading: (loading: boolean) => void;
-      setMagicLinkSent: (sent: boolean) => void;
-    }
-  ): Promise<{ user: unknown; session: unknown } | null> {
-    logger.debug('Auth coordinator: Confirming magic link', {
-      tokenHash: tokenHash.slice(-8),
-      type,
-    });
-
-    return magicLinkService.confirmMagicLink(
-      tokenHash,
-      type,
-      callbacks.onSuccess,
-      callbacks.onError,
-      callbacks.setLoading,
-      callbacks.setMagicLinkSent
-    );
-  }
-
   /**
    * Handle deep link authentication callback
    */
@@ -80,48 +24,18 @@ export class AuthCoordinator {
   }
 
   /**
-   * Check if magic link can be sent (rate limiting)
-   */
-  canSendMagicLink(): boolean {
-    return magicLinkService.canSendMagicLink();
-  }
-
-  /**
-   * Get remaining cooldown time for magic link
-   */
-  getMagicLinkCooldownRemaining(): number {
-    return magicLinkService.getMagicLinkCooldownRemaining();
-  }
-
-  /**
    * Get comprehensive auth status for monitoring/debugging
    */
   getAuthStatus(): {
-    magicLink: {
-      queueLength: number;
-      isProcessing: boolean;
-      lastRequestTime: number | null;
-      canSendNow: boolean;
-    };
     deepLink: {
-      otpTokens: number;
+      oauthTokens: number;
       isProcessing: boolean;
       oldestToken?: number;
     };
   } {
     return {
-      magicLink: magicLinkService.getQueueStatus(),
       deepLink: deepLinkService.getQueueStatus(),
     };
-  }
-
-  /**
-   * Reset auth state (for testing/cleanup)
-   */
-  resetState(): void {
-    logger.debug('Auth coordinator: Resetting all auth service states');
-    magicLinkService.resetState();
-    // Note: deepLinkService doesn't have resetState, only cleanup
   }
 
   /**
@@ -129,7 +43,6 @@ export class AuthCoordinator {
    */
   cleanup(): void {
     logger.debug('Auth coordinator: Cleaning up all auth services');
-    magicLinkService.cleanup();
     deepLinkService.cleanup();
   }
 
@@ -142,15 +55,9 @@ export class AuthCoordinator {
   } {
     const issues: string[] = [];
 
-    // Check magic link service readiness
-    const magicLinkStatus = magicLinkService.getQueueStatus();
-    if (magicLinkStatus.isProcessing && magicLinkStatus.queueLength > 5) {
-      issues.push('Magic link queue is overloaded');
-    }
-
     // Check deep link service readiness
     const deepLinkStatus = deepLinkService.getQueueStatus();
-    if (deepLinkStatus.isProcessing && deepLinkStatus.otpTokens > 3) {
+    if (deepLinkStatus.isProcessing && deepLinkStatus.oauthTokens > 3) {
       issues.push('Deep link token queue is overloaded');
     }
 
@@ -169,19 +76,14 @@ export class AuthCoordinator {
    * Get auth flow metrics for analytics
    */
   getMetrics(): {
-    magicLinkQueueLength: number;
     deepLinkQueueLength: number;
     isAnyServiceBusy: boolean;
-    canAcceptNewRequests: boolean;
   } {
-    const magicLinkStatus = magicLinkService.getQueueStatus();
     const deepLinkStatus = deepLinkService.getQueueStatus();
 
     return {
-      magicLinkQueueLength: magicLinkStatus.queueLength,
-      deepLinkQueueLength: deepLinkStatus.otpTokens,
-      isAnyServiceBusy: magicLinkStatus.isProcessing || deepLinkStatus.isProcessing,
-      canAcceptNewRequests: magicLinkStatus.canSendNow && !magicLinkStatus.isProcessing,
+      deepLinkQueueLength: deepLinkStatus.oauthTokens,
+      isAnyServiceBusy: deepLinkStatus.isProcessing,
     };
   }
 }

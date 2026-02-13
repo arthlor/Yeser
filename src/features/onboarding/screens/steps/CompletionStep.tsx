@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
-import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
-import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
+import { OnboardingLayout } from '@/features/onboarding/components/OnboardingLayout';
+import OnboardingNavHeader from '@/features/onboarding/components/OnboardingNavHeader';
+import { OnboardingButton } from '@/features/onboarding/components/OnboardingButton';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { hapticFeedback } from '@/utils/hapticFeedback';
@@ -232,13 +232,13 @@ const createStyles = (theme: AppTheme) =>
     },
     congratsTitle: {
       ...theme.typography.headlineLarge,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.sm,
     },
     congratsSubtitle: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 24,
       paddingHorizontal: theme.spacing.md,
@@ -255,7 +255,7 @@ const createStyles = (theme: AppTheme) =>
     },
     summaryTitle: {
       ...theme.typography.headlineSmall,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       fontWeight: '600',
       marginBottom: theme.spacing.lg,
       textAlign: 'center',
@@ -279,7 +279,7 @@ const createStyles = (theme: AppTheme) =>
     },
     summaryText: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       flex: 1,
     },
     encouragementContainer: {
@@ -291,12 +291,12 @@ const createStyles = (theme: AppTheme) =>
     },
     encouragementTitle: {
       ...theme.typography.headlineSmall,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       marginBottom: theme.spacing.sm,
     },
     encouragementText: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       textAlign: 'center',
       lineHeight: 24,
     },
@@ -306,7 +306,7 @@ const createStyles = (theme: AppTheme) =>
     },
     celebrationIcon: {
       ...theme.typography.headlineSmall,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
     },
     startButton: {
       width: '100%',
@@ -325,7 +325,7 @@ const createStyles = (theme: AppTheme) =>
     },
     footerText: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
     },
   });

@@ -100,17 +100,6 @@ const enhancedDarkColors: ThemeColors = {
   // Gradient colors - Natural teal harmony for dark mode
   gradientStart: '#2DD4BF', // Bright teal start
   gradientEnd: '#14B8A6', // Harmonious deeper teal end
-
-  // Legacy support - updated for enhanced dark theme
-  text: '#F1F5F9', // Light, comfortable text for reading
-  textSecondary: '#CBD5E1', // Secondary text with good contrast
-  border: '#5A6875', // Enhanced from #64748B for better definition
-  inputBackground: '#374151', // Sophisticated desaturated blue input background
-  inputText: '#F1F5F9', // Light text in inputs
-  danger: '#F87171', // Consistent with error
-  onDanger: '#7F1D1D', // Dark text on danger
-  shadow: 'rgba(0, 0, 0, 0.5)', // Deep shadow for elevation
-  surfaceDisabled: '#374151', // Sophisticated disabled surface
 };
 
 const enhancedTypography: ThemeTypography = {

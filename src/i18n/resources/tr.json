@@ -258,7 +258,17 @@
     "enable": "Evet, Etkinleştir",
     "maybeLater": "Bildirimler minnet pratiğini güçlendirir",
     "openSettings": "Ayarlara Git",
-    "fixedScheduleDescription": "Her gün {{firstTime}} ve {{secondTime}}'de minnettar olman gerektiğini hatırlatacağız 🌱"
+    "fixedScheduleDescription": "Her gün yerel saatine göre {{firstTime}} ve {{secondTime}} saatlerinde hatırlatacağız.",
+    "reminderTimeTitle": "Birincil hatırlatma saati",
+    "timeUpdatedSuccess": "Hatırlatma saati {{time}} olarak güncellendi.",
+    "reminderTimeA11y": "Hatırlatma saatini {{time}} olarak ayarla",
+    "errors": {
+      "generic": "Bildirim ayarlarında bir sorun oluştu.",
+      "permissionDenied": "Hatırlatıcıları açmak için bildirim izni gerekiyor.",
+      "enableFailed": "Bildirimler açılamadı. Lütfen tekrar dene.",
+      "disableFailed": "Bildirimler kapatılamadı. Lütfen tekrar dene.",
+      "timeUpdateFailed": "Hatırlatma saati güncellenemedi. Lütfen tekrar dene."
+    }
   },
   "calendar": {
     "title": "MİNNET YOLCULUĞUN",
@@ -490,7 +500,8 @@
     },
     "gratitude": {
       "empty": "Minnet ifadesi boş olamaz.",
-      "required": "En az bir minnet ifadesi gerekli."
+      "required": "En az bir minnet ifadesi gerekli.",
+      "tooLong": "Minnet ifadesi en fazla 500 karakter olabilir."
     },
     "streak": {
       "negativeStreak": "Mevcut seri negatif olamaz",
@@ -535,21 +546,12 @@
     "login": {
       "brand": "Yeşer",
       "welcome": "Hoş Geldin!",
-      "magicLinkSentTitle": "Giriş Bağlantısı Gönderildi!",
-      "magicLinkSentDesc": "E-postanı kontrol et ve giriş bağlantısına tıkla.",
-      "continueJourney": "Minnet yolculuğuna devam et",
+      "continueJourney": "Minnet yolculuğuna başla",
+      "privacyNote": "Verileriniz güvenle korunur",
       "secure": {
         "trust1": "Güvenli Giriş",
-        "trust2": "Şifresiz",
-        "toggleHelp": { "show": "Güvenli Link Nedir?", "hide": "Yardımı Gizle" },
-        "helpTitle": "🔒 Güvenli ve Kolay",
-        "helpDesc": "Güvenli link ile şifre hatırlamana gerek yok. E-postana özel bir bağlantı gönderiyoruz."
+        "trust2": "Şifresiz"
       },
-      "labels": {
-        "email": "E-posta Adresi",
-        "emailPlaceholder": "ornek@email.com"
-      },
-      "divider": { "or": "veya" },
       "oauth": {
         "googleContinue": "Google ile Devam Et",
         "appleContinue": "Apple ile Devam Et",
@@ -557,16 +559,11 @@
       },
       "toasts": {
         "loginSuccess": "Başarıyla giriş yaptın!",
-        "rateLimit": "Lütfen bekle, çok fazla istek gönderdin.",
-        "invalidEmail": "Geçerli bir e-posta adresi gir",
         "googleNotReady": "Google servisleri henüz hazır değil. Lütfen bekle.",
         "appleOnlyIOS": "Apple ile giriş sadece iOS üzerinde desteklenir.",
         "appleNotReady": "Apple servisleri henüz hazır değil. Lütfen bekle."
       },
       "buttons": {
-        "send": "Giriş Bağlantısı Gönder",
-        "sending": "Gönderiliyor...",
-        "resend": "Tekrar Gönder",
         "openInBrowser": "Tarayıcıda giriş yap...",
         "googleLoading": "Google servislerine bağlanılıyor...",
         "googleSigning": "Google ile giriş yapılıyor...",
@@ -576,8 +573,6 @@
     },
     "services": {
       "waitSeconds": "Lütfen {{seconds}} saniye bekle ve tekrar dene.",
-      "rateLimitMessage": "Lütfen {{remainingTime}} saniye bekle ve tekrar dene.",
-      "magicLinkSent": "Giriş bağlantısı e-posta adresine gönderildi!",
       "appleStartFailed": "Apple ile giriş başlatılamadı.",
       "appleRedirectMissing": "Apple ile giriş için yönlendirme adresi alınamadı.",
       "appleInProgress": "Giriş işlemi devam ediyor. Lütfen bekle.",
@@ -587,12 +582,7 @@
       "googleRedirectMissing": "Google ile giriş için yönlendirme adresi alınamadı.",
       "googleInProgress": "Giriş işlemi devam ediyor. Lütfen bekle.",
       "googleNetwork": "İnternet bağlantısı sorunu. Lütfen tekrar dene.",
-      "googleFailed": "Google ile giriş yapılamadı. Lütfen tekrar dene.",
-      "magicLink": {
-        "inProgress": "Giriş işlemi devam ediyor. Lütfen bekle.",
-        "linkSent": "Giriş bağlantısı e-posta adresine gönderildi!",
-        "invalidLink": "Geçersiz giriş bağlantısı. Lütfen yeni bir bağlantı talep et."
-      }
+      "googleFailed": "Google ile giriş yapılamadı. Lütfen tekrar dene."
     },
     "validation": {
       "emailRequired": "E-posta adresi gereklidir",
@@ -1412,12 +1402,13 @@
       },
       "premiumPayment": {
         "title": "Premium Uygulama ve Ödeme Koşulları",
-        "content": "Yeşer ücretli bir premium uygulamadır. Uygulama 39,99 TL tek seferlik ödeme ile satın alınır ve tüm özelliklerine sınırsız erişim sağlar. Ödeme koşulları:",
+        "content": "Yeşer tüm özellikleri açan premium abonelik sunar. Ödeme koşulları:",
         "items": [
-          "Tek Seferlik Ödeme: Abonelik sistemi yoktur, sadece bir kez ödersiniz",
+          "Otomatik Yenilenen Abonelik: Aboneliğiniz, mevcut dönem bitiminden en az 24 saat önce iptal edilmedikçe otomatik olarak yenilenir",
           "App Store/Google Play: Tüm ödemeler ilgili uygulama mağazaları üzerinden işlenir",
-          "İade Politikası: İade talepleri Apple/Google'ın politikalarına tabidir",
-          "KDV Dahil: Belirtilen fiyat KDV dahildir"
+          "Yönetim veya İptal: Aboneliğinizi mağaza hesap ayarlarınızdan yönetebilir veya iptal edebilirsiniz",
+          "Fiyat ve Vergiler: Fiyatlar satın alma öncesinde gösterilir ve bölgeye göre değişebilir; uygulanabilir vergiler dahildir",
+          "Satın Almaları Geri Yükleme: Daha önceki satın almalarınızı uygulama içinden geri yükleyebilirsiniz"
         ]
       },
       "usage": {
@@ -1515,7 +1506,20 @@
   "subscription": {
     "customerCenter": {
       "title": "Aboneliğinizi yönetin",
-      "openButton": "Müşteri Merkezini Aç"
+      "openButton": "Müşteri Merkezini Aç",
+      "description": "Aboneliğini yönet, güncelle veya geri yükle."
+    },
+    "locked": {
+      "aiCoach": {
+        "title": "AI Koçu'nu Aç",
+        "subtitle": "Kişiselleştirilmiş yönlendirme ve ilham soruları ile pratiğini derinleştir.",
+        "cta": "Premium'a Geç"
+      },
+      "aiChat": {
+        "title": "AI Sohbeti'ni Aç",
+        "subtitle": "Minnet arkadaşınla her zaman sohbet et.",
+        "cta": "Premium'a Geç"
+      }
     },
     "upsell": {
       "title": "Premium'a Yükselt",
@@ -1536,7 +1540,41 @@
       "unlockSubtitle": "Detaylı analizlere ve trendlere eriş",
       "upgradeToPro": "Pro'ya Yükselt",
       "loading": "Abonelik seçenekleri yükleniyor...",
-      "noOfferings": "Abonelik seçenekleri yüklenemedi"
+      "noOfferings": "Abonelik seçenekleri yüklenemedi",
+      "context": {
+        "default": {
+          "title": "Premium'a Yükselt",
+          "subtitle": "Tüm premium özellikleri aç ve minnet pratiğini derinleştir."
+        },
+        "aiCoach": {
+          "title": "AI Koçu'nu Aç",
+          "subtitle": "Yolculuğuna özel kişiselleştirilmiş yönlendirme ve sorular al."
+        },
+        "aiChat": {
+          "title": "AI Sohbeti'ni Aç",
+          "subtitle": "Minnet arkadaşınla her zaman sohbet et."
+        },
+        "insights": {
+          "title": "Premium İçgörüleri Aç",
+          "subtitle": "Detaylı analizlere ve zaman trendlerine eriş."
+        },
+        "pastEntries": {
+          "title": "Geçmiş Kayıtları Aç",
+          "subtitle": "Herhangi bir geçmiş tarihe minnet ekle ve düzenle."
+        },
+        "dailyLimit": {
+          "title": "Sınırsız Günlük Kayıt",
+          "subtitle": "Ücretsiz günlük limiti aş ve dilediğin kadar yaz."
+        },
+        "pdfExport": {
+          "title": "Minnetlerini Dışa Aktar",
+          "subtitle": "Kayıtlarının güzel PDF'lerini istediğin zaman oluştur."
+        },
+        "variedPrompts": {
+          "title": "Çeşitli Soru Önerilerini Aç",
+          "subtitle": "Daha fazla ilham için daha geniş soru aralığına eriş."
+        }
+      }
     },
     "restore": {
       "success": "Abonelik geri yüklendi!",

@@ -5,16 +5,15 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { queryClient } from '@/api/queryClient';
+import { queryClient } from '@/shared/query/queryClient';
 import ErrorBoundary from '@/shared/components/layout/ErrorBoundary';
 import { useInitialization } from '@/hooks/useInitialization';
 import { logger } from '@/utils/debugConfig';
 import { cleanupSingletons } from '@/utils/cleanupSingletons';
-import useAuthStore from '@/store/authStore';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import { ThemeProvider } from './ThemeProvider';
 import { ToastProvider, useToast } from './ToastProvider';
 import { GlobalErrorProvider } from './GlobalErrorProvider';
-import { registerGlobalErrorHandlers } from '@/store/authStore';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -27,11 +26,8 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
   const initialization = useInitialization();
 
   useEffect(() => {
-    // Register global error handlers with enhanced 7-layer protection
-    registerGlobalErrorHandlers({ showError, showSuccess });
-
     logger.debug('[COLD START] AppProviders initialized - staged initialization running...');
-  }, [showError, showSuccess]);
+  }, []);
 
   // Separate effect for initialization logging to avoid re-mounting providers
   useEffect(() => {
@@ -67,7 +63,7 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
 
         // If app was stuck on splash and user backgrounded/foregrounded it,
         // this likely fixed an AsyncStorage deadlock - re-initialize auth to ensure proper state
-        const authState = useAuthStore.getState();
+        const authState = useCoreAuthStore.getState();
         if (authState.isLoading && timeSinceStart > 3000) {
           logger.warn('Detected potential AsyncStorage deadlock recovery - re-initializing auth');
 
@@ -94,7 +90,7 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <GlobalErrorProvider>
+        <GlobalErrorProvider toastHandlers={{ showError, showSuccess }}>
           <GestureHandlerRootView style={styles.container}>
             <SafeAreaProvider>{children}</SafeAreaProvider>
           </GestureHandlerRootView>

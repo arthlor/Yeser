@@ -56,7 +56,7 @@ function getGeminiModel() {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   return genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-3-flash-preview',
     safetySettings: [
       {
         category: HarmCategory.HARM_CATEGORY_HARASSMENT,

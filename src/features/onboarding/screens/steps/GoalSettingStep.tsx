@@ -9,9 +9,9 @@ import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimation
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
-import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
-import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
+import { OnboardingLayout } from '@/features/onboarding/components/OnboardingLayout';
+import OnboardingNavHeader from '@/features/onboarding/components/OnboardingNavHeader';
+import { OnboardingButton } from '@/features/onboarding/components/OnboardingButton';
 import { ScreenSection } from '@/shared/components/layout';
 import { useTranslation } from 'react-i18next';
 
@@ -233,13 +233,13 @@ const createStyles = (theme: AppTheme) =>
     header: { alignItems: 'center', paddingTop: 0 },
     title: {
       ...theme.typography.headlineLarge,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.xs,
     },
     subtitle: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 20,
     },
@@ -290,7 +290,7 @@ const createStyles = (theme: AppTheme) =>
     },
     optionLabel: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       fontWeight: '600',
       marginBottom: 2,
     },
@@ -299,7 +299,7 @@ const createStyles = (theme: AppTheme) =>
     },
     optionDescription: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
     },
     optionDescriptionSelected: {
       color: theme.colors.primary + 'CC',
@@ -332,7 +332,7 @@ const createStyles = (theme: AppTheme) =>
     },
     infoText: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       flex: 1,
       lineHeight: 20,
     },

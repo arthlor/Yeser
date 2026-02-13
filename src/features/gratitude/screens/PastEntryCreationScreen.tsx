@@ -10,8 +10,6 @@ import { AppStackParamList, RootStackParamList } from '@/types/navigation';
 import { analyticsService } from '@/services/analyticsService';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { ScreenLayout } from '@/shared/components/layout';
-import ThemedCard from '@/shared/components/ui/ThemedCard';
-import { getPrimaryShadow } from '@/themes/utils';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -27,8 +25,11 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTranslation } from 'react-i18next';
-import { getCurrentLocale } from '@/utils/localeUtils';
 import { useSubscription } from '@/hooks/useSubscription';
+import { format } from 'date-fns';
+import { enUS, es, tr } from 'date-fns/locale';
+import { useLanguageStore } from '@/store/languageStore';
+import { AICoachPrompt } from '@/shared/components/ui/AICoachPrompt';
 
 type PastEntryCreationScreenRouteProp = RouteProp<AppStackParamList, 'PastEntryCreation'>;
 
@@ -41,10 +42,10 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { t } = useTranslation();
   const { canAccessPastEntries, checkGate } = useSubscription();
+  const language = useLanguageStore((state) => state.language);
 
   // **DOUBLE LOCK**: Secure screen access against deep links or bypasses
   useEffect(() => {
-    // If user cannot access past entries, double check via checkGate to show paywall/redirect
     if (!canAccessPastEntries()) {
       checkGate('past_entry_screen_access');
       navigation.goBack();
@@ -80,10 +81,10 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
 
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
 
-  // **SIMPLIFIED ANIMATION SYSTEM**: Single coordinated instance (2 → 1, 50% reduction)
   const animations = useCoordinatedAnimations();
 
   const statements = currentEntry?.statements || [];
+  const dailyGoal = profile?.daily_gratitude_goal ?? 3;
 
   useEffect(() => {
     if (addStatementError || editStatementError || deleteStatementError) {
@@ -103,7 +104,6 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
     }
   }, [entryError, handleMutationError]);
 
-  // **MINIMAL ENTRANCE**: Simple 400ms fade-in, barely noticeable
   useEffect(() => {
     animations.animateEntrance({ duration: 400 });
   }, [animations]);
@@ -124,7 +124,6 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
           { entryDate: finalDateString, statement: statementText, moodEmoji: moodEmoji ?? null },
           {
             onSuccess: () => {
-              // **ELIMINATED LAYOUTANIMATION**: Removed complex layout animation call
               if (statements.length + 1 >= (profile?.daily_gratitude_goal ?? 3)) {
                 showSuccess(t('gratitude.success.goalCompletedPastEntry'));
                 navigation.goBack();
@@ -152,12 +151,10 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
 
   const handleEditStatement = useCallback((index: number) => {
     setEditingStatementIndex(index);
-    // **ELIMINATED LAYOUTANIMATION**: Removed complex layout animation call
   }, []);
 
   const handleCancelEditingStatement = useCallback(() => {
     setEditingStatementIndex(null);
-    // **ELIMINATED LAYOUTANIMATION**: Removed complex layout animation call
   }, []);
 
   const handleSaveEditedStatement = useCallback(
@@ -169,7 +166,6 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
           {
             onSuccess: () => {
               setEditingStatementIndex(null);
-              // **ELIMINATED LAYOUTANIMATION**: Removed complex layout animation call
               showSuccess(t('shared.statement.updated'));
             },
           }
@@ -189,7 +185,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
         { entryDate: finalDateString, statementIndex: index },
         {
           onSuccess: () => {
-            // **ELIMINATED LAYOUTANIMATION**: Removed complex layout animation call
+            // Animation handled by list
           },
         }
       );
@@ -201,14 +197,20 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
     await refetchEntry();
   }, [refetchEntry]);
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString(getCurrentLocale(), {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  const getDateLocale = () => {
+    switch (language) {
+      case 'tr':
+        return tr;
+      case 'es':
+        return es;
+      default:
+        return enUS;
+    }
   };
+
+  // Format date like DailyEntryScreen
+  const formattedDate = format(entryDate, 'EEEE, d MMMM', { locale: getDateLocale() });
+  const formattedMonthYear = format(entryDate, 'MMMM yyyy', { locale: getDateLocale() });
 
   return (
     <>
@@ -216,8 +218,9 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
       <ScreenLayout
         edges={['top']}
         scrollable={true}
-        density="compact"
+        density="comfortable"
         edgeToEdge={true}
+        backgroundColor={theme.colors.background}
         showsVerticalScrollIndicator={false}
         keyboardAware={true}
         keyboardDismissMode="interactive"
@@ -234,239 +237,239 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
       >
         <Animated.View
           style={[
-            styles.heroSection,
+            styles.container,
             {
               opacity: animations.fadeAnim,
+              transform: animations.entranceTransform,
             },
           ]}
         >
-          <ThemedCard
-            variant="elevated"
-            density="comfortable"
-            elevation="floating"
-            style={styles.heroCard}
-          >
-            <View style={styles.dateSection}>
-              <Icon name="calendar-today" size={24} color={theme.colors.primary} />
-              <View style={styles.dateTextContainer}>
-                <Text style={styles.dateText}>{formatDate(entryDate)}</Text>
-                <Text style={styles.dateSubtext}>
-                  {t('gratitude.input.a11y.addFirstGratitude')}
+          {/* HEADER SECTION - Matching DailyEntryScreen */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Text style={styles.headerDate}>{formattedDate.toUpperCase()}</Text>
+              <Text style={styles.headerTitle}>{formattedMonthYear}</Text>
+              <Text style={styles.headerSubtitle}>{t('throwback.teaser.subtitle')}</Text>
+            </View>
+
+            <View style={styles.progressRingContainer}>
+              <Animated.View style={styles.progressRing}>
+                <Icon
+                  name={statements.length >= dailyGoal ? 'check-decagram' : 'calendar-clock'}
+                  size={24}
+                  color={
+                    statements.length >= dailyGoal ? theme.colors.success : theme.colors.primary
+                  }
+                />
+                <Text style={styles.progressText}>
+                  {statements.length}/{dailyGoal}
+                </Text>
+              </Animated.View>
+            </View>
+          </View>
+
+          {/* INPUT SECTION */}
+          <View style={styles.inputSection}>
+            <GratitudeInputBar
+              onSubmit={handleAddStatement}
+              onSubmitWithMood={(text, mood) => handleAddStatement(text, mood ?? null)}
+              disabled={isAddingStatement}
+              placeholder={
+                isAddingStatement ? t('gratitude.input.motto') : t('gratitude.input.placeholder')
+              }
+            />
+          </View>
+
+          {/* AI COACH PROMPT */}
+          <View style={styles.coachSection}>
+            <AICoachPrompt
+              recentEntries={statements.slice(0, 5)}
+              onSelectPrompt={() => {
+                // Prompt selection handled
+              }}
+            />
+          </View>
+
+          {/* STATEMENTS LIST SECTION */}
+          <View style={styles.listSection}>
+            {isLoadingEntry && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={styles.loadingText}>{t('shared.layout.screenContent.loading')}</Text>
+              </View>
+            )}
+
+            {statements.length > 0 && (
+              <View style={styles.listHeader}>
+                <Text style={styles.listTitle}>
+                  {t('gratitude.sections.todaysGratitudes', 'Your Gratitudes')}
+                </Text>
+                <View style={styles.lineDivider} />
+              </View>
+            )}
+
+            {[...statements].reverse().map((statement, index) => (
+              <View key={index} style={styles.statementWrapper}>
+                <Animated.View
+                  style={{
+                    opacity: animations.fadeAnim,
+                    transform: [
+                      {
+                        translateY: animations.fadeAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [20 + index * 5, 0],
+                        }),
+                      },
+                    ],
+                  }}
+                >
+                  <StatementEditCard
+                    statement={statement}
+                    variant="primary"
+                    date={finalDateString}
+                    isEditing={editingStatementIndex === index}
+                    isLoading={isEditingStatement || isDeletingStatement}
+                    onEdit={() => handleEditStatement(index)}
+                    onDelete={() => handleDeleteStatement(index)}
+                    onCancel={handleCancelEditingStatement}
+                    onSave={(updatedText: string) => handleSaveEditedStatement(index, updatedText)}
+                    enableInlineEdit={true}
+                    confirmDelete={true}
+                    maxLength={500}
+                    edgeToEdge={true}
+                    showQuotes={true}
+                    animateEntrance={true}
+                    accessibilityLabel={t('shared.statement.a11y.memoryLabel', {
+                      text: statement,
+                    })}
+                  />
+                </Animated.View>
+              </View>
+            ))}
+
+            {statements.length === 0 && !isLoadingEntry && (
+              <View style={styles.emptyContainer}>
+                <Icon name="feather" size={32} color={theme.colors.onSurfaceVariant + '40'} />
+                <Text style={styles.emptyText}>
+                  {t('gratitude.empty.past', 'No entries for this day.')}
                 </Text>
               </View>
-            </View>
-          </ThemedCard>
+            )}
+          </View>
         </Animated.View>
-
-        <GratitudeInputBar
-          onSubmit={handleAddStatement}
-          onSubmitWithMood={(text, mood) => handleAddStatement(text, mood ?? null)}
-          disabled={isAddingStatement}
-          placeholder={
-            isAddingStatement ? t('gratitude.input.motto') : t('gratitude.input.placeholder')
-          }
-        />
-
-        {isLoadingEntry && (
-          <View style={styles.entryLoadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>{t('shared.layout.screenContent.loading')}</Text>
-          </View>
-        )}
-
-        {statements.length > 0 ? (
-          <View style={styles.contentZone}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionHeaderLeft}>
-                <Icon name="format-list-bulleted" size={20} color={theme.colors.onSurface} />
-                <Text style={styles.sectionTitle}>{t('home.actions.progress.title')}</Text>
-              </View>
-              <View style={styles.statementsCounter}>
-                <Text style={styles.statementsCountText}>{statements.length}</Text>
-              </View>
-            </View>
-
-            <View style={styles.statementsContainer}>
-              {statements.map((statement, index) => (
-                <View key={index} style={styles.statementWrapperOuter}>
-                  <Animated.View
-                    style={[
-                      styles.statementWrapper,
-                      {
-                        opacity: animations.fadeAnim,
-                        transform: [
-                          {
-                            translateY: animations.fadeAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [20 + index * 5, 0],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
-                  >
-                    <StatementEditCard
-                      statement={statement}
-                      variant="primary"
-                      date={finalDateString}
-                      isEditing={editingStatementIndex === index}
-                      isLoading={isEditingStatement || isDeletingStatement}
-                      onEdit={() => handleEditStatement(index)}
-                      onDelete={() => handleDeleteStatement(index)}
-                      onCancel={handleCancelEditingStatement}
-                      onSave={(updatedText: string) =>
-                        handleSaveEditedStatement(index, updatedText)
-                      }
-                      enableInlineEdit={true}
-                      confirmDelete={true}
-                      maxLength={500}
-                      accessibilityLabel={t('shared.statement.a11y.memoryLabel', {
-                        text: statement,
-                      })}
-                    />
-                  </Animated.View>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : (
-          <View style={styles.emptyStateContainer}>
-            <ThemedCard
-              variant="outlined"
-              density="comfortable"
-              elevation="card"
-              style={styles.emptyStateCard}
-            >
-              <View style={styles.emptyStateContent}>
-                <Icon name={'heart-plus-outline'} size={64} color={theme.colors.primary + '40'} />
-                <Text style={styles.emptyStateTitle}>{t('pastEntries.empty.title')}</Text>
-                <Text style={styles.emptyStateSubtitle}>{t('pastEntries.empty.subtitle')}</Text>
-              </View>
-            </ThemedCard>
-          </View>
-        )}
       </ScreenLayout>
     </>
   );
 };
 
-// Keeping styles consistent with DailyEntryScreen
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    heroSection: {
-      paddingHorizontal: theme.spacing.md,
-      paddingTop: theme.spacing.md,
-      marginBottom: theme.spacing.md,
-    },
-    heroCard: {
-      // styles for the hero card
-    },
-    dateSection: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: theme.spacing.sm,
-    },
-    dateTextContainer: {
-      marginLeft: theme.spacing.md,
-    },
-    dateText: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '700',
-    },
-    dateSubtext: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
-    },
-    contentZone: {
+    container: {
       flex: 1,
+      paddingBottom: theme.spacing.xl,
     },
-    sectionHeader: {
+    header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.md,
-      backgroundColor: theme.colors.surface,
-      borderTopWidth: 1,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline + '10',
-      borderBottomColor: theme.colors.outline + '15',
-      ...getPrimaryShadow.small(theme),
+      alignItems: 'flex-start',
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.xl,
+      paddingBottom: theme.spacing.md,
     },
-    sectionHeaderLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
+    headerContent: {
       flex: 1,
+      paddingRight: theme.spacing.md,
     },
-    sectionTitle: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onSurface,
+    headerDate: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.primary,
       fontWeight: '700',
+      letterSpacing: 1.5,
+      marginBottom: 8,
     },
-    statementsCounter: {
-      backgroundColor: theme.colors.primaryContainer,
-      borderRadius: theme.borderRadius.full,
-      width: 32,
-      height: 32,
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...getPrimaryShadow.small(theme),
-    },
-    statementsCountText: {
-      ...theme.typography.labelMedium,
-      color: theme.colors.onPrimaryContainer,
-      fontWeight: '800',
-    },
-    statementsContainer: {
-      paddingVertical: theme.spacing.sm,
-    },
-    statementWrapperOuter: {
-      // Outer wrapper for layout animations
-    },
-    statementWrapper: {
-      position: 'relative',
-    },
-    emptyStateContainer: {
-      marginTop: theme.spacing.xl,
-      paddingHorizontal: theme.spacing.md,
-    },
-    emptyStateCard: {
-      // styles for empty state card
-    },
-    emptyStateContent: {
-      alignItems: 'center',
-      paddingVertical: theme.spacing.xl,
-      paddingHorizontal: theme.spacing.md,
-    },
-    emptyStateTitle: {
-      ...theme.typography.titleLarge,
-      color: theme.colors.onSurface,
-      marginTop: theme.spacing.md,
+    headerTitle: {
+      ...theme.typography.displaySmall,
+      color: theme.colors.onBackground,
       fontWeight: '700',
+      marginBottom: 8,
+      fontFamily: 'Lora-Bold',
     },
-    emptyStateSubtitle: {
+    headerSubtitle: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      marginTop: theme.spacing.sm,
       lineHeight: 22,
     },
-    entryLoadingContainer: {
-      flex: 1,
+    progressRingContainer: {
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: theme.colors.surface,
-      padding: theme.spacing.xl,
-      borderRadius: theme.borderRadius.lg,
-      margin: theme.spacing.md,
-      ...getPrimaryShadow.card(theme),
+      paddingTop: 8,
+    },
+    progressRing: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceVariant + '40',
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 6,
+      borderRadius: theme.borderRadius.full,
+      gap: 6,
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '20',
+    },
+    progressText: {
+      ...theme.typography.labelMedium,
+      fontWeight: '700',
+      color: theme.colors.onSurface,
+    },
+    inputSection: {
+      paddingHorizontal: theme.spacing.md,
+      marginVertical: theme.spacing.md,
+    },
+    coachSection: {
+      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+    },
+    listSection: {
+      marginTop: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+    },
+    listHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.xs,
+    },
+    listTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '600',
+      marginRight: theme.spacing.md,
+    },
+    lineDivider: {
+      flex: 1,
+      height: 1,
+      backgroundColor: theme.colors.outline + '20',
+    },
+    statementWrapper: {
+      marginBottom: theme.spacing.sm,
+    },
+    emptyContainer: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.xxl,
+      gap: theme.spacing.md,
+    },
+    emptyText: {
+      ...theme.typography.bodyLarge,
+      color: theme.colors.onSurfaceVariant + '80',
+      fontStyle: 'italic',
+    },
+    loadingContainer: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.xl,
+      gap: theme.spacing.md,
     },
     loadingText: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
-      marginTop: theme.spacing.md,
     },
   });
 

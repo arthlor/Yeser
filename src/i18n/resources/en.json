@@ -258,7 +258,17 @@
     "enable": "Enable",
     "maybeLater": "Maybe Later",
     "openSettings": "Open Settings",
-    "fixedScheduleDescription": "We'll remind you twice a day at {{firstTime}} and {{secondTime}} (9 PM) in your local time."
+    "fixedScheduleDescription": "We'll remind you twice a day at {{firstTime}} and {{secondTime}} in your local time.",
+    "reminderTimeTitle": "Primary reminder time",
+    "timeUpdatedSuccess": "Reminder time updated to {{time}}.",
+    "reminderTimeA11y": "Set reminder time to {{time}}",
+    "errors": {
+      "generic": "Something went wrong with notifications.",
+      "permissionDenied": "Notification permission is required to enable reminders.",
+      "enableFailed": "Could not enable notifications. Please try again.",
+      "disableFailed": "Could not disable notifications. Please try again.",
+      "timeUpdateFailed": "Could not update reminder time. Please try again."
+    }
   },
   "calendar": {
     "title": "YOUR JOURNEY",
@@ -490,7 +500,8 @@
     },
     "gratitude": {
       "empty": "Gratitude statement cannot be empty.",
-      "required": "At least one gratitude statement is required."
+      "required": "At least one gratitude statement is required.",
+      "tooLong": "Gratitude statement must be 500 characters or less."
     },
     "streak": {
       "negativeStreak": "Current streak cannot be negative",
@@ -535,24 +546,12 @@
     "login": {
       "brand": "Yeser",
       "welcome": "Welcome!",
-      "magicLinkSentTitle": "Login Link Sent!",
-      "magicLinkSentDesc": "Check your email and click the login link.",
       "continueJourney": "Continue your gratitude journey",
+      "privacyNote": "Your data is securely protected",
       "secure": {
         "trust1": "Secure Login",
-        "trust2": "Passwordless",
-        "toggleHelp": {
-          "show": "What is a Secure Link?",
-          "hide": "Hide Help"
-        },
-        "helpTitle": "🔒 Secure and Easy",
-        "helpDesc": "With a secure link, there's no need to remember a password. We send a unique link to your email."
+        "trust2": "Passwordless"
       },
-      "labels": {
-        "email": "Email Address",
-        "emailPlaceholder": "name@example.com"
-      },
-      "divider": { "or": "or" },
       "oauth": {
         "googleContinue": "Continue with Google",
         "appleContinue": "Continue with Apple",
@@ -560,16 +559,11 @@
       },
       "toasts": {
         "loginSuccess": "You have logged in successfully!",
-        "rateLimit": "Please wait, you have sent too many requests.",
-        "invalidEmail": "Enter a valid email address",
         "googleNotReady": "Google services aren't ready yet. Please wait.",
         "appleOnlyIOS": "Sign in with Apple is only supported on iOS.",
         "appleNotReady": "Apple services aren't ready yet. Please wait."
       },
       "buttons": {
-        "send": "Send Login Link",
-        "sending": "Sending...",
-        "resend": "Resend",
         "openInBrowser": "Sign in in the browser...",
         "googleLoading": "Preparing Google services...",
         "googleSigning": "Signing in with Google...",
@@ -579,8 +573,6 @@
     },
     "services": {
       "waitSeconds": "Please wait {{seconds}} seconds and try again.",
-      "rateLimitMessage": "Please wait {{remainingTime}} seconds and try again.",
-      "magicLinkSent": "Sign-in link has been sent to your email!",
       "appleStartFailed": "Could not start Sign in with Apple.",
       "appleRedirectMissing": "Redirect URL for Apple sign-in could not be obtained.",
       "appleInProgress": "Sign-in in progress. Please wait.",
@@ -590,12 +582,7 @@
       "googleRedirectMissing": "Redirect URL for Google sign-in could not be obtained.",
       "googleInProgress": "Sign-in in progress. Please wait.",
       "googleNetwork": "Internet connection issue. Please try again.",
-      "googleFailed": "Sign in with Google failed. Please try again.",
-      "magicLink": {
-        "inProgress": "Sign-in in progress. Please wait.",
-        "linkSent": "Login link has been sent to your email!",
-        "invalidLink": "Invalid login link. Please request a new one."
-      }
+      "googleFailed": "Sign in with Google failed. Please try again."
     },
     "validation": {
       "emailRequired": "Email is required",
@@ -783,7 +770,7 @@
       "save": "Save",
       "cancel": "Cancel",
       "inputPlaceholder": "Write your gratitude statement...",
-      "editButton": "✏️ Edit",
+      "editButton": "Edit",
       "deleteButton": "Delete",
       "updated": "Gratitude statement updated",
       "deleted": "Gratitude statement deleted",
@@ -1412,12 +1399,13 @@
       },
       "premiumPayment": {
         "title": "Premium Application and Payment Terms",
-        "content": "Yeser is a paid premium application. The application is purchased with a one-time payment of 39.99 TL and provides unlimited access to all features. Payment terms:",
+        "content": "Yeser offers a premium subscription that unlocks all features. Payment terms:",
         "items": [
-          "One-Time Payment: There is no subscription system, you only pay once",
+          "Auto-Renewing Subscription: Your subscription renews automatically unless canceled at least 24 hours before the end of the current period",
           "App Store/Google Play: All payments are processed through the relevant app stores",
-          "Refund Policy: Refund requests are subject to Apple/Google policies",
-          "VAT Included: The stated price includes VAT"
+          "Manage or Cancel: You can manage or cancel from your store account settings",
+          "Price and Taxes: Prices are shown before purchase and may vary by region; taxes are included where applicable",
+          "Restore Purchases: You can restore previous purchases from within the app"
         ]
       },
       "usage": {
@@ -1515,7 +1503,20 @@
   "subscription": {
     "customerCenter": {
       "title": "Manage your subscription",
-      "openButton": "Open Customer Center"
+      "openButton": "Open Customer Center",
+      "description": "Manage, update, or restore your subscription."
+    },
+    "locked": {
+      "aiCoach": {
+        "title": "Unlock AI Coach",
+        "subtitle": "Personalized prompts and guidance to deepen your practice.",
+        "cta": "Go Premium"
+      },
+      "aiChat": {
+        "title": "Unlock AI Chat",
+        "subtitle": "Reflect anytime with your gratitude companion.",
+        "cta": "Go Premium"
+      }
     },
     "upsell": {
       "title": "Upgrade to Premium",
@@ -1536,7 +1537,41 @@
       "unlockSubtitle": "Access in-depth analysis and trends",
       "upgradeToPro": "Upgrade to Pro",
       "loading": "Loading subscription options...",
-      "noOfferings": "Unable to load subscription options"
+      "noOfferings": "Unable to load subscription options",
+      "context": {
+        "default": {
+          "title": "Upgrade to Premium",
+          "subtitle": "Unlock all premium features and deepen your gratitude practice."
+        },
+        "aiCoach": {
+          "title": "Unlock AI Coach",
+          "subtitle": "Get personalized prompts and guidance tailored to your journey."
+        },
+        "aiChat": {
+          "title": "Unlock AI Chat",
+          "subtitle": "Reflect anytime with your gratitude companion."
+        },
+        "insights": {
+          "title": "Unlock Premium Insights",
+          "subtitle": "Access in-depth analysis and trends over time."
+        },
+        "pastEntries": {
+          "title": "Unlock Past Entries",
+          "subtitle": "Add and edit gratitudes for any past date."
+        },
+        "dailyLimit": {
+          "title": "Unlimited Daily Entries",
+          "subtitle": "Go beyond the free daily limit and write as much as you want."
+        },
+        "pdfExport": {
+          "title": "Export Your Gratitudes",
+          "subtitle": "Create beautiful PDFs of your entries anytime."
+        },
+        "variedPrompts": {
+          "title": "Unlock Varied Prompts",
+          "subtitle": "Get more inspiration with a wider range of prompts."
+        }
+      }
     },
     "restore": {
       "success": "Subscription restored!",

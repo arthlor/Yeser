@@ -15,6 +15,13 @@ Yeşer, her güne minnettar başlayabilmen için tasarlanmış, sıcak ve motive
 - **Günlük İlham Notları:** Yazmaya ilham veren AI destekli öneriler
 - **Hızlı Ekleme:** Tek dokunuşla yeni giriş oluştur
 
+### 🤖 AI Destekli Özellikler
+
+- **Yeşer Arkadaş:** Seni dinleyen ve destekleyen yapay zeka yoldaşın
+- **Akıllı İyileştirme:** Girişlerini "Şiirsel", "Detaylı" veya "Farkında" modlarıyla zenginleştir
+- **Minnettarlık Koçu:** Geçmişine dayalı kişisel yazma önerileri
+- **Derin Analiz:** Duygusal durumunu ve minnettarlık alışkanlıklarını analiz eden içgörüler
+
 ### 🎭 12 Farklı Duygu ile İfade
 
 Duygularını zengin bir palet ile ifade et:
@@ -117,6 +124,13 @@ Yeşer is the gratitude ritual that helps you greet each day with warmth, calm, 
 - **Daily Prompts:** AI-powered suggestions to inspire your writing
 - **Quick Add:** Create new entries with one tap
 
+### 🤖 AI Powered Features
+
+- **Yeşer Companion:** Your AI gratitude partner helping you reflect
+- **Smart Enhance:** Rewrite entries to be "Poetic", "Detailed", or "Mindful"
+- **Gratitude Coach:** Personalized prompts based on your history
+- **Deep Insights:** AI analysis of your emotional trends and habits
+
 ### 🎭 12 Expressive Moods
 
 Express yourself with a rich emotional palette:
@@ -210,15 +224,16 @@ Express yourself with a rich emotional palette:
 
 ## 🛠️ Tech Stack
 
-| Category   | Technology                                     |
-| ---------- | ---------------------------------------------- |
-| Framework  | React Native 0.81+, Expo SDK 54, Expo Router 6 |
-| Language   | TypeScript 5.9+                                |
-| State      | Zustand (global), TanStack Query (server)      |
-| Backend    | Supabase (Auth, Database, Realtime)            |
-| Animations | React Native Reanimated 4, React Native Skia   |
-| Payments   | RevenueCat                                     |
-| Forms      | React Hook Form + Zod                          |
+| Category   | Technology                                         |
+| ---------- | -------------------------------------------------- |
+| Framework  | React Native 0.79, Expo SDK 53, React Navigation 7 |
+| Language   | TypeScript 5.8+                                    |
+| State      | Zustand (global), TanStack Query (server)          |
+| Backend    | Supabase (Auth, Database, Realtime, Storage)       |
+| AI & Edge  | Supabase Edge Functions, Google Gemini 3 Flash     |
+| Animations | React Native Reanimated 4, React Native Skia       |
+| Payments   | RevenueCat                                         |
+| Forms      | React Hook Form + Zod                              |
 
 ---
 

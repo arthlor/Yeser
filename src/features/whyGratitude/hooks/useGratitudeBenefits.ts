@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getLocalizedGratitudeBenefits } from '@/api/whyGratitudeApi';
-import { queryKeys } from '@/api/queryKeys';
+import { getLocalizedGratitudeBenefits } from '@/features/whyGratitude/api';
+import { queryKeys } from '@/shared/query/queryKeys';
 import { logger } from '@/utils/debugConfig';
 import { useLanguageStore } from '@/store/languageStore';
 import type { SupportedLanguage } from '@/store/languageStore';

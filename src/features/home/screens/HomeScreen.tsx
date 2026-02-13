@@ -75,7 +75,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     refetch: refetchThrowback,
   } = useRandomGratitudeEntry();
 
-  const { isPro, checkGate } = useSubscription();
+  const { isPro } = useSubscription();
 
   // Removed noisy total count debug logs
 
@@ -181,12 +181,8 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
       source: 'home_footer_card',
     });
 
-    // Hard gate: Check pro status before navigating
-    // This will trigger the paywall modal if the user is not Pro
-    if (checkGate('mood_analytics_deep_dive')) {
-      navigation.getParent<StackNavigationProp<RootStackParamList>>()?.navigate('MoodAnalysis');
-    }
-  }, [navigation, checkGate]);
+    navigation.getParent<StackNavigationProp<RootStackParamList>>()?.navigate('MoodAnalysis');
+  }, [navigation]);
 
   // Dynamic image picking without compile-time dependency
   const pickImageAndUpload = useCallback(async () => {
@@ -261,7 +257,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
           ],
           destructiveButtonIndex: 1,
           cancelButtonIndex: 2,
-          userInterfaceStyle: 'dark',
+          userInterfaceStyle: theme.name === 'dark' ? 'dark' : 'light',
         },
         async (index) => {
           if (index === 0) {
@@ -280,7 +276,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     } else {
       showAndroid();
     }
-  }, [deleteAvatar, pickImageAndUpload, profile?.avatar_path, refetchProfile, t]);
+  }, [deleteAvatar, pickImageAndUpload, profile?.avatar_path, refetchProfile, t, theme.name]);
 
   // Memoize throwback entry prop and translate errors
   const memoizedThrowbackEntry = useMemo(() => {
@@ -356,7 +352,9 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
                 <HomeGratitudeListItem
                   statement={item}
                   moodEmoji={mood}
-                  onPress={() => navigation.navigate('EntryDetail', { entryDate: todayDateString })}
+                  onPress={() =>
+                    navigation.navigate('EntryDetail', { entryId: '', entryDate: todayDateString })
+                  }
                 />
               </View>
             );
@@ -421,7 +419,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
                     <View
                       style={[
                         styles.insightIconContainer,
-                        { backgroundColor: theme.colors.tertiaryContainer },
+                        { backgroundColor: theme.colors.tertiary + '15' },
                       ]}
                     >
                       <Icon name="lightbulb-on-outline" size={18} color={theme.colors.tertiary} />
@@ -462,7 +460,6 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
           removeClippedSubviews
           initialNumToRender={8}
           windowSize={5}
-          getItemLayout={(_, index) => ({ length: 120, offset: 120 * index, index })}
           contentContainerStyle={styles.listContent}
         />
       </ScreenLayout>
@@ -577,7 +574,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       borderRadius: theme.borderRadius.full,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.primaryContainer,
+      backgroundColor: theme.colors.primary + '15',
     },
     insightTextContainer: {
       flex: 1,

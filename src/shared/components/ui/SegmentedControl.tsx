@@ -98,7 +98,7 @@ const createStyles = (theme: AppTheme) =>
     },
     segmentSelected: {
       backgroundColor: theme.colors.surface,
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.15,
       shadowRadius: 2,

@@ -20,7 +20,7 @@ class RevenueCatService {
 
     try {
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+        Purchases.setLogLevel(LOG_LEVEL.ERROR);
         Purchases.configure({ apiKey: REVENUECAT_CONFIG.API_KEY });
         this.isInitialized = true;
 

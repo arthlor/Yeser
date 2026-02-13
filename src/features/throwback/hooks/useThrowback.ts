@@ -1,7 +1,7 @@
-import { getRandomGratitudeEntry } from '@/api/gratitudeApi';
-import { queryKeys } from '@/api/queryKeys';
+import { getRandomGratitudeEntry } from '@/features/gratitude/api';
+import { queryKeys } from '@/shared/query/queryKeys';
 import { type GratitudeEntry, gratitudeEntrySchema } from '@/schemas/gratitudeEntrySchema';
-import useAuthStore from '@/store/authStore';
+import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/debugConfig';
@@ -25,7 +25,7 @@ const LAST_THROWBACK_KEY = 'lastThrowbackShownAt';
  * Uses TanStack Query for caching and background updates
  */
 export const useRandomGratitudeEntry = (enabled = true) => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
 
   return useQuery({
     queryKey: queryKeys.randomGratitudeEntry(user?.id),
@@ -59,7 +59,7 @@ export const useRandomGratitudeEntry = (enabled = true) => {
  * Hook for managing throwback mutations and client state
  */
 export const useThrowbackMutations = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useCoreAuthStore((state) => state.user);
   const queryClient = useQueryClient();
   const { handleMutationError } = useGlobalError();
 

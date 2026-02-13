@@ -206,7 +206,7 @@ const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     paragraph: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       marginBottom: theme.spacing.medium,
       textAlign: 'justify',
       lineHeight: 24,
@@ -214,7 +214,7 @@ const createStyles = (theme: AppTheme) =>
     faqItemContainer: {
       marginBottom: theme.spacing.medium,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      borderBottomColor: theme.colors.outline,
       paddingBottom: theme.spacing.medium,
     },
     faqQuestionRow: {
@@ -225,13 +225,13 @@ const createStyles = (theme: AppTheme) =>
     },
     faqQuestion: {
       ...theme.typography.titleMedium,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       flex: 1,
       marginRight: theme.spacing.small,
     },
     faqAnswer: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       marginTop: theme.spacing.small,
       paddingLeft: theme.spacing.small,
       textAlign: 'justify',

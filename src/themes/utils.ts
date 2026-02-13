@@ -247,7 +247,7 @@ export const unifiedShadows = (theme: AppTheme) => {
     },
 
     subtle: {
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: isLightTheme ? 0.08 : 0.02, // Stronger for light theme
       shadowRadius: 2,
@@ -255,7 +255,7 @@ export const unifiedShadows = (theme: AppTheme) => {
     },
 
     card: {
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: isLightTheme ? 0.12 : 0.04, // Stronger for light theme
       shadowRadius: 4,
@@ -263,7 +263,7 @@ export const unifiedShadows = (theme: AppTheme) => {
     },
 
     floating: {
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: isLightTheme ? 0.16 : 0.06, // Stronger for light theme
       shadowRadius: 12,
@@ -271,7 +271,7 @@ export const unifiedShadows = (theme: AppTheme) => {
     },
 
     overlay: {
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: isLightTheme ? 0.2 : 0.08, // Stronger for light theme
       shadowRadius: 20,
@@ -311,7 +311,7 @@ export const componentStyles = (theme: AppTheme) => {
       padding: spacing.inputPadding,
       borderColor: theme.colors.outline,
       focusedBorderColor: theme.colors.primary,
-      backgroundColor: theme.colors.inputBackground,
+      backgroundColor: theme.colors.surfaceVariant,
     },
 
     // List item styling helpers
@@ -551,9 +551,9 @@ export const textColors = (theme: AppTheme) => ({
   placeholder: theme.colors.onSurfaceVariant,
   brand: theme.colors.primary,
 
-  // Legacy support
-  text: theme.colors.text,
-  textSecondary: theme.colors.textSecondary,
+  // Convenience aliases
+  primaryText: theme.colors.onBackground,
+  secondaryText: theme.colors.onSurfaceVariant,
 });
 
 /**
@@ -796,7 +796,7 @@ export const getNeutralShadow = {
   card: (theme: AppTheme) => {
     const isLightTheme = theme.name === 'light';
     return {
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 3 },
       shadowOpacity: isLightTheme ? 0.15 : 0.06, // Stronger for light theme
       shadowRadius: 10,
@@ -811,7 +811,7 @@ export const getNeutralShadow = {
   floating: (theme: AppTheme) => {
     const isLightTheme = theme.name === 'light';
     return {
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: isLightTheme ? 0.2 : 0.08, // Stronger for light theme
       shadowRadius: 14,
@@ -826,7 +826,7 @@ export const getNeutralShadow = {
   small: (theme: AppTheme) => {
     const isLightTheme = theme.name === 'light';
     return {
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: isLightTheme ? 0.08 : 0.03, // Stronger for light theme
       shadowRadius: 3,
@@ -841,7 +841,7 @@ export const getNeutralShadow = {
   medium: (theme: AppTheme) => {
     const isLightTheme = theme.name === 'light';
     return {
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: isLightTheme ? 0.12 : 0.05, // Stronger for light theme
       shadowRadius: 8,
@@ -856,7 +856,7 @@ export const getNeutralShadow = {
   overlay: (theme: AppTheme) => {
     const isLightTheme = theme.name === 'light';
     return {
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: isLightTheme ? 0.25 : 0.1, // Stronger for light theme
       shadowRadius: 20,

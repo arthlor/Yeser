@@ -5,9 +5,9 @@ import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { useUsernameValidation } from '@/shared/hooks';
 import { Ionicons } from '@expo/vector-icons';
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingLayout } from '@/features/onboarding/components/OnboardingLayout';
 import { useTranslation } from 'react-i18next';
-import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
+import { OnboardingButton } from '@/features/onboarding/components/OnboardingButton';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 
 import { ScreenSection } from '@/shared/components/layout';
-import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
+import OnboardingNavHeader from '@/features/onboarding/components/OnboardingNavHeader';
 
 type ThemeKey = 'light' | 'dark' | 'auto';
 
@@ -189,7 +189,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
               value={username}
               onChangeText={handleUsernameChange}
               placeholder={t('onboarding.personalization.placeholderName')}
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={theme.colors.onSurfaceVariant}
               maxLength={50}
               autoCapitalize="none"
               autoCorrect={false}
@@ -246,7 +246,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
                     color={
                       selectedTheme === themeOption.key
                         ? theme.colors.primary
-                        : theme.colors.textSecondary
+                        : theme.colors.onSurfaceVariant
                     }
                   />
                   <View style={styles.themeOptionText}>
@@ -304,13 +304,13 @@ const createStyles = (theme: AppTheme) =>
     },
     title: {
       ...theme.typography.headlineLarge,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.xs,
     },
     subtitle: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 20,
     },
@@ -326,7 +326,7 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: Platform.OS === 'ios' ? theme.spacing.xs : 0, // Minimal vertical padding
       paddingRight: 50, // Make room for validation indicator
       fontSize: 16,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       minHeight: 48,
       height: 48, // Fixed height for consistent appearance
       textAlignVertical: 'center', // Center text vertically on Android
@@ -360,7 +360,7 @@ const createStyles = (theme: AppTheme) =>
     },
     usernameHint: {
       ...theme.typography.bodySmall,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       lineHeight: 18,
     },
     themeOptions: { gap: theme.spacing.xs },
@@ -386,7 +386,7 @@ const createStyles = (theme: AppTheme) =>
     },
     themeOptionTitle: {
       ...theme.typography.bodyLarge,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       fontWeight: '600',
     },
     themeOptionTitleSelected: {
@@ -394,7 +394,7 @@ const createStyles = (theme: AppTheme) =>
     },
     themeOptionDescription: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
     },
     themeOptionDescriptionSelected: {
       color: theme.colors.primary + 'CC',

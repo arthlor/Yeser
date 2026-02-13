@@ -14,18 +14,13 @@ export type {
   AuthMethod,
   OperationType,
   AuthCallbackParams,
-  MagicLinkRequest,
   UrlProcessingState,
-  QueuedOTPToken,
   GlobalErrorHandlers,
 } from './authConstants';
 
 // Auth Validation
 export {
   validateEmail,
-  canSendMagicLink,
-  getMagicLinkCooldownRemaining,
-  validateMagicLinkCredentials,
   validateRedirectUri,
   validateTokenHash,
   isOperationExpired,

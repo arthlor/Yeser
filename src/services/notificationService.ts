@@ -14,6 +14,8 @@ import { logger } from '@/utils/logger';
 const ANDROID_CHANNEL_ID = 'daily-reminder-channel';
 const EXPO_PROJECT_ID = config.eas.projectId;
 const DEFAULT_NOTIFICATION_TIME = '12:30:00';
+const DEFAULT_PRIMARY_REMINDER_TIME = '12:30';
+const DEFAULT_SECOND_REMINDER_TIME = '21:00';
 const SAFE_UPDATE_MISSING_WHERE_CODE = '21000';
 const SAFE_UPDATE_MISSING_WHERE_MESSAGE = 'UPDATE requires a WHERE clause';
 const SAFE_UPDATE_MISSING_COLUMN_CODE = '42703';
@@ -45,11 +47,6 @@ interface DailyReminderSchedule {
   variant: DailyReminderVariant;
   time: string;
 }
-
-const DAILY_REMINDER_SCHEDULES: ReadonlyArray<DailyReminderSchedule> = [
-  { variant: 'midday', time: '12:30' },
-  { variant: 'evening', time: '21:00' },
-];
 
 // Configure notification handling for different app states
 Notifications.setNotificationHandler({
@@ -229,7 +226,15 @@ async function setNotificationsEnabled(
     }
 
     if (enabled) {
-      const scheduleResult = await scheduleDailyReminderNotifications();
+      const { data: profileRow } = await client
+        .from('profiles')
+        .select('notification_time')
+        .eq('id', user.id)
+        .single();
+
+      const scheduleResult = await scheduleDailyReminderNotifications(
+        profileRow?.notification_time ?? undefined
+      );
       if (!scheduleResult.ok) {
         return scheduleResult;
       }
@@ -291,7 +296,10 @@ async function getCurrentDevicePushToken(): Promise<string | null> {
   }
 }
 
-async function scheduleDailyReminderNotifications(): Promise<NotificationOperationResult<void>> {
+async function scheduleDailyReminderNotifications(
+  primaryReminderTime?: string | null,
+  includeEveningReminder: boolean = true
+): Promise<NotificationOperationResult<void>> {
   try {
     await setupAndroidChannel();
 
@@ -306,8 +314,10 @@ async function scheduleDailyReminderNotifications(): Promise<NotificationOperati
 
     await cancelDailyReminderNotifications();
 
+    const schedules = buildDailyReminderSchedules(primaryReminderTime, includeEveningReminder);
+
     await Promise.all(
-      DAILY_REMINDER_SCHEDULES.map(({ variant, time }) => {
+      schedules.map(({ variant, time }) => {
         const localizedCopy = getLocalizedReminderCopy(variant);
         const trigger = parseDailyTrigger(time);
         return Notifications.scheduleNotificationAsync({
@@ -427,6 +437,53 @@ export const notificationService = {
   scheduleDailyReminderNotifications,
   cancelDailyReminderNotifications,
 };
+
+function normalizeReminderTime(rawTime: string | null | undefined, fallback: string): string {
+  if (!rawTime) {
+    return fallback;
+  }
+
+  const match = rawTime.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) {
+    return fallback;
+  }
+
+  const hour = Number.parseInt(match[1], 10);
+  const minute = Number.parseInt(match[2], 10);
+
+  if (
+    Number.isNaN(hour) ||
+    Number.isNaN(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return fallback;
+  }
+
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+function buildDailyReminderSchedules(
+  primaryReminderTime?: string | null,
+  includeEveningReminder: boolean = true
+): ReadonlyArray<DailyReminderSchedule> {
+  const primaryTime = normalizeReminderTime(primaryReminderTime, DEFAULT_PRIMARY_REMINDER_TIME);
+  const schedules: DailyReminderSchedule[] = [{ variant: 'midday', time: primaryTime }];
+
+  if (includeEveningReminder) {
+    const eveningTime = normalizeReminderTime(
+      DEFAULT_SECOND_REMINDER_TIME,
+      DEFAULT_SECOND_REMINDER_TIME
+    );
+    if (eveningTime !== primaryTime) {
+      schedules.push({ variant: 'evening', time: eveningTime });
+    }
+  }
+
+  return schedules;
+}
 
 function mapPostgrestError(error: PostgrestError): Error {
   return new Error(error.message);

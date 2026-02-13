@@ -1,7 +1,7 @@
 import { analyticsService } from '@/services/analyticsService';
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
-import OnboardingNavHeader from '@/components/onboarding/OnboardingNavHeader';
-import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
+import { OnboardingLayout } from '@/features/onboarding/components/OnboardingLayout';
+import OnboardingNavHeader from '@/features/onboarding/components/OnboardingNavHeader';
+import { OnboardingButton } from '@/features/onboarding/components/OnboardingButton';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import type { AppTheme } from '@/themes/types';
@@ -145,14 +145,14 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.headlineLarge,
       fontSize: 32,
       fontWeight: '700',
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.xs,
     },
     welcomeSubtitle: {
       ...theme.typography.bodyLarge,
       fontSize: 16,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 20,
       paddingHorizontal: theme.spacing.md,
@@ -190,14 +190,14 @@ const createStyles = (theme: AppTheme) =>
     featureTitle: {
       ...theme.typography.bodyMedium,
       fontSize: 16,
-      color: theme.colors.text,
+      color: theme.colors.onBackground,
       flex: 1,
       lineHeight: 22,
     },
     featureDescription: {
       ...theme.typography.bodyMedium,
       fontSize: 14,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       flex: 1,
       lineHeight: 20,
     },
@@ -207,7 +207,7 @@ const createStyles = (theme: AppTheme) =>
     },
     encouragementText: {
       ...theme.typography.bodyMedium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 20,
       fontSize: 14,

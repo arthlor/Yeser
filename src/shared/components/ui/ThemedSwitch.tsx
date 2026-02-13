@@ -153,7 +153,7 @@ const createStyles = (theme: AppTheme, size: 'small' | 'medium' | 'large') => {
       borderRadius: dimensions.thumbSize / 2,
       position: 'absolute',
       elevation: 2,
-      shadowColor: theme.colors.shadow,
+      shadowColor: theme.colors.scrim,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.2,
       shadowRadius: 2,

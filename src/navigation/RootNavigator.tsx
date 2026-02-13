@@ -1,28 +1,27 @@
 // src/navigation/RootNavigator.tsx
 import { createStackNavigator } from '@react-navigation/stack';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import AppNavigator from './AppNavigator';
 import AuthNavigator from './AuthNavigator';
 import { useUserProfile } from '../hooks';
 import OnboardingFlowScreen from '../features/onboarding/screens/EnhancedOnboardingFlowScreen';
 import SplashScreen from '../features/auth/screens/SplashScreen';
-import useAuthStore from '../store/authStore';
+import ProfileErrorScreen from '../features/auth/screens/ProfileErrorScreen';
+import { useCoreAuthStore } from '../features/auth/store/coreAuthStore';
 import { RootStackParamList } from '../types/navigation';
 import { PaywallScreen } from '../features/subscription/components/Paywall';
 
 const Root = createStackNavigator<RootStackParamList>();
 
 const RootNavigator: React.FC = () => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const authIsLoading = useAuthStore((state) => state.isLoading);
-  const initializeAuth = useAuthStore((state) => state.initializeAuth);
-  const { profile, isLoadingProfile, isProfileError } = useUserProfile();
+  const isAuthenticated = useCoreAuthStore((state) => state.isAuthenticated);
+  const authIsLoading = useCoreAuthStore((state) => state.isLoading);
+  const { profile, isLoadingProfile, isProfileError, profileError, refetchProfile } =
+    useUserProfile();
   const onboarded = profile?.onboarded;
 
-  useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
+  // Auth initialization is handled in App.tsx - no need for duplicate call here
 
   // Remove verbose auth-state debug logs
 
@@ -37,8 +36,13 @@ const RootNavigator: React.FC = () => {
       ) : isLoadingProfile ? (
         // Authenticated but profile not loaded yet → keep splash to avoid onboarding flash
         <Root.Screen name="Splash" component={SplashScreen} />
-      ) : !onboarded || isProfileError ? (
-        // Profile loaded and user not onboarded (or profile errored) → onboarding
+      ) : isProfileError ? (
+        // Profile failed to load → show retryable error state
+        <Root.Screen name="ProfileError">
+          {() => <ProfileErrorScreen error={profileError} onRetry={refetchProfile} />}
+        </Root.Screen>
+      ) : !onboarded ? (
+        // Profile loaded and user not onboarded → onboarding
         <Root.Screen name="Onboarding" component={OnboardingFlowScreen} />
       ) : (
         // Fully ready → main app

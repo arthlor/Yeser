@@ -22,16 +22,32 @@ interface ActionRowProps {
   subtitle?: string;
   onPress: () => void;
   showDivider?: boolean;
+  accessibilityLabel?: string;
 }
 
 const ActionRow: React.FC<ActionRowProps> = React.memo(
-  ({ icon, iconBgColor, iconColor, title, subtitle, onPress, showDivider = true }) => {
+  ({
+    icon,
+    iconBgColor,
+    iconColor,
+    title,
+    subtitle,
+    onPress,
+    showDivider = true,
+    accessibilityLabel,
+  }) => {
     const { theme } = useTheme();
     const styles = useMemo(() => createRowStyles(theme), [theme]);
 
     return (
       <>
-        <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={onPress}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel || (subtitle ? `${title}. ${subtitle}` : title)}
+        >
           <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
             <Icon name={icon} size={18} color={iconColor} />
           </View>
@@ -85,38 +101,58 @@ const ActionCards: React.FC<ActionCardsProps> = React.memo(
             title={primaryTitle}
             subtitle={primarySubtitle}
             onPress={onNavigateToEntry}
+            accessibilityLabel={t('home.actions.start.a11y', {
+              defaultValue: '{{title}}. {{subtitle}}',
+              title: primaryTitle,
+              subtitle: primarySubtitle,
+            })}
           />
         )}
 
         {/* Past Entries */}
         <ActionRow
           icon="history"
-          iconBgColor={theme.colors.primaryContainer}
+          iconBgColor={theme.colors.primary + '15'}
           iconColor={theme.colors.primary}
           title={t('home.actions.past.title')}
           subtitle={t('home.actions.past.subtitle')}
           onPress={onNavigateToPastEntries}
+          accessibilityLabel={t('home.actions.past.a11y', {
+            defaultValue: '{{title}}. {{subtitle}}',
+            title: t('home.actions.past.title'),
+            subtitle: t('home.actions.past.subtitle'),
+          })}
         />
 
         {/* Calendar */}
         <ActionRow
           icon="calendar-month"
-          iconBgColor={theme.colors.secondaryContainer}
+          iconBgColor={theme.colors.secondary + '15'}
           iconColor={theme.colors.secondary}
           title={t('home.actions.calendar.title')}
           subtitle={t('home.actions.calendar.subtitle')}
           onPress={onNavigateToCalendar}
+          accessibilityLabel={t('home.actions.calendar.a11y', {
+            defaultValue: '{{title}}. {{subtitle}}',
+            title: t('home.actions.calendar.title'),
+            subtitle: t('home.actions.calendar.subtitle'),
+          })}
         />
 
         {/* Why Gratitude */}
         <ActionRow
           icon="heart-outline"
-          iconBgColor={theme.colors.tertiaryContainer}
+          iconBgColor={theme.colors.tertiary + '15'}
           iconColor={theme.colors.tertiary}
           title={t('home.actions.why.title')}
           subtitle={t('home.actions.why.subtitle')}
           onPress={onNavigateToWhyGratitude}
           showDivider={false}
+          accessibilityLabel={t('home.actions.why.a11y', {
+            defaultValue: '{{title}}. {{subtitle}}',
+            title: t('home.actions.why.title'),
+            subtitle: t('home.actions.why.subtitle'),
+          })}
         />
       </View>
     );

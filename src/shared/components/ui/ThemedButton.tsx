@@ -360,7 +360,7 @@ const getDisabledStyles = (
   return {
     container: {
       ...baseStyles.container,
-      backgroundColor: isTransparent ? 'transparent' : theme.colors.surfaceDisabled,
+      backgroundColor: isTransparent ? 'transparent' : theme.colors.surfaceVariant,
       borderColor: theme.colors.disabled,
       shadowOpacity: 0, // Remove shadows when disabled
       elevation: 0,

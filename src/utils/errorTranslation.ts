@@ -7,6 +7,7 @@
 
 import { logger } from './debugConfig';
 import i18n from '@/i18n';
+import { isAppError } from '@/shared/errors';
 
 export interface TranslatedError {
   userMessage: string;
@@ -33,6 +34,36 @@ export const translateError = (
     context,
     component: 'errorTranslation',
   });
+
+  // ✅ First-class AppError handling (explicit error types)
+  if (isAppError(error)) {
+    const messageFromType = (() => {
+      switch (error.type) {
+        case 'auth':
+          return i18n.isInitialized
+            ? i18n.t('errors.auth.notAuthenticated')
+            : 'Authentication required';
+        case 'permission':
+          return i18n.isInitialized ? i18n.t('errors.permission.generic') : 'Permission error';
+        case 'network':
+          return i18n.isInitialized ? i18n.t('errors.network.generic') : 'Network error';
+        case 'validation':
+          return i18n.isInitialized ? i18n.t('errors.validation.generic') : 'Validation error';
+        case 'server':
+          return i18n.isInitialized ? i18n.t('errors.server.generic') : 'Server error';
+        case 'unknown':
+        default:
+          return i18n.isInitialized ? i18n.t('errors.unknown.generic') : 'Unknown error';
+      }
+    })();
+
+    return {
+      userMessage: isLocalizedErrorMessage(error.message) ? error.message : messageFromType,
+      technicalMessage,
+      errorType:
+        error.type === 'permission' ? 'auth' : error.type === 'unknown' ? 'unknown' : error.type,
+    };
+  }
 
   // 🔥 CRITICAL FIX: Handle Supabase/PostgreSQL error objects properly
   if (error && typeof error === 'object' && 'code' in error) {

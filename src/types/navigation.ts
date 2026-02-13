@@ -1,12 +1,13 @@
 // src/types/navigation.ts
 import { NavigatorScreenParams } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { StackNavigationProp } from '@react-navigation/stack';
 
 // Define ParamList types for each navigator
 
-// For the authentication flow - magic link and OAuth only
+// For the authentication flow - OAuth only
 export interface AuthStackParamList extends Record<string, object | undefined> {
-  Login: undefined; // Magic link login screen (email-only + Google OAuth)
+  Login: undefined; // OAuth login screen (Google + Apple)
 }
 
 // Main app tab navigator
@@ -24,6 +25,7 @@ export interface AppStackParamList extends Record<string, object | undefined> {
   EntryDetail: { entryId: string; entryDate?: string };
   PastEntryCreation: { date: string };
   MoodAnalysis: { focusMood?: string } | undefined;
+  CustomerCenter: undefined;
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
   Help: undefined;
@@ -35,6 +37,7 @@ export interface RootStackParamList extends Record<string, object | undefined> {
   Splash: undefined;
   Auth: undefined;
   Onboarding: undefined;
+  ProfileError: undefined;
   MainApp: NavigatorScreenParams<AppStackParamList>;
   NotFound: undefined;
   PaywallModal: { source?: string };
@@ -56,9 +59,10 @@ export type TabScreenName = keyof MainTabParamList;
 export type RootScreenName = keyof RootStackParamList;
 
 // Navigation prop types for common use cases
-// These will be properly typed by the navigation library when used
-export type TabNavigationProp = unknown;
-export type RootNavigationProp = unknown;
+export type TabNavigationProp<T extends keyof MainTabParamList = keyof MainTabParamList> =
+  BottomTabNavigationProp<MainTabParamList, T>;
+export type RootNavigationProp<T extends keyof RootStackParamList = keyof RootStackParamList> =
+  StackNavigationProp<RootStackParamList, T>;
 
 // You might also want to extend ReactNavigation's global type for useNavigation hook
 // declare global {

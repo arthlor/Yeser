@@ -44,7 +44,7 @@ export const config = {
   // App metadata from build configuration
   app: {
     environment: runtimeConfig.environment,
-    version: Constants.expoConfig?.version || '1.2.2',
+    version: Constants.expoConfig?.version || '1.3.0',
     name: Constants.expoConfig?.name || 'Yeşer',
     scheme: Constants.expoConfig?.scheme || 'yeser',
     bundleIdentifier:

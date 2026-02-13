@@ -411,16 +411,21 @@
           "title": "Información del Perfil",
           "name": "Nombre",
           "email": "Correo electrónico",
+          "username": "Nombre de usuario",
+          "language": "Idioma",
           "empty": "No proporcionado"
         },
         "stats": {
           "title": "Estadísticas",
           "totalEntries": "Entradas Totales",
           "totalStatements": "Gratitudes Totales",
-          "activeMonths": "Meses Activos"
+          "activeMonths": "Meses Activos",
+          "dateRange": "Desde {{from}} hasta {{to}}"
         },
         "entries": {
-          "title": "Mis Entradas de Gratitud"
+          "title": "Mis Entradas de Gratitud",
+          "empty": "No se encontraron entradas de gratitud para este período.",
+          "emptyStatements": "Esta entrada no tiene declaraciones de gratitud."
         },
         "footer": {
           "app": "Aplicación Diario de Gratitud",

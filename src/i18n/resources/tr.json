@@ -395,16 +395,21 @@
           "title": "Profil Bilgileri",
           "name": "İsim",
           "email": "E-posta",
+          "username": "Kullanıcı adı",
+          "language": "Dil",
           "empty": "Belirtilmemiş"
         },
         "stats": {
           "title": "İstatistikler",
           "totalEntries": "Toplam Giriş",
           "totalStatements": "Toplam Minnet İfadesi",
-          "activeMonths": "Aktif Aylar"
+          "activeMonths": "Aktif Aylar",
+          "dateRange": "{{from}} - {{to}} arası"
         },
         "entries": {
-          "title": "Minnet Girişlerim"
+          "title": "Minnet Girişlerim",
+          "empty": "Bu dönem için minnet girişi bulunamadı.",
+          "emptyStatements": "Bu girişte minnet ifadesi bulunmuyor."
         },
         "footer": {
           "app": "Minnet Günlüğü Uygulaması",

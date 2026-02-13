@@ -395,16 +395,21 @@
           "title": "Profile Information",
           "name": "Name",
           "email": "Email",
+          "username": "Username",
+          "language": "Language",
           "empty": "Not provided"
         },
         "stats": {
           "title": "Statistics",
           "totalEntries": "Total Entries",
           "totalStatements": "Total Gratitudes",
-          "activeMonths": "Active Months"
+          "activeMonths": "Active Months",
+          "dateRange": "From {{from}} to {{to}}"
         },
         "entries": {
-          "title": "My Gratitude Entries"
+          "title": "My Gratitude Entries",
+          "empty": "No gratitude entries were found for this period.",
+          "emptyStatements": "No gratitude statements in this entry."
         },
         "footer": {
           "app": "Gratitude Journal App",

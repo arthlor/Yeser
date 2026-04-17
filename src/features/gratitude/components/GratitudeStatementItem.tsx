@@ -27,6 +27,7 @@ import { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
+import { GRATITUDE_MAX_LENGTH } from '@/constants/gratitude';
 
 const getThemedStyles = (theme: AppTheme) =>
   StyleSheet.create({
@@ -258,10 +259,12 @@ const GratitudeStatementItem: React.FC<GratitudeStatementItemProps> = ({
             placeholderTextColor={placeholderTextColor}
             autoFocus
             textAlignVertical="top"
-            maxLength={500}
+            maxLength={GRATITUDE_MAX_LENGTH}
           />
           <View style={styles.characterCount}>
-            <Text style={styles.characterCountText}>{currentText.length}/500</Text>
+            <Text style={styles.characterCountText}>
+              {currentText.length}/{GRATITUDE_MAX_LENGTH}
+            </Text>
           </View>
         </View>
         <Animated.View

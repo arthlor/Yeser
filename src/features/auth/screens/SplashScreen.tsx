@@ -1,17 +1,16 @@
 // src/screens/EnhancedSplashScreen.tsx
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, View } from 'react-native';
 import LottieView from 'lottie-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { config } from '@/utils/config';
 
 import splashAnimation from '@/assets/animations/splash.json';
 
-import { ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
-import { useGlobalError } from '@/providers/GlobalErrorProvider';
 // Analytics disabled
 import { getPrimaryShadow } from '@/themes/utils';
 import { AppTheme } from '@/themes/types';
@@ -52,17 +51,18 @@ const buildLocalizedTips = (t: (key: string) => string) =>
  * - Extended duration to prevent race conditions
  * - Educational content while users wait
  */
-const SCREEN_EDGES = ['top'] as const;
-
 const EnhancedSplashScreen: React.FC = () => {
   const { theme } = useTheme();
-  const { showError } = useGlobalError();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
   // Tip rotation state
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [tipOpacity] = useState(new Animated.Value(1));
+  const isMountedRef = useRef(true);
+  const tipAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const lottieStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animation system
   const animations = useCoordinatedAnimations();
@@ -70,38 +70,71 @@ const EnhancedSplashScreen: React.FC = () => {
   // Lottie animation ref
   const lottieRef = React.useRef<LottieView>(null);
 
+  const stopTipAnimation = useCallback(() => {
+    tipAnimationRef.current?.stop();
+    tipAnimationRef.current = null;
+    tipOpacity.stopAnimation();
+  }, [tipOpacity]);
+
   // 🛡️ MEMORY LEAK FIX: Cleanup refs on unmount
   React.useEffect(() => {
-    const lottie = lottieRef.current;
     return () => {
-      if (lottie) {
-        // No explicit cleanup needed for the ref itself,
-        // React handles unmounting.
+      isMountedRef.current = false;
+      stopTipAnimation();
+
+      if (lottieStartTimeoutRef.current) {
+        clearTimeout(lottieStartTimeoutRef.current);
+        lottieStartTimeoutRef.current = null;
       }
     };
-  }, []);
+  }, [stopTipAnimation]);
 
   // **TIP ROTATION SYSTEM**: Cycle through gratitude tips every 3 seconds
   useEffect(() => {
     const interval = setInterval(() => {
+      stopTipAnimation();
+
       // Fade out current tip
-      Animated.timing(tipOpacity, {
+      const fadeOutAnimation = Animated.timing(tipOpacity, {
         toValue: 0,
         duration: 300,
         useNativeDriver: true,
-      }).start(() => {
+      });
+
+      tipAnimationRef.current = fadeOutAnimation;
+
+      fadeOutAnimation.start(({ finished }) => {
+        if (!finished || !isMountedRef.current) {
+          if (tipAnimationRef.current === fadeOutAnimation) {
+            tipAnimationRef.current = null;
+          }
+          return;
+        }
+
         // Change tip and fade in
         setCurrentTipIndex((prev) => (prev + 1) % 5);
-        Animated.timing(tipOpacity, {
+
+        const fadeInAnimation = Animated.timing(tipOpacity, {
           toValue: 1,
           duration: 300,
           useNativeDriver: true,
-        }).start();
+        });
+
+        tipAnimationRef.current = fadeInAnimation;
+
+        fadeInAnimation.start(({ finished: fadeInFinished }) => {
+          if (fadeInFinished && tipAnimationRef.current === fadeInAnimation) {
+            tipAnimationRef.current = null;
+          }
+        });
       });
     }, 3000); // Change every 3 seconds
 
-    return () => clearInterval(interval);
-  }, [tipOpacity]);
+    return () => {
+      clearInterval(interval);
+      stopTipAnimation();
+    };
+  }, [stopTipAnimation, tipOpacity]);
 
   // **ENTRANCE ANIMATIONS**: Smooth coordinated entrance
   const triggerEntranceAnimations = useCallback(() => {
@@ -109,17 +142,13 @@ const EnhancedSplashScreen: React.FC = () => {
     animations.animateEntrance({ duration: 600 });
 
     // Start Lottie animation
-    setTimeout(() => {
+    lottieStartTimeoutRef.current = setTimeout(() => {
       if (lottieRef.current) {
         lottieRef.current.play();
       }
+      lottieStartTimeoutRef.current = null;
     }, 300);
   }, [animations]);
-
-  // Analytics and initialization
-  useEffect(() => {
-    // Analytics disabled
-  }, [showError]);
 
   // Start entrance animations
   useEffect(() => {
@@ -135,15 +164,17 @@ const EnhancedSplashScreen: React.FC = () => {
     () => ({ opacity: animations.fadeAnim, transform: animations.entranceTransform }),
     [animations.fadeAnim, animations.entranceTransform]
   );
+  const splashInsetStyle = useMemo(
+    () => ({
+      paddingTop: Math.max(insets.top, theme.spacing.xl),
+      paddingBottom: Math.max(insets.bottom, theme.spacing.xl),
+    }),
+    [insets.bottom, insets.top, theme.spacing.xl]
+  );
 
   return (
-    <ScreenLayout
-      scrollable={false}
-      edges={SCREEN_EDGES}
-      edgeToEdge={true}
-      constrainContentWidth={false}
-    >
-      <Animated.View style={[styles.content, contentAnimatedStyle]}>
+    <View style={styles.root}>
+      <Animated.View style={[styles.content, splashInsetStyle, contentAnimatedStyle]}>
         {/* Background Gradient Overlay */}
         <View style={styles.backgroundOverlay} />
 
@@ -209,12 +240,16 @@ const EnhancedSplashScreen: React.FC = () => {
           </Text>
         </View>
       </Animated.View>
-    </ScreenLayout>
+    </View>
   );
 };
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
     backgroundOverlay: {
       position: 'absolute',
       top: 0,

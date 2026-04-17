@@ -67,6 +67,16 @@ const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
               </Text>
             ) : null}
           </View>
+
+          {/* Mascot Decorative Image */}
+          <View style={styles.mascotContainer}>
+            <Image
+              source={require('@/assets/assets/mascot.png')}
+              style={styles.mascotImage}
+              contentFit="contain"
+              transition={400}
+            />
+          </View>
         </View>
       </View>
     );
@@ -78,36 +88,36 @@ HomeHeader.displayName = 'HomeHeader';
 const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
     container: {
-      marginBottom: theme.spacing.md,
-      paddingHorizontal: theme.spacing.sm,
-      paddingTop: theme.spacing.sm,
+      marginBottom: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.xs,
+      paddingTop: theme.spacing.md,
     },
     mainRow: {
       flexDirection: 'row',
       alignItems: 'center',
     },
     avatar: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: 52,
+      height: 52,
+      borderRadius: 26,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.surfaceVariant,
-      borderWidth: 2,
-      borderColor: theme.colors.primary + '40',
+      borderWidth: 1.5,
+      borderColor: theme.colors.primary + '30',
       shadowColor: theme.colors.scrim,
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.15,
-      shadowRadius: 6,
-      elevation: 4,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
     },
     avatarImage: {
       width: '100%',
       height: '100%',
-      borderRadius: 32,
+      borderRadius: 26,
     },
     avatarText: {
-      ...theme.typography.headlineSmall,
+      ...theme.typography.titleMedium,
       color: theme.colors.onSurfaceVariant,
       fontWeight: '700',
     },
@@ -115,23 +125,39 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       flex: 1,
       justifyContent: 'center',
       marginLeft: theme.spacing.md,
-      paddingTop: theme.spacing.xs,
+      paddingRight: 120,
     },
     greetingText: {
-      ...theme.typography.displaySmall,
+      ...theme.typography.headlineSmall,
       color: theme.colors.onBackground,
-      fontWeight: '700',
-      fontFamily: 'Lora-Bold',
-      letterSpacing: -0.5,
-      lineHeight: 44,
+      fontWeight: '600',
+      fontFamily: theme.typography.fontFamilySerif || 'Lora-Regular',
+      letterSpacing: -0.2,
+      lineHeight: 28,
+      opacity: 0.8,
     },
     nameText: {
       ...theme.typography.displaySmall,
       color: theme.colors.primary,
-      fontWeight: '400',
-      fontFamily: 'Lora-Regular',
-      letterSpacing: -0.5,
-      lineHeight: 38,
+      fontWeight: '700',
+      fontFamily: theme.typography.fontFamilySerifBold || 'Lora-Bold',
+      letterSpacing: -0.8,
+      lineHeight: 40,
+      marginTop: -2,
+    },
+    mascotContainer: {
+      position: 'absolute',
+      right: -30,
+      top: -15,
+      width: 180,
+      height: 180,
+      zIndex: -1, // Sits behind the greeting text but above surface
+      opacity: 0.9,
+      transform: [{ rotate: '-5deg' }, { scaleX: -1 }],
+    },
+    mascotImage: {
+      width: '100%',
+      height: '100%',
     },
   });
 

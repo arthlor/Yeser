@@ -32,10 +32,50 @@ import { moodStorageService } from '@/services/moodStorageService';
 import { useEntryEnhancement } from '@/features/gratitude/hooks/useEntryEnhancement';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useLanguageStore } from '@/store/languageStore';
+import {
+  captureImageFromCamera,
+  type PickedImage,
+  pickImageFromLibrary,
+} from '@/features/gratitude/components/AttachmentPicker';
+import VoiceRecorderSheet from '@/features/gratitude/components/VoiceRecorderSheet';
+import { Image as ExpoImage } from 'expo-image';
+import { GRATITUDE_MAX_LENGTH, GRATITUDE_WARNING_LENGTH } from '@/constants/gratitude';
+
+export interface PendingAudio {
+  uri: string;
+  mimeType: string;
+  bytes: number;
+  durationMs: number;
+}
+
+export interface PendingAttachments {
+  image: PickedImage | null;
+  audio: PendingAudio | null;
+}
+
+/**
+ * Submit callbacks may return `false` (sync or via a Promise) to indicate the
+ * submission was rejected (e.g. the parent opened the paywall because the user
+ * hit a daily quota). When that happens, the input bar preserves the typed
+ * text and mood so the user doesn't lose their draft.
+ */
+type SubmitResult = boolean | void | Promise<boolean | void>;
 
 interface GratitudeInputBarProps {
-  onSubmit: (text: string) => void;
-  onSubmitWithMood?: (text: string, mood: import('@/types/mood.types').MoodEmoji | null) => void;
+  onSubmit: (text: string) => SubmitResult;
+  onSubmitWithMood?: (
+    text: string,
+    mood: import('@/types/mood.types').MoodEmoji | null
+  ) => SubmitResult;
+  /**
+   * Receives pending image/audio the user attached before submitting.
+   * The screen is responsible for uploading them to the resulting statement.
+   */
+  onSubmitWithAttachments?: (
+    text: string,
+    mood: import('@/types/mood.types').MoodEmoji | null,
+    attachments: PendingAttachments
+  ) => SubmitResult;
   placeholder?: string;
   error?: string | null;
   disabled?: boolean;
@@ -47,6 +87,20 @@ interface GratitudeInputBarProps {
   showPrompt?: boolean;
   currentCount?: number;
   goal?: number;
+  /** Called when the user taps the locked voice button (non-Pro). */
+  onLockedVoicePress?: () => void;
+  /** Called when the user taps the locked image button (non-Pro). */
+  onLockedImagePress?: () => void;
+  /**
+   * How many image attachments the user can still add today. When 0, the
+   * image button still works but taps surface a quota toast via
+   * `onAttachmentLimitReached('image')`.
+   */
+  imageAttachmentsRemaining?: number;
+  /** Same as above, but for voice notes. */
+  audioAttachmentsRemaining?: number;
+  /** Called when the user tries to attach while at their daily cap. */
+  onAttachmentLimitReached?: (kind: 'image' | 'audio') => void;
 }
 
 export interface GratitudeInputBarRef {
@@ -65,6 +119,7 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
     {
       onSubmit,
       onSubmitWithMood,
+      onSubmitWithAttachments,
       placeholder: _placeholder,
       error: _error,
       disabled = false,
@@ -76,6 +131,11 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       showPrompt = true,
       currentCount: _currentCount,
       goal: _goal,
+      onLockedVoicePress,
+      onLockedImagePress,
+      imageAttachmentsRemaining,
+      audioAttachmentsRemaining,
+      onAttachmentLimitReached,
     },
     ref
   ) => {
@@ -96,6 +156,9 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
     const [selectedMood, setSelectedMood] = useState<string | null>(null);
     const [showEnhancePreview, setShowEnhancePreview] = useState(false);
     const [showLimitModal, setShowLimitModal] = useState(false);
+    const [pendingImage, setPendingImage] = useState<PickedImage | null>(null);
+    const [pendingAudio, setPendingAudio] = useState<PendingAudio | null>(null);
+    const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
 
     const animations = useCoordinatedAnimations();
 
@@ -240,45 +303,138 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       [toggleEmoji]
     );
 
-    const handleSubmit = useCallback(() => {
-      if (inputText.trim() && !disabled) {
-        hapticFeedback.light();
-
-        // Button animation
-        Animated.sequence([
-          Animated.timing(buttonScale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
-          Animated.spring(buttonScale, { toValue: 1, friction: 5, useNativeDriver: true }),
-        ]).start();
-
-        if (onSubmitWithMood) {
-          onSubmitWithMood(
-            inputText.trim(),
-            (selectedMood as unknown as import('@/types/mood.types').MoodEmoji) ?? null
-          );
-        } else {
-          onSubmit(inputText.trim());
-        }
-        setInputText('');
-        setSelectedMood(null);
-
-        // Close emoji picker if open
-        if (emojiOpen) {
-          toggleEmoji();
-        }
-
-        // Keep focus
-        setTimeout(() => inputRef.current?.focus(), 100);
+    const handleSubmit = useCallback(async () => {
+      const trimmed = inputText.trim();
+      if (!trimmed || disabled) {
+        return;
       }
+      hapticFeedback.light();
+
+      // Button animation
+      Animated.sequence([
+        Animated.timing(buttonScale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+        Animated.spring(buttonScale, { toValue: 1, friction: 5, useNativeDriver: true }),
+      ]).start();
+
+      const mood = (selectedMood as unknown as import('@/types/mood.types').MoodEmoji) ?? null;
+
+      // IMPORTANT: release first responder *before* calling the submit
+      // callback so that when the parent decides to open the paywall modal
+      // (daily-limit gate, etc.) the keyboard has actually started
+      // dismissing. Otherwise the modal slides up while the keyboard is
+      // still visible and the RevenueCat paywall collapses its hero/video.
+      inputRef.current?.blur();
+      Keyboard.dismiss();
+
+      let rawResult: SubmitResult;
+      if (onSubmitWithAttachments && (pendingImage || pendingAudio)) {
+        rawResult = onSubmitWithAttachments(trimmed, mood, {
+          image: pendingImage,
+          audio: pendingAudio,
+        });
+      } else if (onSubmitWithMood) {
+        rawResult = onSubmitWithMood(trimmed, mood);
+      } else {
+        rawResult = onSubmit(trimmed);
+      }
+
+      // Treat `undefined` / `void` returns as success (backwards compatible).
+      // A strict `false` (sync or from Promise) means the submit was gated
+      // and we must keep the user's draft intact.
+      const resolved = await Promise.resolve(rawResult as boolean | void | undefined);
+      const submitted = resolved !== false;
+
+      if (!submitted) {
+        return;
+      }
+
+      setInputText('');
+      setSelectedMood(null);
+      setPendingImage(null);
+      setPendingAudio(null);
+
+      if (emojiOpen) {
+        toggleEmoji();
+      }
+
+      setTimeout(() => inputRef.current?.focus(), 100);
     }, [
       inputText,
       disabled,
       onSubmit,
       selectedMood,
       onSubmitWithMood,
+      onSubmitWithAttachments,
+      pendingImage,
+      pendingAudio,
       buttonScale,
       emojiOpen,
       toggleEmoji,
     ]);
+
+    const imageQuotaExhausted =
+      typeof imageAttachmentsRemaining === 'number' && imageAttachmentsRemaining <= 0;
+    const audioQuotaExhausted =
+      typeof audioAttachmentsRemaining === 'number' && audioAttachmentsRemaining <= 0;
+
+    // iOS keeps firing the keyboard for a still-focused TextInput even after
+    // `Keyboard.dismiss()`, so before we open the paywall / picker / recorder
+    // we explicitly release first responder on the input.
+    const releaseKeyboard = useCallback(() => {
+      inputRef.current?.blur();
+      Keyboard.dismiss();
+    }, []);
+
+    const handlePickImage = useCallback(async () => {
+      hapticFeedback.light();
+      releaseKeyboard();
+      if (!isPro) {
+        onLockedImagePress?.();
+        return;
+      }
+      if (imageQuotaExhausted) {
+        onAttachmentLimitReached?.('image');
+        return;
+      }
+      const picked = await pickImageFromLibrary();
+      if (picked) {
+        setPendingImage(picked);
+      }
+    }, [isPro, onLockedImagePress, imageQuotaExhausted, onAttachmentLimitReached, releaseKeyboard]);
+
+    const handleCaptureImage = useCallback(async () => {
+      hapticFeedback.light();
+      releaseKeyboard();
+      if (!isPro) {
+        onLockedImagePress?.();
+        return;
+      }
+      if (imageQuotaExhausted) {
+        onAttachmentLimitReached?.('image');
+        return;
+      }
+      const picked = await captureImageFromCamera();
+      if (picked) {
+        setPendingImage(picked);
+      }
+    }, [isPro, onLockedImagePress, imageQuotaExhausted, onAttachmentLimitReached, releaseKeyboard]);
+
+    const handleVoicePress = useCallback(() => {
+      releaseKeyboard();
+      if (!isPro) {
+        onLockedVoicePress?.();
+        return;
+      }
+      if (audioQuotaExhausted) {
+        onAttachmentLimitReached?.('audio');
+        return;
+      }
+      setShowVoiceRecorder(true);
+    }, [isPro, audioQuotaExhausted, onLockedVoicePress, onAttachmentLimitReached, releaseKeyboard]);
+
+    const handleVoiceSave = useCallback((payload: PendingAudio) => {
+      setPendingAudio(payload);
+    }, []);
 
     const handlePromptRefresh = useCallback(() => {
       onRefreshPrompt?.();
@@ -342,9 +498,43 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
             placeholderTextColor={theme.colors.onSurfaceVariant + '60'}
             multiline
             textAlignVertical="top"
-            maxLength={500}
+            maxLength={GRATITUDE_MAX_LENGTH}
             editable={!disabled}
           />
+
+          {/* PENDING ATTACHMENT CHIPS */}
+          {(pendingImage || pendingAudio) && (
+            <View style={styles.pendingAttachRow}>
+              {pendingImage ? (
+                <View style={styles.pendingImageWrap}>
+                  <ExpoImage
+                    source={{ uri: pendingImage.uri }}
+                    style={styles.pendingImage}
+                    contentFit="cover"
+                    transition={150}
+                  />
+                  <TouchableOpacity
+                    style={styles.pendingRemove}
+                    onPress={() => setPendingImage(null)}
+                    hitSlop={8}
+                  >
+                    <Icon name="close" size={14} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+              {pendingAudio ? (
+                <View style={styles.pendingAudioPill}>
+                  <Icon name="microphone" size={16} color={theme.colors.onPrimaryContainer} />
+                  <Text style={styles.pendingAudioText}>
+                    {`${Math.round((pendingAudio.durationMs ?? 0) / 1000)}s`}
+                  </Text>
+                  <TouchableOpacity onPress={() => setPendingAudio(null)} hitSlop={8}>
+                    <Icon name="close" size={14} color={theme.colors.onPrimaryContainer} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+          )}
 
           {/* FOOTER ACTIONS */}
           <View style={styles.inputFooter}>
@@ -360,6 +550,60 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
                   color={theme.colors.onSurfaceVariant + '80'}
                 />
               )}
+            </TouchableOpacity>
+
+            {/* IMAGE BUTTON */}
+            <TouchableOpacity
+              onPress={handlePickImage}
+              onLongPress={isPro && !imageQuotaExhausted ? handleCaptureImage : undefined}
+              style={styles.attachmentButton}
+              accessibilityLabel={
+                !isPro
+                  ? t('gratitude.input.attach.imageLocked', 'Attach image (Premium)')
+                  : imageQuotaExhausted
+                    ? t('gratitude.input.attach.imageLimitReached', 'Daily image limit reached')
+                    : t('gratitude.input.attach.image', 'Attach image')
+              }
+              hitSlop={6}
+            >
+              <Icon
+                name={isPro ? 'image-outline' : 'image-off-outline'}
+                size={22}
+                color={theme.colors.onSurfaceVariant + '80'}
+              />
+              {!isPro ? (
+                <View style={styles.voiceLockBadge}>
+                  <Icon name="lock" size={9} color={theme.colors.onPrimary} />
+                </View>
+              ) : null}
+            </TouchableOpacity>
+
+            {/* VOICE BUTTON */}
+            <TouchableOpacity
+              onPress={handleVoicePress}
+              style={styles.attachmentButton}
+              accessibilityLabel={
+                !isPro
+                  ? t('gratitude.input.attach.voiceLocked', 'Record voice note (Premium)')
+                  : audioQuotaExhausted
+                    ? t(
+                        'gratitude.input.attach.voiceLimitReached',
+                        'Daily voice note limit reached'
+                      )
+                    : t('gratitude.input.attach.voice', 'Record voice note')
+              }
+              hitSlop={6}
+            >
+              <Icon
+                name={isPro ? 'microphone-outline' : 'microphone-off'}
+                size={22}
+                color={theme.colors.onSurfaceVariant + '80'}
+              />
+              {!isPro ? (
+                <View style={styles.voiceLockBadge}>
+                  <Icon name="lock" size={9} color={theme.colors.onPrimary} />
+                </View>
+              ) : null}
             </TouchableOpacity>
 
             {/* AI Enhance Button (PRO only) */}
@@ -387,9 +631,12 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
 
             <View style={styles.characterCount}>
               <Text
-                style={[styles.countText, inputText.length > 450 && { color: theme.colors.error }]}
+                style={[
+                  styles.countText,
+                  inputText.length >= GRATITUDE_WARNING_LENGTH && { color: theme.colors.error },
+                ]}
               >
-                {inputText.length > 0 ? `${inputText.length}/500` : ''}
+                {inputText.length > 0 ? `${inputText.length}/${GRATITUDE_MAX_LENGTH}` : ''}
               </Text>
             </View>
 
@@ -484,6 +731,11 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
             </View>
           </View>
         </Modal>
+        <VoiceRecorderSheet
+          visible={showVoiceRecorder}
+          onClose={() => setShowVoiceRecorder(false)}
+          onSave={handleVoiceSave}
+        />
         <Modal
           visible={showLimitModal}
           transparent
@@ -528,6 +780,8 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
 );
 
 GratitudeInputBar.displayName = 'GratitudeInputBar';
+
+const OVERLAY_SCRIM = 'rgba(0,0,0,0.55)';
 
 const createStyles = (theme: AppTheme, disabled: boolean) =>
   StyleSheet.create({
@@ -601,6 +855,67 @@ const createStyles = (theme: AppTheme, disabled: boolean) =>
       backgroundColor: theme.colors.surfaceVariant + '60',
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    attachmentButton: {
+      width: 40,
+      height: 40,
+      marginLeft: 6,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.surfaceVariant + '60',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    voiceLockBadge: {
+      position: 'absolute',
+      top: -2,
+      right: -2,
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      backgroundColor: theme.colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pendingAttachRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.sm,
+    },
+    pendingImageWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: theme.borderRadius.md,
+      overflow: 'hidden',
+    },
+    pendingImage: {
+      width: '100%',
+      height: '100%',
+    },
+    pendingRemove: {
+      position: 'absolute',
+      top: 2,
+      right: 2,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: OVERLAY_SCRIM,
+    },
+    pendingAudioPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: 6,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.primaryContainer,
+    },
+    pendingAudioText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.onPrimaryContainer,
+      fontWeight: '600',
     },
     selectedMoodBadge: {
       width: 40,

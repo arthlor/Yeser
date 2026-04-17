@@ -74,6 +74,7 @@ export default [
         URL: 'readonly',
         // React Native specific
         performance: 'readonly',
+        require: 'readonly',
         // Jest globals for test files
         describe: 'readonly',
         it: 'readonly',

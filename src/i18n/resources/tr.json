@@ -170,8 +170,8 @@
         "extra": "Öğren"
       },
       "mood": {
-        "title": "Duygu İçgörüleri",
-        "subtitle": "Duygusal örüntülerini incele"
+        "title": "İçgörüler",
+        "subtitle": "Minnetlerinin son zamanlarda sana ne anlattığı."
       }
     },
     "headline": {
@@ -240,7 +240,7 @@
     }
   },
   "notifications": {
-    "remindersLabel": "Günlük Hatırlatıcılar",
+    "remindersLabel": "Günlük Hatırlatıcı",
     "reminders": {
       "midday": {
         "title": "Yeşerme Zamanı! ✨",
@@ -252,14 +252,14 @@
       }
     },
     "permissionRequiredTitle": "Bildirim İzni Gerekli",
-    "dailyRemindersMessage": "Minnettarlık alışkanlığını sürdürmen için sana günlük hatırlatıcılar göndermek istiyoruz.\n\n✨ Faydaları:\n• Her gün aynı saatte nazik bir anımsatma\n• Minnettarlık pratiğini aksatmazsın\n• İstediğin zaman kapatabilirsin\n• Daha pozitif ve huzurlu bir yaşam\n\nİzin vermek ister misin?",
+    "dailyRemindersMessage": "Minnettarlık alışkanlığını desteklemek için sana nazik bir günlük hatırlatma göndermek istiyoruz.\n\n✨ Faydaları:\n• Seçtiğin saate yakın düşünceli bir hatırlatma\n• Bazen geçmişte yazdığın bir minnet anısını yeniden hatırlatma\n• Pratiğini daha istikrarlı sürdürme\n• İstediğin zaman kapatabilme\n\nİzin vermek ister misin?",
     "permissionRequiredMessage": "Günlük hatırlatıcıları etkinleştirmek için bildirim izni gerekiyor.\n\n📱 Nasıl etkinleştirilir:\n1. 'Ayarlara Git' butonuna dokun\n2. 'Bildirimler' bölümünü bul\n3. Yeşer uygulamasını etkinleştir\n4. Bu sayfaya geri dön\n\nHatırlatıcılar seni motive edecek! 😊",
     "notNow": "Şimdi Değil",
     "enable": "Evet, Etkinleştir",
     "maybeLater": "Bildirimler minnet pratiğini güçlendirir",
     "openSettings": "Ayarlara Git",
-    "fixedScheduleDescription": "Her gün yerel saatine göre {{firstTime}} ve {{secondTime}} saatlerinde hatırlatacağız.",
-    "reminderTimeTitle": "Birincil hatırlatma saati",
+    "fixedScheduleDescription": "Yerel saatine göre her gün yaklaşık {{firstTime}} civarında bir hatırlatma göndeririz. Bazen geçmiş bir minnet kaydını da yeniden hatırlatabiliriz.",
+    "reminderTimeTitle": "Günlük hatırlatma saati",
     "timeUpdatedSuccess": "Hatırlatma saati {{time}} olarak güncellendi.",
     "reminderTimeA11y": "Hatırlatma saatini {{time}} olarak ayarla",
     "errors": {
@@ -360,8 +360,8 @@
     },
     "about": {
       "moodAnalysis": {
-        "label": "Duygu Analizi",
-        "description": "Minnet duygularındaki örüntüleri incele"
+        "label": "İçgörüler",
+        "description": "Minnetinin içindeki duygusal örüntüleri gör"
       },
       "whyGratitude": {
         "label": "Minnetin Gücü",
@@ -445,7 +445,7 @@
       "contactEmailLabel": "Destek ekibiyle iletişim",
       "contactEmailHint": "Destek ekibiyle iletişim kurmak için e-posta uygulamasını açar",
       "contactCTA": "Destek Ekibiyle İletişim",
-      "appVersion": "Yeşer v1.3.0",
+      "appVersion": "Yeşer v1.3.1",
       "accessibility": {
         "expanded": "{{question}} açıldı. {{answer}}",
         "collapsed": "{{question}} kapandı.",
@@ -477,7 +477,8 @@
     "loadingSubtext": "Minnetin gücü yükleniyor...",
     "hero": {
       "title": "Zihinsel Sağlığın İçin Bir Adım At",
-      "subtitle": "Yeşer ile her gün minnettar olduğun şeyleri düşünmek, zihinsel sağlığın üzerinde kanıtlanmış güçlü etkilere sahiptir."
+      "subtitle": "Yeşer ile her gün minnettar olduğun şeyleri düşünmek, zihinsel sağlığın üzerinde kanıtlanmış güçlü etkilere sahiptir.",
+      "streakLabel": "günlük seri"
     },
     "benefits": {
       "title": "Neden minnet duymalıyız?",
@@ -506,7 +507,7 @@
     "gratitude": {
       "empty": "Minnet ifadesi boş olamaz.",
       "required": "En az bir minnet ifadesi gerekli.",
-      "tooLong": "Minnet ifadesi en fazla 500 karakter olabilir."
+      "tooLong": "Minnet ifadesi en fazla {{max}} karakter olabilir."
     },
     "streak": {
       "negativeStreak": "Mevcut seri negatif olamaz",
@@ -598,6 +599,12 @@
   "pastEntries": {
     "tab": { "title": "Minnetlerim", "a11y": "Geçmiş kayıtları görüntüle" },
     "title": "Minnet Kayıtların",
+    "search": {
+      "placeholder": "Anılarında ara...",
+      "a11y": "Minnet kayıtlarını ara",
+      "emptyTitle": "Eşleşen kayıt bulunamadı",
+      "emptySubtitle": "Başka bir kelime dene veya aramayı temizle."
+    },
     "item": {
       "relative": {
         "today": "Bugün",
@@ -612,7 +619,9 @@
       "goal": {
         "completeDay": "🎉 Günlük hedef tamamlandı",
         "remaining": "Hedef için {{count}} minnet daha gerekli"
-      }
+      },
+      "reflections": "Mİnnet",
+      "more": "daha"
     },
     "list": {
       "page": "Sayfa {{count}}",
@@ -636,7 +645,8 @@
       "benefit3": "Kişisel gelişim",
       "quote": "Minnettarlık, sahip olduklarımızı yeterli kılan büyülü bir anahtardır.",
       "tipTitle": "💡 Minnetin faydası",
-      "tip": "Günde 3 minnet kaydı tutmak, ilerleyen süreçte mutluluk artışı sağlar!"
+      "tip": "Günde 3 minnet kaydı tutmak, ilerleyen süreçte mutluluk artışı sağlar!",
+      "author": "— Oprah Winfrey"
     },
     "header": {
       "label": "GEÇMİŞ",
@@ -670,9 +680,7 @@
       "status": {
         "operational": "Çalışıyor",
         "noConnection": "Bağlantı Yok",
-        "temporary": "Geçici Hata"
-      },
-      "statusLabels": {
+        "temporary": "Geçici Hata",
         "app": "Uygulama",
         "data": "Veri"
       },
@@ -991,7 +999,44 @@
       },
       "moodQuickAction": "Duygunu seç",
       "moodQuickActionSelected": "Değiştir",
-      "sendButton": "Minnetini gönder"
+      "sendButton": "Minnetini gönder",
+      "attach": {
+        "image": "Fotoğraf ekle",
+        "imageLong": "Fotoğraf çekmek için basılı tut",
+        "imageLocked": "Fotoğraf ekle (Premium)",
+        "imageLimitReached": "Günlük fotoğraf sınırına ulaşıldı",
+        "imageLimitReachedToast": "Günlük {{max}} fotoğraf sınırına ulaştın.",
+        "voice": "Sesli not kaydet",
+        "voiceLocked": "Sesli not kaydet (Premium)",
+        "voiceLimitReached": "Günlük sesli not sınırına ulaşıldı",
+        "voiceLimitReachedToast": "Günlük {{max}} sesli not sınırına ulaştın.",
+        "permissionRequired": {
+          "title": "İzin gerekli",
+          "photos": "Fotoğraf eklemek için galeri erişimi gerekiyor.",
+          "camera": "Fotoğraf çekmek için kamera erişimi gerekiyor."
+        },
+        "imageTooLarge": {
+          "title": "Fotoğraf çok büyük",
+          "message": "Lütfen {{max}} MB'tan küçük bir fotoğraf seç."
+        }
+      }
+    },
+    "voiceRecorder": {
+      "title": {
+        "record": "Sesli not kaydet",
+        "review": "Sesli notunu dinle"
+      },
+      "subtitle": "En fazla {{seconds}} sn",
+      "permissionDenied": "Mikrofon izni reddedildi. Kayıt için sistem ayarlarından izin ver.",
+      "rerecord": "Yeniden kaydet",
+      "attach": "Ekle",
+      "cancel": "Vazgeç"
+    },
+    "attachments": {
+      "errors": {
+        "dailyLimitImage": "Bugünkü fotoğraf sınırına ulaştın ({{cap}}/gün). Yarın tekrar deneyebilirsin.",
+        "dailyLimitAudio": "Bugünkü sesli not sınırına ulaştın ({{cap}}/gün). Yarın tekrar deneyebilirsin."
+      }
     },
     "prompt": {
       "inspiringQuestion": "İlham verici soru",
@@ -1033,10 +1078,14 @@
     "modal": {
       "errorTitle": "Bir Hata Oluştu",
       "unexpected": "Beklenmeyen bir hata oluştu",
-      "shardTitle": "Bir Anı Parçacığı",
+      "shardTitle": "Yeşer'diğin bir an",
       "another": "Başka Anı",
       "ok": "Anladım!",
-      "empty": "Görünecek bir anı bulunamadı."
+      "empty": "Görünecek bir anı bulunamadı.",
+      "share": "Kartı Paylaş",
+      "sharing": "Paylaşım Hazırlanıyor...",
+      "shareEyebrow": "YEŞER'DİĞİM BİR GÜN",
+      "shareFooter": "Minnetle Yeşer."
     }
   },
   "why": {
@@ -1197,44 +1246,54 @@
   },
   "onboarding": {
     "backHint": "Önceki adıma geri dön",
+    "trust": {
+      "privateByDefault": "Her şey sana özel",
+      "freeToStart": "Başlaması ücretsiz",
+      "twoMinutes": "2 dakika"
+    },
     "welcome": {
-      "title": "Hoş Geldin! 🌱",
-      "subtitle": "Minnettarlığa başlayalım.",
-      "featureDailyTitle": "Günlük Minnetler",
-      "featureDailyDesc": "Minnettarlık ile hayatını renklendir!",
-      "featureStreakTitle": "Seri Takibi",
-      "featureStreakDesc": "Düzenli minnet pratiklerin ile güçlü alışkanlıklar oluştur",
+      "title": "Hoş geldin 🌿",
+      "subtitle": "Günün iyi yanlarını fark etmek için sessiz, sıcak bir alan.",
+      "socialProof": "50.000+ nazik kişi tarafından seviliyor",
+      "featureDailyTitle": "Günlük Minnet",
+      "featureDailyDesc": "Küçük anlar, güne özenle dokunuyor",
+      "featureStreakTitle": "Nazik Seriler",
+      "featureStreakDesc": "Baskı yok — sadece ufak ufak büyüyen bir alışkanlık",
       "featureGrowthTitle": "Kişisel Gelişim",
-      "featureGrowthDesc": "Daha pozitif bir yaşama sahip ol",
-      "encouragement": "Hazırsan, bu güzel yolculuğa birlikte başlayalım! ✨",
-      "getStarted": "Başlayalım",
+      "featureGrowthDesc": "Daha sakin, daha ışıklı bir sen hissedeceksin",
+      "encouragement": "Derin bir nefes al. Bu yolu birlikte, yavaşça yürüyeceğiz.",
+      "getStarted": "Yolculuğa Başla",
       "getStartedA11y": "Onboarding sürecine başla"
     },
     "demo": {
-      "title": "Hadi Deneyelim! ✨",
-      "subtitle": "Küçük bir ifade ile başlayalım.",
+      "kicker": "MİNİK BİR ISINMA",
+      "title": "Hadi ilk tohumu ekelim",
+      "subtitle": "İçinden gelen tek bir cümle yeter. Baskı yok, mükemmellik aranmıyor.",
       "promptLabel": "Bugünün İlhamı",
       "promptLoading": "Yükleniyor...",
       "promptFallback": "Bugün neye minnettarsın?",
       "placeholder": "Örneğin: Kahvemin sıcaklığı, arkadaşımın gülümsemesi...",
-      "buttonTry": "Dene",
+      "buttonTry": "İlk notumu kaydet",
       "buttonSaving": "Kaydediliyor...",
-      "successTitle": "Harika! 🎉",
-      "successText": "İlk minnettarlığın kaydedildi.",
+      "successTitle": "Seninle gurur duyuyoruz 🌱",
+      "successText": "İşte bu senin ilk girişin. İsim verince iyi hissettirdi, değil mi?",
+      "successFootnote": "Artık 1 günlük bir serinin başlangıcındasın — başlaması en zor olan gün.",
       "savingText": "Kaydediliyor...",
-      "encouragement": "💡 Küçük şeyler büyük fark yaratır"
+      "encouragement": "Küçük notlar, gerçek anlar. Pratiğin özü bu."
     },
     "personalization": {
-      "title": "Seni Tanıyalım! 👋",
-      "subtitle": "Senin için kişiselleştirilmiş bir deneyim oluşturalım.",
-      "sectionNameTitle": "Adın Ne?",
+      "title": "Seni nasıl çağıralım?",
+      "subtitle": "Adın, hatırlatmalarımızın uygulama değil bir arkadaş gibi hissettirmesine yardım eder.",
+      "previewEmpty": "Hatırlatıcıların seni adınla selamlayacak.",
+      "previewFilled": "Merhaba {{name}} 🌿 — minnet alanın şekillenmeye başladı.",
+      "sectionNameTitle": "Sana nasıl sesleneceğiz?",
       "placeholderName": "Örneğin: Ayşe",
       "a11yLabelName": "Kullanıcı adı",
       "a11yHintName": "Minnettarlık günlüğünde sana nasıl seslenelim",
       "errorTaken": "Bu kullanıcı adı zaten kullanılıyor",
-      "successAvailable": "✅ Kullanıcı adı kullanılabilir",
+      "successAvailable": "Harika bir seçim — bu isim müsait",
       "hintUsage": "Bu isim günlük hatırlatıcılarda ve kişiselleştirilmiş mesajlarda kullanılacak.",
-      "sectionThemeTitle": "Tema Tercihin",
+      "sectionThemeTitle": "Sana iyi gelen ruh halini seç",
       "continue": "Devam Et",
       "continueA11y": "Kişiselleştirme ayarlarını kaydet ve devam et",
       "theme": {
@@ -1244,54 +1303,127 @@
       }
     },
     "notifications": {
-      "title": "Hatırlatıcılar 🔔",
-      "subtitle": "Günlük nazik hatırlatıcılar gönderelim mi?",
-      "benefit1Title": "Düzenli Hatırlatma",
-      "benefit1Desc": "Her gün aynı saatte nazik bir uyarı",
-      "benefit2Title": "Alışkanlık Oluşturma",
-      "benefit2Desc": "Günlük minnet pratiğini unutmana engel olur",
-      "benefit3Title": "Tam Kontrol",
-      "benefit3Desc": "İstediğin zaman ayarlardan değiştirebilirsin",
-      "statusSuccess": "Harika! Hatırlatıcılar etkinleştirildi ✨",
+      "title": "Nazik bir günlük dokunuş",
+      "subtitle": "Omzuna küçük bir dokunuş — asla yüksek ses, asla spam yok.",
+      "preview": {
+        "app": "YEŞER",
+        "time": "şimdi",
+        "title": "Senin için küçük bir an 🌿",
+        "body": "Bir nefes ver. Bugünü biraz aydınlatan şey neydi?"
+      },
+      "benefit1Title": "Her gün aynı şefkatli saat",
+      "benefit1Desc": "Ritmine uyum sağlayan yumuşak bir hatırlatıcı",
+      "benefit2Title": "Kendiliğinden oluşan alışkanlık",
+      "benefit2Desc": "Hatırlatmaya yetecek kadar, hiç sıkmayacak kadar",
+      "benefit3Title": "Kontrol her zaman sende",
+      "benefit3Desc": "Saatini, tonunu değiştir ya da istediğin an kapat",
+      "statusSuccess": "Harika — nazik hatırlatıcın artık hazır.",
       "statusSkip": "Şimdilik atlayabilirsin, sonra ayarlardan etkinleştirebilirsin",
-      "enable": "Hatırlatıcıları Etkinleştir",
+      "enable": "Hatırlatıcımı aç",
       "enableLoading": "İzin İsteniyor...",
       "enableA11y": "Bildirim izni ver ve hatırlatıcıları etkinleştir",
-      "skip": "Şimdilik Atla",
+      "skip": "Belki sonra",
       "skipA11y": "Hatırlatıcıları şimdilik atla",
       "info": "Bildirimleri istediğin zaman açıp kapatabilirsin"
     },
     "goal": {
       "options": {
-        "one": { "label": "Bir Minnet", "desc": "Küçük adımlarla başlayalım" },
-        "three": { "label": "Üç Minnet", "desc": "İdeal günlük hedef" },
-        "five": { "label": "Beş Minnet", "desc": "Motive olduğunda" },
-        "custom": { "label": "Özel", "desc": "Kendim belirleyeceğim" },
-        "recommended": "Önerilen"
+        "one": {
+          "label": "Bir Minnet",
+          "desc": "Günde bir nefes, bir satır",
+          "vibe": "Yoğun günler için birebir 🌱"
+        },
+        "three": {
+          "label": "Üç Minnet",
+          "desc": "Araştırmaların sevdiği klasik ritim",
+          "vibe": "Günlük tutanların en çok sevdiği 🌿"
+        },
+        "five": {
+          "label": "Beş Minnet",
+          "desc": "Daha derin düşünmek için",
+          "vibe": "Yavaşlamak istediğin günlerde 🌳"
+        },
+        "custom": {
+          "label": "Sonra karar vereceğim",
+          "desc": "İstediğin an ayarlardan güncelle",
+          "vibe": "Esnek ve özgür ✨"
+        },
+        "recommended": "EN ÇOK SEÇİLEN"
       },
-      "title": "Günlük Hedefin? 🎯",
-      "subtitle": "Her gün kaç minnettarlık ifadesi yazmak istiyorsun? Başlangıçta küçük hedefler büyük başarıları getirir.",
-      "info": "Bu tercihini istediğin zaman profil ayarlarından değiştirebilirsin.",
+      "title": "Günün ne kadar dolu hissetsin?",
+      "subtitle": "Yanlış cevap yok. İstediğin zaman fikrini değiştirebilirsin.",
+      "info": "Küçük hedefler, kusursuzlardan iyidir. Hafif başla — sonra büyür.",
       "continue": "Devam Et",
       "continueA11y": "Hedef ayarını kaydet ve devam et"
     },
+    "planReveal": {
+      "kicker": "SANA ÖZEL PLAN",
+      "title": "{{name}}, işte senin için hazırladığımız plan",
+      "subtitle": "Bize söylediklerine göre kurguladık. Sade, şefkatli ve gerçek hayata uygun.",
+      "planLabel": "GÜNLÜK AKIŞIN",
+      "goalCustom": "Esnek bir tempo, sana özel",
+      "goalText": "Günde {{count}} sıcak not",
+      "planReminder": "Kendi saatinde, yumuşak bir günlük hatırlatıcı",
+      "planHorizon": "İlk 7 gün boyunca yönlendirici sorular",
+      "ratingText": "4,9 · 50.000+ kişinin sevdiği uygulama",
+      "testimonial": {
+        "quote": "Yeşer akşamlarımın en sakin 3 dakikası oldu.",
+        "author": "Selin, İstanbul"
+      },
+      "premiumBadge": "PREMİUM",
+      "perksTitle": "Premium ile açılanlar",
+      "perks": {
+        "prompts": {
+          "title": "Rehber sorular",
+          "desc": "Her gün taze, düşündürücü bir soru"
+        },
+        "insights": {
+          "title": "Ruh hâli içgörüleri",
+          "desc": "Yapay zekanın senin için fark ettiği haftalık kalıplar"
+        },
+        "memories": {
+          "title": "Anılar ve fotoğraflar",
+          "desc": "Fotoğraflarını sakla, sıcak günlerini tekrar yaşa"
+        },
+        "support": {
+          "title": "Misyonu destekle",
+          "desc": "Yeşer reklamsız ve nazik kalmaya devam etsin"
+        }
+      },
+      "trialLine": "Ücretsiz deneme ile başla — iki dokunuşta iptal edebilirsin.",
+      "cta": "Planı gör ve Premium'u dene",
+      "ctaA11y": "Abonelik seçeneklerine devam et",
+      "ctaFootnote": "Ücretsiz çekirdek özellikleri her zaman kullanabilirsin."
+    },
     "completion": {
+      "pill": "HER ŞEY HAZIR",
       "goalCustom": "Özel hedef",
       "goalText": "Günde {{count}} minnettarlık ifadesi",
       "themeMap": { "light": "Açık Tema", "dark": "Koyu Tema", "auto": "Otomatik Tema" },
-      "congratsTitle": "Tebrikler {{username}}! 🎉",
-      "congratsSubtitle": "Hazırsın. Hadi başlayalım.",
+      "congratsTitle": "Harika bir başlangıç, {{username}}",
+      "congratsSubtitle": "Minnet alanın hazır. Ne zaman istersen içeri adım at.",
       "summaryTitle": "Senin Profilin",
       "featuresActiveSuffix": "aktif",
-      "encouragementTitle": "Hazırsın! ✨",
-      "encouragementText": "Küçük adımlar, büyük değişimler.",
-      "startJourney": "Yolculuğa Başla",
+      "encouragementTitle": "Bir seferde tek bir küçük not",
+      "encouragementText": "İlk tohum toprağa düştü. Birlikte büyüteceğiz.",
+      "startJourney": "Günlüğümü aç",
       "startJourneyA11y": "Minnettarlık yolculuğuna başla",
       "footer": "İstediğin zaman ayarlardan tercihlerini değiştirebilirsin."
     },
     "flow": {
       "defaultUsername": "Dostum",
       "featuresEnabled": ["Çeşitli İlham Soruları", "Anı Pırıltıları"]
+    },
+    "rateApp": {
+      "label": "SON BİR ŞEY",
+      "title": "Yeşer sana iyi geliyorsa bizi değerlendir",
+      "subtitle": "Kısa bir değerlendirme, daha fazla insanın minnettarlık alışkanlığı kazanmasına yardımcı olur.",
+      "quote": "Küçük günlük düşünceler, sessizce bütün bir hayat mevsimini değiştirebilir.",
+      "loading": "Değerlendirme açılıyor...",
+      "cta": "Yeşer'i Değerlendir",
+      "ctaA11y": "Yeşer'i Değerlendir ve devam et",
+      "skip": "Değerlendirmeden devam et",
+      "skipA11y": "Değerlendirmeyi atla ve devam et"
     }
   },
   "privacyPolicy": {
@@ -1532,7 +1664,7 @@
       "features": {
         "unlimited": "Sınırsız günlük kayıt",
         "past": "Geçmiş tarihlere minnet ekleme",
-        "insights": "Gelişmiş duygu analizi",
+        "insights": "Daha derin duygusal örüntülerini açığa çıkaran AI içgörüleri",
         "export": "Minnetlerini PDF olarak dışa aktar",
         "prompts": "Çeşitli ilham soruları",
         "aiCoach": "AI Koçu ve Kişiselleştirilmiş Rehberlik",
@@ -1541,8 +1673,8 @@
       }
     },
     "paywall": {
-      "unlockInsights": "Premium İçgörüleri Aç",
-      "unlockSubtitle": "Detaylı analizlere ve trendlere eriş",
+      "unlockInsights": "Daha Derin İçgörüleri Aç",
+      "unlockSubtitle": "Minnetinin içinde şekillenen duygusal örüntüyü gör",
       "upgradeToPro": "Pro'ya Yükselt",
       "loading": "Abonelik seçenekleri yükleniyor...",
       "noOfferings": "Abonelik seçenekleri yüklenemedi",
@@ -1560,8 +1692,8 @@
           "subtitle": "Minnet arkadaşınla her zaman sohbet et."
         },
         "insights": {
-          "title": "Premium İçgörüleri Aç",
-          "subtitle": "Detaylı analizlere ve zaman trendlerine eriş."
+          "title": "Daha Derin İçgörüleri Aç",
+          "subtitle": "Kayıtlarının günlerini şekillendiren duygular, temalar ve ihtiyaçlar hakkında ne söylediğini gör."
         },
         "pastEntries": {
           "title": "Geçmiş Kayıtları Aç",
@@ -1593,12 +1725,29 @@
   "mood": {
     "analysis": {
       "label": "İÇGÖRÜLER",
-      "title": "Duygu Analizi",
-      "subtitle": "Minnet pratiğinin duygusal dünyanı nasıl şekillendirdiğini keşfet.",
+      "title": "İçgörüler",
+      "subtitle": "Minnetinin içindeki duygusal örüntüyü gör.",
+      "promise": "Minnetinin içindeki duygusal örüntüyü gör.",
       "range": {
-        "7d": "7 Gün",
         "15d": "15 Gün",
-        "30d": "30 Gün"
+        "30d": "30 Gün",
+        "90d": "90 Gün"
+      },
+      "home": {
+        "latestTitle": "Minnetinin anlattıkları",
+        "readyDescription": "Anlamlı bir içgörü için burada yeterince an var.",
+        "seedTitle": "İlk örüntün oluşmaya başlıyor",
+        "seedDescription": "Birkaç minnet anı daha ekle; onları ilk duygusal içgörüne dönüştürelim.",
+        "fallbackDescription": "Belirmeye başlayan duyguları ve temaları görmek için İçgörüler'i aç.",
+        "updatedToday": "Bugün güncellendi",
+        "updatedDaysAgo": "{{count}} gün önce güncellendi",
+        "previewBadge": "Ön izleme",
+        "cta": {
+          "view": "Ne anlattığını gör",
+          "reveal": "İçgörümü aç",
+          "seed": "Bir tane yaz",
+          "open": "İçgörüler'i aç"
+        }
       },
       "overview": {
         "entries": "Analiz edilen kayıt",
@@ -1608,7 +1757,7 @@
         "noDominantMood": "Yok",
         "statementsPerEntry": "Kayıt başına ortalama {{value}} ifade",
         "generatedAt": "{{date}} tarihinde güncellendi",
-        "entriesExplanation": "Bu özet, son {{days}} gündeki {{count}} kayda dayalı duygusal yönelimlerini gösterir."
+        "entriesExplanation": "Bu özet, son {{days}} gündeki {{count}} kayıtta ortaya çıkan duygusal örüntüleri yansıtır."
       },
       "balance": {
         "imbalanced": "Dengesiz",
@@ -1617,34 +1766,56 @@
       },
       "sections": {
         "narrative": {
-          "title": "AI İçgörüleri",
-          "subtitle": "Duygusal durumunu anla"
+          "title": "En çok öne çıkan şey",
+          "subtitle": "Minnetinde beliren temalara, duygulara ve ihtiyaçlara daha derin bir bakış."
         }
       },
       "ai": {
         "remaining": "Bugünlük {{count}} AI hakkın kaldı"
       },
       "banner": {
-        "title": "AI İçgörülerini Aç",
-        "subtitle": "Duygu durumun hakkında kişiselleştirilmiş analiz al.",
-        "button": "Duygularımı Analiz Et"
+        "title": "Kayıtlarının altındaki hikayeyi gör",
+        "subtitle": "Birkaç basit minnet anını, son zamanlarda seni taşıyan şeylere dair daha derin bir okumaya dönüştür.",
+        "button": "İçgörümü aç"
       },
       "narrative": {
-        "loading": "Minnet örüntülerin analiz ediliyor...",
-        "logical": "Mantıksal Çıkarım",
-        "emotional": "Duygusal Okuma",
-        "suggestions": "Önerilen Adımlar",
-        "empty": "Daha fazla kayıt ekleyerek içgörüleri aç."
+        "loading": "Minnetinin duygusal örüntüsü okunuyor...",
+        "logical": "Bunun işaret ettiği şey",
+        "emotional": "Duygusal alt akış",
+        "suggestions": "Sıradaki nazik adımlar",
+        "empty": "Birkaç minnet anı daha ekle; ilk örüntünü görünür hale getirelim."
       },
       "actions": {
         "refresh": "Yenile"
+      },
+      "snapshot": {
+        "stored": "Son içgörü açılışından kaydedildi"
+      },
+      "board": {
+        "widerPictureTitle": "Daha geniş resim",
+        "contextBody": "Bu aralıkta {{statements}} minnet satırı okundu. En çok öne çıkan duygu {{dominantMood}} ve duygusal dengen şu anda {{balance}} görünüyor.",
+        "quoteTitle": "Minnetlerinden biri şöyleydi...",
+        "referenceTag": "Referans",
+        "readMore": "Devamını gör",
+        "readLess": "Daha az göster"
+      },
+      "teaser": {
+        "title": "Daha derin bir örüntü belirmeye başlıyor",
+        "description": "Az önce yine anlamlı bir an ekledin. Bu kayıtları anlayabileceğin bir içgörüye dönüştürelim."
+      },
+      "locked": {
+        "title": "Minnetinin ardındaki duygusal örüntüyü gör",
+        "subtitle": "Daha derin okumayı aç: tekrar edenleri, seni yükseltenleri ve kayıtlarının sessizce işaret ettiklerini gör."
+      },
+      "errors": {
+        "revealFailed": "İçgörünü şu anda gösteremedik. Birazdan tekrar dene."
       },
       "date": {
         "unknown": "Bilinmiyor"
       },
       "empty": {
-        "title": "Henüz veri yok",
-        "message": "Analiz için biraz minnet kaydı girmelisin.",
+        "title": "Henüz okunacak bir şey yok",
+        "message": "Birkaç minnet anı eklediğinde, İçgörüler içlerindeki duygusal örüntüleri ortaya çıkarmaya başlayacak.",
         "cta": "İlk Kaydı Gir"
       },
       "loading": "Yükleniyor...",

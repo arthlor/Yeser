@@ -167,10 +167,15 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
     container: {
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '20',
+      borderRadius: 20,
+      borderWidth: 1.2,
+      borderColor: theme.colors.outline + '14',
       overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOpacity: theme.name === 'dark' ? 0.35 : 0.08,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 4,
     },
   });
 
@@ -194,14 +199,16 @@ const createRowStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       flex: 1,
     },
     title: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodyLarge,
       color: theme.colors.onSurface,
-      fontWeight: '600',
+      fontWeight: '700',
+      letterSpacing: -0.2,
     },
     subtitle: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
-      marginTop: 2,
+      marginTop: 3,
+      opacity: 0.8,
     },
     divider: {
       height: StyleSheet.hairlineWidth,

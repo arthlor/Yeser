@@ -36,6 +36,7 @@ export const useUserProfile = () => {
 
   const {
     mutate: updateProfileMutation,
+    mutateAsync: updateProfileAsyncMutation,
     isPending: isUpdatingProfile,
     error: updateError,
   } = useMutation<Profile | null, Error, UpdateProfilePayload>({
@@ -142,6 +143,7 @@ export const useUserProfile = () => {
     isProfileError: isError,
     refetchProfile: refetch,
     updateProfile: updateProfileMutation,
+    updateProfileAsync: updateProfileAsyncMutation,
     isUpdatingProfile,
     updateProfileError: updateError,
     deleteAccount: deleteAccountMutation,

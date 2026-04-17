@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { OnboardingMascot } from '@/features/onboarding/components/OnboardingMascot';
+import { Feather } from '@expo/vector-icons';
 
 import { OnboardingLayout } from '@/features/onboarding/components/OnboardingLayout';
 import OnboardingNavHeader from '@/features/onboarding/components/OnboardingNavHeader';
@@ -10,12 +11,14 @@ import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimation
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { analyticsService } from '@/services/analyticsService';
 import { useTranslation } from 'react-i18next';
+import { reviewService } from '@/services/reviewService';
 import { getPrimaryShadow } from '@/themes/utils';
 import type { AppTheme } from '@/themes/types';
 
 interface CompletionStepProps {
-  onComplete: () => void;
+  onComplete: () => void | Promise<void>;
   onBack: () => void;
+  isCompleting?: boolean;
   userSummary: {
     username: string;
     dailyGoal: number;
@@ -37,10 +40,12 @@ interface CompletionStepProps {
 export const CompletionStep: React.FC<CompletionStepProps> = ({
   onComplete,
   onBack,
+  isCompleting = false,
   userSummary,
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const [isStartingJourney, setIsStartingJourney] = useState(false);
 
   // **SIMPLIFIED ANIMATION SYSTEM**: Single coordinated instance (8+ → 1, 87.5% reduction)
   const animations = useCoordinatedAnimations();
@@ -59,6 +64,13 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
       selected_theme: userSummary.selectedTheme,
       features_count: userSummary.featuresEnabled.length,
     });
+
+    // Prompt native rating modal automatically with a slight delay
+    const ratingTimer = setTimeout(() => {
+      void reviewService.requestReview();
+    }, 600);
+
+    return () => clearTimeout(ratingTimer);
   }, [
     animations,
     userSummary.username,
@@ -67,11 +79,20 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
     userSummary.featuresEnabled,
   ]);
 
-  const handleStartJourney = useCallback(() => {
-    hapticFeedback.success();
-    analyticsService.logEvent('onboarding_journey_started');
-    onComplete();
-  }, [onComplete]);
+  const handleStartJourney = useCallback(async () => {
+    if (isStartingJourney || isCompleting) {
+      return;
+    }
+
+    setIsStartingJourney(true);
+
+    try {
+      await Promise.resolve(onComplete());
+      analyticsService.logEvent('onboarding_journey_started');
+    } finally {
+      setIsStartingJourney(false);
+    }
+  }, [isCompleting, isStartingJourney, onComplete]);
 
   const getGoalText = () => {
     if (userSummary.dailyGoal === 0) {
@@ -94,7 +115,7 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
   const styles = createStyles(theme);
 
   return (
-    <OnboardingLayout edgeToEdge={true}>
+    <OnboardingLayout edgeToEdge={true} ambient="celebrate">
       <View style={styles.navWrapper}>
         <OnboardingNavHeader
           onBack={() => {
@@ -114,8 +135,13 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
           },
         ]}
       >
-        {/* **SIMPLIFIED CELEBRATION**: Static celebration with minimal animation */}
+        <OnboardingMascot source={require('@/assets/assets/mascot.png')} delay={200} />
+
         <View style={styles.celebrationContainer}>
+          <View style={styles.celebrationPill}>
+            <Feather name="check-circle" size={12} color={theme.colors.success} />
+            <Text style={styles.celebrationPillText}>{t('onboarding.completion.pill')}</Text>
+          </View>
           <Text style={styles.congratsTitle}>
             {t('onboarding.completion.congratsTitle', { username: userSummary.username })}
           </Text>
@@ -129,21 +155,21 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
           <View style={styles.summaryItems}>
             <View style={styles.summaryItem}>
               <View style={styles.summaryIconWrapper}>
-                <Ionicons name="person" size={16} color={theme.colors.primary} />
+                <Feather name="user" size={16} color={theme.colors.primary} />
               </View>
               <Text style={styles.summaryText}>{userSummary.username}</Text>
             </View>
 
             <View style={styles.summaryItem}>
               <View style={styles.summaryIconWrapper}>
-                <Ionicons name="golf" size={16} color={theme.colors.primary} />
+                <Feather name="target" size={16} color={theme.colors.primary} />
               </View>
               <Text style={styles.summaryText}>{getGoalText()}</Text>
             </View>
 
             <View style={styles.summaryItem}>
               <View style={styles.summaryIconWrapper}>
-                <Ionicons name="color-palette" size={16} color={theme.colors.primary} />
+                <Feather name="layers" size={16} color={theme.colors.primary} />
               </View>
               <Text style={styles.summaryText}>{getThemeText()}</Text>
             </View>
@@ -151,7 +177,7 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
             {userSummary.featuresEnabled.length > 0 && (
               <View style={styles.summaryItem}>
                 <View style={styles.summaryIconWrapper}>
-                  <Ionicons name="star" size={16} color={theme.colors.primary} />
+                  <Feather name="star" size={16} color={theme.colors.primary} />
                 </View>
                 <Text style={styles.summaryText}>
                   {userSummary.featuresEnabled.join(', ')}{' '}
@@ -171,13 +197,6 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
             <Text style={styles.encouragementText}>
               {t('onboarding.completion.encouragementText')}
             </Text>
-
-            {/* **STATIC CELEBRATION ICONS**: No rotating sparkles */}
-            <View style={styles.staticCelebrationIcons}>
-              <Text style={styles.celebrationIcon}>🌱</Text>
-              <Text style={styles.celebrationIcon}>✨</Text>
-              <Text style={styles.celebrationIcon}>💚</Text>
-            </View>
           </View>
         </View>
 
@@ -191,6 +210,8 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({
           <OnboardingButton
             onPress={handleStartJourney}
             title={t('onboarding.completion.startJourney')}
+            disabled={isStartingJourney || isCompleting}
+            loading={isStartingJourney || isCompleting}
             accessibilityLabel={t('onboarding.completion.startJourneyA11y')}
           />
         </Animated.View>
@@ -230,18 +251,38 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       marginBottom: theme.spacing.xl,
     },
-    congratsTitle: {
-      ...theme.typography.headlineLarge,
-      color: theme.colors.onBackground,
-      textAlign: 'center',
+    celebrationPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 4,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.success + '18',
       marginBottom: theme.spacing.sm,
     },
+    celebrationPillText: {
+      ...theme.typography.labelSmall,
+      fontSize: 11,
+      color: theme.colors.success,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
+    congratsTitle: {
+      ...theme.typography.headlineMedium,
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.colors.onBackground,
+      textAlign: 'center',
+      marginBottom: theme.spacing.xs,
+    },
     congratsSubtitle: {
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
+      fontSize: 14,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 24,
-      paddingHorizontal: theme.spacing.md,
+      lineHeight: 20,
+      paddingHorizontal: theme.spacing.sm,
     },
     summaryCard: {
       backgroundColor: theme.colors.surface,

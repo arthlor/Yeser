@@ -15,12 +15,10 @@ import ErrorBoundary from '@/shared/components/layout/ErrorBoundary';
 import { ScreenLayout } from '@/shared/components/layout';
 import { analyticsService } from '@/services/analyticsService';
 import { logger } from '@/utils/debugConfig';
+import { getPrimaryShadow } from '@/themes/utils';
 import type { AppTheme } from '@/themes/types';
 import type { AppStackParamList } from '@/types/navigation';
 import { useTranslation } from 'react-i18next';
-
-// Screen dimensions available if needed
-// const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 type WhyGratitudeScreenNavigationProp = NativeStackNavigationProp<
   AppStackParamList,
@@ -33,42 +31,30 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
   const navigation = useNavigation<WhyGratitudeScreenNavigationProp>();
   const { t } = useTranslation();
 
-  // Data fetching hooks
   const { data: benefits, isLoading, error, refetch } = useGratitudeBenefits();
   const { profile } = useUserProfile();
   const { data: streak } = useStreakData();
 
-  // 🛡️ ERROR PROTECTION: Handle benefits loading errors
   React.useEffect(() => {
     if (error) {
       logger.error('WhyGratitudeScreen error:', { error });
     }
   }, [error, t]);
 
-  // ✅ PERFORMANCE FIX: Separate static styles from dynamic values
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  // ✅ PERFORMANCE FIX: Consolidate analytics tracking
   React.useEffect(() => {
-    const trackScreenView = () => {
-      analyticsService.logScreenView('why_gratitude_screen');
-
-      // Batch analytics events
-      analyticsService.logEvent('why_gratitude_viewed', {
-        user_id: profile?.id || 'anonymous',
-        user_streak: streak?.current_streak || 0,
-        has_benefits_data: !!benefits?.length,
-        timestamp: Date.now(),
-      });
-    };
-
-    trackScreenView();
+    analyticsService.logScreenView('why_gratitude_screen');
+    analyticsService.logEvent('why_gratitude_viewed', {
+      user_id: profile?.id || 'anonymous',
+      user_streak: streak?.current_streak || 0,
+      has_benefits_data: !!benefits?.length,
+      timestamp: Date.now(),
+    });
   }, [profile?.id, streak?.current_streak, benefits?.length]);
 
-  // 🚀 TOAST INTEGRATION: Enhanced event handlers with centralized toast notifications
   const handleStartJournaling = useCallback(
     (prompt?: string | null, source: 'main_button' | 'benefit_card' = 'main_button') => {
-      // Track analytics
       analyticsService.logEvent('cta_button_pressed', {
         prompt: prompt || 'none',
         user_streak: streak?.current_streak || 0,
@@ -82,7 +68,6 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
         user_id: profile?.id || 'anonymous',
       });
 
-      // Navigate to DailyEntryTab through MainAppTabs
       setTimeout(() => {
         try {
           navigation.navigate('MainAppTabs', {
@@ -91,14 +76,12 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
           });
         } catch (error) {
           logger.warn('Navigation failed in WhyGratitudeScreen:', { error });
-          // Fallback: just navigate to the tab without params
           navigation.navigate('MainAppTabs', {
             screen: 'DailyEntryTab',
           });
         }
       }, 100);
 
-      // 🚀 TOAST INTEGRATION: Use centralized toast system instead of custom Snackbar
       if (prompt) {
         showSuccess(t('whyGratitude.cta.successMessage', { prompt }));
       }
@@ -108,7 +91,6 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
 
   const handleBenefitCtaPress = useCallback(
     (prompt: string, benefitId: number, title: string, index: number) => {
-      // Track benefit-specific analytics
       analyticsService.logEvent('benefit_card_cta_pressed', {
         benefit_id: benefitId,
         title,
@@ -117,7 +99,6 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
         user_id: profile?.id || 'anonymous',
       });
 
-      // Navigate with the specific prompt
       handleStartJournaling(prompt, 'benefit_card');
     },
     [handleStartJournaling, profile?.id]
@@ -125,7 +106,6 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
 
   const handleRetry = useCallback(() => {
     refetch();
-    // 🛡️ ERROR PROTECTION: Notify user when retrying
     showSuccess(t('common.loading'));
   }, [refetch, showSuccess, t]);
 
@@ -133,10 +113,9 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
     navigation.goBack();
   }, [navigation]);
 
-  // ✅ PERFORMANCE FIX: Memoize computed values
   const primaryPrompt = useMemo(() => benefits?.[0]?.cta_prompt, [benefits]);
+  const currentStreak = streak?.current_streak ?? 0;
 
-  // Enhanced Loading State
   if (isLoading) {
     return (
       <ScreenLayout edges={['top']} edgeToEdge={true} backgroundColor={theme.colors.surface}>
@@ -156,25 +135,22 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
     );
   }
 
-  // Enhanced Error State
   if (error) {
     return (
       <ScreenLayout edges={['top']} edgeToEdge={true} backgroundColor={theme.colors.surface}>
         <View style={styles.errorContainer}>
           <Animated.View entering={FadeInUp.duration(600)} style={styles.errorContent}>
-            <Icon
-              name="alert-circle-outline"
-              size={64}
-              color={theme.colors.error}
-              style={styles.errorIcon}
-            />
+            <View style={styles.errorIconWrap}>
+              <Icon name="alert-circle-outline" size={40} color={theme.colors.error} />
+            </View>
             <Text style={styles.errorTitle}>
               {t('shared.layout.errorState.cases.generic.title')}
             </Text>
             <Text style={styles.errorMessage}>
               {t('shared.layout.errorState.cases.generic.message')}
             </Text>
-            <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
+            <TouchableOpacity onPress={handleRetry} style={styles.retryButton} activeOpacity={0.85}>
+              <Icon name="refresh" size={18} color={theme.colors.onPrimary} />
               <Text style={styles.retryButtonLabel}>{t('common.retry')}</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -193,85 +169,181 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
       >
-        {/* Simple Header */}
+        {/* Header */}
         <View style={styles.appBar}>
           <TouchableOpacity
             onPress={handleGoBack}
             accessibilityLabel={t('common.back')}
+            accessibilityRole="button"
             style={styles.appBarBackAction}
+            hitSlop={8}
           >
-            <Icon name="arrow-left" size={24} color={theme.colors.onSurface} />
+            <Icon name="arrow-left" size={22} color={theme.colors.onSurface} />
           </TouchableOpacity>
-          <Text style={styles.appBarTitle}>{t('whyGratitude.title')}</Text>
-        </View>
-        {/* Simple Hero Section */}
-        <View style={styles.heroSection}>
-          <Text style={styles.title}>{t('whyGratitude.hero.title')}</Text>
-          <Text style={styles.intro}>{t('whyGratitude.hero.subtitle')}</Text>
+          <Text style={styles.appBarTitle} numberOfLines={1}>
+            {t('whyGratitude.title')}
+          </Text>
+          <View style={styles.appBarSpacer} />
         </View>
 
-        {/* Benefits Section */}
-        <View style={styles.benefitsSection}>
-          <Text style={styles.benefitsTitle}>{t('whyGratitude.benefits.title')}</Text>
-          <Text style={styles.benefitsSubtitle}>{t('whyGratitude.benefits.subtitle')}</Text>
+        {/* Hero */}
+        <Animated.View entering={FadeIn.duration(500)} style={styles.heroSection}>
+          {/* Soft decorative glow */}
+          <View pointerEvents="none" style={styles.heroGlowA} />
+          <View pointerEvents="none" style={styles.heroGlowB} />
 
-          {benefits?.map((benefit, index) => (
-            <TouchableOpacity
-              key={benefit.id}
-              style={styles.benefitCard}
-              onPress={() =>
-                handleBenefitCtaPress(benefit.cta_prompt || '', benefit.id, benefit.title, index)
-              }
-              activeOpacity={0.8}
+          <Animated.View
+            entering={FadeInUp.duration(600).springify()}
+            style={styles.heroIconContainer}
+          >
+            <LinearGradient
+              colors={[theme.colors.primary, theme.colors.tertiary || theme.colors.primary]}
+              style={styles.heroIconBackground}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
             >
-              {/* Gradient Border Container */}
-              <View style={styles.benefitGradientBorderContainer}>
-                <LinearGradient
-                  colors={[
-                    theme.colors.primary,
-                    theme.colors.secondary || theme.colors.primaryContainer,
-                    theme.colors.tertiary || theme.colors.primary,
-                  ]}
-                  style={styles.benefitGradientBorder}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                />
-              </View>
+              <Icon name="heart-multiple" size={40} color={theme.colors.onPrimary} />
+            </LinearGradient>
+            <View style={styles.heroIconHalo} />
+          </Animated.View>
 
-              <View style={styles.benefitContent}>
-                {/* Icon */}
-                <View style={styles.benefitIconContainer}>
-                  <Icon name={benefit.icon} size={24} color={theme.colors.primary} />
-                </View>
-
-                {/* Content */}
-                <View style={styles.benefitTextContainer}>
-                  <Text style={styles.benefitTitle}>{benefit.title}</Text>
-                  <Text style={styles.benefitDescription}>{benefit.description}</Text>
-                  {benefit.stat && <Text style={styles.benefitStat}>{benefit.stat}</Text>}
-                </View>
-
-                {/* Arrow */}
-                <View style={styles.benefitArrow}>
-                  <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Simple CTA Section */}
-        <View style={styles.ctaSection}>
-          <Text style={styles.ctaTitle}>{t('whyGratitude.cta.title')}</Text>
-          <Text style={styles.ctaSubtitle}>{t('whyGratitude.cta.subtitle')}</Text>
-
-          <TouchableOpacity
-            onPress={() => handleStartJournaling(primaryPrompt)}
-            style={styles.ctaButton}
+          <Animated.Text
+            entering={FadeInUp.delay(120).duration(500)}
+            style={styles.title}
+            accessibilityRole="header"
           >
-            <Text style={styles.ctaButtonLabel}>{t('whyGratitude.cta.button')}</Text>
-          </TouchableOpacity>
+            {t('whyGratitude.hero.title')}
+          </Animated.Text>
+          <Animated.Text entering={FadeInUp.delay(200).duration(500)} style={styles.intro}>
+            {t('whyGratitude.hero.subtitle')}
+          </Animated.Text>
+
+          {/* Personalised streak pill */}
+          {currentStreak > 0 && (
+            <Animated.View
+              entering={FadeInUp.delay(280).duration(500).springify()}
+              style={styles.streakPill}
+            >
+              <Icon name="fire" size={16} color={theme.colors.primary} />
+              <Text style={styles.streakPillText}>
+                <Text style={styles.streakPillNumber}>{currentStreak}</Text>{' '}
+                {t('whyGratitude.hero.streakLabel', { defaultValue: 'day streak' })}
+              </Text>
+            </Animated.View>
+          )}
+        </Animated.View>
+
+        {/* Benefits */}
+        <View style={styles.benefitsSection}>
+          <Animated.Text entering={FadeInUp.delay(320).duration(500)} style={styles.benefitsTitle}>
+            {t('whyGratitude.benefits.title')}
+          </Animated.Text>
+          <Animated.Text
+            entering={FadeInUp.delay(380).duration(500)}
+            style={styles.benefitsSubtitle}
+          >
+            {t('whyGratitude.benefits.subtitle')}
+          </Animated.Text>
+
+          {benefits?.map((benefit, index) => {
+            const stepNumber = index + 1;
+            return (
+              <Animated.View
+                key={benefit.id}
+                entering={FadeInUp.delay(420 + index * 90)
+                  .duration(500)
+                  .springify()}
+              >
+                <TouchableOpacity
+                  style={styles.benefitCard}
+                  onPress={() =>
+                    handleBenefitCtaPress(
+                      benefit.cta_prompt || '',
+                      benefit.id,
+                      benefit.title,
+                      index
+                    )
+                  }
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${benefit.title}. ${benefit.description}`}
+                >
+                  {/* Numbered step badge */}
+                  <View style={styles.benefitStepBadge}>
+                    <Text style={styles.benefitStepText}>{stepNumber}</Text>
+                  </View>
+
+                  <View style={styles.benefitContent}>
+                    <View style={styles.benefitIconContainer}>
+                      <Icon name={benefit.icon} size={22} color={theme.colors.primary} />
+                    </View>
+
+                    <View style={styles.benefitTextContainer}>
+                      <Text style={styles.benefitTitle} numberOfLines={2}>
+                        {benefit.title}
+                      </Text>
+                      <Text style={styles.benefitDescription}>{benefit.description}</Text>
+                      {benefit.stat && (
+                        <View style={styles.benefitStatBadge}>
+                          <Icon
+                            name="chart-line"
+                            size={12}
+                            color={theme.colors.primary}
+                            style={styles.benefitStatIcon}
+                          />
+                          <Text style={styles.benefitStatText} numberOfLines={2}>
+                            {benefit.stat}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.benefitArrow}>
+                      <Icon name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
         </View>
+
+        {/* CTA */}
+        <Animated.View entering={FadeInUp.delay(720).duration(500)} style={styles.ctaSection}>
+          <LinearGradient
+            colors={[
+              `${theme.colors.primary}12`,
+              `${theme.colors.tertiary || theme.colors.primary}06`,
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.ctaCard}
+          >
+            <View style={styles.ctaIconWrap}>
+              <Icon name="sprout" size={24} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.ctaTitle}>{t('whyGratitude.cta.title')}</Text>
+            <Text style={styles.ctaSubtitle}>{t('whyGratitude.cta.subtitle')}</Text>
+
+            <TouchableOpacity
+              onPress={() => handleStartJournaling(primaryPrompt)}
+              style={styles.ctaButtonWrapper}
+              activeOpacity={0.9}
+              accessibilityRole="button"
+              accessibilityLabel={t('whyGratitude.cta.button')}
+            >
+              <LinearGradient
+                colors={[theme.colors.primary, theme.colors.tertiary || theme.colors.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.ctaButton}
+              >
+                <Text style={styles.ctaButtonLabel}>{t('whyGratitude.cta.button')}</Text>
+                <Icon name="arrow-right" size={18} color={theme.colors.onPrimary} />
+              </LinearGradient>
+            </TouchableOpacity>
+          </LinearGradient>
+        </Animated.View>
       </ScreenLayout>
     </ErrorBoundary>
   );
@@ -279,247 +351,303 @@ export const WhyGratitudeScreen: React.FC = React.memo(() => {
 
 WhyGratitudeScreen.displayName = 'WhyGratitudeScreen';
 
-// **CLEAN DESIGN**: Simplified styles without gradients
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    // Header styles
+    // Header
     appBar: {
       backgroundColor: theme.colors.surface,
-      shadowOpacity: 0.05,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.outline + '15',
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      gap: theme.spacing.sm,
     },
     appBarBackAction: {
-      padding: theme.spacing.sm,
-      borderRadius: theme.borderRadius.sm,
-      backgroundColor: `${theme.colors.primary}06`,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: `${theme.colors.primary}0D`,
     },
     appBarTitle: {
       fontWeight: '700',
-      fontSize: 20,
+      fontSize: 17,
       color: theme.colors.onSurface,
       flex: 1,
       textAlign: 'center',
-      marginRight: 44, // Balance the back button
+    },
+    appBarSpacer: {
+      width: 40,
+      height: 40,
     },
 
-    // Layout containers
+    // Layout
     contentContainer: {
       paddingBottom: theme.spacing.xxxl,
     },
 
-    // Hero section
+    // Hero
     heroSection: {
       alignItems: 'center',
-      paddingTop: theme.spacing.xl,
-      paddingBottom: theme.spacing.xl,
-      paddingHorizontal: theme.spacing.sm,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+      paddingHorizontal: theme.spacing.lg,
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    heroGlowA: {
+      position: 'absolute',
+      top: -60,
+      right: -40,
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      backgroundColor: `${theme.colors.primary}1A`,
+      opacity: 0.6,
+    },
+    heroGlowB: {
+      position: 'absolute',
+      bottom: -40,
+      left: -60,
+      width: 180,
+      height: 180,
+      borderRadius: 90,
+      backgroundColor: `${theme.colors.tertiary || theme.colors.primary}14`,
+      opacity: 0.5,
     },
     heroIconContainer: {
       marginBottom: theme.spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     heroIconBackground: {
-      width: 96,
-      height: 96,
-      borderRadius: 48,
-      backgroundColor: `${theme.colors.primary}15`,
+      width: 88,
+      height: 88,
+      borderRadius: 44,
       justifyContent: 'center',
       alignItems: 'center',
-      ...theme.elevation.lg,
+      ...getPrimaryShadow.floating(theme),
+    },
+    heroIconHalo: {
+      position: 'absolute',
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: `${theme.colors.primary}10`,
+      zIndex: -1,
     },
     title: {
       ...theme.typography.headlineMedium,
       color: theme.colors.onSurface,
       textAlign: 'center',
-      marginBottom: theme.spacing.lg,
-      lineHeight: 32,
+      marginBottom: theme.spacing.md,
+      lineHeight: 34,
       fontWeight: '700',
+      letterSpacing: -0.3,
     },
     intro: {
       ...theme.typography.bodyLarge,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 26,
-      opacity: 0.85,
+      lineHeight: 24,
+      opacity: 0.9,
+      maxWidth: 340,
     },
-
-    // Streak section
-    streakContainer: {
+    streakPill: {
       marginTop: theme.spacing.lg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
       paddingHorizontal: theme.spacing.md,
-      width: '100%',
-    },
-    streakBackground: {
-      padding: theme.spacing.lg,
-      borderRadius: theme.borderRadius.xl,
+      paddingVertical: 8,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: `${theme.colors.primary}12`,
       borderWidth: 1,
-      borderColor: `${theme.colors.success}30`,
+      borderColor: `${theme.colors.primary}22`,
     },
-    streakIcon: {
-      alignSelf: 'center',
-      marginBottom: theme.spacing.sm,
+    streakPillText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.onSurface,
+      fontWeight: '600',
     },
-    streakText: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onBackground,
-      textAlign: 'center',
-      lineHeight: 22,
-    },
-    streakTextBold: {
-      fontWeight: '700',
-      color: theme.colors.success,
-    },
-    streakNumber: {
-      fontWeight: '700',
-      color: theme.colors.success,
-      fontSize: 18,
+    streakPillNumber: {
+      color: theme.colors.primary,
+      fontWeight: '800',
     },
 
-    // Benefits section
+    // Benefits
     benefitsSection: {
-      marginTop: theme.spacing.lg,
+      marginTop: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.lg,
     },
     benefitsTitle: {
       ...theme.typography.titleLarge,
       color: theme.colors.onSurface,
       textAlign: 'center',
       fontWeight: '700',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
     },
     benefitsSubtitle: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      opacity: 0.8,
+      opacity: 0.75,
       marginBottom: theme.spacing.xl,
     },
 
-    // Benefit cards
     benefitCard: {
       position: 'relative',
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
       borderRadius: theme.borderRadius.lg,
-      overflow: 'hidden',
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: `${theme.colors.outline}14`,
+      ...getPrimaryShadow.small(theme),
     },
-    benefitGradientBorderContainer: {
+    benefitStepBadge: {
       position: 'absolute',
-      top: -0.5,
-      left: -0.3,
-      right: -0.3,
-      bottom: -0.5,
-      borderRadius: theme.borderRadius.lg + 0.5,
-      zIndex: 0,
+      top: -10,
+      left: theme.spacing.lg,
+      minWidth: 28,
+      height: 28,
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      backgroundColor: theme.colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 2,
+      ...getPrimaryShadow.small(theme),
     },
-    benefitGradientBorder: {
-      flex: 1,
-      borderRadius: theme.borderRadius.lg + 0.5,
+    benefitStepText: {
+      color: theme.colors.onPrimary,
+      fontSize: 12,
+      fontWeight: '800',
+      letterSpacing: 0.3,
     },
     benefitContent: {
-      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.surface,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.lg,
-      borderRadius: theme.borderRadius.lg,
-      position: 'relative',
-      zIndex: 1,
+      paddingTop: theme.spacing.lg + 6,
+      gap: theme.spacing.md,
     },
     benefitIconContainer: {
-      marginRight: theme.spacing.lg,
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: `${theme.colors.primary}08`,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: `${theme.colors.primary}12`,
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 1,
-      borderColor: `${theme.colors.primary}15`,
     },
     benefitTextContainer: {
       flex: 1,
-      paddingRight: theme.spacing.sm,
     },
     benefitTitle: {
       ...theme.typography.titleMedium,
       color: theme.colors.onSurface,
-      fontWeight: '600',
-      marginBottom: theme.spacing.xs,
+      fontWeight: '700',
+      marginBottom: 2,
       lineHeight: 22,
     },
     benefitDescription: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
-      marginBottom: theme.spacing.xs,
       lineHeight: 20,
       opacity: 0.9,
     },
-    benefitStat: {
-      ...theme.typography.bodySmall,
+    benefitStatBadge: {
+      marginTop: theme.spacing.sm,
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: `${theme.colors.primary}10`,
+      maxWidth: '100%',
+    },
+    benefitStatIcon: {
+      marginRight: 2,
+    },
+    benefitStatText: {
+      ...theme.typography.labelSmall,
       color: theme.colors.primary,
-      fontWeight: '600',
-      fontSize: 13,
+      fontWeight: '700',
+      fontSize: 12,
+      flexShrink: 1,
     },
     benefitArrow: {
       width: 32,
       height: 32,
       borderRadius: 16,
-      backgroundColor: `${theme.colors.primary}06`,
+      backgroundColor: `${theme.colors.primary}08`,
       alignItems: 'center',
       justifyContent: 'center',
     },
 
-    // CTA section
+    // CTA
     ctaSection: {
       marginTop: theme.spacing.xl,
-      paddingTop: theme.spacing.xl,
-      alignItems: 'center',
+      paddingHorizontal: theme.spacing.lg,
     },
-    ctaContent: {
+    ctaCard: {
+      borderRadius: theme.borderRadius.xl,
+      padding: theme.spacing.xl,
       alignItems: 'center',
+      borderWidth: 1,
+      borderColor: `${theme.colors.primary}1F`,
+    },
+    ctaIconWrap: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: `${theme.colors.primary}14`,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: theme.spacing.md,
     },
     ctaTitle: {
       ...theme.typography.titleLarge,
       color: theme.colors.onSurface,
       textAlign: 'center',
       fontWeight: '700',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
     },
     ctaSubtitle: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      marginBottom: theme.spacing.xl,
-      opacity: 0.8,
+      marginBottom: theme.spacing.lg,
+      opacity: 0.85,
       lineHeight: 20,
+      maxWidth: 320,
+    },
+    ctaButtonWrapper: {
+      width: '100%',
+      borderRadius: theme.borderRadius.full,
+      ...getPrimaryShadow.floating(theme),
     },
     ctaButton: {
+      flexDirection: 'row',
       borderRadius: theme.borderRadius.full,
-      minHeight: 56,
-      backgroundColor: theme.colors.primary,
+      minHeight: 54,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
       paddingHorizontal: theme.spacing.xl,
-      minWidth: 200,
-      shadowColor: theme.colors.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 12,
-      elevation: 4,
+      gap: theme.spacing.sm,
     },
     ctaButtonLabel: {
-      fontSize: 17,
+      fontSize: 16,
       fontWeight: '700',
-      letterSpacing: 0.5,
+      letterSpacing: 0.3,
       color: theme.colors.onPrimary,
     },
 
-    // Loading states
+    // Loading
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -544,7 +672,7 @@ const createStyles = (theme: AppTheme) =>
       opacity: 0.7,
     },
 
-    // Error states
+    // Error
     errorContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -554,7 +682,13 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       paddingHorizontal: theme.spacing.xl,
     },
-    errorIcon: {
+    errorIconWrap: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: `${theme.colors.error}14`,
+      alignItems: 'center',
+      justifyContent: 'center',
       marginBottom: theme.spacing.lg,
     },
     errorTitle: {
@@ -562,7 +696,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.error,
       textAlign: 'center',
       marginBottom: theme.spacing.md,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     errorMessage: {
       ...theme.typography.bodyMedium,
@@ -573,17 +707,19 @@ const createStyles = (theme: AppTheme) =>
       lineHeight: 22,
     },
     retryButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
       minHeight: 48,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.primary,
       justifyContent: 'center',
-      alignItems: 'center',
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.lg,
+      gap: 8,
     },
     retryButtonLabel: {
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.colors.onPrimary,
-      fontSize: 16,
+      fontSize: 15,
     },
   });

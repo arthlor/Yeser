@@ -15,7 +15,6 @@ import { useTranslation } from 'react-i18next';
 import { UpdateProfilePayload } from '@/schemas/profileSchema';
 
 const FIRST_REMINDER_TIME = '12:30';
-const SECOND_REMINDER_TIME = '21:00';
 const REMINDER_TIME_PRESETS = ['08:00', '12:30', '18:00', '21:00'] as const;
 
 const normalizeReminderTime = (raw: string | null | undefined): string => {
@@ -101,7 +100,6 @@ export const NotificationSettings: React.FC = () => {
         return;
       }
 
-      hasSyncedRef.current = true;
       setIsSyncing(true);
 
       try {
@@ -129,12 +127,21 @@ export const NotificationSettings: React.FC = () => {
         } else if (!hasBackendPreference) {
           await notificationService.cancelDailyReminderNotifications();
         }
+
+        // Only latch hasSyncedRef once we have fully finished. If this run
+        // was cancelled (because `profile` refetched mid-sync) we want the
+        // next run to actually re-execute instead of short-circuiting.
+        if (!isCancelled) {
+          hasSyncedRef.current = true;
+        }
       } catch (error) {
         if (!isCancelled && isMountedRef.current) {
           logger.error('Error in notification sync:', error as Error);
         }
       } finally {
-        if (!isCancelled && isMountedRef.current) {
+        // Always clear the spinner while we're still mounted — even if the
+        // effect was cancelled, the component is still rendering the toggle.
+        if (isMountedRef.current) {
           setIsSyncing(false);
         }
       }
@@ -395,7 +402,6 @@ export const NotificationSettings: React.FC = () => {
     () =>
       t('notifications.fixedScheduleDescription', {
         firstTime: selectedReminderTime,
-        secondTime: SECOND_REMINDER_TIME,
       }),
     [selectedReminderTime, t]
   );
@@ -449,7 +455,7 @@ export const NotificationSettings: React.FC = () => {
               <Text style={styles.scheduleTitle}>{t('notifications.remindersLabel')}</Text>
               <Text style={styles.scheduleDescription}>{scheduleDescription}</Text>
               <Text style={styles.timeSelectionTitle}>
-                {t('notifications.reminderTimeTitle', { defaultValue: 'Primary reminder time' })}
+                {t('notifications.reminderTimeTitle', { defaultValue: 'Daily reminder time' })}
               </Text>
               <View style={styles.timeChipRow}>
                 {REMINDER_TIME_PRESETS.map((time) => {

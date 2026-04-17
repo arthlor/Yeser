@@ -169,8 +169,8 @@
         "extra": "Aprender"
       },
       "mood": {
-        "title": "Perspectivas de ánimo",
-        "subtitle": "Revisa tus patrones emocionales"
+        "title": "Perspectivas",
+        "subtitle": "Lo que tu gratitud está revelando últimamente."
       }
     },
     "headline": {
@@ -239,7 +239,7 @@
     }
   },
   "notifications": {
-    "remindersLabel": "Recordatorios diarios",
+    "remindersLabel": "Recordatorio diario",
     "reminders": {
       "midday": {
         "title": "¡Es Hora de Florecer! ✨",
@@ -251,14 +251,14 @@
       }
     },
     "permissionRequiredTitle": "Permiso de Notificación Requerido",
-    "dailyRemindersMessage": "Nos gustaría enviar recordatorios diarios suaves para mantener tu hábito de gratitud.\n\n✨ Beneficios:\n• Un recordatorio amistoso a la misma hora todos los días\n• Mantén tu práctica constante\n• Puedes desactivarlo en cualquier momento\n• Una vida más feliz y positiva\n\n¿Te gustaría habilitarlo?",
+    "dailyRemindersMessage": "Nos gustaría enviar un recordatorio diario suave para apoyar tu hábito de gratitud.\n\n✨ Beneficios:\n• Un recordatorio considerado cerca de la hora que elijas\n• A veces también una memoria de gratitud del pasado\n• Mantener tu práctica constante\n• Puedes desactivarlo en cualquier momento\n\n¿Te gustaría activarlo?",
     "permissionRequiredMessage": "Para habilitar los recordatorios diarios, se requiere permiso de notificación.\n\n📱 Cómo habilitar:\n1. Toca 'Abrir Configuración'\n2. Busca la sección 'Notificaciones'\n3. Habilita la aplicación Yeser\n4. Regresa a esta página\n\n¡Los recordatorios te ayudarán a sentirte más feliz! 😊",
     "notNow": "Ahora no",
     "enable": "Habilitar",
     "maybeLater": "Quizás más tarde",
     "openSettings": "Abrir Configuración",
-    "fixedScheduleDescription": "Te recordaremos dos veces al día a las {{firstTime}} y {{secondTime}} en tu hora local.",
-    "reminderTimeTitle": "Hora principal del recordatorio",
+    "fixedScheduleDescription": "Enviaremos un recordatorio diario alrededor de las {{firstTime}} en tu hora local. A veces también puede traer de vuelta una memoria de gratitud anterior.",
+    "reminderTimeTitle": "Hora del recordatorio diario",
     "timeUpdatedSuccess": "La hora del recordatorio se actualizó a las {{time}}.",
     "reminderTimeA11y": "Configurar recordatorio para las {{time}}",
     "errors": {
@@ -376,8 +376,8 @@
     },
     "about": {
       "moodAnalysis": {
-        "label": "Perspectivas de Ánimo",
-        "description": "Analiza patrones en tus estados de ánimo de gratitud"
+        "label": "Perspectivas",
+        "description": "Descubre los patrones emocionales que viven dentro de tu gratitud"
       },
       "whyGratitude": {
         "label": "El Poder de la Gratitud",
@@ -461,7 +461,7 @@
       "contactEmailLabel": "Soporte por correo",
       "contactEmailHint": "Abre la aplicación de correo para contactar a soporte",
       "contactCTA": "Contactar Soporte",
-      "appVersion": "Yeser v1.2.2",
+      "appVersion": "Yeser v1.3.1",
       "accessibility": {
         "expanded": "{{question}} expandido. {{answer}}",
         "collapsed": "{{question}} contraído.",
@@ -493,7 +493,8 @@
     "loadingSubtext": "Cargando el poder de la gratitud...",
     "hero": {
       "title": "Da un Paso por tu Salud Mental",
-      "subtitle": "Pensar en aquello por lo que estás agradecido todos los días con Yeser ha demostrado tener efectos poderosos en tu salud mental."
+      "subtitle": "Pensar en aquello por lo que estás agradecido todos los días con Yeser ha demostrado tener efectos poderosos en tu salud mental.",
+      "streakLabel": "días de racha"
     },
     "benefits": {
       "title": "¿Por qué deberíamos estar agradecidos?",
@@ -522,7 +523,7 @@
     "gratitude": {
       "empty": "La declaración de gratitud no puede estar vacía.",
       "required": "Se requiere al menos una declaración de gratitud.",
-      "tooLong": "La declaración de gratitud debe tener 500 caracteres o menos."
+      "tooLong": "La declaración de gratitud debe tener {{max}} caracteres o menos."
     },
     "streak": {
       "negativeStreak": "La racha actual no puede ser negativa",
@@ -616,6 +617,12 @@
       "a11y": "Ver entradas pasadas"
     },
     "title": "Tus Entradas de Gratitud",
+    "search": {
+      "placeholder": "Buscar en tus recuerdos...",
+      "a11y": "Buscar registros de gratitud",
+      "emptyTitle": "No se encontraron entradas",
+      "emptySubtitle": "Intenta con otra palabra o limpia tu búsqueda."
+    },
     "item": {
       "relative": {
         "today": "Hoy",
@@ -630,7 +637,9 @@
       "goal": {
         "completeDay": "🎉 Meta diaria completa",
         "remaining": "{{count}} más necesarios para la meta"
-      }
+      },
+      "reflections": "Reflexiones",
+      "more": "más"
     },
     "list": {
       "page": "Página {{count}}",
@@ -654,7 +663,8 @@
       "benefit3": "Crecimiento personal",
       "quote": "La gratitud es la llave mágica que hace que lo que tenemos sea suficiente.",
       "tipTitle": "💡 El beneficio de la gratitud",
-      "tip": "¡Escribir 3 gratitudes al día conduce a una mayor felicidad con el tiempo!"
+      "tip": "¡Escribir 3 gratitudes al día conduce a una mayor felicidad con el tiempo!",
+      "author": "— Oprah Winfrey"
     },
     "header": {
       "label": "HISTORIAL",
@@ -688,9 +698,7 @@
       "status": {
         "operational": "Operacional",
         "noConnection": "Sin Conexión",
-        "temporary": "Error Temporal"
-      },
-      "statusLabels": {
+        "temporary": "Error Temporal",
         "app": "Aplicación",
         "data": "Datos"
       },
@@ -903,13 +911,30 @@
   },
   "mood": {
     "analysis": {
-      "label": "INFORMACIÓN",
-      "title": "Análisis de Ánimo",
-      "subtitle": "Descubre cómo la gratitud moldea tu mundo emocional.",
+      "label": "PERSPECTIVAS",
+      "title": "Perspectivas",
+      "subtitle": "Mira el patrón emocional escondido dentro de tu gratitud.",
+      "promise": "Mira el patrón emocional escondido dentro de tu gratitud.",
       "range": {
-        "7d": "7 Días",
         "15d": "15 Días",
-        "30d": "30 Días"
+        "30d": "30 Días",
+        "90d": "90 Días"
+      },
+      "home": {
+        "latestTitle": "Lo que tu gratitud está revelando",
+        "readyDescription": "Ya hay suficientes momentos aquí para una lectura con sentido.",
+        "seedTitle": "Tu primer patrón está empezando a aparecer",
+        "seedDescription": "Agrega unos momentos de gratitud más y los convertiremos en tu primera perspectiva emocional.",
+        "fallbackDescription": "Abre Perspectivas para ver las emociones y temas que empiezan a salir a la luz.",
+        "updatedToday": "Actualizado hoy",
+        "updatedDaysAgo": "Actualizado hace {{count}} días",
+        "previewBadge": "Vista previa",
+        "cta": {
+          "view": "Ver lo que revela",
+          "reveal": "Revelar mi perspectiva",
+          "seed": "Escribir ahora",
+          "open": "Abrir Perspectivas"
+        }
       },
       "overview": {
         "entries": "Entradas analizadas",
@@ -919,7 +944,7 @@
         "noDominantMood": "Ninguno",
         "statementsPerEntry": "Promedio {{value}} declaraciones por entrada",
         "generatedAt": "Actualizado el {{date}}",
-        "entriesExplanation": "El número de entradas de gratitud de los últimos {{days}} días utilizadas para este análisis."
+        "entriesExplanation": "Este resumen refleja los patrones emocionales que están emergiendo en {{count}} entradas de los últimos {{days}} días."
       },
       "balance": {
         "imbalanced": "Desequilibrado",
@@ -928,34 +953,56 @@
       },
       "sections": {
         "narrative": {
-          "title": "Perspectivas de IA",
-          "subtitle": "Entiende tu bienestar"
+          "title": "Lo que más destaca",
+          "subtitle": "Una lectura más profunda de los temas, emociones y necesidades que aparecen en tu gratitud."
         }
       },
       "ai": {
         "remaining": "{{count}} asistencias de IA restantes hoy"
       },
       "banner": {
-        "title": "Desbloquear Perspectivas de IA",
-        "subtitle": "Obtén un análisis personalizado de tus patrones de ánimo.",
-        "button": "Analizar Mi Ánimo"
+        "title": "Mira la historia detrás de tus entradas",
+        "subtitle": "Convierte unos cuantos momentos de gratitud en una lectura más profunda sobre lo que te ha estado sosteniendo últimamente.",
+        "button": "Revelar mi perspectiva"
       },
       "narrative": {
-        "loading": "Analizando tus patrones de gratitud...",
-        "logical": "Deducción Lógica",
-        "emotional": "Lectura Emocional",
-        "suggestions": "Pasos Sugeridos",
-        "empty": "Desbloquea perspectivas agregando más entradas."
+        "loading": "Leyendo el patrón emocional de tu gratitud...",
+        "logical": "Lo que esto sugiere",
+        "emotional": "Corriente emocional",
+        "suggestions": "Qué probar ahora",
+        "empty": "Agrega unos momentos de gratitud más y sacaremos a la luz tu primer patrón."
       },
       "actions": {
         "refresh": "Actualizar"
+      },
+      "snapshot": {
+        "stored": "Guardado desde tu última revelación"
+      },
+      "board": {
+        "widerPictureTitle": "El panorama general",
+        "contextBody": "En este periodo se leyeron {{statements}} lineas de gratitud. El estado emocional mas visible es {{dominantMood}} y tu equilibrio emocional ahora se siente {{balance}}.",
+        "quoteTitle": "Una de tus gratitudes decia...",
+        "referenceTag": "Referencia",
+        "readMore": "Ver mas",
+        "readLess": "Ver menos"
+      },
+      "teaser": {
+        "title": "Está empezando a aparecer un patrón más profundo",
+        "description": "Acabas de añadir otro momento valioso. Convirtamos estas entradas en algo que puedas entender."
+      },
+      "locked": {
+        "title": "Mira el patrón emocional detrás de tu gratitud",
+        "subtitle": "Desbloquea la lectura profunda: lo que se repite, lo que te eleva y lo que tus entradas están insinuando en silencio."
+      },
+      "errors": {
+        "revealFailed": "No pudimos revelar tu perspectiva ahora mismo. Inténtalo de nuevo en un momento."
       },
       "date": {
         "unknown": "Desconocido"
       },
       "empty": {
-        "title": "Sin datos aún",
-        "message": "Agrega algunas entradas de gratitud para ver el análisis.",
+        "title": "Todavía no hay nada que leer",
+        "message": "Cuando agregues unos cuantos momentos de gratitud, Perspectivas empezará a descubrir los patrones emocionales que hay dentro.",
         "cta": "Agregar Entrada"
       },
       "loading": "Cargando...",
@@ -1079,7 +1126,44 @@
       },
       "moodQuickAction": "Elige estado de ánimo",
       "moodQuickActionSelected": "Toca para cambiar",
-      "sendButton": "Enviar gratitud"
+      "sendButton": "Enviar gratitud",
+      "attach": {
+        "image": "Adjuntar imagen",
+        "imageLong": "Mantén pulsado para tomar una foto",
+        "imageLocked": "Adjuntar imagen (Premium)",
+        "imageLimitReached": "Se alcanzó el límite diario de imágenes",
+        "imageLimitReachedToast": "Has alcanzado el límite diario de {{max}} imágenes.",
+        "voice": "Grabar nota de voz",
+        "voiceLocked": "Grabar nota de voz (Premium)",
+        "voiceLimitReached": "Se alcanzó el límite diario de notas de voz",
+        "voiceLimitReachedToast": "Has alcanzado el límite diario de {{max}} notas de voz.",
+        "permissionRequired": {
+          "title": "Permiso requerido",
+          "photos": "Se necesita acceso a la galería para adjuntar una foto.",
+          "camera": "Se necesita acceso a la cámara para tomar una foto."
+        },
+        "imageTooLarge": {
+          "title": "Imagen demasiado grande",
+          "message": "Elige una imagen de menos de {{max}} MB."
+        }
+      }
+    },
+    "voiceRecorder": {
+      "title": {
+        "record": "Grabar una nota de voz",
+        "review": "Revisa tu nota de voz"
+      },
+      "subtitle": "Hasta {{seconds}} s",
+      "permissionDenied": "Permiso de micrófono denegado. Actívalo en los ajustes del sistema para grabar.",
+      "rerecord": "Grabar de nuevo",
+      "attach": "Adjuntar",
+      "cancel": "Cancelar"
+    },
+    "attachments": {
+      "errors": {
+        "dailyLimitImage": "Has alcanzado el límite de imágenes de hoy ({{cap}}/día). Inténtalo mañana.",
+        "dailyLimitAudio": "Has alcanzado el límite de notas de voz de hoy ({{cap}}/día). Inténtalo mañana."
+      }
     },
     "prompt": {
       "inspiringQuestion": "Pregunta inspiradora",
@@ -1124,7 +1208,11 @@
       "shardTitle": "Un Fragmento de Memoria",
       "another": "Otro Recuerdo",
       "ok": "¡Entendido!",
-      "empty": "No se encontró ningún recuerdo para mostrar."
+      "empty": "No se encontró ningún recuerdo para mostrar.",
+      "share": "Compartir Tarjeta",
+      "sharing": "Preparando para compartir...",
+      "shareEyebrow": "YEŞER PASADO",
+      "shareFooter": "Un recuerdo de gratitud que vale la pena revisar."
     }
   },
   "why": {
@@ -1290,76 +1378,83 @@
   },
   "onboarding": {
     "backHint": "Volver al paso anterior",
+    "trust": {
+      "privateByDefault": "Privado por defecto",
+      "freeToStart": "Empezar es gratis",
+      "twoMinutes": "2 minutos"
+    },
     "welcome": {
-      "title": "¡Bienvenido! 🌱",
-      "subtitle": "Comencemos con la gratitud.",
+      "title": "Bienvenido a casa",
+      "subtitle": "Un espacio tranquilo para notar lo bueno que ya te rodea.",
+      "socialProof": "Amado por más de 50.000 journaling suaves",
       "featureDailyTitle": "Gratitud Diaria",
-      "featureDailyDesc": "Agradece las pequeñas cosas todos los días",
-      "featureStreakTitle": "Seguimiento de Racha",
-      "featureStreakDesc": "Construye hábitos fuertes con práctica regular",
+      "featureDailyDesc": "Pequeñas reflexiones tejidas en tu día",
+      "featureStreakTitle": "Rachas Amables",
+      "featureStreakDesc": "Construye un buen hábito — sin presión, solo impulso",
       "featureGrowthTitle": "Crecimiento Personal",
-      "featureGrowthDesc": "Una vida más positiva",
-      "encouragement": "Si estás listo, ¡comencemos este hermoso viaje juntos! ✨",
-      "getStarted": "Empecemos",
+      "featureGrowthDesc": "Siente el cambio hacia un tú más sereno y luminoso",
+      "encouragement": "Respira. Iremos despacio, juntos.",
+      "getStarted": "Comenzar mi camino",
       "getStartedA11y": "Iniciar el proceso de incorporación"
     },
     "demo": {
-      "title": "¡Probemos! ✨",
-      "subtitle": "Comencemos con una pequeña declaración.",
+      "kicker": "UN CALENTAMIENTO SUAVE",
+      "title": "Plantemos la primera semilla",
+      "subtitle": "Una línea honesta basta. Sin presión, sin perfección.",
       "promptLabel": "Inspiración de Hoy",
       "promptLoading": "Cargando...",
       "promptFallback": "¿Por qué estás agradecido hoy?",
       "placeholder": "Por ejemplo: El calor de mi café, la sonrisa de mi amigo...",
-      "buttonTry": "Probar",
+      "buttonTry": "Guardar mi primera nota",
       "buttonSaving": "Guardando...",
-      "successTitle": "¡Genial! 🎉",
-      "successText": "Tu primera gratitud ha sido guardada.",
+      "successTitle": "Mira eso 🌱",
+      "successText": "Esa es tu primera entrada. ¿Verdad que sienta bien nombrarla?",
+      "successFootnote": "Ya empezaste una racha de 1 — la más difícil de arrancar.",
       "savingText": "Guardando...",
-      "encouragement": "💡 Las pequeñas cosas hacen una gran diferencia"
+      "encouragement": "Pequeñas notas, momentos reales. Eso es toda la práctica."
     },
     "personalization": {
-      "title": "¡Conozcámonos! 👋",
-      "subtitle": "Creemos una experiencia personalizada para ti.",
-      "sectionNameTitle": "¿Cuál es tu nombre?",
+      "title": "Cuéntanos con quién escribimos",
+      "subtitle": "Tu nombre hace que los recordatorios se sientan como un amigo, no como una app.",
+      "previewEmpty": "Tus recordatorios te saludarán por tu nombre.",
+      "previewFilled": "Hola {{name}} 🌿 — tu espacio de gratitud está tomando forma.",
+      "sectionNameTitle": "¿Cómo te llamamos?",
       "placeholderName": "ej., Sofía",
       "a11yLabelName": "Nombre de usuario",
       "a11yHintName": "¿Cómo deberíamos llamarte en tu diario de gratitud?",
       "errorTaken": "Este nombre de usuario ya está en uso",
-      "successAvailable": "✅ Nombre de usuario disponible",
+      "successAvailable": "¡Genial! Ese nombre está disponible",
       "hintUsage": "Este nombre se utilizará en recordatorios diarios y mensajes personalizados.",
-      "sectionThemeTitle": "Preferencia de Tema",
+      "sectionThemeTitle": "Elige el ambiente que te acompaña",
       "continue": "Continuar",
       "continueA11y": "Guardar configuración de personalización y continuar",
       "theme": {
-        "light": {
-          "name": "Tema Claro",
-          "desc": "Para cada hora del día"
-        },
-        "dark": {
-          "name": "Tema Oscuro",
-          "desc": "Descansa tus ojos"
-        },
-        "auto": {
-          "name": "Automático",
-          "desc": "Sigue al sistema"
-        }
+        "light": { "name": "Tema Claro", "desc": "Para cada hora del día" },
+        "dark": { "name": "Tema Oscuro", "desc": "Descansa tus ojos" },
+        "auto": { "name": "Automático", "desc": "Sigue al sistema" }
       }
     },
     "notifications": {
-      "title": "Recordatorios 🔔",
-      "subtitle": "¿Deberíamos enviar recordatorios diarios suaves?",
-      "benefit1Title": "Recordatorio Regular",
-      "benefit1Desc": "Una alerta suave a la misma hora cada día",
-      "benefit2Title": "Construcción de Hábitos",
-      "benefit2Desc": "Evita que olvides la práctica diaria de gratitud",
-      "benefit3Title": "Control Total",
-      "benefit3Desc": "Puedes cambiarlo en cualquier momento en la configuración",
-      "statusSuccess": "¡Genial! Recordatorios habilitados ✨",
+      "title": "Un empujoncito amable",
+      "subtitle": "Un suave toque en el hombro — nunca un grito, nunca spam.",
+      "preview": {
+        "app": "YEŞER",
+        "time": "ahora",
+        "title": "Un pequeño momento para ti 🌿",
+        "body": "Pausa para respirar. ¿Qué hizo tu día un poco más luminoso?"
+      },
+      "benefit1Title": "La misma hora amable cada día",
+      "benefit1Desc": "Un recordatorio suave que se ajusta a tu ritmo",
+      "benefit2Title": "Hábitos que se sostienen solos",
+      "benefit2Desc": "Lo justo para recordar, nunca para incomodar",
+      "benefit3Title": "Tú mandas",
+      "benefit3Desc": "Cambia la hora, el tono o apágalo cuando quieras",
+      "statusSuccess": "Listo — tu recordatorio suave está configurado.",
       "statusSkip": "Puedes omitir por ahora; habilitar más tarde en la configuración",
-      "enable": "Habilitar Recordatorios",
+      "enable": "Activar mi recordatorio",
       "enableLoading": "Solicitando Permiso...",
       "enableA11y": "Otorgar permiso de notificación y habilitar recordatorios",
-      "skip": "Omitir por Ahora",
+      "skip": "Quizás después",
       "skipA11y": "Omitir recordatorios por ahora",
       "info": "Puedes activar/desactivar las notificaciones en cualquier momento desde la configuración"
     },
@@ -1367,29 +1462,73 @@
       "options": {
         "one": {
           "label": "Una Gratitud",
-          "desc": "Comencemos con pequeños pasos"
+          "desc": "Una respiración, una línea al día",
+          "vibe": "Perfecta para días ocupados 🌱"
         },
         "three": {
           "label": "Tres Gratitudes",
-          "desc": "Meta diaria ideal"
+          "desc": "El ritmo clásico respaldado por la ciencia",
+          "vibe": "El favorito de nuestra comunidad 🌿"
         },
         "five": {
           "label": "Cinco Gratitudes",
-          "desc": "Cuando estés motivado"
+          "desc": "Para una reflexión más profunda",
+          "vibe": "Cuando quieres ir despacio de verdad 🌳"
         },
         "custom": {
-          "label": "Personalizado",
-          "desc": "Estableceré la mía"
+          "label": "Lo decido después",
+          "desc": "Ajusta cuando quieras desde ajustes",
+          "vibe": "Suave y flexible ✨"
         },
-        "recommended": "Recomendado"
+        "recommended": "MÁS ELEGIDO"
       },
-      "title": "¿Tu Meta Diaria? 🎯",
-      "subtitle": "¿Cuántas declaraciones de gratitud quieres escribir cada día? Las pequeñas metas traen grandes éxitos.",
-      "info": "Puedes cambiar esta preferencia en cualquier momento desde la configuración del perfil.",
+      "title": "¿Qué tan llena quieres que se sienta tu día?",
+      "subtitle": "No hay respuesta incorrecta. Siempre puedes cambiar de idea.",
+      "info": "Las metas pequeñas ganan a las perfectas. Empieza suave — crecerá.",
       "continue": "Continuar",
       "continueA11y": "Guardar configuración de meta y continuar"
     },
+    "planReveal": {
+      "kicker": "TU PLAN PERSONALIZADO",
+      "title": "{{name}}, aquí está tu plan hecho a medida",
+      "subtitle": "Construido a partir de lo que acabas de contarnos. Simple, amable y pensado para la vida real.",
+      "planLabel": "TU FLUJO DIARIO",
+      "goalCustom": "Un ritmo flexible, solo para ti",
+      "goalText": "{{count}} notas cálidas al día",
+      "planReminder": "Un recordatorio suave a tu hora",
+      "planHorizon": "Tus primeros 7 días, guiados por preguntas",
+      "ratingText": "4,9 · adorado por más de 50.000 journalers",
+      "testimonial": {
+        "quote": "Yeşer convirtió tres minutos gruñones en la parte más tranquila de mi noche.",
+        "author": "Selin, Estambul"
+      },
+      "premiumBadge": "PREMIUM",
+      "perksTitle": "Lo que desbloquea Premium",
+      "perks": {
+        "prompts": {
+          "title": "Preguntas guiadas",
+          "desc": "Una pregunta fresca cada día"
+        },
+        "insights": {
+          "title": "Insights de ánimo",
+          "desc": "Patrones suaves que la IA descubre para ti cada semana"
+        },
+        "memories": {
+          "title": "Recuerdos y fotos",
+          "desc": "Guarda fotos y revive tus días más cálidos"
+        },
+        "support": {
+          "title": "Apoya la misión",
+          "desc": "Ayuda a Yeşer a seguir amable y sin anuncios"
+        }
+      },
+      "trialLine": "Empieza con una prueba gratis — cancela en dos toques.",
+      "cta": "Ver mi plan y probar Premium",
+      "ctaA11y": "Continuar a las opciones de suscripción",
+      "ctaFootnote": "Siempre podrás seguir usando la versión gratuita."
+    },
     "completion": {
+      "pill": "TODO LISTO",
       "goalCustom": "Meta personalizada",
       "goalText": "{{count}} entradas de gratitud al día",
       "themeMap": {
@@ -1397,19 +1536,30 @@
         "dark": "Tema Oscuro",
         "auto": "Tema Automático"
       },
-      "congratsTitle": "¡Felicidades {{username}}! 🎉",
-      "congratsSubtitle": "Estás listo. Comencemos.",
+      "congratsTitle": "Precioso, {{username}}",
+      "congratsSubtitle": "Tu espacio de gratitud está listo. Entra cuando quieras.",
       "summaryTitle": "Tu Perfil",
       "featuresActiveSuffix": "activo",
-      "encouragementTitle": "¡Estás listo! ✨",
-      "encouragementText": "Pequeños pasos, grandes cambios.",
-      "startJourney": "Iniciar el Viaje",
+      "encouragementTitle": "Una pequeña nota a la vez",
+      "encouragementText": "La primera semilla ya está en la tierra. La haremos crecer juntos.",
+      "startJourney": "Abrir mi diario",
       "startJourneyA11y": "Iniciar tu viaje de gratitud",
       "footer": "Puedes cambiar tus preferencias en cualquier momento desde la configuración."
     },
     "flow": {
       "defaultUsername": "Usuario",
       "featuresEnabled": ["Avisos Variados", "Momentos Destacados"]
+    },
+    "rateApp": {
+      "label": "UNA ÚLTIMA COSA",
+      "title": "Si Yeşer te hace bien, califícanos",
+      "subtitle": "Una calificación rápida ayuda a más personas a construir un hábito de gratitud.",
+      "quote": "Las pequeñas reflexiones diarias pueden cambiar en silencio toda una temporada de la vida.",
+      "loading": "Abriendo calificación...",
+      "cta": "Calificar Yeşer",
+      "ctaA11y": "Calificar Yeşer y continuar",
+      "skip": "Continuar sin calificar",
+      "skipA11y": "Omitir calificación y continuar"
     }
   },
   "privacyPolicy": {
@@ -1660,7 +1810,7 @@
       "features": {
         "unlimited": "Entradas diarias ilimitadas",
         "past": "Agregar entradas para fechas pasadas",
-        "insights": "Análisis de ánimo avanzado",
+        "insights": "Perspectivas de IA que revelan tus patrones emocionales más profundos",
         "export": "Exportar datos a PDF",
         "prompts": "Variadas preguntas de inspiración",
         "aiCoach": "Entrenador de IA y Guía Personalizada",
@@ -1669,8 +1819,8 @@
       }
     },
     "paywall": {
-      "unlockInsights": "Desbloquear Perspectivas Premium",
-      "unlockSubtitle": "Accede a análisis y tendencias detalladas",
+      "unlockInsights": "Desbloquear perspectivas más profundas",
+      "unlockSubtitle": "Mira el patrón emocional que está tomando forma en tu gratitud",
       "upgradeToPro": "Actualizar a Pro",
       "loading": "Cargando opciones de suscripción...",
       "noOfferings": "No se pudieron cargar las opciones de suscripción",
@@ -1688,8 +1838,8 @@
           "subtitle": "Reflexiona cuando quieras con tu compañero de gratitud."
         },
         "insights": {
-          "title": "Desbloquear Perspectivas Premium",
-          "subtitle": "Accede a análisis y tendencias con mayor profundidad."
+          "title": "Desbloquear perspectivas más profundas",
+          "subtitle": "Entiende lo que tus entradas revelan sobre las emociones, temas y necesidades que están moldeando tus días."
         },
         "pastEntries": {
           "title": "Desbloquear Entradas Pasadas",

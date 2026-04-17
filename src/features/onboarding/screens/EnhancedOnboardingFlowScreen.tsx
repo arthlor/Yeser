@@ -3,6 +3,7 @@ import { analyticsService } from '@/services/analyticsService';
 import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
+import { useToast } from '@/providers/ToastProvider';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
@@ -12,8 +13,11 @@ import { useTranslation } from 'react-i18next';
 import GoalSettingStep from './steps/GoalSettingStep';
 import InteractiveDemoStep from './steps/InteractiveDemoStep';
 import NotificationPermissionStep from './steps/NotificationPermissionStep';
+import PaywallStep from './steps/PaywallStep';
 import PersonalizationStep from './steps/PersonalizationStep';
+import PlanRevealStep from './steps/PlanRevealStep';
 import WelcomeStep from './steps/WelcomeStep';
+import OnboardingProgressDots from '@/features/onboarding/components/OnboardingProgressDots';
 import { logger } from '@/utils/debugConfig';
 
 import { ScreenLayout } from '@/shared/components/layout';
@@ -25,6 +29,8 @@ const ONBOARDING_STEPS = [
   'goal',
   'personalization',
   'notifications',
+  'planReveal',
+  'paywall',
   'completion',
 ] as const;
 
@@ -41,9 +47,10 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const { t } = useTranslation();
+  const { showError } = useToast();
 
   // TanStack Query for profile updates
-  const { updateProfile } = useUserProfile();
+  const { updateProfileAsync, isUpdatingProfile } = useUserProfile();
 
   // Onboarding state
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
@@ -95,7 +102,7 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   useEffect(() => {
     // Track onboarding start
     analyticsService.logEvent('enhanced_onboarding_started', {
-      flow_version: '2.2', // Updated version
+      flow_version: '2.3',
       total_steps: ONBOARDING_STEPS.length,
     });
 
@@ -119,12 +126,12 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
         onboarded: true,
       };
 
-      // Save to profile using TanStack Query
-      updateProfile(finalData);
+      // Persist onboarding state before celebrating completion.
+      await updateProfileAsync(finalData);
 
       // Track completion
       analyticsService.logEvent('enhanced_onboarding_completed', {
-        flow_version: '2.2', // Updated version
+        flow_version: '2.3',
         username_length: finalData.username.length,
         daily_goal: finalData.daily_gratitude_goal,
         theme: onboardingData.selectedTheme || 'auto',
@@ -141,8 +148,13 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
       analyticsService.logEvent('onboarding_completion_error', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
+      showError(
+        t('onboarding.flow.saveError', {
+          defaultValue: 'We could not finish setting up your profile. Please try again.',
+        })
+      );
     }
-  }, [onboardingData, updateProfile, t]);
+  }, [onboardingData, showError, t, updateProfileAsync]);
 
   // Render current step
   const renderCurrentStep = () => {
@@ -192,11 +204,24 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
       case 'notifications':
         return <NotificationPermissionStep {...stepProps} />;
 
+      case 'planReveal':
+        return (
+          <PlanRevealStep
+            {...stepProps}
+            username={onboardingData.username || t('onboarding.flow.defaultUsername')}
+            dailyGoal={onboardingData.dailyGoal || 3}
+          />
+        );
+
+      case 'paywall':
+        return <PaywallStep onNext={stepProps.onNext} />;
+
       case 'completion':
         return (
           <CompletionStep
             onComplete={handleOnboardingComplete}
             onBack={handleStepBack}
+            isCompleting={isUpdatingProfile}
             userSummary={{
               username: onboardingData.username || t('onboarding.flow.defaultUsername'),
               dailyGoal: onboardingData.dailyGoal || 3,
@@ -224,19 +249,13 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
       <View style={styles.container}>
         <View style={styles.stepContainer}>{renderCurrentStep()}</View>
 
-        {/* Step Progress Indicator */}
-        {currentStep !== 'completion' && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${((ONBOARDING_STEPS.indexOf(currentStep) + 1) / ONBOARDING_STEPS.length) * 100}%`,
-                  },
-                ]}
-              />
-            </View>
+        {/* Step Progress Indicator (hidden on paywall + completion for focus) */}
+        {currentStep !== 'completion' && currentStep !== 'paywall' && (
+          <View style={styles.progressContainer} pointerEvents="none">
+            <OnboardingProgressDots
+              total={ONBOARDING_STEPS.length}
+              current={ONBOARDING_STEPS.indexOf(currentStep)}
+            />
           </View>
         )}
       </View>
@@ -251,7 +270,7 @@ const createStyles = (theme: AppTheme) =>
     },
     stepContainer: {
       flex: 1,
-      paddingTop: theme.spacing.xxl + theme.spacing.lg,
+      paddingTop: theme.spacing.xxl,
     },
     progressContainer: {
       position: 'absolute',
@@ -259,20 +278,7 @@ const createStyles = (theme: AppTheme) =>
       left: theme.spacing.lg,
       right: theme.spacing.lg,
       zIndex: 10,
-      backgroundColor: theme.colors.background + 'E6',
-      paddingVertical: theme.spacing.sm,
-      borderRadius: theme.borderRadius.md,
-    },
-    progressBar: {
-      height: 3,
-      backgroundColor: theme.colors.outline + '20',
-      borderRadius: 2,
-      overflow: 'hidden',
-    },
-    progressFill: {
-      height: '100%',
-      backgroundColor: theme.colors.primary,
-      borderRadius: 2,
+      paddingVertical: theme.spacing.xs,
     },
   });
 

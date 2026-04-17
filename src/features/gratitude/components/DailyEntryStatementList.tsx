@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MoodEmoji } from '@/types/mood.types';
+import { GRATITUDE_MAX_LENGTH } from '@/constants/gratitude';
 
 // Assuming 'statements' are an array of strings for now.
 // If they are objects, this type should be adjusted.
@@ -74,7 +75,7 @@ const StatementItemWrapper: React.FC<{
         animateEntrance={false} // Already animated by coordinated system
         // Configuration for minimal list variant - READ-ONLY MODE
         enableInlineEdit={false} // Disabled: handled by parent screen
-        maxLength={500}
+        maxLength={GRATITUDE_MAX_LENGTH}
         // Accessibility
         accessibilityLabel={t('shared.statement.a11y.memoryLabel', { text: item })}
         hapticFeedback={false}

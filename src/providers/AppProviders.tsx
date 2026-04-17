@@ -91,9 +91,7 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <GlobalErrorProvider toastHandlers={{ showError, showSuccess }}>
-          <GestureHandlerRootView style={styles.container}>
-            <SafeAreaProvider>{children}</SafeAreaProvider>
-          </GestureHandlerRootView>
+          <GestureHandlerRootView style={styles.container}>{children}</GestureHandlerRootView>
         </GlobalErrorProvider>
       </QueryClientProvider>
     </ErrorBoundary>
@@ -103,9 +101,11 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
 export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
     <ThemeProvider>
-      <ToastProvider>
-        <AppProvidersContent>{children}</AppProvidersContent>
-      </ToastProvider>
+      <SafeAreaProvider>
+        <ToastProvider>
+          <AppProvidersContent>{children}</AppProvidersContent>
+        </ToastProvider>
+      </SafeAreaProvider>
     </ThemeProvider>
   );
 };

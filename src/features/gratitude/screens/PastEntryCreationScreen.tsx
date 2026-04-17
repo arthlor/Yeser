@@ -28,6 +28,7 @@ import { useTranslation } from 'react-i18next';
 import { useSubscription } from '@/hooks/useSubscription';
 import { format } from 'date-fns';
 import { enUS, es, tr } from 'date-fns/locale';
+import { GRATITUDE_MAX_LENGTH } from '@/constants/gratitude';
 import { useLanguageStore } from '@/store/languageStore';
 import { AICoachPrompt } from '@/shared/components/ui/AICoachPrompt';
 
@@ -335,7 +336,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
                     onSave={(updatedText: string) => handleSaveEditedStatement(index, updatedText)}
                     enableInlineEdit={true}
                     confirmDelete={true}
-                    maxLength={500}
+                    maxLength={GRATITUDE_MAX_LENGTH}
                     edgeToEdge={true}
                     showQuotes={true}
                     animateEntrance={true}

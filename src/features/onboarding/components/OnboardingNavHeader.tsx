@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
@@ -33,7 +33,7 @@ export const OnboardingNavHeader: React.FC<OnboardingNavHeaderProps> = ({
         accessibilityRole="button"
         accessibilityHint={t('onboarding.backHint') || ''}
       >
-        <Ionicons name="arrow-back" size={18} color={theme.colors.onSurface} />
+        <Feather name="chevron-left" size={20} color={theme.colors.onSurface} strokeWidth={2.5} />
         {!hideBackText && <Text style={styles.backText}>{t('common.back')}</Text>}
       </TouchableOpacity>
       <View style={styles.rightSpacer} />

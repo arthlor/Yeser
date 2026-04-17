@@ -1,10 +1,78 @@
-import { serve } from 'https://deno.land/std@0.214.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+
+type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 const EXPO_PUSH_API_URL = 'https://exp.host/--/api/v2/push/send';
 const DEFAULT_BATCH_LIMIT = 100;
 const DEFAULT_JOB_LIMIT = 200;
 const MAX_ATTEMPTS = 5;
+type NotificationLanguage = 'tr' | 'en' | 'es';
+type ReminderVariant = 'midday' | 'evening';
+
+interface ReminderCopy {
+  title: string;
+  body: string;
+}
+
+interface NotificationJobMetadata {
+  variant?: ReminderVariant | null;
+  memory_statement?: string | null;
+  memory_age_days?: number | string | null;
+  [key: string]: unknown;
+}
+
+interface ClaimedJob {
+  id: string;
+  user_id: string;
+  attempts: number;
+  tokens: string[];
+  language?: string | null;
+  metadata?: NotificationJobMetadata | null;
+}
+
+interface ExpoPushMessage {
+  to: string;
+  title: string;
+  body: string;
+  priority: 'high';
+  sound: 'default';
+  ttl: number;
+  data: {
+    screen: 'DailyEntryTab';
+    userId: string;
+    language: NotificationLanguage;
+    metadata: NotificationJobMetadata | null | undefined;
+    ts: number;
+  };
+}
+
+interface ExpoTicketDetails {
+  error?: string | null;
+  [key: string]: unknown;
+}
+
+interface ExpoTicket {
+  status?: string;
+  message?: string | null;
+  id?: string | null;
+  details?: ExpoTicketDetails | null;
+}
+
+interface DispatchTicket {
+  ticket: ExpoTicket;
+  index: number;
+}
+
+interface NotificationLogInsert {
+  job_id: string;
+  token: string | null;
+  expo_status: string | null;
+  expo_message: string | null;
+  expo_ticket_id: string | null;
+  error_detail: string | null;
+}
+
+type SupabaseAdminClient = SupabaseClient;
 
 const loadConfig = () => {
   const config = {
@@ -27,19 +95,30 @@ const loadConfig = () => {
   return config;
 };
 
-const authorizeRequest = (request, edgeSecret, cronToken) => {
-  const bearer = request.headers.get('authorization');
+const authorizeRequest = (
+  request: Request,
+  edgeSecret: string,
+  serviceRoleKey: string,
+  cronToken: string | undefined
+) => {
+  const bearer = request.headers.get('authorization')?.trim();
   const internal = request.headers.get('x-internal-secret');
   const cron = request.headers.get('x-cron-token');
 
-  const hasBearer = Boolean(bearer?.startsWith('Bearer '));
+  const bearerToken =
+    bearer && bearer.startsWith('Bearer ') ? bearer.slice('Bearer '.length).trim() : null;
+  const acceptedBearerTokens = [serviceRoleKey, cronToken]
+    .filter((value): value is string => Boolean(value && value.trim().length > 0))
+    .map((value) => value.trim());
+
+  const hasBearer = Boolean(bearerToken && acceptedBearerTokens.includes(bearerToken));
   const hasInternal = internal === edgeSecret;
   const hasCron = cronToken ? cron === cronToken : true;
 
   return hasBearer && hasInternal && hasCron;
 };
 
-const isExpoToken = (token) => {
+const isExpoToken = (token: string) => {
   if (!token) return false;
   return (
     token.startsWith('ExponentPushToken[') ||
@@ -48,22 +127,81 @@ const isExpoToken = (token) => {
   );
 };
 
-const chunk = (items, size) => {
-  const result = [];
+const chunk = <T>(items: T[], size: number): T[][] => {
+  const result: T[][] = [];
   for (let index = 0; index < items.length; index += size) {
     result.push(items.slice(index, index + size));
   }
   return result;
 };
 
-const buildMessages = (job) => {
+const normalizeMemoryStatement = (statement: string | null | undefined) =>
+  String(statement ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const truncateMemoryStatement = (statement: string, maxLength: number = 84) => {
+  if (statement.length <= maxLength) {
+    return statement;
+  }
+
+  return `${statement.slice(0, maxLength - 1).trimEnd()}…`;
+};
+
+const getRelativeMemoryLabel = (language: NotificationLanguage, ageDays: number) => {
+  const safeAgeDays = Math.max(Number(ageDays) || 0, 0);
+
+  if (safeAgeDays >= 30) {
+    const months = Math.max(Math.round(safeAgeDays / 30), 1);
+    if (language === 'tr') return `${months} ay önce`;
+    if (language === 'es') return `hace ${months} meses`;
+    return `${months} month${months === 1 ? '' : 's'} ago`;
+  }
+
+  if (safeAgeDays >= 7) {
+    const weeks = Math.max(Math.round(safeAgeDays / 7), 1);
+    if (language === 'tr') return `${weeks} hafta önce`;
+    if (language === 'es') return `hace ${weeks} semana${weeks === 1 ? '' : 's'}`;
+    return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
+  }
+
+  if (language === 'tr') return `${safeAgeDays} gün önce`;
+  if (language === 'es') return `hace ${safeAgeDays} día${safeAgeDays === 1 ? '' : 's'}`;
+  return `${safeAgeDays} day${safeAgeDays === 1 ? '' : 's'} ago`;
+};
+
+const getPersonalizedReminderCopy = (
+  language: NotificationLanguage,
+  ageDays: number,
+  statement: string
+) => {
+  const relativeLabel = getRelativeMemoryLabel(language, ageDays);
+  const sanitizedStatement = truncateMemoryStatement(normalizeMemoryStatement(statement));
+
+  switch (language) {
+    case 'tr':
+      return {
+        title: 'Uzun zaman oldu...',
+        body: `${relativeLabel} şöyle demiştin: "${sanitizedStatement}"`,
+      };
+    case 'es':
+      return {
+        title: 'Cuánto tiempo...',
+        body: `Recuerda que ${relativeLabel} dijiste: "${sanitizedStatement}"`,
+      };
+    default:
+      return {
+        title: 'Long time no see...',
+        body: `Remember ${relativeLabel} you said: "${sanitizedStatement}"`,
+      };
+  }
+};
+
+const buildMessages = (job: ClaimedJob): ExpoPushMessage[] => {
   const tokens = job.tokens.filter(isExpoToken);
   if (tokens.length === 0) return [];
 
-  // Use variant from metadata to select the appropriate message
-  const variant = job.metadata?.variant || 'midday';
-
-  const copy = {
+  const copy: Record<NotificationLanguage, Record<ReminderVariant, ReminderCopy>> = {
     tr: {
       midday: {
         title: 'Yeşerme Zamanı! ✨',
@@ -97,10 +235,19 @@ const buildMessages = (job) => {
   };
 
   const jobLanguage = job.language?.toLowerCase();
-  const language = jobLanguage === 'tr' || jobLanguage === 'es' ? jobLanguage : 'en';
-  const content = copy[language][variant] || copy[language]['midday'];
+  const language: NotificationLanguage =
+    jobLanguage === 'tr' || jobLanguage === 'es' ? jobLanguage : 'en';
+  const reminderVariant: ReminderVariant =
+    job.metadata?.variant === 'evening' ? 'evening' : 'midday';
+  const memoryStatement =
+    typeof job.metadata?.memory_statement === 'string' ? job.metadata.memory_statement : '';
+  const memoryAgeDays = Number(job.metadata?.memory_age_days);
+  const hasPersonalizedMemory = memoryStatement.trim().length > 0 && memoryAgeDays >= 14;
+  const content = hasPersonalizedMemory
+    ? getPersonalizedReminderCopy(language, memoryAgeDays, memoryStatement)
+    : copy[language][reminderVariant];
 
-  return tokens.map((token) => ({
+  return tokens.map((token: string) => ({
     to: token,
     title: content.title,
     body: content.body,
@@ -117,9 +264,12 @@ const buildMessages = (job) => {
   }));
 };
 
-const dispatchExpo = async (messages, accessToken) => {
+const dispatchExpo = async (
+  messages: ExpoPushMessage[],
+  accessToken: string
+): Promise<DispatchTicket[]> => {
   const batches = chunk(messages, DEFAULT_BATCH_LIMIT);
-  const tickets = [];
+  const tickets: DispatchTicket[] = [];
 
   for (const batch of batches) {
     const response = await fetch(EXPO_PUSH_API_URL, {
@@ -134,7 +284,7 @@ const dispatchExpo = async (messages, accessToken) => {
 
     if (!response.ok) {
       const message = await response.text();
-      batch.forEach((_, index) => {
+      batch.forEach((_, index: number) => {
         tickets.push({
           ticket: {
             status: 'error',
@@ -146,8 +296,8 @@ const dispatchExpo = async (messages, accessToken) => {
       continue;
     }
 
-    const body = await response.json();
-    body.data?.forEach((ticket, index) =>
+    const body = (await response.json()) as { data?: ExpoTicket[] };
+    body.data?.forEach((ticket, index: number) =>
       tickets.push({
         ticket,
         index,
@@ -157,7 +307,12 @@ const dispatchExpo = async (messages, accessToken) => {
   return tickets;
 };
 
-const updateJobStatus = async (supabase, jobId, status, lastError) => {
+const updateJobStatus = async (
+  supabase: SupabaseAdminClient,
+  jobId: string,
+  status: string,
+  lastError: string | null
+) => {
   await supabase
     .from('notification_jobs')
     .update({
@@ -168,31 +323,31 @@ const updateJobStatus = async (supabase, jobId, status, lastError) => {
     .eq('id', jobId);
 };
 
-const insertLogs = async (supabase, logs) => {
+const insertLogs = async (supabase: SupabaseAdminClient, logs: NotificationLogInsert[]) => {
   if (logs.length === 0) return;
   await supabase.rpc('insert_notification_logs', {
-    p_logs: logs,
+    p_logs: logs as unknown as Json,
   });
 };
 
-const removeInvalidTokens = async (supabase, tokens) => {
+const removeInvalidTokens = async (supabase: SupabaseAdminClient, tokens: Set<string>) => {
   if (tokens.size === 0) return;
   await supabase.from('push_tokens').delete().in('token', Array.from(tokens));
 };
 
-serve(async (request) => {
+Deno.serve(async (request: Request) => {
   if (request.method !== 'POST') {
     return new Response('Method Not Allowed', {
       status: 405,
     });
   }
 
-  let config;
+  let config: ReturnType<typeof loadConfig>;
   try {
     config = loadConfig();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown configuration error';
-    console.error('[process-jobs] Configuration error:', message);
+    console.error('[send-daily-reminders] Configuration error:', message);
     return new Response(
       JSON.stringify({
         error: message,
@@ -206,20 +361,30 @@ serve(async (request) => {
     );
   }
 
-  if (!authorizeRequest(request, config.EDGE_INTERNAL_SECRET, config.CRON_AUTH_TOKEN)) {
-    console.warn('[process-jobs] Unauthorized request blocked');
+  if (
+    !authorizeRequest(
+      request,
+      config.EDGE_INTERNAL_SECRET,
+      config.SUPABASE_SERVICE_ROLE_KEY,
+      config.CRON_AUTH_TOKEN
+    )
+  ) {
+    console.warn('[send-daily-reminders] Unauthorized request blocked');
     return new Response('Unauthorized', {
       status: 401,
     });
   }
 
-  const supabase = createClient(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY);
+  const supabase: SupabaseAdminClient = createClient(
+    config.SUPABASE_URL,
+    config.SUPABASE_SERVICE_ROLE_KEY
+  );
   const { data: jobs, error: lockError } = await supabase.rpc('lock_notification_jobs', {
     p_limit: config.JOB_LIMIT,
   });
 
   if (lockError) {
-    console.error('[process-jobs] lock_notification_jobs failed:', lockError.message);
+    console.error('[send-daily-reminders] lock_notification_jobs failed:', lockError.message);
     return new Response(
       JSON.stringify({
         error: lockError.message,
@@ -233,7 +398,7 @@ serve(async (request) => {
     );
   }
 
-  const claimedJobs = Array.isArray(jobs) ? jobs : [];
+  const claimedJobs: ClaimedJob[] = Array.isArray(jobs) ? (jobs as ClaimedJob[]) : [];
   if (claimedJobs.length === 0) {
     return new Response(
       JSON.stringify({
@@ -249,8 +414,8 @@ serve(async (request) => {
     );
   }
 
-  const logs = [];
-  const invalidTokens = new Set();
+  const logs: NotificationLogInsert[] = [];
+  const invalidTokens = new Set<string>();
 
   for (const job of claimedJobs) {
     if (job.attempts >= MAX_ATTEMPTS) {

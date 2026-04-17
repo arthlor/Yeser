@@ -29,6 +29,20 @@
   },
   {
     "schema_name": "public",
+    "function_name": "attach_media_to_statement",
+    "owner": "postgres",
+    "language": "plpgsql",
+    "security_definer": true,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": false,
+    "result_type": "uuid",
+    "arguments": "p_entry_date date, p_statement_index integer, p_kind text, p_storage_path text, p_mime_type text, p_bytes integer, p_duration_ms integer DEFAULT NULL::integer, p_width integer DEFAULT NULL::integer, p_height integer DEFAULT NULL::integer",
+    "definition": "CREATE OR REPLACE FUNCTION public.attach_media_to_statement(p_entry_date date, p_statement_index integer, p_kind text, p_storage_path text, p_mime_type text, p_bytes integer, p_duration_ms integer DEFAULT NULL::integer, p_width integer DEFAULT NULL::integer, p_height integer DEFAULT NULL::integer)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid := auth.uid();\n  v_entry_id uuid;\n  v_len integer;\n  v_new_id uuid;\n  v_expected_prefix text;\n  v_existing_count integer;\n  v_daily_cap CONSTANT integer := 10;\nBEGIN\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Not authenticated' USING ERRCODE = '28000';\n  END IF;\n\n  IF p_kind NOT IN ('image', 'audio') THEN\n    RAISE EXCEPTION 'Invalid attachment kind: %', p_kind USING ERRCODE = '22023';\n  END IF;\n\n  -- Enforce that the storage path lives under the user's own folder.\n  v_expected_prefix := v_user_id::text || '/';\n  IF p_storage_path IS NULL OR position(v_expected_prefix IN p_storage_path) <> 1 THEN\n    RAISE EXCEPTION 'Storage path must start with %', v_expected_prefix USING ERRCODE = '22023';\n  END IF;\n\n  SELECT id, coalesce(jsonb_array_length(statements), 0)\n    INTO v_entry_id, v_len\n  FROM public.gratitude_entries\n  WHERE user_id = v_user_id AND entry_date = p_entry_date\n  FOR UPDATE;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Entry not found for date %', p_entry_date USING ERRCODE = 'P0002';\n  END IF;\n\n  IF p_statement_index < 0 OR p_statement_index >= v_len THEN\n    RAISE EXCEPTION 'Invalid statement index % (length %)', p_statement_index, v_len\n      USING ERRCODE = '22003';\n  END IF;\n\n  -- Per-day cap per kind. Keep the row lock from the entry above in effect so\n  -- two concurrent uploads can't both race past the limit.\n  SELECT count(*) INTO v_existing_count\n  FROM public.gratitude_attachments\n  WHERE user_id   = v_user_id\n    AND entry_date = p_entry_date\n    AND kind       = p_kind;\n\n  IF v_existing_count >= v_daily_cap THEN\n    RAISE EXCEPTION 'ATTACHMENT_DAILY_LIMIT_REACHED:%:%', p_kind, v_daily_cap\n      USING ERRCODE = '23514';\n  END IF;\n\n  INSERT INTO public.gratitude_attachments (\n    user_id, entry_id, entry_date, statement_index,\n    kind, storage_path, mime_type, bytes,\n    duration_ms, width, height\n  ) VALUES (\n    v_user_id, v_entry_id, p_entry_date, p_statement_index,\n    p_kind, p_storage_path, p_mime_type, p_bytes,\n    p_duration_ms, p_width, p_height\n  )\n  RETURNING id INTO v_new_id;\n\n  -- Touch the parent entry so query cache invalidation behaves like a normal edit.\n  UPDATE public.gratitude_entries\n  SET updated_at = now()\n  WHERE id = v_entry_id;\n\n  RETURN v_new_id;\nEND;\n$function$\n",
+    "function_oid": 888305
+  },
+  {
+    "schema_name": "public",
     "function_name": "bytea_to_text",
     "owner": "supabase_admin",
     "language": "c",
@@ -52,7 +66,7 @@
     "returns_set": false,
     "result_type": "integer",
     "arguments": "p_user_id uuid",
-    "definition": "CREATE OR REPLACE FUNCTION public.calculate_streak(p_user_id uuid)\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_current_streak INTEGER := 0;\n  v_check_date DATE;\n  v_has_entry BOOLEAN;\nBEGIN\n  -- Validate input\n  IF p_user_id IS NULL THEN\n    RAISE EXCEPTION 'User ID cannot be null';\n  END IF;\n  \n  -- Calculate current streak (from today backwards)\n  v_check_date := CURRENT_DATE;\n  \n  LOOP\n    -- Check if user has an entry for this date\n    SELECT EXISTS(\n      SELECT 1 FROM gratitude_entries \n      WHERE user_id = p_user_id \n      AND entry_date = v_check_date\n      AND jsonb_array_length(statements) > 0\n    ) INTO v_has_entry;\n    \n    -- If no entry found\n    IF NOT v_has_entry THEN\n      -- Grace period: If this is today and current streak is 0, check yesterday\n      IF v_check_date = CURRENT_DATE AND v_current_streak = 0 THEN\n        v_check_date := v_check_date - INTERVAL '1 day';\n        CONTINUE;\n      END IF;\n      \n      -- No more grace - break the streak\n      EXIT;\n    END IF;\n    \n    -- Increment current streak and check previous day\n    v_current_streak := v_current_streak + 1;\n    v_check_date := v_check_date - INTERVAL '1 day';\n    \n    -- Safety limit to prevent infinite loops\n    IF v_current_streak >= 1000 THEN\n      EXIT;\n    END IF;\n  END LOOP;\n  \n  RETURN v_current_streak;\nEND;\n$function$\n",
+    "definition": "CREATE OR REPLACE FUNCTION public.calculate_streak(p_user_id uuid)\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_current_streak integer := 0;\n  v_check_date date := current_date;\n  v_has_entry boolean;\n  v_grace_used boolean := false;\nbegin\n  if p_user_id is null then\n    raise exception 'User ID cannot be null';\n  end if;\n\n  loop\n    select exists(\n      select 1\n      from public.gratitude_entries\n      where user_id = p_user_id\n        and entry_date = v_check_date\n        and coalesce(jsonb_array_length(statements), 0) > 0\n    ) into v_has_entry;\n\n    if v_has_entry then\n      v_current_streak := v_current_streak + 1;\n      v_check_date := v_check_date - interval '1 day';\n    elsif v_check_date = current_date and not v_grace_used then\n      -- Grace: missing \"today\" doesn't break the streak if yesterday exists.\n      v_grace_used := true;\n      v_check_date := v_check_date - interval '1 day';\n    else\n      exit;\n    end if;\n\n    if v_current_streak >= 3650 then\n      exit; -- safety\n    end if;\n  end loop;\n\n  return v_current_streak;\nend;\n$function$\n",
     "function_oid": 17397
   },
   {
@@ -88,20 +102,6 @@
     "function_name": "cleanup_stale_tokens",
     "owner": "postgres",
     "language": "plpgsql",
-    "security_definer": true,
-    "volatility": "volatile",
-    "strict": false,
-    "returns_set": false,
-    "result_type": "integer",
-    "arguments": "",
-    "definition": "CREATE OR REPLACE FUNCTION public.cleanup_stale_tokens()\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'extensions'\nAS $function$\nDECLARE\n  deleted_count INTEGER := 0;\nBEGIN\n  -- Remove tokens older than 90 days\n  DELETE FROM push_tokens \n  WHERE created_at < NOW() - INTERVAL '90 days';\n  \n  GET DIAGNOSTICS deleted_count = ROW_COUNT;\n  \n  RETURN deleted_count;\nEND;\n$function$\n",
-    "function_oid": 77868
-  },
-  {
-    "schema_name": "public",
-    "function_name": "cleanup_stale_tokens",
-    "owner": "postgres",
-    "language": "plpgsql",
     "security_definer": false,
     "volatility": "volatile",
     "strict": false,
@@ -110,6 +110,20 @@
     "arguments": "p_max_age_days integer DEFAULT 90",
     "definition": "CREATE OR REPLACE FUNCTION public.cleanup_stale_tokens(p_max_age_days integer DEFAULT 90)\n RETURNS integer\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public', 'extensions'\nAS $function$\nDECLARE\n  deleted_count integer := 0;\nBEGIN\n  DELETE FROM public.push_tokens\n  WHERE created_at < NOW() - (p_max_age_days || ' days')::interval;\n\n  GET DIAGNOSTICS deleted_count = ROW_COUNT;\n  RETURN deleted_count;\nEND;\n$function$\n",
     "function_oid": 150146
+  },
+  {
+    "schema_name": "public",
+    "function_name": "cleanup_stale_tokens",
+    "owner": "postgres",
+    "language": "plpgsql",
+    "security_definer": true,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": false,
+    "result_type": "integer",
+    "arguments": "",
+    "definition": "CREATE OR REPLACE FUNCTION public.cleanup_stale_tokens()\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public', 'extensions'\nAS $function$\nDECLARE\n  deleted_count INTEGER := 0;\nBEGIN\n  -- Remove tokens older than 90 days\n  DELETE FROM push_tokens \n  WHERE created_at < NOW() - INTERVAL '90 days';\n  \n  GET DIAGNOSTICS deleted_count = ROW_COUNT;\n  \n  RETURN deleted_count;\nEND;\n$function$\n",
+    "function_oid": 77868
   },
   {
     "schema_name": "public",
@@ -155,6 +169,34 @@
   },
   {
     "schema_name": "public",
+    "function_name": "delete_attachment",
+    "owner": "postgres",
+    "language": "plpgsql",
+    "security_definer": true,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": false,
+    "result_type": "text",
+    "arguments": "p_attachment_id uuid",
+    "definition": "CREATE OR REPLACE FUNCTION public.delete_attachment(p_attachment_id uuid)\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid := auth.uid();\n  v_path    text;\n  v_entry_id uuid;\nBEGIN\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Not authenticated' USING ERRCODE = '28000';\n  END IF;\n\n  DELETE FROM public.gratitude_attachments\n  WHERE id = p_attachment_id AND user_id = v_user_id\n  RETURNING storage_path, entry_id\n    INTO v_path, v_entry_id;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Attachment not found' USING ERRCODE = 'P0002';\n  END IF;\n\n  UPDATE public.gratitude_entries\n  SET updated_at = now()\n  WHERE id = v_entry_id;\n\n  RETURN v_path;\nEND;\n$function$\n",
+    "function_oid": 888306
+  },
+  {
+    "schema_name": "public",
+    "function_name": "delete_current_user_cascade",
+    "owner": "postgres",
+    "language": "plpgsql",
+    "security_definer": true,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": false,
+    "result_type": "void",
+    "arguments": "",
+    "definition": "CREATE OR REPLACE FUNCTION public.delete_current_user_cascade()\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  delete from public.ai_usage              where user_id = v_user_id;\n  delete from public.gratitude_attachments where user_id = v_user_id;\n  delete from public.gratitude_entries     where user_id = v_user_id;\n  delete from public.mood_insight_snapshots where user_id = v_user_id;\n  delete from public.notification_jobs     where user_id = v_user_id;\n  delete from public.push_tokens           where user_id = v_user_id;\n  delete from public.streaks               where user_id = v_user_id;\n  delete from public.profiles              where id      = v_user_id;\nend;\n$function$\n",
+    "function_oid": 888455
+  },
+  {
+    "schema_name": "public",
     "function_name": "delete_gratitude_entry_by_date",
     "owner": "postgres",
     "language": "plpgsql",
@@ -178,7 +220,7 @@
     "returns_set": false,
     "result_type": "void",
     "arguments": "p_entry_date date, p_statement_index integer",
-    "definition": "CREATE OR REPLACE FUNCTION public.delete_gratitude_statement(p_entry_date date, p_statement_index integer)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\n  v_row_id uuid;\n  v_statements jsonb;\n  v_moods jsonb;\n  v_len int;\n  v_new_statements jsonb;\n  v_new_moods jsonb;\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  select id, coalesce(statements, '[]'::jsonb), coalesce(moods, '{}'::jsonb)\n    into v_row_id, v_statements, v_moods\n  from public.gratitude_entries\n  where user_id = v_user_id and entry_date = p_entry_date\n  for update;\n\n  if not found then\n    raise exception 'Entry not found for date %', p_entry_date using errcode = 'P0002';\n  end if;\n\n  v_len := coalesce(jsonb_array_length(v_statements), 0);\n  if p_statement_index < 0 or p_statement_index >= v_len then\n    raise exception 'Invalid statement index %, length %', p_statement_index, v_len using errcode = '22003';\n  end if;\n\n  -- Remove the statement at the index and rebuild array\n  select coalesce(jsonb_agg(elem.value order by elem.idx), '[]'::jsonb)\n    into v_new_statements\n  from (\n    select value, idx\n    from jsonb_array_elements(v_statements) with ordinality as e(value, idx)\n    where (idx - 1) <> p_statement_index\n  ) as elem;\n\n  -- Shift/realign moods keys: remove the index, and decrement keys > index by 1\n  select coalesce(\n    jsonb_object_agg(\n      case when (key)::int > p_statement_index then ((key)::int - 1)::text else key end,\n      value\n    ), '{}'::jsonb)\n    into v_new_moods\n  from (\n    select key, value\n    from jsonb_each(v_moods)\n    where key <> (p_statement_index)::text\n  ) as kv;\n\n  if jsonb_array_length(v_new_statements) = 0 then\n    -- Delete the entire row when no statements remain\n    delete from public.gratitude_entries where id = v_row_id;\n  else\n    update public.gratitude_entries\n    set statements = v_new_statements,\n        moods = v_new_moods,\n        updated_at = now()\n    where id = v_row_id;\n  end if;\nend;\n$function$\n",
+    "definition": "CREATE OR REPLACE FUNCTION public.delete_gratitude_statement(p_entry_date date, p_statement_index integer)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid := auth.uid();\n  v_row_id uuid;\n  v_statements jsonb;\n  v_moods jsonb;\n  v_len int;\n  v_new_statements jsonb := '[]'::jsonb;\n  v_new_moods jsonb := '{}'::jsonb;\n  v_i int;\n  v_k text;\nBEGIN\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Not authenticated' USING ERRCODE = '28000';\n  END IF;\n\n  SELECT id, coalesce(statements, '[]'::jsonb), coalesce(moods, '{}'::jsonb)\n    INTO v_row_id, v_statements, v_moods\n  FROM public.gratitude_entries\n  WHERE user_id = v_user_id AND entry_date = p_entry_date\n  FOR UPDATE;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Entry not found for date %', p_entry_date USING ERRCODE = 'P0002';\n  END IF;\n\n  v_len := coalesce(jsonb_array_length(v_statements), 0);\n  IF p_statement_index < 0 OR p_statement_index >= v_len THEN\n    RAISE EXCEPTION 'Invalid statement index %', p_statement_index USING ERRCODE = '22003';\n  END IF;\n\n  -- Rebuild statements[] without the deleted index.\n  FOR v_i IN 0 .. v_len - 1 LOOP\n    IF v_i <> p_statement_index THEN\n      v_new_statements := v_new_statements || (v_statements -> v_i);\n    END IF;\n  END LOOP;\n\n  -- Re-key moods{} by shifting everything above p_statement_index down by one.\n  FOR v_k IN SELECT jsonb_object_keys(v_moods) LOOP\n    IF v_k::int < p_statement_index THEN\n      v_new_moods := v_new_moods || jsonb_build_object(v_k, v_moods -> v_k);\n    ELSIF v_k::int > p_statement_index THEN\n      v_new_moods := v_new_moods || jsonb_build_object((v_k::int - 1)::text, v_moods -> v_k);\n    END IF;\n  END LOOP;\n\n  IF jsonb_array_length(v_new_statements) = 0 THEN\n    -- Last statement removed → delete the entry row (cascades to attachments).\n    DELETE FROM public.gratitude_entries WHERE id = v_row_id;\n    RETURN;\n  END IF;\n\n  UPDATE public.gratitude_entries\n  SET statements = v_new_statements,\n      moods      = v_new_moods,\n      updated_at = now()\n  WHERE id = v_row_id;\n\n  -- Shift attachment indexes atomically, then drop anything attached to the\n  -- deleted statement. Order matters: delete first, then shift.\n  DELETE FROM public.gratitude_attachments\n  WHERE user_id = v_user_id\n    AND entry_date = p_entry_date\n    AND statement_index = p_statement_index;\n\n  UPDATE public.gratitude_attachments\n  SET statement_index = statement_index - 1\n  WHERE user_id = v_user_id\n    AND entry_date = p_entry_date\n    AND statement_index > p_statement_index;\nEND;\n$function$\n",
     "function_oid": 18717
   },
   {
@@ -205,22 +247,8 @@
     "strict": false,
     "returns_set": false,
     "result_type": "void",
-    "arguments": "p_entry_date date, p_statement_index integer, p_updated_statement text",
-    "definition": "CREATE OR REPLACE FUNCTION public.edit_gratitude_statement(p_entry_date date, p_statement_index integer, p_updated_statement text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n   BEGIN\n       UPDATE public.gratitude_entries\n       SET statements = jsonb_set(statements, ARRAY[p_statement_index]::TEXT[], to_jsonb(p_updated_statement::TEXT))\n       WHERE user_id = auth.uid() AND entry_date = p_entry_date;\n       -- updated_at is handled by the 'handle_gratitude_entries_update_updated_at' trigger\n   END;\n   $function$\n",
-    "function_oid": 18716
-  },
-  {
-    "schema_name": "public",
-    "function_name": "edit_gratitude_statement",
-    "owner": "postgres",
-    "language": "plpgsql",
-    "security_definer": true,
-    "volatility": "volatile",
-    "strict": false,
-    "returns_set": false,
-    "result_type": "void",
     "arguments": "p_entry_date date, p_statement_index integer, p_updated_statement text, p_mood text DEFAULT NULL::text",
-    "definition": "CREATE OR REPLACE FUNCTION public.edit_gratitude_statement(p_entry_date date, p_statement_index integer, p_updated_statement text, p_mood text DEFAULT NULL::text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\n  v_row_id uuid;\n  v_statements jsonb;\n  v_moods jsonb;\n  v_len int;\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  select id, coalesce(statements, '[]'::jsonb), coalesce(moods, '{}'::jsonb)\n    into v_row_id, v_statements, v_moods\n  from public.gratitude_entries\n  where user_id = v_user_id and entry_date = p_entry_date\n  for update;\n\n  if not found then\n    raise exception 'Entry not found for date %', p_entry_date using errcode = 'P0002';\n  end if;\n\n  v_len := coalesce(jsonb_array_length(v_statements), 0);\n  if p_statement_index < 0 or p_statement_index >= v_len then\n    raise exception 'Invalid statement index %, length %', p_statement_index, v_len using errcode = '22003';\n  end if;\n\n  update public.gratitude_entries\n  set statements = jsonb_set(v_statements, array[(p_statement_index)::text], to_jsonb(p_updated_statement), true),\n      moods = case when p_mood is not null\n                   then jsonb_set(v_moods, array[(p_statement_index)::text], to_jsonb(p_mood), true)\n                   else v_moods end,\n      updated_at = now()\n  where id = v_row_id;\nend;\n$function$\n",
+    "definition": "CREATE OR REPLACE FUNCTION public.edit_gratitude_statement(p_entry_date date, p_statement_index integer, p_updated_statement text, p_mood text DEFAULT NULL::text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid := auth.uid();\n  v_row_id uuid;\n  v_statements jsonb;\n  v_moods jsonb;\n  v_len int;\nBEGIN\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Not authenticated' USING ERRCODE = '28000';\n  END IF;\n\n  SELECT id, COALESCE(statements, '[]'::jsonb), COALESCE(moods, '{}'::jsonb)\n    INTO v_row_id, v_statements, v_moods\n  FROM public.gratitude_entries\n  WHERE user_id = v_user_id\n    AND entry_date = p_entry_date\n  FOR UPDATE;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Entry not found for date %', p_entry_date USING ERRCODE = 'P0002';\n  END IF;\n\n  v_len := COALESCE(jsonb_array_length(v_statements), 0);\n  IF p_statement_index < 0 OR p_statement_index >= v_len THEN\n    RAISE EXCEPTION 'Invalid statement index %, length %', p_statement_index, v_len\n      USING ERRCODE = '22003';\n  END IF;\n\n  UPDATE public.gratitude_entries\n  SET statements = jsonb_set(\n        v_statements,\n        ARRAY[(p_statement_index)::text],\n        to_jsonb(p_updated_statement),\n        true\n      ),\n      moods = CASE\n        WHEN p_mood IS NOT NULL THEN\n          jsonb_set(v_moods, ARRAY[(p_statement_index)::text], to_jsonb(p_mood), true)\n        ELSE\n          v_moods\n      END,\n      updated_at = now()\n  WHERE id = v_row_id;\nEND;\n$function$\n",
     "function_oid": 148181
   },
   {
@@ -234,7 +262,7 @@
     "returns_set": false,
     "result_type": "integer",
     "arguments": "p_horizon_minutes integer DEFAULT 5",
-    "definition": "CREATE OR REPLACE FUNCTION public.enqueue_notification_jobs(p_horizon_minutes integer DEFAULT 5)\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  -- Calculate the target time (Now + 5 mins)\n  v_target_time timestamptz := NOW() + make_interval(mins => p_horizon_minutes);\n  inserted integer;\nBEGIN\n  INSERT INTO public.notification_jobs (\n    user_id,\n    scheduled_for,\n    tokens,\n    language,\n    metadata\n  )\n  SELECT\n    p.id,\n    date_trunc('minute', v_target_time), -- Truncate to minute for clean scheduling\n    array_agg(pt.token),\n    COALESCE(p.language, 'en'),\n    jsonb_build_object(\n      'variant', CASE \n        WHEN to_char(v_target_time AT TIME ZONE p.timezone, 'HH24:MI') = '12:30' THEN 'midday'\n        ELSE 'evening'\n      END,\n      'timezone', p.timezone,\n      'notification_time', to_char(v_target_time AT TIME ZONE p.timezone, 'HH24:MI')\n    )\n  FROM public.profiles p\n  JOIN public.push_tokens pt ON p.id = pt.user_id\n  WHERE p.notification_time IS NOT NULL -- Notifications enabled\n    AND p.timezone IS NOT NULL\n    AND p.onboarded = true -- Only notify onboarded users\n    AND (\n      -- Check for Midday (12:30)\n      to_char(v_target_time AT TIME ZONE p.timezone, 'HH24:MI') = '12:30'\n      OR\n      -- Check for Evening (21:00)\n      to_char(v_target_time AT TIME ZONE p.timezone, 'HH24:MI') = '21:00'\n    )\n  GROUP BY p.id, p.language, p.timezone\n  ON CONFLICT DO NOTHING;\n\n  GET DIAGNOSTICS inserted = ROW_COUNT;\n  RETURN inserted;\nEND;\n$function$\n",
+    "definition": "CREATE OR REPLACE FUNCTION public.enqueue_notification_jobs(p_horizon_minutes integer DEFAULT 5)\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_target_time timestamptz := NOW() + make_interval(mins => p_horizon_minutes);\n  inserted integer;\nBEGIN\n  INSERT INTO public.notification_jobs (\n    user_id,\n    scheduled_for,\n    tokens,\n    language,\n    metadata\n  )\n  SELECT\n    p.id,\n    date_trunc('minute', v_target_time),\n    array_agg(pt.token ORDER BY pt.created_at DESC),\n    COALESCE(p.language, 'en'),\n    jsonb_build_object(\n      'variant',\n      CASE\n        WHEN EXTRACT(HOUR FROM (v_target_time AT TIME ZONE p.timezone)) < 17 THEN 'midday'\n        ELSE 'evening'\n      END,\n      'timezone',\n      p.timezone,\n      'notification_time',\n      to_char(p.notification_time, 'HH24:MI'),\n      'memory_statement',\n      memory_pick.statement,\n      'memory_entry_date',\n      CASE\n        WHEN memory_pick.entry_date IS NULL THEN NULL\n        ELSE to_char(memory_pick.entry_date, 'YYYY-MM-DD')\n      END,\n      'memory_age_days',\n      memory_pick.age_days\n    )\n  FROM public.profiles p\n  JOIN public.push_tokens pt ON p.id = pt.user_id\n  LEFT JOIN LATERAL (\n    SELECT\n      ge.entry_date,\n      statement_pick.statement,\n      ((v_target_time AT TIME ZONE p.timezone)::date - ge.entry_date) AS age_days\n    FROM public.gratitude_entries ge\n    JOIN LATERAL (\n      SELECT statement_value.value AS statement\n      FROM jsonb_array_elements_text(ge.statements) AS statement_value(value)\n      ORDER BY random()\n      LIMIT 1\n    ) AS statement_pick ON true\n    WHERE ge.user_id = p.id\n      AND jsonb_array_length(ge.statements) > 0\n      AND ge.entry_date <= ((v_target_time AT TIME ZONE p.timezone)::date - 14)\n    ORDER BY random()\n    LIMIT 1\n  ) AS memory_pick ON true\n  WHERE p.notification_time IS NOT NULL\n    AND p.timezone IS NOT NULL\n    AND p.onboarded = true\n    AND p.notification_time = (date_trunc('minute', v_target_time AT TIME ZONE p.timezone))::time\n    AND NOT EXISTS (\n      SELECT 1\n      FROM public.notification_jobs nj\n      WHERE nj.user_id = p.id\n        AND nj.scheduled_for = date_trunc('minute', v_target_time)\n        AND nj.status IN ('pending', 'processing')\n    )\n  GROUP BY\n    p.id,\n    p.language,\n    p.timezone,\n    p.notification_time,\n    memory_pick.entry_date,\n    memory_pick.statement,\n    memory_pick.age_days;\n\n  GET DIAGNOSTICS inserted = ROW_COUNT;\n  RETURN inserted;\nEND;\n$function$\n",
     "function_oid": 203076
   },
   {
@@ -256,14 +284,56 @@
     "function_name": "get_entry_dates_for_month",
     "owner": "postgres",
     "language": "plpgsql",
-    "security_definer": false,
+    "security_definer": true,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": true,
+    "result_type": "SETOF date",
+    "arguments": "p_year integer, p_month integer",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_entry_dates_for_month(p_year integer, p_month integer)\n RETURNS SETOF date\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  return query\n    select distinct entry_date\n    from public.gratitude_entries\n    where user_id = v_user_id\n      and extract(year from entry_date) = p_year\n      and extract(month from entry_date) = p_month\n    order by entry_date asc;\nend;\n$function$\n",
+    "function_oid": 888369
+  },
+  {
+    "schema_name": "public",
+    "function_name": "get_entry_dates_for_month",
+    "owner": "postgres",
+    "language": "plpgsql",
+    "security_definer": true,
     "volatility": "volatile",
     "strict": false,
     "returns_set": true,
     "result_type": "SETOF date",
     "arguments": "p_user_id uuid, p_year integer, p_month integer",
-    "definition": "CREATE OR REPLACE FUNCTION public.get_entry_dates_for_month(p_user_id uuid, p_year integer, p_month integer)\n RETURNS SETOF date\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n    RETURN QUERY\n    SELECT DISTINCT entry_date\n    FROM public.gratitude_entries\n    WHERE user_id = p_user_id\n      AND EXTRACT(YEAR FROM entry_date) = p_year\n      AND EXTRACT(MONTH FROM entry_date) = p_month\n    ORDER BY entry_date ASC;\nEND;\n$function$\n",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_entry_dates_for_month(p_user_id uuid, p_year integer, p_month integer)\n RETURNS SETOF date\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  if p_user_id is distinct from v_user_id then\n    raise exception 'Forbidden' using errcode = '42501';\n  end if;\n\n  return query\n    select * from public.get_entry_dates_for_month(p_year, p_month);\nend;\n$function$\n",
     "function_oid": 17399
+  },
+  {
+    "schema_name": "public",
+    "function_name": "get_gratitude_entries_paginated",
+    "owner": "postgres",
+    "language": "plpgsql",
+    "security_definer": true,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": true,
+    "result_type": "TABLE(id uuid, user_id uuid, entry_date date, statements jsonb, moods jsonb, attachments jsonb, created_at timestamp with time zone, updated_at timestamp with time zone, total_count bigint, has_more boolean)",
+    "arguments": "p_page integer DEFAULT 0, p_limit integer DEFAULT 20, p_search_term text DEFAULT NULL::text",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_gratitude_entries_paginated(p_page integer DEFAULT 0, p_limit integer DEFAULT 20, p_search_term text DEFAULT NULL::text)\n RETURNS TABLE(id uuid, user_id uuid, entry_date date, statements jsonb, moods jsonb, attachments jsonb, created_at timestamp with time zone, updated_at timestamp with time zone, total_count bigint, has_more boolean)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\n  v_offset integer;\n  v_total bigint;\n  v_search_term text := nullif(trim(p_search_term), '');\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  if p_page < 0 then\n    raise exception 'Page must be non-negative' using errcode = '22003';\n  end if;\n\n  if p_limit < 1 or p_limit > 100 then\n    raise exception 'Limit must be between 1 and 100' using errcode = '22003';\n  end if;\n\n  v_offset := p_page * p_limit;\n\n  select count(*)\n    into v_total\n  from public.gratitude_entries ge\n  where ge.user_id = v_user_id\n    and coalesce(jsonb_array_length(ge.statements), 0) > 0\n    and (\n      v_search_term is null\n      or exists (\n        select 1\n        from jsonb_array_elements_text(ge.statements) as statement_text(value)\n        where statement_text.value ilike '%' || v_search_term || '%'\n      )\n    );\n\n  return query\n    with base as (\n      select ge.*\n      from public.gratitude_entries ge\n      where ge.user_id = v_user_id\n        and coalesce(jsonb_array_length(ge.statements), 0) > 0\n        and (\n          v_search_term is null\n          or exists (\n            select 1\n            from jsonb_array_elements_text(ge.statements) as statement_text(value)\n            where statement_text.value ilike '%' || v_search_term || '%'\n          )\n        )\n      order by ge.entry_date desc\n      limit p_limit\n      offset v_offset\n    )\n    select\n      b.id,\n      b.user_id,\n      b.entry_date,\n      b.statements,\n      b.moods,\n      coalesce(\n        (\n          select jsonb_agg(\n            jsonb_build_object(\n              'id', a.id,\n              'statement_index', a.statement_index,\n              'kind', a.kind,\n              'storage_path', a.storage_path,\n              'mime_type', a.mime_type,\n              'bytes', a.bytes,\n              'duration_ms', a.duration_ms,\n              'width', a.width,\n              'height', a.height,\n              'transcript', a.transcript,\n              'created_at', a.created_at\n            )\n            order by a.created_at asc\n          )\n          from public.gratitude_attachments a\n          where a.entry_id = b.id\n        ),\n        '[]'::jsonb\n      ) as attachments,\n      b.created_at,\n      b.updated_at,\n      v_total as total_count,\n      (v_offset + p_limit < v_total) as has_more\n    from base b\n    order by b.entry_date desc;\nend;\n$function$\n",
+    "function_oid": 888379
+  },
+  {
+    "schema_name": "public",
+    "function_name": "get_latest_mood_insight_snapshot",
+    "owner": "postgres",
+    "language": "plpgsql",
+    "security_definer": true,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": true,
+    "result_type": "TABLE(range text, language text, highlighted_insight jsonb, narrative jsonb, generated_at timestamp with time zone, entry_count_at_generation integer, is_preview_only boolean)",
+    "arguments": "p_range text DEFAULT '30d'::text, p_language text DEFAULT 'en'::text",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_latest_mood_insight_snapshot(p_range text DEFAULT '30d'::text, p_language text DEFAULT 'en'::text)\n RETURNS TABLE(range text, language text, highlighted_insight jsonb, narrative jsonb, generated_at timestamp with time zone, entry_count_at_generation integer, is_preview_only boolean)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid;\n  v_is_pro boolean := false;\nBEGIN\n  v_user_id := auth.uid();\n\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Not authenticated';\n  END IF;\n\n  SELECT COALESCE(is_pro, false)\n    INTO v_is_pro\n  FROM public.profiles\n  WHERE id = v_user_id;\n\n  RETURN QUERY\n  SELECT\n    mis.range,\n    mis.language,\n    mis.highlighted_insight,\n    CASE WHEN v_is_pro THEN mis.narrative ELSE NULL END AS narrative,\n    mis.generated_at,\n    mis.entry_count_at_generation,\n    NOT v_is_pro AS is_preview_only\n  FROM public.mood_insight_snapshots AS mis\n  WHERE mis.user_id = v_user_id\n    AND mis.range = COALESCE(p_range, '30d')\n    AND mis.language = COALESCE(p_language, 'en')\n  ORDER BY mis.generated_at DESC\n  LIMIT 1;\nEND;\n$function$\n",
+    "function_oid": 873456
   },
   {
     "schema_name": "public",
@@ -275,23 +345,23 @@
     "strict": false,
     "returns_set": false,
     "result_type": "jsonb",
-    "arguments": "p_range text DEFAULT '90d'::text",
-    "definition": "CREATE OR REPLACE FUNCTION public.get_mood_analytics(p_range text DEFAULT '90d'::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\n  v_start_date date;\n  v_payload jsonb;\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated';\n  end if;\n\n  v_start_date := case p_range\n    when '7d' then current_date - interval '7 days'\n    when '30d' then current_date - interval '30 days'\n    when '365d' then current_date - interval '365 days'\n    else current_date - interval '90 days'\n  end::date;\n\n  with entries as (\n    select *\n    from gratitude_entries\n    where user_id = v_user_id\n      and entry_date >= v_start_date\n  ),\n  statements as (\n    select\n      e.entry_date,\n      elem.ordinality - 1 as idx,\n      trim(elem.value::text) as statement\n    from entries e\n    left join lateral jsonb_array_elements_text(e.statements) with ordinality as elem(value, ordinality) on true\n  ),\n  moods as (\n    select\n      e.entry_date,\n      (m.key)::int as idx,\n      nullif(m.value::text, '') as mood\n    from entries e\n    left join lateral jsonb_each_text(e.moods) as m(key, value) on true\n  ),\n  statements_with_mood as (\n    select\n      s.entry_date,\n      s.idx,\n      s.statement,\n      m.mood\n    from statements s\n    left join moods m\n      on m.entry_date = s.entry_date\n     and m.idx = s.idx\n  ),\n  mood_totals as (\n    select mood, count(*)::int as total\n    from moods\n    where mood is not null\n    group by mood\n  ),\n  overall_counts as (\n    select\n      coalesce(sum(total), 0)::int as total_sum,\n      coalesce(max(total), 0)::int as max_total\n    from mood_totals\n  ),\n  dominant_mood as (\n    select mood\n    from mood_totals\n    order by total desc, mood asc\n    limit 1\n  ),\n  mood_distribution as (\n    select coalesce(\n      jsonb_agg(\n        jsonb_build_object(\n          'mood', sub.mood,\n          'count', sub.total,\n          'percentage',\n            case when sub.total_sum = 0 then 0\n                 else round(sub.total::numeric * 100 / sub.total_sum, 2)\n            end\n        )\n        order by sub.total desc, sub.mood asc\n      ),\n      '[]'::jsonb\n    ) as data\n    from (\n      select mt.mood, mt.total, oc.total_sum\n      from mood_totals mt\n      cross join overall_counts oc\n    ) sub\n  ),\n  trend_data as (\n    select jsonb_agg(\n      jsonb_build_object(\n        'date', entry_date,\n        'entry_count', entry_count,\n        'dominant_mood', dominant_mood,\n        'mood_counts', mood_counts\n      )\n      order by entry_date desc\n    ) as data\n    from (\n      select\n        e.entry_date,\n        coalesce(count(sw.statement) filter (where sw.statement <> ''), 0)::int as entry_count,\n        (\n          select mood\n          from moods md\n          where md.entry_date = e.entry_date and md.mood is not null\n          group by mood\n          order by count(*) desc, mood asc\n          limit 1\n        ) as dominant_mood,\n        (\n          select jsonb_object_agg(mood, mood_count)\n          from (\n            select mood, count(*)::int as mood_count\n            from moods md2\n            where md2.entry_date = e.entry_date and md2.mood is not null\n            group by mood\n          ) mm\n        ) as mood_counts\n      from entries e\n      left join statements_with_mood sw on sw.entry_date = e.entry_date\n      group by e.entry_date\n    ) trend\n  ),\n  highlights as (\n    select jsonb_agg(item order by item->>'entry_date' desc, item->>'weight' desc) as data\n    from (\n      select jsonb_build_object(\n        'entry_date', sw.entry_date,\n        'statement', sw.statement,\n        'mood', sw.mood,\n        'weight', round(greatest(1, least(5, char_length(sw.statement)::numeric / 60)), 2)\n      ) as item\n      from statements_with_mood sw\n      where sw.mood is not null and sw.statement is not null and sw.statement <> ''\n      order by sw.entry_date desc, char_length(sw.statement) desc\n      limit 6\n    ) ranked\n  ),\n  overview_stats as (\n    select\n      coalesce((select count(*) from entries), 0)::int as total_entries,\n      coalesce(\n        (select count(*) from statements_with_mood where statement is not null and statement <> ''),\n        0\n      )::int as analyzed_statements\n  ),\n  narrative as (\n    select jsonb_build_object(\n      'logical',\n        case\n          when oc.total_sum = 0 then 'Add more moods to see detailed insights.'\n          when oc.max_total::numeric / nullif(oc.total_sum, 0) > 0.65 then\n            'A single mood is appearing very frequently in this period.'\n          else\n            'Your gratitude moods are cycling through a healthy mix.'\n        end,\n      'emotional',\n        case\n          when dm.mood is null then\n            'There is not enough mood data yet for an emotional read.'\n          else\n            'Recent entries feel predominantly ' || dm.mood || '.'\n        end,\n      'suggestions', to_jsonb(array_remove(array[\n        case when oc.total_sum = 0 then\n          'Tag a few gratitudes with moods to unlock deeper reflections.'\n        else null end,\n        case when oc.total_sum > 0 and oc.max_total::numeric / nullif(oc.total_sum, 0) > 0.65 then\n          'Balance your practice by exploring a different feeling tomorrow.'\n        else null end,\n        'Revisit your streak card to keep the habit alive.'\n      ], null))\n    ) as data\n    from overall_counts oc\n    left join dominant_mood dm on true\n  )\n  select jsonb_build_object(\n    'generated_at', to_char(now(), 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),\n    'overview', jsonb_build_object(\n      'total_entries', os.total_entries,\n      'analyzed_statements', os.analyzed_statements,\n      'dominant_mood', dm.mood,\n      'balance_score', jsonb_build_object(\n        'value',\n          case\n            when oc.total_sum = 0 then 0\n            else round(100 - (oc.max_total::numeric * 100 / oc.total_sum), 2)\n          end,\n        'label',\n          case\n            when oc.total_sum = 0 then 'neutral'\n            when oc.max_total::numeric / oc.total_sum >= 0.65 then 'imbalanced'\n            when oc.max_total::numeric / oc.total_sum <= 0.4 then 'balanced'\n            else 'neutral'\n          end\n      )\n    ),\n    'mood_counts', md.data,\n    'trend', coalesce(td.data, '[]'::jsonb),\n    'highlighted_statements', coalesce(h.data, '[]'::jsonb),\n    'narrative', coalesce(n.data, '{}'::jsonb)\n  )\n  into v_payload\n  from overview_stats os\n  cross join overall_counts oc\n  left join dominant_mood dm on true\n  left join mood_distribution md on true\n  left join trend_data td on true\n  left join highlights h on true\n  left join narrative n on true;\n\n  return coalesce(\n    v_payload,\n    jsonb_build_object(\n      'generated_at', to_char(now(), 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),\n      'overview', jsonb_build_object(\n        'total_entries', 0,\n        'analyzed_statements', 0,\n        'dominant_mood', null,\n        'balance_score', jsonb_build_object('value', 0, 'label', 'neutral')\n      ),\n      'mood_counts', '[]'::jsonb,\n      'trend', '[]'::jsonb,\n      'highlighted_statements', '[]'::jsonb,\n      'narrative', jsonb_build_object(\n        'logical', 'Add more moods to see detailed insights.',\n        'emotional', 'There is not enough mood data yet for an emotional read.',\n        'suggestions', '[]'::jsonb\n      )\n    )\n  );\nend;\n$function$\n",
+    "arguments": "p_range text DEFAULT '30d'::text",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_mood_analytics(p_range text DEFAULT '30d'::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\n  v_start_date date;\n  v_payload jsonb;\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  v_start_date := case p_range\n    when '15d' then current_date - interval '15 days'\n    when '30d' then current_date - interval '30 days'\n    when '90d' then current_date - interval '90 days'\n    else current_date - interval '30 days'\n  end::date;\n\n  with entries as (\n    select *\n    from gratitude_entries\n    where user_id = v_user_id\n      and entry_date >= v_start_date\n  ),\n  statements as (\n    select\n      e.entry_date,\n      elem.ordinality - 1 as idx,\n      trim(elem.value::text) as statement\n    from entries e\n    left join lateral jsonb_array_elements_text(e.statements) with ordinality as elem(value, ordinality) on true\n  ),\n  moods as (\n    select\n      e.entry_date,\n      (m.key)::int as idx,\n      nullif(m.value::text, '') as mood\n    from entries e\n    left join lateral jsonb_each_text(e.moods) as m(key, value) on true\n  ),\n  statements_with_mood as (\n    select\n      s.entry_date,\n      s.idx,\n      s.statement,\n      m.mood\n    from statements s\n    left join moods m\n      on m.entry_date = s.entry_date\n     and m.idx = s.idx\n  ),\n  mood_totals as (\n    select mood, count(*)::int as total\n    from moods\n    where mood is not null\n    group by mood\n  ),\n  overall_counts as (\n    select\n      coalesce(sum(total), 0)::int as total_sum,\n      coalesce(max(total), 0)::int as max_total\n    from mood_totals\n  ),\n  dominant_mood as (\n    select mood\n    from mood_totals\n    order by total desc, mood asc\n    limit 1\n  ),\n  mood_distribution as (\n    select coalesce(\n      jsonb_agg(\n        jsonb_build_object(\n          'mood', sub.mood,\n          'count', sub.total,\n          'percentage',\n            case when sub.total_sum = 0 then 0\n                 else round(sub.total::numeric * 100 / sub.total_sum, 2)\n            end\n        )\n        order by sub.total desc, sub.mood asc\n      ),\n      '[]'::jsonb\n    ) as data\n    from (\n      select mt.mood, mt.total, oc.total_sum\n      from mood_totals mt\n      cross join overall_counts oc\n    ) sub\n  ),\n  trend_data as (\n    select jsonb_agg(\n      jsonb_build_object(\n        'date', entry_date,\n        'entry_count', entry_count,\n        'dominant_mood', dominant_mood,\n        'mood_counts', mood_counts\n      )\n      order by entry_date desc\n    ) as data\n    from (\n      select\n        e.entry_date,\n        coalesce(count(sw.statement) filter (where sw.statement <> ''), 0)::int as entry_count,\n        (\n          select mood\n          from moods md\n          where md.entry_date = e.entry_date and md.mood is not null\n          group by mood\n          order by count(*) desc, mood asc\n          limit 1\n        ) as dominant_mood,\n        (\n          select jsonb_object_agg(mood, mood_count)\n          from (\n            select mood, count(*)::int as mood_count\n            from moods md2\n            where md2.entry_date = e.entry_date and md2.mood is not null\n            group by mood\n          ) mm\n        ) as mood_counts\n      from entries e\n      left join statements_with_mood sw on sw.entry_date = e.entry_date\n      group by e.entry_date\n    ) trend\n  ),\n  highlights as (\n    select jsonb_agg(item order by item->>'entry_date' desc, item->>'weight' desc) as data\n    from (\n      select jsonb_build_object(\n        'entry_date', sw.entry_date,\n        'statement', sw.statement,\n        'mood', sw.mood,\n        'weight', round(greatest(1, least(5, char_length(sw.statement)::numeric / 60)), 2)\n      ) as item\n      from statements_with_mood sw\n      where sw.mood is not null and sw.statement is not null and sw.statement <> ''\n      order by sw.entry_date desc, char_length(sw.statement) desc\n      limit 6\n    ) ranked\n  ),\n  overview_stats as (\n    select\n      coalesce((select count(*) from entries), 0)::int as total_entries,\n      coalesce(\n        (select count(*) from statements_with_mood where statement is not null and statement <> ''),\n        0\n      )::int as analyzed_statements\n  ),\n  narrative as (\n    select jsonb_build_object(\n      'logical',\n        case\n          when oc.total_sum = 0 then 'Add more moods to see detailed insights.'\n          when oc.max_total::numeric / nullif(oc.total_sum, 0) > 0.65 then\n            'A single mood is appearing very frequently in this period.'\n          else\n            'Your gratitude moods are cycling through a healthy mix.'\n        end,\n      'emotional',\n        case\n          when dm.mood is null then\n            'There is not enough mood data yet for an emotional read.'\n          else\n            'Recent entries feel predominantly ' || dm.mood || '.'\n        end,\n      'suggestions', to_jsonb(array_remove(array[\n        case when oc.total_sum = 0 then\n          'Tag a few gratitudes with moods to unlock deeper reflections.'\n        else null end,\n        case when oc.total_sum > 0 and oc.max_total::numeric / nullif(oc.total_sum, 0) > 0.65 then\n          'Balance your practice by exploring a different feeling tomorrow.'\n        else null end,\n        'Revisit your streak card to keep the habit alive.'\n      ], null))\n    ) as data\n    from overall_counts oc\n    left join dominant_mood dm on true\n  )\n  select jsonb_build_object(\n    'generated_at', to_char(now(), 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),\n    'overview', jsonb_build_object(\n      'total_entries', os.total_entries,\n      'analyzed_statements', os.analyzed_statements,\n      'dominant_mood', dm.mood,\n      'balance_score', jsonb_build_object(\n        'value',\n          case\n            when oc.total_sum = 0 then 0\n            else round(100 - (oc.max_total::numeric * 100 / oc.total_sum), 2)\n          end,\n        'label',\n          case\n            when oc.total_sum = 0 then 'neutral'\n            when oc.max_total::numeric / oc.total_sum >= 0.65 then 'imbalanced'\n            when oc.max_total::numeric / oc.total_sum <= 0.4 then 'balanced'\n            else 'neutral'\n          end\n      )\n    ),\n    'mood_counts', md.data,\n    'trend', coalesce(td.data, '[]'::jsonb),\n    'highlighted_statements', coalesce(h.data, '[]'::jsonb),\n    'narrative', coalesce(n.data, '{}'::jsonb)\n  )\n  into v_payload\n  from overview_stats os\n  cross join overall_counts oc\n  left join dominant_mood dm on true\n  left join mood_distribution md on true\n  left join trend_data td on true\n  left join highlights h on true\n  left join narrative n on true;\n\n  return coalesce(\n    v_payload,\n    jsonb_build_object(\n      'generated_at', to_char(now(), 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),\n      'overview', jsonb_build_object(\n        'total_entries', 0,\n        'analyzed_statements', 0,\n        'dominant_mood', null,\n        'balance_score', jsonb_build_object('value', 0, 'label', 'neutral')\n      ),\n      'mood_counts', '[]'::jsonb,\n      'trend', '[]'::jsonb,\n      'highlighted_statements', '[]'::jsonb,\n      'narrative', jsonb_build_object(\n        'logical', 'Add more moods to see detailed insights.',\n        'emotional', 'There is not enough mood data yet for an emotional read.',\n        'suggestions', '[]'::jsonb\n      )\n    )\n  );\nend;\n$function$\n",
     "function_oid": 278038
   },
   {
     "schema_name": "public",
     "function_name": "get_multiple_random_active_prompts",
     "owner": "postgres",
-    "language": "plpgsql",
-    "security_definer": true,
-    "volatility": "volatile",
+    "language": "sql",
+    "security_definer": false,
+    "volatility": "stable",
     "strict": false,
     "returns_set": true,
-    "result_type": "SETOF daily_prompts",
-    "arguments": "p_limit integer DEFAULT 10",
-    "definition": "CREATE OR REPLACE FUNCTION public.get_multiple_random_active_prompts(p_limit integer DEFAULT 10)\n RETURNS SETOF daily_prompts\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  -- Validate input parameters\n  IF p_limit <= 0 OR p_limit > 50 THEN\n    RAISE EXCEPTION 'Limit must be between 1 and 50, got: %', p_limit;\n  END IF;\n  \n  -- Return random active prompts using PostgreSQL's RANDOM() function\n  -- This is much more efficient than fetching all and shuffling on client\n  RETURN QUERY\n  SELECT * FROM daily_prompts\n  WHERE is_active = true\n  ORDER BY RANDOM()\n  LIMIT p_limit;\nEND;\n$function$\n",
-    "function_oid": 26068
+    "result_type": "TABLE(id uuid, prompt_text text, prompt_text_tr text, prompt_text_en text, prompt_text_es text, category text)",
+    "arguments": "p_limit integer DEFAULT 10, p_language text DEFAULT 'en'::text",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_multiple_random_active_prompts(p_limit integer DEFAULT 10, p_language text DEFAULT 'en'::text)\n RETURNS TABLE(id uuid, prompt_text text, prompt_text_tr text, prompt_text_en text, prompt_text_es text, category text)\n LANGUAGE sql\n STABLE\n SET search_path TO 'public'\nAS $function$\n  select\n    dp.id,\n    case lower(coalesce(p_language, 'en'))\n      when 'tr' then dp.prompt_text_tr\n      when 'es' then coalesce(dp.prompt_text_es, dp.prompt_text_en, dp.prompt_text_tr)\n      else coalesce(dp.prompt_text_en, dp.prompt_text_tr)\n    end as prompt_text,\n    dp.prompt_text_tr,\n    dp.prompt_text_en,\n    dp.prompt_text_es,\n    dp.category\n  from public.daily_prompts dp\n  where dp.is_active = true\n  order by random()\n  limit greatest(1, coalesce(p_limit, 10));\n$function$\n",
+    "function_oid": 888373
   },
   {
     "schema_name": "public",
@@ -302,24 +372,38 @@
     "volatility": "stable",
     "strict": false,
     "returns_set": true,
-    "result_type": "TABLE(id uuid, prompt_text_tr text, category text)",
-    "arguments": "",
-    "definition": "CREATE OR REPLACE FUNCTION public.get_random_active_prompt()\n RETURNS TABLE(id uuid, prompt_text_tr text, category text)\n LANGUAGE sql\n STABLE\n SET search_path TO 'public'\nAS $function$\n  SELECT dp.id, dp.prompt_text_tr, dp.category\n  FROM public.daily_prompts dp\n  WHERE dp.is_active = true\n  ORDER BY random()\n  LIMIT 1;\n$function$\n",
-    "function_oid": 20264
+    "result_type": "TABLE(id uuid, prompt_text text, prompt_text_tr text, prompt_text_en text, prompt_text_es text, category text)",
+    "arguments": "p_language text DEFAULT 'en'::text",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_random_active_prompt(p_language text DEFAULT 'en'::text)\n RETURNS TABLE(id uuid, prompt_text text, prompt_text_tr text, prompt_text_en text, prompt_text_es text, category text)\n LANGUAGE sql\n STABLE\n SET search_path TO 'public'\nAS $function$\n  select\n    dp.id,\n    case lower(coalesce(p_language, 'en'))\n      when 'tr' then dp.prompt_text_tr\n      when 'es' then coalesce(dp.prompt_text_es, dp.prompt_text_en, dp.prompt_text_tr)\n      else coalesce(dp.prompt_text_en, dp.prompt_text_tr)\n    end as prompt_text,\n    dp.prompt_text_tr,\n    dp.prompt_text_en,\n    dp.prompt_text_es,\n    dp.category\n  from public.daily_prompts dp\n  where dp.is_active = true\n  order by random()\n  limit 1;\n$function$\n",
+    "function_oid": 888372
   },
   {
     "schema_name": "public",
     "function_name": "get_random_gratitude_entry",
     "owner": "postgres",
-    "language": "sql",
-    "security_definer": false,
-    "volatility": "stable",
+    "language": "plpgsql",
+    "security_definer": true,
+    "volatility": "volatile",
     "strict": false,
     "returns_set": true,
     "result_type": "SETOF gratitude_entries",
     "arguments": "p_user_id uuid",
-    "definition": "CREATE OR REPLACE FUNCTION public.get_random_gratitude_entry(p_user_id uuid)\n RETURNS SETOF gratitude_entries\n LANGUAGE sql\n STABLE\n SET search_path TO 'public'\nAS $function$\n  SELECT *\n  FROM public.gratitude_entries\n  WHERE user_id = p_user_id\n  ORDER BY random()\n  LIMIT 1;\n$function$\n",
-    "function_oid": 17398
+    "definition": "CREATE OR REPLACE FUNCTION public.get_random_gratitude_entry(p_user_id uuid)\n RETURNS SETOF gratitude_entries\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  if p_user_id is distinct from v_user_id then\n    raise exception 'Forbidden' using errcode = '42501';\n  end if;\n\n  return query\n    select * from public.get_random_gratitude_entry();\nend;\n$function$\n",
+    "function_oid": 888371
+  },
+  {
+    "schema_name": "public",
+    "function_name": "get_random_gratitude_entry",
+    "owner": "postgres",
+    "language": "plpgsql",
+    "security_definer": true,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": true,
+    "result_type": "SETOF gratitude_entries",
+    "arguments": "",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_random_gratitude_entry()\n RETURNS SETOF gratitude_entries\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  return query\n    select *\n    from public.gratitude_entries\n    where user_id = v_user_id\n      and jsonb_array_length(statements) > 0\n    order by random()\n    limit 1;\nend;\n$function$\n",
+    "function_oid": 888370
   },
   {
     "schema_name": "public",
@@ -374,7 +458,7 @@
     "returns_set": false,
     "result_type": "trigger",
     "arguments": "",
-    "definition": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  -- Insert a new profile for the user\n  INSERT INTO public.profiles (\n    id, \n    username, \n    onboarded, \n    created_at, \n    updated_at,\n    daily_gratitude_goal,\n    use_varied_prompts,\n    timezone,\n    notification_time\n  )\n  VALUES (\n    new.id,\n    COALESCE(new.raw_user_meta_data->>'username', NULL),\n    false, -- Not onboarded yet\n    NOW(),\n    NOW(),\n    3, -- Default goal\n    false, -- Default for varied prompts\n    NULL, -- Timezone will be set when notifications are enabled\n    NULL  -- Notification time will be set when notifications are enabled\n  );\n  \n  RETURN new;\nEXCEPTION\n  WHEN unique_violation THEN\n    -- If profile already exists, just return (this shouldn't happen but is a safety net)\n    RETURN new;\nEND;\n$function$\n",
+    "definition": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nbegin\n  insert into public.profiles (id, created_at, updated_at, onboarded, language)\n  values (\n    new.id,\n    now(),\n    now(),\n    false,\n    coalesce(new.raw_user_meta_data->>'language', 'en')\n  )\n  on conflict (id) do nothing;\n  return new;\nend;\n$function$\n",
     "function_oid": 77646
   },
   {
@@ -401,9 +485,9 @@
     "strict": false,
     "returns_set": false,
     "result_type": "http_response",
-    "arguments": "uri character varying",
-    "definition": "CREATE OR REPLACE FUNCTION public.http_delete(uri character varying)\n RETURNS http_response\n LANGUAGE sql\nAS $function$ SELECT public.http(('DELETE', $1, NULL, NULL, NULL)::public.http_request) $function$\n",
-    "function_oid": 40662
+    "arguments": "uri character varying, content character varying, content_type character varying",
+    "definition": "CREATE OR REPLACE FUNCTION public.http_delete(uri character varying, content character varying, content_type character varying)\n RETURNS http_response\n LANGUAGE sql\nAS $function$ SELECT public.http(('DELETE', $1, NULL, $3, $2)::public.http_request) $function$\n",
+    "function_oid": 40663
   },
   {
     "schema_name": "public",
@@ -415,23 +499,9 @@
     "strict": false,
     "returns_set": false,
     "result_type": "http_response",
-    "arguments": "uri character varying, content character varying, content_type character varying",
-    "definition": "CREATE OR REPLACE FUNCTION public.http_delete(uri character varying, content character varying, content_type character varying)\n RETURNS http_response\n LANGUAGE sql\nAS $function$ SELECT public.http(('DELETE', $1, NULL, $3, $2)::public.http_request) $function$\n",
-    "function_oid": 40663
-  },
-  {
-    "schema_name": "public",
-    "function_name": "http_get",
-    "owner": "supabase_admin",
-    "language": "sql",
-    "security_definer": false,
-    "volatility": "volatile",
-    "strict": false,
-    "returns_set": false,
-    "result_type": "http_response",
-    "arguments": "uri character varying, data jsonb",
-    "definition": "CREATE OR REPLACE FUNCTION public.http_get(uri character varying, data jsonb)\n RETURNS http_response\n LANGUAGE sql\nAS $function$\n        SELECT public.http(('GET', $1 || '?' || public.urlencode($2), NULL, NULL, NULL)::public.http_request)\n    $function$\n",
-    "function_oid": 40668
+    "arguments": "uri character varying",
+    "definition": "CREATE OR REPLACE FUNCTION public.http_delete(uri character varying)\n RETURNS http_response\n LANGUAGE sql\nAS $function$ SELECT public.http(('DELETE', $1, NULL, NULL, NULL)::public.http_request) $function$\n",
+    "function_oid": 40662
   },
   {
     "schema_name": "public",
@@ -446,6 +516,20 @@
     "arguments": "uri character varying",
     "definition": "CREATE OR REPLACE FUNCTION public.http_get(uri character varying)\n RETURNS http_response\n LANGUAGE sql\nAS $function$ SELECT public.http(('GET', $1, NULL, NULL, NULL)::public.http_request) $function$\n",
     "function_oid": 40658
+  },
+  {
+    "schema_name": "public",
+    "function_name": "http_get",
+    "owner": "supabase_admin",
+    "language": "sql",
+    "security_definer": false,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": false,
+    "result_type": "http_response",
+    "arguments": "uri character varying, data jsonb",
+    "definition": "CREATE OR REPLACE FUNCTION public.http_get(uri character varying, data jsonb)\n RETURNS http_response\n LANGUAGE sql\nAS $function$\n        SELECT public.http(('GET', $1 || '?' || public.urlencode($2), NULL, NULL, NULL)::public.http_request)\n    $function$\n",
+    "function_oid": 40668
   },
   {
     "schema_name": "public",
@@ -589,6 +673,20 @@
   },
   {
     "schema_name": "public",
+    "function_name": "list_attachments_for_date",
+    "owner": "postgres",
+    "language": "plpgsql",
+    "security_definer": true,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": true,
+    "result_type": "TABLE(id uuid, statement_index integer, kind text, storage_path text, mime_type text, bytes integer, duration_ms integer, width integer, height integer, transcript text, created_at timestamp with time zone)",
+    "arguments": "p_entry_date date",
+    "definition": "CREATE OR REPLACE FUNCTION public.list_attachments_for_date(p_entry_date date)\n RETURNS TABLE(id uuid, statement_index integer, kind text, storage_path text, mime_type text, bytes integer, duration_ms integer, width integer, height integer, transcript text, created_at timestamp with time zone)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid := auth.uid();\nBEGIN\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Not authenticated' USING ERRCODE = '28000';\n  END IF;\n\n  RETURN QUERY\n  SELECT a.id, a.statement_index, a.kind, a.storage_path, a.mime_type,\n         a.bytes, a.duration_ms, a.width, a.height, a.transcript, a.created_at\n  FROM public.gratitude_attachments a\n  WHERE a.user_id = v_user_id AND a.entry_date = p_entry_date\n  ORDER BY a.statement_index, a.created_at;\nEND;\n$function$\n",
+    "function_oid": 888307
+  },
+  {
+    "schema_name": "public",
     "function_name": "lock_notification_jobs",
     "owner": "postgres",
     "language": "plpgsql",
@@ -626,7 +724,7 @@
     "returns_set": false,
     "result_type": "void",
     "arguments": "p_user_id uuid",
-    "definition": "CREATE OR REPLACE FUNCTION public.recalculate_user_streak(p_user_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n    v_current_streak INT := 0;\n    v_longest_streak_from_calculation INT := 0;\n    v_last_entry_date DATE;\n    current_streak_count INT := 0;\n    entry_record RECORD;\n    prev_date DATE;\nBEGIN\n    SELECT MAX(entry_date) INTO v_last_entry_date\n    FROM public.gratitude_entries\n    WHERE user_id = p_user_id;\n\n    v_current_streak := public.calculate_streak(p_user_id);\n\n    prev_date := NULL;\n    current_streak_count := 0;\n    v_longest_streak_from_calculation := 0;\n\n    FOR entry_record IN\n        SELECT entry_date FROM public.gratitude_entries\n        WHERE user_id = p_user_id ORDER BY entry_date ASC\n    LOOP\n        IF prev_date IS NULL THEN\n            current_streak_count := 1;\n        ELSIF entry_record.entry_date = prev_date + INTERVAL '1 day' THEN\n            current_streak_count := current_streak_count + 1;\n        ELSE\n            v_longest_streak_from_calculation := GREATEST(v_longest_streak_from_calculation, current_streak_count);\n            current_streak_count := 1;\n        END IF;\n        \n        prev_date := entry_record.entry_date;\n    END LOOP;\n\n    v_longest_streak_from_calculation := GREATEST(v_longest_streak_from_calculation, current_streak_count);\n\n    IF v_last_entry_date IS NULL THEN\n        v_current_streak := 0;\n        v_longest_streak_from_calculation := 0;\n        v_last_entry_date := NULL;\n    END IF;\n\n    INSERT INTO public.streaks (user_id, current_streak, longest_streak, last_entry_date, created_at, updated_at)\n    VALUES (p_user_id, v_current_streak, v_longest_streak_from_calculation, v_last_entry_date, NOW(), NOW())\n    ON CONFLICT (user_id) \n    DO UPDATE SET\n        current_streak = EXCLUDED.current_streak,\n        longest_streak = GREATEST(streaks.longest_streak, EXCLUDED.longest_streak),\n        last_entry_date = EXCLUDED.last_entry_date,\n        updated_at = NOW();\n        \n    RAISE NOTICE 'Streak recalculated for user %: current=%, longest=%, last_date=%', \n        p_user_id, v_current_streak, v_longest_streak_from_calculation, v_last_entry_date;\nEND;\n$function$\n",
+    "definition": "CREATE OR REPLACE FUNCTION public.recalculate_user_streak(p_user_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_current_streak int := 0;\n  v_longest_streak int := 0;\n  v_running_streak int := 0;\n  v_prev_date date := null;\n  v_last_entry_date date := null;\n  entry_record record;\nbegin\n  if p_user_id is null then\n    raise exception 'User ID cannot be null';\n  end if;\n\n  v_current_streak := public.calculate_streak(p_user_id);\n\n  for entry_record in\n    select entry_date\n    from public.gratitude_entries\n    where user_id = p_user_id\n      and coalesce(jsonb_array_length(statements), 0) > 0\n    order by entry_date asc\n  loop\n    if v_prev_date is null then\n      v_running_streak := 1;\n    elsif entry_record.entry_date = v_prev_date + interval '1 day' then\n      v_running_streak := v_running_streak + 1;\n    elsif entry_record.entry_date = v_prev_date then\n      -- Duplicate day (shouldn't happen, but be safe).\n      null;\n    else\n      v_running_streak := 1;\n    end if;\n\n    if v_running_streak > v_longest_streak then\n      v_longest_streak := v_running_streak;\n    end if;\n\n    v_prev_date := entry_record.entry_date;\n    v_last_entry_date := entry_record.entry_date;\n  end loop;\n\n  v_longest_streak := greatest(v_longest_streak, v_current_streak);\n\n  insert into public.streaks (user_id, current_streak, longest_streak, last_entry_date, created_at, updated_at)\n  values (p_user_id, v_current_streak, v_longest_streak, v_last_entry_date, now(), now())\n  on conflict (user_id) do update\n    set current_streak = excluded.current_streak,\n        longest_streak = greatest(public.streaks.longest_streak, excluded.longest_streak),\n        last_entry_date = excluded.last_entry_date,\n        updated_at = now();\nend;\n$function$\n",
     "function_oid": 20338
   },
   {
@@ -696,7 +794,7 @@
     "returns_set": false,
     "result_type": "void",
     "arguments": "p_entry_date date, p_statement_index integer, p_mood text",
-    "definition": "CREATE OR REPLACE FUNCTION public.set_statement_mood(p_entry_date date, p_statement_index integer, p_mood text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\n  v_row_id uuid;\n  v_moods jsonb;\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  select id, coalesce(moods, '{}'::jsonb)\n    into v_row_id, v_moods\n  from public.gratitude_entries\n  where user_id = v_user_id and entry_date = p_entry_date\n  for update;\n\n  if not found then\n    raise exception 'Entry not found for date %', p_entry_date using errcode = 'P0002';\n  end if;\n\n  if p_mood is null then\n    update public.gratitude_entries\n    set moods = v_moods - (p_statement_index)::text,\n        updated_at = now()\n    where id = v_row_id;\n  else\n    update public.gratitude_entries\n    set moods = jsonb_set(v_moods, array[(p_statement_index)::text], to_jsonb(p_mood), true),\n        updated_at = now()\n    where id = v_row_id;\n  end if;\nend;\n$function$\n",
+    "definition": "CREATE OR REPLACE FUNCTION public.set_statement_mood(p_entry_date date, p_statement_index integer, p_mood text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid := auth.uid();\n  v_row_id uuid;\n  v_moods jsonb;\n  v_len int;\n  v_clean_mood text := nullif(trim(coalesce(p_mood, '')), '');\nbegin\n  if v_user_id is null then\n    raise exception 'Not authenticated' using errcode = '28000';\n  end if;\n\n  select id, coalesce(moods, '{}'::jsonb), coalesce(jsonb_array_length(statements), 0)\n    into v_row_id, v_moods, v_len\n  from public.gratitude_entries\n  where user_id = v_user_id and entry_date = p_entry_date\n  for update;\n\n  if not found then\n    raise exception 'Entry not found for date %', p_entry_date using errcode = 'P0002';\n  end if;\n\n  if p_statement_index < 0 or p_statement_index >= v_len then\n    raise exception 'Invalid statement index % (length %)', p_statement_index, v_len\n      using errcode = '22003';\n  end if;\n\n  if v_clean_mood is null then\n    update public.gratitude_entries\n    set moods = v_moods - (p_statement_index)::text,\n        updated_at = now()\n    where id = v_row_id;\n  else\n    update public.gratitude_entries\n    set moods = jsonb_set(v_moods, array[(p_statement_index)::text], to_jsonb(v_clean_mood), true),\n        updated_at = now()\n    where id = v_row_id;\n  end if;\nend;\n$function$\n",
     "function_oid": 148182
   },
   {
@@ -794,7 +892,7 @@
     "returns_set": false,
     "result_type": "trigger",
     "arguments": "",
-    "definition": "CREATE OR REPLACE FUNCTION public.update_user_streak()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n   DECLARE\n       v_user_id UUID;\n       v_calculated_current_streak_for_block INT := 0;\n       v_final_current_streak_to_set INT := 0;\n       v_longest_streak_from_calculation INT := 0;\n       v_loop_last_processed_date DATE;\n       v_streak_block_end_date DATE;\n       entry_record RECORD;\n   BEGIN\n       IF (TG_OP = 'DELETE') THEN\n           v_user_id := OLD.user_id;\n       ELSE\n           v_user_id := NEW.user_id;\n       END IF;\n\n       FOR entry_record IN\n           SELECT entry_date\n           FROM public.gratitude_entries\n           WHERE user_id = v_user_id\n           ORDER BY entry_date ASC\n       LOOP\n           IF v_loop_last_processed_date IS NULL THEN\n               v_calculated_current_streak_for_block := 1;\n           ELSE\n               IF entry_record.entry_date = v_loop_last_processed_date + INTERVAL '1 day' THEN\n                   v_calculated_current_streak_for_block := v_calculated_current_streak_for_block + 1;\n               ELSE\n                   v_calculated_current_streak_for_block := 1;\n               END IF;\n           END IF;\n\n           IF v_calculated_current_streak_for_block > v_longest_streak_from_calculation THEN\n               v_longest_streak_from_calculation := v_calculated_current_streak_for_block;\n           END IF;\n\n           v_loop_last_processed_date := entry_record.entry_date;\n           v_streak_block_end_date := entry_record.entry_date;\n       END LOOP;\n\n       IF v_loop_last_processed_date IS NULL THEN\n           v_final_current_streak_to_set := 0;\n           v_longest_streak_from_calculation := 0;\n           v_streak_block_end_date := NULL;\n       ELSE\n           IF v_streak_block_end_date = CURRENT_DATE\n              OR v_streak_block_end_date = (CURRENT_DATE - INTERVAL '1 day') THEN\n               v_final_current_streak_to_set := v_calculated_current_streak_for_block;\n           ELSE\n               v_final_current_streak_to_set := 0;\n           END IF;\n       END IF;\n\n       INSERT INTO public.streaks (\n           user_id, current_streak, longest_streak, last_entry_date, updated_at\n       )\n       VALUES (\n           v_user_id, v_final_current_streak_to_set, v_longest_streak_from_calculation, v_streak_block_end_date, now()\n       )\n       ON CONFLICT (user_id) DO UPDATE\n       SET current_streak = EXCLUDED.current_streak,\n           longest_streak = GREATEST(public.streaks.longest_streak, EXCLUDED.longest_streak),\n           last_entry_date = EXCLUDED.last_entry_date,\n           updated_at = now();\n\n       RETURN NULL;\n   END;\n$function$\n",
+    "definition": "CREATE OR REPLACE FUNCTION public.update_user_streak()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\ndeclare\n  v_user_id uuid;\nbegin\n  v_user_id := coalesce(new.user_id, old.user_id);\n  if v_user_id is not null then\n    perform public.recalculate_user_streak(v_user_id);\n  end if;\n  return coalesce(new, old);\nend;\n$function$\n",
     "function_oid": 17304
   },
   {
@@ -807,9 +905,9 @@
     "strict": true,
     "returns_set": false,
     "result_type": "text",
-    "arguments": "data jsonb",
-    "definition": "CREATE OR REPLACE FUNCTION public.urlencode(data jsonb)\n RETURNS text\n LANGUAGE c\n IMMUTABLE STRICT\nAS '$libdir/http', $function$urlencode_jsonb$function$\n",
-    "function_oid": 40667
+    "arguments": "string character varying",
+    "definition": "CREATE OR REPLACE FUNCTION public.urlencode(string character varying)\n RETURNS text\n LANGUAGE c\n IMMUTABLE STRICT\nAS '$libdir/http', $function$urlencode$function$\n",
+    "function_oid": 40665
   },
   {
     "schema_name": "public",
@@ -835,8 +933,22 @@
     "strict": true,
     "returns_set": false,
     "result_type": "text",
-    "arguments": "string character varying",
-    "definition": "CREATE OR REPLACE FUNCTION public.urlencode(string character varying)\n RETURNS text\n LANGUAGE c\n IMMUTABLE STRICT\nAS '$libdir/http', $function$urlencode$function$\n",
-    "function_oid": 40665
+    "arguments": "data jsonb",
+    "definition": "CREATE OR REPLACE FUNCTION public.urlencode(data jsonb)\n RETURNS text\n LANGUAGE c\n IMMUTABLE STRICT\nAS '$libdir/http', $function$urlencode_jsonb$function$\n",
+    "function_oid": 40667
+  },
+  {
+    "schema_name": "public",
+    "function_name": "validate_profile_timezone",
+    "owner": "postgres",
+    "language": "plpgsql",
+    "security_definer": false,
+    "volatility": "volatile",
+    "strict": false,
+    "returns_set": false,
+    "result_type": "trigger",
+    "arguments": "",
+    "definition": "CREATE OR REPLACE FUNCTION public.validate_profile_timezone()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nbegin\n  if new.timezone is null then\n    return new;\n  end if;\n\n  if not exists (\n    select 1 from pg_timezone_names where name = new.timezone\n  ) then\n    raise exception 'Invalid IANA timezone: %', new.timezone\n      using errcode = '22023';\n  end if;\n\n  return new;\nend;\n$function$\n",
+    "function_oid": 888407
   }
 ]

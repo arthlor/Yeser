@@ -1,13 +1,11 @@
 import { useCallback, useEffect } from 'react';
 import { useSubscriptionStore } from '@/store/subscriptionStore';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/types/navigation';
 import { PurchasesPackage } from 'react-native-purchases';
+
+import { presentNativePaywall } from '@/features/subscription/presentPaywall';
 
 export const useSubscription = () => {
   const store = useSubscriptionStore();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     // Optional: Auto-check status when hook mounts if needed,
@@ -16,21 +14,27 @@ export const useSubscription = () => {
 
   /**
    * Universal gate checker.
-   * If user is NOT pro, it navigates to Paywall/Modal (optional) and returns false.
-   * If user IS pro, returns true.
+   *
+   * If the user is Pro, returns `true` (caller proceeds).
+   *
+   * Otherwise presents RevenueCat's **native** paywall (video + layout work
+   * correctly because the paywall is pushed as a real UIViewController, not
+   * embedded inside a React Native view) and returns `false` so the caller
+   * skips the gated action.
+   *
+   * The presentation is fire-and-forget; callers that need to know the final
+   * result (purchased / cancelled) should call `presentNativePaywall`
+   * directly and await it.
    */
   const checkGate = useCallback(
     (featureName?: string): boolean => {
       if (store.isPro) {
         return true;
       }
-      // Navigate to Paywall by default if check fails
-      // We use the root navigator to ensure it overlays everything
-      // The navigation structure might be nested, ensuring safety
-      navigation.navigate('PaywallModal', { source: featureName });
+      void presentNativePaywall(featureName);
       return false;
     },
-    [store.isPro, navigation]
+    [store.isPro]
   );
 
   return {

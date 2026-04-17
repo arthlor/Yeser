@@ -25,6 +25,7 @@ import PastEntryItem from '@/features/calendar/components/past-entries/PastEntry
 import PastEntriesEmptyState from '@/features/calendar/components/past-entries/PastEntriesEmptyState';
 import PastEntriesErrorState from '@/features/calendar/components/past-entries/PastEntriesErrorState';
 import PastEntriesSkeletonLoader from '@/features/calendar/components/past-entries/PastEntriesSkeletonLoader';
+import { ThemedInput } from '@/shared/components/ui';
 import type { AppTheme } from '@/themes/types';
 import type { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 import { MainTabParamList, RootStackParamList } from '@/types/navigation';
@@ -52,6 +53,16 @@ const PastEntriesScreen: React.FC = () => {
   const { showSuccess, handleMutationError } = useGlobalError();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const [searchInput, setSearchInput] = React.useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState('');
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchTerm(searchInput.trim());
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchInput]);
 
   const {
     data,
@@ -63,7 +74,7 @@ const PastEntriesScreen: React.FC = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useGratitudeEntriesPaginated();
+  } = useGratitudeEntriesPaginated(20, debouncedSearchTerm);
 
   // Flatten the paginated data into a single array
   const entries = useMemo(() => {
@@ -74,11 +85,19 @@ const PastEntriesScreen: React.FC = () => {
   }, [data]);
 
   // Get total count from the first page (for future use)
-  // const totalCount = data?.pages?.[0]?.totalCount || 0;
+  const totalCount = data?.pages?.[0]?.totalCount || 0;
 
   useEffect(() => {
     analyticsService.logScreenView('PastEntriesScreen');
   }, []);
+
+  useEffect(() => {
+    if (debouncedSearchTerm.length > 0) {
+      analyticsService.logEvent('past_entries_search', {
+        search_term_length: debouncedSearchTerm.length,
+      });
+    }
+  }, [debouncedSearchTerm]);
 
   // Enhanced error handling using centralized system
   useEffect(() => {
@@ -131,11 +150,50 @@ const PastEntriesScreen: React.FC = () => {
   const translatedErrorMessage = useMemo(() => {
     return error ? safeErrorDisplay(error) : t('pastEntries.error.generic');
   }, [error, t]);
+  const isSearchActive = searchInput.length > 0;
+  const isDebouncedSearchActive = debouncedSearchTerm.length > 0;
 
-  const styles = createStyles(theme, insets);
+  // Optimized style memoization
+  const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
+
+  // Extract header to separate memoized component for focus stability
+  const ListHeader = useMemo(
+    () => (
+      <View key="past-entries-header">
+        <PastEntriesHeader
+          title={t('pastEntries.title')}
+          entryCount={totalCount || entries.length}
+        />
+        <View style={styles.searchContainer}>
+          <ThemedInput
+            value={searchInput}
+            onChangeText={setSearchInput}
+            placeholder={t('pastEntries.search.placeholder', {
+              defaultValue: 'Search your memories...',
+            })}
+            leftIcon="magnify"
+            variant="filled" // We will style this to be "stealth" in createStyles
+            showClearButton
+            onClear={() => setSearchInput('')}
+            accessibilityLabel={t('pastEntries.search.a11y', {
+              defaultValue: 'Search gratitude statements',
+            })}
+          />
+        </View>
+      </View>
+    ),
+    [searchInput, totalCount, entries.length, styles, t]
+  );
+
+  // NEW LOADING STRATEGY:
+  // - Show full skeleton ONLY on initial load (no entries and no active search loading)
+  // - If we are filtering (isSearchActive), we keep the list visible with its results
+  const shouldShowFullSkeleton =
+    isLoading && !isRefetching && entries.length === 0 && !isSearchActive;
+  const shouldShowEmptyState = entries.length === 0 && !isLoading && !isRefetching;
 
   // Loading state with enhanced skeleton
-  if (isLoading && !isRefetching) {
+  if (shouldShowFullSkeleton) {
     return (
       <View style={styles.edgeToEdgeContainer}>
         <StatusBar
@@ -144,7 +202,7 @@ const PastEntriesScreen: React.FC = () => {
           barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
         />
         <View style={styles.scrollableContent}>
-          <PastEntriesHeader title={t('pastEntries.title')} subtitle={t('common.loading')} />
+          {ListHeader}
           <PastEntriesSkeletonLoader count={5} />
         </View>
       </View>
@@ -152,7 +210,7 @@ const PastEntriesScreen: React.FC = () => {
   }
 
   // Error state with enhanced error UI
-  if (isError && !isRefetching) {
+  if (isError && !isRefetching && entries.length === 0) {
     return (
       <View style={styles.edgeToEdgeContainer}>
         <StatusBar
@@ -161,15 +219,32 @@ const PastEntriesScreen: React.FC = () => {
           barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
         />
         <View style={styles.scrollableContent}>
-          <PastEntriesHeader title={t('pastEntries.title')} />
+          {ListHeader}
           <PastEntriesErrorState error={translatedErrorMessage} onRetry={handleRetry} />
         </View>
       </View>
     );
   }
 
-  // Empty state with enhanced onboarding
-  if (entries.length === 0 && !isRefetching) {
+  // Pure Empty state (only when not loading and no results)
+  if (shouldShowEmptyState) {
+    const emptyContent = isDebouncedSearchActive ? (
+      <View style={styles.searchEmptyState}>
+        <Text style={styles.searchEmptyTitle}>
+          {t('pastEntries.search.emptyTitle', {
+            defaultValue: 'No matching entries found',
+          })}
+        </Text>
+        <Text style={styles.searchEmptyText}>
+          {t('pastEntries.search.emptySubtitle', {
+            defaultValue: 'Try another word or clear your search to view all entries.',
+          })}
+        </Text>
+      </View>
+    ) : (
+      <PastEntriesEmptyState />
+    );
+
     return (
       <View style={styles.edgeToEdgeContainer}>
         <StatusBar
@@ -178,8 +253,8 @@ const PastEntriesScreen: React.FC = () => {
           barStyle={theme.name === 'dark' ? 'light-content' : 'dark-content'}
         />
         <View style={styles.scrollableContent}>
-          <PastEntriesHeader title={t('pastEntries.title')} />
-          <PastEntriesEmptyState />
+          {ListHeader}
+          {emptyContent}
         </View>
       </View>
     );
@@ -197,9 +272,7 @@ const PastEntriesScreen: React.FC = () => {
         data={entries}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        ListHeaderComponent={
-          <PastEntriesHeader title={t('pastEntries.title')} entryCount={entries.length} />
-        }
+        ListHeaderComponent={ListHeader}
         ListFooterComponent={
           <View style={styles.footerContainer}>
             <View style={styles.paginationPill}>
@@ -273,12 +346,39 @@ const createStyles = (
       flex: 1,
       paddingBottom: insets.bottom + theme.spacing.xl, // Extra space for better scrolling
     },
+    searchContainer: {
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.xl,
+    },
     listContent: {
-      paddingBottom: insets.bottom + theme.spacing.xxxl, // Extra space for better scrolling
+      paddingBottom: insets.bottom + theme.spacing.xxxl,
+      paddingTop: theme.spacing.md,
     },
     list: {
       flex: 1,
       backgroundColor: theme.colors.background,
+    },
+    searchEmptyState: {
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.md,
+      padding: theme.spacing.xl,
+      borderRadius: theme.borderRadius.xl,
+      backgroundColor: theme.colors.surface + '80', // Tonal layering
+      gap: theme.spacing.sm,
+      alignItems: 'center',
+    },
+    searchEmptyTitle: {
+      ...theme.typography.titleMedium,
+      color: theme.colors.onSurface,
+      fontFamily: 'Lora-Bold',
+      textAlign: 'center',
+    },
+    searchEmptyText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onSurfaceVariant,
+      lineHeight: 22,
+      textAlign: 'center',
+      opacity: 0.7,
     },
     footerContainer: {
       paddingTop: theme.spacing.md,
@@ -309,17 +409,17 @@ const createStyles = (
       color: theme.colors.onSurfaceVariant,
     },
     loadMoreButton: {
-      backgroundColor: theme.colors.surface,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
+      backgroundColor: theme.colors.surface + '80',
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
       borderRadius: theme.borderRadius.full,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '25',
     },
     loadMoreText: {
       ...theme.typography.labelMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '700',
+      color: theme.colors.primary,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
     },
   });
 

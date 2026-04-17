@@ -2,13 +2,8 @@
 // AI gratitude chatbot for supportive conversations
 // Self-contained - no shared imports
 
-import { serve } from 'https://deno.land/std@0.214.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import {
-  GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
-} from 'npm:@google/generative-ai@0.21.0';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 // ============================================================================
 // CORS Helpers
@@ -47,36 +42,6 @@ function handleCors(request: Request): Response | null {
 // ============================================================================
 // Gemini Client
 // ============================================================================
-
-function getGeminiModel() {
-  const apiKey = Deno.env.get('GEMINI_API_KEY');
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not set in Supabase secrets');
-  }
-
-  const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({
-    model: 'gemini-3-flash-preview',
-    safetySettings: [
-      {
-        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-      },
-      {
-        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-      },
-      {
-        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-      },
-      {
-        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-      },
-    ],
-  });
-}
 
 async function generateText(prompt: string, systemInstruction?: string): Promise<string> {
   const apiKey = Deno.env.get('GEMINI_API_KEY');
@@ -231,7 +196,7 @@ interface ChatMessageResponse {
 function buildSystemPrompt(language: string, recentEntries: string[]): string {
   const entriesContext =
     recentEntries.length > 0
-      ? `\n\nRecent gratitude entries from this user:\n${recentEntries.map((e, i) => `- ${e}`).join('\n')}`
+      ? `\n\nRecent gratitude entries from this user:\n${recentEntries.map((e: string) => `- ${e}`).join('\n')}`
       : '';
 
   let languageNote = 'Respond in English.';
@@ -270,13 +235,13 @@ function buildConversationPrompt(message: string, history: ChatMessage[]): strin
 
   const historyText = history
     .slice(-6) // Keep last 6 messages for context
-    .map((m) => `${m.role === 'user' ? 'User' : 'Yeşer'}: ${m.content}`)
+    .map((m: ChatMessage) => `${m.role === 'user' ? 'User' : 'Yeşer'}: ${m.content}`)
     .join('\n');
 
   return `${historyText}\nUser: ${message}`;
 }
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 

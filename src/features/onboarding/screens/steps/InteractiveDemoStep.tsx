@@ -2,12 +2,13 @@ import { analyticsService } from '@/services/analyticsService';
 import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
-import { Ionicons } from '@expo/vector-icons';
+import { OnboardingMascot } from '@/features/onboarding/components/OnboardingMascot';
+import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { getPrimaryShadow } from '@/themes/utils';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
 import type { MoodEmoji } from '@/types/mood.types';
 
@@ -44,6 +45,11 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
   const [hasWrittenStatement, setHasWrittenStatement] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // Guards against double advancement when the mutation fires both
+  // onSuccess and a retry callback, or when the user taps twice.
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const advancedRef = useRef(false);
+
   // **COORDINATED ANIMATION SYSTEM**: Single instance for all demo animations
   const animations = useCoordinatedAnimations();
 
@@ -59,6 +65,27 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
     }
   }, [showSuccess, animations]);
 
+  // Cancel any pending auto-advance when unmounting.
+  useEffect(() => {
+    return () => {
+      if (advanceTimerRef.current) {
+        clearTimeout(advanceTimerRef.current);
+        advanceTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const scheduleAdvance = useCallback(() => {
+    if (advancedRef.current || advanceTimerRef.current) {
+      return;
+    }
+    advanceTimerRef.current = setTimeout(() => {
+      advancedRef.current = true;
+      advanceTimerRef.current = null;
+      onNext();
+    }, 2400);
+  }, [onNext]);
+
   const handleStatementSubmit = useCallback(
     (statement: string, mood: MoodEmoji | null) => {
       // Save as real gratitude entry for today's date
@@ -72,7 +99,6 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             setShowSuccess(true);
             hapticFeedback.success();
 
-            // Track demo completion with success
             analyticsService.logEvent('onboarding_demo_statement_saved', {
               statement_length: statement.length,
               used_prompt: !!currentPrompt,
@@ -80,13 +106,10 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
               mood,
             });
 
-            // Auto-advance after celebration
-            setTimeout(() => {
-              onNext();
-            }, 2500);
+            scheduleAdvance();
           },
           onError: (error: Error) => {
-            // Still show success for UX, but track the error
+            // Still celebrate for UX but record the error.
             setHasWrittenStatement(true);
             setShowSuccess(true);
             hapticFeedback.success();
@@ -97,15 +120,12 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
               mood,
             });
 
-            // Continue with onboarding even if save failed
-            setTimeout(() => {
-              onNext();
-            }, 2500);
+            scheduleAdvance();
           },
         }
       );
     },
-    [currentPrompt, onNext, addStatement]
+    [currentPrompt, scheduleAdvance, addStatement]
   );
 
   const getPromptText = () => {
@@ -119,7 +139,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
   };
 
   return (
-    <OnboardingLayout edgeToEdge={true}>
+    <OnboardingLayout edgeToEdge={true} ambient="sunrise">
       <Animated.View
         style={[
           styles.container,
@@ -128,7 +148,6 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
           },
         ]}
       >
-        {/* Standardized compact header */}
         <ScreenSection>
           <OnboardingNavHeader
             onBack={() => {
@@ -138,21 +157,24 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
           />
         </ScreenSection>
 
-        {/* Content Header */}
+        <OnboardingMascot source={require('@/assets/assets/mascot1.png')} delay={200} />
+
         <ScreenSection>
           <View style={styles.header}>
+            <View style={styles.kickerPill}>
+              <Feather name="sun" size={12} color={theme.colors.secondary} />
+              <Text style={styles.kickerText}>{t('onboarding.demo.kicker')}</Text>
+            </View>
             <Text style={styles.title}>{t('onboarding.demo.title')}</Text>
             <Text style={styles.subtitle}>{t('onboarding.demo.subtitle')}</Text>
           </View>
         </ScreenSection>
 
-        {/* Interactive Demo Section */}
         <ScreenSection>
           <View style={styles.demoArea}>
-            {/* Current Prompt Display */}
             <View style={styles.promptCard}>
               <View style={styles.promptHeader}>
-                <Ionicons name="bulb-outline" size={20} color={theme.colors.primary} />
+                <Feather name="sunrise" size={14} color={theme.colors.primary} />
                 <Text style={styles.promptLabel}>{t('onboarding.demo.promptLabel')}</Text>
               </View>
               {promptLoading ? (
@@ -165,7 +187,6 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
               )}
             </View>
 
-            {/* Gratitude Input - Using Specialized Onboarding Component */}
             <OnboardingGratitudeInput
               onSubmitWithMood={handleStatementSubmit}
               placeholder={t('onboarding.demo.placeholder')}
@@ -177,7 +198,6 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
               disabled={isAddingStatement || hasWrittenStatement}
             />
 
-            {/* Success Celebration */}
             {showSuccess && (
               <Animated.View
                 style={[
@@ -189,8 +209,14 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
               >
                 <View style={styles.successCard}>
                   <View style={styles.successContent}>
+                    <View style={styles.successBadge}>
+                      <Feather name="check" size={18} color={theme.colors.onPrimary} />
+                    </View>
                     <Text style={styles.successTitle}>{t('onboarding.demo.successTitle')}</Text>
                     <Text style={styles.successText}>{t('onboarding.demo.successText')}</Text>
+                    <Text style={styles.successFootnote}>
+                      {t('onboarding.demo.successFootnote')}
+                    </Text>
                   </View>
                 </View>
               </Animated.View>
@@ -198,7 +224,6 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
           </View>
         </ScreenSection>
 
-        {/* Progress & Actions Section */}
         <ScreenSection>
           <View style={styles.footer}>
             {isAddingStatement && (
@@ -209,9 +234,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             )}
 
             {!hasWrittenStatement && !isAddingStatement && (
-              <>
-                <Text style={styles.encouragement}>{t('onboarding.demo.encouragement')}</Text>
-              </>
+              <Text style={styles.encouragement}>{t('onboarding.demo.encouragement')}</Text>
             )}
           </View>
         </ScreenSection>
@@ -230,38 +253,57 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       paddingTop: 0,
     },
+    kickerPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 3,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.secondary + '18',
+      marginBottom: theme.spacing.xs,
+    },
+    kickerText: {
+      ...theme.typography.labelSmall,
+      fontSize: 10,
+      color: theme.colors.secondary,
+      letterSpacing: 0.3,
+    },
     title: {
-      ...theme.typography.headlineLarge,
+      ...theme.typography.headlineMedium,
+      fontSize: 24,
+      fontWeight: '700',
       color: theme.colors.onBackground,
       textAlign: 'center',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
     },
     subtitle: {
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
+      fontSize: 14,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 24,
+      lineHeight: 20,
     },
     demoArea: {
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
     promptCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
-      padding: theme.spacing.lg,
+      padding: theme.spacing.md,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.outline + '25',
-      // 🌟 Beautiful primary shadow for prompt card (no react-native-paper conflicts)
       ...getPrimaryShadow.card(theme),
     },
     promptHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
       gap: theme.spacing.xs,
     },
     promptLabel: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodySmall,
+      fontSize: 12,
       color: theme.colors.primary,
       fontWeight: '600',
     },
@@ -271,10 +313,11 @@ const createStyles = (theme: AppTheme) =>
       gap: theme.spacing.sm,
     },
     promptText: {
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
+      fontSize: 14,
       color: theme.colors.onBackground,
       fontStyle: 'italic',
-      lineHeight: 22,
+      lineHeight: 20,
     },
     successContainer: {
       position: 'absolute',
@@ -288,43 +331,68 @@ const createStyles = (theme: AppTheme) =>
     successCard: {
       backgroundColor: theme.colors.surface,
       marginHorizontal: theme.spacing.md,
-      borderRadius: theme.borderRadius.lg,
-      // 🌟 Beautiful primary shadow for success card (no react-native-paper conflicts)
+      borderRadius: theme.borderRadius.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '30',
       ...getPrimaryShadow.overlay(theme),
     },
     successContent: {
       alignItems: 'center',
-      padding: theme.spacing.xl,
+      padding: theme.spacing.lg,
+      gap: theme.spacing.xs,
+    },
+    successBadge: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: theme.spacing.xs,
     },
     successTitle: {
-      ...theme.typography.headlineMedium,
+      ...theme.typography.titleLarge,
+      fontSize: 20,
+      fontWeight: '700',
       color: theme.colors.onBackground,
-      marginBottom: theme.spacing.sm,
+      marginBottom: 2,
+      textAlign: 'center',
     },
     successText: {
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
+      fontSize: 14,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 22,
+      lineHeight: 20,
+    },
+    successFootnote: {
+      ...theme.typography.bodySmall,
+      fontSize: 12,
+      color: theme.colors.primary,
+      marginTop: theme.spacing.xs,
+      textAlign: 'center',
+      fontWeight: '600',
+      letterSpacing: 0.3,
     },
     footer: {
       alignItems: 'center',
       gap: theme.spacing.xs,
     },
     encouragement: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodySmall,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
       fontStyle: 'italic',
       textAlign: 'center',
     },
-
     savingContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.xs,
     },
     savingText: {
-      ...theme.typography.bodyMedium,
+      ...theme.typography.bodySmall,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
   });

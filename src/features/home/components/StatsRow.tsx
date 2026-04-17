@@ -31,26 +31,33 @@ const MiniStatCard: React.FC<{
     <ThemedCard
       variant="elevated"
       density="compact"
-      elevation="xs"
+      elevation="none"
       onPress={onPress}
-      touchableProps={{ activeOpacity: 0.85 }}
+      touchableProps={{ activeOpacity: 0.9 }}
       style={styles.card}
     >
-      <View style={styles.row}>
-        <View style={[styles.iconWrap, { backgroundColor: iconColor + '22' }]}>
+      <View style={styles.contentWrap}>
+        <View
+          style={[
+            styles.iconContainer,
+            { backgroundColor: iconColor + (theme.name === 'dark' ? '25' : '15') },
+          ]}
+        >
           <Icon name={icon} size={16} color={iconColor} />
         </View>
-        <View style={styles.texts}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
+        <View style={styles.textStack}>
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {title.replace('DAILY ', '').replace('DAILY', '')}
           </Text>
-          {!!subtitle && (
-            <Text style={styles.subtitle} numberOfLines={1}>
-              {subtitle}
-            </Text>
-          )}
+          <View style={styles.valueRow}>
+            <Text style={styles.cardValue}>{value}</Text>
+            {!!subtitle && (
+              <Text style={styles.cardSubtitle} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            )}
+          </View>
         </View>
-        <Text style={styles.value}>{value}</Text>
       </View>
     </ThemedCard>
   );
@@ -74,24 +81,33 @@ const ProgressMiniCard: React.FC<{
     <ThemedCard
       variant="elevated"
       density="compact"
-      elevation="xs"
+      elevation="none"
       onPress={onPress}
-      touchableProps={{ activeOpacity: 0.85 }}
+      touchableProps={{ activeOpacity: 0.9 }}
       style={styles.card}
     >
-      <View style={styles.row}>
-        <View style={[styles.iconWrap, { backgroundColor: theme.colors.primary + '22' }]}>
+      <View style={styles.contentWrap}>
+        <View
+          style={[
+            styles.iconContainer,
+            { backgroundColor: theme.colors.primary + (theme.name === 'dark' ? '25' : '15') },
+          ]}
+        >
           <Icon name="check-circle" size={16} color={theme.colors.primary} />
         </View>
-        <View style={styles.texts}>
-          <Text style={styles.title} numberOfLines={1}>
-            {t('home.stats.dailyProgress')}
+        <View style={styles.textStack}>
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {t('home.stats.dailyProgress').replace('DAILY ', '').replace('DAILY', '')}
           </Text>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${ratio * 100}%` }]} />
+          <View style={styles.valueRow}>
+            <Text style={styles.cardValue}>{progressLabel}</Text>
+            <View style={styles.progressInlineWrapper}>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${ratio * 100}%` }]} />
+              </View>
+            </View>
           </View>
         </View>
-        <Text style={styles.value}>{progressLabel}</Text>
       </View>
     </ThemedCard>
   );
@@ -149,7 +165,7 @@ const createRowStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
     rowContainer: {
       flexDirection: 'row',
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
     },
     item: {
       flex: 1,
@@ -159,48 +175,79 @@ const createRowStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
 const createMiniStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
     card: {
-      borderRadius: theme.borderRadius.lg,
+      borderRadius: 16,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '10',
+      paddingVertical: 10,
+      paddingHorizontal: 10,
+      shadowColor: '#000',
+      shadowOpacity: theme.name === 'dark' ? 0.25 : 0.05,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 2,
     },
-    row: {
+    contentWrap: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      minHeight: 44,
+      gap: 10,
     },
-    iconWrap: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
+    iconContainer: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    texts: {
+    textStack: {
       flex: 1,
-      marginHorizontal: theme.spacing.xs,
+      justifyContent: 'center',
     },
-    title: {
-      ...theme.typography.labelLarge,
-      color: theme.colors.onSurface,
+    valueRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 6,
+      marginTop: -2,
     },
-    subtitle: {
+    cardTitle: {
       ...theme.typography.labelSmall,
       color: theme.colors.onSurfaceVariant,
+      fontSize: 9,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 1.2,
+      opacity: 0.5,
+      marginBottom: 0,
     },
-    value: {
-      ...theme.typography.titleSmall,
+    cardSubtitle: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      opacity: 0.6,
+      fontSize: 10,
+    },
+    cardValue: {
+      ...theme.typography.titleMedium,
       color: theme.colors.onSurface,
-      fontWeight: '700',
-      marginLeft: theme.spacing.xs,
+      fontFamily: theme.typography.fontFamilySerifBold || 'Lora-Bold',
+      fontWeight: '800',
+      letterSpacing: -0.2,
+    },
+    progressInlineWrapper: {
+      flex: 1,
+      height: 4,
+      justifyContent: 'center',
+      marginLeft: 4,
+      maxWidth: 40,
     },
     progressBar: {
       height: 4,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.outline + '30',
+      borderRadius: 2,
+      backgroundColor: theme.colors.outline + '10',
       overflow: 'hidden',
-      marginTop: 4,
     },
     progressFill: {
       height: '100%',
       backgroundColor: theme.colors.primary,
+      borderRadius: 2,
     },
   });

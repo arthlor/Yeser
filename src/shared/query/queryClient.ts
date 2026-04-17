@@ -30,6 +30,8 @@ export const QUERY_STALE_TIMES = {
   monthlyData: 20 * 60 * 1000, // 20 minutes (historical data)
   analytics: 30 * 60 * 1000, // 30 minutes (insights recompute occasionally)
   moodInsights: 60 * 60 * 1000, // 60 minutes (AI insights are expensive)
+  insightSnapshots: 10 * 60 * 1000, // 10 minutes (cheap to read, changes after explicit reveal)
+  insightEntryCounts: 2 * 60 * 1000, // 2 minutes (used to determine freshness)
 } as const;
 
 /**

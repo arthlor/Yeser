@@ -196,15 +196,13 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
           <View style={styles.statusSection}>
             <View style={styles.statusHeader}>
               <Icon name="information-outline" size={16} color={theme.colors.onSurfaceVariant} />
-              <Text style={styles.statusTitle}>
-                {t('pastEntries.error.statusTitle', 'System Status')}
-              </Text>
+              <Text style={styles.statusTitle}>{t('pastEntries.error.statusTitle')}</Text>
             </View>
 
             <View style={styles.statusGrid}>
               <View style={styles.statusItem}>
                 <View style={[styles.statusDot, { backgroundColor: theme.colors.success }]} />
-                <Text style={styles.statusText}>{t('pastEntries.error.status.app', 'App')}</Text>
+                <Text style={styles.statusText}>{t('pastEntries.error.status.app')}</Text>
                 <Text style={styles.statusValue}>{t('pastEntries.error.status.operational')}</Text>
               </View>
 
@@ -218,7 +216,7 @@ const PastEntriesErrorState: React.FC<PastEntriesErrorStateProps> = ({ error, on
                     },
                   ]}
                 />
-                <Text style={styles.statusText}>{t('pastEntries.error.status.data', 'Data')}</Text>
+                <Text style={styles.statusText}>{t('pastEntries.error.status.data')}</Text>
                 <Text style={styles.statusValue}>
                   {errorInfo.type === 'network'
                     ? t('pastEntries.error.status.noConnection')

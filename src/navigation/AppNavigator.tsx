@@ -78,6 +78,7 @@ const MainAppTabNavigator: React.FC = () => {
   const { t } = useTranslation();
   return (
     <Tab.Navigator
+      initialRouteName="DailyEntryTab"
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size: _size }) => {
           let iconName = '';

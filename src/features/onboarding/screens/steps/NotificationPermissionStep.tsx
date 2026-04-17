@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { OnboardingMascot } from '@/features/onboarding/components/OnboardingMascot';
+import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { OnboardingLayout } from '@/features/onboarding/components/OnboardingLayout';
@@ -21,6 +22,8 @@ interface NotificationPermissionStepProps {
   onBack: () => void;
 }
 
+type NotificationSetupStatus = 'idle' | 'success' | 'permissionDenied' | 'setupError';
+
 /**
  * 🔔 NOTIFICATION PERMISSION STEP: Request notification permissions during onboarding
  *
@@ -36,7 +39,8 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
   const { t } = useTranslation();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
+  const [setupStatus, setSetupStatus] = useState<NotificationSetupStatus>('idle');
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
   const animations = useCoordinatedAnimations();
@@ -60,6 +64,8 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
 
   const handleEnableNotifications = useCallback(async () => {
     setIsLoading(true);
+    setSetupStatus('idle');
+    setStatusMessage(null);
     hapticFeedback.light();
 
     try {
@@ -67,28 +73,28 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
       const result = await notificationService.registerForPushNotificationsAsync();
 
       if (result.token) {
-        // Success - permissions granted and token obtained
-        setPermissionGranted(true);
-        hapticFeedback.success();
-
         // Save token to backend
         const saveResult = await notificationService.saveTokenToBackend(result.token);
 
         if (!saveResult.ok) {
-          logger.warn('Token saved but backend save failed:', {
+          logger.error('Notification setup failed while saving token:', {
             error: saveResult.error?.message || 'Unknown error',
           });
-          // Treat RLS/duplicate cases as soft success
+          throw saveResult.error ?? new Error('Failed to save notification token');
         }
 
         const preferenceResult = await notificationService.setNotificationsEnabled(true);
 
         if (!preferenceResult.ok) {
-          logger.warn('Token saved but enabling notifications failed:', {
+          logger.error('Notification setup failed while enabling notifications:', {
             error: preferenceResult.error?.message || 'Unknown error',
           });
-          // Still consider this success for UX - user can re-enable in settings
+          throw preferenceResult.error ?? new Error('Failed to enable notifications');
         }
+
+        setSetupStatus('success');
+        setStatusMessage(null);
+        hapticFeedback.success();
 
         // Track successful permission grant
         analyticsService.logEvent('onboarding_notifications_enabled', {
@@ -102,7 +108,8 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
         }, 1500);
       } else {
         // Permission denied or failed
-        setPermissionGranted(false);
+        setSetupStatus('permissionDenied');
+        setStatusMessage(t('onboarding.notifications.statusSkip'));
         hapticFeedback.error();
 
         // Track permission denial
@@ -120,16 +127,24 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
       logger.error('Notification permission request failed:', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      setPermissionGranted(false);
+      setSetupStatus('setupError');
+      setStatusMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : t('notifications.errors.enableFailed', {
+              defaultValue:
+                'Notification permission was granted, but we could not finish setup. Please try again.',
+            })
+      );
       hapticFeedback.error();
 
-      analyticsService.logEvent('onboarding_notifications_error', {
+      analyticsService.logEvent('onboarding_notifications_setup_error', {
         error_message: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
       setIsLoading(false);
     }
-  }, [onNext]);
+  }, [onNext, t]);
 
   const handleSkip = useCallback(() => {
     hapticFeedback.light();
@@ -146,20 +161,34 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
   }, [onBack]);
 
   return (
-    <OnboardingLayout edgeToEdge={true}>
+    <OnboardingLayout edgeToEdge={true} ambient="calm">
       <Animated.View style={[styles.container, containerStyle]}>
         <ScreenSection>
           <OnboardingNavHeader onBack={handleBack} />
         </ScreenSection>
 
+        <OnboardingMascot source={require('@/assets/assets/mascot2.png')} delay={200} />
+
         {/* Content Header */}
         <ScreenSection>
           <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="notifications-outline" size={40} color={theme.colors.primary} />
-            </View>
             <Text style={styles.title}>{t('onboarding.notifications.title')}</Text>
             <Text style={styles.subtitle}>{t('onboarding.notifications.subtitle')}</Text>
+          </View>
+        </ScreenSection>
+
+        {/* Mock notification preview – makes the promise tangible */}
+        <ScreenSection>
+          <View style={styles.previewCard}>
+            <View style={styles.previewHeader}>
+              <View style={styles.previewAppBadge}>
+                <Feather name="feather" size={12} color={theme.colors.onPrimary} />
+              </View>
+              <Text style={styles.previewAppName}>{t('onboarding.notifications.preview.app')}</Text>
+              <Text style={styles.previewTime}>{t('onboarding.notifications.preview.time')}</Text>
+            </View>
+            <Text style={styles.previewTitle}>{t('onboarding.notifications.preview.title')}</Text>
+            <Text style={styles.previewBody}>{t('onboarding.notifications.preview.body')}</Text>
           </View>
         </ScreenSection>
 
@@ -168,7 +197,7 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
           <View style={styles.benefitsContainer}>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIconContainer}>
-                <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+                <Feather name="clock" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.benefitContent}>
                 <Text style={styles.benefitTitle}>
@@ -182,7 +211,7 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
 
             <View style={styles.benefitItem}>
               <View style={styles.benefitIconContainer}>
-                <Ionicons name="leaf-outline" size={20} color={theme.colors.primary} />
+                <Feather name="feather" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.benefitContent}>
                 <Text style={styles.benefitTitle}>
@@ -196,7 +225,7 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
 
             <View style={styles.benefitItem}>
               <View style={styles.benefitIconContainer}>
-                <Ionicons name="settings-outline" size={20} color={theme.colors.primary} />
+                <Feather name="settings" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.benefitContent}>
                 <Text style={styles.benefitTitle}>
@@ -211,26 +240,29 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
         </ScreenSection>
 
         {/* Success/Error State */}
-        {permissionGranted !== null && (
+        {setupStatus !== 'idle' && (
           <ScreenSection>
             <View
-              style={[styles.statusCard, permissionGranted ? styles.successCard : styles.errorCard]}
+              style={[
+                styles.statusCard,
+                setupStatus === 'success' ? styles.successCard : styles.errorCard,
+              ]}
             >
               <View style={styles.statusContent}>
-                <Ionicons
-                  name={permissionGranted ? 'checkmark-circle' : 'close-circle'}
+                <Feather
+                  name={setupStatus === 'success' ? 'check-circle' : 'x-circle'}
                   size={24}
-                  color={permissionGranted ? theme.colors.success : theme.colors.error}
+                  color={setupStatus === 'success' ? theme.colors.success : theme.colors.error}
                 />
                 <Text
                   style={[
                     styles.statusText,
-                    permissionGranted ? styles.successText : styles.errorText,
+                    setupStatus === 'success' ? styles.successText : styles.errorText,
                   ]}
                 >
-                  {permissionGranted
+                  {setupStatus === 'success'
                     ? t('onboarding.notifications.statusSuccess')
-                    : t('onboarding.notifications.statusSkip')}
+                    : statusMessage || t('onboarding.notifications.statusSkip')}
                 </Text>
               </View>
             </View>
@@ -240,7 +272,7 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
         {/* Action Buttons */}
         <ScreenSection>
           <View style={styles.actionContainer}>
-            {permissionGranted === null && (
+            {setupStatus !== 'success' && (
               <>
                 <OnboardingButton
                   onPress={handleEnableNotifications}
@@ -271,8 +303,8 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
         <ScreenSection>
           <View style={styles.infoFooter}>
             <View style={styles.infoContent}>
-              <Ionicons
-                name="information-circle-outline"
+              <Feather
+                name="info"
                 size={16}
                 color={theme.colors.onSurface}
                 style={styles.infoIcon}
@@ -415,6 +447,51 @@ const createStyles = (theme: AppTheme) =>
       opacity: 0.6,
       textAlign: 'center',
       flex: 1,
+    },
+    previewCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.xl,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '25',
+      ...getPrimaryShadow.card(theme),
+    },
+    previewHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      marginBottom: theme.spacing.xs,
+    },
+    previewAppBadge: {
+      width: 20,
+      height: 20,
+      borderRadius: 6,
+      backgroundColor: theme.colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    previewAppName: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      flex: 1,
+    },
+    previewTime: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 11,
+    },
+    previewTitle: {
+      ...theme.typography.titleSmall,
+      color: theme.colors.onBackground,
+      fontWeight: '600',
+      marginBottom: 2,
+    },
+    previewBody: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      lineHeight: 18,
     },
   });
 

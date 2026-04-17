@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 
@@ -22,6 +23,31 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
   const entryDate = entry.entry_date ? new Date(entry.entry_date) : new Date();
   const isRecent = index < 3;
   const statementCount = entry.statements?.length || 0;
+  const pressAnim = useRef(new Animated.Value(1)).current;
+
+  // Mascot Selection Logic
+  const mascotSource = useMemo(() => {
+    const mascots = [
+      require('@/assets/assets/mascot.png'),
+      require('@/assets/assets/mascot1.png'),
+      require('@/assets/assets/mascot2.png'),
+    ];
+    return mascots[index % mascots.length];
+  }, [index]);
+
+  const handlePressIn = () => {
+    Animated.spring(pressAnim, {
+      toValue: 0.98,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(pressAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const getRelativeDate = (date: Date) => {
     const today = new Date();
@@ -54,15 +80,32 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
   const hasMore = statementCount > 1;
 
   return (
-    <View style={styles.container}>
-      {/* Header Row */}
-      <TouchableOpacity style={styles.headerRow} onPress={() => onPress(entry)} activeOpacity={0.7}>
+    <Animated.View style={[styles.container, { transform: [{ scale: pressAnim }] }]}>
+      {/* Background Reflection Stack Visual */}
+      {hasMore && (
+        <>
+          <View style={[styles.stackLayer, styles.stackLayer1]} />
+          <View style={[styles.stackLayer, styles.stackLayer2]} />
+        </>
+      )}
+
+      {/* Mascot Peek (Rendered later to be on top) */}
+
+      <TouchableOpacity
+        style={styles.headerRow}
+        onPress={() => onPress(entry)}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={0.9}
+      >
+        {/* Editorial Date Section */}
         <View style={styles.dateContainer}>
           <Text style={styles.dayNumber}>{entryDate.getDate()}</Text>
           <Text style={styles.monthText}>
             {entryDate.toLocaleDateString(getCurrentLocale(), { month: 'short' }).toUpperCase()}
           </Text>
         </View>
+
         <View style={styles.headerTextContainer}>
           <Text style={[styles.relativeDate, isRecent && styles.recentText]}>
             {getRelativeDate(entryDate)}
@@ -75,37 +118,64 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
             </View>
           )}
         </View>
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>{statementCount}</Text>
+
+        <View style={styles.reflectionCountContainer}>
+          <Text style={styles.reflectionCountText}>
+            {statementCount} {t('pastEntries.item.reflections')}
+          </Text>
         </View>
       </TouchableOpacity>
 
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Quote Row */}
+      {/* Quote Row with Decorative Elements */}
       {firstStatement ? (
         <TouchableOpacity
           style={styles.quoteRow}
           onPress={() => onPress(entry)}
-          activeOpacity={0.7}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={0.9}
         >
-          <Icon
-            name="format-quote-open"
-            size={14}
-            color={theme.colors.outline}
-            style={styles.quoteIcon}
-          />
+          {/* Decorative Large Quote Mark */}
+          <View style={styles.decorativeQuoteContainer}>
+            <Icon
+              name="format-quote-open"
+              size={120}
+              color={theme.colors.primary + '08'}
+              style={styles.decorativeQuote}
+            />
+          </View>
+
           <View style={styles.quoteContent}>
-            <Text style={styles.quoteText} numberOfLines={2}>
+            <Text
+              style={styles.quoteText}
+              numberOfLines={4}
+              accessible={true}
+              accessibilityLabel={firstStatement}
+            >
               {firstStatement}
             </Text>
-            {hasMore && <Text style={styles.moreText}>+{statementCount - 1}</Text>}
+            {hasMore && (
+              <Text style={styles.moreText}>
+                + {statementCount - 1} {t('pastEntries.item.more')}
+              </Text>
+            )}
           </View>
-          <Icon name="chevron-right" size={20} color={theme.colors.outline} />
+          <View style={styles.chevronContainer}>
+            <Icon name="chevron-right" size={24} color={theme.colors.outline + '40'} />
+          </View>
+
+          {/* Mascot Peek - Inside the Touchable to be visible */}
+          <View style={styles.mascotPeekContainer} pointerEvents="none">
+            <Image
+              source={mascotSource}
+              style={styles.mascotPeek}
+              contentFit="contain"
+              transition={1000}
+            />
+          </View>
         </TouchableOpacity>
       ) : null}
-    </View>
+    </Animated.View>
   );
 };
 
@@ -113,117 +183,200 @@ const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '20',
+      borderRadius: theme.borderRadius.xl,
       marginHorizontal: theme.spacing.md,
-      marginBottom: theme.spacing.sm,
-      overflow: 'hidden',
+      marginBottom: theme.spacing.lg,
+      overflow: 'visible', // Allow stack to show
+      position: 'relative',
+      zIndex: 1,
+    },
+    stackLayer: {
+      position: 'absolute',
+      height: '100%',
+      width: '94%',
+      left: '3%',
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.xl,
+      borderColor: theme.colors.outline + '10',
+      borderWidth: 1,
+    },
+    stackLayer1: {
+      bottom: -6,
+      zIndex: -1,
+      opacity: 0.5,
+      transform: [{ scale: 0.98 }],
+    },
+    stackLayer2: {
+      bottom: -12,
+      zIndex: -2,
+      opacity: 0.2,
+      transform: [{ scale: 0.96 }],
+    },
+    mascotPeekContainer: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      width: 100,
+      height: 100,
+      zIndex: 0,
+      opacity: 0.8,
+    },
+    mascotPeek: {
+      width: '100%',
+      height: '100%',
     },
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
-      gap: theme.spacing.sm,
+      paddingVertical: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
+      gap: theme.spacing.md,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.xl,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
     },
     dateContainer: {
-      width: 40,
-      height: 40,
-      borderRadius: theme.borderRadius.lg,
-      backgroundColor: theme.colors.primaryContainer,
       alignItems: 'center',
       justifyContent: 'center',
+      minWidth: 44,
     },
     dayNumber: {
-      ...theme.typography.titleSmall,
-      color: theme.colors.onPrimaryContainer,
-      fontWeight: '800',
-      fontSize: 14,
-      lineHeight: 16,
+      fontFamily: theme.typography.fontFamilySerif || 'Lora-Bold',
+      color: theme.colors.primary,
+      fontWeight: '700',
+      fontSize: 28,
+      lineHeight: 32,
     },
     monthText: {
       ...theme.typography.labelSmall,
-      color: theme.colors.onPrimaryContainer,
-      fontWeight: '600',
-      fontSize: 8,
-      letterSpacing: 0.5,
+      color: theme.colors.primary,
+      fontWeight: '700',
+      fontSize: 10,
+      letterSpacing: 2,
+      marginTop: -2,
     },
     headerTextContainer: {
       flex: 1,
+      justifyContent: 'center',
     },
     relativeDate: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurface,
-      fontWeight: '600',
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
     },
     recentText: {
-      color: theme.colors.primary,
+      color: theme.colors.secondary,
     },
     fullDate: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
       marginTop: 2,
+      opacity: 0.7,
     },
     recentBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.primaryContainer,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
+      backgroundColor: theme.colors.secondary + '15',
+      paddingHorizontal: 8,
+      paddingVertical: 3,
       borderRadius: theme.borderRadius.full,
       gap: 4,
       alignSelf: 'flex-start',
-      marginTop: 4,
+      marginTop: 6,
     },
     recentBadgeText: {
       ...theme.typography.labelSmall,
-      color: theme.colors.onPrimaryContainer,
+      color: theme.colors.secondary,
+      fontWeight: '800',
+      fontSize: 8,
+      textTransform: 'uppercase',
+    },
+    reflectionCountContainer: {
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: theme.borderRadius.md,
+    },
+    reflectionCountText: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
       fontWeight: '700',
       fontSize: 9,
-    },
-    countBadge: {
-      width: 28,
-      height: 28,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    countText: {
-      ...theme.typography.labelMedium,
-      color: theme.colors.onPrimary,
-      fontWeight: '800',
+      textTransform: 'uppercase',
     },
     divider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: theme.colors.outline + '15',
-      marginLeft: theme.spacing.md + 40 + theme.spacing.sm,
+      height: 1,
+      backgroundColor: theme.colors.outline + '08',
+      marginHorizontal: theme.spacing.lg,
     },
     quoteRow: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
-      gap: theme.spacing.xs,
+      alignItems: 'center',
+      paddingVertical: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.lg,
+      paddingRight: 96, // Clear space for the larger mascot companion
+      position: 'relative',
+      backgroundColor: theme.colors.surface,
+      borderBottomLeftRadius: theme.borderRadius.xl,
+      borderBottomRightRadius: theme.borderRadius.xl,
     },
-    quoteIcon: {
-      marginTop: 3,
+    decorativeQuoteContainer: {
+      position: 'absolute',
+      top: -20,
+      left: 0,
+      zIndex: 0,
+    },
+    decorativeQuote: {
+      transform: [{ rotate: '0deg' }],
     },
     quoteContent: {
       flex: 1,
+      zIndex: 1,
+    },
+    quoteTextContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+    },
+    dropCapText: {
+      fontFamily:
+        theme.typography.fontFamilySerifBold || theme.typography.fontFamilySerif || 'Lora-Bold',
+      fontSize: 42,
+      lineHeight: 48,
+      color: theme.colors.primary,
+      marginRight: theme.spacing.xs,
+      marginTop: -4,
     },
     quoteText: {
-      ...theme.typography.bodyMedium,
+      flex: 1,
+      ...theme.typography.bodyLarge,
+      fontFamily: theme.typography.fontFamilySerif || 'Lora-Regular',
       color: theme.colors.onSurface,
       fontStyle: 'italic',
-      lineHeight: 22,
+      lineHeight: 26,
+      opacity: 0.9,
     },
     moreText: {
-      ...theme.typography.labelSmall,
+      ...theme.typography.labelMedium,
       color: theme.colors.primary,
-      fontWeight: '600',
-      marginTop: 4,
+      fontWeight: '700',
+      marginTop: 8,
+      textTransform: 'lowercase',
+    },
+    chevronContainer: {
+      marginLeft: theme.spacing.sm,
+      opacity: 0.5,
     },
   });
 

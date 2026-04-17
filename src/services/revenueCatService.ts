@@ -5,9 +5,32 @@ import { logger } from '@/utils/debugConfig';
 
 class RevenueCatService {
   private isInitialized = false;
+  private logoutInFlight: Promise<void> | null = null;
 
   constructor() {
     // Singleton pattern could be used, or just export an instance
+  }
+
+  /**
+   * Check if the current RevenueCat user is anonymous.
+   * Returns true when not initialized or when the originalAppUserId is an
+   * anonymous RC-generated identifier.
+   */
+  private async isAnonymousUser(): Promise<boolean> {
+    if (!this.isInitialized) {
+      return true;
+    }
+    try {
+      const info = await Purchases.getCustomerInfo();
+      return info.originalAppUserId.startsWith('$RCAnonymousID');
+    } catch (error) {
+      logger.debug('[RevenueCatService] Could not resolve anonymous status:', {
+        error: (error as Error).message,
+      });
+      // Treat as anonymous on error so we never send a logOut the SDK will
+      // reject with a noisy "current user is anonymous" native error log.
+      return true;
+    }
   }
 
   /**
@@ -20,7 +43,7 @@ class RevenueCatService {
 
     try {
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        Purchases.setLogLevel(LOG_LEVEL.ERROR);
+        Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR);
         Purchases.configure({ apiKey: REVENUECAT_CONFIG.API_KEY });
         this.isInitialized = true;
 
@@ -68,27 +91,40 @@ class RevenueCatService {
       return;
     }
 
+    // Serialize concurrent calls so we never race two logOut() invocations.
+    // Without this, two callers (e.g. the auth store's logout() and the
+    // SIGNED_OUT event listener) can both read a non-anonymous customerInfo
+    // before either completes logOut(), producing the native SDK error:
+    //   "LogOut was called but the current user is anonymous"
+    if (this.logoutInFlight) {
+      return this.logoutInFlight;
+    }
+
+    this.logoutInFlight = (async () => {
+      try {
+        if (await this.isAnonymousUser()) {
+          logger.debug('[RevenueCatService] User is anonymous, skipping logout');
+          return;
+        }
+
+        const info = await Purchases.logOut();
+        await this.handleCustomerInfoUpdate(info);
+        logger.debug('[RevenueCatService] User logged out');
+      } catch (error: unknown) {
+        // Silently handle the "anonymous user" error - it's not a real error
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.toLowerCase().includes('anonymous')) {
+          logger.debug('[RevenueCatService] User already anonymous, skipping logout');
+          return;
+        }
+        logger.error('[RevenueCatService] Logout failed:', error as Error);
+      }
+    })();
+
     try {
-      // Check if current user is anonymous - if so, skip logout
-      const customerInfo = await Purchases.getCustomerInfo();
-      const isAnonymous = customerInfo.originalAppUserId.startsWith('$RCAnonymousID');
-
-      if (isAnonymous) {
-        logger.debug('[RevenueCatService] User is anonymous, skipping logout');
-        return;
-      }
-
-      const info = await Purchases.logOut();
-      await this.handleCustomerInfoUpdate(info);
-      logger.debug('[RevenueCatService] User logged out');
-    } catch (error: unknown) {
-      // Silently handle the "anonymous user" error - it's not a real error
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes('anonymous')) {
-        logger.debug('[RevenueCatService] User already anonymous, skipping logout');
-        return;
-      }
-      logger.error('[RevenueCatService] Logout failed:', error as Error);
+      await this.logoutInFlight;
+    } finally {
+      this.logoutInFlight = null;
     }
   }
 
@@ -109,6 +145,10 @@ class RevenueCatService {
   async getOfferings() {
     try {
       const offerings = await Purchases.getOfferings();
+      logger.debug('[RevenueCatService] Offerings fetched', {
+        currentOfferingIdentifier: offerings.current?.identifier ?? null,
+        offeringCount: Object.keys(offerings.all ?? {}).length,
+      });
       return offerings.current;
     } catch (error: unknown) {
       logger.error('Error fetching offerings:', error as Error);

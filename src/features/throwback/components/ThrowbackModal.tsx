@@ -1,21 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useThrowback } from '@/features/throwback/hooks/useThrowback';
+import ThrowbackShareCard from '@/features/throwback/components/ThrowbackShareCard';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { alpha, getPrimaryShadow } from '@/themes/utils';
 import { formatDate as formatUtilityDate } from '@/utils/dateUtils';
 import { analyticsService } from '@/services/analyticsService';
 import { useTranslation } from 'react-i18next';
+import { shareThrowbackCard } from '@/features/throwback/shareThrowback';
 
 interface EnhancedThrowbackModalProps {
   isVisible: boolean;
@@ -23,38 +27,48 @@ interface EnhancedThrowbackModalProps {
 }
 
 /**
- * Enhanced ThrowbackModal using TanStack Query
+ * Memory Shard modal.
  *
- * Key improvements over the original:
- * - Uses TanStack Query for automatic caching and background sync
- * - Cleaner state management with better error handling
- * - Automatic retry logic for failed requests
- * - Better loading states and optimistic updates
- * - Separation of server state (random entry) from UI state (modal visibility)
+ * Clean, hierarchical layout:
+ *  - Top row: eyebrow title + close (x) button.
+ *  - Share card preview fills the center.
+ *  - Primary "Share" CTA, with secondary "Another" and tertiary "Done".
+ * No decorative orbs or blurs — just type, the card, and quiet dividers.
  */
 const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisible, onClose }) => {
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { t, i18n } = useTranslation();
 
-  // Map app language to date utility locales
   const currentLanguage =
     (i18n.language === 'en' ? 'en-US' : (i18n.language as 'tr' | 'es')) || 'en-US';
 
-  // TanStack Query hook replaces the old throwback store
   const { randomEntry, isLoading, error, hideThrowback, refreshThrowback, hasRandomEntry } =
     useThrowback();
 
   const [modalActuallyVisible, setModalActuallyVisible] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const shareCardRef = useRef<View>(null);
+
+  const formattedEntryDate = useMemo(() => {
+    if (!randomEntry?.entry_date) {
+      return '';
+    }
+    return formatUtilityDate(randomEntry.entry_date, 'PPP', currentLanguage);
+  }, [currentLanguage, randomEntry?.entry_date]);
+
+  const shareFallbackMessage = useMemo(() => {
+    if (!randomEntry?.statements?.[0]) {
+      return '';
+    }
+    return `${formattedEntryDate}\n\n"${randomEntry.statements[0]}"\n\nYeşer`;
+  }, [formattedEntryDate, randomEntry?.statements]);
 
   useEffect(() => {
     if (isVisible && hasRandomEntry) {
       setModalActuallyVisible(true);
-
-      // Track modal view
       analyticsService.logScreenView('throwback_modal');
 
-      // Track throwback content analytics
       if (randomEntry) {
         analyticsService.logEvent('throwback_modal_viewed', {
           entry_date: randomEntry.entry_date,
@@ -76,7 +90,7 @@ const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisib
       entry_date: randomEntry?.entry_date || null,
     });
 
-    await hideThrowback(); // Clears cache and updates timestamp
+    await hideThrowback();
     onClose();
   };
 
@@ -86,7 +100,31 @@ const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisib
       interaction_type: 'refresh_button',
     });
 
-    refreshThrowback(); // Fetches new random entry
+    refreshThrowback();
+  };
+
+  const handleShare = async () => {
+    if (!randomEntry?.statements?.[0] || isSharing) {
+      return;
+    }
+
+    setIsSharing(true);
+    try {
+      const sharedMode = await shareThrowbackCard({
+        cardRef: shareCardRef,
+        fallbackMessage: shareFallbackMessage,
+        dialogTitle: t('throwback.modal.shareTitle', {
+          defaultValue: 'Share this memory',
+        }),
+      });
+
+      analyticsService.logEvent('throwback_shared', {
+        share_mode: sharedMode,
+        entry_date: randomEntry.entry_date,
+      });
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   if (!isVisible && !modalActuallyVisible) {
@@ -100,6 +138,8 @@ const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisib
     return null;
   }
 
+  const hasStatement = !!randomEntry?.statements?.[0];
+
   return (
     <Modal
       animationType="fade"
@@ -108,80 +148,141 @@ const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisib
       onRequestClose={handleClose}
     >
       {modalActuallyVisible && (
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
+        <Pressable style={styles.backdrop} onPress={handleClose}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            {/* Top bar: eyebrow + close */}
+            <View style={styles.topBar}>
+              <Text style={styles.eyebrow}>
+                {t('throwback.modal.shardTitle', { defaultValue: 'A Memory Shard' })}
+              </Text>
+              <TouchableOpacity
+                onPress={handleClose}
+                style={styles.closeButton}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.close', { defaultValue: 'Close' })}
+              >
+                <Icon name="close" size={20} color={theme.colors.onSurfaceVariant} />
+              </TouchableOpacity>
+            </View>
+
             {isLoading ? (
-              <ActivityIndicator
-                size="large"
-                color={theme.colors.primary}
-                style={styles.activityIndicator}
-              />
+              <View style={styles.stateContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+              </View>
             ) : error ? (
-              <>
-                <Text style={styles.modalTitle}>{t('throwback.modal.errorTitle')}</Text>
-                <Text style={styles.errorText}>
+              <View style={styles.stateContainer}>
+                <Icon
+                  name="alert-circle-outline"
+                  size={28}
+                  color={theme.colors.error}
+                  style={styles.stateIcon}
+                />
+                <Text style={styles.stateTitle}>{t('throwback.modal.errorTitle')}</Text>
+                <Text style={styles.stateSubtitle}>
                   {error instanceof Error ? error.message : t('throwback.modal.unexpected')}
                 </Text>
-                <View style={styles.buttonContainer}>
+                <View style={styles.actionRow}>
                   <TouchableOpacity
-                    style={[styles.button, styles.buttonSecondary]}
+                    style={[styles.actionButton, styles.actionButtonGhost]}
+                    onPress={handleClose}
+                  >
+                    <Text style={styles.actionButtonGhostLabel}>{t('common.cancel')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.actionButtonPrimary]}
                     onPress={handleRefresh}
                   >
-                    <Text style={styles.textStyleSecondary}>
+                    <Text style={styles.actionButtonPrimaryLabel}>
                       {t('throwback.teaser.errorRetry')}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.button, styles.buttonClose]}
-                    onPress={handleClose}
-                  >
-                    <Text style={styles.textStyle}>{t('common.cancel')}</Text>
-                  </TouchableOpacity>
                 </View>
-              </>
-            ) : randomEntry?.statements && randomEntry.statements.length > 0 ? (
+              </View>
+            ) : hasStatement ? (
               <>
-                <Text style={styles.modalTitle}>{t('throwback.modal.shardTitle')}</Text>
                 <ScrollView
-                  style={styles.entryScrollView}
-                  contentContainerStyle={styles.entryScrollContentContainer}
+                  style={styles.cardScroll}
+                  contentContainerStyle={styles.cardScrollContent}
                   showsVerticalScrollIndicator={false}
                 >
-                  <View style={styles.entryContainer}>
-                    <Text style={styles.entryDate}>
-                      {formatUtilityDate(randomEntry.entry_date, 'PPP', currentLanguage)}
-                    </Text>
-                    <Text style={styles.entryContent}>{randomEntry.statements[0]}</Text>
-                  </View>
+                  <ThrowbackShareCard
+                    ref={shareCardRef}
+                    dateLabel={formattedEntryDate}
+                    statement={randomEntry!.statements![0]}
+                  />
                 </ScrollView>
-                <View style={styles.buttonContainer}>
+
+                <TouchableOpacity
+                  style={[styles.primaryCta, isSharing && styles.primaryCtaDisabled]}
+                  onPress={() => void handleShare()}
+                  disabled={isSharing}
+                  accessibilityRole="button"
+                >
+                  {isSharing ? (
+                    <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+                  ) : (
+                    <>
+                      <Icon
+                        name="share-variant"
+                        size={18}
+                        color={theme.colors.onPrimary}
+                        style={styles.primaryCtaIcon}
+                      />
+                      <Text style={styles.primaryCtaLabel}>
+                        {t('throwback.modal.share', { defaultValue: 'Share card' })}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <View style={styles.secondaryRow}>
                   <TouchableOpacity
-                    style={[styles.button, styles.buttonSecondary]}
+                    style={styles.secondaryButton}
                     onPress={handleRefresh}
+                    accessibilityRole="button"
                   >
-                    <Text style={styles.textStyleSecondary}>{t('throwback.modal.another')}</Text>
+                    <Icon
+                      name="shuffle-variant"
+                      size={16}
+                      color={theme.colors.onSurfaceVariant}
+                      style={styles.secondaryIcon}
+                    />
+                    <Text style={styles.secondaryLabel}>{t('throwback.modal.another')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.button, styles.buttonClose]}
+                    style={styles.tertiaryButton}
                     onPress={handleClose}
+                    accessibilityRole="button"
                   >
-                    <Text style={styles.textStyle}>{t('throwback.modal.ok')}</Text>
+                    <Text style={styles.tertiaryLabel}>{t('throwback.modal.ok')}</Text>
                   </TouchableOpacity>
                 </View>
               </>
             ) : (
-              <>
-                <Text style={styles.modalTitle}>{t('throwback.modal.shardTitle')}</Text>
-                <Text style={styles.entryContent}>{t('throwback.modal.empty')}</Text>
-                <TouchableOpacity style={[styles.button, styles.buttonClose]} onPress={handleClose}>
-                  <Text style={styles.textStyle}>
+              <View style={styles.stateContainer}>
+                <Icon
+                  name="leaf-off"
+                  size={28}
+                  color={theme.colors.onSurfaceVariant}
+                  style={styles.stateIcon}
+                />
+                <Text style={styles.stateTitle}>
+                  {t('throwback.modal.shardTitle', { defaultValue: 'A Memory Shard' })}
+                </Text>
+                <Text style={styles.stateSubtitle}>{t('throwback.modal.empty')}</Text>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.actionButtonPrimary, styles.singleAction]}
+                  onPress={handleClose}
+                >
+                  <Text style={styles.actionButtonPrimaryLabel}>
                     {t('common.cancel', { defaultValue: 'Tamam' })}
                   </Text>
                 </TouchableOpacity>
-              </>
+              </View>
             )}
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       )}
     </Modal>
   );
@@ -189,115 +290,172 @@ const EnhancedThrowbackModal: React.FC<EnhancedThrowbackModalProps> = ({ isVisib
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    centeredView: {
+    backdrop: {
       flex: 1,
+      backgroundColor: theme.colors.scrim,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: theme.colors.scrim, // Using scrim for darker tint
+      paddingHorizontal: theme.spacing.lg,
     },
-    modalView: {
-      minHeight: 150,
-      justifyContent: 'center',
-      margin: theme.spacing.lg,
-      backgroundColor: theme.colors.surfaceElevated || theme.colors.surface, // Darker surface
-      borderRadius: theme.borderRadius.xl,
-      padding: theme.spacing.xl,
-      alignItems: 'center',
-      width: '90%',
-      maxHeight: '80%',
-      borderWidth: 1,
-      borderColor: theme.colors.borderLight || theme.colors.outlineVariant,
-      // 🌟 Beautiful primary shadow for modal
+    sheet: {
+      width: '100%',
+      maxWidth: 420,
+      maxHeight: '92%',
+      backgroundColor: theme.colors.surfaceElevated || theme.colors.surface,
+      borderRadius: theme.borderRadius.xxl || 28,
+      paddingTop: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outlineVariant,
       ...getPrimaryShadow.overlay(theme),
     },
-    modalTitle: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: theme.colors.primary,
-      marginBottom: theme.spacing.lg,
-      textAlign: 'center',
-      letterSpacing: -0.5,
-      fontFamily: theme.typography.fontFamilySerifBold,
-    },
-    entryScrollView: {
-      width: '100%',
-      marginBottom: theme.spacing.lg,
-    },
-    entryScrollContentContainer: {
-      flexGrow: 1,
-      justifyContent: 'center',
-    },
-    entryContainer: {
-      padding: theme.spacing.xl,
-      backgroundColor: alpha(theme.colors.background, 0.5), // Semi-transparent dark background
-      borderRadius: theme.borderRadius.lg,
-      width: '100%',
-      borderWidth: 1,
-      borderColor: alpha(theme.colors.outline, 0.1),
-      // 🌟 Beautiful primary shadow for entry container
-      ...getPrimaryShadow.card(theme),
-    },
-    entryDate: {
-      fontSize: 13,
-      fontWeight: '500',
-      color: theme.colors.primary, // Highlight date with primary
-      marginBottom: theme.spacing.md,
-      textAlign: 'center',
-      fontStyle: 'italic',
-      opacity: 0.9,
-    },
-    entryContent: {
-      fontSize: 18,
-      fontWeight: '400',
-      color: theme.colors.onSurface,
-      textAlign: 'center',
-      lineHeight: 28,
-      letterSpacing: 0.2,
-      fontFamily: theme.typography.fontFamilySerif, // Use serif for better journal feel
-    },
-    errorText: {
-      fontSize: 14,
-      fontWeight: '400',
-      color: theme.colors.error,
-      textAlign: 'center',
-      marginVertical: theme.spacing.md,
-      lineHeight: 20,
-    },
-    activityIndicator: {
-      marginVertical: theme.spacing.lg,
-    },
-    buttonContainer: {
+    topBar: {
       flexDirection: 'row',
-      gap: theme.spacing.md,
-      marginTop: theme.spacing.sm,
-      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: theme.spacing.md,
     },
-    button: {
-      borderRadius: theme.borderRadius.full, // Standardized pill buttons
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.lg,
-      minWidth: 100,
-      flex: 1,
+    eyebrow: {
+      fontSize: 12,
+      fontWeight: '800',
+      letterSpacing: 2,
+      color: theme.colors.primary,
+      textTransform: 'uppercase',
     },
-    buttonClose: {
-      backgroundColor: theme.colors.primary,
-    },
-    buttonSecondary: {
-      backgroundColor: alpha(theme.colors.surfaceVariant, 0.5),
-      borderWidth: 1,
+    closeButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: alpha(theme.colors.surfaceVariant, 0.6),
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.outlineVariant,
     },
-    textStyle: {
-      color: theme.colors.onPrimary,
-      fontWeight: '600',
-      textAlign: 'center',
-      fontSize: 14, // Reduced from 15
+    cardScroll: {
+      width: '100%',
     },
-    textStyleSecondary: {
+    cardScrollContent: {
+      paddingVertical: theme.spacing.xs,
+      alignItems: 'center',
+    },
+    primaryCta: {
+      marginTop: theme.spacing.lg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.borderRadius.full,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      backgroundColor: theme.colors.primary,
+      ...getPrimaryShadow.card(theme),
+    },
+    primaryCtaDisabled: {
+      opacity: 0.7,
+    },
+    primaryCtaIcon: {
+      marginRight: theme.spacing.sm,
+    },
+    primaryCtaLabel: {
+      color: theme.colors.onPrimary,
+      fontSize: 15,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+    secondaryRow: {
+      marginTop: theme.spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
+    },
+    secondaryButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: theme.spacing.sm + 2,
+      paddingHorizontal: theme.spacing.md,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: 'transparent',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outlineVariant,
+    },
+    secondaryIcon: {
+      marginRight: 6,
+    },
+    secondaryLabel: {
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    tertiaryButton: {
+      paddingVertical: theme.spacing.sm + 2,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    tertiaryLabel: {
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    stateContainer: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.md,
+    },
+    stateIcon: {
+      marginBottom: theme.spacing.sm,
+    },
+    stateTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.colors.onSurface,
+      textAlign: 'center',
+      marginBottom: 4,
+      fontFamily: theme.typography.fontFamilySerifBold,
+    },
+    stateSubtitle: {
+      fontSize: 14,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      lineHeight: 20,
+      marginBottom: theme.spacing.lg,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      gap: theme.spacing.sm,
+      width: '100%',
+    },
+    actionButton: {
+      flex: 1,
+      borderRadius: theme.borderRadius.full,
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionButtonPrimary: {
+      backgroundColor: theme.colors.primary,
+    },
+    actionButtonPrimaryLabel: {
+      color: theme.colors.onPrimary,
+      fontWeight: '700',
+      fontSize: 14,
+    },
+    actionButtonGhost: {
+      backgroundColor: 'transparent',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outlineVariant,
+    },
+    actionButtonGhostLabel: {
       color: theme.colors.onSurfaceVariant,
       fontWeight: '600',
-      textAlign: 'center',
-      fontSize: 14, // Reduced from 15
+      fontSize: 14,
+    },
+    singleAction: {
+      width: '100%',
+      flex: 0,
     },
   });
 

@@ -10,7 +10,6 @@ import SplashScreen from '../features/auth/screens/SplashScreen';
 import ProfileErrorScreen from '../features/auth/screens/ProfileErrorScreen';
 import { useCoreAuthStore } from '../features/auth/store/coreAuthStore';
 import { RootStackParamList } from '../types/navigation';
-import { PaywallScreen } from '../features/subscription/components/Paywall';
 
 const Root = createStackNavigator<RootStackParamList>();
 
@@ -45,18 +44,11 @@ const RootNavigator: React.FC = () => {
         // Profile loaded and user not onboarded → onboarding
         <Root.Screen name="Onboarding" component={OnboardingFlowScreen} />
       ) : (
-        // Fully ready → main app
-        <Root.Group>
-          <Root.Screen name="MainApp" component={AppNavigator} />
-          <Root.Screen
-            name="PaywallModal"
-            component={PaywallScreen}
-            options={{
-              presentation: 'modal',
-              headerShown: false,
-            }}
-          />
-        </Root.Group>
+        // Fully ready → main app. The paywall is presented as a native
+        // modal via RevenueCatUI.presentPaywall() (see
+        // `presentNativePaywall`), so it does not need a React Navigation
+        // route.
+        <Root.Screen name="MainApp" component={AppNavigator} />
       )}
     </Root.Navigator>
   );

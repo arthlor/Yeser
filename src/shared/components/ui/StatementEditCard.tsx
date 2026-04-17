@@ -22,6 +22,7 @@ import { useMoodSuggestion } from '@/features/mood/hooks/useMoodSuggestion';
 import { AIMoodSuggestions } from './AIMoodSuggestions';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useLanguageStore } from '@/store/languageStore';
+import { GRATITUDE_MAX_LENGTH } from '@/constants/gratitude';
 
 interface StatementEditCardProps extends Omit<InteractiveStatementCardProps, 'onSave'> {
   variant?: 'primary' | 'secondary' | 'minimal';
@@ -33,6 +34,7 @@ interface StatementEditCardProps extends Omit<InteractiveStatementCardProps, 'on
   moodEmoji?: MoodEmoji | null;
   onChangeMood?: (mood: MoodEmoji | null) => void;
   onSave?: (statement: string, mood?: MoodEmoji | null) => Promise<void>;
+  onShare?: () => void;
   showSaveHint?: boolean;
 }
 
@@ -49,7 +51,8 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
   onDelete,
   onCancel,
   onSave,
-  maxLength = 500,
+  onShare,
+  maxLength = GRATITUDE_MAX_LENGTH,
   moodEmoji,
 }) => {
   const { theme } = useTheme();
@@ -288,16 +291,7 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
         )}
         <View style={styles.spacer} />
 
-        {/* 3-dot Menu */}
-        {(onEdit || onDelete) && (
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() => setShowActions(!showActions)}
-            activeOpacity={0.7}
-          >
-            <Icon name="dots-vertical" size={20} color={theme.colors.onSurfaceVariant} />
-          </TouchableOpacity>
-        )}
+        <View style={styles.spacer} />
       </View>
 
       {/* Actions Row (shown when menu is active) */}
@@ -323,6 +317,40 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
               <Text style={styles.actionText}>{t('shared.statement.editButton')}</Text>
             </TouchableOpacity>
           )}
+
+          {/* Share Button */}
+          {onShare && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => {
+                setShowActions(false);
+                onShare();
+              }}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  {
+                    backgroundColor:
+                      theme.colors.secondaryContainer ||
+                      theme.colors.tertiaryContainer ||
+                      theme.colors.primaryContainer,
+                  },
+                ]}
+              >
+                <Icon
+                  name="share-variant-outline"
+                  size={18}
+                  color={theme.colors.secondary || theme.colors.primary}
+                />
+              </View>
+              <Text style={styles.actionText}>
+                {t('throwback.modal.share', { defaultValue: 'Share' })}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {onDelete && (
             <TouchableOpacity
               style={styles.actionButton}
@@ -358,8 +386,35 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
         <View style={styles.dateRow}>
           <Icon name="clock-outline" size={14} color={theme.colors.onSurfaceVariant} />
           <Text style={styles.dateText}>{relativeTime}</Text>
+          {moodEmoji && <Text style={styles.moodEmojiCompact}>{moodEmoji}</Text>}
         </View>
-        {moodEmoji && <Text style={styles.moodEmoji}>{moodEmoji}</Text>}
+
+        {/* Inline Actions (SVG-style Icons) */}
+        <View style={styles.inlineActions}>
+          {onEdit && (
+            <TouchableOpacity onPress={onEdit} style={styles.inlineActionBtn} activeOpacity={0.6}>
+              <Icon name="pencil-outline" size={20} color={theme.colors.primary} />
+            </TouchableOpacity>
+          )}
+          {onShare && (
+            <TouchableOpacity onPress={onShare} style={styles.inlineActionBtn} activeOpacity={0.6}>
+              <Icon
+                name="share-variant-outline"
+                size={20}
+                color={theme.colors.secondary || theme.colors.primary}
+              />
+            </TouchableOpacity>
+          )}
+          {onDelete && (
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.inlineActionBtn}
+              activeOpacity={0.6}
+            >
+              <Icon name="trash-can-outline" size={20} color={theme.colors.error} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Loading Overlay */}
@@ -455,6 +510,18 @@ const createStyles = (theme: AppTheme) =>
     dateText: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
+    },
+    moodEmojiCompact: {
+      fontSize: 16,
+      marginLeft: theme.spacing.xs,
+    },
+    inlineActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    inlineActionBtn: {
+      padding: 4,
     },
     moodEmoji: {
       fontSize: 18,

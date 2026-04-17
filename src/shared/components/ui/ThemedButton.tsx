@@ -4,6 +4,7 @@ import {
   Animated,
   Platform,
   Pressable,
+  StyleProp,
   StyleSheet,
   Text,
   TextStyle,
@@ -36,8 +37,8 @@ interface ThemedButtonProps {
   enableHaptics?: boolean;
   loadingText?: string;
   _pressAnimationScale?: number; // Kept for API compatibility, not used in coordinated animation system
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
   testID?: string;
 }
 

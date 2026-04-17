@@ -2,25 +2,27 @@ import ActionCards from '../components/ActionCards';
 import HomeHeader from '../components/HomeHeader';
 import StreakDetailsScreen from '@/features/streak/screens/StreakDetailsScreen';
 import { useGratitudeEntry, useRandomGratitudeEntry } from '@/features/gratitude/hooks';
+import InsightTeaserCard from '@/features/mood/components/InsightTeaserCard';
+import { useLatestMoodInsight, useMoodInsights } from '@/features/mood/hooks';
 import { useStreakData } from '@/features/streak/hooks';
 import { useUserProfile } from '@/shared/hooks';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
 import { analyticsService } from '@/services/analyticsService';
-import type { MainTabParamList, RootStackParamList } from '@/types/navigation';
+import type { AppStackParamList, MainTabParamList } from '@/types/navigation';
 import { ScreenLayout } from '@/shared/components/layout';
 import StatsRow from '@/features/home/components/StatsRow';
 import HomeGratitudeListItem from '@/features/home/components/HomeGratitudeListItem';
 import FloatingAddButton from '@/features/home/components/FloatingAddButton';
 import ThrowbackTeaser from '@/features/throwback/components/ThrowbackTeaser';
 import EnhancedThrowbackModal from '@/features/throwback/components/ThrowbackModal';
+import { getInsightSnapshotAgeInDays } from '@/features/mood/utils/insightSnapshot';
 import { safeErrorDisplay } from '@/utils/errorTranslation';
 import { useSubscription } from '@/hooks/useSubscription';
-import { ProBadge } from '@/features/subscription/components/ProBadge';
 // debug logger removed (noisy)
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -33,7 +35,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -43,7 +44,7 @@ import type { MoodEmoji } from '@/types/mood.types';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabScreenProps<MainTabParamList, 'HomeTab'>['navigation'],
-  StackNavigationProp<RootStackParamList>
+  StackNavigationProp<AppStackParamList>
 >;
 
 interface HomeScreenProps {
@@ -76,6 +77,15 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
   } = useRandomGratitudeEntry();
 
   const { isPro } = useSubscription();
+  const {
+    snapshot: latestInsightSnapshot,
+    hasEnoughData: hasEnoughInsightData,
+    isFresh: hasFreshInsight,
+    isLoading: isInsightLoading,
+    error: latestInsightError,
+  } = useLatestMoodInsight('30d');
+  const { refetch: generateInsight, isRefetching: isGeneratingInsight } = useMoodInsights('30d');
+  const homeInsightCardEventRef = useRef<string | null>(null);
 
   // Removed noisy total count debug logs
 
@@ -176,13 +186,40 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     setStreakDetailsVisible(true);
   }, []);
 
-  const handleMoodAnalysisPress = useCallback(() => {
-    analyticsService.logEvent('navigate_to_mood_analysis', {
-      source: 'home_footer_card',
+  const navigateToInsights = useCallback(
+    (source: string) => {
+      analyticsService.logEvent('home_insight_card_tapped', {
+        source,
+        state: hasFreshInsight ? 'fresh' : hasEnoughInsightData ? 'reveal' : 'seed',
+      });
+
+      navigation.navigate('MoodAnalysis', {
+        initialRange: '30d',
+        source,
+      });
+    },
+    [hasEnoughInsightData, hasFreshInsight, navigation]
+  );
+
+  const handleRevealInsightPress = useCallback(async () => {
+    analyticsService.logEvent('home_insight_card_tapped', {
+      source: 'home_insight_card_reveal',
+      state: 'reveal',
+    });
+    analyticsService.logEvent('insight_reveal_requested', {
+      source: 'home_insight_card',
+      range: '30d',
     });
 
-    navigation.getParent<StackNavigationProp<RootStackParamList>>()?.navigate('MoodAnalysis');
-  }, [navigation]);
+    const result = await generateInsight();
+
+    if (result.error) {
+      handleMutationError(result.error, t('mood.analysis.errors.revealFailed'));
+      return;
+    }
+
+    navigateToInsights('home_insight_card_reveal');
+  }, [generateInsight, handleMutationError, navigateToInsights, t]);
 
   // Dynamic image picking without compile-time dependency
   const pickImageAndUpload = useCallback(async () => {
@@ -294,6 +331,139 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
 
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  const homeInsightCardState = useMemo(() => {
+    if (isInsightLoading) {
+      return 'loading';
+    }
+
+    if (hasFreshInsight && latestInsightSnapshot?.highlighted_insight) {
+      return 'fresh';
+    }
+
+    if (hasEnoughInsightData) {
+      return 'reveal';
+    }
+
+    if (latestInsightError) {
+      return 'fallback';
+    }
+
+    return 'seed';
+  }, [
+    hasEnoughInsightData,
+    hasFreshInsight,
+    isInsightLoading,
+    latestInsightError,
+    latestInsightSnapshot?.highlighted_insight,
+  ]);
+
+  const latestInsightMeta = useMemo(() => {
+    if (!latestInsightSnapshot?.generated_at) {
+      return null;
+    }
+
+    const ageInDays = getInsightSnapshotAgeInDays(latestInsightSnapshot.generated_at);
+
+    if (ageInDays <= 0) {
+      return t('mood.analysis.home.updatedToday');
+    }
+
+    return t('mood.analysis.home.updatedDaysAgo', { count: ageInDays });
+  }, [latestInsightSnapshot?.generated_at, t]);
+
+  useEffect(() => {
+    if (homeInsightCardState === 'loading') {
+      return;
+    }
+
+    if (homeInsightCardEventRef.current === homeInsightCardState) {
+      return;
+    }
+
+    homeInsightCardEventRef.current = homeInsightCardState;
+
+    analyticsService.logEvent('home_insight_card_viewed', {
+      state: homeInsightCardState,
+      hasSnapshot: Boolean(latestInsightSnapshot?.highlighted_insight),
+      isPro,
+    });
+  }, [homeInsightCardState, isPro, latestInsightSnapshot?.highlighted_insight]);
+
+  const homeInsightCard = useMemo(() => {
+    if (homeInsightCardState === 'fresh' && latestInsightSnapshot?.highlighted_insight) {
+      return (
+        <InsightTeaserCard
+          title={latestInsightSnapshot.highlighted_insight.title}
+          description={latestInsightSnapshot.highlighted_insight.description}
+          promise={t('mood.analysis.promise')}
+          ctaLabel={t('mood.analysis.home.cta.view')}
+          onPress={() => navigateToInsights('home_insight_card')}
+          emoji={latestInsightSnapshot.highlighted_insight.emoji}
+          meta={latestInsightMeta}
+          lockedLabel={!isPro ? t('mood.analysis.home.previewBadge') : null}
+          compact
+          variant="reference"
+        />
+      );
+    }
+
+    if (homeInsightCardState === 'reveal') {
+      return (
+        <InsightTeaserCard
+          title={t('mood.analysis.home.latestTitle')}
+          description={t('mood.analysis.home.readyDescription')}
+          promise={t('mood.analysis.promise')}
+          ctaLabel={t('mood.analysis.home.cta.reveal')}
+          onPress={() => void handleRevealInsightPress()}
+          emoji="✨"
+          isLoading={isGeneratingInsight}
+          lockedLabel={!isPro ? t('mood.analysis.home.previewBadge') : null}
+          compact
+          variant="reference"
+        />
+      );
+    }
+
+    if (homeInsightCardState === 'fallback') {
+      return (
+        <InsightTeaserCard
+          title={t('mood.analysis.home.latestTitle')}
+          description={t('mood.analysis.home.fallbackDescription')}
+          promise={t('mood.analysis.promise')}
+          ctaLabel={t('mood.analysis.home.cta.open')}
+          onPress={() => navigateToInsights('home_insight_card_fallback')}
+          emoji="💫"
+          lockedLabel={!isPro ? t('mood.analysis.home.previewBadge') : null}
+          compact
+          variant="reference"
+        />
+      );
+    }
+
+    return (
+      <InsightTeaserCard
+        title={t('mood.analysis.home.seedTitle')}
+        description={t('mood.analysis.home.seedDescription')}
+        promise={t('mood.analysis.promise')}
+        ctaLabel={t('mood.analysis.home.cta.seed')}
+        onPress={handleNewEntryPress}
+        emoji="🌱"
+        compact
+        variant="reference"
+      />
+    );
+  }, [
+    handleNewEntryPress,
+    handleRevealInsightPress,
+    homeInsightCardState,
+    isGeneratingInsight,
+    isPro,
+    latestInsightMeta,
+    latestInsightSnapshot?.highlighted_insight,
+    navigateToInsights,
+    t,
+  ]);
+
   const header = (
     <>
       <View style={styles.section}>
@@ -318,6 +488,7 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
           onStreakPress={handleStreakPress}
         />
       </View>
+      <View style={styles.section}>{homeInsightCard}</View>
       <View style={styles.todayHeaderRow}>
         <Text style={styles.todayHeaderText}>{t('gratitude.sections.todaysEntries')}</Text>
         <View style={styles.todayCountPill}>
@@ -389,53 +560,6 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
                 />
               </View>
               <View style={styles.section}>
-                <View style={styles.insightsCard}>
-                  {/* Mood Analysis Row */}
-                  <TouchableOpacity
-                    style={styles.insightRow}
-                    onPress={handleMoodAnalysisPress}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.insightIconContainer}>
-                      <Icon name="emoticon-happy-outline" size={18} color={theme.colors.primary} />
-                    </View>
-                    <View style={styles.insightTextContainer}>
-                      <View style={styles.titleWithBadge}>
-                        <Text style={styles.insightTitle}>{t('home.actions.mood.title')}</Text>
-                        {!isPro && <ProBadge size="small" style={styles.badgeMargin} />}
-                      </View>
-                      <Text style={styles.insightSubtitle} numberOfLines={1}>
-                        {t('home.actions.mood.subtitle')}
-                      </Text>
-                    </View>
-                    <Icon name="chevron-right" size={20} color={theme.colors.outline} />
-                  </TouchableOpacity>
-
-                  {/* Divider */}
-                  <View style={styles.insightDivider} />
-
-                  {/* Inspiration Row */}
-                  <View style={styles.insightRow}>
-                    <View
-                      style={[
-                        styles.insightIconContainer,
-                        { backgroundColor: theme.colors.tertiary + '15' },
-                      ]}
-                    >
-                      <Icon name="lightbulb-on-outline" size={18} color={theme.colors.tertiary} />
-                    </View>
-                    <View style={styles.insightTextContainer}>
-                      <Text style={styles.insightTitle}>{t('tips.gratitude.title')}</Text>
-                      <Text style={styles.insightSubtitle} numberOfLines={2}>
-                        {todaysGratitudeCount >= dailyGoal
-                          ? t('home.inspiration.progress.complete.message')
-                          : t('tips.gratitude.simpleThings')}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-              <View style={styles.section}>
                 <ThrowbackTeaser
                   throwbackEntry={memoizedThrowbackEntry}
                   isLoading={throwbackLoading}
@@ -497,7 +621,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       gap: theme.spacing.md,
     },
     section: {
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
     },
     sectionPadded: {
       marginBottom: theme.spacing.md,
@@ -510,9 +634,11 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       // Padding handled by ScreenLayout/FlatList content container to ensure alignment
     },
     todayHeaderText: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '700',
+      ...theme.typography.labelMedium,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '800',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
     },
     todayCountPill: {
       backgroundColor: theme.colors.primaryContainer,

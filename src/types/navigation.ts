@@ -2,6 +2,7 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import type { MoodAnalyticsRange } from '@/types/moodAnalytics.types';
 
 // Define ParamList types for each navigator
 
@@ -24,7 +25,13 @@ export interface AppStackParamList extends Record<string, object | undefined> {
   MainAppTabs: NavigatorScreenParams<MainTabParamList>;
   EntryDetail: { entryId: string; entryDate?: string };
   PastEntryCreation: { date: string };
-  MoodAnalysis: { focusMood?: string } | undefined;
+  MoodAnalysis:
+    | {
+        focusMood?: string;
+        initialRange?: MoodAnalyticsRange;
+        source?: string;
+      }
+    | undefined;
   CustomerCenter: undefined;
   PrivacyPolicy: undefined;
   TermsOfService: undefined;
@@ -40,7 +47,6 @@ export interface RootStackParamList extends Record<string, object | undefined> {
   ProfileError: undefined;
   MainApp: NavigatorScreenParams<AppStackParamList>;
   NotFound: undefined;
-  PaywallModal: { source?: string };
 }
 
 // Additional utility types

@@ -56,6 +56,14 @@
     "trigger_definition": "CREATE TRIGGER protect_is_pro_field BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION check_is_pro_update()"
   },
   {
+    "trigger_name": "validate_profile_timezone_trg",
+    "schema_name": "public",
+    "table_name": "profiles",
+    "table_owner": "postgres",
+    "enabled": "e",
+    "trigger_definition": "CREATE TRIGGER validate_profile_timezone_trg BEFORE INSERT OR UPDATE OF timezone ON profiles FOR EACH ROW EXECUTE FUNCTION validate_profile_timezone()"
+  },
+  {
     "trigger_name": "handle_streaks_update_updated_at",
     "schema_name": "public",
     "table_name": "streaks",

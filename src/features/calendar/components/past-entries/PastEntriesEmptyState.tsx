@@ -157,7 +157,7 @@ const PastEntriesEmptyState: React.FC<PastEntriesEmptyStateProps> = () => {
           <View style={styles.motivationSection}>
             <Icon name="format-quote-open" size={24} color={theme.colors.primary + '60'} />
             <Text style={styles.motivationQuote}>{t('pastEntries.empty.quote')}</Text>
-            <Text style={styles.motivationAuthor}>— Oprah Winfrey</Text>
+            <Text style={styles.motivationAuthor}>{t('pastEntries.empty.author')}</Text>
           </View>
         </View>
       </ThemedCard>
@@ -186,13 +186,9 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing.md,
     },
     emptyCard: {
-      borderRadius: 0,
-      borderTopWidth: 2,
-      borderBottomWidth: 2,
-      borderStyle: 'dashed',
-      borderColor: theme.colors.outline + '30',
-      backgroundColor: theme.colors.surface + '80',
-      ...getPrimaryShadow.card(theme),
+      borderRadius: theme.borderRadius.xl,
+      backgroundColor: theme.colors.surface + '60',
+      paddingVertical: theme.spacing.xxl,
     },
     emptyContent: {
       alignItems: 'center',
@@ -210,12 +206,10 @@ const createStyles = (theme: AppTheme) =>
       width: 140,
       height: 140,
       borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primaryContainer + '20',
-      borderWidth: 3,
-      borderColor: theme.colors.primary + '30',
-      borderStyle: 'dashed',
+      backgroundColor: theme.colors.primaryContainer + '30',
       justifyContent: 'center',
       alignItems: 'center',
+      opacity: 0.8,
     },
     sparkleContainer: {
       position: 'absolute',
@@ -252,9 +246,9 @@ const createStyles = (theme: AppTheme) =>
     title: {
       ...theme.typography.headlineSmall,
       color: theme.colors.onSurface,
-      fontWeight: '700',
+      fontFamily: 'Lora-Bold', // Editorial serif
       textAlign: 'center',
-      letterSpacing: -0.3,
+      fontSize: 28,
       marginBottom: theme.spacing.md,
     },
     description: {
@@ -262,7 +256,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 24,
-      letterSpacing: 0.1,
+      opacity: 0.8,
     },
 
     // Enhanced Guidance Section
@@ -390,13 +384,16 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onSurface,
       textAlign: 'center',
       fontStyle: 'italic',
-      lineHeight: 24,
+      fontFamily: 'Lora-Italic',
+      lineHeight: 26,
       marginVertical: theme.spacing.md,
     },
     motivationAuthor: {
       ...theme.typography.labelMedium,
       color: theme.colors.onSurfaceVariant,
-      fontWeight: '600',
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
     },
 
     // Enhanced Tip Section

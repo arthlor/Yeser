@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useAssets } from 'expo-asset';
 import { MotiView } from 'moti';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -27,7 +26,7 @@ import { alpha, blend } from '@/themes/utils';
 import { AuthStackParamList } from '@/types/navigation';
 import { supabaseService } from '@/utils/supabaseClient';
 import LoginBackgroundVideo from '@/assets/videos/login-background.mp4';
-import AppIcon from '@/assets/assets/icon.png';
+import MascotIcon from '@/assets/assets/mascot.png';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -49,15 +48,13 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   const { t } = useTranslation();
   const isDark = colorMode === 'dark';
 
-  // Video assets
-  const [assets] = useAssets([LoginBackgroundVideo]);
   const [videoReady, setVideoReady] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
 
-  const videoSource = assets ? assets[0] : null;
-
-  const player = useVideoPlayer(videoSource, (player) => {
+  const player = useVideoPlayer(LoginBackgroundVideo, (player) => {
     player.loop = true;
     player.muted = true;
+    player.allowsExternalPlayback = false;
     player.play();
   });
 
@@ -65,7 +62,15 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     const subscription = player.addListener('statusChange', (status) => {
       // status: 'idle' | 'loading' | 'readyToPlay' | 'error'
       if (status.status === 'readyToPlay') {
-        setVideoReady(true);
+        setVideoError(null);
+      }
+
+      if (status.status === 'error') {
+        setVideoReady(false);
+        setVideoError(status.error?.message ?? 'Unknown video error');
+        logger.warn('Login background video failed to load', {
+          error: status.error?.message ?? 'Unknown video error',
+        });
       }
     });
 
@@ -73,6 +78,11 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       subscription.remove();
     };
   }, [player]);
+
+  const handleFirstVideoFrame = useCallback(() => {
+    setVideoReady(true);
+    setVideoError(null);
+  }, []);
 
   const gradientColors = useMemo<readonly [string, string, string]>(() => {
     if (isDark) {
@@ -116,6 +126,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   const { initialize: initializeApple } = useAppleOAuth();
 
   const isLoading = coreLoading;
+  const shouldShowVideo = videoReady && !videoError;
 
   // Track OAuth callback state
   const [isWaitingForOAuthCallback, setIsWaitingForOAuthCallback] = useState(false);
@@ -255,20 +266,19 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
       {/* Subtle Background */}
       <View pointerEvents="none" style={styles.backgroundLayer}>
         {/* Video Background */}
-        {assets && (
-          <VideoView
-            player={player}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            nativeControls={false}
-          />
-        )}
+        <VideoView
+          player={player}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          nativeControls={false}
+          onFirstFrameRender={handleFirstVideoFrame}
+        />
 
         {/* Fallback & Loading State (Fades out when video is ready) */}
         <MotiView
           from={{ opacity: 1 }}
-          animate={{ opacity: videoReady ? 0 : 1 }}
-          transition={{ type: 'timing', duration: 800 }}
+          animate={{ opacity: shouldShowVideo ? 0 : 1 }}
+          transition={{ type: 'timing', duration: 450 }}
           style={StyleSheet.absoluteFill}
         >
           <LinearGradient
@@ -283,7 +293,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
         </MotiView>
 
         {/* Dark Overlay for readability */}
-        <View style={styles.videoOverlay} />
+        <View style={[styles.videoOverlay, shouldShowVideo && styles.videoOverlayReady]} />
       </View>
 
       <ScreenLayout
@@ -303,7 +313,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
             {/* Brand Section */}
             <View style={styles.brandSection}>
               <View style={styles.brandIcon}>
-                <Image source={AppIcon} style={styles.brandLogo} resizeMode="contain" />
+                <Image source={MascotIcon} style={styles.brandLogo} resizeMode="contain" />
               </View>
               <Text style={styles.brandName}>{t('auth.login.brand')}</Text>
             </View>
@@ -312,18 +322,6 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
             <View style={styles.welcomeSection}>
               <Text style={styles.welcomeTitle}>{t('auth.login.welcome')}</Text>
               <Text style={styles.welcomeSubtitle}>{t('auth.login.continueJourney')}</Text>
-            </View>
-
-            {/* Trust Chips */}
-            <View style={styles.trustRow}>
-              <View style={styles.trustChip}>
-                <Ionicons name="shield-checkmark" size={14} color={theme.colors.onSurfaceVariant} />
-                <Text style={styles.trustText}>{t('auth.login.secure.trust1')}</Text>
-              </View>
-              <View style={styles.trustChip}>
-                <Ionicons name="key-outline" size={14} color={theme.colors.onSurfaceVariant} />
-                <Text style={styles.trustText}>{t('auth.login.secure.trust2')}</Text>
-              </View>
             </View>
 
             {/* OAuth Buttons Container */}
@@ -472,6 +470,9 @@ const createStyles = (
       ...StyleSheet.absoluteFillObject,
       backgroundColor: alpha(theme.colors.scrim, 0.3),
     },
+    videoOverlayReady: {
+      backgroundColor: alpha(theme.colors.scrim, 0.18),
+    },
 
     // Content layout
     contentContainer: {
@@ -500,21 +501,15 @@ const createStyles = (
       marginBottom: theme.spacing.xl,
     },
     brandIcon: {
-      width: 68,
-      height: 68,
-      borderRadius: 20,
-      backgroundColor:
-        colorMode === 'dark' ? alpha(theme.colors.primary, 0.2) : alpha(theme.colors.primary, 0.14),
-      borderWidth: 1,
-      borderColor: alpha(theme.colors.primary, 0.2),
+      width: 220,
+      height: 220,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: theme.spacing.md,
     },
     brandLogo: {
-      width: 40,
-      height: 40,
-      borderRadius: 8,
+      width: 220,
+      height: 220,
     },
     brandName: {
       fontSize: 30,
@@ -527,7 +522,7 @@ const createStyles = (
     // Welcome section
     welcomeSection: {
       alignItems: 'center',
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.xl,
     },
     welcomeTitle: {
       fontSize: 26,
@@ -546,34 +541,6 @@ const createStyles = (
       fontFamily: theme.typography.fontFamilyRegular || 'Inter-Regular',
       maxWidth: 260,
       lineHeight: 20,
-    },
-
-    trustRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
-      gap: theme.spacing.sm,
-      marginTop: theme.spacing.md,
-      marginBottom: theme.spacing.lg,
-    },
-    trustChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-      paddingVertical: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.sm,
-      borderRadius: 999,
-      backgroundColor:
-        colorMode === 'dark'
-          ? alpha(theme.colors.surfaceVariant, 0.6)
-          : alpha(theme.colors.surfaceVariant, 0.8),
-      borderWidth: 1,
-      borderColor: alpha(theme.colors.outlineVariant, 0.35),
-    },
-    trustText: {
-      fontSize: 12,
-      color: theme.colors.onSurfaceVariant,
-      fontFamily: theme.typography.fontFamilyMedium || 'Inter-Medium',
     },
 
     // Auth container

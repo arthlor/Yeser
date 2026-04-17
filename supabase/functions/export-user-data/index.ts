@@ -1,5 +1,4 @@
-import { serve } from 'https://deno.land/std@0.214.0/http/server.ts';
-import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 type SupportedLanguage = 'tr' | 'en' | 'es';
 type LanguageDetectionMethod = 'header' | 'body' | 'profile' | 'accept-language' | 'fallback';
@@ -326,7 +325,9 @@ const fetchLocalizedBenefits = async (
       return [];
     }
 
-    return (data ?? []).map((benefit) => localizeGratitudeBenefit(benefit, language));
+    return (data ?? []).map((benefit: Database['public']['Tables']['gratitude_benefits']['Row']) =>
+      localizeGratitudeBenefit(benefit, language)
+    );
   } catch (error) {
     logger.warn('Unexpected error while fetching gratitude benefits', error);
     return [];
@@ -349,7 +350,9 @@ const fetchLocalizedPrompts = async (
       return [];
     }
 
-    return (data ?? []).map((prompt) => localizeDailyPrompt(prompt, language));
+    return (data ?? []).map((prompt: Database['public']['Tables']['daily_prompts']['Row']) =>
+      localizeDailyPrompt(prompt, language)
+    );
   } catch (error) {
     logger.warn('Unexpected error while fetching daily prompts', error);
     return [];
@@ -374,6 +377,9 @@ interface SanitizedEntry {
   created_at: string;
   updated_at: string | null;
 }
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type GratitudeEntryRow = Database['public']['Tables']['gratitude_entries']['Row'];
 
 const calculateExportMetadata = (
   entries: SanitizedEntry[],
@@ -427,7 +433,7 @@ const getFullName = (userMetadata: unknown): string | null => {
 
 logger.info('Edge Function "export-user-data" is ready with tr/en/es localization support');
 
-serve(async (req: Request): Promise<Response> => {
+Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS });
   }
@@ -472,7 +478,7 @@ serve(async (req: Request): Promise<Response> => {
 
     const user = userData.user;
 
-    const { data: profile, error: profileError } = await supabaseClient
+    const { data: profileData, error: profileError } = await supabaseClient
       .from('profiles')
       .select(
         `
@@ -490,6 +496,8 @@ serve(async (req: Request): Promise<Response> => {
       .eq('id', user.id)
       .maybeSingle();
 
+    const profile = (profileData ?? null) as ProfileRow | null;
+
     if (profileError) {
       logger.warn(
         'Error fetching profile, continuing with fallback language detection',
@@ -504,19 +512,21 @@ serve(async (req: Request): Promise<Response> => {
       profile?.language ?? null
     );
 
-    const { data: entries, error: entriesError } = await supabaseClient
+    const { data: entriesData, error: entriesError } = await supabaseClient
       .from('gratitude_entries')
       .select('id, user_id, entry_date, statements, created_at, updated_at')
       .eq('user_id', user.id)
       .order('entry_date', { ascending: false })
       .limit(EXPORT_LIMITS.MAX_ENTRIES_PER_REQUEST);
 
+    const entries = (entriesData ?? []) as GratitudeEntryRow[];
+
     if (entriesError) {
       logger.error('Error fetching gratitude entries', entriesError);
       return jsonResponse({ error: `Database error: ${entriesError.message}` }, 500);
     }
 
-    const sanitizedEntries: SanitizedEntry[] = (entries ?? []).map((entry) => ({
+    const sanitizedEntries: SanitizedEntry[] = entries.map((entry) => ({
       id: entry.id,
       entry_date: entry.entry_date,
       statements: toStringArray(entry.statements),

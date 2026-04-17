@@ -19,6 +19,9 @@ import { enUS, es, tr } from 'date-fns/locale';
 
 import LoadingState from '@/shared/components/states/LoadingState';
 import StatementEditCard from '@/shared/components/ui/StatementEditCard';
+import AttachmentRail from '@/features/gratitude/components/AttachmentRail';
+import { useAttachmentMutations } from '@/features/gratitude/hooks';
+import type { Attachment } from '@/schemas/gratitudeEntrySchema';
 import { ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useToast } from '@/providers/ToastProvider';
@@ -32,6 +35,8 @@ import { hapticFeedback } from '@/utils/hapticFeedback';
 import { useMoodEmoji } from '@/shared/hooks/useMoodEmoji';
 import type { MoodEmoji } from '@/types/mood.types';
 import { useLanguageStore } from '@/store/languageStore';
+import ThrowbackShareCard from '@/features/throwback/components/ThrowbackShareCard';
+import { shareThrowbackCard } from '@/features/throwback/shareThrowback';
 
 type EntryDetailScreenRouteProp = RouteProp<AppStackParamList, 'EntryDetail'>;
 type EntryDetailScreenNavigationProp = CompositeNavigationProp<
@@ -54,6 +59,7 @@ const EntryDetailStatementItem = React.memo<{
   onSave: (updated: string, mood?: MoodEmoji | null) => Promise<void>;
   onCancel: () => void;
   onDelete: () => void;
+  onShare: () => void;
   serverMood?: MoodEmoji | null;
   theme: AppTheme;
 }>(
@@ -67,6 +73,7 @@ const EntryDetailStatementItem = React.memo<{
     onSave,
     onCancel,
     onDelete,
+    onShare,
     serverMood,
     theme: _theme,
   }) => {
@@ -94,6 +101,7 @@ const EntryDetailStatementItem = React.memo<{
         onSave={(updated, mood) => onSave(updated, mood)}
         onCancel={onCancel}
         onDelete={onDelete}
+        onShare={onShare}
         isLoading={isLoading}
         edgeToEdge={true}
         variant="primary"
@@ -128,6 +136,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const { editStatement, deleteStatement, addStatement, isDeletingStatement } =
     useGratitudeMutations();
+  const { deleteAttachment: removeAttachment } = useAttachmentMutations();
 
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
   const animations = useCoordinatedAnimations();
@@ -135,6 +144,10 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const statements = useMemo(() => currentEntry?.statements || [], [currentEntry?.statements]);
   const displayStatements = useMemo(() => [...statements].reverse(), [statements]);
+
+  const shareCardRef = useRef<View>(null);
+  const [statementToShare, setStatementToShare] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     animations.animateEntrance({ duration: 500 });
@@ -160,8 +173,33 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
-  const formattedDate = format(effectiveDate, 'EEEE, d MMMM', { locale: getDateLocale() });
-  const monthYear = format(effectiveDate, 'MMMM yyyy', { locale: getDateLocale() });
+  const formattedDate = format(effectiveDate, 'EEEE', { locale: getDateLocale() });
+  const fullDateTitle = format(effectiveDate, 'd MMMM yyyy', { locale: getDateLocale() });
+
+  const handleShareStatement = useCallback(
+    async (statement: string) => {
+      if (isSharing) {
+        return;
+      }
+      setIsSharing(true);
+      setStatementToShare(statement);
+      // Wait briefly for React to render the hidden card before capturing
+      setTimeout(async () => {
+        try {
+          await shareThrowbackCard({
+            cardRef: shareCardRef,
+            fallbackMessage: `${formattedDate.toUpperCase()}, ${fullDateTitle}\n\n"${statement}"\n\nYeşer`,
+            dialogTitle: t('throwback.modal.shareTitle', { defaultValue: 'Share this memory' }),
+          });
+          analyticsService.logEvent('gratitude_shared', { source: 'detail_screen' });
+        } finally {
+          setIsSharing(false);
+          setStatementToShare(null);
+        }
+      }, 150);
+    },
+    [isSharing, formattedDate, fullDateTitle, t]
+  );
 
   const handleSaveEditedStatement = useCallback(
     async (index: number, updatedText: string, updatedMood?: MoodEmoji | null) => {
@@ -232,9 +270,6 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     ]
   );
 
-  // Header Logic
-  const isToday = entryDate === new Date().toISOString().split('T')[0];
-
   if (isLoadingEntry) {
     return <LoadingState fullScreen message={t('shared.loading')} />;
   }
@@ -276,36 +311,50 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <View style={styles.header}>
             <View style={styles.headerContent}>
               <Text style={styles.headerDate}>{formattedDate.toUpperCase()}</Text>
-              <Text style={styles.headerTitle}>
-                {isToday ? t('home.headline.greeting.morning', 'Your Day') : monthYear}
-              </Text>
+              <Text style={styles.headerTitle}>{fullDateTitle}</Text>
               <Text style={styles.headerSubtitle}>{t('gratitude.detail.subtitle')}</Text>
             </View>
           </View>
 
           {/* STATEMENTS LIST SECTION */}
           <View style={styles.listSection}>
-            {displayStatements.map((statement, index) => (
-              <View key={`${entryDate}-${index}`} style={styles.statementWrapper}>
-                <EntryDetailStatementItem
-                  index={index}
-                  statement={statement}
-                  entryDate={entryDate}
-                  isEditing={editingStatementIndex === index}
-                  isLoading={isDeletingStatement}
-                  onEdit={() => setEditingStatementIndex(index)}
-                  onSave={(updated, mood) => handleSaveEditedStatement(index, updated, mood)}
-                  onCancel={() => setEditingStatementIndex(null)}
-                  onDelete={() => handleDeleteStatement(index)}
-                  serverMood={
-                    ((currentEntry?.moods as Record<string, string> | undefined)?.[
-                      String(statements.length - 1 - index)
-                    ] as MoodEmoji | undefined) ?? null
-                  }
-                  theme={theme}
-                />
-              </View>
-            ))}
+            {displayStatements.map((statement, index) => {
+              const originalIndex = statements.length - 1 - index;
+              const entryAttachments =
+                (currentEntry?.attachments as Attachment[] | undefined) ?? [];
+              const statementAttachments = entryAttachments.filter(
+                (a) => a.statement_index === originalIndex
+              );
+              return (
+                <View key={`${entryDate}-${index}`} style={styles.statementWrapper}>
+                  <EntryDetailStatementItem
+                    index={index}
+                    statement={statement}
+                    entryDate={entryDate}
+                    isEditing={editingStatementIndex === index}
+                    isLoading={isDeletingStatement}
+                    onEdit={() => setEditingStatementIndex(index)}
+                    onSave={(updated, mood) => handleSaveEditedStatement(index, updated, mood)}
+                    onCancel={() => setEditingStatementIndex(null)}
+                    onDelete={() => handleDeleteStatement(index)}
+                    onShare={() => handleShareStatement(statement)}
+                    serverMood={
+                      ((currentEntry?.moods as Record<string, string> | undefined)?.[
+                        String(statements.length - 1 - index)
+                      ] as MoodEmoji | undefined) ?? null
+                    }
+                    theme={theme}
+                  />
+                  {statementAttachments.length > 0 ? (
+                    <AttachmentRail
+                      attachments={statementAttachments}
+                      onRemove={(a) => removeAttachment({ entryDate, attachmentId: a.id })}
+                      compact
+                    />
+                  ) : null}
+                </View>
+              );
+            })}
 
             {statements.length === 0 && (
               <View style={styles.emptyContainer}>
@@ -318,6 +367,17 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               </View>
             )}
           </View>
+
+          {/* Hidden Share Card */}
+          {statementToShare !== null && (
+            <View style={styles.hiddenShareCardContainer} pointerEvents="none">
+              <ThrowbackShareCard
+                ref={shareCardRef}
+                dateLabel={fullDateTitle}
+                statement={statementToShare}
+              />
+            </View>
+          )}
         </Animated.View>
       </ScreenLayout>
     </>
@@ -391,6 +451,14 @@ const createStyles = (theme: AppTheme) =>
       ...theme.typography.bodyLarge,
       color: theme.colors.onSurfaceVariant + '80',
       fontStyle: 'italic',
+    },
+    hiddenShareCardContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: 400, // Fixed width for nice rendering
+      opacity: 0,
+      zIndex: -1,
     },
   });
 

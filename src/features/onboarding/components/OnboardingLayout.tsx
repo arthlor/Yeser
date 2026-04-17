@@ -5,10 +5,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
+import OnboardingGradientBackground from './OnboardingGradientBackground';
 
 interface OnboardingLayoutProps {
   children: React.ReactNode;
   edgeToEdge?: boolean;
+  /**
+   * When set, renders a soft decorative gradient + aura behind the content
+   * to give the step a warmer, more inviting feel.
+   */
+  ambient?: 'warm' | 'sunrise' | 'calm' | 'celebrate' | null;
 }
 
 /**
@@ -23,6 +29,7 @@ interface OnboardingLayoutProps {
 export const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   children,
   edgeToEdge = false,
+  ambient = 'warm',
 }) => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -30,7 +37,7 @@ export const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
 
   return (
     <ScreenLayout
-      edges={['top']} // Handle top safe area only
+      edges={[]} // Handled by EnhancedOnboardingFlowScreen
       edgeToEdge={true} // Always enable fullscreen layout
       scrollable={false} // Compact onboarding: avoid scroll
       density="compact"
@@ -39,6 +46,7 @@ export const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
       style={styles.screenContainer}
       keyboardDismissMode="interactive"
     >
+      {ambient && <OnboardingGradientBackground variant={ambient} />}
       <View style={styles.contentContainer}>{children}</View>
 
       {/* Android Navigation Bar Safe Area Spacer */}

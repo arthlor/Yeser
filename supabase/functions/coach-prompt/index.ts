@@ -2,13 +2,8 @@
 // Generates personalized gratitude coaching prompts based on user history
 // Self-contained - no shared imports
 
-import { serve } from 'https://deno.land/std@0.214.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import {
-  GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
-} from 'npm:@google/generative-ai@0.21.0';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 // ============================================================================
 // CORS Helpers
@@ -206,7 +201,7 @@ interface CoachPromptResponse {
 function buildPrompt(recentEntries: string[], language: string, focusArea: string): string {
   const entriesContext =
     recentEntries.length > 0
-      ? `Recent gratitude entries from this user:\n${recentEntries.map((e, i) => `${i + 1}. "${e}"`).join('\n')}`
+      ? `Recent gratitude entries from this user:\n${recentEntries.map((e: string, i: number) => `${i + 1}. "${e}"`).join('\n')}`
       : 'No recent entries available.';
 
   const focusGuides = {
@@ -252,7 +247,7 @@ Return ONLY valid JSON in this exact format:
 }`;
 }
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 

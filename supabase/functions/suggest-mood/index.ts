@@ -2,13 +2,8 @@
 // Analyzes gratitude statement and suggests appropriate mood emojis
 // Self-contained - no shared imports
 
-import { serve } from 'https://deno.land/std@0.214.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import {
-  GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
-} from 'npm:@google/generative-ai@0.21.0';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 // ============================================================================
 // CORS Helpers
@@ -253,7 +248,7 @@ Rules:
 - The primary emoji must be included in the moods array`;
 }
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;

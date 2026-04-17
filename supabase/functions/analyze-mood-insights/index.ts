@@ -2,13 +2,8 @@
 // Analyzes gratitude entries to provide deep psychological and emotional insights
 // and suggestions for the user.
 
-import { serve } from 'https://deno.land/std@0.214.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import {
-  GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
-} from 'npm:@google/generative-ai@0.21.0';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 // ============================================================================
 // CORS Helpers
@@ -57,6 +52,12 @@ function getGeminiModel() {
   const genAI = new GoogleGenerativeAI(apiKey);
   return genAI.getGenerativeModel({
     model: 'gemini-3-flash-preview',
+    generationConfig: {
+      temperature: 0.85,
+      topP: 0.95,
+      maxOutputTokens: 2400,
+      responseMimeType: 'application/json',
+    },
     safetySettings: [
       {
         category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -83,9 +84,14 @@ function getGeminiModel() {
 // ============================================================================
 
 interface AnalyzeMoodRequest {
-  range: '7d' | '15d' | '30d';
+  range: '15d' | '30d' | '90d';
   language?: 'tr' | 'en' | 'es';
 }
+
+const VALID_RANGES = ['15d', '30d', '90d'] as const;
+
+const isValidRange = (range: unknown): range is AnalyzeMoodRequest['range'] =>
+  typeof range === 'string' && VALID_RANGES.includes(range as AnalyzeMoodRequest['range']);
 
 interface GratitudeEntry {
   entry_date: string;
@@ -93,17 +99,51 @@ interface GratitudeEntry {
   moods?: Record<string, string>;
 }
 
+interface FlattenedStatement {
+  entry_date: string;
+  statement: string;
+  mood: string | null;
+}
+
+const flattenStatements = (entries: GratitudeEntry[]): FlattenedStatement[] =>
+  entries.flatMap((entry) => {
+    const statements = Array.isArray(entry.statements) ? entry.statements : [];
+
+    return statements.flatMap((value, index) => {
+      if (typeof value !== 'string') {
+        return [];
+      }
+
+      const statement = value.trim();
+
+      if (!statement) {
+        return [];
+      }
+
+      return [
+        {
+          entry_date: entry.entry_date,
+          statement,
+          mood: entry.moods?.[String(index)] ?? null,
+        },
+      ];
+    });
+  });
+
 interface InsightResponse {
   narrative: {
     logical: string;
     emotional: string;
     suggestions: string[];
-  };
+  } | null;
   highlighted_insight: {
     title: string;
     description: string;
     emoji: string;
   } | null;
+  generated_at?: string;
+  entry_count_at_generation?: number;
+  is_preview_only?: boolean;
 }
 
 // ============================================================================
@@ -111,6 +151,7 @@ interface InsightResponse {
 // ============================================================================
 
 const DAILY_LIMIT = 25;
+const MIN_GRATITUDE_STATEMENTS_FOR_INSIGHTS = 3;
 
 type AIFeature =
   | 'mood_suggest'
@@ -212,7 +253,7 @@ async function recordUsage(userId: string, feature: AIFeature): Promise<UsageRes
 // Main Logic
 // ============================================================================
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   // Handle CORS
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -243,6 +284,15 @@ serve(async (req: Request) => {
       return errorResponse('Unauthorized', 401);
     }
 
+    const adminClient = getSupabaseAdmin();
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('is_pro')
+      .eq('id', user.id)
+      .single();
+
+    const isPro = Boolean(profile?.is_pro);
+
     // Check rate limit
     const usageInfo = await checkUsage(user.id);
     if (!usageInfo.allowed) {
@@ -258,12 +308,16 @@ serve(async (req: Request) => {
     }
 
     // 2. Parse Request
-    const body: AnalyzeMoodRequest = await req.json();
-    const { range = '7d', language = 'en' } = body;
+    const body = (await req.json()) as Partial<AnalyzeMoodRequest>;
+    const range = isValidRange(body.range) ? body.range : '30d';
+    const language =
+      body.language === 'tr' || body.language === 'es' || body.language === 'en'
+        ? body.language
+        : 'en';
 
     // 3. Fetch Data
-    const daysMap = { '7d': 7, '15d': 15, '30d': 30 };
-    const days = daysMap[range] || 7;
+    const daysMap: Record<string, number> = { '15d': 15, '30d': 30, '90d': 90 };
+    const days = daysMap[range] ?? 30;
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -281,7 +335,10 @@ serve(async (req: Request) => {
       return errorResponse('Failed to fetch entries', 500);
     }
 
-    if (!entries || entries.length < 3) {
+    const flattenedStatements = flattenStatements(entries ?? []);
+    const statementCount = flattenedStatements.length;
+
+    if (!entries || statementCount < MIN_GRATITUDE_STATEMENTS_FOR_INSIGHTS) {
       // Not enough data for AI analysis
       let logicalMsg = 'Not enough data yet.';
       let emotionalMsg = 'Add more entries.';
@@ -301,6 +358,7 @@ serve(async (req: Request) => {
           suggestions: [],
         },
         highlighted_insight: null,
+        is_preview_only: !isPro,
         remaining: usageInfo.remaining,
       });
     }
@@ -308,7 +366,7 @@ serve(async (req: Request) => {
     // 4. Prepare Context for AI
     const entriesContext = entries
       .map(
-        (e) => `
+        (e: GratitudeEntry) => `
       Date: ${e.entry_date}
       Statements: ${Array.isArray(e.statements) ? e.statements.join(' | ') : e.statements}
       Moods: ${JSON.stringify(e.moods || {})}
@@ -324,31 +382,79 @@ serve(async (req: Request) => {
         en: 'English',
       }[language] || 'English';
 
+    const shouldUseLightweightRead = statementCount <= 5;
+    const suggestionsTargetCount = shouldUseLightweightRead ? 3 : 5;
+    const logicalLengthInstruction = shouldUseLightweightRead
+      ? 'Write 1 well-developed paragraph (~90-130 words, around 4-6 sentences).'
+      : 'Write a deep synthesis (~150-220 words) across 2 short paragraphs.';
+    const emotionalLengthInstruction = shouldUseLightweightRead
+      ? 'Write 1 warm paragraph (~90-130 words, around 4-6 sentences).'
+      : 'Write a nuanced emotional read (~150-220 words) across 2 short paragraphs.';
+    const analysisStyleInstruction = shouldUseLightweightRead
+      ? `
+      Important context:
+      - The user only has ${statementCount} gratitude statements in this range.
+      - Treat this as an early emerging pattern, not a firm conclusion.
+      - Be warm, cautiously phrased, and specific without over-claiming certainty.
+      - Keep logical and emotional sections to 2-3 sentences each.
+      - Suggestions should be simple, gentle, and realistic for an early-stage habit.
+      - Still make the language vivid and emotionally meaningful, even with limited data.
+      `
+      : `
+      Important context:
+      - The user has ${statementCount} gratitude statements in this range.
+      - You can provide a fuller, more confident synthesis while still staying grounded in the data.
+      - Aim for emotionally rich, creative synthesis without sounding dramatic or abstract.
+      - Explore recurring threads with more depth, examples, and nuance.
+      `;
+
     const prompt = `
       You are an empathetic psychology expert and data analyst for a gratitude journal app.
-      Your goal is to provide a DEEP, COMPREHENSIVE, and DETAILED psychological analysis of the user's emotional state based on their gratitude entries.
-      Analyze the user's gratitude entries from the last ${days} days.
+      Your goal is to provide a deep, emotionally intelligent reflection based on the person's gratitude entries.
+      Analyze the gratitude entries from the last ${days} days.
       Language: ${languageName} (Output MUST be in this language).
+      ${analysisStyleInstruction}
+
+      Voice and tone rules:
+      - Write directly to the person reading, using second-person voice.
+      - In Turkish, speak as "sen/sana/senin". In Spanish, speak as "tu/tus/te". In English, speak as "you/your".
+      - Never refer to the person as "the user", "kullanıcı", "el usuario", or any third-person label.
+      - Sound warm, sincere, gentle, and emotionally attuned.
+      - Avoid clinical, academic, overly formal, or distant language.
+      - Help the person feel understood, not evaluated from afar.
+      - Keep the writing natural and human, not robotic or overly dramatic.
+      - Prefer concrete, sensory language over generic labels.
+      - If useful, use one subtle metaphor or image per section (max one), rooted in the person's actual entries.
+      - Avoid cliches, motivational slogans, and template-like phrasing.
+      - Do not repeat the same idea with different words.
 
       Data:
       ${entriesContext}
 
       Task:
-      1. **Logical Deduction**: Write a DETAILED paragraph (at least 3-4 sentences) connecting the user's entries to broader life themes. Don't just list what they are grateful for; analyze *why* and what it implies about their current life focus (e.g., career growth, family bonding, self-discovery). Avoid generic statements. Deeply interpret the data.
-      2. **Emotional Reading**: Write a DETAILED paragraph (at least 3-4 sentences) analyzing the emotional undercurrents. Go beyond surface-level labels. Discuss the nuances of their feelings (e.g., "a sense of relief mixed with pride," "quiet contentment," "energetic anticipation").
-      3. **Suggestions**: Provide 3 concrete, actionable, and specific psychological suggestions to help them deepen their practice or address any potential gaps.
-      4. **Highlighted Insight**: Identify one specific pattern or standout realization that is unique to this user. Give it a catchy short title and a dedicated emoji.
+      1. **Logical Deduction**: Connect these entries to broader life themes. Don't just list what was appreciated; reflect on what it may suggest about the person's current focus, needs, or direction. Keep it grounded and personal.
+         - ${logicalLengthInstruction}
+         - Refer to at least 2 concrete motifs from the entries.
+      2. **Emotional Reading**: Describe the emotional undercurrent with warmth and nuance, going beyond surface labels.
+         - ${emotionalLengthInstruction}
+         - Include subtle emotional contrasts (e.g., relief vs. pressure, safety vs. uncertainty) when present.
+      3. **Suggestions**: Provide ${suggestionsTargetCount} concrete, actionable, and gentle suggestions to deepen gratitude practice or support emotional balance.
+         - Each suggestion should be personalized to the observed pattern and at least 1 full sentence.
+      4. **Highlighted Insight**: Identify one specific pattern or realization that stands out.
+         - The title should feel human, vivid, and emotionally resonant, not technical or analytical.
+         - The description should be 2 sincere sentences written directly to the person.
+      5. **Creativity constraint**: Keep the writing fresh and non-generic. Avoid repetitive structures like "you are someone who..." in every section.
 
       Output JSON format:
       {
         "narrative": {
-          "logical": "Detailed paragraph exploring logical themes...",
-          "emotional": "Detailed paragraph analyzing emotional nuances...",
-          "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3"]
+          "logical": "Longer warm analysis...",
+          "emotional": "Longer nuanced emotional read...",
+          "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
         },
         "highlighted_insight": {
-          "title": "Short title",
-          "description": "One sentence description",
+          "title": "Short resonant title",
+          "description": "Two warm sentences written directly to the person",
           "emoji": "🌟"
         }
       }
@@ -358,8 +464,47 @@ serve(async (req: Request) => {
 
     // 6. Generate with Gemini
     const model = getGeminiModel();
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    let text = '';
+
+    try {
+      // Use a timeout of 25 seconds for the AI call
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+      const result = await model.generateContent(prompt, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      // Check if we have candidates
+      if (
+        !result.response ||
+        !result.response.candidates ||
+        result.response.candidates.length === 0
+      ) {
+        console.error('[analyze-mood] No candidates returned from Gemini');
+        return errorResponse('No response generated from AI', 500);
+      }
+
+      // Handle safety blocks
+      const firstCandidate = result.response.candidates[0];
+      if (firstCandidate.finishReason === 'SAFETY') {
+        console.error('[analyze-mood] Response blocked by safety filters');
+        return errorResponse(
+          'The content was flagged by safety filters. Please try again with different entries.',
+          400
+        );
+      }
+
+      text = result.response.text();
+    } catch (genError) {
+      console.error('[analyze-mood] Generation Error:', genError);
+      const msg = genError instanceof Error ? genError.message : String(genError);
+
+      if (msg.includes('abort') || msg.includes('timeout')) {
+        return errorResponse('AI analysis timed out. Please try again.', 504);
+      }
+
+      return errorResponse(`AI Generation failed: ${msg}`, 500);
+    }
 
     // Clean JSON
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -369,19 +514,53 @@ serve(async (req: Request) => {
     try {
       analysis = JSON.parse(jsonString);
     } catch (e) {
-      console.error('JSON Parse Error:', e);
-      // Fallback or retry logic could go here, for now return error or simple fallback
-      return errorResponse('Failed to parse AI response', 500);
+      console.error('[analyze-mood] JSON Parse Error:', e);
+      console.error('[analyze-mood] Raw Response content:', text);
+      return errorResponse('Failed to parse AI response into the required format.', 500);
+    }
+
+    const generatedAt = new Date().toISOString();
+    const entryCountAtGeneration = statementCount;
+
+    const { error: snapshotError } = await adminClient.from('mood_insight_snapshots').upsert(
+      {
+        user_id: user.id,
+        range,
+        language,
+        highlighted_insight: analysis.highlighted_insight,
+        narrative: analysis.narrative,
+        generated_at: generatedAt,
+        updated_at: generatedAt,
+        entry_count_at_generation: entryCountAtGeneration,
+      },
+      {
+        onConflict: 'user_id,range,language',
+      }
+    );
+
+    if (snapshotError) {
+      console.error('[analyze-mood] Error storing snapshot:', snapshotError);
     }
 
     // Record usage
     const updatedUsage = await recordUsage(user.id, 'mood_insights');
-    analysis.remaining = updatedUsage.remaining;
-    analysis.resetInSeconds = updatedUsage.resetInSeconds;
+    const responsePayload: InsightResponse & {
+      remaining: number;
+      resetInSeconds: number;
+    } = {
+      narrative: isPro ? analysis.narrative : null,
+      highlighted_insight: analysis.highlighted_insight,
+      generated_at: generatedAt,
+      entry_count_at_generation: entryCountAtGeneration,
+      is_preview_only: !isPro,
+      remaining: updatedUsage.remaining,
+      resetInSeconds: updatedUsage.resetInSeconds,
+    };
 
-    return jsonResponse(analysis);
+    return jsonResponse(responsePayload);
   } catch (error) {
     console.error('Internal Error:', error);
-    return errorResponse(error.message || 'Internal Server Error', 500);
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    return errorResponse(message, 500);
   }
 });

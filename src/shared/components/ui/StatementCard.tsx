@@ -31,6 +31,7 @@ import { ThreeDotsMenu, useReducedMotion } from './StatementCardBase';
 import type { MoodEmoji } from '@/types/mood.types';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import { useTranslation } from 'react-i18next';
+import { GRATITUDE_MAX_LENGTH } from '@/constants/gratitude';
 
 // Simplified props interface focusing on core functionality
 export interface StatementCardProps {
@@ -94,7 +95,7 @@ export const StatementCard: React.FC<StatementCardProps> = ({
   // Simplified interaction configuration
   enableInlineEdit = false,
   confirmDelete = true,
-  maxLength = 500,
+  maxLength = GRATITUDE_MAX_LENGTH,
 
   // Accessibility
   accessibilityLabel,

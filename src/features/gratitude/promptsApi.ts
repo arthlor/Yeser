@@ -12,10 +12,14 @@ import type { SupportedLanguage } from '@/store/languageStore';
  * **NETWORK RESILIENCE**: Enhanced error handling for network failures
  * @returns A DailyPrompt object or null if no prompt is found or an error occurs.
  */
-export const getRandomActivePrompt = async (): Promise<DailyPrompt | null> => {
+export const getRandomActivePrompt = async (
+  language: SupportedLanguage = 'en'
+): Promise<DailyPrompt | null> => {
   try {
     const client = await getSupabaseClient();
-    const { data, error } = await client.rpc('get_random_active_prompt');
+    const { data, error } = await client.rpc('get_random_active_prompt', {
+      p_language: language,
+    });
 
     if (error) {
       // **ENHANCED ERROR HANDLING**: Better error categorization
@@ -74,13 +78,14 @@ export const getRandomActivePrompt = async (): Promise<DailyPrompt | null> => {
  * @returns Array of DailyPrompt objects or empty array if none found
  */
 export const getMultipleRandomActivePrompts = async (
-  limit: number = 10
+  limit: number = 10,
+  language: SupportedLanguage = 'en'
 ): Promise<DailyPrompt[]> => {
   try {
-    // Use server-side RPC function for optimal performance and scalability
     const client = await getSupabaseClient();
     const { data, error } = await client.rpc('get_multiple_random_active_prompts', {
       p_limit: limit,
+      p_language: language,
     });
 
     if (error) {

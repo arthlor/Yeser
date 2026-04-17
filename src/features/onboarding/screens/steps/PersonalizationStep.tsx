@@ -4,7 +4,8 @@ import { getNeutralShadow } from '@/themes/utils';
 import type { AppTheme } from '@/themes/types';
 import { hapticFeedback } from '@/utils/hapticFeedback';
 import { useUsernameValidation } from '@/shared/hooks';
-import { Ionicons } from '@expo/vector-icons';
+import { OnboardingMascot } from '@/features/onboarding/components/OnboardingMascot';
+import { Feather } from '@expo/vector-icons';
 import { OnboardingLayout } from '@/features/onboarding/components/OnboardingLayout';
 import { useTranslation } from 'react-i18next';
 import { OnboardingButton } from '@/features/onboarding/components/OnboardingButton';
@@ -58,26 +59,26 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   const THEME_OPTIONS_LOCALIZED: {
     key: ThemeKey;
     name: string;
-    icon: keyof typeof Ionicons.glyphMap;
+    icon: keyof typeof Feather.glyphMap;
     description: string;
   }[] = useMemo(
     () => [
       {
         key: 'light',
         name: t('onboarding.personalization.theme.light.name'),
-        icon: 'sunny-outline',
+        icon: 'sun',
         description: t('onboarding.personalization.theme.light.desc'),
       },
       {
         key: 'dark',
         name: t('onboarding.personalization.theme.dark.name'),
-        icon: 'moon-outline',
+        icon: 'moon',
         description: t('onboarding.personalization.theme.dark.desc'),
       },
       {
         key: 'auto',
         name: t('onboarding.personalization.theme.auto.name'),
-        icon: 'phone-portrait-outline',
+        icon: 'smartphone',
         description: t('onboarding.personalization.theme.auto.desc'),
       },
     ],
@@ -159,7 +160,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   // Removed debug logging
 
   return (
-    <OnboardingLayout edgeToEdge={true}>
+    <OnboardingLayout edgeToEdge={true} ambient="warm">
       <Animated.View style={[styles.container, containerStyle]}>
         <ScreenSection>
           <OnboardingNavHeader
@@ -170,11 +171,25 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
           />
         </ScreenSection>
 
+        <OnboardingMascot source={require('@/assets/assets/mascot1.png')} delay={200} />
+
         {/* Content Header */}
         <ScreenSection>
           <View style={styles.header}>
             <Text style={styles.title}>{t('onboarding.personalization.title')}</Text>
             <Text style={styles.subtitle}>{t('onboarding.personalization.subtitle')}</Text>
+          </View>
+        </ScreenSection>
+
+        {/* Live greeting preview — warms up the experience with the user's name. */}
+        <ScreenSection>
+          <View style={styles.previewCard}>
+            <Feather name="message-circle" size={16} color={theme.colors.primary} />
+            <Text style={styles.previewText}>
+              {username.trim().length >= 2
+                ? t('onboarding.personalization.previewFilled', { name: username.trim() })
+                : t('onboarding.personalization.previewEmpty')}
+            </Text>
           </View>
         </ScreenSection>
 
@@ -204,7 +219,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
             )}
             {!isChecking && isAvailable === true && username.length >= 3 && (
               <View style={styles.usernameValidationIndicator}>
-                <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
+                <Feather name="check-circle" size={20} color={theme.colors.success} />
               </View>
             )}
           </View>
@@ -240,7 +255,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
                 accessibilityLabel={`${themeOption.name}: ${themeOption.description}`}
               >
                 <View style={styles.themeOptionContent}>
-                  <Ionicons
+                  <Feather
                     name={themeOption.icon}
                     size={22}
                     color={
@@ -268,7 +283,7 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
                     </Text>
                   </View>
                   {selectedTheme === themeOption.key && (
-                    <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} />
+                    <Feather name="check-circle" size={18} color={theme.colors.primary} />
                   )}
                 </View>
               </TouchableOpacity>
@@ -303,13 +318,16 @@ const createStyles = (theme: AppTheme) =>
       paddingTop: 0,
     },
     title: {
-      ...theme.typography.headlineLarge,
+      ...theme.typography.headlineMedium,
+      fontSize: 24,
+      fontWeight: '700',
       color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.xs,
     },
     subtitle: {
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
+      fontSize: 14,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
       lineHeight: 20,
@@ -322,16 +340,15 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.lg,
       borderWidth: 1,
       borderColor: theme.colors.outline,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: Platform.OS === 'ios' ? theme.spacing.xs : 0, // Minimal vertical padding
-      paddingRight: 50, // Make room for validation indicator
-      fontSize: 16,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: Platform.OS === 'ios' ? theme.spacing.xs : 0,
+      paddingRight: 44, // Room for validation indicator
+      fontSize: 15,
       color: theme.colors.onBackground,
-      minHeight: 48,
-      height: 48, // Fixed height for consistent appearance
-      textAlignVertical: 'center', // Center text vertically on Android
-      includeFontPadding: false, // Remove extra font padding on Android
-      // 🌟 Beautiful neutral shadow for username input
+      minHeight: 44,
+      height: 44,
+      textAlignVertical: 'center',
+      includeFontPadding: false,
       ...getNeutralShadow.card(theme),
     },
     usernameValidationIndicator: {
@@ -369,8 +386,8 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.lg,
       borderWidth: 1,
       borderColor: theme.colors.outline,
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
     },
     themeOptionSelected: {
       borderColor: theme.colors.primary,
@@ -402,6 +419,24 @@ const createStyles = (theme: AppTheme) =>
     footer: {
       alignItems: 'center',
       gap: theme.spacing.xs,
+    },
+    previewCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      backgroundColor: theme.colors.primary + '10',
+      borderRadius: theme.borderRadius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.primary + '26',
+    },
+    previewText: {
+      ...theme.typography.bodyMedium,
+      color: theme.colors.onBackground,
+      flex: 1,
+      fontStyle: 'italic',
+      lineHeight: 20,
     },
     // Removed button styles - handled by OnboardingButton component
   });

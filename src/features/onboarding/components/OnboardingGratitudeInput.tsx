@@ -203,7 +203,7 @@ const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
           textAlignVertical="center"
         />
 
-        {/* **COORDINATED BUTTON ANIMATION**: Use coordinated press transform */}
+        {/* Compact circular submit button (icon-only) to keep the row tidy. */}
         <Animated.View
           style={React.useMemo(
             () => ({ transform: animations.pressTransform }),
@@ -216,11 +216,15 @@ const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
             onPressOut={animations.animatePressOut}
             style={[styles.button, !isButtonEnabled && styles.buttonDisabled]}
             disabled={!isButtonEnabled}
-            activeOpacity={1} // We handle animation manually
+            activeOpacity={1}
+            accessibilityRole="button"
+            accessibilityLabel={actualButtonText}
           >
-            <Text style={[styles.buttonText, !isButtonEnabled && styles.buttonTextDisabled]}>
-              {actualButtonText}
-            </Text>
+            <Ionicons
+              name="arrow-up"
+              size={20}
+              color={isButtonEnabled ? colors.onPrimary : colors.onSurfaceVariant}
+            />
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -275,7 +279,7 @@ const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      marginVertical: theme.spacing.md,
+      marginVertical: theme.spacing.sm,
     },
     inputContainer: {
       flexDirection: 'row',
@@ -284,57 +288,47 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.lg,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.outline + '25',
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      gap: theme.spacing.sm,
-      minHeight: 56,
-      // 🌟 Beautiful primary shadow for input container
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      gap: theme.spacing.xs,
+      minHeight: 48,
       ...getPrimaryShadow.floating(theme),
     },
     inputContainerFocused: {
       borderColor: theme.colors.primary,
-      borderWidth: 2,
+      borderWidth: 1.5,
     },
     input: {
       flex: 1,
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
+      fontSize: 15,
       color: theme.colors.onBackground,
       margin: 0,
       padding: 0,
-      minHeight: 40,
+      minHeight: 36,
       maxHeight: 80,
       paddingTop: Platform.OS === 'ios' ? 2 : 0,
     },
     button: {
-      backgroundColor: theme.colors.primary,
-      borderRadius: theme.borderRadius.lg,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      minHeight: 44,
-      justifyContent: 'center',
-      alignItems: 'center',
-      // 🌟 Beautiful primary shadow for button
-      ...getPrimaryShadow.small(theme),
-    },
-    buttonDisabled: {
-      backgroundColor: theme.colors.outline,
-      opacity: 0.6,
-    },
-    buttonText: {
-      color: theme.colors.onPrimary,
-      ...theme.typography.titleMedium,
-      letterSpacing: 0.3,
-    },
-    buttonTextDisabled: {
-      color: theme.colors.onSurfaceVariant,
-    },
-    selectedMood: {
-      fontSize: 20,
-    },
-    emojiButton: {
       width: 36,
       height: 36,
       borderRadius: 18,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...getPrimaryShadow.small(theme),
+    },
+    buttonDisabled: {
+      backgroundColor: theme.colors.surfaceVariant,
+      opacity: 0.7,
+    },
+    selectedMood: {
+      fontSize: 18,
+    },
+    emojiButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       backgroundColor: theme.colors.surfaceVariant,
       justifyContent: 'center',
       alignItems: 'center',

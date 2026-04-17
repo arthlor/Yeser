@@ -170,8 +170,8 @@
         "extra": "Learn"
       },
       "mood": {
-        "title": "Mood insights",
-        "subtitle": "Review your emotional patterns"
+        "title": "Insights",
+        "subtitle": "What your gratitude is revealing lately."
       }
     },
     "headline": {
@@ -240,7 +240,7 @@
     }
   },
   "notifications": {
-    "remindersLabel": "Daily Reminders",
+    "remindersLabel": "Daily Reminder",
     "reminders": {
       "midday": {
         "title": "Time to Blossom! ✨",
@@ -252,14 +252,14 @@
       }
     },
     "permissionRequiredTitle": "Notification Permission Required",
-    "dailyRemindersMessage": "We'd like to send gentle daily reminders to sustain your gratitude habit.\n\n✨ Benefits:\n• A friendly reminder at the same time every day\n• Keep your practice consistent\n• You can turn it off anytime\n• A happier, more positive life\n\nWould you like to enable it?",
+    "dailyRemindersMessage": "We'd like to send a gentle daily reminder to support your gratitude habit.\n\n✨ Benefits:\n• A thoughtful nudge around your chosen time\n• Sometimes a past gratitude memory to bring you back\n• Keep your practice consistent\n• You can turn it off anytime\n\nWould you like to enable it?",
     "permissionRequiredMessage": "To enable daily reminders, notification permission is required.\n\n📱 How to enable:\n1. Tap 'Open Settings'\n2. Find the 'Notifications' section\n3. Enable the Yeser app\n4. Return to this page\n\nReminders will help you feel happier! 😊",
     "notNow": "Not Now",
     "enable": "Enable",
     "maybeLater": "Maybe Later",
     "openSettings": "Open Settings",
-    "fixedScheduleDescription": "We'll remind you twice a day at {{firstTime}} and {{secondTime}} in your local time.",
-    "reminderTimeTitle": "Primary reminder time",
+    "fixedScheduleDescription": "We'll send one daily reminder around {{firstTime}} in your local time. Sometimes it may bring back an older gratitude memory.",
+    "reminderTimeTitle": "Daily reminder time",
     "timeUpdatedSuccess": "Reminder time updated to {{time}}.",
     "reminderTimeA11y": "Set reminder time to {{time}}",
     "errors": {
@@ -360,8 +360,8 @@
     },
     "about": {
       "moodAnalysis": {
-        "label": "Mood Insights",
-        "description": "Analyze patterns in your gratitude journal"
+        "label": "Insights",
+        "description": "See the emotional patterns hidden inside your gratitude"
       },
       "whyGratitude": {
         "label": "The Power of Gratitude",
@@ -445,7 +445,7 @@
       "contactEmailLabel": "Email support",
       "contactEmailHint": "Opens email app to contact support",
       "contactCTA": "Contact Support",
-      "appVersion": "Yeser v1.3.0",
+      "appVersion": "Yeser v1.3.1",
       "accessibility": {
         "expanded": "{{question}} expanded. {{answer}}",
         "collapsed": "{{question}} collapsed.",
@@ -477,7 +477,8 @@
     "loadingSubtext": "Loading the power of gratitude...",
     "hero": {
       "title": "Take a Step for Your Mental Health",
-      "subtitle": "Thinking about what you're grateful for every day with Yeser has proven powerful effects on your mental health."
+      "subtitle": "Thinking about what you're grateful for every day with Yeser has proven powerful effects on your mental health.",
+      "streakLabel": "day streak"
     },
     "benefits": {
       "title": "Why should we be grateful?",
@@ -506,7 +507,7 @@
     "gratitude": {
       "empty": "Gratitude statement cannot be empty.",
       "required": "At least one gratitude statement is required.",
-      "tooLong": "Gratitude statement must be 500 characters or less."
+      "tooLong": "Gratitude statement must be {{max}} characters or less."
     },
     "streak": {
       "negativeStreak": "Current streak cannot be negative",
@@ -598,6 +599,12 @@
   "pastEntries": {
     "tab": { "title": "My Gratitudes", "a11y": "View past entries" },
     "title": "Your Gratitude Entries",
+    "search": {
+      "placeholder": "Search your memories...",
+      "a11y": "Search gratitude statements",
+      "emptyTitle": "No matching entries found",
+      "emptySubtitle": "Try another word or clear your search to view all entries."
+    },
     "item": {
       "relative": {
         "today": "Today",
@@ -612,7 +619,9 @@
       "goal": {
         "completeDay": "🎉 Daily goal complete",
         "remaining": "{{count}} more needed for the goal"
-      }
+      },
+      "reflections": "Reflections",
+      "more": "more"
     },
     "list": {
       "page": "Page {{count}}",
@@ -636,7 +645,8 @@
       "benefit3": "Personal growth",
       "quote": "Gratitude is the magic key that makes what we have enough.",
       "tipTitle": "💡 The benefit of gratitude",
-      "tip": "Writing 3 gratitudes a day leads to increased happiness over time!"
+      "tip": "Writing 3 gratitudes a day leads to increased happiness over time!",
+      "author": "— Oprah Winfrey"
     },
     "header": {
       "label": "HISTORY",
@@ -670,9 +680,7 @@
       "status": {
         "operational": "Operational",
         "noConnection": "No Connection",
-        "temporary": "Temporary Error"
-      },
-      "statusLabels": {
+        "temporary": "Temporary Error",
         "app": "App",
         "data": "Data"
       },
@@ -991,7 +999,44 @@
       },
       "moodQuickAction": "Choose mood",
       "moodQuickActionSelected": "Tap to change",
-      "sendButton": "Send gratitude"
+      "sendButton": "Send gratitude",
+      "attach": {
+        "image": "Attach image",
+        "imageLong": "Long-press to take a photo",
+        "imageLocked": "Attach image (Premium)",
+        "imageLimitReached": "Daily image limit reached",
+        "imageLimitReachedToast": "You've reached the daily limit of {{max}} images.",
+        "voice": "Record voice note",
+        "voiceLocked": "Record voice note (Premium)",
+        "voiceLimitReached": "Daily voice note limit reached",
+        "voiceLimitReachedToast": "You've reached the daily limit of {{max}} voice notes.",
+        "permissionRequired": {
+          "title": "Permission required",
+          "photos": "Photo library access is needed to attach a picture.",
+          "camera": "Camera access is needed to take a photo."
+        },
+        "imageTooLarge": {
+          "title": "Image too large",
+          "message": "Please pick an image smaller than {{max}} MB."
+        }
+      }
+    },
+    "voiceRecorder": {
+      "title": {
+        "record": "Record a voice note",
+        "review": "Review your voice note"
+      },
+      "subtitle": "Up to {{seconds}}s",
+      "permissionDenied": "Microphone permission denied. Enable it in system settings to record.",
+      "rerecord": "Re-record",
+      "attach": "Attach",
+      "cancel": "Cancel"
+    },
+    "attachments": {
+      "errors": {
+        "dailyLimitImage": "You've reached today's image limit ({{cap}}/day). Try again tomorrow.",
+        "dailyLimitAudio": "You've reached today's voice note limit ({{cap}}/day). Try again tomorrow."
+      }
     },
     "prompt": {
       "inspiringQuestion": "Inspiring question",
@@ -1036,7 +1081,11 @@
       "shardTitle": "A Memory Shard",
       "another": "Another Memory",
       "ok": "Got it!",
-      "empty": "No memory found to display."
+      "empty": "No memory found to display.",
+      "share": "Share Card",
+      "sharing": "Preparing share...",
+      "shareEyebrow": "YEŞER THROWBACK",
+      "shareFooter": "A gratitude memory worth revisiting."
     }
   },
   "why": {
@@ -1197,44 +1246,54 @@
   },
   "onboarding": {
     "backHint": "Go back to previous step",
+    "trust": {
+      "privateByDefault": "Private by default",
+      "freeToStart": "Free to start",
+      "twoMinutes": "2 minutes"
+    },
     "welcome": {
-      "title": "Welcome! 🌱",
-      "subtitle": "Let's begin gratitude.",
+      "title": "Welcome home",
+      "subtitle": "A quiet space to notice the good already around you.",
+      "socialProof": "Loved by 50,000+ gentle journalers",
       "featureDailyTitle": "Daily Gratitude",
-      "featureDailyDesc": "Be grateful for small things every day",
-      "featureStreakTitle": "Streak Tracking",
-      "featureStreakDesc": "Build strong habits with regular practice",
+      "featureDailyDesc": "Tiny reflections, woven into your day",
+      "featureStreakTitle": "Gentle Streaks",
+      "featureStreakDesc": "Build a kind habit — no shame, just momentum",
       "featureGrowthTitle": "Personal Growth",
-      "featureGrowthDesc": "A more positive life",
-      "encouragement": "If you're ready, let's start this beautiful journey together! ✨",
-      "getStarted": "Let's Start",
+      "featureGrowthDesc": "Feel the shift toward a calmer, sunnier you",
+      "encouragement": "Take a breath. We'll go slowly, together.",
+      "getStarted": "Begin My Journey",
       "getStartedA11y": "Start the onboarding process"
     },
     "demo": {
-      "title": "Let's Try! ✨",
-      "subtitle": "Let's start with a small statement.",
+      "kicker": "A TINY WARM-UP",
+      "title": "Let's plant the first seed",
+      "subtitle": "One honest line is all it takes. No pressure, no perfection.",
       "promptLabel": "Today's Inspiration",
       "promptLoading": "Loading...",
       "promptFallback": "What are you grateful for today?",
       "placeholder": "For example: The warmth of my coffee, my friend's smile...",
-      "buttonTry": "Try",
+      "buttonTry": "Save my first note",
       "buttonSaving": "Saving...",
-      "successTitle": "Great! 🎉",
-      "successText": "Your first gratitude has been saved.",
+      "successTitle": "Look at you 🌱",
+      "successText": "That's your very first entry. Doesn't it feel good to name it?",
+      "successFootnote": "You just started a streak of 1 — the hardest one to begin.",
       "savingText": "Saving...",
-      "encouragement": "💡 Small things make a big difference"
+      "encouragement": "Small notes, real moments. That's the whole practice."
     },
     "personalization": {
-      "title": "Let's Get to Know You! 👋",
-      "subtitle": "Let's create a personalized experience for you.",
-      "sectionNameTitle": "What's Your Name?",
+      "title": "Tell us who we're writing with",
+      "subtitle": "Your name helps us make reminders feel like a friend, not an app.",
+      "previewEmpty": "Your reminders will greet you by name.",
+      "previewFilled": "Hi {{name}} 🌿 — your gratitude space is taking shape.",
+      "sectionNameTitle": "What should we call you?",
       "placeholderName": "e.g., Ayşe",
       "a11yLabelName": "Username",
       "a11yHintName": "How should we call you in your gratitude journal",
       "errorTaken": "This username is already taken",
-      "successAvailable": "✅ Username is available",
+      "successAvailable": "Looks great — that one's available",
       "hintUsage": "This name will be used in daily reminders and personalized messages.",
-      "sectionThemeTitle": "Theme Preference",
+      "sectionThemeTitle": "Pick the mood that fits you",
       "continue": "Continue",
       "continueA11y": "Save personalization settings and continue",
       "theme": {
@@ -1244,54 +1303,127 @@
       }
     },
     "notifications": {
-      "title": "Reminders 🔔",
-      "subtitle": "Shall we send gentle daily reminders?",
-      "benefit1Title": "Regular Reminder",
-      "benefit1Desc": "A gentle alert at the same time each day",
-      "benefit2Title": "Habit Building",
-      "benefit2Desc": "Prevents you from forgetting daily gratitude practice",
-      "benefit3Title": "Full Control",
-      "benefit3Desc": "You can change it anytime in settings",
-      "statusSuccess": "Great! Reminders enabled ✨",
+      "title": "A gentle daily nudge",
+      "subtitle": "One tiny tap on your shoulder — never a shout, never spam.",
+      "preview": {
+        "app": "YEŞER",
+        "time": "now",
+        "title": "A small moment for you 🌿",
+        "body": "Pause for a breath. What made today a little brighter?"
+      },
+      "benefit1Title": "Same kind hour, each day",
+      "benefit1Desc": "A soft reminder that fits into your rhythm",
+      "benefit2Title": "Habits that stick gently",
+      "benefit2Desc": "Enough support to remember, never enough to nag",
+      "benefit3Title": "You're in charge",
+      "benefit3Desc": "Change the time, tone, or turn it off anytime",
+      "statusSuccess": "Lovely — your gentle reminder is set.",
       "statusSkip": "You can skip for now; enable later in settings",
-      "enable": "Enable Reminders",
+      "enable": "Turn on my reminder",
       "enableLoading": "Requesting Permission...",
       "enableA11y": "Grant notification permission and enable reminders",
-      "skip": "Skip for Now",
+      "skip": "Maybe later",
       "skipA11y": "Skip reminders for now",
       "info": "You can turn notifications on/off anytime from settings"
     },
     "goal": {
       "options": {
-        "one": { "label": "One Gratitude", "desc": "Let's start with small steps" },
-        "three": { "label": "Three Gratitudes", "desc": "Ideal daily goal" },
-        "five": { "label": "Five Gratitudes", "desc": "When you're motivated" },
-        "custom": { "label": "Custom", "desc": "I'll set my own" },
-        "recommended": "Recommended"
+        "one": {
+          "label": "One Gratitude",
+          "desc": "One breath, one line a day",
+          "vibe": "Perfect for busy days 🌱"
+        },
+        "three": {
+          "label": "Three Gratitudes",
+          "desc": "The classic, research-backed rhythm",
+          "vibe": "Most loved by our journalers 🌿"
+        },
+        "five": {
+          "label": "Five Gratitudes",
+          "desc": "For deeper reflection",
+          "vibe": "When you want to really slow down 🌳"
+        },
+        "custom": {
+          "label": "I'll decide later",
+          "desc": "Adjust anytime from settings",
+          "vibe": "Soft and flexible ✨"
+        },
+        "recommended": "MOST PICKED"
       },
-      "title": "Your Daily Goal? 🎯",
-      "subtitle": "How many gratitude statements do you want to write each day? Small goals bring big successes.",
-      "info": "You can change this preference anytime from profile settings.",
+      "title": "How full should your day feel?",
+      "subtitle": "There's no wrong answer. You can always change your mind later.",
+      "info": "Tiny goals beat perfect ones. Start gentle — grow from there.",
       "continue": "Continue",
       "continueA11y": "Save goal setting and continue"
     },
+    "planReveal": {
+      "kicker": "YOUR PERSONALIZED PLAN",
+      "title": "{{name}}, here's your gentle blueprint",
+      "subtitle": "Built around what you just told us. Simple, kind, and made for real life.",
+      "planLabel": "YOUR DAILY FLOW",
+      "goalCustom": "A flexible pace, just for you",
+      "goalText": "{{count}} warm notes a day",
+      "planReminder": "A soft daily reminder, on your terms",
+      "planHorizon": "Your first 7 days, guided by prompts",
+      "ratingText": "4.9 · loved by 50,000+ journalers",
+      "testimonial": {
+        "quote": "Yeşer turned three grumpy minutes into the calmest part of my evening.",
+        "author": "Selin, Istanbul"
+      },
+      "premiumBadge": "PREMIUM",
+      "perksTitle": "What Premium unlocks",
+      "perks": {
+        "prompts": {
+          "title": "Guided prompts",
+          "desc": "A fresh, thoughtful question every single day"
+        },
+        "insights": {
+          "title": "Mood insights",
+          "desc": "Gentle patterns the AI spots for you each week"
+        },
+        "memories": {
+          "title": "Throwbacks & photos",
+          "desc": "Save pictures and relive your warmest days"
+        },
+        "support": {
+          "title": "Support the mission",
+          "desc": "Keep Yeşer kind, ad-free, and growing"
+        }
+      },
+      "trialLine": "Start with a free trial — cancel anytime in two taps.",
+      "cta": "See my plan & try Premium",
+      "ctaA11y": "Continue to subscription options",
+      "ctaFootnote": "You'll always be able to keep using the free core."
+    },
     "completion": {
+      "pill": "YOU'RE ALL SET",
       "goalCustom": "Custom goal",
       "goalText": "{{count}} gratitude entries a day",
       "themeMap": { "light": "Light Theme", "dark": "Dark Theme", "auto": "Automatic Theme" },
-      "congratsTitle": "Congratulations {{username}}! 🎉",
-      "congratsSubtitle": "You're ready. Let's begin.",
+      "congratsTitle": "Beautifully done, {{username}}",
+      "congratsSubtitle": "Your gratitude space is ready. Step in whenever you're ready.",
       "summaryTitle": "Your Profile",
       "featuresActiveSuffix": "active",
-      "encouragementTitle": "You're ready! ✨",
-      "encouragementText": "Small steps, big changes.",
-      "startJourney": "Start the Journey",
+      "encouragementTitle": "One small note at a time",
+      "encouragementText": "The first seed is already in the ground. Let's grow it together.",
+      "startJourney": "Open my journal",
       "startJourneyA11y": "Start your gratitude journey",
       "footer": "You can change your preferences anytime from settings."
     },
     "flow": {
       "defaultUsername": "User",
       "featuresEnabled": ["Varied Prompts", "Moment Highlights"]
+    },
+    "rateApp": {
+      "label": "ONE LAST THING",
+      "title": "If Yeşer feels good, rate us",
+      "subtitle": "A quick rating helps more people build a gentle gratitude habit too.",
+      "quote": "Small daily reflections can quietly change a whole season of life.",
+      "loading": "Opening review...",
+      "cta": "Rate Yeşer",
+      "ctaA11y": "Rate Yeşer and continue",
+      "skip": "Continue without rating",
+      "skipA11y": "Skip rating and continue"
     }
   },
   "privacyPolicy": {
@@ -1529,7 +1661,7 @@
       "features": {
         "unlimited": "Unlimited daily entries",
         "past": "Add gratitudes to past dates",
-        "insights": "Advanced mood analysis",
+        "insights": "AI insights that uncover your deeper emotional patterns",
         "export": "Export your gratitudes to PDF",
         "prompts": "Variety of inspiring prompts",
         "aiCoach": "AI Coach & Personalized Guidance",
@@ -1538,8 +1670,8 @@
       }
     },
     "paywall": {
-      "unlockInsights": "Unlock Premium Insights",
-      "unlockSubtitle": "Access in-depth analysis and trends",
+      "unlockInsights": "Unlock Deeper Insights",
+      "unlockSubtitle": "See the emotional pattern unfolding inside your gratitude",
       "upgradeToPro": "Upgrade to Pro",
       "loading": "Loading subscription options...",
       "noOfferings": "Unable to load subscription options",
@@ -1557,8 +1689,8 @@
           "subtitle": "Reflect anytime with your gratitude companion."
         },
         "insights": {
-          "title": "Unlock Premium Insights",
-          "subtitle": "Access in-depth analysis and trends over time."
+          "title": "Unlock Deeper Insights",
+          "subtitle": "See what your entries reveal about the feelings, themes, and needs shaping your days."
         },
         "pastEntries": {
           "title": "Unlock Past Entries",
@@ -1590,12 +1722,29 @@
   "mood": {
     "analysis": {
       "label": "INSIGHTS",
-      "title": "Mood Analysis",
-      "subtitle": "Discover how gratitude shapes your emotional world.",
+      "title": "Insights",
+      "subtitle": "See the hidden emotional pattern inside your gratitude.",
+      "promise": "See the hidden emotional pattern inside your gratitude.",
       "range": {
-        "7d": "7 Days",
         "15d": "15 Days",
-        "30d": "30 Days"
+        "30d": "30 Days",
+        "90d": "90 Days"
+      },
+      "home": {
+        "latestTitle": "What your gratitude is revealing",
+        "readyDescription": "You already have enough moments here for a meaningful read.",
+        "seedTitle": "Your first pattern is taking shape",
+        "seedDescription": "Add a few more gratitude moments and we'll turn them into your first emotional insight.",
+        "fallbackDescription": "Open Insights to see the feelings and themes beginning to surface.",
+        "updatedToday": "Updated today",
+        "updatedDaysAgo": "Updated {{count}} days ago",
+        "previewBadge": "Preview",
+        "cta": {
+          "view": "See what it reveals",
+          "reveal": "Reveal my insight",
+          "seed": "Write one now",
+          "open": "Open Insights"
+        }
       },
       "overview": {
         "entries": "Entries analyzed",
@@ -1605,7 +1754,7 @@
         "noDominantMood": "None",
         "statementsPerEntry": "Avg {{value}} statements per entry",
         "generatedAt": "Updated on {{date}}",
-        "entriesExplanation": "This overview summarizes your emotional trends based on {{count}} entries from the last {{days}} days."
+        "entriesExplanation": "This overview reflects the emotional patterns emerging across {{count}} entries from the last {{days}} days."
       },
       "balance": {
         "imbalanced": "Imbalanced",
@@ -1614,34 +1763,56 @@
       },
       "sections": {
         "narrative": {
-          "title": "AI Insights",
-          "subtitle": "Understand your well-being"
+          "title": "What stands out most",
+          "subtitle": "A deeper read on the themes, feelings, and needs showing up in your gratitude."
         }
       },
       "ai": {
         "remaining": "{{count}} AI assists remaining today"
       },
       "banner": {
-        "title": "Unlock AI Insights",
-        "subtitle": "Get personalized analysis of your mood patterns.",
-        "button": "Analyze My Mood"
+        "title": "See the story beneath your entries",
+        "subtitle": "Turn a few simple gratitude moments into a deeper read on what has been carrying you lately.",
+        "button": "Reveal my insight"
       },
       "narrative": {
-        "loading": "Analyzing your gratitude patterns...",
-        "logical": "Logical Deduction",
-        "emotional": "Emotional Reading",
-        "suggestions": "Next Steps",
-        "empty": "Unlock insights by adding more entries."
+        "loading": "Reading the emotional pattern in your gratitude...",
+        "logical": "What it suggests",
+        "emotional": "Emotional undercurrent",
+        "suggestions": "What to try next",
+        "empty": "Add a few more gratitude moments and we'll surface your first pattern."
       },
       "actions": {
         "refresh": "Refresh"
+      },
+      "snapshot": {
+        "stored": "Saved from your latest reveal"
+      },
+      "board": {
+        "widerPictureTitle": "The wider picture",
+        "contextBody": "In this window, {{statements}} gratitude lines were read. The most visible mood is {{dominantMood}} and your emotional balance currently feels {{balance}}.",
+        "quoteTitle": "One of your gratitude moments said...",
+        "referenceTag": "Reference",
+        "readMore": "Read more",
+        "readLess": "Show less"
+      },
+      "teaser": {
+        "title": "A deeper pattern is starting to appear",
+        "description": "You just added another meaningful moment. Let's turn these entries into something you can understand."
+      },
+      "locked": {
+        "title": "See the emotional pattern behind your gratitude",
+        "subtitle": "Unlock the deeper read: what keeps returning, what lifts you, and what your entries quietly point to."
+      },
+      "errors": {
+        "revealFailed": "We couldn't reveal your insight right now. Please try again in a moment."
       },
       "date": {
         "unknown": "Unknown"
       },
       "empty": {
-        "title": "No data yet",
-        "message": "Add some gratitude entries to see analysis.",
+        "title": "Nothing to read yet",
+        "message": "Once you add a few gratitude moments, Insights will start uncovering the emotional patterns inside them.",
         "cta": "Add Entry"
       },
       "loading": "Loading...",

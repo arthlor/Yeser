@@ -9,6 +9,7 @@ export {
 } from './useGratitudeQueries';
 
 export { useGratitudeMutations } from './useGratitudeMutations';
+export { useAttachmentMutations } from './useAttachmentMutations';
 
 // Prompt hooks
 export {

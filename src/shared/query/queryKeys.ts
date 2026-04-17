@@ -9,8 +9,8 @@ export const queryKeys = {
 
   // Gratitude entry queries
   gratitudeEntries: (userId?: string) => [...queryKeys.all, 'gratitudeEntries', userId] as const,
-  gratitudeEntriesPaginated: (userId?: string, pageSize?: number) =>
-    [...queryKeys.gratitudeEntries(userId), 'paginated', pageSize] as const,
+  gratitudeEntriesPaginated: (userId?: string, pageSize?: number, searchTerm?: string) =>
+    [...queryKeys.gratitudeEntries(userId), 'paginated', pageSize, searchTerm ?? ''] as const,
   gratitudeEntry: (userId: string | undefined, entryDate: string) =>
     [...queryKeys.gratitudeEntries(userId), { entryDate }] as const,
   gratitudeEntriesByMonth: (userId: string | undefined, year: number, month: number) =>
@@ -38,4 +38,16 @@ export const queryKeys = {
   // Mood insights (AI) queries
   moodInsights: (userId?: string, range: MoodAnalyticsRange = '30d', language: string = 'en') =>
     [...queryKeys.all, 'moodInsights', userId, range, language] as const,
+
+  latestMoodInsights: (userId?: string) =>
+    [...queryKeys.all, 'latestMoodInsights', userId] as const,
+  latestMoodInsight: (
+    userId?: string,
+    range: MoodAnalyticsRange = '30d',
+    language: string = 'en'
+  ) => [...queryKeys.latestMoodInsights(userId), range, language] as const,
+  moodInsightEntryCounts: (userId?: string) =>
+    [...queryKeys.all, 'moodInsightEntryCounts', userId] as const,
+  moodInsightEntryCount: (userId?: string, range: MoodAnalyticsRange = '30d') =>
+    [...queryKeys.moodInsightEntryCounts(userId), range] as const,
 } as const;

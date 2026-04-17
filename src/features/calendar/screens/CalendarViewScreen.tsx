@@ -9,7 +9,6 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ErrorState from '@/shared/components/ui/ErrorState';
 
 import {
-  CalendarStats,
   CalendarView,
   CustomMarkedDates,
   DayPreview,
@@ -292,12 +291,6 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
             key={language}
           />
         </View>
-
-        <CalendarStats
-          markedDates={markedDates}
-          currentMonth={currentMonth}
-          isLoading={isLoading}
-        />
 
         <DayPreview
           selectedDate={selectedDate}

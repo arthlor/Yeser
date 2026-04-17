@@ -2,13 +2,11 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/providers/ThemeProvider';
 import { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
-import { RootStackParamList } from '@/types/navigation';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { presentNativePaywall } from '@/features/subscription/presentPaywall';
 
 interface Props {
   style?: ViewStyle;
@@ -18,75 +16,81 @@ export const PremiumUpsellCard: React.FC<Props> = ({ style }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const { t } = useTranslation();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const highlightedFeatures = new Set(['prompts', 'moodEditing']);
 
   const handlePress = () => {
-    navigation.navigate('PaywallModal', { source: 'settings_upsell' });
+    void presentNativePaywall('settings_upsell');
   };
 
+  const isDarkTheme = theme.name === 'dark';
+
+  // Refined mode-aware aesthetics
+  const premiumGradient: [string, string] = isDarkTheme
+    ? ['#1C1E26', '#0F1116'] // Deep Obsidian/Charcoal
+    : ['#FFFFFF', '#F9F6F0']; // Soft Ivory/Paper
+
+  const goldAccent = '#D4AF37'; // Classic Gold
+  const goldLight = isDarkTheme ? '#FCE38A' : '#B8860B';
+  const textPrimary = isDarkTheme ? '#FFFFFF' : '#1A1D24';
+  const textSecondary = isDarkTheme ? '#A0A0A0' : '#5C6370';
+
+  const features = [
+    { key: 'unlimited', label: t('subscription.upsell.features.unlimited') },
+    { key: 'past', label: t('subscription.upsell.features.past') },
+    { key: 'insights', label: t('subscription.upsell.features.insights') },
+    { key: 'export', label: t('subscription.upsell.features.export') },
+    { key: 'prompts', label: t('subscription.upsell.features.prompts') },
+    { key: 'aiCoach', label: t('subscription.upsell.features.aiCoach') },
+    { key: 'aiChat', label: t('subscription.upsell.features.aiChat') },
+    { key: 'moodEditing', label: t('subscription.upsell.features.moodEditing') },
+  ];
+
   return (
-    <TouchableOpacity activeOpacity={0.95} onPress={handlePress} style={[styles.container, style]}>
+    <TouchableOpacity activeOpacity={0.9} onPress={handlePress} style={[styles.container, style]}>
       <LinearGradient
-        // Dark premium gradient background
-        colors={[theme.colors.primary, theme.colors.primaryVariant]}
+        colors={premiumGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
         <View style={styles.content}>
           <View style={styles.headerRow}>
-            <Icon
-              name="crown"
-              size={28}
-              color={theme.colors.accent || '#FFD700'}
-              style={styles.icon}
-            />
-            <Text style={styles.title}>{t('subscription.upsell.title', 'Upgrade to Premium')}</Text>
-          </View>
-
-          <Text style={styles.subtitle}>
-            {t('subscription.upsell.subtitle', 'Unlock the full potential:')}
-          </Text>
-
-          <View style={styles.featureList}>
-            {[
-              { key: 'unlimited', label: t('subscription.upsell.features.unlimited') },
-              { key: 'past', label: t('subscription.upsell.features.past') },
-              { key: 'insights', label: t('subscription.upsell.features.insights') },
-              { key: 'export', label: t('subscription.upsell.features.export') },
-              { key: 'prompts', label: t('subscription.upsell.features.prompts') },
-              { key: 'aiCoach', label: t('subscription.upsell.features.aiCoach') },
-              { key: 'aiChat', label: t('subscription.upsell.features.aiChat') },
-              { key: 'moodEditing', label: t('subscription.upsell.features.moodEditing') },
-            ].map((feature, index) => {
-              const isHighlight = highlightedFeatures.has(feature.key);
-              return (
-                <View key={index} style={styles.featureItem}>
-                  <Icon
-                    name={isHighlight ? 'star-four-points' : 'check-circle'}
-                    size={16}
-                    color={theme.colors.accent || '#FFD700'}
-                    style={styles.checkIcon}
-                  />
-                  <Text style={[styles.featureText, isHighlight && styles.featureTextHighlight]}>
-                    {feature.label}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-
-          <View style={styles.ctaRow}>
-            <View style={styles.arrowContainer}>
-              <Icon name="arrow-right" size={24} color={theme.colors.onPrimary} />
+            <View
+              style={[
+                styles.iconContainer,
+                { backgroundColor: goldAccent + (isDarkTheme ? '20' : '10') },
+              ]}
+            >
+              <Icon name="crown" size={20} color={goldAccent} />
             </View>
+            <View style={styles.titleContainer}>
+              <Text style={[styles.title, { color: textPrimary }]}>
+                {t('subscription.upsell.title', 'Upgrade to Premium')}
+              </Text>
+              <Text style={[styles.subtitle, { color: textSecondary }]}>
+                {t('subscription.upsell.subtitle', 'Unlock the full potential')}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.featureGrid}>
+            {features.map((feature, index) => (
+              <View key={index} style={styles.featureItem}>
+                <Icon name="check-circle" size={14} color={goldAccent} style={styles.checkIcon} />
+                <Text style={[styles.featureText, { color: textSecondary }]}>{feature.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.footerRow}>
+            <Text style={[styles.ctaText, { color: goldLight }]}>
+              {t('subscription.locked.aiCoach.cta', 'See Benefits')}
+            </Text>
+            <Icon name="chevron-right" size={18} color={goldLight} />
           </View>
         </View>
 
-        {/* Decorative Circles */}
-        <View style={styles.circle1} />
-        <View style={styles.circle2} />
+        {/* Subtle Decorative Elements */}
+        <View style={[styles.glow, { backgroundColor: goldAccent }]} />
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -100,6 +104,8 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: theme.spacing.md,
       marginHorizontal: theme.spacing.md,
       ...getPrimaryShadow.medium(theme),
+      borderWidth: 1,
+      borderColor: theme.name === 'dark' ? '#D4AF37' + '1A' : '#D4AF37' + '33',
     },
     gradient: {
       padding: theme.spacing.lg,
@@ -112,82 +118,70 @@ const createStyles = (theme: AppTheme) =>
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
     },
-    icon: {
-      marginRight: theme.spacing.sm,
-      shadowColor: theme.colors.scrim,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 2,
+    iconContainer: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: theme.spacing.md,
+    },
+    titleContainer: {
+      flex: 1,
     },
     title: {
-      fontSize: 20,
-      fontWeight: '800',
-      color: theme.colors.onPrimary,
-      letterSpacing: 0.5,
+      fontSize: 18,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+      fontFamily: theme.typography.fontFamilyBold,
     },
     subtitle: {
-      fontSize: 14,
-      color: theme.colors.onPrimary + 'E6', // 0.9 opacity
-      marginBottom: theme.spacing.md,
-      fontWeight: '600',
+      fontSize: 13,
+      fontWeight: '500',
+      opacity: 0.8,
     },
-    featureList: {
-      marginTop: theme.spacing.xs,
-      gap: 8,
+    featureGrid: {
+      flexDirection: 'column',
+      gap: theme.spacing.xs,
+      marginBottom: theme.spacing.md,
     },
     featureItem: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start', // Align icon with the first line of text
+      width: '100%',
+      marginBottom: 2,
     },
     checkIcon: {
       marginRight: 8,
-      marginTop: 1,
+      marginTop: 2, // Slightly offset icon for better alignment with text
     },
     featureText: {
-      fontSize: 14,
-      color: theme.colors.onPrimary + 'F2', // 0.95 opacity
+      fontSize: 13, // Slightly increased for better readability
       fontWeight: '500',
-      lineHeight: 20,
+      flex: 1,
+      lineHeight: 18,
     },
-    featureTextHighlight: {
-      fontWeight: '700',
-      color: theme.colors.onPrimary,
-    },
-    ctaRow: {
+    footerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'flex-end',
-      marginTop: theme.spacing.md,
+      marginTop: theme.spacing.xs,
     },
-    arrowContainer: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: theme.colors.onPrimary + '33', // 0.2 opacity
-      justifyContent: 'center',
-      alignItems: 'center',
+    ctaText: {
+      fontSize: 14,
+      fontWeight: '700',
+      marginRight: 4,
     },
-    // Decorative
-    circle1: {
+    glow: {
       position: 'absolute',
-      top: -30,
-      right: -30,
-      width: 140,
-      height: 140,
-      borderRadius: 70,
-      backgroundColor: theme.colors.onPrimary + '1A', // 0.1 opacity
-      zIndex: 1,
-    },
-    circle2: {
-      position: 'absolute',
-      bottom: -50,
-      left: -30,
-      width: 180,
-      height: 180,
-      borderRadius: 90,
-      backgroundColor: theme.colors.onPrimary + '0D', // 0.05 opacity
+      top: -100,
+      right: -100,
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      opacity: theme.name === 'dark' ? 0.05 : 0.03,
       zIndex: 1,
     },
   });

@@ -22,10 +22,19 @@ export class CacheService {
       case 'add_statement':
       case 'edit_statement':
       case 'delete_statement':
+      case 'delete_entry':
         queryKeyHelpers.invalidateEntryData(userId, data?.entryDate).forEach((key) => {
           if (key) {
             this.queryClient.invalidateQueries({ queryKey: key });
           }
+        });
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.latestMoodInsights(userId),
+          exact: false,
+        });
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.moodInsightEntryCounts(userId),
+          exact: false,
         });
         break;
 

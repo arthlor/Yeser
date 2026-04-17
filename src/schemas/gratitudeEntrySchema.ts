@@ -3,6 +3,22 @@ import i18n from '@/i18n';
 
 // 🚨 FIX: Single source of truth schema (DRY principle)
 // Base schema that defines the core structure once
+export const attachmentSchema = z.object({
+  id: z.string().uuid(),
+  statement_index: z.number().int().min(0),
+  kind: z.enum(['image', 'audio']),
+  storage_path: z.string().min(1),
+  mime_type: z.string().min(1),
+  bytes: z.number().int().positive(),
+  duration_ms: z.number().int().positive().nullable().optional(),
+  width: z.number().int().positive().nullable().optional(),
+  height: z.number().int().positive().nullable().optional(),
+  transcript: z.string().nullable().optional(),
+  created_at: z.string(),
+});
+
+export type Attachment = z.infer<typeof attachmentSchema>;
+
 const baseGratitudeEntrySchema = z.object({
   id: z.string().uuid({ message: 'Invalid UUID for id' }),
   user_id: z.string().uuid({ message: 'Invalid UUID for user_id' }),
@@ -19,6 +35,8 @@ const baseGratitudeEntrySchema = z.object({
   ),
   // New optional moods map: index (string) -> emoji string
   moods: z.record(z.string(), z.string()).optional(),
+  // Optional media attachments. Populated by paginated RPC or by a side-fetch.
+  attachments: z.array(attachmentSchema).optional(),
   created_at: z
     .string()
     .datetime({ offset: true, message: 'Invalid datetime format for created_at' }),

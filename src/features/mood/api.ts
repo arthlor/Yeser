@@ -3,6 +3,7 @@ import type {
   AIInsightResponse,
   MoodAnalyticsRange,
   MoodAnalyticsResponse,
+  MoodInsightSnapshot,
 } from '@/types/moodAnalytics.types';
 import { MOOD_EMOJIS } from '@/types/mood.types';
 import { handleAPIError } from '@/utils/apiHelpers';
@@ -12,10 +13,12 @@ import { getAuthedClient } from '@/services/session';
 import type { RawMoodAnalytics } from '@/schemas/moodAnalyticsSchema';
 import type { MoodEmoji } from '@/types/mood.types';
 
+import { getMoodInsightRangeStartDate } from './utils/insightSnapshot';
+
 const DEFAULT_RANGE: MoodAnalyticsRange = '30d';
 
 export const analyzeMoodInsights = async (
-  range: MoodAnalyticsRange = '7d',
+  range: MoodAnalyticsRange = DEFAULT_RANGE,
   language: 'en' | 'tr' | 'es' = 'en'
 ): Promise<AIInsightResponse> => {
   const { client, session } = await getAuthedClient();
@@ -37,6 +40,83 @@ export const analyzeMoodInsights = async (
   }
 
   return data as AIInsightResponse;
+};
+
+export const getLatestMoodInsightSnapshot = async (
+  range: MoodAnalyticsRange = DEFAULT_RANGE,
+  language: 'en' | 'tr' | 'es' = 'en'
+): Promise<MoodInsightSnapshot | null> => {
+  try {
+    const { client } = await getAuthedClient();
+    const { data, error } = await client.rpc('get_latest_mood_insight_snapshot', {
+      p_range: range,
+      p_language: language,
+    });
+
+    if (error) {
+      throw handleAPIError(new Error(error.message), 'fetch latest mood insight snapshot');
+    }
+
+    const rawSnapshot = Array.isArray(data) ? data[0] : data;
+
+    if (!rawSnapshot) {
+      return null;
+    }
+
+    return {
+      range,
+      language,
+      highlighted_insight:
+        rawSnapshot.highlighted_insight as MoodInsightSnapshot['highlighted_insight'],
+      narrative: (rawSnapshot.narrative ?? null) as MoodInsightSnapshot['narrative'],
+      generated_at: rawSnapshot.generated_at,
+      entry_count_at_generation: rawSnapshot.entry_count_at_generation ?? 0,
+      is_preview_only: Boolean(rawSnapshot.is_preview_only),
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'fetch latest mood insight snapshot');
+  }
+};
+
+export const getRecentGratitudeEntryCount = async (
+  range: MoodAnalyticsRange = DEFAULT_RANGE
+): Promise<number> => {
+  try {
+    const { client, session } = await getAuthedClient();
+    const { user } = session;
+    const startDate = getMoodInsightRangeStartDate(range);
+
+    const { data, error } = await client
+      .from('gratitude_entries')
+      .select('statements')
+      .eq('user_id', user.id)
+      .gte('entry_date', startDate);
+
+    if (error) {
+      throw handleAPIError(new Error(error.message), 'fetch recent gratitude entry count');
+    }
+
+    return (data ?? []).reduce((total, row) => {
+      if (!Array.isArray(row.statements)) {
+        return total;
+      }
+
+      const statements = row.statements as unknown[];
+      const statementCount = statements.reduce<number>((count, value) => {
+        if (typeof value !== 'string') {
+          return count;
+        }
+
+        return value.trim().length > 0 ? count + 1 : count;
+      }, 0);
+
+      return total + statementCount;
+    }, 0);
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'fetch recent gratitude entry count');
+  }
 };
 
 const buildEmptyMoodCounts = (): Record<MoodEmoji, number> => {

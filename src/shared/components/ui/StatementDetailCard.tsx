@@ -29,6 +29,7 @@ import {
 } from './StatementCardBase';
 import type { MoodEmoji } from '@/types/mood.types';
 import { useTranslation } from 'react-i18next';
+import { GRATITUDE_MAX_LENGTH } from '@/constants/gratitude';
 
 // 📖 ENTRY DETAIL SPECIFIC PROPS
 interface StatementDetailCardProps extends InteractiveStatementCardProps {
@@ -87,7 +88,7 @@ const StatementDetailCard: React.FC<StatementDetailCardProps> = React.memo(
     // Configuration
     enableInlineEdit = true,
     confirmDelete = true,
-    maxLength = 500,
+    maxLength = GRATITUDE_MAX_LENGTH,
     edgeToEdge = false,
     moodEmoji: _moodEmoji,
     onChangeMood: _onChangeMood,

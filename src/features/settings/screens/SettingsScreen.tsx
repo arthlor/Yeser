@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import RevenueCatUI from 'react-native-purchases-ui';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -9,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { config } from '@/utils/config';
 
 import { AppTheme, ThemeName } from '@/themes/types';
+import { getPrimaryShadow } from '@/themes/utils';
 
 import {
   cleanupTemporaryFile,
@@ -20,6 +23,7 @@ import AppearanceSettings from '@/features/settings/components/AppearanceSetting
 import DailyGoalSettings from '@/features/settings/components/DailyGoalSettings';
 import { NotificationSettings } from '../components/NotificationSettings';
 import AvatarPickerRow from '../components/AvatarPickerRow';
+import UsernameEditorModal from '../components/UsernameEditorModal';
 import { LanguageSettings } from '../components/LanguageSettings';
 import { ScreenContent, ScreenLayout } from '@/shared/components/layout';
 import ThemedButton from '@/shared/components/ui/ThemedButton';
@@ -51,23 +55,24 @@ interface Props {
 const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { theme, colorMode, toggleColorMode } = useTheme();
   const { handleMutationError } = useGlobalError();
-  const { showError: showToastError } = useToast();
+  const { showError: showToastError, showSuccess: showToastSuccess } = useToast();
   const styles = createStyles(theme);
   const { t } = useTranslation();
   const { isPro, checkGate } = useSubscription();
   const isDarkTheme = theme.name === 'dark';
   const premiumGradientColors = useMemo<[string, string]>(
-    () => (isDarkTheme ? ['#4D3500', '#6B4A00'] : ['#FFF4CC', '#FFE29A']),
+    () => (isDarkTheme ? ['#1E293B', '#0F172A'] : ['#F8FAFC', '#F1F5F9']),
     [isDarkTheme]
   );
-  const premiumTitleColor = isDarkTheme ? '#FFF3D1' : '#2F2100';
-  const premiumSubtitleColor = isDarkTheme ? '#F4DEAF' : '#6A4A00';
-  const premiumIconColor = isDarkTheme ? '#FFE29A' : '#7A5300';
+  const premiumTitleColor = isDarkTheme ? '#F8FAFC' : '#0F172A';
+  const premiumSubtitleColor = isDarkTheme ? '#94A3B8' : '#475569';
+  const premiumIconColor = isDarkTheme ? '#FBBF24' : '#D97706';
 
   // **COORDINATED ANIMATION**: Add minimal entrance animation for consistency
   const animations = useCoordinatedAnimations();
 
   const [isExporting, setIsExporting] = useState(false);
+  const [isUsernameModalVisible, setIsUsernameModalVisible] = useState(false);
 
   // TanStack Query - Replace Zustand profile store
   const {
@@ -198,9 +203,17 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     navigation.getParent<StackNavigationProp<AppStackParamList>>()?.navigate('WhyGratitude');
   };
 
-  const navigateToCustomerCenter = () => {
-    navigation.getParent<StackNavigationProp<AppStackParamList>>()?.navigate('CustomerCenter');
-  };
+  const navigateToCustomerCenter = useCallback(async () => {
+    try {
+      await RevenueCatUI.presentCustomerCenter();
+    } catch (err: unknown) {
+      logger.error('Failed to present customer center:', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      // Fallback to our existing screen if the native one fails or is not available
+      navigation.getParent<StackNavigationProp<AppStackParamList>>()?.navigate('CustomerCenter');
+    }
+  }, [navigation]);
 
   const navigateToMoodAnalysis = () => {
     analyticsService.logEvent('settings_open_mood_analysis');
@@ -273,6 +286,30 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     await refetchProfile();
   }, [deleteAvatar, profile?.avatar_path, refetchProfile]);
 
+  const updateProfileAsync = useCallback(
+    (payload: Parameters<typeof updateProfile>[0]): Promise<void> =>
+      new Promise((resolve, reject) => {
+        updateProfile(payload, {
+          onSuccess: () => resolve(),
+          onError: (error) => reject(error),
+        });
+      }),
+    [updateProfile]
+  );
+
+  const handleUsernameSave = useCallback(
+    async (username: string) => {
+      try {
+        await updateProfileAsync({ username });
+        await refetchProfile();
+        showToastSuccess(t('settings.user.usernameSaved', { defaultValue: 'Username updated.' }));
+      } catch (error) {
+        handleMutationError(error, 'update username');
+      }
+    },
+    [handleMutationError, refetchProfile, showToastSuccess, t, updateProfileAsync]
+  );
+
   // Account management handlers
   const handleLogoutPress = async () => {
     try {
@@ -342,15 +379,34 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
               end={{ x: 1, y: 1 }}
               style={styles.premiumCard}
             >
-              <View style={styles.premiumIconContainer}>
-                <Icon name="crown" size={20} color={premiumIconColor} />
+              {/* Decorative Mascot Overlay */}
+              <View style={styles.premiumDecorContainer}>
+                <Image
+                  source={require('@/assets/assets/mascot2.png')}
+                  style={styles.premiumMascot}
+                  contentFit="contain"
+                  transition={400}
+                />
+              </View>
+
+              <View
+                style={[
+                  styles.premiumIconContainer,
+                  {
+                    backgroundColor: isDarkTheme
+                      ? theme.colors.primary + '25'
+                      : theme.colors.primary + '15',
+                  },
+                ]}
+              >
+                <Icon name="crown" size={22} color={premiumIconColor} />
               </View>
               <View style={styles.premiumTextContainer}>
                 <Text style={[styles.premiumTitle, { color: premiumTitleColor }]}>
                   {t('settings.premium.title', 'Premium Active')}
                 </Text>
                 <Text style={[styles.premiumSubtitle, { color: premiumSubtitleColor }]}>
-                  {t('settings.premium.subtitle', 'You have access to all features')}
+                  {t('settings.premium.subtitle', 'Access to all features unlocked')}
                 </Text>
               </View>
               <Icon
@@ -375,21 +431,33 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             onPick={handlePickAvatar}
             onRemove={handleRemoveAvatar}
           />
-          {profile?.username && (
-            <View style={styles.settingCard}>
-              <View style={styles.settingRow}>
-                <View style={styles.settingInfo}>
-                  <View style={styles.iconContainer}>
-                    <Icon name="account-circle" size={20} color={theme.colors.primary} />
-                  </View>
-                  <View style={styles.textContainer}>
-                    <Text style={styles.settingTitle}>{t('settings.user.usernameTitle')}</Text>
-                    <Text style={styles.settingDescription}>{profile.username}</Text>
-                  </View>
+          <View style={styles.settingCard}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setIsUsernameModalVisible(true)}
+              style={styles.settingRow}
+              accessibilityRole="button"
+              accessibilityLabel={t('settings.user.usernameEditA11y', {
+                defaultValue: 'Edit username',
+              })}
+            >
+              <View style={styles.settingInfo}>
+                <View style={styles.iconContainer}>
+                  <Icon name="account-circle" size={20} color={theme.colors.primary} />
+                </View>
+                <View style={styles.textContainer}>
+                  <Text style={styles.settingTitle}>{t('settings.user.usernameTitle')}</Text>
+                  <Text style={styles.settingDescription}>
+                    {profile?.username ||
+                      t('settings.user.usernamePlaceholder', {
+                        defaultValue: 'Choose a username',
+                      })}
+                  </Text>
                 </View>
               </View>
-            </View>
-          )}
+              <Icon name="pencil-outline" size={20} color={theme.colors.onSurfaceVariant} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Preferences Section */}
@@ -536,6 +604,12 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
         </View>
+        <UsernameEditorModal
+          visible={isUsernameModalVisible}
+          currentUsername={profile?.username}
+          onClose={() => setIsUsernameModalVisible(false)}
+          onSave={handleUsernameSave}
+        />
       </ScreenContent>
     </ScreenLayout>
   );
@@ -552,9 +626,10 @@ const createStyles = (theme: AppTheme) =>
     sectionTitle: {
       ...theme.typography.titleMedium,
       color: theme.colors.onBackground,
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
       marginHorizontal: theme.spacing.md,
-      fontWeight: '600',
+      fontWeight: '700',
+      letterSpacing: 0.3,
     },
     footerSection: {
       marginBottom: theme.spacing.sm,
@@ -588,11 +663,11 @@ const createStyles = (theme: AppTheme) =>
     settingCard: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '20',
-      marginBottom: theme.spacing.sm,
+      borderColor: theme.colors.outline + '15',
+      marginBottom: theme.spacing.md,
       marginHorizontal: theme.spacing.md,
       overflow: 'hidden',
+      ...getPrimaryShadow.card(theme),
     },
     settingRow: {
       flexDirection: 'row',
@@ -715,41 +790,57 @@ const createStyles = (theme: AppTheme) =>
     premiumCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      minHeight: 82,
-      paddingHorizontal: theme.spacing.md + 2,
+      minHeight: 100,
+      paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.md,
-      borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.outline + '55',
-      shadowColor: theme.colors.scrim,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.18,
-      shadowRadius: 8,
-      elevation: 3,
+      borderRadius: theme.borderRadius.xl,
+      borderWidth: 1.5,
+      borderColor:
+        theme.name === 'dark' ? theme.colors.primary + '33' : theme.colors.primary + '15',
+      ...getPrimaryShadow.floating(theme),
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    premiumDecorContainer: {
+      position: 'absolute',
+      right: -20,
+      bottom: -20,
+      width: 120,
+      height: 120,
+      opacity: theme.name === 'dark' ? 0.15 : 0.1,
+      zIndex: 0,
+    },
+    premiumMascot: {
+      width: '100%',
+      height: '100%',
     },
     premiumIconContainer: {
-      backgroundColor: theme.colors.surface + '2E',
-      borderRadius: theme.borderRadius.full,
-      width: 40,
-      height: 40,
+      borderRadius: theme.borderRadius.md,
+      width: 44,
+      height: 44,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: theme.spacing.sm,
+      marginRight: theme.spacing.md,
+      zIndex: 1,
     },
     premiumTextContainer: {
       flex: 1,
+      zIndex: 1,
     },
     premiumTitle: {
       ...theme.typography.headlineSmall,
-      fontSize: 17,
-      lineHeight: 22,
+      fontSize: 19,
+      lineHeight: 24,
       fontWeight: '700',
       marginBottom: 2,
+      fontFamily: 'Lora-Bold',
     },
     premiumSubtitle: {
       ...theme.typography.bodyMedium,
+      fontSize: 14,
+      lineHeight: 20,
       fontWeight: '500',
-      lineHeight: 19,
+      zIndex: 1,
     },
     premiumChevron: {
       marginLeft: theme.spacing.sm,

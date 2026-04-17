@@ -1,5 +1,6 @@
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenLayout } from '@/shared/components/layout';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -13,17 +14,24 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { ZodError } from 'zod';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import MascotImage from '@/assets/assets/mascot1.png';
 import ErrorState from '@/shared/components/ui/ErrorState';
 
 import {
+  useAttachmentMutations,
   useCurrentPrompt,
   useGratitudeEntry,
   useGratitudeMutations,
   usePromptMutations,
   usePromptText,
 } from '../hooks';
+import AttachmentRail from '../components/AttachmentRail';
+import type { PendingAttachments } from '../components/GratitudeInputBar';
+import type { Attachment } from '@/schemas/gratitudeEntrySchema';
+import { MAX_ATTACHMENTS_PER_DAY_PER_KIND } from '../mediaApi';
 import { useUserProfile } from '@/shared/hooks';
 import { useLanguageStore } from '@/store/languageStore';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -37,6 +45,8 @@ import { AppTheme } from '@/themes/types';
 import { AppStackParamList, MainTabParamList } from '@/types/navigation';
 import { analyticsService } from '@/services/analyticsService';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
+import InsightTeaserCard from '@/features/mood/components/InsightTeaserCard';
+import { useLatestMoodInsight, useMoodInsights } from '@/features/mood/hooks';
 
 import GratitudeInputBar, { GratitudeInputBarRef } from '../components/GratitudeInputBar';
 import { AICoachPrompt } from '@/shared/components/ui/AICoachPrompt';
@@ -55,6 +65,19 @@ interface Props {
   route?: DailyEntryScreenRouteProp;
 }
 
+const LAST_INSIGHT_TEASER_KEY = 'lastInsightTeaserShownAt';
+
+const getInsightTeaserDayStamp = () => new Date().toISOString().split('T')[0];
+
+const wasInsightTeaserShownToday = async (): Promise<boolean> => {
+  const storedDay = await AsyncStorage.getItem(LAST_INSIGHT_TEASER_KEY);
+  return storedDay === getInsightTeaserDayStamp();
+};
+
+const markInsightTeaserShownToday = async (): Promise<void> => {
+  await AsyncStorage.setItem(LAST_INSIGHT_TEASER_KEY, getInsightTeaserDayStamp());
+};
+
 /**
  * Enhanced Daily Entry Screen - Redesigned
  *
@@ -67,7 +90,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
   const { theme } = useTheme();
   const { handleMutationError, showError } = useGlobalError();
-  const { showSuccess } = useToast();
+  const { showSuccess, showWarning } = useToast();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { t } = useTranslation();
 
@@ -78,6 +101,12 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const isToday = finalDateString === new Date().toISOString().split('T')[0];
 
   const { canAccessPastEntries, canAddDailyEntry, checkGate, isPro } = useSubscription();
+  const {
+    hasEnoughData: hasEnoughInsightData,
+    isFresh: hasFreshInsight,
+    isLoading: isLatestInsightLoading,
+  } = useLatestMoodInsight('30d');
+  const { refetch: generateInsight, isRefetching: isGeneratingInsight } = useMoodInsights('30d');
 
   // **PAST DATE INJECTION PROTECTION**
   useEffect(() => {
@@ -107,11 +136,15 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     deleteStatementError,
   } = useGratitudeMutations();
 
+  const { uploadImage, uploadAudio, deleteAttachment: removeAttachment } = useAttachmentMutations();
+
   const { profile } = useUserProfile();
 
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
   const [showSaveHint, setShowSaveHint] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+  const [isInsightTeaserVisible, setIsInsightTeaserVisible] = useState(false);
+  const [pendingInsightTeaserCheck, setPendingInsightTeaserCheck] = useState(false);
 
   const inputBarRef = useRef<GratitudeInputBarRef>(null);
 
@@ -143,6 +176,27 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
   const statements = useMemo(() => currentEntry?.statements || [], [currentEntry?.statements]);
   const displayStatements = useMemo(() => [...statements].reverse(), [statements]);
+
+  const attachments = useMemo(
+    () => (currentEntry?.attachments as Attachment[] | undefined) ?? [],
+    [currentEntry?.attachments]
+  );
+  const imageAttachmentsRemaining = useMemo(
+    () =>
+      Math.max(
+        0,
+        MAX_ATTACHMENTS_PER_DAY_PER_KIND - attachments.filter((a) => a.kind === 'image').length
+      ),
+    [attachments]
+  );
+  const audioAttachmentsRemaining = useMemo(
+    () =>
+      Math.max(
+        0,
+        MAX_ATTACHMENTS_PER_DAY_PER_KIND - attachments.filter((a) => a.kind === 'audio').length
+      ),
+    [attachments]
+  );
   const dailyGoal = daily_gratitude_goal || 3;
   const isGoalComplete = statements.length >= dailyGoal;
   const wasGoalJustCompleted = useRef(false);
@@ -242,12 +296,64 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     });
   }, [finalDateString, isToday, statements.length]);
 
+  useEffect(() => {
+    if (hasFreshInsight) {
+      setIsInsightTeaserVisible(false);
+    }
+  }, [hasFreshInsight]);
+
+  useEffect(() => {
+    if (!pendingInsightTeaserCheck || !isToday || isLatestInsightLoading) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const maybeShowTeaser = async () => {
+      try {
+        const shownToday = await wasInsightTeaserShownToday();
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (!shownToday && hasEnoughInsightData && !hasFreshInsight) {
+          setIsInsightTeaserVisible(true);
+          await markInsightTeaserShownToday();
+          analyticsService.logEvent('insight_teaser_shown', {
+            source: 'daily_entry_success',
+            isPro,
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setPendingInsightTeaserCheck(false);
+        }
+      }
+    };
+
+    void maybeShowTeaser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    hasEnoughInsightData,
+    hasFreshInsight,
+    isLatestInsightLoading,
+    isPro,
+    isToday,
+    pendingInsightTeaserCheck,
+  ]);
+
   const handleAddStatement = useCallback(
-    (statementText: string, moodEmoji?: MoodEmoji | null) => {
+    (statementText: string, moodEmoji?: MoodEmoji | null): boolean => {
       try {
         if (!canAddDailyEntry(statements.length, isToday)) {
           checkGate('daily_limit');
-          return;
+          // Return false so GratitudeInputBar preserves the typed draft
+          // instead of wiping it when the paywall is shown.
+          return false;
         }
 
         gratitudeStatementSchema.parse(statementText);
@@ -277,14 +383,20 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               layoutTimerRef.current = setTimeout(() => {
                 animations.animateLayoutTransition(false, 0, { duration: 200 });
               }, 1000);
+
+              if (isToday) {
+                setPendingInsightTeaserCheck(true);
+              }
             },
           }
         );
+        return true;
       } catch (error) {
         if (error instanceof ZodError) {
           showError(error.issues[0]?.message || t('gratitude.validation.invalidStatement'));
           hapticFeedback.warning();
         }
+        return false;
       }
     },
     [
@@ -299,8 +411,124 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       isToday,
       canAddDailyEntry,
       checkGate,
+      setPendingInsightTeaserCheck,
     ]
   );
+
+  const handleAddStatementWithAttachments = useCallback(
+    (
+      statementText: string,
+      moodEmoji: MoodEmoji | null,
+      attachments: PendingAttachments
+    ): boolean => {
+      try {
+        if (!canAddDailyEntry(statements.length, isToday)) {
+          checkGate('daily_limit');
+          return false;
+        }
+        gratitudeStatementSchema.parse(statementText);
+
+        const newStatementIndex = statements.length; // server appends
+
+        addStatement(
+          { entryDate: finalDateString, statement: statementText, moodEmoji },
+          {
+            onSuccess: async () => {
+              hapticFeedback.medium();
+              try {
+                if (attachments.image) {
+                  await uploadImage({
+                    entryDate: finalDateString,
+                    statementIndex: newStatementIndex,
+                    uri: attachments.image.uri,
+                    mimeType: attachments.image.mimeType,
+                    bytes: attachments.image.bytes,
+                    width: attachments.image.width,
+                    height: attachments.image.height,
+                  });
+                }
+                if (attachments.audio) {
+                  await uploadAudio({
+                    entryDate: finalDateString,
+                    statementIndex: newStatementIndex,
+                    uri: attachments.audio.uri,
+                    mimeType: attachments.audio.mimeType,
+                    bytes: attachments.audio.bytes,
+                    durationMs: attachments.audio.durationMs,
+                  });
+                }
+                showSuccess(t('gratitude.success.statementAdded'));
+              } catch (err) {
+                showError((err as Error).message || t('shared.error'));
+              }
+
+              if (isToday) {
+                setPendingInsightTeaserCheck(true);
+              }
+            },
+          }
+        );
+        return true;
+      } catch (error) {
+        if (error instanceof ZodError) {
+          showError(error.issues[0]?.message || t('gratitude.validation.invalidStatement'));
+          hapticFeedback.warning();
+        }
+        return false;
+      }
+    },
+    [
+      addStatement,
+      canAddDailyEntry,
+      checkGate,
+      finalDateString,
+      isToday,
+      showError,
+      showSuccess,
+      statements.length,
+      t,
+      uploadAudio,
+      uploadImage,
+    ]
+  );
+
+  const handleRemoveAttachment = useCallback(
+    (attachment: Attachment) => {
+      void removeAttachment({
+        entryDate: finalDateString,
+        attachmentId: attachment.id,
+      });
+    },
+    [finalDateString, removeAttachment]
+  );
+
+  const handleDismissInsightTeaser = useCallback(() => {
+    setIsInsightTeaserVisible(false);
+    analyticsService.logEvent('insight_teaser_dismissed', {
+      source: 'daily_entry_teaser',
+      isPro,
+    });
+  }, [isPro]);
+
+  const handleInsightTeaserPress = useCallback(async () => {
+    analyticsService.logEvent('insight_reveal_requested', {
+      source: 'daily_entry_teaser',
+      range: '30d',
+    });
+
+    const result = await generateInsight();
+
+    if (result.error) {
+      handleMutationError(result.error, t('mood.analysis.errors.revealFailed'));
+      return;
+    }
+
+    setIsInsightTeaserVisible(false);
+    navigation.navigate('MoodAnalysis', {
+      initialRange: '30d',
+      source: 'daily_entry_teaser',
+    });
+  }, [generateInsight, handleMutationError, navigation, t]);
 
   const handleSaveEditedStatement = useCallback(
     async (index: number, updatedStatement: string, updatedMood?: MoodEmoji | null) => {
@@ -541,17 +769,13 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               <Text style={styles.headerSubtitle}>{subtitle}</Text>
             </View>
 
-            <View style={styles.progressRingContainer}>
-              <Animated.View style={styles.progressRing}>
-                <Icon
-                  name={isGoalComplete ? 'check-decagram' : 'flower-tulip-outline'}
-                  size={24}
-                  color={isGoalComplete ? theme.colors.success : theme.colors.primary}
-                />
-                <Text style={styles.progressText}>
-                  {statements.length}/{dailyGoal}
-                </Text>
-              </Animated.View>
+            <View style={styles.mascotContainer}>
+              <Image
+                source={MascotImage}
+                style={styles.mascotImage}
+                contentFit="contain"
+                transition={400}
+              />
             </View>
           </View>
 
@@ -561,8 +785,26 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               ref={inputBarRef}
               promptText={effectivePromptText}
               onSubmit={handleAddStatement}
-              onSubmitWithMood={(text, mood) => {
-                handleAddStatement(text, mood ?? null);
+              onSubmitWithMood={(text, mood) => handleAddStatement(text, mood ?? null)}
+              onSubmitWithAttachments={handleAddStatementWithAttachments}
+              onLockedVoicePress={() => checkGate('voice_attachment')}
+              onLockedImagePress={() => checkGate('image_attachment')}
+              imageAttachmentsRemaining={imageAttachmentsRemaining}
+              audioAttachmentsRemaining={audioAttachmentsRemaining}
+              onAttachmentLimitReached={(kind) => {
+                showWarning(
+                  kind === 'image'
+                    ? t(
+                        'gratitude.input.attach.imageLimitReachedToast',
+                        'You’ve reached the daily limit of {{max}} images.',
+                        { max: MAX_ATTACHMENTS_PER_DAY_PER_KIND }
+                      )
+                    : t(
+                        'gratitude.input.attach.voiceLimitReachedToast',
+                        'You’ve reached the daily limit of {{max}} voice notes.',
+                        { max: MAX_ATTACHMENTS_PER_DAY_PER_KIND }
+                      )
+                );
               }}
               disabled={isAddingStatement}
               error={null}
@@ -574,6 +816,22 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               goal={dailyGoal}
             />
           </View>
+
+          {isInsightTeaserVisible ? (
+            <View style={styles.insightTeaserSection}>
+              <InsightTeaserCard
+                title={t('mood.analysis.teaser.title')}
+                description={t('mood.analysis.teaser.description')}
+                promise={t('mood.analysis.promise')}
+                ctaLabel={t('mood.analysis.home.cta.reveal')}
+                onPress={() => void handleInsightTeaserPress()}
+                emoji="✨"
+                isLoading={isGeneratingInsight}
+                lockedLabel={!isPro ? t('mood.analysis.home.previewBadge') : null}
+                onDismiss={handleDismissInsightTeaser}
+              />
+            </View>
+          ) : null}
 
           {/* AI COACH PROMPT (PRO only, today only) */}
           {isToday && (
@@ -612,39 +870,53 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
               </View>
             )}
 
-            {displayStatements.map((statement, index) => (
-              <View
-                key={`${finalDateString}-${index}-${statement.slice(0, 10)}`}
-                style={styles.statementWrapper}
-              >
-                <DailyEntryStatementItem
-                  index={index}
-                  statement={statement}
-                  entryDate={finalDateString}
-                  dateIso={effectiveDate.toISOString()}
-                  isEditing={editingStatementIndex === index}
-                  isLoading={isEditingStatement || isDeletingStatement}
-                  onEdit={() => {
-                    navigation.navigate('EntryDetail', {
-                      entryDate: finalDateString,
-                      entryId: '',
-                    });
-                  }}
-                  onSave={(updated, mood) => handleSaveEditedStatement(index, updated, mood)}
-                  onCancel={handleCancelEditing}
-                  onDelete={() => handleDeleteStatement(index)}
-                  serverMood={
-                    ((currentEntry?.moods as Record<string, string> | undefined)?.[
-                      String(statements.length - 1 - index)
-                    ] as MoodEmoji | undefined) ?? null
-                  }
-                  showSaveHint={editingStatementIndex === index && showSaveHint}
-                  theme={theme}
-                  canEditMood={isPro}
-                  onLockedMoodEdit={() => checkGate('mood_editing')}
-                />
-              </View>
-            ))}
+            {displayStatements.map((statement, index) => {
+              const originalIndex = statements.length - 1 - index;
+              const rawAttachments = (currentEntry?.attachments as Attachment[] | undefined) ?? [];
+              const statementAttachments = rawAttachments.filter(
+                (a) => a.statement_index === originalIndex
+              );
+              return (
+                <View
+                  key={`${finalDateString}-${index}-${statement.slice(0, 10)}`}
+                  style={styles.statementWrapper}
+                >
+                  <DailyEntryStatementItem
+                    index={index}
+                    statement={statement}
+                    entryDate={finalDateString}
+                    dateIso={effectiveDate.toISOString()}
+                    isEditing={editingStatementIndex === index}
+                    isLoading={isEditingStatement || isDeletingStatement}
+                    onEdit={() => {
+                      navigation.navigate('EntryDetail', {
+                        entryDate: finalDateString,
+                        entryId: '',
+                      });
+                    }}
+                    onSave={(updated, mood) => handleSaveEditedStatement(index, updated, mood)}
+                    onCancel={handleCancelEditing}
+                    onDelete={() => handleDeleteStatement(index)}
+                    serverMood={
+                      ((currentEntry?.moods as Record<string, string> | undefined)?.[
+                        String(statements.length - 1 - index)
+                      ] as MoodEmoji | undefined) ?? null
+                    }
+                    showSaveHint={editingStatementIndex === index && showSaveHint}
+                    theme={theme}
+                    canEditMood={isPro}
+                    onLockedMoodEdit={() => checkGate('mood_editing')}
+                  />
+                  {statementAttachments.length > 0 ? (
+                    <AttachmentRail
+                      attachments={statementAttachments}
+                      onRemove={handleRemoveAttachment}
+                      compact
+                    />
+                  ) : null}
+                </View>
+              );
+            })}
 
             {statements.length === 0 && !isLoadingEntry && (
               <View style={styles.emptyContainer}>
@@ -794,12 +1066,13 @@ const createStyles = (theme: AppTheme) =>
       justifyContent: 'space-between',
       alignItems: 'flex-start',
       paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.xl,
+      paddingTop: theme.spacing.xxl + 10,
       paddingBottom: theme.spacing.md,
+      position: 'relative', // Ensure absolute child is relative to header
     },
     headerContent: {
       flex: 1,
-      paddingRight: theme.spacing.md,
+      paddingRight: 110,
     },
     headerDate: {
       ...theme.typography.labelSmall,
@@ -841,9 +1114,26 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '700',
       color: theme.colors.onSurface,
     },
+    mascotContainer: {
+      position: 'absolute',
+      right: -20,
+      top: 5,
+      width: 180,
+      height: 180,
+      zIndex: 0,
+      opacity: 0.8,
+    },
+    mascotImage: {
+      width: '100%',
+      height: '100%',
+    },
     inputSection: {
       paddingHorizontal: theme.spacing.md,
       marginVertical: theme.spacing.md,
+    },
+    insightTeaserSection: {
+      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.md,
     },
     coachSection: {
       paddingHorizontal: theme.spacing.md,

@@ -106,154 +106,20 @@ export const editStatement = async (
     }
 
     const normalizedMood = typeof moodEmoji === 'string' ? moodEmoji.trim() : undefined;
+    const { error } = await client.rpc('edit_gratitude_statement', {
+      p_entry_date: entryDate,
+      p_statement_index: statementIndex,
+      p_updated_statement: updatedStatementText,
+      ...(normalizedMood && normalizedMood.length > 0 ? { p_mood: normalizedMood } : {}),
+    });
 
-    try {
-      const { error } = await client.rpc(
-        'edit_gratitude_statement',
-        normalizedMood && normalizedMood.length > 0
-          ? {
-              p_entry_date: entryDate,
-              p_statement_index: statementIndex,
-              p_updated_statement: updatedStatementText,
-              p_mood: normalizedMood,
-            }
-          : {
-              p_entry_date: entryDate,
-              p_statement_index: statementIndex,
-              p_updated_statement: updatedStatementText,
-            }
-      );
-
-      if (error) {
-        throw new Error(error.message);
-      }
-    } catch (rpcError) {
-      const rpcMessage = rpcError instanceof Error ? rpcError.message : String(rpcError);
-
-      if (rpcMessage.includes('Could not choose the best candidate function')) {
-        logger.warn('editStatement RPC ambiguity detected. Falling back to direct update.', {
-          entryDate,
-          statementIndex,
-        });
-
-        await fallbackEditStatement(entryDate, statementIndex, updatedStatementText, moodEmoji);
-        return;
-      }
-
-      throw rpcError instanceof Error ? rpcError : new Error(rpcMessage);
+    if (error) {
+      throw new Error(error.message);
     }
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     throw handleAPIError(error, 'edit gratitude statement');
   }
-};
-
-const fallbackEditStatement = async (
-  entryDate: string,
-  statementIndex: number,
-  updatedStatementText: string,
-  moodEmoji?: string | null
-): Promise<void> => {
-  const { client, session } = await getAuthedClient();
-  const userId = session.user.id;
-
-  const { data: entry, error: fetchError } = await client
-    .from('gratitude_entries')
-    .select('statements, moods')
-    .eq('user_id', userId)
-    .eq('entry_date', entryDate)
-    .maybeSingle();
-
-  if (fetchError) {
-    throw new Error(fetchError.message);
-  }
-
-  if (!entry) {
-    throw new Error('Gratitude entry not found');
-  }
-
-  const statementsArray = normalizeStatements(entry.statements);
-
-  if (statementIndex < 0 || statementIndex >= statementsArray.length) {
-    throw new Error('Invalid statement index');
-  }
-
-  statementsArray[statementIndex] = updatedStatementText;
-
-  const updatePayload: Record<string, unknown> = {
-    statements: statementsArray,
-    updated_at: new Date().toISOString(),
-  };
-
-  if (moodEmoji !== undefined) {
-    const moodsMap = normalizeMoods(entry.moods);
-    const key = String(statementIndex);
-
-    if (moodEmoji === null || (typeof moodEmoji === 'string' && moodEmoji.trim().length === 0)) {
-      delete moodsMap[key];
-    } else {
-      moodsMap[key] = moodEmoji.trim();
-    }
-
-    updatePayload.moods = moodsMap;
-  }
-
-  const { error: updateError } = await client
-    .from('gratitude_entries')
-    .update(updatePayload)
-    .eq('user_id', userId)
-    .eq('entry_date', entryDate);
-
-  if (updateError) {
-    throw new Error(updateError.message);
-  }
-};
-
-const normalizeStatements = (statements: unknown): string[] => {
-  if (Array.isArray(statements)) {
-    return statements.map((item) => String(item));
-  }
-
-  if (statements && typeof statements === 'object') {
-    const entries = Object.entries(statements as Record<string, unknown>)
-      .filter(([, value]) => typeof value === 'string')
-      .sort(([a], [b]) => Number(a) - Number(b));
-
-    if (entries.length > 0) {
-      return entries.map(([, value]) => String(value));
-    }
-  }
-
-  throw new Error('Invalid statements format received from the server');
-};
-
-const normalizeMoods = (moods: unknown): Record<string, string> => {
-  if (!moods) {
-    return {};
-  }
-
-  if (Array.isArray(moods)) {
-    return moods.reduce<Record<string, string>>((acc, value, index) => {
-      if (typeof value === 'string' && value.trim().length > 0) {
-        acc[String(index)] = value;
-      }
-      return acc;
-    }, {});
-  }
-
-  if (typeof moods === 'object') {
-    return Object.entries(moods as Record<string, unknown>).reduce<Record<string, string>>(
-      (acc, [key, value]) => {
-        if (typeof value === 'string' && value.trim().length > 0) {
-          acc[key] = value;
-        }
-        return acc;
-      },
-      {}
-    );
-  }
-
-  return {};
 };
 
 /**
@@ -301,10 +167,14 @@ export const setStatementMood = async (
 ): Promise<void> => {
   try {
     const { client } = await getAuthedClient();
+    const cleanedMood = moodEmoji && moodEmoji.trim() !== '' ? moodEmoji : null;
     const { error } = await client.rpc('set_statement_mood', {
       p_entry_date: entryDate,
       p_statement_index: statementIndex,
-      p_mood: moodEmoji ?? '',
+      // The RPC treats NULL (and, after fix_10, '') as "clear".
+      // Passing NULL explicitly so that both old and new deployments clear correctly.
+      // Generated types declare p_mood as string; cast because the RPC body allows null.
+      p_mood: cleanedMood as unknown as string,
     });
 
     if (error) {
@@ -391,7 +261,9 @@ export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
     const { user } = session;
     const { data, error } = await client
       .from('gratitude_entries')
-      .select('id, user_id, entry_date, statements, moods, created_at, updated_at')
+      .select(
+        'id, user_id, entry_date, statements, moods, created_at, updated_at, gratitude_attachments(id, statement_index, kind, storage_path, mime_type, bytes, duration_ms, width, height, transcript, created_at)'
+      )
       .eq('user_id', user.id)
       .order('entry_date', { ascending: false });
 
@@ -401,7 +273,15 @@ export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
     if (!data) {
       return [];
     }
-    return data.map(mapAndValidateRawEntry);
+    return data.map((row) => {
+      const { gratitude_attachments: attachments, ...rest } = row as GratitudeEntryRow & {
+        gratitude_attachments?: unknown;
+      };
+      return mapAndValidateRawEntry({
+        ...(rest as GratitudeEntryRow),
+        attachments: Array.isArray(attachments) ? attachments : [],
+      } as GratitudeEntryRow);
+    });
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     throw handleAPIError(error, 'fetch gratitude daily entries');
@@ -418,7 +298,8 @@ export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
  */
 export const getGratitudeDailyEntriesPaginated = async (
   page: number = 0,
-  limit: number = 20
+  limit: number = 20,
+  searchTerm: string = ''
 ): Promise<{
   entries: GratitudeEntry[];
   hasMore: boolean;
@@ -428,9 +309,11 @@ export const getGratitudeDailyEntriesPaginated = async (
   try {
     const { client } = await getAuthedClient();
     // Use optimized RPC that returns entries with pagination metadata in one query
+    const trimmedSearch = searchTerm.trim();
     const { data, error } = await client.rpc('get_gratitude_entries_paginated', {
       p_page: page,
       p_limit: limit,
+      p_search_term: trimmedSearch.length > 0 ? trimmedSearch : undefined,
     });
 
     if (error) {
@@ -451,16 +334,17 @@ export const getGratitudeDailyEntriesPaginated = async (
     const hasMore = Boolean(data[0].has_more);
 
     // Map and validate entries
-    const entries = data.map((row: GratitudeEntryRow) =>
+    const entries = data.map((row: GratitudeEntryRow & { attachments?: unknown }) =>
       mapAndValidateRawEntry({
         id: row.id,
         user_id: row.user_id,
         entry_date: row.entry_date,
         statements: row.statements,
         moods: row.moods,
+        attachments: Array.isArray(row.attachments) ? row.attachments : [],
         created_at: row.created_at,
         updated_at: row.updated_at,
-      })
+      } as GratitudeEntryRow)
     );
 
     return {
@@ -486,7 +370,9 @@ export const getGratitudeDailyEntryByDate = async (
     const { user } = session;
     const { data, error } = await client
       .from('gratitude_entries')
-      .select('id, user_id, entry_date, statements, moods, created_at, updated_at')
+      .select(
+        'id, user_id, entry_date, statements, moods, created_at, updated_at, gratitude_attachments(id, statement_index, kind, storage_path, mime_type, bytes, duration_ms, width, height, transcript, created_at)'
+      )
       .eq('user_id', user.id)
       .eq('entry_date', entryDate)
       .single();
@@ -497,7 +383,16 @@ export const getGratitudeDailyEntryByDate = async (
       }
       throw handleAPIError(new Error(error.message), 'fetch gratitude daily entry by date');
     }
-    return data ? mapAndValidateRawEntry(data as GratitudeEntryRow) : null;
+    if (!data) {
+      return null;
+    }
+    const { gratitude_attachments: attachments, ...rest } = data as GratitudeEntryRow & {
+      gratitude_attachments?: unknown;
+    };
+    return mapAndValidateRawEntry({
+      ...(rest as GratitudeEntryRow),
+      attachments: Array.isArray(attachments) ? attachments : [],
+    } as GratitudeEntryRow);
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     throw handleAPIError(error, 'fetch gratitude daily entry by date');
@@ -535,15 +430,11 @@ export const getEntryDatesForMonth = async (year: number, month: number): Promis
  */
 export const getRandomGratitudeEntry = async (): Promise<GratitudeEntry | null> => {
   try {
-    const { client, session } = await getAuthedClient();
-    const { user } = session;
+    const { client } = await getAuthedClient();
 
-    // The SQL function 'get_random_gratitude_entry' expects p_user_id
-    // and returns SETOF gratitude_entries.
-    // We call it as an RPC that returns an array, and we take the first element.
-    const { data, error } = await client.rpc('get_random_gratitude_entry', {
-      p_user_id: user.id,
-    });
+    // get_random_gratitude_entry() derives the user from auth.uid() on the
+    // server; no p_user_id is needed (and passing one is a spoof target).
+    const { data, error } = await client.rpc('get_random_gratitude_entry');
 
     if (error) {
       throw handleAPIError(error, 'fetch random gratitude entry');

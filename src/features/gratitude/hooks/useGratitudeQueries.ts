@@ -25,12 +25,13 @@ export const useGratitudeEntries = () => {
   });
 };
 
-export const useGratitudeEntriesPaginated = (pageSize: number = 20) => {
+export const useGratitudeEntriesPaginated = (pageSize: number = 20, searchTerm: string = '') => {
   const user = useCoreAuthStore((state) => state.user);
 
   return useInfiniteQuery({
-    queryKey: queryKeys.gratitudeEntriesPaginated(user?.id, pageSize),
-    queryFn: ({ pageParam = 0 }) => getGratitudeDailyEntriesPaginated(pageParam, pageSize),
+    queryKey: queryKeys.gratitudeEntriesPaginated(user?.id, pageSize, searchTerm),
+    queryFn: ({ pageParam = 0 }) =>
+      getGratitudeDailyEntriesPaginated(pageParam, pageSize, searchTerm),
     enabled: shouldEnableQueries(user),
     staleTime: QUERY_STALE_TIMES.entries, // 2 minutes - dynamic content
     gcTime: 15 * 60 * 1000, // 15 minutes for pagination UX

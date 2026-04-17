@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/providers/ThemeProvider';
@@ -59,49 +59,50 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.label}>{t('pastEntries.header.label', 'HISTORY')}</Text>
-        <Text style={styles.title}>{title}</Text>
-        {getSubtitleText() && <Text style={styles.subtitle}>{getSubtitleText()}</Text>}
+        <View style={styles.headerContent}>
+          <Text style={styles.label}>{t('pastEntries.header.label', 'HISTORY')}</Text>
+          <Text style={styles.title}>{title}</Text>
+          {getSubtitleText() && <Text style={styles.subtitle}>{getSubtitleText()}</Text>}
+        </View>
       </View>
 
       {/* Stats Row - Unified card style */}
+      {/* Stats Row - Subtle tonal style */}
       {stats && (
         <View style={styles.statsCard}>
-          {/* Total */}
-          <View style={styles.statRow}>
-            <View style={styles.statIconContainer}>
-              <Icon name="notebook-outline" size={18} color={theme.colors.primary} />
-            </View>
-            <View style={styles.statTextContainer}>
-              <Text style={styles.statTitle}>{t('pastEntries.header.total')}</Text>
+          <View style={styles.statsInner}>
+            {/* Total */}
+            <View style={styles.statItem}>
               <Text style={styles.statValue}>{stats.total}</Text>
+              <Text style={styles.statTitle}>{t('pastEntries.header.total')}</Text>
+            </View>
+
+            <View style={styles.verticalDivider} />
+
+            {/* Monthly Progress */}
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{stats.monthlyProgress}%</Text>
+              <Text style={styles.statTitle}>{t('pastEntries.header.monthly')}</Text>
             </View>
           </View>
 
-          <View style={styles.divider} />
-
-          {/* Monthly Progress */}
-          <View style={styles.statRow}>
-            <View
-              style={[
-                styles.statIconContainer,
-                { backgroundColor: theme.colors.secondaryContainer },
-              ]}
-            >
-              <Icon name="chart-line" size={18} color={theme.colors.secondary} />
-            </View>
-            <View style={styles.statTextContainer}>
-              <Text style={styles.statTitle}>{t('pastEntries.header.monthly')}</Text>
-              <Text style={styles.statValue}>{stats.monthlyProgress}%</Text>
-            </View>
-            <View style={styles.progressBarContainer}>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${stats.monthlyProgress}%` }]} />
-              </View>
+          <View style={styles.progressBarWrapper}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${stats.monthlyProgress}%` }]} />
             </View>
           </View>
         </View>
       )}
+
+      {/* Mascot perfectly resting on the card */}
+      <View style={styles.mascotContainer}>
+        <Image
+          source={require('@/assets/assets/mascot2.png')}
+          style={styles.mascotImage}
+          contentFit="contain"
+          transition={400}
+        />
+      </View>
     </View>
   );
 };
@@ -109,72 +110,94 @@ const PastEntriesHeader: React.FC<PastEntriesHeaderProps> = ({ title, subtitle, 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
       paddingHorizontal: theme.spacing.md,
-      paddingTop: theme.spacing.xl,
+      paddingTop: theme.spacing.xxxl,
     },
     header: {
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+    },
+    headerContent: {
+      paddingRight: 110,
+    },
+    mascotContainer: {
+      position: 'absolute',
+      right: -20,
+      top: 40,
+      width: 180,
+      height: 180,
+      zIndex: 10,
+    },
+    mascotImage: {
+      width: '100%',
+      height: '100%',
     },
     label: {
       ...theme.typography.labelSmall,
       color: theme.colors.primary,
-      fontWeight: '700',
-      letterSpacing: 1.2,
-      marginBottom: 4,
+      fontWeight: '800',
+      letterSpacing: 2,
+      marginBottom: 8,
+      textTransform: 'uppercase',
+      opacity: 0.8,
     },
     title: {
       ...theme.typography.displaySmall,
       color: theme.colors.onBackground,
-      fontWeight: '700',
       fontFamily: 'Lora-Bold',
-      marginBottom: 4,
+      fontSize: 34,
+      lineHeight: 40,
+      marginBottom: 6,
     },
     subtitle: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurfaceVariant,
+      fontStyle: 'italic',
+      opacity: 0.7,
     },
     statsCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surface + '60',
       borderRadius: theme.borderRadius.lg,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '20',
-      overflow: 'hidden',
+      padding: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
     },
-    statRow: {
+    statsInner: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
-      gap: theme.spacing.sm,
+      justifyContent: 'space-around',
+      marginBottom: theme.spacing.xs,
     },
-    statIconContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primaryContainer,
+    statItem: {
       alignItems: 'center',
-      justifyContent: 'center',
-    },
-    statTextContainer: {
       flex: 1,
     },
     statTitle: {
-      ...theme.typography.bodyMedium,
-      color: theme.colors.onSurface,
-      fontWeight: '600',
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+      marginTop: 0,
+      fontSize: 8.5,
+      opacity: 0.8,
     },
     statValue: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.onSurfaceVariant,
-      marginTop: 2,
+      ...theme.typography.titleLarge,
+      color: theme.colors.primary,
+      fontFamily: 'Lora-Bold',
+      fontSize: 18,
     },
-    progressBarContainer: {
-      width: 60,
+    verticalDivider: {
+      width: 1,
+      height: 16,
+      backgroundColor: theme.colors.outline + '10',
+    },
+    progressBarWrapper: {
+      paddingHorizontal: theme.spacing.xs,
     },
     progressBar: {
-      height: 4,
-      backgroundColor: theme.colors.outline + '20',
+      height: 3,
+      backgroundColor: theme.colors.outline + '08',
       borderRadius: theme.borderRadius.full,
       overflow: 'hidden',
     },
@@ -182,11 +205,6 @@ const createStyles = (theme: AppTheme) =>
       height: '100%',
       backgroundColor: theme.colors.primary,
       borderRadius: theme.borderRadius.full,
-    },
-    divider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: theme.colors.outline + '15',
-      marginLeft: theme.spacing.md + 32 + theme.spacing.sm,
     },
   });
 

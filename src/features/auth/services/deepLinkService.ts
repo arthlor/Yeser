@@ -261,14 +261,14 @@ export class DeepLinkService {
     originalUrl: string,
     databaseReady: boolean
   ): Promise<void> {
-    // Extract tokens from URL fragment or query parameters
-    const fragment = parsedUrl.hash.substring(1); // Remove the # character
-    const fragmentParams = new URLSearchParams(fragment);
-    const queryParams = parsedUrl.searchParams;
+    // Extract tokens via regex to avoid React Native URL polyfill bugs with custom schemes
+    const getParam = (str: string, key: string) => {
+      const match = str.match(new RegExp(`[?&#]${key}=([^&#]+)`));
+      return match ? decodeURIComponent(match[1]) : null;
+    };
 
-    // Check for OAuth-style tokens (access_token + refresh_token)
-    const accessToken = fragmentParams.get('access_token') || queryParams.get('access_token');
-    const refreshToken = fragmentParams.get('refresh_token') || queryParams.get('refresh_token');
+    const accessToken = getParam(originalUrl, 'access_token');
+    const refreshToken = getParam(originalUrl, 'refresh_token');
 
     if (accessToken && refreshToken) {
       // Handle OAuth-style tokens with robust queueing
@@ -308,7 +308,7 @@ export class DeepLinkService {
         logger.debug('[OAUTH QUEUE] OAuth tokens queued for processing when database ready');
       }
     } else {
-      logger.error('No valid OAuth tokens found in callback URL');
+      logger.error('No valid OAuth tokens found in callback URL. URL was:', { url: originalUrl });
     }
   }
 

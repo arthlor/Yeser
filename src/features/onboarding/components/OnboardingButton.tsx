@@ -56,18 +56,17 @@ const createStyles = (theme: AppTheme) =>
     button: {
       width: '100%',
       borderRadius: theme.borderRadius.lg,
-      // Consistent shadow for all onboarding buttons
-      ...getPrimaryShadow.medium(theme),
+      ...getPrimaryShadow.small(theme),
     },
     buttonContent: {
-      paddingVertical: theme.spacing.sm, // 12px - consistent height
-      minHeight: 48, // Minimum touch target for accessibility
+      paddingVertical: theme.spacing.xs,
+      minHeight: 44, // Meets accessibility minimum touch target
     },
     buttonText: {
-      ...theme.typography.bodyLarge,
-      fontSize: 16,
+      ...theme.typography.bodyMedium,
+      fontSize: 15,
       fontWeight: '600',
-      letterSpacing: 0.5,
+      letterSpacing: 0.3,
     },
   });
 

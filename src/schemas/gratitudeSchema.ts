@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import i18n from '@/i18n';
+import { GRATITUDE_MAX_LENGTH } from '@/constants/gratitude';
 
 // Schema for validating a single gratitude statement
 export const gratitudeStatementSchema = z
@@ -12,10 +13,10 @@ export const gratitudeStatementSchema = z
       ? i18n.t('validation.gratitude.empty')
       : 'Gratitude statement cannot be empty.',
   })
-  .max(500, {
+  .max(GRATITUDE_MAX_LENGTH, {
     message: i18n.isInitialized
-      ? i18n.t('validation.gratitude.tooLong')
-      : 'Gratitude statement must be 500 characters or less.',
+      ? i18n.t('validation.gratitude.tooLong', { max: GRATITUDE_MAX_LENGTH })
+      : `Gratitude statement must be ${GRATITUDE_MAX_LENGTH} characters or less.`,
   });
 
 export type GratitudeStatementFormData = z.infer<typeof gratitudeStatementSchema>;

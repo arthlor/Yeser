@@ -8,6 +8,27 @@ export type Database = {
   };
   public: {
     Tables: {
+      ai_usage: {
+        Row: {
+          created_at: string | null;
+          feature: string;
+          id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          feature: string;
+          id?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string | null;
+          feature?: string;
+          id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       daily_prompts: {
         Row: {
           category: string | null;
@@ -15,6 +36,7 @@ export type Database = {
           id: string;
           is_active: boolean;
           prompt_text_en: string | null;
+          prompt_text_es: string | null;
           prompt_text_tr: string;
           updated_at: string;
         };
@@ -24,6 +46,7 @@ export type Database = {
           id?: string;
           is_active?: boolean;
           prompt_text_en?: string | null;
+          prompt_text_es?: string | null;
           prompt_text_tr: string;
           updated_at?: string;
         };
@@ -33,57 +56,129 @@ export type Database = {
           id?: string;
           is_active?: boolean;
           prompt_text_en?: string | null;
+          prompt_text_es?: string | null;
           prompt_text_tr?: string;
           updated_at?: string;
         };
         Relationships: [];
       };
+      gratitude_attachments: {
+        Row: {
+          bytes: number;
+          created_at: string;
+          duration_ms: number | null;
+          entry_date: string;
+          entry_id: string;
+          height: number | null;
+          id: string;
+          kind: string;
+          mime_type: string;
+          statement_index: number;
+          storage_path: string;
+          transcript: string | null;
+          user_id: string;
+          width: number | null;
+        };
+        Insert: {
+          bytes: number;
+          created_at?: string;
+          duration_ms?: number | null;
+          entry_date: string;
+          entry_id: string;
+          height?: number | null;
+          id?: string;
+          kind: string;
+          mime_type: string;
+          statement_index: number;
+          storage_path: string;
+          transcript?: string | null;
+          user_id: string;
+          width?: number | null;
+        };
+        Update: {
+          bytes?: number;
+          created_at?: string;
+          duration_ms?: number | null;
+          entry_date?: string;
+          entry_id?: string;
+          height?: number | null;
+          id?: string;
+          kind?: string;
+          mime_type?: string;
+          statement_index?: number;
+          storage_path?: string;
+          transcript?: string | null;
+          user_id?: string;
+          width?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'gratitude_attachments_entry_id_fkey';
+            columns: ['entry_id'];
+            isOneToOne: false;
+            referencedRelation: 'gratitude_entries';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       gratitude_benefits: {
         Row: {
           created_at: string | null;
           cta_prompt_en: string | null;
+          cta_prompt_es: string | null;
           cta_prompt_tr: string | null;
           description_en: string | null;
+          description_es: string | null;
           description_tr: string;
           display_order: number;
           icon: string;
           id: number;
           is_active: boolean | null;
           stat_en: string | null;
+          stat_es: string | null;
           stat_tr: string | null;
           title_en: string | null;
+          title_es: string | null;
           title_tr: string;
           updated_at: string | null;
         };
         Insert: {
           created_at?: string | null;
           cta_prompt_en?: string | null;
+          cta_prompt_es?: string | null;
           cta_prompt_tr?: string | null;
           description_en?: string | null;
+          description_es?: string | null;
           description_tr: string;
           display_order?: number;
           icon: string;
           id?: number;
           is_active?: boolean | null;
           stat_en?: string | null;
+          stat_es?: string | null;
           stat_tr?: string | null;
           title_en?: string | null;
+          title_es?: string | null;
           title_tr: string;
           updated_at?: string | null;
         };
         Update: {
           created_at?: string | null;
           cta_prompt_en?: string | null;
+          cta_prompt_es?: string | null;
           cta_prompt_tr?: string | null;
           description_en?: string | null;
+          description_es?: string | null;
           description_tr?: string;
           display_order?: number;
           icon?: string;
           id?: number;
           is_active?: boolean | null;
           stat_en?: string | null;
+          stat_es?: string | null;
           stat_tr?: string | null;
           title_en?: string | null;
+          title_es?: string | null;
           title_tr?: string;
           updated_at?: string | null;
         };
@@ -114,6 +209,42 @@ export type Database = {
           id?: string;
           moods?: Json;
           statements?: Json;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      mood_insight_snapshots: {
+        Row: {
+          entry_count_at_generation: number;
+          generated_at: string;
+          highlighted_insight: Json;
+          id: string;
+          language: string;
+          narrative: Json;
+          range: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          entry_count_at_generation?: number;
+          generated_at?: string;
+          highlighted_insight: Json;
+          id?: string;
+          language: string;
+          narrative: Json;
+          range: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          entry_count_at_generation?: number;
+          generated_at?: string;
+          highlighted_insight?: Json;
+          id?: string;
+          language?: string;
+          narrative?: Json;
+          range?: string;
           updated_at?: string;
           user_id?: string;
         };
@@ -361,6 +492,20 @@ export type Database = {
           rows_processed: number;
         }[];
       };
+      attach_media_to_statement: {
+        Args: {
+          p_bytes: number;
+          p_duration_ms?: number;
+          p_entry_date: string;
+          p_height?: number;
+          p_kind: string;
+          p_mime_type: string;
+          p_statement_index: number;
+          p_storage_path: string;
+          p_width?: number;
+        };
+        Returns: string;
+      };
       bytea_to_text: { Args: { data: string }; Returns: string };
       calculate_streak: { Args: { p_user_id: string }; Returns: number };
       check_username_availability: {
@@ -408,6 +553,8 @@ export type Database = {
           username: string;
         }[];
       };
+      delete_attachment: { Args: { p_attachment_id: string }; Returns: string };
+      delete_current_user_cascade: { Args: never; Returns: undefined };
       delete_gratitude_entry_by_date: {
         Args: { p_entry_date: string };
         Returns: undefined;
@@ -424,24 +571,15 @@ export type Database = {
           details: string;
         }[];
       };
-      edit_gratitude_statement:
-        | {
-            Args: {
-              p_entry_date: string;
-              p_statement_index: number;
-              p_updated_statement: string;
-            };
-            Returns: undefined;
-          }
-        | {
-            Args: {
-              p_entry_date: string;
-              p_mood?: string;
-              p_statement_index: number;
-              p_updated_statement: string;
-            };
-            Returns: undefined;
-          };
+      edit_gratitude_statement: {
+        Args: {
+          p_entry_date: string;
+          p_mood?: string;
+          p_statement_index: number;
+          p_updated_statement: string;
+        };
+        Returns: undefined;
+      };
       enqueue_notification_jobs: {
         Args: { p_horizon_minutes?: number };
         Returns: number;
@@ -454,13 +592,16 @@ export type Database = {
           stat_value: string;
         }[];
       };
-      get_entry_dates_for_month: {
-        Args: { p_month: number; p_user_id: string; p_year: number };
-        Returns: string[];
-      };
+      get_entry_dates_for_month:
+        | {
+            Args: { p_month: number; p_user_id: string; p_year: number };
+            Returns: string[];
+          }
+        | { Args: { p_month: number; p_year: number }; Returns: string[] };
       get_gratitude_entries_paginated: {
-        Args: { p_limit?: number; p_page?: number };
+        Args: { p_limit?: number; p_page?: number; p_search_term?: string };
         Returns: {
+          attachments: Json;
           created_at: string;
           entry_date: string;
           has_more: boolean;
@@ -472,51 +613,78 @@ export type Database = {
           user_id: string;
         }[];
       };
+      get_latest_mood_insight_snapshot: {
+        Args: { p_language?: string; p_range?: string };
+        Returns: {
+          entry_count_at_generation: number;
+          generated_at: string;
+          highlighted_insight: Json;
+          is_preview_only: boolean;
+          language: string;
+          narrative: Json;
+          range: string;
+        }[];
+      };
       get_mood_analytics: { Args: { p_range?: string }; Returns: Json };
       get_multiple_random_active_prompts: {
-        Args: { p_limit?: number };
-        Returns: {
-          category: string | null;
-          created_at: string;
-          id: string;
-          is_active: boolean;
-          prompt_text_en: string | null;
-          prompt_text_tr: string;
-          updated_at: string;
-        }[];
-        SetofOptions: {
-          from: '*';
-          to: 'daily_prompts';
-          isOneToOne: false;
-          isSetofReturn: true;
-        };
-      };
-      get_random_active_prompt: {
-        Args: never;
+        Args: { p_language?: string; p_limit?: number };
         Returns: {
           category: string;
           id: string;
+          prompt_text: string;
+          prompt_text_en: string;
+          prompt_text_es: string;
           prompt_text_tr: string;
         }[];
       };
-      get_random_gratitude_entry: {
-        Args: { p_user_id: string };
+      get_random_active_prompt: {
+        Args: { p_language?: string };
         Returns: {
-          created_at: string;
-          entry_date: string;
+          category: string;
           id: string;
-          moods: Json;
-          statements: Json;
-          updated_at: string;
-          user_id: string;
+          prompt_text: string;
+          prompt_text_en: string;
+          prompt_text_es: string;
+          prompt_text_tr: string;
         }[];
-        SetofOptions: {
-          from: '*';
-          to: 'gratitude_entries';
-          isOneToOne: false;
-          isSetofReturn: true;
-        };
       };
+      get_random_gratitude_entry:
+        | {
+            Args: never;
+            Returns: {
+              created_at: string;
+              entry_date: string;
+              id: string;
+              moods: Json;
+              statements: Json;
+              updated_at: string;
+              user_id: string;
+            }[];
+            SetofOptions: {
+              from: '*';
+              to: 'gratitude_entries';
+              isOneToOne: false;
+              isSetofReturn: true;
+            };
+          }
+        | {
+            Args: { p_user_id: string };
+            Returns: {
+              created_at: string;
+              entry_date: string;
+              id: string;
+              moods: Json;
+              statements: Json;
+              updated_at: string;
+              user_id: string;
+            }[];
+            SetofOptions: {
+              from: '*';
+              to: 'gratitude_entries';
+              isOneToOne: false;
+              isSetofReturn: true;
+            };
+          };
       get_user_gratitude_entries_count: { Args: never; Returns: number };
       get_users_for_next_hour_optimized: {
         Args: never;
@@ -662,6 +830,22 @@ export type Database = {
         Returns: boolean;
       };
       insert_notification_logs: { Args: { p_logs: Json }; Returns: undefined };
+      list_attachments_for_date: {
+        Args: { p_entry_date: string };
+        Returns: {
+          bytes: number;
+          created_at: string;
+          duration_ms: number;
+          height: number;
+          id: string;
+          kind: string;
+          mime_type: string;
+          statement_index: number;
+          storage_path: string;
+          transcript: string;
+          width: number;
+        }[];
+      };
       lock_notification_jobs: {
         Args: { p_cutoff?: string; p_limit: number };
         Returns: {
@@ -694,7 +878,7 @@ export type Database = {
         Returns: Json;
       };
       reset_stuck_notification_jobs: {
-        Args: { p_threshold?: unknown };
+        Args: { p_threshold?: string };
         Returns: number;
       };
       set_daily_gratitude_statements: {

@@ -1,6 +1,14 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.ai_usage (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  feature text NOT NULL CHECK (feature = ANY (ARRAY['mood_suggest'::text, 'entry_enhance'::text, 'coach_prompt'::text, 'memory_curate'::text, 'chat_message'::text, 'mood_insights'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT ai_usage_pkey PRIMARY KEY (id),
+  CONSTRAINT ai_usage_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
 CREATE TABLE public.daily_prompts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   prompt_text_tr text NOT NULL,
@@ -9,7 +17,27 @@ CREATE TABLE public.daily_prompts (
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  prompt_text_es text,
   CONSTRAINT daily_prompts_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.gratitude_attachments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  entry_id uuid NOT NULL,
+  entry_date date NOT NULL,
+  statement_index integer NOT NULL CHECK (statement_index >= 0),
+  kind text NOT NULL CHECK (kind = ANY (ARRAY['image'::text, 'audio'::text])),
+  storage_path text NOT NULL UNIQUE,
+  mime_type text NOT NULL,
+  bytes integer NOT NULL CHECK (bytes > 0 AND bytes <= (16 * 1024 * 1024)),
+  duration_ms integer CHECK (duration_ms IS NULL OR duration_ms > 0 AND duration_ms <= 120000),
+  width integer CHECK (width IS NULL OR width > 0),
+  height integer CHECK (height IS NULL OR height > 0),
+  transcript text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT gratitude_attachments_pkey PRIMARY KEY (id),
+  CONSTRAINT gratitude_attachments_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT gratitude_attachments_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.gratitude_entries(id)
 );
 CREATE TABLE public.gratitude_benefits (
   id integer NOT NULL DEFAULT nextval('gratitude_benefits_id_seq'::regclass),
@@ -26,6 +54,10 @@ CREATE TABLE public.gratitude_benefits (
   description_en text,
   stat_en text,
   cta_prompt_en text,
+  title_es text,
+  description_es text,
+  stat_es text,
+  cta_prompt_es text,
   CONSTRAINT gratitude_benefits_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.gratitude_entries (
@@ -38,6 +70,19 @@ CREATE TABLE public.gratitude_entries (
   moods jsonb NOT NULL DEFAULT '{}'::jsonb,
   CONSTRAINT gratitude_entries_pkey PRIMARY KEY (id),
   CONSTRAINT gratitude_entries_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.mood_insight_snapshots (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  range text NOT NULL CHECK (range = ANY (ARRAY['15d'::text, '30d'::text, '90d'::text])),
+  language text NOT NULL CHECK (language = ANY (ARRAY['en'::text, 'tr'::text, 'es'::text])),
+  highlighted_insight jsonb NOT NULL,
+  narrative jsonb NOT NULL,
+  entry_count_at_generation integer NOT NULL DEFAULT 0 CHECK (entry_count_at_generation >= 0),
+  generated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT mood_insight_snapshots_pkey PRIMARY KEY (id),
+  CONSTRAINT mood_insight_snapshots_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.notification_jobs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { checkUsernameAvailability } from '@/features/settings/profileApi';
+import i18n from '@/i18n';
 import { logger } from '@/utils/debugConfig';
 
 interface UseUsernameValidationResult {
@@ -11,63 +12,90 @@ interface UseUsernameValidationResult {
 
 const DEBOUNCE_DELAY = 500; // 500ms debounce
 
-export const useUsernameValidation = (): UseUsernameValidationResult => {
+const normalizeUsername = (value: string): string => value.trim().toLocaleLowerCase('tr-TR');
+
+export const useUsernameValidation = (
+  currentUsername?: string | null
+): UseUsernameValidationResult => {
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [debounceTimer, setDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
-  const checkUsername = useCallback(async (username: string) => {
-    // Clear previous timer using current ref value
-    setDebounceTimer((prevTimer) => {
-      if (prevTimer) {
-        clearTimeout(prevTimer);
-      }
-      return null;
-    });
-
-    // Reset states
-    setError(null);
-    setIsAvailable(null);
-
-    // Basic validation first
-    if (!username || username.length < 3) {
-      return; // Don't check if username is too short
-    }
-
-    if (username.length > 50) {
-      setError('Kullanıcı adı en fazla 50 karakter olabilir');
-      return;
-    }
-
-    // Set up debounced check
-    const timer = setTimeout(async () => {
-      setIsChecking(true);
-      logger.debug(`Checking username availability for: "${username}"`);
-
-      try {
-        const available = await checkUsernameAvailability(username);
-        logger.debug(`Username "${username}" availability result:`, { available });
-
-        setIsAvailable(available);
-
-        if (!available) {
-          setError('Bu kullanıcı adı zaten kullanılıyor');
-          logger.debug(`Setting error: username "${username}" is not available`);
-        } else {
-          logger.debug(`Username "${username}" is available`);
+  const checkUsername = useCallback(
+    async (username: string) => {
+      // Clear previous timer using current ref value
+      setDebounceTimer((prevTimer) => {
+        if (prevTimer) {
+          clearTimeout(prevTimer);
         }
-      } catch (err) {
-        logger.error('Username availability check failed:', err as Error);
-        setError('Kullanıcı adı kontrol edilirken bir hata oluştu');
-        setIsAvailable(null);
-      } finally {
-        setIsChecking(false);
-      }
-    }, DEBOUNCE_DELAY);
+        return null;
+      });
 
-    setDebounceTimer(timer);
-  }, []); // Remove debounceTimer dependency to break the cycle
+      // Reset states
+      setError(null);
+      setIsAvailable(null);
+
+      // Basic validation first
+      const normalizedUsername = normalizeUsername(username);
+      const normalizedCurrentUsername = currentUsername ? normalizeUsername(currentUsername) : null;
+
+      if (!username || username.length < 3) {
+        return; // Don't check if username is too short
+      }
+
+      if (username.length > 50) {
+        setError(
+          i18n.t('validation.usernameTooLong', {
+            defaultValue: 'Username can be at most 50 characters',
+          })
+        );
+        return;
+      }
+
+      if (normalizedCurrentUsername && normalizedUsername === normalizedCurrentUsername) {
+        setIsAvailable(true);
+        return;
+      }
+
+      // Set up debounced check
+      const timer = setTimeout(async () => {
+        setIsChecking(true);
+        logger.debug(`Checking username availability for: "${username}"`);
+
+        try {
+          const available = await checkUsernameAvailability(username);
+          logger.debug(`Username "${username}" availability result:`, { available });
+
+          setIsAvailable(available);
+
+          if (!available) {
+            setError(
+              i18n.t('validation.usernameTaken', {
+                defaultValue: 'This username is already taken',
+              })
+            );
+            logger.debug(`Setting error: username "${username}" is not available`);
+          } else {
+            logger.debug(`Username "${username}" is available`);
+          }
+        } catch (err) {
+          logger.error('Username availability check failed:', err as Error);
+          setError(
+            i18n.t('validation.usernameCheckError', {
+              defaultValue: 'An error occurred while checking username',
+            })
+          );
+          setIsAvailable(null);
+        } finally {
+          setIsChecking(false);
+        }
+      }, DEBOUNCE_DELAY);
+
+      setDebounceTimer(timer);
+    },
+    [currentUsername]
+  ); // Remove debounceTimer dependency to break the cycle
 
   // Cleanup timer on unmount
   useEffect(() => {

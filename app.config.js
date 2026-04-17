@@ -81,8 +81,8 @@ const extra = {
 module.exports = {
   name,
   slug: 'yeser',
-  version: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.3.0',
-  runtimeVersion: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.3.0', // Static version for bare workflow
+  version: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.3.1',
+  runtimeVersion: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.3.1', // Static version for bare workflow
   scheme,
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
@@ -112,6 +112,14 @@ module.exports = {
       CFBundleLocalizations: ['en', 'tr', 'es'],
       NSUserTrackingUsageDescription:
         'This allows us to provide personalized gratitude insights and improve your experience.',
+      NSCameraUsageDescription:
+        'Yeşer uses the camera so you can attach a photo to your gratitude entry.',
+      NSMicrophoneUsageDescription:
+        'Yeşer uses the microphone so you can record a short voice note for your gratitude entry.',
+      NSPhotoLibraryUsageDescription:
+        'Yeşer needs access to your photo library so you can attach a picture to your gratitude entry.',
+      NSPhotoLibraryAddUsageDescription:
+        'Yeşer can save shared gratitude cards to your photo library.',
       CFBundleURLTypes: [
         {
           CFBundleURLName: 'yeser.auth',
@@ -137,6 +145,7 @@ module.exports = {
       'com.android.alarm.permission.SET_ALARM',
       'android.permission.WAKE_LOCK',
       'android.permission.CAMERA',
+      'android.permission.RECORD_AUDIO',
       'android.permission.READ_EXTERNAL_STORAGE',
       'android.permission.WRITE_EXTERNAL_STORAGE',
       // 🔥 FCM Permissions
@@ -180,7 +189,7 @@ module.exports = {
           enableProguardInReleaseBuilds: true,
         },
         ios: {
-          deploymentTarget: '15.1',
+          deploymentTarget: '16.0',
           useFrameworks: 'static',
           googleServicesFile: process.env.GOOGLE_SERVICES_PLIST,
         },
@@ -193,6 +202,22 @@ module.exports = {
         icon: './src/assets/assets/adaptive-icon.png',
         color: '#2F4F4F',
         sounds: [],
+      },
+    ],
+    [
+      'expo-image-picker',
+      {
+        photosPermission:
+          'Yeşer needs access to your photo library so you can attach a picture to your gratitude entry.',
+        cameraPermission:
+          'Yeşer uses the camera so you can attach a photo to your gratitude entry.',
+      },
+    ],
+    [
+      'expo-audio',
+      {
+        microphonePermission:
+          'Yeşer uses the microphone so you can record a short voice note for your gratitude entry.',
       },
     ],
     // Enable App Tracking Transparency

@@ -23,6 +23,8 @@ import { AIMoodSuggestions } from './AIMoodSuggestions';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useLanguageStore } from '@/store/languageStore';
 import { GRATITUDE_MAX_LENGTH } from '@/constants/gratitude';
+import { Attachment } from '@/schemas/gratitudeEntrySchema';
+import AttachmentRail from '@/features/gratitude/components/AttachmentRail';
 
 interface StatementEditCardProps extends Omit<InteractiveStatementCardProps, 'onSave'> {
   variant?: 'primary' | 'secondary' | 'minimal';
@@ -36,6 +38,7 @@ interface StatementEditCardProps extends Omit<InteractiveStatementCardProps, 'on
   onSave?: (statement: string, mood?: MoodEmoji | null) => Promise<void>;
   onShare?: () => void;
   showSaveHint?: boolean;
+  attachments?: Attachment[];
 }
 
 const StatementEditCard: React.FC<StatementEditCardProps> = ({
@@ -54,6 +57,7 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
   onShare,
   maxLength = GRATITUDE_MAX_LENGTH,
   moodEmoji,
+  attachments,
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -381,6 +385,13 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
         {statement}
       </Text>
 
+      {/* Attachments */}
+      {attachments && attachments.length > 0 && (
+        <View style={styles.attachmentContainer}>
+          <AttachmentRail attachments={attachments} />
+        </View>
+      )}
+
       {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.dateRow}>
@@ -494,6 +505,10 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.md,
       lineHeight: 26,
+    },
+    attachmentContainer: {
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.md,
     },
     footer: {
       flexDirection: 'row',

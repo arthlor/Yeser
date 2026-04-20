@@ -393,12 +393,12 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     if (homeInsightCardState === 'fresh' && latestInsightSnapshot?.highlighted_insight) {
       return (
         <InsightTeaserCard
-          title={latestInsightSnapshot.highlighted_insight.title}
-          description={latestInsightSnapshot.highlighted_insight.description}
+          title={t('mood.analysis.banner.title')}
+          description={t('mood.analysis.banner.subtitle')}
           promise={t('mood.analysis.promise')}
           ctaLabel={t('mood.analysis.home.cta.view')}
           onPress={() => navigateToInsights('home_insight_card')}
-          emoji={latestInsightSnapshot.highlighted_insight.emoji}
+          emoji="✨"
           meta={latestInsightMeta}
           lockedLabel={!isPro ? t('mood.analysis.home.previewBadge') : null}
           compact
@@ -410,8 +410,8 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     if (homeInsightCardState === 'reveal') {
       return (
         <InsightTeaserCard
-          title={t('mood.analysis.home.latestTitle')}
-          description={t('mood.analysis.home.readyDescription')}
+          title={t('mood.analysis.banner.title')}
+          description={t('mood.analysis.banner.subtitle')}
           promise={t('mood.analysis.promise')}
           ctaLabel={t('mood.analysis.home.cta.reveal')}
           onPress={() => void handleRevealInsightPress()}
@@ -427,12 +427,12 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
     if (homeInsightCardState === 'fallback') {
       return (
         <InsightTeaserCard
-          title={t('mood.analysis.home.latestTitle')}
-          description={t('mood.analysis.home.fallbackDescription')}
+          title={t('mood.analysis.banner.title')}
+          description={t('mood.analysis.banner.subtitle')}
           promise={t('mood.analysis.promise')}
           ctaLabel={t('mood.analysis.home.cta.open')}
           onPress={() => navigateToInsights('home_insight_card_fallback')}
-          emoji="💫"
+          emoji="✨"
           lockedLabel={!isPro ? t('mood.analysis.home.previewBadge') : null}
           compact
           variant="reference"
@@ -518,11 +518,16 @@ const EnhancedHomeScreen: React.FC<HomeScreenProps> = React.memo(({ navigation }
               ((todaysEntry?.moods as Record<string, string> | undefined)?.[String(rawIndex)] as
                 | MoodEmoji
                 | undefined) ?? null;
+            const rawAttachments = (todaysEntry?.attachments as any[]) ?? [];
+            const statementAttachments = rawAttachments.filter(
+              (a) => a.statement_index === rawIndex
+            );
             return (
               <View style={styles.todayItemWrapper}>
                 <HomeGratitudeListItem
                   statement={item}
                   moodEmoji={mood}
+                  attachments={statementAttachments}
                   onPress={() =>
                     navigation.navigate('EntryDetail', { entryId: '', entryDate: todayDateString })
                   }

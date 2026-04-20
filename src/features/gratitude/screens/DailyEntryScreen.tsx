@@ -906,14 +906,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                     theme={theme}
                     canEditMood={isPro}
                     onLockedMoodEdit={() => checkGate('mood_editing')}
+                    attachments={statementAttachments}
                   />
-                  {statementAttachments.length > 0 ? (
-                    <AttachmentRail
-                      attachments={statementAttachments}
-                      onRemove={handleRemoveAttachment}
-                      compact
-                    />
-                  ) : null}
                 </View>
               );
             })}
@@ -992,6 +986,7 @@ const DailyEntryStatementItem = React.memo<{
   showSaveHint?: boolean;
   canEditMood: boolean;
   onLockedMoodEdit: () => void;
+  attachments?: Attachment[];
   theme: AppTheme;
 }>(
   ({
@@ -1009,6 +1004,7 @@ const DailyEntryStatementItem = React.memo<{
     showSaveHint,
     canEditMood,
     onLockedMoodEdit,
+    attachments,
     theme: _theme,
   }) => {
     const { moodEmoji, setMoodEmoji } = useMoodEmoji({ entryDate, index });
@@ -1049,6 +1045,7 @@ const DailyEntryStatementItem = React.memo<{
         moodEmoji={moodEmoji}
         onChangeMood={handleChangeMood}
         showSaveHint={showSaveHint}
+        attachments={attachments}
       />
     );
   }
@@ -1072,7 +1069,7 @@ const createStyles = (theme: AppTheme) =>
     },
     headerContent: {
       flex: 1,
-      paddingRight: 110,
+      paddingRight: 160,
     },
     headerDate: {
       ...theme.typography.labelSmall,

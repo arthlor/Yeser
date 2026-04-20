@@ -4,10 +4,11 @@ import { Image } from 'expo-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 
-import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
+import { GratitudeEntry, Attachment } from '@/schemas/gratitudeEntrySchema';
 import { AppTheme } from '@/themes/types';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getCurrentLocale } from '@/utils/localeUtils';
+import AttachmentRail from '@/features/gratitude/components/AttachmentRail';
 
 interface PastEntryItemProps {
   entry: GratitudeEntry;
@@ -154,6 +155,11 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
             >
               {firstStatement}
             </Text>
+            {entry.attachments && entry.attachments.length > 0 ? (
+              <View style={styles.attachmentContainer}>
+                <AttachmentRail attachments={entry.attachments as Attachment[]} />
+              </View>
+            ) : null}
             {hasMore && (
               <Text style={styles.moreText}>
                 + {statementCount - 1} {t('pastEntries.item.more')}
@@ -377,6 +383,11 @@ const createStyles = (theme: AppTheme) =>
     chevronContainer: {
       marginLeft: theme.spacing.sm,
       opacity: 0.5,
+    },
+    attachmentContainer: {
+      marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
+      width: '100%',
     },
   });
 

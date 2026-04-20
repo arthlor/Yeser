@@ -7,14 +7,18 @@ import { useTheme } from '@/providers/ThemeProvider';
 import type { MoodEmoji } from '@/types/mood.types';
 import { AppTheme } from '@/themes/types';
 
+import { Attachment } from '@/schemas/gratitudeEntrySchema';
+import AttachmentRail from '@/features/gratitude/components/AttachmentRail';
+
 interface HomeGratitudeListItemProps {
   statement: string;
   moodEmoji: MoodEmoji | null;
+  attachments?: Attachment[];
   onPress: () => void;
 }
 
 const HomeGratitudeListItem: React.FC<HomeGratitudeListItemProps> = React.memo(
-  ({ statement, moodEmoji, onPress }) => {
+  ({ statement, moodEmoji, attachments, onPress }) => {
     const { theme } = useTheme();
     const { t } = useTranslation();
     const styles = useMemo(() => createStyles(theme), [theme]);
@@ -77,6 +81,12 @@ const HomeGratitudeListItem: React.FC<HomeGratitudeListItemProps> = React.memo(
                 {statement}
               </Text>
             </View>
+
+            {attachments && attachments.length > 0 ? (
+              <View style={styles.attachmentContainer}>
+                <AttachmentRail attachments={attachments} />
+              </View>
+            ) : null}
 
             {/* Footer Row */}
             <View style={styles.footer}>
@@ -177,5 +187,10 @@ const createStyles = (theme: AppTheme) =>
     mascotPeek: {
       width: '100%',
       height: '100%',
+    },
+    attachmentContainer: {
+      marginBottom: theme.spacing.md,
+      marginTop: theme.spacing.sm,
+      width: '100%',
     },
   });

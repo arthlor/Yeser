@@ -39,6 +39,10 @@ export const analyzeMoodInsights = async (
     throw handleAPIError(new Error(error.message), 'analyze mood insights');
   }
 
+  if (data && typeof data === 'object' && 'error' in data) {
+    throw handleAPIError(new Error(String((data as any).error)), 'analyze mood insights');
+  }
+
   return data as AIInsightResponse;
 };
 

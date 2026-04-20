@@ -2,8 +2,8 @@
 // Analyzes gratitude entries to provide deep psychological and emotional insights
 // and suggestions for the user.
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, SchemaType } from 'npm:@google/generative-ai';
 
 // ============================================================================
 // CORS Helpers
@@ -57,6 +57,33 @@ function getGeminiModel() {
       topP: 0.95,
       maxOutputTokens: 2400,
       responseMimeType: 'application/json',
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          narrative: {
+            type: SchemaType.OBJECT,
+            properties: {
+              logical: { type: SchemaType.STRING },
+              emotional: { type: SchemaType.STRING },
+              suggestions: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING },
+              },
+            },
+            required: ['logical', 'emotional', 'suggestions'],
+          },
+          highlighted_insight: {
+            type: SchemaType.OBJECT,
+            properties: {
+              title: { type: SchemaType.STRING },
+              description: { type: SchemaType.STRING },
+              emoji: { type: SchemaType.STRING },
+            },
+            required: ['title', 'description', 'emoji'],
+          },
+        },
+        required: ['narrative', 'highlighted_insight'],
+      },
     },
     safetySettings: [
       {
@@ -332,7 +359,7 @@ Deno.serve(async (req: Request) => {
 
     if (dbError) {
       console.error('DB Error:', dbError);
-      return errorResponse('Failed to fetch entries', 500);
+      return jsonResponse({ error: 'Failed to fetch entries' }, 200);
     }
 
     const flattenedStatements = flattenStatements(entries ?? []);
@@ -481,16 +508,16 @@ Deno.serve(async (req: Request) => {
         result.response.candidates.length === 0
       ) {
         console.error('[analyze-mood] No candidates returned from Gemini');
-        return errorResponse('No response generated from AI', 500);
+        return jsonResponse({ error: 'No response generated from AI. Please try again.' }, 200);
       }
 
       // Handle safety blocks
       const firstCandidate = result.response.candidates[0];
       if (firstCandidate.finishReason === 'SAFETY') {
         console.error('[analyze-mood] Response blocked by safety filters');
-        return errorResponse(
-          'The content was flagged by safety filters. Please try again with different entries.',
-          400
+        return jsonResponse(
+          { error: 'The content was flagged by safety filters. Please try again with different entries.' },
+          200
         );
       }
 
@@ -500,23 +527,40 @@ Deno.serve(async (req: Request) => {
       const msg = genError instanceof Error ? genError.message : String(genError);
 
       if (msg.includes('abort') || msg.includes('timeout')) {
-        return errorResponse('AI analysis timed out. Please try again.', 504);
+        return jsonResponse({ error: 'AI analysis timed out. Please try again.' }, 200);
       }
 
-      return errorResponse(`AI Generation failed: ${msg}`, 500);
+      return jsonResponse({ error: `AI Generation failed: ${msg}` }, 200);
     }
 
     // Clean JSON
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    const jsonString = jsonMatch ? jsonMatch[0] : text;
-
     let analysis;
     try {
-      analysis = JSON.parse(jsonString);
-    } catch (e) {
-      console.error('[analyze-mood] JSON Parse Error:', e);
-      console.error('[analyze-mood] Raw Response content:', text);
-      return errorResponse('Failed to parse AI response into the required format.', 500);
+      // First try parsing exactly as returned
+      analysis = JSON.parse(text);
+    } catch (e1) {
+      try {
+        // Fallback 1: Strip markdown code blocks
+        const cleaned = text.replace(/^```(?:json)?|```$/gm, '').trim();
+        analysis = JSON.parse(cleaned);
+      } catch (e2) {
+        try {
+          // Fallback 2: Extract from first { to last }
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            // Also replace any unescaped literal newlines inside strings if they exist
+            // (a common LLM JSON error), but doing this safely is hard. 
+            // We will just try to parse the extracted block.
+            analysis = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('No JSON object found in response');
+          }
+        } catch (e3) {
+          console.error('[analyze-mood] JSON Parse Error:', e3);
+          console.error('[analyze-mood] Raw Response content:', text);
+          return jsonResponse({ error: 'Failed to parse AI response into the required format.' }, 200);
+        }
+      }
     }
 
     const generatedAt = new Date().toISOString();
@@ -561,6 +605,6 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error('Internal Error:', error);
     const message = error instanceof Error ? error.message : 'Internal Server Error';
-    return errorResponse(message, 500);
+    return jsonResponse({ error: message }, 200);
   }
 });

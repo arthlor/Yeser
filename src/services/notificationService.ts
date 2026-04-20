@@ -310,7 +310,51 @@ async function scheduleDailyReminderNotifications(
     }
 
     await cancelDailyReminderNotifications();
-    logger.debug('Remote notification pipeline active; skipping local reminder scheduling', {
+    // We now rely on the robust server-side cron job (cron-trigger -> send-daily-reminders)
+    // which handles personalized content and timezones. We skip local scheduling to avoid duplicates.
+    logger.debug('Remote notification pipeline active; skipping local reminder scheduling');
+    
+    /* 
+    // Uncomment this block if you ever want to fall back to purely local notifications
+    // Parse the configured time (e.g., '12:30:00' or fallback to default)
+    const timeParts = (primaryReminderTime || '12:30:00').split(':');
+    const hour = parseInt(timeParts[0] || '12', 10);
+    const minute = parseInt(timeParts[1] || '30', 10);
+
+    // Schedule primary local notification
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Time for Gratitude 💛',
+        body: 'Take a moment to reflect on your day and record a memory.',
+        sound: true,
+        data: { tag: DAILY_REMINDER_DATA_TAG },
+      },
+      trigger: {
+        hour,
+        minute,
+        repeats: true,
+      },
+    });
+
+    if (includeEveningReminder) {
+      // Schedule evening local notification
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Evening Reflection 🌙',
+          body: 'Before you sleep, what are you grateful for today?',
+          sound: true,
+          data: { tag: DAILY_REMINDER_DATA_TAG },
+        },
+        trigger: {
+          hour: 20,
+          minute: 0,
+          repeats: true,
+        },
+      });
+    }
+    */
+
+    logger.debug('Local notifications scheduled successfully', {
       primaryReminderTime,
       includeEveningReminder,
     });

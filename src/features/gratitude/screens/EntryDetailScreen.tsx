@@ -348,7 +348,6 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   {statementAttachments.length > 0 ? (
                     <AttachmentRail
                       attachments={statementAttachments}
-                      onRemove={(a) => removeAttachment({ entryDate, attachmentId: a.id })}
                       compact
                     />
                   ) : null}

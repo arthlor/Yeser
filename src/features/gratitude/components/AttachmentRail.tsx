@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -37,12 +38,14 @@ const ImageAttachmentThumb: React.FC<{
   onRemove?: () => void;
   size: number;
   theme: AppTheme;
-}> = ({ attachment, onRemove, size, theme }) => {
+  compact?: boolean;
+}> = ({ attachment, onRemove, size, theme, compact }) => {
   const [url, setUrl] = useState<string | null>(null);
+  const [isModalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    createAttachmentSignedUrl(attachment.storage_path, { size }).then((resolved) => {
+    createAttachmentSignedUrl(attachment.storage_path).then((resolved) => {
       if (!cancelled) {
         setUrl(resolved);
       }
@@ -50,30 +53,54 @@ const ImageAttachmentThumb: React.FC<{
     return () => {
       cancelled = true;
     };
-  }, [attachment.storage_path, size]);
+  }, [attachment.storage_path]);
 
   return (
-    <View style={[styles.thumbBox, { width: size, height: size }]}>
-      {url ? (
-        <Image
-          source={{ uri: url }}
-          style={styles.thumbImage}
-          contentFit="cover"
-          transition={200}
-        />
-      ) : (
-        <View
-          style={[styles.thumbPlaceholder, { backgroundColor: theme.colors.surfaceVariant + '60' }]}
-        >
-          <ActivityIndicator size="small" color={theme.colors.onSurfaceVariant} />
+    <>
+      <TouchableOpacity 
+        activeOpacity={0.9} 
+        onPress={() => setModalVisible(true)} 
+        style={[
+          styles.thumbBox,
+          compact ? { width: size, height: size } : { width: '100%', aspectRatio: 4 / 3 }
+        ]}
+      >
+        {url ? (
+          <Image
+            source={{ uri: url }}
+            style={styles.thumbImage}
+            contentFit="cover"
+            transition={200}
+          />
+        ) : (
+          <View
+            style={[styles.thumbPlaceholder, { backgroundColor: theme.colors.surfaceVariant + '60' }]}
+          >
+            <ActivityIndicator size="small" color={theme.colors.onSurfaceVariant} />
+          </View>
+        )}
+        {onRemove ? (
+          <TouchableOpacity onPress={onRemove} hitSlop={8} style={styles.removeButton}>
+            <Icon name="close" size={14} color="#fff" />
+          </TouchableOpacity>
+        ) : null}
+      </TouchableOpacity>
+
+      <Modal visible={isModalVisible} transparent={true} animationType="fade" onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalBackground}>
+          <TouchableOpacity style={styles.modalCloseButton} onPress={() => setModalVisible(false)} hitSlop={12}>
+            <Icon name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+          {url && (
+            <Image
+              source={{ uri: url }}
+              style={styles.modalImage}
+              contentFit="contain"
+            />
+          )}
         </View>
-      )}
-      {onRemove ? (
-        <TouchableOpacity onPress={onRemove} hitSlop={8} style={styles.removeButton}>
-          <Icon name="close" size={14} color="#fff" />
-        </TouchableOpacity>
-      ) : null}
-    </View>
+      </Modal>
+    </>
   );
 };
 
@@ -81,7 +108,8 @@ const AudioAttachmentPill: React.FC<{
   attachment: Attachment;
   onRemove?: () => void;
   theme: AppTheme;
-}> = ({ attachment, onRemove, theme }) => {
+  compact?: boolean;
+}> = ({ attachment, onRemove, theme, compact }) => {
   const [url, setUrl] = useState<string | null>(null);
   const player = useAudioPlayer(url ? { uri: url } : null);
   const status = useAudioPlayerStatus(player);
@@ -173,6 +201,7 @@ const AttachmentRail: React.FC<AttachmentRailProps> = ({ attachments, onRemove, 
             attachment={a}
             size={size}
             theme={theme}
+            compact={compact}
             onRemove={onRemove ? () => onRemove(a) : undefined}
           />
         ) : (
@@ -180,6 +209,7 @@ const AttachmentRail: React.FC<AttachmentRailProps> = ({ attachments, onRemove, 
             key={a.id}
             attachment={a}
             theme={theme}
+            compact={compact}
             onRemove={onRemove ? () => onRemove(a) : undefined}
           />
         )
@@ -209,6 +239,28 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 22,
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
   },
   removeButton: {
     position: 'absolute',

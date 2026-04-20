@@ -445,7 +445,7 @@
       "contactEmailLabel": "Destek ekibiyle iletişim",
       "contactEmailHint": "Destek ekibiyle iletişim kurmak için e-posta uygulamasını açar",
       "contactCTA": "Destek Ekibiyle İletişim",
-      "appVersion": "Yeşer v1.3.1",
+      "appVersion": "Yeşer v1.3.2",
       "accessibility": {
         "expanded": "{{question}} açıldı. {{answer}}",
         "collapsed": "{{question}} kapandı.",
@@ -1774,7 +1774,7 @@
         "remaining": "Bugünlük {{count}} AI hakkın kaldı"
       },
       "banner": {
-        "title": "Kayıtlarının altındaki hikayeyi gör",
+        "title": "Minnetlerinin hikayesini keşfet",
         "subtitle": "Birkaç basit minnet anını, son zamanlarda seni taşıyan şeylere dair daha derin bir okumaya dönüştür.",
         "button": "İçgörümü aç"
       },

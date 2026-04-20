@@ -28,7 +28,7 @@ BEGIN
         url := '__SUPABASE_FUNCTION_URL__/send-daily-reminders',
         headers := jsonb_build_object(
           'Authorization', 'Bearer Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2bmV4cGRiY2txaWV4ZGpiYWNhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODcwNjE1OCwiZXhwIjoyMDY0MjgyMTU4fQ.T85wVXnHsKAC0c5PoeTrq7jrild2Qtlc1jAzqyhV67A',
-          'x-internal-secret', 'Rl4dlMORBKOh4bREXzTuZhXEyxhmsVjqfHO4txpj68A=',
+          'x-internal-secret', 'Rl4dlMORBKOh4bREXzTuZhXEyxhmsVjqfHO4txpj68A='
         ),
         body := '{}',
         timeout_milliseconds := 1000

@@ -37,18 +37,5 @@
       "active": true,
       "jobname": "reset-stuck-notification-jobs"
     }
-  },
-  {
-    "cron_job_json": {
-      "jobid": 62,
-      "schedule": "*/5 * * * *",
-      "command": "SELECT\n      net.http_post(\n        url := '__SUPABASE_FUNCTION_URL__/send-daily-reminders',\n        headers := jsonb_build_object(\n          'Authorization', 'Bearer eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2bmV4cGRiY2txaWV4ZGpiYWNhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODcwNjE1OCwiZXhwIjoyMDY0MjgyMTU4fQ.T85wVXnHsKAC0c5PoeTrq7jrild2Qtlc1jAzqyhV67A',\n          'x-internal-secret', 'Rl4dlMORBKOh4bREXzTuZhXEyxhmsVjqfHO4txpj68A=',\n        ),\n        body := '{}',\n        timeout_milliseconds := 1000\n      );",
-      "nodename": "localhost",
-      "nodeport": 5432,
-      "database": "postgres",
-      "username": "postgres",
-      "active": true,
-      "jobname": "cron-trigger"
-    }
   }
 ]

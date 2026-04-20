@@ -538,125 +538,129 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
 
           {/* FOOTER ACTIONS */}
           <View style={styles.inputFooter}>
-            <TouchableOpacity onPress={toggleEmoji} style={styles.moodButton}>
-              {selectedMood ? (
-                <View style={styles.selectedMoodBadge}>
-                  <Text style={styles.selectedMoodText}>{selectedMood}</Text>
-                </View>
-              ) : (
+            <View style={styles.footerActionGroup}>
+              <TouchableOpacity onPress={toggleEmoji} style={styles.moodButton}>
+                {selectedMood ? (
+                  <View style={styles.selectedMoodBadge}>
+                    <Text style={styles.selectedMoodText}>{selectedMood}</Text>
+                  </View>
+                ) : (
+                  <Icon
+                    name={emojiOpen ? 'keyboard-close' : 'emoticon-happy-outline'}
+                    size={22}
+                    color={theme.colors.onSurfaceVariant + '80'}
+                  />
+                )}
+              </TouchableOpacity>
+
+              {/* IMAGE BUTTON */}
+              <TouchableOpacity
+                onPress={handlePickImage}
+                onLongPress={isPro && !imageQuotaExhausted ? handleCaptureImage : undefined}
+                style={styles.attachmentButton}
+                accessibilityLabel={
+                  !isPro
+                    ? t('gratitude.input.attach.imageLocked', 'Attach image (Premium)')
+                    : imageQuotaExhausted
+                      ? t('gratitude.input.attach.imageLimitReached', 'Daily image limit reached')
+                      : t('gratitude.input.attach.image', 'Attach image')
+                }
+                hitSlop={6}
+              >
                 <Icon
-                  name={emojiOpen ? 'keyboard-close' : 'emoticon-happy-outline'}
+                  name={isPro ? 'image-outline' : 'image-off-outline'}
                   size={22}
                   color={theme.colors.onSurfaceVariant + '80'}
                 />
-              )}
-            </TouchableOpacity>
-
-            {/* IMAGE BUTTON */}
-            <TouchableOpacity
-              onPress={handlePickImage}
-              onLongPress={isPro && !imageQuotaExhausted ? handleCaptureImage : undefined}
-              style={styles.attachmentButton}
-              accessibilityLabel={
-                !isPro
-                  ? t('gratitude.input.attach.imageLocked', 'Attach image (Premium)')
-                  : imageQuotaExhausted
-                    ? t('gratitude.input.attach.imageLimitReached', 'Daily image limit reached')
-                    : t('gratitude.input.attach.image', 'Attach image')
-              }
-              hitSlop={6}
-            >
-              <Icon
-                name={isPro ? 'image-outline' : 'image-off-outline'}
-                size={22}
-                color={theme.colors.onSurfaceVariant + '80'}
-              />
-              {!isPro ? (
-                <View style={styles.voiceLockBadge}>
-                  <Icon name="lock" size={9} color={theme.colors.onPrimary} />
-                </View>
-              ) : null}
-            </TouchableOpacity>
-
-            {/* VOICE BUTTON */}
-            <TouchableOpacity
-              onPress={handleVoicePress}
-              style={styles.attachmentButton}
-              accessibilityLabel={
-                !isPro
-                  ? t('gratitude.input.attach.voiceLocked', 'Record voice note (Premium)')
-                  : audioQuotaExhausted
-                    ? t(
-                        'gratitude.input.attach.voiceLimitReached',
-                        'Daily voice note limit reached'
-                      )
-                    : t('gratitude.input.attach.voice', 'Record voice note')
-              }
-              hitSlop={6}
-            >
-              <Icon
-                name={isPro ? 'microphone-outline' : 'microphone-off'}
-                size={22}
-                color={theme.colors.onSurfaceVariant + '80'}
-              />
-              {!isPro ? (
-                <View style={styles.voiceLockBadge}>
-                  <Icon name="lock" size={9} color={theme.colors.onPrimary} />
-                </View>
-              ) : null}
-            </TouchableOpacity>
-
-            {/* AI Enhance Button (PRO only) */}
-            {isPro && (
-              <TouchableOpacity
-                onPress={handleEnhance}
-                disabled={isEnhancing || inputText.trim().length < 5}
-                style={[
-                  styles.enhanceButton,
-                  inputText.trim().length < 5 && styles.enhanceButtonDisabled,
-                ]}
-              >
-                {isEnhancing ? (
-                  <ActivityIndicator size="small" color={theme.colors.onPrimaryContainer} />
-                ) : (
-                  <>
-                    <Icon name="auto-fix" size={18} color={theme.colors.onPrimaryContainer} />
-                    <Text style={styles.enhanceButtonText}>
-                      {t('ai.enhance.button', 'Enhance')}
-                    </Text>
-                  </>
-                )}
+                {!isPro ? (
+                  <View style={styles.voiceLockBadge}>
+                    <Icon name="lock" size={9} color={theme.colors.onPrimary} />
+                  </View>
+                ) : null}
               </TouchableOpacity>
-            )}
 
-            <View style={styles.characterCount}>
-              <Text
-                style={[
-                  styles.countText,
-                  inputText.length >= GRATITUDE_WARNING_LENGTH && { color: theme.colors.error },
-                ]}
+              {/* VOICE BUTTON */}
+              <TouchableOpacity
+                onPress={handleVoicePress}
+                style={styles.attachmentButton}
+                accessibilityLabel={
+                  !isPro
+                    ? t('gratitude.input.attach.voiceLocked', 'Record voice note (Premium)')
+                    : audioQuotaExhausted
+                      ? t(
+                          'gratitude.input.attach.voiceLimitReached',
+                          'Daily voice note limit reached'
+                        )
+                      : t('gratitude.input.attach.voice', 'Record voice note')
+                }
+                hitSlop={6}
               >
-                {inputText.length > 0 ? `${inputText.length}/${GRATITUDE_MAX_LENGTH}` : ''}
-              </Text>
+                <Icon
+                  name={isPro ? 'microphone-outline' : 'microphone-off'}
+                  size={22}
+                  color={theme.colors.onSurfaceVariant + '80'}
+                />
+                {!isPro ? (
+                  <View style={styles.voiceLockBadge}>
+                    <Icon name="lock" size={9} color={theme.colors.onPrimary} />
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+
+              {/* AI Enhance Button (PRO only) */}
+              {isPro && (
+                <TouchableOpacity
+                  onPress={handleEnhance}
+                  disabled={isEnhancing || inputText.trim().length < 5}
+                  style={[
+                    styles.enhanceButton,
+                    inputText.trim().length < 5 && styles.enhanceButtonDisabled,
+                  ]}
+                >
+                  {isEnhancing ? (
+                    <ActivityIndicator size="small" color={theme.colors.onPrimaryContainer} />
+                  ) : (
+                    <>
+                      <Icon name="auto-fix" size={18} color={theme.colors.onPrimaryContainer} />
+                      <Text style={styles.enhanceButtonText}>
+                        {t('ai.enhance.button', 'Enhance')}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
 
-            <TouchableOpacity
-              onPress={handleSubmit}
-              disabled={!isButtonEnabled}
-              style={[styles.sendButton, !isButtonEnabled && styles.sendButtonDisabled]}
-            >
-              <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-                {disabled ? (
-                  <ActivityIndicator size="small" color={theme.colors.onPrimary} />
-                ) : (
-                  <Icon
-                    name="arrow-up"
-                    size={20}
-                    color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
-                  />
-                )}
-              </Animated.View>
-            </TouchableOpacity>
+            <View style={styles.footerSubmitGroup}>
+              <View style={styles.characterCount}>
+                <Text
+                  style={[
+                    styles.countText,
+                    inputText.length >= GRATITUDE_WARNING_LENGTH && { color: theme.colors.error },
+                  ]}
+                >
+                  {inputText.length > 0 ? `${inputText.length}/${GRATITUDE_MAX_LENGTH}` : ''}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={handleSubmit}
+                disabled={!isButtonEnabled}
+                style={[styles.sendButton, !isButtonEnabled && styles.sendButtonDisabled]}
+              >
+                <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                  {disabled ? (
+                    <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+                  ) : (
+                    <Icon
+                      name="arrow-up"
+                      size={20}
+                      color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
+                    />
+                  )}
+                </Animated.View>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* INLINE EMOJI PICKER */}
@@ -845,8 +849,25 @@ const createStyles = (theme: AppTheme, disabled: boolean) =>
     inputFooter: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
       marginTop: theme.spacing.md,
-      paddingTop: theme.spacing.sm,
+      paddingTop: theme.spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.outline + '15',
+    },
+    footerActionGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
+    },
+    footerSubmitGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+      marginLeft: 'auto',
     },
     moodButton: {
       width: 40,
@@ -859,7 +880,6 @@ const createStyles = (theme: AppTheme, disabled: boolean) =>
     attachmentButton: {
       width: 40,
       height: 40,
-      marginLeft: 6,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.surfaceVariant + '60',
       justifyContent: 'center',
@@ -928,9 +948,8 @@ const createStyles = (theme: AppTheme, disabled: boolean) =>
       borderColor: theme.colors.primary,
     },
     characterCount: {
-      flex: 1,
       alignItems: 'flex-end',
-      paddingRight: theme.spacing.md,
+      minWidth: 40,
     },
     countText: {
       ...theme.typography.labelSmall,

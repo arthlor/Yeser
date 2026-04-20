@@ -81,8 +81,8 @@ const extra = {
 module.exports = {
   name,
   slug: 'yeser',
-  version: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.3.1',
-  runtimeVersion: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.3.1', // Static version for bare workflow
+  version: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.3.2',
+  runtimeVersion: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.3.2', // Static version for bare workflow
   scheme,
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',

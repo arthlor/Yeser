@@ -30,28 +30,22 @@ import { AIUsageIndicator } from '@/shared/components/ui/AIUsageIndicator';
 import { MOOD_EMOJIS } from '@/types/mood.types';
 import { moodStorageService } from '@/services/moodStorageService';
 import { useEntryEnhancement } from '@/features/gratitude/hooks/useEntryEnhancement';
+import {
+  type PendingAttachments,
+  type PendingAudio,
+  usePendingAttachments,
+} from '@/features/gratitude/hooks/usePendingAttachments';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useLanguageStore } from '@/store/languageStore';
 import {
   captureImageFromCamera,
-  type PickedImage,
   pickImageFromLibrary,
 } from '@/features/gratitude/components/AttachmentPicker';
 import VoiceRecorderSheet from '@/features/gratitude/components/VoiceRecorderSheet';
 import { Image as ExpoImage } from 'expo-image';
 import { GRATITUDE_MAX_LENGTH, GRATITUDE_WARNING_LENGTH } from '@/constants/gratitude';
 
-export interface PendingAudio {
-  uri: string;
-  mimeType: string;
-  bytes: number;
-  durationMs: number;
-}
-
-export interface PendingAttachments {
-  image: PickedImage | null;
-  audio: PendingAudio | null;
-}
+export type { PendingAttachments, PendingAudio };
 
 /**
  * Submit callbacks may return `false` (sync or via a Promise) to indicate the
@@ -107,6 +101,7 @@ export interface GratitudeInputBarRef {
   focus: () => void;
   blur: () => void;
   clear: () => void;
+  setInputText?: (text: string) => void;
 }
 
 /**
@@ -156,9 +151,16 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
     const [selectedMood, setSelectedMood] = useState<string | null>(null);
     const [showEnhancePreview, setShowEnhancePreview] = useState(false);
     const [showLimitModal, setShowLimitModal] = useState(false);
-    const [pendingImage, setPendingImage] = useState<PickedImage | null>(null);
-    const [pendingAudio, setPendingAudio] = useState<PendingAudio | null>(null);
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+    const {
+      pendingImage,
+      pendingAudio,
+      pendingAttachments,
+      hasPendingAttachments,
+      setPendingImage,
+      setPendingAudio,
+      clearPendingAttachments,
+    } = usePendingAttachments();
 
     const animations = useCoordinatedAnimations();
 
@@ -172,7 +174,7 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       resetInSeconds: aiResetInSeconds,
       enhanceEntry,
       clearEnhancement,
-    } = useEntryEnhancement({ language: language === 'tr' ? 'tr' : 'en' });
+    } = useEntryEnhancement({ language });
 
     const handleEnhance = useCallback(async () => {
       // Show feedback if text is too short, or just disable button (handled by UI condition, but good to double check)
@@ -221,6 +223,7 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
 
     // Button feedback
     const buttonScale = useRef(new Animated.Value(1)).current;
+    const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fallbackPrompts = useMemo(() => {
       const list = t('gratitude.prompt.fallbackList', { returnObjects: true });
@@ -231,13 +234,26 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       focus: () => inputRef.current?.focus(),
       blur: () => inputRef.current?.blur(),
       clear: () => setInputText(''),
+      setInputText: (text: string) => setInputText(text),
     }));
 
     // Auto-focus logic
     useEffect(() => {
       if (autoFocus && !disabled) {
-        setTimeout(() => inputRef.current?.focus(), 300);
+        if (focusTimeoutRef.current) {
+          clearTimeout(focusTimeoutRef.current);
+        }
+        focusTimeoutRef.current = setTimeout(() => {
+          inputRef.current?.focus();
+          focusTimeoutRef.current = null;
+        }, 300);
       }
+      return () => {
+        if (focusTimeoutRef.current) {
+          clearTimeout(focusTimeoutRef.current);
+          focusTimeoutRef.current = null;
+        }
+      };
     }, [autoFocus, disabled]);
 
     // **STABILITY SAFETY**: Reset animations if they get stuck or component stays hidden
@@ -327,11 +343,8 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       Keyboard.dismiss();
 
       let rawResult: SubmitResult;
-      if (onSubmitWithAttachments && (pendingImage || pendingAudio)) {
-        rawResult = onSubmitWithAttachments(trimmed, mood, {
-          image: pendingImage,
-          audio: pendingAudio,
-        });
+      if (onSubmitWithAttachments && hasPendingAttachments) {
+        rawResult = onSubmitWithAttachments(trimmed, mood, pendingAttachments);
       } else if (onSubmitWithMood) {
         rawResult = onSubmitWithMood(trimmed, mood);
       } else {
@@ -350,14 +363,19 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
 
       setInputText('');
       setSelectedMood(null);
-      setPendingImage(null);
-      setPendingAudio(null);
+      clearPendingAttachments();
 
       if (emojiOpen) {
         toggleEmoji();
       }
 
-      setTimeout(() => inputRef.current?.focus(), 100);
+      if (focusTimeoutRef.current) {
+        clearTimeout(focusTimeoutRef.current);
+      }
+      focusTimeoutRef.current = setTimeout(() => {
+        inputRef.current?.focus();
+        focusTimeoutRef.current = null;
+      }, 100);
     }, [
       inputText,
       disabled,
@@ -365,8 +383,9 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       selectedMood,
       onSubmitWithMood,
       onSubmitWithAttachments,
-      pendingImage,
-      pendingAudio,
+      pendingAttachments,
+      hasPendingAttachments,
+      clearPendingAttachments,
       buttonScale,
       emojiOpen,
       toggleEmoji,
@@ -400,7 +419,14 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       if (picked) {
         setPendingImage(picked);
       }
-    }, [isPro, onLockedImagePress, imageQuotaExhausted, onAttachmentLimitReached, releaseKeyboard]);
+    }, [
+      isPro,
+      onLockedImagePress,
+      imageQuotaExhausted,
+      onAttachmentLimitReached,
+      releaseKeyboard,
+      setPendingImage,
+    ]);
 
     const handleCaptureImage = useCallback(async () => {
       hapticFeedback.light();
@@ -417,7 +443,14 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       if (picked) {
         setPendingImage(picked);
       }
-    }, [isPro, onLockedImagePress, imageQuotaExhausted, onAttachmentLimitReached, releaseKeyboard]);
+    }, [
+      isPro,
+      onLockedImagePress,
+      imageQuotaExhausted,
+      onAttachmentLimitReached,
+      releaseKeyboard,
+      setPendingImage,
+    ]);
 
     const handleVoicePress = useCallback(() => {
       releaseKeyboard();
@@ -432,9 +465,12 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
       setShowVoiceRecorder(true);
     }, [isPro, audioQuotaExhausted, onLockedVoicePress, onAttachmentLimitReached, releaseKeyboard]);
 
-    const handleVoiceSave = useCallback((payload: PendingAudio) => {
-      setPendingAudio(payload);
-    }, []);
+    const handleVoiceSave = useCallback(
+      (payload: PendingAudio) => {
+        setPendingAudio(payload);
+      },
+      [setPendingAudio]
+    );
 
     const handlePromptRefresh = useCallback(() => {
       onRefreshPrompt?.();
@@ -655,7 +691,9 @@ const GratitudeInputBar = forwardRef<GratitudeInputBarRef, GratitudeInputBarProp
                     <Icon
                       name="arrow-up"
                       size={20}
-                      color={isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
+                      color={
+                        isButtonEnabled ? theme.colors.onPrimary : theme.colors.onSurfaceVariant
+                      }
                     />
                   )}
                 </Animated.View>

@@ -42,7 +42,7 @@ export const useGoogleAuthState = () => {
   const isLoading = useGoogleOAuthStore((state) => state.isLoading);
   const error = useGoogleOAuthStore((state) => state.error);
   const isInitialized = useGoogleOAuthStore((state) => state.isInitialized);
-  const canAttemptSignIn = useGoogleOAuthStore((state) => state.canAttemptSignIn);
+  const canAttemptSignIn = useGoogleOAuthStore((state) => state.canAttemptSignIn());
 
   return { isLoading, error, isInitialized, canAttemptSignIn };
 };
@@ -54,7 +54,7 @@ export const useAppleAuthState = () => {
   const isLoading = useAppleOAuthStore((state) => state.isLoading);
   const error = useAppleOAuthStore((state) => state.error);
   const isInitialized = useAppleOAuthStore((state) => state.isInitialized);
-  const canAttemptSignIn = useAppleOAuthStore((state) => state.canAttemptSignIn);
+  const canAttemptSignIn = useAppleOAuthStore((state) => state.canAttemptSignIn());
 
   return { isLoading, error, isInitialized, canAttemptSignIn };
 };
@@ -78,15 +78,15 @@ export const useAuthState = () => {
     googleOAuthLoading: googleOAuth.isLoading,
     googleOAuthError: googleOAuth.error,
     googleOAuthInitialized: googleOAuth.isInitialized,
-    canAttemptGoogleSignIn: googleOAuth.canAttemptSignIn,
-    googleOAuthReady: googleOAuth.isReady,
+    canAttemptGoogleSignIn: googleOAuth.canAttemptSignIn(),
+    googleOAuthReady: googleOAuth.isReady(),
 
     // Apple OAuth
     appleOAuthLoading: appleOAuth.isLoading,
     appleOAuthError: appleOAuth.error,
     appleOAuthInitialized: appleOAuth.isInitialized,
-    canAttemptAppleSignIn: appleOAuth.canAttemptSignIn,
-    appleOAuthReady: appleOAuth.isReady,
+    canAttemptAppleSignIn: appleOAuth.canAttemptSignIn(),
+    appleOAuthReady: appleOAuth.isReady(),
 
     // Session
     hasPersistedSession: session.hasPersistedSession,

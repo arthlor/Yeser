@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -71,6 +71,16 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
     const [isUpdating, setIsUpdating] = useState(false);
     const [customGoalInput, setCustomGoalInput] = useState('');
     const [showCustomInput, setShowCustomInput] = useState(false);
+    const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+      return () => {
+        if (updateTimeoutRef.current) {
+          clearTimeout(updateTimeoutRef.current);
+          updateTimeoutRef.current = null;
+        }
+      };
+    }, []);
 
     // Get current goal display info
     const currentGoalInfo = useMemo(() => {
@@ -158,11 +168,16 @@ const DailyGoalSettings: React.FC<DailyGoalSettingsProps> = React.memo(
           });
 
           // Auto-collapse after selection
-          setTimeout(() => {
+          if (updateTimeoutRef.current) {
+            clearTimeout(updateTimeoutRef.current);
+          }
+
+          updateTimeoutRef.current = setTimeout(() => {
             setIsExpanded(false);
             setShowCustomInput(false);
             setCustomGoalInput('');
             setIsUpdating(false);
+            updateTimeoutRef.current = null;
           }, 600);
         } catch (error) {
           logger.error(

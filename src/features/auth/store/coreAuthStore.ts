@@ -5,6 +5,7 @@ import { logger } from '@/utils/debugConfig';
 import { queryClient } from '@/shared/query/queryClient';
 import { atomicOperationManager } from '../utils/atomicOperations';
 import * as authService from '@/services/authService';
+import { notificationService } from '@/services/notificationService';
 import { revenueCatService } from '@/services/revenueCatService';
 
 /**
@@ -194,6 +195,22 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
           // Cancel queries before logout
           await cancelQueriesForAuthTransition();
 
+          try {
+            const token = await notificationService.getCurrentDevicePushToken();
+            if (token) {
+              const removalResult = await notificationService.removeTokenFromBackend(token);
+              if (!removalResult.ok) {
+                logger.warn('Failed to unregister push token during logout', {
+                  error: removalResult.error?.message,
+                });
+              }
+            }
+          } catch (tokenError) {
+            logger.warn('Push token cleanup failed during logout', {
+              error: tokenError instanceof Error ? tokenError.message : String(tokenError),
+            });
+          }
+
           const { error } = await authService.signOut();
 
           if (error) {
@@ -300,7 +317,12 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
   },
 
   setAuthState: (isAuthenticated: boolean, user: SupabaseUser | null) => {
-    set({ isAuthenticated, user });
+    set({ isAuthenticated, user, isLoading: false });
+    if (isAuthenticated && user?.id) {
+      revenueCatService.identifyUser(user.id);
+    } else if (!isAuthenticated) {
+      revenueCatService.logoutUser();
+    }
   },
 }));
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { OnboardingMascot } from '@/features/onboarding/components/OnboardingMascot';
 import { Feather } from '@expo/vector-icons';
@@ -20,6 +20,8 @@ import OnboardingNavHeader from '@/features/onboarding/components/OnboardingNavH
 interface NotificationPermissionStepProps {
   onNext: () => void;
   onBack: () => void;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 type NotificationSetupStatus = 'idle' | 'success' | 'permissionDenied' | 'setupError';
@@ -33,6 +35,8 @@ type NotificationSetupStatus = 'idle' | 'success' | 'permissionDenied' | 'setupE
 export const NotificationPermissionStep: React.FC<NotificationPermissionStepProps> = ({
   onNext,
   onBack,
+  currentStep,
+  totalSteps,
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -41,6 +45,7 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
   const [isLoading, setIsLoading] = useState(false);
   const [setupStatus, setSetupStatus] = useState<NotificationSetupStatus>('idle');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const autoAdvanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
   const animations = useCoordinatedAnimations();
@@ -60,6 +65,12 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
     // Track step view
     analyticsService.logScreenView('onboarding_notification_permission_step');
     analyticsService.logEvent('onboarding_notifications_viewed');
+    return () => {
+      if (autoAdvanceTimeoutRef.current) {
+        clearTimeout(autoAdvanceTimeoutRef.current);
+        autoAdvanceTimeoutRef.current = null;
+      }
+    };
   }, [animations]);
 
   const handleEnableNotifications = useCallback(async () => {
@@ -103,8 +114,12 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
         });
 
         // Auto-advance after brief success state
-        setTimeout(() => {
+        if (autoAdvanceTimeoutRef.current) {
+          clearTimeout(autoAdvanceTimeoutRef.current);
+        }
+        autoAdvanceTimeoutRef.current = setTimeout(() => {
           onNext();
+          autoAdvanceTimeoutRef.current = null;
         }, 1500);
       } else {
         // Permission denied or failed
@@ -164,7 +179,11 @@ export const NotificationPermissionStep: React.FC<NotificationPermissionStepProp
     <OnboardingLayout edgeToEdge={true} ambient="calm">
       <Animated.View style={[styles.container, containerStyle]}>
         <ScreenSection>
-          <OnboardingNavHeader onBack={handleBack} />
+          <OnboardingNavHeader
+            onBack={handleBack}
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+          />
         </ScreenSection>
 
         <OnboardingMascot source={require('@/assets/assets/mascot2.png')} delay={200} />

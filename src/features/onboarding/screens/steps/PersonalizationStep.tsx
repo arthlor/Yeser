@@ -35,6 +35,8 @@ interface PersonalizationStepProps {
     username?: string;
     selectedTheme?: string;
   };
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 // Deprecated constant (replaced by localized THEME_OPTIONS_LOCALIZED)
@@ -52,6 +54,8 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
   onNext,
   onBack,
   initialData,
+  currentStep,
+  totalSteps,
 }) => {
   const { theme, setColorMode } = useTheme();
   const styles = createStyles(theme);
@@ -168,6 +172,8 @@ export const PersonalizationStep: React.FC<PersonalizationStepProps> = ({
               hapticFeedback.light();
               onBack();
             }}
+            currentStep={currentStep}
+            totalSteps={totalSteps}
           />
         </ScreenSection>
 

@@ -5,18 +5,29 @@ import {
   editStatement,
   setStatementMood as setStatementMoodRpc,
 } from '@/features/gratitude/api';
-// 🔧 FIX: Import streak recalculation function
+import {
+  appendStatementToEntry,
+  createOptimisticEntry,
+  deleteStatementFromEntry,
+  editStatementInEntry,
+  findCachedGratitudeEntry,
+  type GratitudeCacheSnapshot,
+  incrementGratitudeEntryCount,
+  removeGratitudeEntryCaches,
+  restoreGratitudeCaches,
+  setStatementMoodInEntry,
+  snapshotGratitudeCaches,
+  updateGratitudeEntryCaches,
+  upsertGratitudeEntryCaches,
+} from '@/features/gratitude/utils/gratitudeCache';
 import { recalculateUserStreak } from '@/features/streak/api';
-import { queryKeys } from '@/shared/query/queryKeys';
-import { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
-import { cacheService } from '@/services/cacheService';
 import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
-// 🔧 FIX: Import logger for streak error logging
+import { queryKeys } from '@/shared/query/queryKeys';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/debugConfig';
+import type { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 
-// **RACE CONDITION FIX**: Add mutation coordination
 interface MutationLock {
   entryDate: string;
   operation: 'add' | 'edit' | 'delete' | 'delete_entry';
@@ -31,11 +42,9 @@ interface OptimisticUpdateVersion {
   timestamp: number;
 }
 
-// Global mutation locks to prevent concurrent operations on same entry
 const mutationLocks: Map<string, MutationLock> = new Map();
 const optimisticVersions: Map<string, OptimisticUpdateVersion> = new Map();
 
-// **RACE CONDITION FIX**: Create mutex for entry operations
 const acquireMutationLock = async (
   entryDate: string,
   operation: MutationLock['operation'],
@@ -43,14 +52,13 @@ const acquireMutationLock = async (
 ): Promise<boolean> => {
   const lockKey = `${userId}:${entryDate}`;
 
-  // Wait for any existing lock to be released
   while (mutationLocks.has(lockKey)) {
     const existingLock = mutationLocks.get(lockKey);
     if (existingLock) {
       try {
         await existingLock.promise;
       } catch {
-        // Ignore errors from previous operations
+        // Ignore failures from the previous serialized operation.
       }
     }
   }
@@ -71,7 +79,6 @@ const acquireMutationLock = async (
   return true;
 };
 
-// **RACE CONDITION FIX**: Release mutation lock
 const releaseMutationLock = (entryDate: string, userId: string): void => {
   const lockKey = `${userId}:${entryDate}`;
   const lock = mutationLocks.get(lockKey);
@@ -82,7 +89,6 @@ const releaseMutationLock = (entryDate: string, userId: string): void => {
   }
 };
 
-// **RACE CONDITION FIX**: Get next optimistic version
 const getNextOptimisticVersion = (entryDate: string, userId: string): number => {
   const versionKey = `${userId}:${entryDate}`;
   const currentVersion = optimisticVersions.get(versionKey);
@@ -97,7 +103,6 @@ const getNextOptimisticVersion = (entryDate: string, userId: string): number => 
   return newVersion;
 };
 
-// **RACE CONDITION FIX**: Validate optimistic version
 const isValidOptimisticVersion = (entryDate: string, userId: string, version: number): boolean => {
   const versionKey = `${userId}:${entryDate}`;
   const currentVersion = optimisticVersions.get(versionKey);
@@ -108,6 +113,7 @@ interface AddStatementPayload {
   entryDate: string;
   statement: string;
   moodEmoji?: string | null;
+  isDemo?: boolean;
 }
 
 interface EditStatementPayload {
@@ -122,14 +128,9 @@ interface DeleteStatementPayload {
   statementIndex: number;
 }
 
-// Payload for deleting entire entry (atomic operation)
 interface DeleteEntireEntryPayload {
   entryDate: string;
-}
-
-interface AddStatementContext {
-  previousEntry: GratitudeEntry | null | undefined;
-  optimisticVersion: number;
+  entryId?: string;
 }
 
 interface SetMoodPayload {
@@ -138,8 +139,10 @@ interface SetMoodPayload {
   moodEmoji: string | null;
 }
 
-interface SetMoodContext {
-  previousEntry: GratitudeEntry | null | undefined;
+interface GratitudeMutationContext {
+  snapshot?: GratitudeCacheSnapshot;
+  optimisticVersion?: number;
+  createdEntry?: boolean;
 }
 
 export const useGratitudeMutations = () => {
@@ -147,18 +150,70 @@ export const useGratitudeMutations = () => {
   const queryClient = useQueryClient();
   const { handleMutationError } = useGlobalError();
 
+  const cancelGratitudeQueries = async (userId: string) => {
+    await Promise.all([
+      queryClient.cancelQueries({
+        queryKey: queryKeys.gratitudeEntries(userId),
+        exact: false,
+      }),
+      queryClient.cancelQueries({
+        queryKey: queryKeys.randomGratitudeEntry(userId),
+        exact: false,
+      }),
+    ]);
+  };
+
+  const invalidateGratitudeBackgroundData = (userId: string) => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.gratitudeEntries(userId),
+      exact: false,
+    });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.randomGratitudeEntry(userId),
+      exact: false,
+    });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.latestMoodInsights(userId),
+      exact: false,
+    });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.moodInsightEntryCounts(userId),
+      exact: false,
+    });
+  };
+
+  const runStreakRefreshInBackground = (operation: string, userId: string) => {
+    void recalculateUserStreak()
+      .catch((error) => {
+        logger.error(
+          `Streak recalculation failed after ${operation}:`,
+          error instanceof Error ? error : new Error(String(error))
+        );
+      })
+      .finally(() => {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.streaks(userId),
+          exact: false,
+        });
+      });
+  };
+
+  const finishEntryMutation = (operation: string, userId: string) => {
+    invalidateGratitudeBackgroundData(userId);
+    runStreakRefreshInBackground(operation, userId);
+  };
+
   const addStatementMutation = useMutation<
     GratitudeEntry | null,
     Error,
     AddStatementPayload,
-    AddStatementContext
+    GratitudeMutationContext
   >({
     mutationFn: async ({ entryDate, statement, moodEmoji }) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
 
-      // **RACE CONDITION FIX**: Acquire mutation lock
       await acquireMutationLock(entryDate, 'add', user.id);
 
       try {
@@ -172,105 +227,71 @@ export const useGratitudeMutations = () => {
         throw new Error('User not authenticated');
       }
 
-      // **RACE CONDITION FIX**: Get optimistic version for coordination
+      await cancelGratitudeQueries(user.id);
+      const snapshot = snapshotGratitudeCaches(queryClient, user.id);
       const optimisticVersion = getNextOptimisticVersion(entryDate, user.id);
 
-      // Cancel outgoing refetches (prevent race with API responses)
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.gratitudeEntry(user.id, entryDate),
-      });
+      const previousEntry = findCachedGratitudeEntry(queryClient, user.id, entryDate);
+      const createdEntry = !previousEntry;
+      const optimisticEntry = previousEntry
+        ? appendStatementToEntry(previousEntry, statement, moodEmoji)
+        : createOptimisticEntry(user.id, entryDate, statement, moodEmoji);
 
-      // Snapshot previous value
-      const previousEntry = queryClient.getQueryData<GratitudeEntry | null>(
-        queryKeys.gratitudeEntry(user.id, entryDate)
-      );
-
-      // **RACE CONDITION FIX**: Coordinated optimistic update with version check
-      queryClient.setQueryData(
-        queryKeys.gratitudeEntry(user.id, entryDate),
-        (old: GratitudeEntry | null) => {
-          // Validate version to prevent stale updates
-          if (!isValidOptimisticVersion(entryDate, user.id, optimisticVersion)) {
-            return old; // Skip stale update
-          }
-
-          if (!old) {
-            return {
-              id: `temp-${Date.now()}-${optimisticVersion}`,
-              user_id: user.id || '',
-              entry_date: entryDate,
-              statements: [statement],
-              moods: moodEmoji ? { '0': moodEmoji } : {},
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            };
-          }
-          const nextStatements = [...old.statements, statement];
-          const nextIndex = nextStatements.length - 1;
-          const prevMoods = (old.moods as Record<string, string> | undefined) || {};
-          const nextMoods = { ...prevMoods } as Record<string, string>;
-          if (moodEmoji) {
-            nextMoods[String(nextIndex)] = moodEmoji;
-          }
-          return {
-            ...old,
-            statements: nextStatements,
-            moods: nextMoods,
-            updated_at: new Date().toISOString(),
-          };
+      if (isValidOptimisticVersion(entryDate, user.id, optimisticVersion)) {
+        upsertGratitudeEntryCaches(queryClient, user.id, optimisticEntry, {
+          insertIntoLists: createdEntry,
+        });
+        if (createdEntry) {
+          incrementGratitudeEntryCount(queryClient, user.id, 1);
         }
-      );
-
-      return { previousEntry, optimisticVersion };
-    },
-    onError: (err, variables, context) => {
-      if (!user?.id || !context) {
-        return;
       }
 
-      // **RACE CONDITION FIX**: Version-aware rollback
-      if (isValidOptimisticVersion(variables.entryDate, user.id, context.optimisticVersion)) {
-        queryClient.setQueryData(
-          queryKeys.gratitudeEntry(user.id, variables.entryDate),
-          context.previousEntry
-        );
+      return { snapshot, optimisticVersion, createdEntry };
+    },
+    onError: (err, variables, context) => {
+      if (user?.id) {
+        restoreGratitudeCaches(queryClient, user.id, context?.snapshot);
+      }
+
+      if (variables.isDemo) {
+        logger.debug('Suppressing global mutation error for onboarding demo statement:', {
+          extra: { error: err.message },
+        });
+        return;
       }
 
       handleMutationError(err, 'add gratitude statement');
     },
-    onSuccess: async (_data, _variables, _context) => {
-      if (user?.id) {
-        try {
-          // 🔧 FIX: Recalculate streak BEFORE cache invalidation
-          await recalculateUserStreak();
-        } catch (error) {
-          // Non-blocking: Log streak error but don't fail the gratitude operation
-          logger.error(
-            'Streak recalculation failed after adding statement:',
-            error instanceof Error ? error : new Error(String(error))
-          );
-        }
+    onSuccess: (data, variables, context) => {
+      if (!user?.id) {
+        return;
       }
-    },
-    onSettled: (data, error, variables, context) => {
-      if (user?.id && context) {
-        // **RACE CONDITION FIX**: Serialize cache invalidation
-        setTimeout(() => {
-          cacheService.invalidateAfterMutation('add_statement', user.id, {
-            entryDate: variables.entryDate,
-          });
-        }, 0);
+
+      if (
+        data &&
+        (!context?.optimisticVersion ||
+          isValidOptimisticVersion(variables.entryDate, user.id, context.optimisticVersion))
+      ) {
+        upsertGratitudeEntryCaches(queryClient, user.id, data, {
+          insertIntoLists: context?.createdEntry ?? false,
+        });
       }
+
+      finishEntryMutation('adding statement', user.id);
     },
   });
 
-  const editStatementMutation = useMutation<void, Error, EditStatementPayload>({
+  const editStatementMutation = useMutation<
+    void,
+    Error,
+    EditStatementPayload,
+    GratitudeMutationContext
+  >({
     mutationFn: async ({ entryDate, statementIndex, updatedStatement, moodEmoji }) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
 
-      // **RACE CONDITION FIX**: Acquire mutation lock
       await acquireMutationLock(entryDate, 'edit', user.id);
 
       try {
@@ -279,37 +300,43 @@ export const useGratitudeMutations = () => {
         releaseMutationLock(entryDate, user.id);
       }
     },
-    onError: (err, _variables, _context) => {
+    onMutate: async ({ entryDate, statementIndex, updatedStatement, moodEmoji }) => {
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      await cancelGratitudeQueries(user.id);
+      const snapshot = snapshotGratitudeCaches(queryClient, user.id);
+      updateGratitudeEntryCaches(queryClient, user.id, entryDate, (entry) =>
+        editStatementInEntry(entry, statementIndex, updatedStatement, moodEmoji)
+      );
+
+      return { snapshot };
+    },
+    onError: (err, _variables, context) => {
+      if (user?.id) {
+        restoreGratitudeCaches(queryClient, user.id, context?.snapshot);
+      }
       handleMutationError(err, 'edit gratitude statement');
     },
-    onSuccess: async (_, { entryDate }) => {
+    onSuccess: (_data, _variables) => {
       if (user?.id) {
-        try {
-          // 🔧 FIX: Recalculate streak BEFORE cache invalidation
-          await recalculateUserStreak();
-        } catch (error) {
-          // Non-blocking: Log streak error but don't fail the gratitude operation
-          logger.error(
-            'Streak recalculation failed after editing statement:',
-            error instanceof Error ? error : new Error(String(error))
-          );
-        }
-
-        // **RACE CONDITION FIX**: Serialize cache invalidation
-        setTimeout(() => {
-          cacheService.invalidateAfterMutation('edit_statement', user.id, { entryDate });
-        }, 0);
+        finishEntryMutation('editing statement', user.id);
       }
     },
   });
 
-  const deleteStatementMutation = useMutation<void, Error, DeleteStatementPayload>({
+  const deleteStatementMutation = useMutation<
+    void,
+    Error,
+    DeleteStatementPayload,
+    GratitudeMutationContext
+  >({
     mutationFn: async ({ entryDate, statementIndex }) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
 
-      // **RACE CONDITION FIX**: Acquire mutation lock
       await acquireMutationLock(entryDate, 'delete', user.id);
 
       try {
@@ -318,160 +345,119 @@ export const useGratitudeMutations = () => {
         releaseMutationLock(entryDate, user.id);
       }
     },
-    onError: (err, _variables, _context) => {
+    onMutate: async ({ entryDate, statementIndex }) => {
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      await cancelGratitudeQueries(user.id);
+      const snapshot = snapshotGratitudeCaches(queryClient, user.id);
+      updateGratitudeEntryCaches(queryClient, user.id, entryDate, (entry) =>
+        deleteStatementFromEntry(entry, statementIndex)
+      );
+
+      return { snapshot };
+    },
+    onError: (err, _variables, context) => {
+      if (user?.id) {
+        restoreGratitudeCaches(queryClient, user.id, context?.snapshot);
+      }
       handleMutationError(err, 'delete gratitude statement');
     },
-    onSuccess: async (_, { entryDate }) => {
+    onSuccess: () => {
       if (user?.id) {
-        try {
-          // 🔧 FIX: Recalculate streak BEFORE cache invalidation
-          await recalculateUserStreak();
-        } catch (error) {
-          // Non-blocking: Log streak error but don't fail the gratitude operation
-          logger.error(
-            'Streak recalculation failed after deleting statement:',
-            error instanceof Error ? error : new Error(String(error))
-          );
-        }
-
-        // **RACE CONDITION FIX**: Serialize cache invalidation
-        setTimeout(() => {
-          cacheService.invalidateAfterMutation('delete_statement', user.id, { entryDate });
-        }, 0);
+        finishEntryMutation('deleting statement', user.id);
       }
     },
   });
 
-  // Atomic mutation for deleting entire entry (much more efficient)
   const deleteEntireEntryMutation = useMutation<
-    void, // Returns nothing on success
+    void,
     Error,
-    DeleteEntireEntryPayload
+    DeleteEntireEntryPayload,
+    GratitudeMutationContext
   >({
     mutationFn: async ({ entryDate }) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
 
-      // **RACE CONDITION FIX**: Acquire mutation lock
       await acquireMutationLock(entryDate, 'delete_entry', user.id);
 
       try {
-        // Use atomic deletion operation - single API call instead of multiple
         await deleteEntireEntry(entryDate);
       } finally {
         releaseMutationLock(entryDate, user.id);
       }
     },
-    onError: (err, _variables, _context) => {
-      handleMutationError(err, 'delete entire gratitude entry');
-    },
-    onSuccess: async (_, { entryDate }) => {
-      if (user?.id) {
-        try {
-          // 🔧 FIX: Recalculate streak BEFORE cache invalidation
-          await recalculateUserStreak();
-        } catch (error) {
-          // Non-blocking: Log streak error but don't fail the gratitude operation
-          logger.error(
-            'Streak recalculation failed after deleting entire entry:',
-            error instanceof Error ? error : new Error(String(error))
-          );
-        }
-
-        // **RACE CONDITION FIX**: Serialize cache invalidation
-        setTimeout(() => {
-          cacheService.invalidateAfterMutation('delete_entry', user.id, { entryDate });
-        }, 0);
-      }
-    },
-    // **RACE CONDITION FIX**: Coordinated optimistic update for entry deletion
-    onMutate: async ({ entryDate }) => {
+    onMutate: async ({ entryDate, entryId }) => {
       if (!user?.id) {
-        return;
+        throw new Error('User not authenticated');
       }
 
-      // **RACE CONDITION FIX**: Get optimistic version for coordination
-      const optimisticVersion = getNextOptimisticVersion(entryDate, user.id);
+      await cancelGratitudeQueries(user.id);
+      const snapshot = snapshotGratitudeCaches(queryClient, user.id);
+      const deletedEntry = findCachedGratitudeEntry(queryClient, user.id, entryDate, entryId);
 
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.gratitudeEntry(user.id, entryDate),
-      });
-
-      // Snapshot for potential rollback
-      const previousEntry = queryClient.getQueryData<GratitudeEntry | null>(
-        queryKeys.gratitudeEntry(user.id, entryDate)
+      removeGratitudeEntryCaches(
+        queryClient,
+        user.id,
+        entryDate,
+        entryId ?? deletedEntry?.id,
+        deletedEntry
       );
 
-      // **RACE CONDITION FIX**: Version-aware optimistic removal
-      if (isValidOptimisticVersion(entryDate, user.id, optimisticVersion)) {
-        queryClient.setQueryData(queryKeys.gratitudeEntry(user.id, entryDate), null);
-
-        // Also invalidate related queries for immediate UI update
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.gratitudeEntries(user.id),
-        });
+      return { snapshot };
+    },
+    onError: (err, _variables, context) => {
+      if (user?.id) {
+        restoreGratitudeCaches(queryClient, user.id, context?.snapshot);
       }
-
-      return { previousEntry, optimisticVersion };
+      handleMutationError(err, 'delete entire gratitude entry');
+    },
+    onSuccess: () => {
+      if (user?.id) {
+        finishEntryMutation('deleting entry', user.id);
+      }
     },
   });
 
-  // Mood-only setter mutation with optimistic update of moods map
-  const setStatementMoodMutation = useMutation<void, Error, SetMoodPayload, SetMoodContext>({
+  const setStatementMoodMutation = useMutation<
+    void,
+    Error,
+    SetMoodPayload,
+    GratitudeMutationContext
+  >({
     mutationFn: async ({ entryDate, statementIndex, moodEmoji }) => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
+
       await setStatementMoodRpc(entryDate, statementIndex, moodEmoji);
     },
     onMutate: async ({ entryDate, statementIndex, moodEmoji }) => {
       if (!user?.id) {
-        // Return a valid context object even if user is not authenticated
-        return { previousEntry: null };
+        throw new Error('User not authenticated');
       }
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.gratitudeEntry(user.id, entryDate),
-      });
 
-      const previousEntry = queryClient.getQueryData<GratitudeEntry | null>(
-        queryKeys.gratitudeEntry(user.id, entryDate)
+      await cancelGratitudeQueries(user.id);
+      const snapshot = snapshotGratitudeCaches(queryClient, user.id);
+      updateGratitudeEntryCaches(queryClient, user.id, entryDate, (entry) =>
+        setStatementMoodInEntry(entry, statementIndex, moodEmoji)
       );
 
-      if (previousEntry) {
-        const prevMoods = (previousEntry.moods as Record<string, string> | undefined) || {};
-        const key = String(statementIndex);
-        const nextMoods: Record<string, string> = { ...prevMoods };
-        if (moodEmoji) {
-          nextMoods[key] = moodEmoji;
-        } else {
-          delete nextMoods[key];
-        }
-        queryClient.setQueryData<GratitudeEntry>(queryKeys.gratitudeEntry(user.id, entryDate), {
-          ...previousEntry,
-          moods: nextMoods,
-          updated_at: new Date().toISOString(),
-        });
-      }
-
-      return { previousEntry };
+      return { snapshot };
     },
-    onError: (_err, { entryDate }, context) => {
-      if (!user?.id || !context?.previousEntry) {
-        return;
+    onError: (err, _variables, context) => {
+      if (user?.id) {
+        restoreGratitudeCaches(queryClient, user.id, context?.snapshot);
       }
-      queryClient.setQueryData(queryKeys.gratitudeEntry(user.id, entryDate), context.previousEntry);
+      handleMutationError(err, 'set statement mood');
     },
-    onSettled: (_data, _error, { entryDate }) => {
-      if (!user?.id) {
-        return;
+    onSuccess: () => {
+      if (user?.id) {
+        invalidateGratitudeBackgroundData(user.id);
       }
-      setTimeout(() => {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.gratitudeEntry(user.id as string, entryDate),
-        });
-      }, 0);
     },
   });
 
@@ -488,10 +474,10 @@ export const useGratitudeMutations = () => {
     isDeletingStatement: deleteStatementMutation.isPending,
     deleteStatementError: deleteStatementMutation.error,
 
-    // Export atomic entry deletion mutation
     deleteEntireEntry: deleteEntireEntryMutation.mutate,
     isDeletingEntry: deleteEntireEntryMutation.isPending,
     deleteEntryError: deleteEntireEntryMutation.error,
+
     setStatementMood: setStatementMoodMutation.mutate,
   };
 };

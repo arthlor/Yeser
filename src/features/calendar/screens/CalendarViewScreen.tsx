@@ -43,36 +43,11 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
 
   const animations = useCoordinatedAnimations();
 
-  const colorsRef = useRef({
-    primary: theme.colors.primary,
-    onPrimary: theme.colors.onPrimary,
-  });
-
-  const updateThemeColors = useCallback(() => {
-    const newColors = {
-      primary: theme.colors.primary,
-      onPrimary: theme.colors.onPrimary,
-    };
-
-    if (
-      colorsRef.current.primary !== newColors.primary ||
-      colorsRef.current.onPrimary !== newColors.onPrimary
-    ) {
-      colorsRef.current = newColors;
-    }
-  }, [theme.colors.primary, theme.colors.onPrimary]);
-
-  useEffect(() => {
-    updateThemeColors();
-  }, [updateThemeColors]);
-
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [markedDates, setMarkedDates] = useState<CustomMarkedDates>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const analyticsTrackedRef = useRef(false);
   const lastMonthAnalyticsRef = useRef<string>('');
-  const lastProcessedEntryDatesRef = useRef<string>('');
 
   const {
     data: entryDates = [],
@@ -122,40 +97,32 @@ const EnhancedCalendarViewScreen: React.FC = React.memo(() => {
     }
   }, [currentMonth, entryDates]);
 
-  // Marked Dates Calculation
-  useEffect(() => {
+  const markedDates = useMemo<CustomMarkedDates>(() => {
     if (!Array.isArray(entryDates)) {
-      return;
+      return {};
     }
-    const entryDatesString = JSON.stringify(entryDates.sort());
-    const currentKey = `${entryDatesString}-${selectedDate}-${currentMonth.getTime()}`;
-    if (lastProcessedEntryDatesRef.current === currentKey) {
-      return;
-    }
-    lastProcessedEntryDatesRef.current = currentKey;
 
     const newMarkedDates: CustomMarkedDates = {};
-    entryDates.forEach((entryDate: string) => {
+    [...entryDates].sort().forEach((entryDate: string) => {
       newMarkedDates[entryDate] = {
         marked: true,
-        dotColor: colorsRef.current.primary,
+        dotColor: theme.colors.primary,
         activeOpacity: 0.8,
       };
     });
 
-    setMarkedDates(() => {
-      if (selectedDate) {
-        return updateMarkedDatesWithSelection(
-          newMarkedDates,
-          selectedDate,
-          colorsRef.current.primary,
-          colorsRef.current.onPrimary,
-          colorsRef.current.primary
-        );
-      }
+    if (!selectedDate) {
       return newMarkedDates;
-    });
-  }, [entryDates, selectedDate, currentMonth]);
+    }
+
+    return updateMarkedDatesWithSelection(
+      newMarkedDates,
+      selectedDate,
+      theme.colors.primary,
+      theme.colors.onPrimary,
+      theme.colors.primary
+    );
+  }, [entryDates, selectedDate, theme.colors.onPrimary, theme.colors.primary]);
 
   const handleMonthChange = useCallback((dateData: DateData) => {
     const newMonthDate = new Date(dateData.timestamp);

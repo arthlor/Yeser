@@ -51,13 +51,16 @@ export const PaywallScreen = ({
     if (currentOffering && !isLoading) {
       logger.debug('[Paywall] Offerings loaded, paywall ready to render');
       setIsPaywallReady(true);
+      return;
     } else if (!isLoading && !currentOffering) {
       logger.error('[Paywall] No offerings available after loading');
       showError(t('subscription.purchase.error', 'Unable to load subscription options'));
       // Auto-dismiss if no offerings available
-      setTimeout(() => {
+      const dismissTimeout = setTimeout(() => {
         dismissPaywall();
       }, 2000);
+
+      return () => clearTimeout(dismissTimeout);
     }
   }, [currentOffering, dismissPaywall, isLoading, showError, t]);
 

@@ -1,43 +1,74 @@
--- Replace every __PLACEHOLDER__ value before running this.
--- Recommended manual prep:
--- 1. Rotate the leaked service-role key if the old key was ever exposed outside your team.
--- 2. Generate a fresh EDGE_INTERNAL_SECRET for the send-daily-reminders function.
--- 3. Set a fresh CRON_AUTH_TOKEN secret on the send-daily-reminders function.
--- 4. Redeploy the send-daily-reminders edge function after updating those secrets.
+-- manual_supabase_04_notification_cron_update.sql
+--
+-- Historical manual fix for the remote notification sender cron.
+-- Safe version: no service_role JWTs or internal secrets are embedded here.
+--
+-- Prefer running supabase/setup_remote_notifications.sql, which contains the
+-- current documented setup and verification query. This file is kept as a
+-- migration-folder handoff for teams that apply fixes from /supabase/migrations.
 
-DO $$
-DECLARE
-  v_existing_jobid bigint;
-BEGIN
-  SELECT jobid
-    INTO v_existing_jobid
-  FROM cron.job
-  WHERE jobname = 'cron-trigger'
-  LIMIT 1;
+do $$
+declare
+  v_job record;
+begin
+  for v_job in
+    select jobid, jobname
+    from cron.job
+    where jobname in ('cron-trigger', 'process-notification-jobs', 'send-daily-reminders')
+       or command ilike '%process-notification-jobs%'
+       or command ilike '%send-daily-reminders%'
+  loop
+    perform cron.unschedule(v_job.jobid);
+  end loop;
 
-  IF v_existing_jobid IS NOT NULL THEN
-    PERFORM cron.unschedule(v_existing_jobid);
-  END IF;
-
-  PERFORM cron.schedule(
-    'cron-trigger',
+  perform cron.schedule(
+    'send-daily-reminders',
     '*/5 * * * *',
     $command$
-    SELECT
+    select
       net.http_post(
-        url := '__SUPABASE_FUNCTION_URL__/send-daily-reminders',
-        headers := jsonb_build_object(
-          'Authorization', 'Bearer Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2bmV4cGRiY2txaWV4ZGpiYWNhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODcwNjE1OCwiZXhwIjoyMDY0MjgyMTU4fQ.T85wVXnHsKAC0c5PoeTrq7jrild2Qtlc1jAzqyhV67A',
-          'x-internal-secret', 'Rl4dlMORBKOh4bREXzTuZhXEyxhmsVjqfHO4txpj68A='
+        url := (
+          select decrypted_secret
+          from vault.decrypted_secrets
+          where name = 'cron_daily_reminders_url'
+          limit 1
         ),
-        body := '{}',
-        timeout_milliseconds := 1000
+        headers := jsonb_build_object(
+          'Authorization',
+          'Bearer ' || (
+            select decrypted_secret
+            from vault.decrypted_secrets
+            where name = 'cron_service_role_key'
+            limit 1
+          ),
+          'x-internal-secret',
+          (
+            select decrypted_secret
+            from vault.decrypted_secrets
+            where name = 'cron_internal_secret'
+            limit 1
+          ),
+          'x-cron-token',
+          coalesce(
+            (
+              select decrypted_secret
+              from vault.decrypted_secrets
+              where name = 'cron_auth_token'
+              limit 1
+            ),
+            ''
+          ),
+          'Content-Type',
+          'application/json'
+        ),
+        body := '{}'::jsonb,
+        timeout_milliseconds := 5000
       );
     $command$
   );
-END;
+end;
 $$;
 
-SELECT jobid, jobname, schedule, command
-FROM cron.job
-WHERE jobname = 'cron-trigger';
+select jobid, jobname, schedule, active
+from cron.job
+where jobname = 'send-daily-reminders';

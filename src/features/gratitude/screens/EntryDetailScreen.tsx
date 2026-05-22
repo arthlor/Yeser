@@ -1,4 +1,4 @@
-import { CompositeNavigationProp, RouteProp } from '@react-navigation/native';
+import { CompositeNavigationProp, RouteProp, StackActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -19,14 +19,14 @@ import { enUS, es, tr } from 'date-fns/locale';
 
 import LoadingState from '@/shared/components/states/LoadingState';
 import StatementEditCard from '@/shared/components/ui/StatementEditCard';
-import AttachmentRail from '@/features/gratitude/components/AttachmentRail';
 import { useAttachmentMutations } from '@/features/gratitude/hooks';
 import type { Attachment } from '@/schemas/gratitudeEntrySchema';
 import { ScreenLayout } from '@/shared/components/layout';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useToast } from '@/providers/ToastProvider';
 import { useGlobalError } from '@/providers/GlobalErrorProvider';
-import { useGratitudeEntry, useGratitudeMutations } from '../hooks';
+import { useGratitudeEntry, useGratitudeEntryById, useGratitudeMutations } from '../hooks';
+import { useSubscription } from '@/hooks/useSubscription';
 import { AppTheme } from '@/themes/types';
 import { AppStackParamList, RootStackParamList } from '@/types/navigation';
 import { analyticsService } from '@/services/analyticsService';
@@ -37,6 +37,7 @@ import type { MoodEmoji } from '@/types/mood.types';
 import { useLanguageStore } from '@/store/languageStore';
 import ThrowbackShareCard from '@/features/throwback/components/ThrowbackShareCard';
 import { shareThrowbackCard } from '@/features/throwback/shareThrowback';
+import { groupAttachmentsByStatementIndex } from '@/features/gratitude/utils/attachmentGrouping';
 
 type EntryDetailScreenRouteProp = RouteProp<AppStackParamList, 'EntryDetail'>;
 type EntryDetailScreenNavigationProp = CompositeNavigationProp<
@@ -55,12 +56,15 @@ const EntryDetailStatementItem = React.memo<{
   entryDate: string;
   isEditing: boolean;
   isLoading: boolean;
-  onEdit: () => void;
+  onEdit?: () => void;
   onSave: (updated: string, mood?: MoodEmoji | null) => Promise<void>;
   onCancel: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
   onShare: () => void;
   serverMood?: MoodEmoji | null;
+  readOnly?: boolean;
+  attachments?: Attachment[];
+  onRemoveAttachment?: (attachment: Attachment) => void | Promise<void>;
   theme: AppTheme;
 }>(
   ({
@@ -75,6 +79,9 @@ const EntryDetailStatementItem = React.memo<{
     onDelete,
     onShare,
     serverMood,
+    readOnly = false,
+    attachments,
+    onRemoveAttachment,
     theme: _theme,
   }) => {
     const { moodEmoji, setMoodEmoji } = useMoodEmoji({ entryDate, index });
@@ -85,7 +92,13 @@ const EntryDetailStatementItem = React.memo<{
       }
     }, [serverMood, moodEmoji, setMoodEmoji]);
 
+    const { isPro, checkGate } = useSubscription();
+
     const handleChangeMood = (mood: MoodEmoji | null) => {
+      if (!isPro) {
+        checkGate('mood_editing');
+        return;
+      }
       setMoodEmoji(mood);
       if (mood) {
         analyticsService.logEvent('mood_selected', { entry_date: entryDate, index, emoji: mood });
@@ -97,10 +110,10 @@ const EntryDetailStatementItem = React.memo<{
         statement={statement}
         date={entryDate} // Passing raw date string usually works if StatementEditCard handles it, or use new Date().toISOString() if needed
         isEditing={isEditing}
-        onEdit={onEdit}
+        onEdit={readOnly ? undefined : onEdit}
         onSave={(updated, mood) => onSave(updated, mood)}
         onCancel={onCancel}
-        onDelete={onDelete}
+        onDelete={readOnly ? undefined : onDelete}
         onShare={onShare}
         isLoading={isLoading}
         edgeToEdge={true}
@@ -109,6 +122,9 @@ const EntryDetailStatementItem = React.memo<{
         animateEntrance={true}
         moodEmoji={moodEmoji}
         onChangeMood={handleChangeMood}
+        attachments={attachments}
+        onRemoveAttachment={onRemoveAttachment}
+        compactAttachments={false}
       />
     );
   }
@@ -122,28 +138,65 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const language = useLanguageStore((state) => state.language);
+  const { isPro, checkGate } = useSubscription();
 
-  const { entryDate: routeEntryDate } = route.params;
-  const entryDate = routeEntryDate || new Date().toISOString().split('T')[0];
+  const { entryId, entryDate: routeEntryDate } = route.params;
+  const isQueryById = !!entryId;
+  const isQueryByDate = !isQueryById && !!routeEntryDate;
+
+  const {
+    data: entryByDate,
+    isLoading: isLoadingEntryByDate,
+    refetch: refetchEntryByDate,
+    isRefetching: isRefetchingByDate,
+  } = useGratitudeEntry(isQueryByDate ? (routeEntryDate as string) : '');
+
+  const {
+    data: entryById,
+    isLoading: isLoadingEntryById,
+    refetch: refetchEntryById,
+    isRefetching: isRefetchingById,
+  } = useGratitudeEntryById(isQueryById ? entryId : '');
+
+  const currentEntry = isQueryById ? entryById : entryByDate;
+  const isLoadingEntry = isQueryById ? isLoadingEntryById : isLoadingEntryByDate;
+  const refetchEntry = isQueryById ? refetchEntryById : refetchEntryByDate;
+  const isRefetching = isQueryById ? isRefetchingById : isRefetchingByDate;
+
+  // Resolve entryDate from currentEntry if available, otherwise use routeEntryDate or today
+  const entryDate =
+    currentEntry?.entry_date || routeEntryDate || new Date().toISOString().split('T')[0];
+  const todayDateString = new Date().toISOString().split('T')[0];
+  const isPastEntry = entryDate < todayDateString;
+  const isReadOnlyForFree = !isPro && isPastEntry;
   const effectiveDate = new Date(entryDate);
 
   const {
-    data: currentEntry,
-    isLoading: isLoadingEntry,
-    refetch: refetchEntry,
-    isRefetching,
-  } = useGratitudeEntry(entryDate);
-
-  const { editStatement, deleteStatement, addStatement, isDeletingStatement } =
-    useGratitudeMutations();
+    editStatement,
+    deleteStatement,
+    deleteEntireEntry,
+    addStatement,
+    isDeletingStatement,
+    isDeletingEntry,
+  } = useGratitudeMutations();
   const { deleteAttachment: removeAttachment } = useAttachmentMutations();
 
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
+  const [isDeletingCurrentEntry, setIsDeletingCurrentEntry] = useState(false);
+  const isDeletingCurrentEntryRef = useRef(false);
   const animations = useCoordinatedAnimations();
   const scrollRef = useRef<ScrollView>(null);
 
   const statements = useMemo(() => currentEntry?.statements || [], [currentEntry?.statements]);
   const displayStatements = useMemo(() => [...statements].reverse(), [statements]);
+  const attachments = useMemo(
+    () => (currentEntry?.attachments as Attachment[] | undefined) ?? [],
+    [currentEntry?.attachments]
+  );
+  const attachmentsByStatementIndex = useMemo(
+    () => groupAttachmentsByStatementIndex(attachments),
+    [attachments]
+  );
 
   const shareCardRef = useRef<View>(null);
   const [statementToShare, setStatementToShare] = useState<string | null>(null);
@@ -152,6 +205,13 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   useEffect(() => {
     animations.animateEntrance({ duration: 500 });
   }, [animations]);
+
+  // Effect to redirect to NotFoundScreen if query by ID returns no entry
+  useEffect(() => {
+    if (!isLoadingEntry && isQueryById && !currentEntry && !isDeletingCurrentEntryRef.current) {
+      navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.replace('NotFound');
+    }
+  }, [isLoadingEntry, isQueryById, currentEntry, isDeletingCurrentEntry, navigation]);
 
   const handleRefresh = useCallback(async () => {
     try {
@@ -188,7 +248,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         try {
           await shareThrowbackCard({
             cardRef: shareCardRef,
-            fallbackMessage: `${formattedDate.toUpperCase()}, ${fullDateTitle}\n\n"${statement}"\n\nYeşer`,
+            fallbackMessage: `${formattedDate.toLocaleUpperCase(language === 'tr' ? 'tr-TR' : language)}, ${fullDateTitle}\n\n"${statement}"\n\nYeşer`,
             dialogTitle: t('throwback.modal.shareTitle', { defaultValue: 'Share this memory' }),
           });
           analyticsService.logEvent('gratitude_shared', { source: 'detail_screen' });
@@ -198,21 +258,32 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         }
       }, 150);
     },
-    [isSharing, formattedDate, fullDateTitle, t]
+    [isSharing, formattedDate, fullDateTitle, t, language]
   );
 
   const handleSaveEditedStatement = useCallback(
     async (index: number, updatedText: string, updatedMood?: MoodEmoji | null) => {
       try {
+        if (isReadOnlyForFree) {
+          checkGate('past_entry_edit');
+          return;
+        }
+
         // Logic similar to DailyEntryScreen
         const originalIndex = statements.length - 1 - index; // Reverse index
         const originalMood = (currentEntry?.moods as Record<string, string> | undefined)?.[
           String(originalIndex)
         ] as MoodEmoji | undefined;
+        let finalMood = updatedMood ?? null;
+
+        if (!isPro && finalMood !== (originalMood ?? null)) {
+          checkGate('mood_editing');
+          finalMood = originalMood ?? null;
+        }
 
         if (
           updatedText.trim() === displayStatements[index].trim() &&
-          updatedMood === (originalMood ?? null)
+          finalMood === (originalMood ?? null)
         ) {
           setEditingStatementIndex(null);
           return;
@@ -221,7 +292,7 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           entryDate,
           statementIndex: originalIndex,
           updatedStatement: updatedText,
-          moodEmoji: updatedMood,
+          moodEmoji: finalMood,
         });
         setEditingStatementIndex(null);
         showSuccess(t('gratitude.success.entryUpdated'));
@@ -238,36 +309,114 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       showError,
       t,
       currentEntry?.moods,
+      isPro,
+      checkGate,
+      isReadOnlyForFree,
     ]
   );
 
   const handleDeleteStatement = useCallback(
-    async (index: number) => {
+    (index: number) => {
+      if (isReadOnlyForFree) {
+        checkGate('past_entry_delete');
+        return;
+      }
+
       const deletedItem = displayStatements[index];
       const originalIndex = statements.length - 1 - index;
+      const shouldRedirectToEntries = statements.length <= 1;
+      const deletedMood = (currentEntry?.moods as Record<string, string> | undefined)?.[
+        String(originalIndex)
+      ] as MoodEmoji | undefined;
 
-      try {
-        await deleteStatement({ entryDate, statementIndex: originalIndex });
-        showSuccess(t('shared.statement.deleted'), {
-          action: {
-            label: t('shared.statement.undoAction'),
-            onPress: () => addStatement({ entryDate, statement: deletedItem }),
-          },
-        });
-      } catch {
-        showError(t('gratitude.errors.deleteFailed'));
+      if (shouldRedirectToEntries) {
+        isDeletingCurrentEntryRef.current = true;
+        setIsDeletingCurrentEntry(true);
+
+        deleteEntireEntry(
+          { entryDate, entryId: currentEntry?.id || entryId },
+          {
+            onSuccess: () => {
+              showSuccess(t('shared.statement.deleted'), {
+                action: {
+                  label: t('shared.statement.undoAction'),
+                  onPress: () =>
+                    addStatement({
+                      entryDate,
+                      statement: deletedItem,
+                      moodEmoji: deletedMood ?? null,
+                    }),
+                },
+              });
+
+              navigation.dispatch(
+                StackActions.replace('MainAppTabs', { screen: 'PastEntriesTab' })
+              );
+            },
+            onError: () => {
+              isDeletingCurrentEntryRef.current = false;
+              setIsDeletingCurrentEntry(false);
+              showError(t('gratitude.errors.deleteFailed'));
+            },
+          }
+        );
+        return;
       }
+
+      deleteStatement(
+        { entryDate, statementIndex: originalIndex },
+        {
+          onSuccess: () => {
+            showSuccess(t('shared.statement.deleted'), {
+              action: {
+                label: t('shared.statement.undoAction'),
+                onPress: () =>
+                  addStatement({
+                    entryDate,
+                    statement: deletedItem,
+                    moodEmoji: deletedMood ?? null,
+                  }),
+              },
+            });
+          },
+          onError: () => {
+            showError(t('gratitude.errors.deleteFailed'));
+          },
+        }
+      );
     },
     [
       statements.length,
       displayStatements,
       deleteStatement,
+      deleteEntireEntry,
       entryDate,
+      entryId,
       showSuccess,
       showError,
       t,
       addStatement,
+      isReadOnlyForFree,
+      checkGate,
+      navigation,
+      currentEntry?.id,
+      currentEntry?.moods,
     ]
+  );
+
+  const handleRemoveAttachment = useCallback(
+    (attachment: Attachment) => {
+      if (isReadOnlyForFree) {
+        checkGate('past_entry_attachment_delete');
+        return;
+      }
+
+      void removeAttachment({
+        entryDate,
+        attachmentId: attachment.id,
+      });
+    },
+    [checkGate, entryDate, isReadOnlyForFree, removeAttachment]
   );
 
   if (isLoadingEntry) {
@@ -310,7 +459,9 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           {/* HEADER SECTION (Matching DailyEntryScreen Style) */}
           <View style={styles.header}>
             <View style={styles.headerContent}>
-              <Text style={styles.headerDate}>{formattedDate.toUpperCase()}</Text>
+              <Text style={styles.headerDate}>
+                {formattedDate.toLocaleUpperCase(language === 'tr' ? 'tr-TR' : language)}
+              </Text>
               <Text style={styles.headerTitle}>{fullDateTitle}</Text>
               <Text style={styles.headerSubtitle}>{t('gratitude.detail.subtitle')}</Text>
             </View>
@@ -320,37 +471,30 @@ const EnhancedEntryDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <View style={styles.listSection}>
             {displayStatements.map((statement, index) => {
               const originalIndex = statements.length - 1 - index;
-              const entryAttachments =
-                (currentEntry?.attachments as Attachment[] | undefined) ?? [];
-              const statementAttachments = entryAttachments.filter(
-                (a) => a.statement_index === originalIndex
-              );
+              const statementAttachments = attachmentsByStatementIndex.get(originalIndex) ?? [];
               return (
-                <View key={`${entryDate}-${index}`} style={styles.statementWrapper}>
+                <View key={`${entryDate}-${originalIndex}`} style={styles.statementWrapper}>
                   <EntryDetailStatementItem
                     index={index}
                     statement={statement}
                     entryDate={entryDate}
                     isEditing={editingStatementIndex === index}
-                    isLoading={isDeletingStatement}
+                    isLoading={isDeletingStatement || isDeletingEntry}
                     onEdit={() => setEditingStatementIndex(index)}
                     onSave={(updated, mood) => handleSaveEditedStatement(index, updated, mood)}
                     onCancel={() => setEditingStatementIndex(null)}
                     onDelete={() => handleDeleteStatement(index)}
                     onShare={() => handleShareStatement(statement)}
+                    readOnly={isReadOnlyForFree}
                     serverMood={
                       ((currentEntry?.moods as Record<string, string> | undefined)?.[
                         String(statements.length - 1 - index)
                       ] as MoodEmoji | undefined) ?? null
                     }
                     theme={theme}
+                    attachments={statementAttachments}
+                    onRemoveAttachment={isReadOnlyForFree ? undefined : handleRemoveAttachment}
                   />
-                  {statementAttachments.length > 0 ? (
-                    <AttachmentRail
-                      attachments={statementAttachments}
-                      compact
-                    />
-                  ) : null}
                 </View>
               );
             })}

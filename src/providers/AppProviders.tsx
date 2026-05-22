@@ -51,6 +51,7 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
     // Background → foreground cycle resets the native module and fixes the issue
     const appStartTime = Date.now();
     let hasBeenBackground = false;
+    let authRecoveryTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const handleAppStateChange = (nextAppState: string) => {
       const timeSinceStart = Date.now() - appStartTime;
@@ -68,10 +69,15 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
           logger.warn('Detected potential AsyncStorage deadlock recovery - re-initializing auth');
 
           // Small delay to let AppState change complete
-          setTimeout(() => {
+          if (authRecoveryTimeout) {
+            clearTimeout(authRecoveryTimeout);
+          }
+
+          authRecoveryTimeout = setTimeout(() => {
             authState.initializeAuth().catch((error) => {
               logger.error('Auth re-initialization after background recovery failed:', error);
             });
+            authRecoveryTimeout = null;
           }, 100);
         }
       }
@@ -82,6 +88,9 @@ const AppProvidersContent: React.FC<AppProvidersProps> = ({ children }) => {
     // Cleanup function
     return () => {
       appStateSubscription?.remove();
+      if (authRecoveryTimeout) {
+        clearTimeout(authRecoveryTimeout);
+      }
       cleanupSingletons();
       logger.debug('[AppProviders] Cleaning up providers...');
     };

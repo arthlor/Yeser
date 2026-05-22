@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@google/generative-ai@*": "0.21.0",
     "npm:@google/generative-ai@0.21.0": "0.21.0",
     "npm:@supabase/supabase-js@2": "2.103.0"
   },

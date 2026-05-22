@@ -1,7 +1,7 @@
 [
   {
     "cron_job_json": {
-      "jobid": 48,
+      "jobid": 71,
       "schedule": "*/5 * * * *",
       "command": "refresh materialized view concurrently public.notification_windows;",
       "nodename": "localhost",
@@ -14,9 +14,9 @@
   },
   {
     "cron_job_json": {
-      "jobid": 49,
+      "jobid": 72,
       "schedule": "25,55 * * * *",
-      "command": "SELECT public.enqueue_notification_jobs()",
+      "command": "select public.enqueue_notification_jobs();",
       "nodename": "localhost",
       "nodeport": 5432,
       "database": "postgres",
@@ -27,7 +27,7 @@
   },
   {
     "cron_job_json": {
-      "jobid": 50,
+      "jobid": 73,
       "schedule": "*/10 * * * *",
       "command": "select public.reset_stuck_notification_jobs();",
       "nodename": "localhost",
@@ -36,6 +36,19 @@
       "username": "postgres",
       "active": true,
       "jobname": "reset-stuck-notification-jobs"
+    }
+  },
+  {
+    "cron_job_json": {
+      "jobid": 77,
+      "schedule": "*/5 * * * *",
+      "command": "\n    select\n      net.http_post(\n        url := (\n          select decrypted_secret\n          from vault.decrypted_secrets\n          where name = 'cron_daily_reminders_url'\n          limit 1\n        ),\n        headers := jsonb_build_object(\n          'Authorization',\n          'Bearer ' || (\n            select decrypted_secret\n            from vault.decrypted_secrets\n            where name = 'cron_service_role_key'\n            limit 1\n          ),\n          'x-internal-secret',\n          (\n            select decrypted_secret\n            from vault.decrypted_secrets\n            where name = 'cron_internal_secret'\n            limit 1\n          ),\n          'x-cron-token',\n          coalesce(\n            (\n              select decrypted_secret\n              from vault.decrypted_secrets\n              where name = 'cron_auth_token'\n              limit 1\n            ),\n            ''\n          ),\n          'Content-Type',\n          'application/json'\n        ),\n        body := '{}'::jsonb,\n        timeout_milliseconds := 5000\n      );\n    ",
+      "nodename": "localhost",
+      "nodeport": 5432,
+      "database": "postgres",
+      "username": "postgres",
+      "active": true,
+      "jobname": "send-daily-reminders"
     }
   }
 ]

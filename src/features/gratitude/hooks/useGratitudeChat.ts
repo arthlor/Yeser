@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { useSubscription } from '@/hooks/useSubscription';
+import type { SupportedLanguage } from '@/store/languageStore';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -17,7 +18,7 @@ interface ChatMessageResult {
 }
 
 interface UseGratitudeChatOptions {
-  language?: 'tr' | 'en';
+  language?: SupportedLanguage;
   recentEntries?: string[];
 }
 

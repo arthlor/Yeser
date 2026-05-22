@@ -3,23 +3,33 @@ import i18n from '@/i18n';
 import type { SupportedLanguage } from '@/store/languageStore';
 
 const supportedLanguageSchema = z.union([z.literal('en'), z.literal('tr'), z.literal('es')]);
+const t = (key: string, fallback: string) => i18n.t(key, { defaultValue: fallback });
 
 export const rawProfileDataSchema = z.object({
   id: z.string().uuid('Invalid UUID format for id'),
   username: z
     .string()
-    .min(
-      3,
-      i18n.isInitialized
-        ? i18n.t('validation.username.minLength')
-        : 'Username must be at least 3 characters'
-    )
-    .max(
-      50,
-      i18n.isInitialized
-        ? i18n.t('validation.username.maxLength')
-        : 'Username cannot exceed 50 characters'
-    )
+    .superRefine((value, ctx) => {
+      if (value.length < 3) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.too_small,
+          minimum: 3,
+          type: 'string',
+          inclusive: true,
+          message: t('validation.username.minLength', 'Username must be at least 3 characters'),
+        });
+      }
+
+      if (value.length > 50) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.too_big,
+          maximum: 50,
+          type: 'string',
+          inclusive: true,
+          message: t('validation.username.maxLength', 'Username cannot exceed 50 characters'),
+        });
+      }
+    })
     .nullable(),
   onboarded: z.boolean(),
   created_at: z
@@ -30,7 +40,6 @@ export const rawProfileDataSchema = z.object({
     .datetime({ offset: true, message: 'Invalid datetime format for updated_at' }),
   daily_gratitude_goal: z.number().int().positive().nullable(),
   use_varied_prompts: z.boolean().default(false),
-  enable_reminders: z.boolean().default(true),
   notification_time: z.string().nullable().optional(),
   timezone: z.string().nullable().optional(),
   avatar_path: z.string().nullable().optional(),
@@ -43,10 +52,8 @@ export const profileSchema = rawProfileDataSchema.transform((data) => ({
   ...data,
   // Handle snake_case to camelCase conversion
   useVariedPrompts: data.use_varied_prompts,
-  enableReminders: data.enable_reminders,
   // Keep both for backward compatibility if needed
   use_varied_prompts: data.use_varied_prompts,
-  enable_reminders: data.enable_reminders,
   // Make fields optional for application layer flexibility
   username: data.username ?? undefined,
   onboarded: data.onboarded ?? false,
@@ -69,7 +76,6 @@ export const updateProfileSchema = z.object({
   onboarded: z.boolean().optional(),
   daily_gratitude_goal: z.number().int().positive().optional().nullable(),
   useVariedPrompts: z.boolean().optional(),
-  enableReminders: z.boolean().optional(),
   notification_time: z
     .string()
     .regex(/^\d{2}:\d{2}(:\d{2})?$/, 'Notification time must be in HH:MM or HH:MM:SS format')

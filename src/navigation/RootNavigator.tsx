@@ -8,6 +8,7 @@ import { useUserProfile } from '../hooks';
 import OnboardingFlowScreen from '../features/onboarding/screens/EnhancedOnboardingFlowScreen';
 import SplashScreen from '../features/auth/screens/SplashScreen';
 import ProfileErrorScreen from '../features/auth/screens/ProfileErrorScreen';
+import NotFoundScreen from '../features/auth/screens/NotFoundScreen';
 import { useCoreAuthStore } from '../features/auth/store/coreAuthStore';
 import { RootStackParamList } from '../types/navigation';
 
@@ -31,7 +32,10 @@ const RootNavigator: React.FC = () => {
         <Root.Screen name="Splash" component={SplashScreen} />
       ) : !isAuthenticated ? (
         // Not authenticated → go to auth flow
-        <Root.Screen name="Auth" component={AuthNavigator} />
+        <>
+          <Root.Screen name="Auth" component={AuthNavigator} />
+          <Root.Screen name="NotFound" component={NotFoundScreen} />
+        </>
       ) : isLoadingProfile ? (
         // Authenticated but profile not loaded yet → keep splash to avoid onboarding flash
         <Root.Screen name="Splash" component={SplashScreen} />
@@ -42,13 +46,19 @@ const RootNavigator: React.FC = () => {
         </Root.Screen>
       ) : !onboarded ? (
         // Profile loaded and user not onboarded → onboarding
-        <Root.Screen name="Onboarding" component={OnboardingFlowScreen} />
+        <>
+          <Root.Screen name="Onboarding" component={OnboardingFlowScreen} />
+          <Root.Screen name="NotFound" component={NotFoundScreen} />
+        </>
       ) : (
         // Fully ready → main app. The paywall is presented as a native
         // modal via RevenueCatUI.presentPaywall() (see
         // `presentNativePaywall`), so it does not need a React Navigation
         // route.
-        <Root.Screen name="MainApp" component={AppNavigator} />
+        <>
+          <Root.Screen name="MainApp" component={AppNavigator} />
+          <Root.Screen name="NotFound" component={NotFoundScreen} />
+        </>
       )}
     </Root.Navigator>
   );

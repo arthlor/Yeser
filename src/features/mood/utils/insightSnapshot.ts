@@ -6,7 +6,7 @@ import type {
 
 const FRESHNESS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
-const RANGE_DAYS: Record<MoodAnalyticsRange, number> = {
+const RANGE_DAYS: Record<'15d' | '30d' | '90d', number> = {
   '15d': 15,
   '30d': 30,
   '90d': 90,
@@ -21,8 +21,9 @@ export const resolveInsightLanguage = (language?: string): 'en' | 'tr' | 'es' =>
 };
 
 export const getMoodInsightRangeStartDate = (range: MoodAnalyticsRange): string => {
+  const days = range.endsWith('d') ? RANGE_DAYS[range as '15d' | '30d' | '90d'] : 30;
   const startDate = new Date();
-  startDate.setDate(startDate.getDate() - RANGE_DAYS[range]);
+  startDate.setDate(startDate.getDate() - days);
   return startDate.toISOString().split('T')[0];
 };
 
@@ -42,6 +43,11 @@ export const toMoodInsightSnapshot = (
     narrative: response.narrative ?? null,
     generated_at: response.generated_at,
     entry_count_at_generation: response.entry_count_at_generation ?? 0,
+    statement_count_at_generation: response.statement_count_at_generation,
+    range_entry_count_at_generation: response.range_entry_count_at_generation,
+    analysis_details: response.analysis_details ?? null,
+    risk_level: response.risk_level,
+    source_hash: response.source_hash ?? null,
     is_preview_only:
       response.is_preview_only ?? (response.narrative === null || response.narrative === undefined),
   };

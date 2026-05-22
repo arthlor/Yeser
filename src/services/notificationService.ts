@@ -16,8 +16,6 @@ const EXPO_PROJECT_ID = config.eas.projectId;
 const DEFAULT_NOTIFICATION_TIME = '12:30:00';
 const SAFE_UPDATE_MISSING_WHERE_CODE = '21000';
 const SAFE_UPDATE_MISSING_WHERE_MESSAGE = 'UPDATE requires a WHERE clause';
-const SAFE_UPDATE_MISSING_COLUMN_CODE = '42703';
-const SAFE_UPDATE_MISSING_COLUMN_FRAGMENT = 'enable_reminders';
 const DAILY_REMINDER_DATA_TAG = 'daily-reminder';
 
 const ensureSupabaseClient = async (): Promise<SupabaseClient<Database>> => {
@@ -196,10 +194,8 @@ async function setNotificationsEnabled(
       logger.error('Error updating notification preference via RPC:', error);
 
       const shouldFallback =
-        (error.code === SAFE_UPDATE_MISSING_WHERE_CODE &&
-          error.message === SAFE_UPDATE_MISSING_WHERE_MESSAGE) ||
-        error.code === SAFE_UPDATE_MISSING_COLUMN_CODE ||
-        error.message?.toLowerCase().includes(SAFE_UPDATE_MISSING_COLUMN_FRAGMENT);
+        error.code === SAFE_UPDATE_MISSING_WHERE_CODE &&
+        error.message === SAFE_UPDATE_MISSING_WHERE_MESSAGE;
 
       if (shouldFallback) {
         logger.warn('Falling back to direct profile update for notification preference', {
@@ -310,51 +306,12 @@ async function scheduleDailyReminderNotifications(
     }
 
     await cancelDailyReminderNotifications();
-    // We now rely on the robust server-side cron job (cron-trigger -> send-daily-reminders)
-    // which handles personalized content and timezones. We skip local scheduling to avoid duplicates.
-    logger.debug('Remote notification pipeline active; skipping local reminder scheduling');
-    
-    /* 
-    // Uncomment this block if you ever want to fall back to purely local notifications
-    // Parse the configured time (e.g., '12:30:00' or fallback to default)
-    const timeParts = (primaryReminderTime || '12:30:00').split(':');
-    const hour = parseInt(timeParts[0] || '12', 10);
-    const minute = parseInt(timeParts[1] || '30', 10);
+    // Server-side pg_cron invokes `send-daily-reminders`, which handles user
+    // timezones and personalized memory content. Keep local reminders disabled
+    // so the user does not receive duplicates.
+    logger.debug('Remote notification pipeline active; skipping local duplicate scheduling');
 
-    // Schedule primary local notification
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Time for Gratitude 💛',
-        body: 'Take a moment to reflect on your day and record a memory.',
-        sound: true,
-        data: { tag: DAILY_REMINDER_DATA_TAG },
-      },
-      trigger: {
-        hour,
-        minute,
-        repeats: true,
-      },
-    });
-
-    if (includeEveningReminder) {
-      // Schedule evening local notification
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Evening Reflection 🌙',
-          body: 'Before you sleep, what are you grateful for today?',
-          sound: true,
-          data: { tag: DAILY_REMINDER_DATA_TAG },
-        },
-        trigger: {
-          hour: 20,
-          minute: 0,
-          repeats: true,
-        },
-      });
-    }
-    */
-
-    logger.debug('Local notifications scheduled successfully', {
+    logger.debug('Remote notification preference validated successfully', {
       primaryReminderTime,
       includeEveningReminder,
     });
@@ -420,7 +377,8 @@ function showNotificationPermissionGuidance(
           text: i18n.isInitialized ? i18n.t('notifications.enable') : 'Enable',
           onPress: async () => {
             const result = await Notifications.requestPermissionsAsync();
-            onPermissionResult?.(result.status === 'granted');
+            const status = result.status as NotificationPermissionStatus;
+            onPermissionResult?.(status === 'granted' || status === 'provisional');
           },
         },
       ]
@@ -459,6 +417,7 @@ export const notificationService = {
   getCurrentDevicePushToken,
   scheduleDailyReminderNotifications,
   cancelDailyReminderNotifications,
+  syncRemindersPushTokenIfNeeded,
 };
 
 function mapPostgrestError(error: PostgrestError): Error {
@@ -484,8 +443,23 @@ async function updateNotificationPreferenceFallback(
       });
     }
 
-    const nextNotificationTime =
-      enabled === true ? (profileRow?.notification_time ?? DEFAULT_NOTIFICATION_TIME) : null;
+    let nextNotificationTime: string | null = null;
+
+    if (enabled) {
+      nextNotificationTime = profileRow?.notification_time ?? DEFAULT_NOTIFICATION_TIME;
+    } else {
+      const { count, error: tokenCountError } = await client
+        .from('push_tokens')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      if (tokenCountError) {
+        logger.error('Failed to count push tokens before fallback disable update', tokenCountError);
+        return { ok: false, error: mapPostgrestError(tokenCountError) };
+      }
+
+      nextNotificationTime = (count ?? 0) > 0 ? (profileRow?.notification_time ?? null) : null;
+    }
 
     const payload: TablesUpdate<'profiles'> = {
       notification_time: nextNotificationTime,
@@ -509,6 +483,38 @@ async function updateNotificationPreferenceFallback(
   } catch (error) {
     const resolvedError = error instanceof Error ? error : new Error(String(error));
     logger.error('Unexpected fallback error updating notification preference', resolvedError);
+    return { ok: false, error: resolvedError };
+  }
+}
+
+/**
+ * Registers this device's push token when account reminders are enabled and permission is granted.
+ */
+async function syncRemindersPushTokenIfNeeded(
+  hasRemindersEnabled: boolean
+): Promise<NotificationOperationResult<void>> {
+  if (!hasRemindersEnabled) {
+    return { ok: true };
+  }
+
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    const permissionStatus = status as NotificationPermissionStatus;
+    if (permissionStatus !== 'granted' && permissionStatus !== 'provisional') {
+      return { ok: true };
+    }
+
+    const token = await getCurrentDevicePushToken();
+    if (!token) {
+      return { ok: true };
+    }
+
+    return saveTokenToBackend(token);
+  } catch (error) {
+    const resolvedError = error instanceof Error ? error : new Error(String(error));
+    logger.warn('Failed to auto-sync push token for reminders', {
+      error: resolvedError.message,
+    });
     return { ok: false, error: resolvedError };
   }
 }

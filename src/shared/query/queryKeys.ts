@@ -13,6 +13,8 @@ export const queryKeys = {
     [...queryKeys.gratitudeEntries(userId), 'paginated', pageSize, searchTerm ?? ''] as const,
   gratitudeEntry: (userId: string | undefined, entryDate: string) =>
     [...queryKeys.gratitudeEntries(userId), { entryDate }] as const,
+  gratitudeEntryById: (userId: string | undefined, entryId: string) =>
+    [...queryKeys.gratitudeEntries(userId), { entryId }] as const,
   gratitudeEntriesByMonth: (userId: string | undefined, year: number, month: number) =>
     [...queryKeys.gratitudeEntries(userId), { year, month }] as const,
   gratitudeTotalCount: (userId?: string) =>

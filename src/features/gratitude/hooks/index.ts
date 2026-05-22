@@ -3,6 +3,7 @@ export {
   useGratitudeEntries,
   useGratitudeEntriesPaginated,
   useGratitudeEntry,
+  useGratitudeEntryById,
   useGratitudeTotalCount,
   useRandomGratitudeEntry,
   useEntryDatesForMonth,
@@ -10,6 +11,11 @@ export {
 
 export { useGratitudeMutations } from './useGratitudeMutations';
 export { useAttachmentMutations } from './useAttachmentMutations';
+export {
+  usePendingAttachments,
+  type PendingAttachments,
+  type PendingAudio,
+} from './usePendingAttachments';
 
 // Prompt hooks
 export {

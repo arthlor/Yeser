@@ -308,15 +308,21 @@ function withGoogleServices(config) {
 
       // Create the iOS directory structure
       const iosDir = path.join(config.modRequest.projectRoot, 'ios');
-      const appDir = path.join(iosDir, 'Yeer');
 
       if (!fs.existsSync(iosDir)) {
         fs.mkdirSync(iosDir, { recursive: true });
         console.log('📁 [Google Services iOS] Created ios directory');
       }
+
+      const xcodeProjectName = fs.readdirSync(iosDir).find((file) => file.endsWith('.xcodeproj'));
+      const projectName = xcodeProjectName
+        ? path.basename(xcodeProjectName, '.xcodeproj')
+        : config.name || 'Yeer';
+      const appDir = path.join(iosDir, projectName);
+
       if (!fs.existsSync(appDir)) {
         fs.mkdirSync(appDir, { recursive: true });
-        console.log('📁 [Google Services iOS] Created ios/Yeer directory');
+        console.log(`📁 [Google Services iOS] Created ios/${projectName} directory`);
       }
 
       // Write the GoogleService-Info.plist file

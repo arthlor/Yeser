@@ -56,7 +56,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { theme, colorMode, toggleColorMode } = useTheme();
   const { handleMutationError } = useGlobalError();
   const { showError: showToastError, showSuccess: showToastSuccess } = useToast();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { t } = useTranslation();
   const { isPro, checkGate } = useSubscription();
   const isDarkTheme = theme.name === 'dark';
@@ -336,7 +336,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const confirmAccountDeletion = () => {
     deleteAccount(undefined, {
       onSuccess: (data) => {
-        showToastError(data.message || t('settings.account.delete.success'));
+        showToastSuccess(data.message || t('settings.account.delete.success'));
       },
       onError: (_error) => {
         showToastError(t('settings.account.delete.error'));

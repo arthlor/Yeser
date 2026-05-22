@@ -25,6 +25,8 @@ export const useAppTrackingTransparency = (
 ): void => {
   const { shouldRequest = true } = options;
   const hasRequestedRef = useRef<boolean>(false);
+  const isMountedRef = useRef(true);
+  const promptTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const maybeRequestATT = useCallback(async (): Promise<void> => {
     if (!shouldRequest) {
@@ -75,7 +77,14 @@ export const useAppTrackingTransparency = (
 
       if (permissions.status === 'undetermined') {
         // Slight delay to avoid overlapping with other system prompts
-        setTimeout(async () => {
+        if (promptTimeoutRef.current) {
+          clearTimeout(promptTimeoutRef.current);
+        }
+        promptTimeoutRef.current = setTimeout(async () => {
+          if (!isMountedRef.current) {
+            return;
+          }
+
           try {
             hasRequestedRef.current = true;
             await trackingTransparency.requestTrackingPermissionsAsync();
@@ -84,6 +93,8 @@ export const useAppTrackingTransparency = (
             logger.error('[ATT] Failed to request tracking permission', error as Error);
             // Reset the flag to allow retry on next app state change
             hasRequestedRef.current = false;
+          } finally {
+            promptTimeoutRef.current = null;
           }
         }, 400);
       } else {
@@ -97,6 +108,16 @@ export const useAppTrackingTransparency = (
       // Don't mark as requested to allow retry on next app state change
     }
   }, [shouldRequest]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (promptTimeoutRef.current) {
+        clearTimeout(promptTimeoutRef.current);
+        promptTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== 'ios') {

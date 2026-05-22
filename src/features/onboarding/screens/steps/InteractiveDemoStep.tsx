@@ -22,50 +22,55 @@ import { useCurrentPrompt } from '@/features/gratitude/hooks';
 interface InteractiveDemoStepProps {
   onNext: () => void;
   onBack: () => void;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
-/**
- * **SIMPLIFIED INTERACTIVE DEMO STEP**: Minimal, elegant demo experience
- *
- * **ANIMATION COORDINATION COMPLETED**:
- * - Eliminated complex manual Animated.timing calls
- * - Replaced with coordinated animation system for all interactions
- * - Simplified entrance and success animations
- * - Maintained demo functionality with minimal, non-intrusive animations
- */
-export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext, onBack }) => {
+export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({
+  onNext,
+  onBack,
+  currentStep,
+  totalSteps,
+}) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const { t } = useTranslation();
 
-  // Use real app hooks for authentic experience
   const { data: currentPrompt, isLoading: promptLoading } = useCurrentPrompt();
   const { addStatement, isAddingStatement } = useGratitudeMutations();
 
   const [hasWrittenStatement, setHasWrittenStatement] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Guards against double advancement when the mutation fires both
-  // onSuccess and a retry callback, or when the user taps twice.
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advancedRef = useRef(false);
 
-  // **COORDINATED ANIMATION SYSTEM**: Single instance for all demo animations
   const animations = useCoordinatedAnimations();
+  const successScale = useRef(new Animated.Value(0.9)).current;
+  const successFade = useRef(new Animated.Value(0)).current;
 
-  // **COORDINATED ENTRANCE**: Simple entrance animation
   useEffect(() => {
     animations.animateEntrance({ duration: 400 });
   }, [animations]);
 
-  // **COORDINATED SUCCESS**: Simple success animation
   useEffect(() => {
     if (showSuccess) {
-      animations.animateEntrance({ duration: 500 });
+      Animated.parallel([
+        Animated.spring(successScale, {
+          toValue: 1,
+          friction: 7,
+          tension: 60,
+          useNativeDriver: true,
+        }),
+        Animated.timing(successFade, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
-  }, [showSuccess, animations]);
+  }, [showSuccess, successScale, successFade]);
 
-  // Cancel any pending auto-advance when unmounting.
   useEffect(() => {
     return () => {
       if (advanceTimerRef.current) {
@@ -88,11 +93,10 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
 
   const handleStatementSubmit = useCallback(
     (statement: string, mood: MoodEmoji | null) => {
-      // Save as real gratitude entry for today's date
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
 
       addStatement(
-        { entryDate: today, statement, moodEmoji: mood },
+        { entryDate: today, statement, moodEmoji: mood, isDemo: true },
         {
           onSuccess: () => {
             setHasWrittenStatement(true);
@@ -109,7 +113,6 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             scheduleAdvance();
           },
           onError: (error: Error) => {
-            // Still celebrate for UX but record the error.
             setHasWrittenStatement(true);
             setShowSuccess(true);
             hapticFeedback.success();
@@ -145,6 +148,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
           styles.container,
           {
             opacity: animations.fadeAnim,
+            transform: animations.entranceTransform,
           },
         ]}
       >
@@ -154,6 +158,8 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
               hapticFeedback.light();
               onBack();
             }}
+            currentStep={currentStep}
+            totalSteps={totalSteps}
           />
         </ScreenSection>
 
@@ -174,7 +180,7 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
           <View style={styles.demoArea}>
             <View style={styles.promptCard}>
               <View style={styles.promptHeader}>
-                <Feather name="sunrise" size={14} color={theme.colors.primary} />
+                <Feather name="sunrise" size={16} color={theme.colors.primary} />
                 <Text style={styles.promptLabel}>{t('onboarding.demo.promptLabel')}</Text>
               </View>
               {promptLoading ? (
@@ -199,18 +205,19 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
             />
 
             {showSuccess && (
-              <Animated.View
-                style={[
-                  styles.successContainer,
-                  {
-                    opacity: animations.fadeAnim,
-                  },
-                ]}
-              >
-                <View style={styles.successCard}>
+              <View style={styles.successContainer}>
+                <Animated.View
+                  style={[
+                    styles.successCard,
+                    {
+                      opacity: successFade,
+                      transform: [{ scale: successScale }],
+                    },
+                  ]}
+                >
                   <View style={styles.successContent}>
                     <View style={styles.successBadge}>
-                      <Feather name="check" size={18} color={theme.colors.onPrimary} />
+                      <Feather name="check" size={24} color={theme.colors.onPrimary} />
                     </View>
                     <Text style={styles.successTitle}>{t('onboarding.demo.successTitle')}</Text>
                     <Text style={styles.successText}>{t('onboarding.demo.successText')}</Text>
@@ -218,8 +225,8 @@ export const InteractiveDemoStep: React.FC<InteractiveDemoStepProps> = ({ onNext
                       {t('onboarding.demo.successFootnote')}
                     </Text>
                   </View>
-                </View>
-              </Animated.View>
+                </Animated.View>
+              </View>
             )}
           </View>
         </ScreenSection>
@@ -248,64 +255,67 @@ const createStyles = (theme: AppTheme) =>
     container: {
       flex: 1,
     },
-    // Navigation header moved to shared component
     header: {
       alignItems: 'center',
       paddingTop: 0,
+      marginBottom: theme.spacing.sm,
     },
     kickerPill: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 3,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: 4,
       borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.secondary + '18',
-      marginBottom: theme.spacing.xs,
+      backgroundColor: theme.colors.secondary + '10',
+      marginBottom: theme.spacing.sm,
     },
     kickerText: {
       ...theme.typography.labelSmall,
-      fontSize: 10,
+      fontSize: 11,
+      fontWeight: '600',
       color: theme.colors.secondary,
-      letterSpacing: 0.3,
+      letterSpacing: 0.4,
     },
     title: {
       ...theme.typography.headlineMedium,
-      fontSize: 24,
+      fontSize: 26,
       fontWeight: '700',
       color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.xs,
+      letterSpacing: -0.5,
     },
     subtitle: {
       ...theme.typography.bodyMedium,
-      fontSize: 14,
+      fontSize: 15,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 20,
+      lineHeight: 22,
     },
     demoArea: {
-      gap: theme.spacing.sm,
+      gap: theme.spacing.md,
     },
     promptCard: {
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.xl,
+      padding: theme.spacing.lg,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.outline + '25',
-      ...getPrimaryShadow.card(theme),
+      borderColor: theme.colors.outline + '15',
+      ...getPrimaryShadow.overlay(theme), // Softer, more elevated shadow
     },
     promptHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
       gap: theme.spacing.xs,
     },
     promptLabel: {
       ...theme.typography.bodySmall,
-      fontSize: 12,
+      fontSize: 13,
       color: theme.colors.primary,
       fontWeight: '600',
+      letterSpacing: 0.2,
     },
     promptLoading: {
       flexDirection: 'row',
@@ -314,45 +324,47 @@ const createStyles = (theme: AppTheme) =>
     },
     promptText: {
       ...theme.typography.bodyMedium,
-      fontSize: 14,
+      fontSize: 15,
       color: theme.colors.onBackground,
       fontStyle: 'italic',
-      lineHeight: 20,
+      lineHeight: 24,
     },
     successContainer: {
       position: 'absolute',
-      top: 0,
+      top: -theme.spacing.xl,
       left: 0,
       right: 0,
       bottom: 0,
       justifyContent: 'center',
-      backgroundColor: theme.colors.background + '95',
+      backgroundColor: theme.colors.background + 'A0', // Slightly more opaque
+      zIndex: 10,
     },
     successCard: {
       backgroundColor: theme.colors.surface,
       marginHorizontal: theme.spacing.md,
-      borderRadius: theme.borderRadius.xl,
-      borderWidth: 1,
-      borderColor: theme.colors.primary + '30',
+      borderRadius: theme.borderRadius.xxl, // Softer corners
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.primary + '20',
       ...getPrimaryShadow.overlay(theme),
     },
     successContent: {
       alignItems: 'center',
-      padding: theme.spacing.lg,
-      gap: theme.spacing.xs,
+      padding: theme.spacing.xl,
+      gap: theme.spacing.sm,
     },
     successBadge: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       backgroundColor: theme.colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
+      ...getPrimaryShadow.small(theme),
     },
     successTitle: {
       ...theme.typography.titleLarge,
-      fontSize: 20,
+      fontSize: 22,
       fontWeight: '700',
       color: theme.colors.onBackground,
       marginBottom: 2,
@@ -360,16 +372,16 @@ const createStyles = (theme: AppTheme) =>
     },
     successText: {
       ...theme.typography.bodyMedium,
-      fontSize: 14,
+      fontSize: 15,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 20,
+      lineHeight: 22,
     },
     successFootnote: {
       ...theme.typography.bodySmall,
-      fontSize: 12,
+      fontSize: 13,
       color: theme.colors.primary,
-      marginTop: theme.spacing.xs,
+      marginTop: theme.spacing.md,
       textAlign: 'center',
       fontWeight: '600',
       letterSpacing: 0.3,
@@ -380,7 +392,7 @@ const createStyles = (theme: AppTheme) =>
     },
     encouragement: {
       ...theme.typography.bodySmall,
-      fontSize: 12,
+      fontSize: 13,
       color: theme.colors.onSurfaceVariant,
       fontStyle: 'italic',
       textAlign: 'center',
@@ -388,11 +400,11 @@ const createStyles = (theme: AppTheme) =>
     savingContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.xs,
+      gap: theme.spacing.sm,
     },
     savingText: {
       ...theme.typography.bodySmall,
-      fontSize: 12,
+      fontSize: 13,
       color: theme.colors.onSurfaceVariant,
     },
   });

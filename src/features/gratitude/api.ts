@@ -14,6 +14,7 @@ import type { GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 import type { Database } from '@/types/supabase.types';
 
 export type GratitudeEntryRow = Database['public']['Tables']['gratitude_entries']['Row'];
+const LEGACY_ENTRIES_PAGE_LIMIT = 50;
 
 // RawSelectedGratitudeEntryData is no longer needed, RawGratitudeEntry from Zod schema will be used.
 
@@ -257,15 +258,12 @@ const mapAndValidateRawEntry = (
  */
 export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
   try {
-    const { client, session } = await getAuthedClient();
-    const { user } = session;
-    const { data, error } = await client
-      .from('gratitude_entries')
-      .select(
-        'id, user_id, entry_date, statements, moods, created_at, updated_at, gratitude_attachments(id, statement_index, kind, storage_path, mime_type, bytes, duration_ms, width, height, transcript, created_at)'
-      )
-      .eq('user_id', user.id)
-      .order('entry_date', { ascending: false });
+    const { client } = await getAuthedClient();
+    const { data, error } = await client.rpc('get_gratitude_entries_paginated', {
+      p_page: 0,
+      p_limit: LEGACY_ENTRIES_PAGE_LIMIT,
+      p_search_term: undefined,
+    });
 
     if (error) {
       throw handleAPIError(new Error(error.message), 'fetch gratitude daily entries');
@@ -273,13 +271,16 @@ export const getGratitudeDailyEntries = async (): Promise<GratitudeEntry[]> => {
     if (!data) {
       return [];
     }
-    return data.map((row) => {
-      const { gratitude_attachments: attachments, ...rest } = row as GratitudeEntryRow & {
-        gratitude_attachments?: unknown;
-      };
+    return data.map((row: GratitudeEntryRow & { attachments?: unknown }) => {
       return mapAndValidateRawEntry({
-        ...(rest as GratitudeEntryRow),
-        attachments: Array.isArray(attachments) ? attachments : [],
+        id: row.id,
+        user_id: row.user_id,
+        entry_date: row.entry_date,
+        statements: row.statements,
+        moods: row.moods,
+        attachments: Array.isArray(row.attachments) ? row.attachments : [],
+        created_at: row.created_at,
+        updated_at: row.updated_at,
       } as GratitudeEntryRow);
     });
   } catch (err) {
@@ -396,6 +397,46 @@ export const getGratitudeDailyEntryByDate = async (
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     throw handleAPIError(error, 'fetch gratitude daily entry by date');
+  }
+};
+
+/**
+ * Fetches a specific gratitude daily entry by ID for the current user.
+ */
+export const getGratitudeDailyEntryById = async (
+  entryId: string
+): Promise<GratitudeEntry | null> => {
+  try {
+    const { client, session } = await getAuthedClient();
+    const { user } = session;
+    const { data, error } = await client
+      .from('gratitude_entries')
+      .select(
+        'id, user_id, entry_date, statements, moods, created_at, updated_at, gratitude_attachments(id, statement_index, kind, storage_path, mime_type, bytes, duration_ms, width, height, transcript, created_at)'
+      )
+      .eq('user_id', user.id)
+      .eq('id', entryId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // No entry for this ID
+      }
+      throw handleAPIError(new Error(error.message), 'fetch gratitude daily entry by id');
+    }
+    if (!data) {
+      return null;
+    }
+    const { gratitude_attachments: attachments, ...rest } = data as GratitudeEntryRow & {
+      gratitude_attachments?: unknown;
+    };
+    return mapAndValidateRawEntry({
+      ...(rest as GratitudeEntryRow),
+      attachments: Array.isArray(attachments) ? attachments : [],
+    } as GratitudeEntryRow);
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    throw handleAPIError(error, 'fetch gratitude daily entry by id');
   }
 };
 

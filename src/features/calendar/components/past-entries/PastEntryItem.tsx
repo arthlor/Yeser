@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 
-import { GratitudeEntry, Attachment } from '@/schemas/gratitudeEntrySchema';
+import { Attachment, GratitudeEntry } from '@/schemas/gratitudeEntrySchema';
 import { AppTheme } from '@/themes/types';
 import { useTheme } from '@/providers/ThemeProvider';
 import { getCurrentLocale } from '@/utils/localeUtils';
@@ -19,7 +19,7 @@ interface PastEntryItemProps {
 const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const entryDate = entry.entry_date ? new Date(entry.entry_date) : new Date();
   const isRecent = index < 3;
@@ -103,7 +103,9 @@ const PastEntryItem: React.FC<PastEntryItemProps> = ({ entry, index, onPress }) 
         <View style={styles.dateContainer}>
           <Text style={styles.dayNumber}>{entryDate.getDate()}</Text>
           <Text style={styles.monthText}>
-            {entryDate.toLocaleDateString(getCurrentLocale(), { month: 'short' }).toUpperCase()}
+            {entryDate
+              .toLocaleDateString(getCurrentLocale(), { month: 'short' })
+              .toLocaleUpperCase(i18n.language === 'tr' ? 'tr-TR' : i18n.language)}
           </Text>
         </View>
 

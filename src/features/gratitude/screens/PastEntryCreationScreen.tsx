@@ -1,4 +1,4 @@
-import GratitudeInputBar from '../components/GratitudeInputBar';
+import GratitudeInputBar, { GratitudeInputBarRef } from '../components/GratitudeInputBar';
 import { useGratitudeEntry, useGratitudeMutations } from '../hooks';
 import { useUserProfile } from '@/shared/hooks';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -81,6 +81,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
   const { profile } = useUserProfile();
 
   const [editingStatementIndex, setEditingStatementIndex] = useState<number | null>(null);
+  const inputBarRef = React.useRef<GratitudeInputBarRef>(null);
 
   const animations = useCoordinatedAnimations();
 
@@ -248,9 +249,15 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
           {/* HEADER SECTION - Matching DailyEntryScreen */}
           <View style={styles.header}>
             <View style={styles.headerContent}>
-              <Text style={styles.headerDate}>{formattedDate.toUpperCase()}</Text>
-              <Text style={styles.headerTitle}>{formattedMonthYear}</Text>
-              <Text style={styles.headerSubtitle}>{t('throwback.teaser.subtitle')}</Text>
+              <Text style={styles.headerDate} maxFontSizeMultiplier={1.3}>
+                {formattedDate.toLocaleUpperCase(language === 'tr' ? 'tr-TR' : language)}
+              </Text>
+              <Text style={styles.headerTitle} maxFontSizeMultiplier={1.3}>
+                {formattedMonthYear}
+              </Text>
+              <Text style={styles.headerSubtitle} maxFontSizeMultiplier={1.3}>
+                {t('throwback.teaser.subtitle')}
+              </Text>
             </View>
 
             <View style={styles.progressRingContainer}>
@@ -262,7 +269,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
                     statements.length >= dailyGoal ? theme.colors.success : theme.colors.primary
                   }
                 />
-                <Text style={styles.progressText}>
+                <Text style={styles.progressText} maxFontSizeMultiplier={1.3}>
                   {statements.length}/{dailyGoal}
                 </Text>
               </Animated.View>
@@ -272,6 +279,7 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
           {/* INPUT SECTION */}
           <View style={styles.inputSection}>
             <GratitudeInputBar
+              ref={inputBarRef}
               onSubmit={handleAddStatement}
               onSubmitWithMood={(text, mood) => handleAddStatement(text, mood ?? null)}
               disabled={isAddingStatement}
@@ -285,8 +293,9 @@ const PastEntryCreationScreen: React.FC<{ route: PastEntryCreationScreenRoutePro
           <View style={styles.coachSection}>
             <AICoachPrompt
               recentEntries={statements.slice(0, 5)}
-              onSelectPrompt={() => {
-                // Prompt selection handled
+              onSelectPrompt={(prompt) => {
+                inputBarRef.current?.setInputText?.(prompt);
+                inputBarRef.current?.focus();
               }}
             />
           </View>

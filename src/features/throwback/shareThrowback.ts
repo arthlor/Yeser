@@ -13,12 +13,10 @@ interface ShareThrowbackCardArgs {
 }
 
 /**
- * Target export dimensions. We render the card as a fixed 4:5 canvas in the
- * modal, so we capture at the same ratio. 1080x1350 is the canonical
- * Instagram portrait post size and looks crisp on all modern devices.
+ * Target export width. The card can grow vertically for long gratitude text,
+ * so height is intentionally left to the rendered view to avoid clipping.
  */
 const EXPORT_WIDTH = 1080;
-const EXPORT_HEIGHT = 1350;
 
 const waitForLayout = (ms = 60) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -30,8 +28,8 @@ type ShareMode = 'image' | 'text';
  * or the underlying `Sharing` module is unavailable.
  *
  * Resilience details:
- *  - Explicit `width`/`height` + `snapshotContentContainer: false` make the
- *    output deterministic across devices.
+ *  - Explicit `width` keeps output crisp while preserving the rendered
+ *    card height for long statements.
  *  - One retry after a short layout delay handles the race where the modal
  *    has just mounted and view-shot can't find the node yet.
  *  - The captured temp file is best-effort cleaned up after the share sheet
@@ -91,8 +89,7 @@ const captureWithRetry = async (cardRef: RefObject<View | null>): Promise<string
         quality: 1,
         result: 'tmpfile',
         width: EXPORT_WIDTH,
-        height: EXPORT_HEIGHT,
-        snapshotContentContainer: false,
+        snapshotContentContainer: true,
       });
       return uri;
     } catch (error) {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { checkUsernameAvailability } from '@/features/settings/profileApi';
 import i18n from '@/i18n';
 import { logger } from '@/utils/debugConfig';
@@ -21,6 +21,7 @@ export const useUsernameValidation = (
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [debounceTimer, setDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
 
   const checkUsername = useCallback(
     async (username: string) => {
@@ -60,12 +61,20 @@ export const useUsernameValidation = (
 
       // Set up debounced check
       const timer = setTimeout(async () => {
+        if (!isMountedRef.current) {
+          return;
+        }
+
         setIsChecking(true);
         logger.debug(`Checking username availability for: "${username}"`);
 
         try {
           const available = await checkUsernameAvailability(username);
           logger.debug(`Username "${username}" availability result:`, { available });
+
+          if (!isMountedRef.current) {
+            return;
+          }
 
           setIsAvailable(available);
 
@@ -80,6 +89,10 @@ export const useUsernameValidation = (
             logger.debug(`Username "${username}" is available`);
           }
         } catch (err) {
+          if (!isMountedRef.current) {
+            return;
+          }
+
           logger.error('Username availability check failed:', err as Error);
           setError(
             i18n.t('validation.usernameCheckError', {
@@ -88,7 +101,9 @@ export const useUsernameValidation = (
           );
           setIsAvailable(null);
         } finally {
-          setIsChecking(false);
+          if (isMountedRef.current) {
+            setIsChecking(false);
+          }
         }
       }, DEBOUNCE_DELAY);
 
@@ -97,7 +112,13 @@ export const useUsernameValidation = (
     [currentUsername]
   ); // Remove debounceTimer dependency to break the cycle
 
-  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Cleanup timer when it changes or on unmount
   useEffect(() => {
     return () => {
       if (debounceTimer) {

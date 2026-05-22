@@ -1,11 +1,9 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { type DimensionValue, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/providers/ThemeProvider';
-import ThemedCard from '@/shared/components/ui/ThemedCard';
-import { TFunction } from 'i18next';
 
 interface StatsRowProps {
   currentCount: number;
@@ -16,104 +14,83 @@ interface StatsRowProps {
   onStreakPress?: () => void;
 }
 
-const MiniStatCard: React.FC<{
-  icon: string;
-  iconColor: string;
-  title: string;
-  value: string;
-  subtitle?: string;
-  onPress?: () => void;
-}> = React.memo(({ icon, iconColor, title, value, subtitle, onPress }) => {
-  const { theme } = useTheme();
-  const styles = useMemo(() => createMiniStyles(theme), [theme]);
-
-  return (
-    <ThemedCard
-      variant="elevated"
-      density="compact"
-      elevation="none"
-      onPress={onPress}
-      touchableProps={{ activeOpacity: 0.9 }}
-      style={styles.card}
-    >
-      <View style={styles.contentWrap}>
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: iconColor + (theme.name === 'dark' ? '25' : '15') },
-          ]}
-        >
-          <Icon name={icon} size={16} color={iconColor} />
-        </View>
-        <View style={styles.textStack}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {title.replace('DAILY ', '').replace('DAILY', '')}
-          </Text>
-          <View style={styles.valueRow}>
-            <Text style={styles.cardValue}>{value}</Text>
-            {!!subtitle && (
-              <Text style={styles.cardSubtitle} numberOfLines={1}>
-                {subtitle}
-              </Text>
-            )}
-          </View>
-        </View>
-      </View>
-    </ThemedCard>
-  );
-});
-
-MiniStatCard.displayName = 'MiniStatCard';
-
-const ProgressMiniCard: React.FC<{
+const ProgressCard: React.FC<{
   currentCount: number;
   dailyGoal: number;
   onPress?: () => void;
-  t: TFunction;
-}> = React.memo(({ currentCount, dailyGoal, onPress, t }) => {
+}> = React.memo(({ currentCount, dailyGoal, onPress }) => {
   const { theme } = useTheme();
-  const styles = useMemo(() => createMiniStyles(theme), [theme]);
+  const { t, i18n } = useTranslation();
+  const styles = useMemo(() => createCardStyles(theme), [theme]);
 
-  const progressLabel = `${currentCount}/${dailyGoal}`;
   const ratio = dailyGoal > 0 ? Math.min(1, Math.max(0, currentCount / dailyGoal)) : 0;
+  const progressWidth = `${Math.round(ratio * 100)}%` as DimensionValue;
+  const completedText = t('home.stats.completed', 'completed');
+  const label = t('home.stats.dailyProgress', 'DAILY PROGRESS').toLocaleUpperCase(
+    i18n.language === 'tr' ? 'tr-TR' : i18n.language
+  );
 
   return (
-    <ThemedCard
-      variant="elevated"
-      density="compact"
-      elevation="none"
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={`${label} ${currentCount}/${dailyGoal} ${completedText}`}
+      activeOpacity={0.9}
+      disabled={!onPress}
       onPress={onPress}
-      touchableProps={{ activeOpacity: 0.9 }}
       style={styles.card}
     >
-      <View style={styles.contentWrap}>
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: theme.colors.primary + (theme.name === 'dark' ? '25' : '15') },
-          ]}
-        >
-          <Icon name="check-circle" size={16} color={theme.colors.primary} />
-        </View>
-        <View style={styles.textStack}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {t('home.stats.dailyProgress').replace('DAILY ', '').replace('DAILY', '')}
-          </Text>
-          <View style={styles.valueRow}>
-            <Text style={styles.cardValue}>{progressLabel}</Text>
-            <View style={styles.progressInlineWrapper}>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${ratio * 100}%` }]} />
-              </View>
-            </View>
-          </View>
-        </View>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.valueRow}>
+        <Text style={styles.bigValue}>
+          {currentCount}/{dailyGoal}
+        </Text>
+        <Text style={styles.completedText}>{completedText}</Text>
       </View>
-    </ThemedCard>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: progressWidth }]} />
+      </View>
+    </TouchableOpacity>
   );
 });
+ProgressCard.displayName = 'ProgressCard';
 
-ProgressMiniCard.displayName = 'ProgressMiniCard';
+const StreakCard: React.FC<{
+  currentStreak: number;
+  longestStreak?: number | null;
+  onPress?: () => void;
+}> = React.memo(({ currentStreak, longestStreak, onPress }) => {
+  const { theme } = useTheme();
+  const { t, i18n } = useTranslation();
+  const styles = useMemo(() => createCardStyles(theme), [theme]);
+  const label = t('home.stats.currentStreak', 'CURRENT STREAK').toLocaleUpperCase(
+    i18n.language === 'tr' ? 'tr-TR' : i18n.language
+  );
+
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={`${label} ${currentStreak}`}
+      activeOpacity={0.9}
+      disabled={!onPress}
+      onPress={onPress}
+      style={styles.card}
+    >
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.streakValueRow}>
+        <View style={styles.fireContainer}>
+          <Icon name="fire" size={17} color={theme.colors.secondary} />
+        </View>
+        <Text style={styles.bigValue}>{currentStreak}</Text>
+      </View>
+      {typeof longestStreak === 'number' && longestStreak > 0 ? (
+        <Text style={styles.longestText}>
+          {t('home.stats.longestStreak', { count: longestStreak })}
+        </Text>
+      ) : null}
+    </TouchableOpacity>
+  );
+});
+StreakCard.displayName = 'StreakCard';
 
 const StatsRow: React.FC<StatsRowProps> = React.memo(
   ({
@@ -126,29 +103,20 @@ const StatsRow: React.FC<StatsRowProps> = React.memo(
   }) => {
     const { theme } = useTheme();
     const styles = useMemo(() => createRowStyles(theme), [theme]);
-    const { t } = useTranslation();
 
     return (
       <View style={styles.rowContainer}>
-        <View style={styles.item}>
-          <ProgressMiniCard
-            t={t}
+        <View style={styles.progressItem}>
+          <ProgressCard
             currentCount={currentCount}
             dailyGoal={dailyGoal}
             onPress={onProgressPress}
           />
         </View>
-        <View style={styles.item}>
-          <MiniStatCard
-            icon="fire"
-            iconColor={theme.colors.secondary}
-            title={t('home.stats.currentStreak')}
-            value={`${currentStreak}`}
-            subtitle={
-              typeof longestStreak === 'number' && longestStreak > 0
-                ? t('home.stats.longestStreak', { count: longestStreak })
-                : undefined
-            }
+        <View style={styles.streakItem}>
+          <StreakCard
+            currentStreak={currentStreak}
+            longestStreak={longestStreak}
             onPress={onStreakPress}
           />
         </View>
@@ -164,90 +132,94 @@ export default StatsRow;
 const createRowStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
     rowContainer: {
+      height: 78,
       flexDirection: 'row',
-      gap: theme.spacing.sm,
+      alignItems: 'stretch',
+      gap: theme.spacing.xs,
     },
-    item: {
-      flex: 1,
+    progressItem: {
+      flex: 1.1,
+    },
+    streakItem: {
+      flex: 0.9,
     },
   });
 
-const createMiniStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
+const createCardStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
     card: {
-      borderRadius: 16,
-      backgroundColor: theme.colors.surface,
+      height: '100%',
+      borderRadius: 14,
+      backgroundColor: theme.name === 'dark' ? theme.colors.surface : theme.colors.surface + 'F2',
       borderWidth: 1,
-      borderColor: theme.colors.outline + '10',
-      paddingVertical: 10,
+      borderColor: theme.colors.outline + (theme.name === 'dark' ? '22' : '14'),
+      paddingVertical: 8,
       paddingHorizontal: 10,
-      shadowColor: '#000',
-      shadowOpacity: theme.name === 'dark' ? 0.25 : 0.05,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 2,
+      shadowColor: theme.colors.scrim,
+      shadowOpacity: theme.name === 'dark' ? 0.16 : 0.04,
+      shadowRadius: 7,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 1,
     },
-    contentWrap: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-    },
-    iconContainer: {
-      width: 28,
-      height: 28,
-      borderRadius: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    textStack: {
-      flex: 1,
-      justifyContent: 'center',
+    label: {
+      ...theme.typography.labelSmall,
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 8,
+      fontWeight: '800',
+      letterSpacing: 1.2,
+      opacity: 0.7,
+      marginBottom: 2,
     },
     valueRow: {
       flexDirection: 'row',
       alignItems: 'baseline',
-      gap: 6,
-      marginTop: -2,
+      gap: 4,
+      marginBottom: 5,
     },
-    cardTitle: {
-      ...theme.typography.labelSmall,
-      color: theme.colors.onSurfaceVariant,
-      fontSize: 9,
+    bigValue: {
+      fontSize: 19,
+      fontFamily: theme.typography.fontFamilySerifBold || 'Lora-Bold',
+      color: theme.colors.onSurface,
       fontWeight: '800',
-      textTransform: 'uppercase',
-      letterSpacing: 1.2,
-      opacity: 0.5,
-      marginBottom: 0,
+      letterSpacing: 0,
+      lineHeight: 23,
     },
-    cardSubtitle: {
-      ...theme.typography.labelSmall,
-      color: theme.colors.onSurfaceVariant,
-      opacity: 0.6,
+    completedText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.primary,
+      fontWeight: '700',
       fontSize: 10,
     },
-    cardValue: {
-      ...theme.typography.titleMedium,
-      color: theme.colors.onSurface,
-      fontFamily: theme.typography.fontFamilySerifBold || 'Lora-Bold',
-      fontWeight: '800',
-      letterSpacing: -0.2,
-    },
-    progressInlineWrapper: {
-      flex: 1,
-      height: 4,
-      justifyContent: 'center',
-      marginLeft: 4,
-      maxWidth: 40,
-    },
-    progressBar: {
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: theme.colors.outline + '10',
+    progressTrack: {
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: theme.colors.outline + (theme.name === 'dark' ? '24' : '12'),
       overflow: 'hidden',
     },
     progressFill: {
       height: '100%',
       backgroundColor: theme.colors.primary,
-      borderRadius: 2,
+      borderRadius: 3,
+    },
+    streakValueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 1,
+    },
+    fireContainer: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: theme.colors.secondary + '15',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    longestText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      opacity: 0.74,
+      fontSize: 10,
+      marginTop: 0,
     },
   });

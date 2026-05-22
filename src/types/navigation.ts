@@ -30,6 +30,7 @@ export interface AppStackParamList extends Record<string, object | undefined> {
         focusMood?: string;
         initialRange?: MoodAnalyticsRange;
         source?: string;
+        autoGenerate?: boolean;
       }
     | undefined;
   CustomerCenter: undefined;

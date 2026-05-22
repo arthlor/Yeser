@@ -39,6 +39,8 @@ interface StatementEditCardProps extends Omit<InteractiveStatementCardProps, 'on
   onShare?: () => void;
   showSaveHint?: boolean;
   attachments?: Attachment[];
+  onRemoveAttachment?: (attachment: Attachment) => void | Promise<void>;
+  compactAttachments?: boolean;
 }
 
 const StatementEditCard: React.FC<StatementEditCardProps> = ({
@@ -57,7 +59,10 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
   onShare,
   maxLength = GRATITUDE_MAX_LENGTH,
   moodEmoji,
+  onChangeMood,
   attachments,
+  onRemoveAttachment,
+  compactAttachments,
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -78,10 +83,11 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
     suggestedMoods,
     primaryMood: suggestedPrimaryMood,
     remaining: aiRemaining,
+    resetInSeconds: aiResetInSeconds,
     isLoading: aiLoading,
     suggestMood,
     clearSuggestions,
-  } = useMoodSuggestion({ language: language === 'tr' ? 'tr' : 'en' });
+  } = useMoodSuggestion({ language });
 
   useEffect(() => {
     setLocalStatement(statement);
@@ -123,7 +129,11 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
 
   const handleSelectMood = useCallback(
     (mood: MoodEmoji | null) => {
-      setLocalMood(mood);
+      if (onChangeMood) {
+        onChangeMood(mood);
+      } else {
+        setLocalMood(mood);
+      }
       // Automatically close modal after selection if it's not null (or keep open? InputBar closes?)
       // InputBar toggles.
       if (emojiOpen) {
@@ -132,7 +142,7 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
         );
       }
     },
-    [emojiOpen, emojiAnim]
+    [emojiOpen, emojiAnim, onChangeMood]
   );
 
   const handleCancel = useCallback(() => {
@@ -201,9 +211,14 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
             suggestedMoods={suggestedMoods}
             primaryMood={suggestedPrimaryMood}
             remaining={aiRemaining}
+            resetInSeconds={aiResetInSeconds}
             isLoading={aiLoading}
             onSelectMood={(mood) => {
-              setLocalMood(mood);
+              if (onChangeMood) {
+                onChangeMood(mood);
+              } else {
+                setLocalMood(mood);
+              }
               clearSuggestions();
             }}
           />
@@ -213,6 +228,17 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
         <Text style={styles.charCount}>
           {localStatement.length}/{maxLength}
         </Text>
+
+        {/* Attachments */}
+        {attachments && attachments.length > 0 && (
+          <View style={styles.attachmentContainer}>
+            <AttachmentRail
+              attachments={attachments}
+              onRemove={onRemoveAttachment}
+              compact={compactAttachments}
+            />
+          </View>
+        )}
 
         {/* Action Buttons */}
         <View style={styles.editActions}>
@@ -388,7 +414,11 @@ const StatementEditCard: React.FC<StatementEditCardProps> = ({
       {/* Attachments */}
       {attachments && attachments.length > 0 && (
         <View style={styles.attachmentContainer}>
-          <AttachmentRail attachments={attachments} />
+          <AttachmentRail
+            attachments={attachments}
+            onRemove={onRemoveAttachment}
+            compact={compactAttachments}
+          />
         </View>
       )}
 

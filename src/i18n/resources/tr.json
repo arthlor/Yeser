@@ -42,7 +42,7 @@
     },
 
     "chat": {
-      "title": "💬 Yeşer AI",
+      "title": "Yeşer AI",
       "placeholder": "Düşüncelerini paylaş...",
       "send": "Gönder",
       "greeting": "Merhaba! Ben Yeşer, minnet yolculuğunda yoldaşınım. Seninle bugün neler keşfedebiliriz?",
@@ -223,7 +223,11 @@
     "stats": {
       "dailyProgress": "Günlük İlerleme",
       "currentStreak": "Mevcut Seri",
-      "longestStreak": "En Uzun: {{count}}"
+      "longestStreak": "En Uzun: {{count}}",
+      "completed": "tamamlandı"
+    },
+    "cta": {
+      "writeTitle": "Bugünkü içgörünü yaz"
     }
   },
   "tips": {
@@ -262,6 +266,17 @@
     "reminderTimeTitle": "Günlük hatırlatma saati",
     "timeUpdatedSuccess": "Hatırlatma saati {{time}} olarak güncellendi.",
     "reminderTimeA11y": "Hatırlatma saatini {{time}} olarak ayarla",
+    "status": {
+      "ready": "Bu cihaz uzak hatırlatıcılar için kaydedildi. Teslimat push alındılarıyla doğrulanır.",
+      "tokenPending": "Hatırlatıcılar açık, ancak bu cihazın push anahtarı hâlâ senkronizasyon bekliyor.",
+      "missingToken": "Hatırlatıcılar açık, ancak bu cihazın push anahtarı henüz senkronize değil.",
+      "permissionMissing": "Hatırlatıcı kaydedildi, ancak bu cihazda bildirim izni kapalı.",
+      "syncFailed": "Bildirim senkronizasyonu doğrulanamadı. Hatırlatıcıyı kapatıp tekrar açmayı dene.",
+      "tokenSaveFailed": "Bu cihaz uzak hatırlatıcılar için kaydedilemedi.",
+      "preferenceSaveFailed": "Hatırlatma tercihin kaydedilemedi.",
+      "stillActiveOtherDevices": "Bu cihazın bildirimleri kapatıldı. Hatırlatmalar diğer cihazlarında açık kaldı.",
+      "deviceUnsubscribed": "Hatırlatmalar bu cihazda kapatıldı."
+    },
     "errors": {
       "generic": "Bildirim ayarlarında bir sorun oluştu.",
       "permissionDenied": "Hatırlatıcıları açmak için bildirim izni gerekiyor.",
@@ -433,7 +448,14 @@
       }
     },
     "user": {
-      "usernameTitle": "Kullanıcı Adı"
+      "usernameTitle": "Kullanıcı Adı",
+      "usernameEditTitle": "Kullanıcı Adını Düzenle",
+      "usernamePlaceholder": "Bir kullanıcı adı seçin",
+      "usernameUnchanged": "Değişiklikleri kaydetmek için farklı bir kullanıcı adı girin.",
+      "usernameAvailable": "Bu kullanıcı adı kullanılabilir.",
+      "usernameHint": "3 ile 50 karakter arasında kullanın. Harfler ve rakamlar en iyisidir.",
+      "usernameModalA11y": "Kullanıcı adı düzenleyicisi",
+      "usernameSaving": "Kaydediliyor..."
     },
     "version": "Yeşer v{{version}}",
     "help": {
@@ -1033,6 +1055,9 @@
       "cancel": "Vazgeç"
     },
     "attachments": {
+      "voiceNote": "Sesli not",
+      "audioUnavailable": "Sesli not açılamıyor",
+      "imageUnavailable": "Görsel açılamıyor",
       "errors": {
         "dailyLimitImage": "Bugünkü fotoğraf sınırına ulaştın ({{cap}}/gün). Yarın tekrar deneyebilirsin.",
         "dailyLimitAudio": "Bugünkü sesli not sınırına ulaştın ({{cap}}/gün). Yarın tekrar deneyebilirsin."
@@ -1317,7 +1342,7 @@
       "benefit2Desc": "Hatırlatmaya yetecek kadar, hiç sıkmayacak kadar",
       "benefit3Title": "Kontrol her zaman sende",
       "benefit3Desc": "Saatini, tonunu değiştir ya da istediğin an kapat",
-      "statusSuccess": "Harika — nazik hatırlatıcın artık hazır.",
+      "statusSuccess": "Harika — bu cihaz nazik hatırlatıcın için kaydedildi.",
       "statusSkip": "Şimdilik atlayabilirsin, sonra ayarlardan etkinleştirebilirsin",
       "enable": "Hatırlatıcımı aç",
       "enableLoading": "İzin İsteniyor...",
@@ -1630,6 +1655,12 @@
       "security": "Güvenlik kısıtlaması nedeniyle işlem gerçekleştirilemedi. Lütfen çıkış yapıp tekrar giriş yapın.",
       "notificationSchedule": "Bildirim ayarlarını kaydedemedik. Lütfen biraz sonra tekrar deneyin."
     },
+    "gratitude": {
+      "pastEntryRequiresPro": "Geçmiş tarihlere kayıt eklemek Premium özelliğidir.",
+      "freeDailyLimit": "Ücretsiz hesaplar günde bir minnet ekleyebilir.",
+      "moodEditingRequiresPro": "Duygu durumu düzenleme Premium özelliğidir.",
+      "attachmentsRequirePro": "Medya ekleri Premium özelliğidir."
+    },
     "network": { "generic": "İnternet bağlantınızı kontrol edin." },
     "server": { "generic": "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin." },
     "validation": { "generic": "Girdiğiniz bilgileri kontrol edin." },
@@ -1731,14 +1762,20 @@
       "range": {
         "15d": "15 Gün",
         "30d": "30 Gün",
-        "90d": "90 Gün"
+        "90d": "90 Gün",
+        "5e": "Son 5 An",
+        "15e": "Son 15 An",
+        "30e": "Son 30 An"
       },
       "home": {
-        "latestTitle": "Minnetinin anlattıkları",
-        "readyDescription": "Anlamlı bir içgörü için burada yeterince an var.",
-        "seedTitle": "İlk örüntün oluşmaya başlıyor",
-        "seedDescription": "Birkaç minnet anı daha ekle; onları ilk duygusal içgörüne dönüştürelim.",
-        "fallbackDescription": "Belirmeye başlayan duyguları ve temaları görmek için İçgörüler'i aç.",
+        "latestTitle": "Yazdıkların ne anlatıyor?",
+        "latestDescription": "Son minnetlerinden kısa bir analiz.",
+        "latestRowTitle": "Analizi aç",
+        "latestRowDescription": "Duygulara ve temalara bak.",
+        "readyDescription": "Kısa analizin hazır.",
+        "seedTitle": "İlk işaretler beliriyor",
+        "seedDescription": "Birkaç minnet daha yaz; analiz netleşsin.",
+        "fallbackDescription": "Kısa analizi gör.",
         "updatedToday": "Bugün güncellendi",
         "updatedDaysAgo": "{{count}} gün önce güncellendi",
         "previewBadge": "Ön izleme",
@@ -1757,7 +1794,8 @@
         "noDominantMood": "Yok",
         "statementsPerEntry": "Kayıt başına ortalama {{value}} ifade",
         "generatedAt": "{{date}} tarihinde güncellendi",
-        "entriesExplanation": "Bu özet, son {{days}} gündeki {{count}} kayıtta ortaya çıkan duygusal örüntüleri yansıtır."
+        "entriesExplanation": "Bu özet, son {{days}} gündeki {{count}} kayıtta ortaya çıkan duygusal örüntüleri yansıtır.",
+        "entriesExplanationEntries": "Bu özet, son {{count}} günlüğünüzde ortaya çıkan duygusal örüntüleri yansıtır."
       },
       "balance": {
         "imbalanced": "Dengesiz",
@@ -1768,6 +1806,9 @@
         "narrative": {
           "title": "En çok öne çıkan şey",
           "subtitle": "Minnetinde beliren temalara, duygulara ve ihtiyaçlara daha derin bir bakış."
+        },
+        "emotions": {
+          "title": "Temel Duygular"
         }
       },
       "ai": {
@@ -1783,7 +1824,26 @@
         "logical": "Bunun işaret ettiği şey",
         "emotional": "Duygusal alt akış",
         "suggestions": "Sıradaki nazik adımlar",
-        "empty": "Birkaç minnet anı daha ekle; ilk örüntünü görünür hale getirelim."
+        "empty": "Birkaç minnet daha yaz; örüntün netleşsin."
+      },
+      "status": {
+        "updating": "Güncelleniyor...",
+        "reading": "Minnet kayıtların okunuyor...",
+        "patterns": "Örüntüler bulunuyor...",
+        "generating": "İçgörün hazırlanıyor...",
+        "analyzingTitle": "İçgörün hazırlanıyor",
+        "analyzingMessage": "Minnet kayıtlarını inceliyoruz.",
+        "errorTitle": "İçgörü durakladı",
+        "errorMessage": "Analiz yarıda kaldı. Tekrar deneyebilirsin.",
+        "limitTitle": "Günlük içgörü hakkın doldu",
+        "limitMessage": "Bugünkü AI içgörü yenileme hakkını kullandın. Yarın yenilenir; son kaydedilen içgörünü yine de inceleyebilirsin.",
+        "unavailableTitle": "İçgörü güncellenemedi",
+        "unavailableMessage": "Analizi şu anda yenileyemedik. Birazdan tekrar dene.",
+        "readyTitle": "İçgörü hazır",
+        "readyToRevealTitle": "Hazır",
+        "readyToRevealMessage": "Aç'a dokun; kısa sürecek.",
+        "seedTitle": "Yazmaya devam et",
+        "seedMessage": "Birkaç minnet daha yaz; içgörü netleşsin."
       },
       "actions": {
         "refresh": "Yenile"

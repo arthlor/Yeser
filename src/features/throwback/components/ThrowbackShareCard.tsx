@@ -6,7 +6,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/providers/ThemeProvider';
 import type { AppTheme } from '@/themes/types';
 import { getPrimaryShadow } from '@/themes/utils';
-import { GRATITUDE_MAX_LENGTH } from '@/constants/gratitude';
 
 // Fixed, share-safe palette. The share card renders the same on light and
 // dark themes so the exported PNG looks identical for every user.
@@ -31,15 +30,6 @@ interface StatementStyle {
   letterSpacing: number;
 }
 
-/**
- * Deterministic type scale. The share card is a fixed 4:5 canvas and the
- * gratitude statement is capped at {@link GRATITUDE_MAX_LENGTH} characters,
- * so we don't need `adjustsFontSizeToFit` (which is flaky under view-shot).
- *
- * The breakpoints were chosen so that worst-case text of exactly
- * {@link GRATITUDE_MAX_LENGTH} characters still fits without clipping on a
- * 340x425 card.
- */
 const getStatementStyle = (length: number): StatementStyle => {
   if (length <= 80) {
     return { fontSize: 28, lineHeight: 38, letterSpacing: 0.1 };
@@ -53,8 +43,26 @@ const getStatementStyle = (length: number): StatementStyle => {
   if (length <= 260) {
     return { fontSize: 19, lineHeight: 28, letterSpacing: 0.15 };
   }
-  // 261 – 300 characters
-  return { fontSize: 17, lineHeight: 25, letterSpacing: 0.2 };
+  if (length <= 360) {
+    return { fontSize: 17, lineHeight: 25, letterSpacing: 0.2 };
+  }
+  if (length <= 560) {
+    return { fontSize: 16, lineHeight: 24, letterSpacing: 0.15 };
+  }
+  if (length <= 820) {
+    return { fontSize: 15, lineHeight: 23, letterSpacing: 0.1 };
+  }
+  return { fontSize: 14, lineHeight: 22, letterSpacing: 0 };
+};
+
+const normalizeThrowbackStatement = (value: string): string => value.replace(/\s+/g, ' ').trim();
+
+const estimateCardHeight = (statement: string, statementStyle: StatementStyle): number => {
+  const estimatedCharsPerLine = Math.max(18, Math.floor(320 / (statementStyle.fontSize * 0.54)));
+  const estimatedLines = Math.max(1, Math.ceil(statement.length / estimatedCharsPerLine));
+  const fixedChromeHeight = 166;
+  const bodyHeight = estimatedLines * statementStyle.lineHeight + 56;
+  return Math.max(425, fixedChromeHeight + bodyHeight);
 };
 
 const ThrowbackShareCard = React.forwardRef<View, ThrowbackShareCardProps>(
@@ -63,24 +71,27 @@ const ThrowbackShareCard = React.forwardRef<View, ThrowbackShareCardProps>(
     const { t } = useTranslation();
     const styles = createStyles(theme);
 
-    // Trim + clamp defensively: even if something upstream leaks a longer
-    // string, the card stays visually intact.
     const normalized = React.useMemo(() => {
-      const trimmed = statement.trim();
-      return trimmed.length > GRATITUDE_MAX_LENGTH
-        ? trimmed.slice(0, GRATITUDE_MAX_LENGTH - 1).trimEnd() + '…'
-        : trimmed;
+      return normalizeThrowbackStatement(statement);
     }, [statement]);
 
     const statementStyle = React.useMemo(
       () => getStatementStyle(normalized.length),
       [normalized.length]
     );
+    const cardMinHeight = React.useMemo(
+      () => estimateCardHeight(normalized, statementStyle),
+      [normalized, statementStyle]
+    );
 
     const appLogo = require('@/assets/assets/icon.png');
 
     return (
-      <View ref={ref} collapsable={false} style={styles.cardContainer}>
+      <View
+        ref={ref}
+        collapsable={false}
+        style={[styles.cardContainer, { minHeight: cardMinHeight }]}
+      >
         <LinearGradient
           colors={['#0F1B2A', '#1F2540', '#2C1F3F']}
           start={{ x: 0, y: 0 }}
@@ -138,7 +149,6 @@ const createStyles = (theme: AppTheme) =>
       width: '100%',
       maxWidth: CARD_BASE_WIDTH,
       alignSelf: 'center',
-      aspectRatio: 4 / 5,
       borderRadius: 24,
       overflow: 'hidden',
       ...getPrimaryShadow.card(theme),

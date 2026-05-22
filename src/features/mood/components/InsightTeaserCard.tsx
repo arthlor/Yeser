@@ -151,12 +151,15 @@ const InsightTeaserCard: React.FC<InsightTeaserCardProps> = ({
 
               <View style={styles.referenceCtaContainer}>
                 <View style={styles.referenceCtaChip}>
-                  <Text style={styles.referenceCtaLabel}>{ctaLabel}</Text>
+                  <Text style={styles.referenceCtaLabel}>
+                    {isLoading
+                      ? t('mood.analysis.status.analyzingTitle', 'Preparing your insight')
+                      : ctaLabel}
+                  </Text>
                   <Icon
-                    name={isLoading ? 'loading' : 'arrow-top-right'}
+                    name={isLoading ? 'progress-clock' : 'arrow-top-right'}
                     size={16}
                     color={theme.colors.onPrimary}
-                    style={isLoading ? styles.loadingIcon : undefined}
                   />
                 </View>
               </View>
@@ -267,12 +270,15 @@ const InsightTeaserCard: React.FC<InsightTeaserCardProps> = ({
             style={styles.ctaTouchable}
           >
             <View style={styles.ctaChip}>
-              <Text style={styles.ctaLabel}>{ctaLabel}</Text>
+              <Text style={styles.ctaLabel}>
+                {isLoading
+                  ? t('mood.analysis.status.analyzingTitle', 'Preparing your insight')
+                  : ctaLabel}
+              </Text>
               <Icon
-                name={isLoading ? 'loading' : 'arrow-top-right'}
+                name={isLoading ? 'progress-clock' : 'arrow-top-right'}
                 size={compact ? 14 : 15}
                 color={theme.colors.primary}
-                style={isLoading ? styles.loadingIcon : undefined}
               />
             </View>
           </TouchableOpacity>
@@ -710,9 +716,6 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme'], compact: bool
       color: theme.colors.primary,
       fontWeight: '700',
       letterSpacing: 0.2,
-    },
-    loadingIcon: {
-      transform: [{ rotate: '90deg' }],
     },
   });
 };

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { useSubscription } from '@/hooks/useSubscription';
+import type { SupportedLanguage } from '@/store/languageStore';
 
 type EnhanceStyle = 'poetic' | 'detailed' | 'mindful';
 
@@ -14,7 +15,7 @@ interface EnhanceEntryResult {
 }
 
 interface UseEntryEnhancementOptions {
-  language?: 'tr' | 'en';
+  language?: SupportedLanguage;
 }
 
 interface UseEntryEnhancementReturn {

@@ -2,8 +2,8 @@
 // AI gratitude chatbot for supportive conversations
 // Self-contained - no shared imports
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { createClient, SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from 'npm:@google/generative-ai';
 
 // ============================================================================
 // CORS Helpers
@@ -96,6 +96,7 @@ interface UsageResult {
   used: number;
   limit: number;
   resetInSeconds: number;
+  usageId: string | null;
 }
 
 function getSupabaseAdmin(): SupabaseClient {
@@ -109,66 +110,49 @@ function getSupabaseAdmin(): SupabaseClient {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-async function checkUsage(userId: string): Promise<UsageResult> {
-  const supabase = getSupabaseAdmin();
-
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
-  const { count, error } = await supabase
-    .from('ai_usage')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .gte('created_at', today.toISOString());
-
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setUTCDate(now.getUTCDate() + 1);
-  tomorrow.setUTCHours(0, 0, 0, 0);
-  const resetInSeconds = Math.floor((tomorrow.getTime() - now.getTime()) / 1000);
-
-  if (error) {
-    console.error('[chat-message] Error checking usage:', error);
-    return { allowed: true, remaining: DAILY_LIMIT, used: 0, limit: DAILY_LIMIT, resetInSeconds };
-  }
-
-  const used = count ?? 0;
-  const remaining = Math.max(0, DAILY_LIMIT - used);
-
-  return {
-    allowed: used < DAILY_LIMIT,
-    remaining,
-    used,
-    limit: DAILY_LIMIT,
-    resetInSeconds,
-  };
-}
-
-async function recordUsage(userId: string, feature: AIFeature): Promise<UsageResult> {
-  const supabase = getSupabaseAdmin();
-  const currentUsage = await checkUsage(userId);
-
-  if (!currentUsage.allowed) {
-    return currentUsage;
-  }
-
-  const { error } = await supabase.from('ai_usage').insert({
-    user_id: userId,
-    feature,
+async function consumeUsage(
+  userId: string,
+  feature: AIFeature,
+  supabase: SupabaseClient
+): Promise<UsageResult> {
+  const { data, error } = await supabase.rpc('consume_ai_usage', {
+    p_user_id: userId,
+    p_feature: feature,
+    p_daily_limit: DAILY_LIMIT,
   });
 
   if (error) {
-    console.error('[chat-message] Error recording usage:', error);
-    return currentUsage;
+    console.error('[chat-message] Error consuming usage:', error);
+    return {
+      allowed: true,
+      remaining: DAILY_LIMIT,
+      used: 0,
+      limit: DAILY_LIMIT,
+      resetInSeconds: 86400,
+      usageId: null,
+    };
   }
 
+  const row = Array.isArray(data) ? data[0] : data;
+  const record = (row || {}) as Record<string, unknown>;
+
   return {
-    allowed: true,
-    remaining: Math.max(0, currentUsage.remaining - 1),
-    used: currentUsage.used + 1,
+    allowed: Boolean(record.allowed),
+    remaining: Number(record.remaining ?? DAILY_LIMIT),
+    used: Number(record.used ?? 0),
     limit: DAILY_LIMIT,
-    resetInSeconds: currentUsage.resetInSeconds,
+    resetInSeconds: Number(record.reset_in_seconds ?? 86400),
+    usageId: typeof record.usage_id === 'string' ? record.usage_id : null,
   };
+}
+
+async function refundUsage(usageId: string | null | undefined, supabase: SupabaseClient) {
+  if (!usageId) return;
+
+  const { error } = await supabase.from('ai_usage').delete().eq('id', usageId);
+  if (error) {
+    console.error('[chat-message] Error refunding usage:', error);
+  }
 }
 
 // ============================================================================
@@ -183,7 +167,7 @@ interface ChatMessage {
 interface ChatMessageRequest {
   message: string;
   history?: ChatMessage[]; // Previous messages in conversation
-  language?: 'tr' | 'en';
+  language?: 'tr' | 'en' | 'es';
   recentEntries?: string[]; // Recent gratitude entries for context
 }
 
@@ -269,8 +253,25 @@ Deno.serve(async (req: Request) => {
       return errorResponse('Unauthorized', 401);
     }
 
-    // Check rate limit
-    const usageInfo = await checkUsage(user.id);
+    const adminClient = getSupabaseAdmin();
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('is_pro')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!profile?.is_pro) {
+      return jsonResponse(
+        {
+          error: 'PRO subscription required',
+          code: 'PRO_REQUIRED',
+        },
+        403
+      );
+    }
+
+    // Atomically reserve rate-limit usage before the paid downstream call.
+    const usageInfo = await consumeUsage(user.id, 'chat_message', adminClient);
     if (!usageInfo.allowed) {
       return jsonResponse(
         {
@@ -291,21 +292,22 @@ Deno.serve(async (req: Request) => {
       return errorResponse('Message is required', 400);
     }
 
-    // Generate chat response
     const systemPrompt = buildSystemPrompt(language, recentEntries);
     const conversationPrompt = buildConversationPrompt(message.trim(), history);
-    const reply = await generateText(conversationPrompt, systemPrompt);
+    try {
+      const reply = await generateText(conversationPrompt, systemPrompt);
 
-    // Record usage
-    const updatedUsage = await recordUsage(user.id, 'chat_message');
+      const response: ChatMessageResponse = {
+        reply: reply.trim(),
+        remaining: usageInfo.remaining,
+        resetInSeconds: usageInfo.resetInSeconds,
+      };
 
-    const response: ChatMessageResponse = {
-      reply: reply.trim(),
-      remaining: updatedUsage.remaining,
-      resetInSeconds: updatedUsage.resetInSeconds,
-    };
-
-    return jsonResponse(response);
+      return jsonResponse(response);
+    } catch (error) {
+      await refundUsage(usageInfo.usageId, adminClient);
+      throw error;
+    }
   } catch (error) {
     console.error('[chat-message] Error:', error);
     return errorResponse('Failed to generate response', 500);

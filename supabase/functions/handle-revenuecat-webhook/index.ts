@@ -1,5 +1,4 @@
-// supabase/functions/handle-revenuecat-webhook/index.ts
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const ACTIVE_SUBSCRIPTION_EVENTS = new Set([
   'INITIAL_PURCHASE',

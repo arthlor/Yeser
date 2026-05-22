@@ -17,6 +17,17 @@ import { UpdateProfilePayload } from '@/schemas/profileSchema';
 const FIRST_REMINDER_TIME = '12:30';
 const REMINDER_TIME_PRESETS = ['08:00', '12:30', '18:00', '21:00'] as const;
 
+const hasUsableNotificationPermission = (permissions: {
+  granted?: boolean;
+  status?: string;
+}): boolean => Boolean(permissions.granted) || permissions.status === 'provisional';
+
+type NotificationSyncNotice = {
+  tone: 'success' | 'warning' | 'error' | 'info';
+  icon: string;
+  text: string;
+};
+
 const normalizeReminderTime = (raw: string | null | undefined): string => {
   if (!raw) {
     return FIRST_REMINDER_TIME;
@@ -51,7 +62,7 @@ export const NotificationSettings: React.FC = () => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { t } = useTranslation();
-  const { profile, updateProfile } = useUserProfile();
+  const { profile, updateProfile, refetchProfile } = useUserProfile();
   const { handleMutationError } = useGlobalError();
   const { showError: showToastError, showSuccess: showToastSuccess } = useToast();
 
@@ -61,14 +72,16 @@ export const NotificationSettings: React.FC = () => {
     [profile?.notification_time]
   );
 
-  const [isEnabled, setIsEnabled] = useState(hasNotificationPreference);
+  const [isEnabled, setIsEnabled] = useState(false);
   const [pushToken, setPushToken] = useState<string | null>(null);
+  const isDeviceRegistered = Boolean(pushToken);
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<NotificationSyncNotice | null>(null);
 
   const isMountedRef = useRef(true);
   const operationInProgressRef = useRef(false);
-  const hasSyncedRef = useRef(false);
+  const lastSyncedPreferenceRef = useRef<string | null>(null);
 
   const updateProfileAsync = useCallback(
     (payload: UpdateProfilePayload): Promise<void> =>
@@ -82,14 +95,21 @@ export const NotificationSettings: React.FC = () => {
   );
 
   useEffect(() => {
-    if (profile?.notification_time !== undefined) {
-      setIsEnabled(Boolean(profile.notification_time));
+    if (operationInProgressRef.current) {
+      return;
     }
-  }, [profile?.notification_time]);
 
-  // Background sync - runs once without blocking UI
+    setIsEnabled(hasNotificationPreference && isDeviceRegistered);
+  }, [hasNotificationPreference, isDeviceRegistered]);
+
+  // Background sync - runs when the backend reminder preference changes without blocking UI.
   useEffect(() => {
-    if (hasSyncedRef.current) {
+    if (profile === undefined) {
+      return;
+    }
+
+    const syncKey = profile?.notification_time ?? 'disabled';
+    if (lastSyncedPreferenceRef.current === syncKey) {
       return;
     }
 
@@ -114,29 +134,71 @@ export const NotificationSettings: React.FC = () => {
         }
 
         const hasBackendPreference = Boolean(profile?.notification_time);
-        const isPermissionGranted =
-          permissions.granted || (permissions.status as string) === 'provisional';
+        const isPermissionGranted = hasUsableNotificationPermission(permissions);
 
         if (hasBackendPreference && isPermissionGranted) {
+          const syncResult = await notificationService.syncRemindersPushTokenIfNeeded(true);
+          const refreshedToken =
+            (await notificationService.getCurrentDevicePushToken()) ?? currentToken;
+
+          if (!isCancelled && isMountedRef.current && refreshedToken) {
+            setPushToken(refreshedToken);
+          }
+
           await notificationService.scheduleDailyReminderNotifications(profile?.notification_time);
+          if (isMountedRef.current) {
+            const hasToken = Boolean(refreshedToken);
+            setSyncNotice({
+              tone: hasToken && syncResult.ok ? 'success' : 'warning',
+              icon: hasToken && syncResult.ok ? 'check-circle-outline' : 'alert-circle-outline',
+              text:
+                hasToken && syncResult.ok
+                  ? t('notifications.status.ready', {
+                      defaultValue:
+                        'This device is registered for remote reminders. Delivery is confirmed by push receipts.',
+                    })
+                  : t('notifications.status.tokenPending', {
+                      defaultValue:
+                        'Reminders are enabled, but this device is still waiting for a push token sync.',
+                    }),
+            });
+          }
         } else if (hasBackendPreference && !isPermissionGranted) {
           if (isMountedRef.current) {
             setIsEnabled(false);
+            setSyncNotice({
+              tone: 'warning',
+              icon: 'bell-off-outline',
+              text: t('notifications.status.permissionMissing', {
+                defaultValue:
+                  'Reminders are saved, but notification permission is off on this device.',
+              }),
+            });
           }
           await notificationService.cancelDailyReminderNotifications();
         } else if (!hasBackendPreference) {
+          if (isMountedRef.current) {
+            setSyncNotice(null);
+          }
           await notificationService.cancelDailyReminderNotifications();
         }
 
-        // Only latch hasSyncedRef once we have fully finished. If this run
+        // Only latch once we have fully finished. If this run
         // was cancelled (because `profile` refetched mid-sync) we want the
         // next run to actually re-execute instead of short-circuiting.
         if (!isCancelled) {
-          hasSyncedRef.current = true;
+          lastSyncedPreferenceRef.current = syncKey;
         }
       } catch (error) {
         if (!isCancelled && isMountedRef.current) {
           logger.error('Error in notification sync:', error as Error);
+          setSyncNotice({
+            tone: 'error',
+            icon: 'cloud-alert-outline',
+            text: t('notifications.status.syncFailed', {
+              defaultValue: 'Could not verify notification sync. Try toggling reminders again.',
+            }),
+          });
         }
       } finally {
         // Always clear the spinner while we're still mounted — even if the
@@ -152,7 +214,7 @@ export const NotificationSettings: React.FC = () => {
     return () => {
       isCancelled = true;
     };
-  }, [profile?.notification_time]);
+  }, [profile, profile?.notification_time, t]);
 
   const enableNotifications = useCallback(async () => {
     if (operationInProgressRef.current || !isMountedRef.current) {
@@ -197,6 +259,13 @@ export const NotificationSettings: React.FC = () => {
       const saveResult = await notificationService.saveTokenToBackend(token);
       if (!saveResult.ok) {
         logger.error('Failed to save push token:', saveResult.error);
+        setSyncNotice({
+          tone: 'error',
+          icon: 'cloud-alert-outline',
+          text: t('notifications.status.tokenSaveFailed', {
+            defaultValue: 'Could not save this device for remote reminders.',
+          }),
+        });
         showToastError(
           t('notifications.errors.enableFailed', {
             defaultValue: 'Could not enable notifications. Please try again.',
@@ -208,6 +277,13 @@ export const NotificationSettings: React.FC = () => {
       const preferenceResult = await notificationService.setNotificationsEnabled(true);
       if (!preferenceResult.ok) {
         logger.error('Failed to enable notifications:', preferenceResult.error);
+        setSyncNotice({
+          tone: 'error',
+          icon: 'cloud-alert-outline',
+          text: t('notifications.status.preferenceSaveFailed', {
+            defaultValue: 'Could not save your reminder preference.',
+          }),
+        });
         showToastError(
           t('notifications.errors.enableFailed', {
             defaultValue: 'Could not enable notifications. Please try again.',
@@ -216,7 +292,18 @@ export const NotificationSettings: React.FC = () => {
         throw preferenceResult.error ?? new Error('Failed to enable notifications');
       }
 
+      await refetchProfile();
+
       if (isMountedRef.current) {
+        setIsEnabled(true);
+        setSyncNotice({
+          tone: 'success',
+          icon: 'check-circle-outline',
+          text: t('notifications.status.ready', {
+            defaultValue:
+              'This device is registered for remote reminders. Delivery is confirmed by push receipts.',
+          }),
+        });
         showToastSuccess(t('onboarding.notifications.statusSuccess'));
       }
     } finally {
@@ -225,7 +312,7 @@ export const NotificationSettings: React.FC = () => {
       }
       operationInProgressRef.current = false;
     }
-  }, [pushToken, showToastError, showToastSuccess, t]);
+  }, [pushToken, showToastError, showToastSuccess, refetchProfile, t]);
 
   const disableNotifications = useCallback(async () => {
     if (operationInProgressRef.current || !isMountedRef.current) {
@@ -245,6 +332,8 @@ export const NotificationSettings: React.FC = () => {
         }
       }
 
+      await notificationService.cancelDailyReminderNotifications();
+
       const preferenceResult = await notificationService.setNotificationsEnabled(false);
       if (!preferenceResult.ok) {
         logger.error('Failed to disable notifications:', preferenceResult.error);
@@ -256,8 +345,31 @@ export const NotificationSettings: React.FC = () => {
         throw preferenceResult.error ?? new Error('Failed to disable notifications');
       }
 
+      const refreshedProfile = await refetchProfile();
+      const remindersStillEnabled = Boolean(refreshedProfile.data?.notification_time);
+
       if (isMountedRef.current) {
-        showToastSuccess(t('notifications.maybeLater'));
+        setPushToken(null);
+        setIsEnabled(false);
+        setSyncNotice(
+          remindersStillEnabled
+            ? {
+                tone: 'info',
+                icon: 'cellphone-link',
+                text: t('notifications.status.stillActiveOtherDevices', {
+                  defaultValue:
+                    'This device was unsubscribed. Reminders remain active on your other devices.',
+                }),
+              }
+            : null
+        );
+        showToastSuccess(
+          remindersStillEnabled
+            ? t('notifications.status.deviceUnsubscribed', {
+                defaultValue: 'Reminders turned off on this device.',
+              })
+            : t('notifications.maybeLater')
+        );
       }
     } finally {
       if (isMountedRef.current) {
@@ -265,7 +377,7 @@ export const NotificationSettings: React.FC = () => {
       }
       operationInProgressRef.current = false;
     }
-  }, [pushToken, showToastSuccess, showToastError, t]);
+  }, [pushToken, showToastSuccess, showToastError, refetchProfile, t]);
 
   const handleToggleSwitch = useCallback(
     async (isOn: boolean) => {
@@ -278,8 +390,9 @@ export const NotificationSettings: React.FC = () => {
       if (isOn) {
         setIsEnabled(true);
         const permissions = await Notifications.getPermissionsAsync();
+        const isPermissionGranted = hasUsableNotificationPermission(permissions);
 
-        if (!permissions.granted && permissions.canAskAgain) {
+        if (!isPermissionGranted && permissions.canAskAgain) {
           notificationService.showNotificationPermissionGuidance(true, (granted) => {
             if (!isMountedRef.current) {
               return;
@@ -301,7 +414,7 @@ export const NotificationSettings: React.FC = () => {
           return;
         }
 
-        if (!permissions.granted && !permissions.canAskAgain) {
+        if (!isPermissionGranted && !permissions.canAskAgain) {
           showToastError(t('notifications.permissionRequiredMessage'));
           notificationService.showNotificationPermissionGuidance(false);
           setIsEnabled(false);
@@ -405,6 +518,12 @@ export const NotificationSettings: React.FC = () => {
       }),
     [selectedReminderTime, t]
   );
+  const syncNoticeRowStyle = syncNotice
+    ? [styles.statusRow, getStatusRowStyle(styles, syncNotice.tone)]
+    : null;
+  const syncNoticeTextStyle = syncNotice
+    ? [styles.statusText, getStatusTextStyle(styles, syncNotice.tone)]
+    : null;
 
   useEffect(() => {
     return () => {
@@ -444,7 +563,18 @@ export const NotificationSettings: React.FC = () => {
         </View>
       </View>
 
-      {isEnabled && (
+      {syncNotice ? (
+        <View style={syncNoticeRowStyle}>
+          <Icon
+            name={syncNotice.icon}
+            size={16}
+            color={getStatusIconColor(theme, syncNotice.tone)}
+          />
+          <Text style={syncNoticeTextStyle}>{syncNotice.text}</Text>
+        </View>
+      ) : null}
+
+      {hasNotificationPreference && (
         <>
           <View style={styles.divider} />
           <View style={styles.scheduleRow}>
@@ -491,6 +621,53 @@ export const NotificationSettings: React.FC = () => {
       )}
     </View>
   );
+};
+
+type NotificationSettingsStyles = ReturnType<typeof createStyles>;
+
+const getStatusRowStyle = (
+  styles: NotificationSettingsStyles,
+  tone: NotificationSyncNotice['tone']
+) => {
+  switch (tone) {
+    case 'success':
+      return styles.statusRow_success;
+    case 'warning':
+      return styles.statusRow_warning;
+    case 'error':
+      return styles.statusRow_error;
+    case 'info':
+      return styles.statusRow_info;
+  }
+};
+
+const getStatusTextStyle = (
+  styles: NotificationSettingsStyles,
+  tone: NotificationSyncNotice['tone']
+) => {
+  switch (tone) {
+    case 'success':
+      return styles.statusText_success;
+    case 'warning':
+      return styles.statusText_warning;
+    case 'error':
+      return styles.statusText_error;
+    case 'info':
+      return styles.statusText_info;
+  }
+};
+
+const getStatusIconColor = (theme: AppTheme, tone: NotificationSyncNotice['tone']): string => {
+  switch (tone) {
+    case 'success':
+      return theme.colors.success;
+    case 'warning':
+      return theme.colors.warning;
+    case 'error':
+      return theme.colors.error;
+    case 'info':
+      return theme.colors.primary;
+  }
 };
 
 const createStyles = (theme: AppTheme) =>
@@ -541,6 +718,50 @@ const createStyles = (theme: AppTheme) =>
       height: StyleSheet.hairlineWidth,
       backgroundColor: theme.colors.outline + '15',
       marginLeft: theme.spacing.md + 32 + theme.spacing.sm,
+    },
+    statusRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: theme.spacing.xs,
+      marginHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+    },
+    statusRow_success: {
+      backgroundColor: theme.colors.success + '12',
+      borderColor: theme.colors.success + '30',
+    },
+    statusRow_warning: {
+      backgroundColor: theme.colors.warning + '12',
+      borderColor: theme.colors.warning + '30',
+    },
+    statusRow_error: {
+      backgroundColor: theme.colors.error + '12',
+      borderColor: theme.colors.error + '30',
+    },
+    statusRow_info: {
+      backgroundColor: theme.colors.primary + '10',
+      borderColor: theme.colors.primary + '28',
+    },
+    statusText: {
+      ...theme.typography.bodySmall,
+      flex: 1,
+      lineHeight: 18,
+    },
+    statusText_success: {
+      color: theme.colors.success,
+    },
+    statusText_warning: {
+      color: theme.colors.warning,
+    },
+    statusText_error: {
+      color: theme.colors.error,
+    },
+    statusText_info: {
+      color: theme.colors.primary,
     },
     scheduleRow: {
       flexDirection: 'row',

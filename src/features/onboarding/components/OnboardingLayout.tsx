@@ -55,7 +55,11 @@ export const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   );
 };
 
-const createStyles = (theme: AppTheme, insets: { bottom: number }, edgeToEdge: boolean) =>
+const createStyles = (
+  theme: AppTheme,
+  insets: { top: number; bottom: number },
+  edgeToEdge: boolean
+) =>
   StyleSheet.create({
     screenContainer: {
       flex: 1,
@@ -69,6 +73,7 @@ const createStyles = (theme: AppTheme, insets: { bottom: number }, edgeToEdge: b
     contentContainer: {
       flex: 1,
       minHeight: '100%', // Ensure content takes full height for proper spacing
+      paddingTop: insets.top,
     },
     androidBottomSpacer: {
       // Extra bottom padding for Android to prevent overlap with navigation bar

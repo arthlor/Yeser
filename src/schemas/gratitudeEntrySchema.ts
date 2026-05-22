@@ -1,6 +1,20 @@
 import { z } from 'zod';
 import i18n from '@/i18n';
 
+const t = (key: string, fallback: string) => i18n.t(key, { defaultValue: fallback });
+
+const nonBlankStatementSchema = z
+  .string()
+  .trim()
+  .superRefine((value, ctx) => {
+    if (value.length < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t('validation.statement.empty', 'Statement cannot be empty'),
+      });
+    }
+  });
+
 // 🚨 FIX: Single source of truth schema (DRY principle)
 // Base schema that defines the core structure once
 export const attachmentSchema = z.object({
@@ -25,14 +39,7 @@ const baseGratitudeEntrySchema = z.object({
   entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format, expected YYYY-MM-DD'),
   // statements are stored as JSONB in the DB, typically fetched as a parsed object or array by Supabase client.
   // Assuming it's an array of strings post-fetch.
-  statements: z.array(
-    z
-      .string()
-      .min(
-        1,
-        i18n.isInitialized ? i18n.t('validation.statement.empty') : 'Statement cannot be empty'
-      )
-  ),
+  statements: z.array(nonBlankStatementSchema),
   // New optional moods map: index (string) -> emoji string
   moods: z.record(z.string(), z.string()).optional(),
   // Optional media attachments. Populated by paginated RPC or by a side-fetch.
@@ -54,21 +61,14 @@ export type RawGratitudeEntry = z.infer<typeof rawGratitudeEntrySchema>;
 // If they're identical, just reuse the base. If different, use .extend()
 export const gratitudeEntrySchema = baseGratitudeEntrySchema.extend({
   // Enhanced validation for application layer
-  statements: z
-    .array(
-      z
-        .string()
-        .min(
-          1,
-          i18n.isInitialized ? i18n.t('validation.statement.empty') : 'Statement cannot be empty'
-        )
-    )
-    .min(
-      1,
-      i18n.isInitialized
-        ? i18n.t('validation.statement.required')
-        : 'At least one statement is required'
-    ),
+  statements: z.array(nonBlankStatementSchema).superRefine((value, ctx) => {
+    if (value.length < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t('validation.statement.required', 'At least one statement is required'),
+      });
+    }
+  }),
 });
 
 export type GratitudeEntry = z.infer<typeof gratitudeEntrySchema>;
@@ -76,12 +76,7 @@ export type GratitudeEntry = z.infer<typeof gratitudeEntrySchema>;
 // Schema for data used by add_gratitude_statement RPC
 export const addStatementPayloadSchema = z.object({
   entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format, expected YYYY-MM-DD'),
-  statement: z
-    .string()
-    .min(
-      1,
-      i18n.isInitialized ? i18n.t('validation.statement.empty') : 'Statement cannot be empty'
-    ),
+  statement: nonBlankStatementSchema,
   mood: z.string().nullable().optional(),
   // user_id is implicit from the session when calling the RPC
 });
@@ -92,12 +87,7 @@ export type AddStatementPayload = z.infer<typeof addStatementPayloadSchema>;
 export const editStatementPayloadSchema = z.object({
   entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format, expected YYYY-MM-DD'),
   statement_index: z.number().int().min(0, 'Statement index must be non-negative'),
-  updated_statement: z
-    .string()
-    .min(
-      1,
-      i18n.isInitialized ? i18n.t('validation.statement.empty') : 'Statement cannot be empty'
-    ),
+  updated_statement: nonBlankStatementSchema,
   mood: z.string().nullable().optional(),
 });
 
@@ -124,12 +114,15 @@ export const dailyPromptSchema = z.object({
   id: z.string().uuid({ message: 'Invalid UUID for prompt id' }),
   prompt_text_tr: z
     .string()
-    .min(
-      1,
-      i18n.isInitialized
-        ? i18n.t('validation.prompt.turkishRequired')
-        : 'Turkish prompt text is required'
-    ),
+    .trim()
+    .superRefine((value, ctx) => {
+      if (value.length < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('validation.prompt.turkishRequired', 'Turkish prompt text is required'),
+        });
+      }
+    }),
   prompt_text_en: z.string().nullable().optional(),
   prompt_text_es: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
@@ -143,10 +136,15 @@ export const localizedDailyPromptSchema = z.object({
   id: z.string().uuid({ message: 'Invalid UUID for prompt id' }),
   prompt_text: z
     .string()
-    .min(
-      1,
-      i18n.isInitialized ? i18n.t('validation.prompt.textRequired') : 'Prompt text is required'
-    ),
+    .trim()
+    .superRefine((value, ctx) => {
+      if (value.length < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('validation.prompt.textRequired', 'Prompt text is required'),
+        });
+      }
+    }),
   category: z.string().nullable().optional(),
 });
 

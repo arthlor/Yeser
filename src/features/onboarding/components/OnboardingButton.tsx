@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
 import { Button } from 'react-native-paper';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { getPrimaryShadow } from '@/themes/utils';
@@ -20,7 +21,7 @@ interface OnboardingButtonProps {
  * Standardized onboarding button component ensuring consistent:
  * - Button sizes across all onboarding steps
  * - Typography and styling
- * - Touch feedback and accessibility
+ * - Touch feedback with scale animation
  * - Loading states
  */
 export const OnboardingButton: React.FC<OnboardingButtonProps> = ({
@@ -35,38 +36,64 @@ export const OnboardingButton: React.FC<OnboardingButtonProps> = ({
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
+  const scale = useSharedValue(1);
+
+  const handlePressIn = () => {
+    if (!disabled && !loading) {
+      scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
+    }
+  };
+
+  const handlePressOut = () => {
+    if (!disabled && !loading) {
+      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    }
+  };
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   return (
-    <Button
-      mode={mode}
-      onPress={onPress}
-      disabled={disabled}
-      loading={loading}
-      style={[styles.button, style]}
-      contentStyle={styles.buttonContent}
-      labelStyle={styles.buttonText}
-      accessibilityLabel={accessibilityLabel || title}
-    >
-      {title}
-    </Button>
+    <Animated.View style={[animatedStyle, style, styles.container]}>
+      <Button
+        mode={mode}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={disabled}
+        loading={loading}
+        style={styles.button}
+        contentStyle={styles.buttonContent}
+        labelStyle={styles.buttonText}
+        accessibilityLabel={accessibilityLabel || title}
+        buttonColor={mode === 'contained' ? theme.colors.primary : undefined}
+      >
+        {title}
+      </Button>
+    </Animated.View>
   );
 };
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
+    container: {
+      width: '100%',
+    },
     button: {
       width: '100%',
-      borderRadius: theme.borderRadius.lg,
-      ...getPrimaryShadow.small(theme),
+      borderRadius: theme.borderRadius.xl, // Softer, more rounded corners
+      ...getPrimaryShadow.overlay(theme), // Softer diffused shadow
     },
     buttonContent: {
-      paddingVertical: theme.spacing.xs,
-      minHeight: 44, // Meets accessibility minimum touch target
+      paddingVertical: theme.spacing.xs + 2, // Slightly taller for more breathing room
+      minHeight: 48, // Enhanced touch target
     },
     buttonText: {
       ...theme.typography.bodyMedium,
-      fontSize: 15,
+      fontSize: 16, // Slightly larger
       fontWeight: '600',
-      letterSpacing: 0.3,
+      letterSpacing: 0.2,
     },
   });
 

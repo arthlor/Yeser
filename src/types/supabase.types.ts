@@ -29,6 +29,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      app_config: {
+        Row: {
+          key: string;
+          updated_at: string;
+          value: Json;
+        };
+        Insert: {
+          key: string;
+          updated_at?: string;
+          value: Json;
+        };
+        Update: {
+          key?: string;
+          updated_at?: string;
+          value?: Json;
+        };
+        Relationships: [];
+      };
       daily_prompts: {
         Row: {
           category: string | null;
@@ -216,6 +234,7 @@ export type Database = {
       };
       mood_insight_snapshots: {
         Row: {
+          analysis_details: Json;
           entry_count_at_generation: number;
           generated_at: string;
           highlighted_insight: Json;
@@ -223,10 +242,15 @@ export type Database = {
           language: string;
           narrative: Json;
           range: string;
+          range_entry_count_at_generation: number;
+          risk_level: string;
+          source_hash: string | null;
+          statement_count_at_generation: number;
           updated_at: string;
           user_id: string;
         };
         Insert: {
+          analysis_details?: Json;
           entry_count_at_generation?: number;
           generated_at?: string;
           highlighted_insight: Json;
@@ -234,10 +258,15 @@ export type Database = {
           language: string;
           narrative: Json;
           range: string;
+          range_entry_count_at_generation?: number;
+          risk_level?: string;
+          source_hash?: string | null;
+          statement_count_at_generation?: number;
           updated_at?: string;
           user_id: string;
         };
         Update: {
+          analysis_details?: Json;
           entry_count_at_generation?: number;
           generated_at?: string;
           highlighted_insight?: Json;
@@ -245,6 +274,10 @@ export type Database = {
           language?: string;
           narrative?: Json;
           range?: string;
+          range_entry_count_at_generation?: number;
+          risk_level?: string;
+          source_hash?: string | null;
+          statement_count_at_generation?: number;
           updated_at?: string;
           user_id?: string;
         };
@@ -316,6 +349,10 @@ export type Database = {
           expo_ticket_id: string | null;
           id: number;
           job_id: string | null;
+          receipt_checked_at: string | null;
+          receipt_details: Json | null;
+          receipt_message: string | null;
+          receipt_status: string | null;
           token: string | null;
         };
         Insert: {
@@ -326,6 +363,10 @@ export type Database = {
           expo_ticket_id?: string | null;
           id?: number;
           job_id?: string | null;
+          receipt_checked_at?: string | null;
+          receipt_details?: Json | null;
+          receipt_message?: string | null;
+          receipt_status?: string | null;
           token?: string | null;
         };
         Update: {
@@ -336,6 +377,10 @@ export type Database = {
           expo_ticket_id?: string | null;
           id?: number;
           job_id?: string | null;
+          receipt_checked_at?: string | null;
+          receipt_details?: Json | null;
+          receipt_message?: string | null;
+          receipt_status?: string | null;
           token?: string | null;
         };
         Relationships: [
@@ -479,6 +524,20 @@ export type Database = {
       };
     };
     Functions: {
+      consume_ai_usage: {
+        Args: { p_daily_limit: number; p_feature: string; p_user_id: string };
+        Returns: {
+          allowed: boolean;
+          remaining: number;
+          reset_in_seconds: number;
+          usage_id: string | null;
+          used: number;
+        }[];
+      };
+      get_recent_statement_count: {
+        Args: { p_start_date: string };
+        Returns: number;
+      };
       add_gratitude_statement: {
         Args: { p_entry_date: string; p_mood?: string; p_statement: string };
         Returns: undefined;
@@ -616,6 +675,7 @@ export type Database = {
       get_latest_mood_insight_snapshot: {
         Args: { p_language?: string; p_range?: string };
         Returns: {
+          analysis_details: Json;
           entry_count_at_generation: number;
           generated_at: string;
           highlighted_insight: Json;
@@ -623,6 +683,10 @@ export type Database = {
           language: string;
           narrative: Json;
           range: string;
+          range_entry_count_at_generation: number;
+          risk_level: string;
+          source_hash: string | null;
+          statement_count_at_generation: number;
         }[];
       };
       get_mood_analytics: { Args: { p_range?: string }; Returns: Json };

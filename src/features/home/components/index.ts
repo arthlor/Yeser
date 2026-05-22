@@ -7,6 +7,7 @@ import HomeGratitudeListItem from './HomeGratitudeListItem';
 import InspirationCard from './InspirationCard';
 import StatsRow from './StatsRow';
 import StreakMiniCard from './StreakMiniCard';
+import { HomeMoodWidget } from './HomeMoodWidget';
 
 export {
   ActionCards,
@@ -17,4 +18,5 @@ export {
   InspirationCard,
   StatsRow,
   StreakMiniCard,
+  HomeMoodWidget,
 };

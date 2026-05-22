@@ -1,7 +1,10 @@
 import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,6 +20,7 @@ import { AIUsageIndicator } from './AIUsageIndicator';
 import { useCoachPrompt } from '@/features/gratitude/hooks/useCoachPrompt';
 import { useLanguageStore } from '@/store/languageStore';
 import { useSubscription } from '@/hooks/useSubscription';
+import { hapticFeedback } from '@/utils/hapticFeedback';
 
 type FocusArea = 'relationships' | 'growth' | 'nature' | 'health' | 'achievements' | 'general';
 
@@ -41,7 +45,7 @@ interface AICoachPromptProps {
  */
 export const AICoachPrompt: React.FC<AICoachPromptProps> = ({
   recentEntries = [],
-  onSelectPrompt: _onSelectPrompt,
+  onSelectPrompt,
   style,
 }) => {
   const { theme } = useTheme();
@@ -51,12 +55,26 @@ export const AICoachPrompt: React.FC<AICoachPromptProps> = ({
   const language = useLanguageStore((state) => state.language);
 
   const { coachPrompt, isLoading, generatePrompt, remaining, resetInSeconds } = useCoachPrompt({
-    language: language === 'tr' ? 'tr' : 'en',
+    language,
   });
 
   const [selectedFocus, setSelectedFocus] = React.useState<FocusArea>('general');
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showLimitModal, setShowLimitModal] = React.useState(false);
+
+  const promptFadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (coachPrompt) {
+      promptFadeAnim.setValue(0);
+      Animated.timing(promptFadeAnim, {
+        toValue: 1,
+        duration: 350,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [coachPrompt, promptFadeAnim]);
 
   const handleGenerate = React.useCallback(async () => {
     // Check limit before generating
@@ -65,9 +83,17 @@ export const AICoachPrompt: React.FC<AICoachPromptProps> = ({
       return;
     }
 
+    hapticFeedback.light();
     await generatePrompt(recentEntries, selectedFocus);
     setIsExpanded(true);
   }, [generatePrompt, recentEntries, selectedFocus, remaining]);
+
+  const handleSelectPrompt = React.useCallback(() => {
+    if (coachPrompt && onSelectPrompt) {
+      hapticFeedback.medium();
+      onSelectPrompt(coachPrompt);
+    }
+  }, [coachPrompt, onSelectPrompt]);
 
   const handleUnlock = React.useCallback(() => {
     checkGate('ai_coach_prompt');
@@ -133,7 +159,7 @@ export const AICoachPrompt: React.FC<AICoachPromptProps> = ({
         activeOpacity={0.7}
       >
         <View style={styles.headerLeft}>
-          <Icon name="school-outline" size={20} color={theme.colors.primary} />
+          <Icon name="creation" size={20} color={theme.colors.primary} />
           <Text style={styles.headerTitle}>{t('ai.coach.title', '🌱 AI Coach')}</Text>
         </View>
         <Icon
@@ -145,13 +171,21 @@ export const AICoachPrompt: React.FC<AICoachPromptProps> = ({
 
       {isExpanded && (
         <View style={styles.content}>
-          {/* Focus Area Selector */}
-          <View style={styles.focusRow}>
+          {/* Focus Area Selector - Horizontal Swipeable */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.focusRow}
+            style={styles.focusScroll}
+          >
             {(Object.keys(FOCUS_ICONS) as FocusArea[]).map((area) => (
               <TouchableOpacity
                 key={area}
                 style={[styles.focusChip, selectedFocus === area && styles.focusChipActive]}
-                onPress={() => setSelectedFocus(area)}
+                onPress={() => {
+                  hapticFeedback.light();
+                  setSelectedFocus(area);
+                }}
               >
                 <Icon
                   name={FOCUS_ICONS[area]}
@@ -168,7 +202,7 @@ export const AICoachPrompt: React.FC<AICoachPromptProps> = ({
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
 
           {/* Generate Button */}
           {!coachPrompt && (
@@ -176,6 +210,7 @@ export const AICoachPrompt: React.FC<AICoachPromptProps> = ({
               style={styles.generateBtn}
               onPress={handleGenerate}
               disabled={isLoading}
+              activeOpacity={0.8}
             >
               {isLoading ? (
                 <>
@@ -195,15 +230,41 @@ export const AICoachPrompt: React.FC<AICoachPromptProps> = ({
 
           {/* Generated Prompt */}
           {coachPrompt && (
-            <View style={styles.promptCard}>
-              <Text style={styles.promptText}>{coachPrompt}</Text>
+            <Animated.View style={[styles.promptCardContainer, { opacity: promptFadeAnim }]}>
+              <TouchableOpacity
+                style={styles.promptCard}
+                onPress={handleSelectPrompt}
+                activeOpacity={0.8}
+              >
+                <View style={styles.quoteIconContainer}>
+                  <Icon name="format-quote-open" size={24} color={theme.colors.primary + '20'} />
+                </View>
+                <Text style={styles.promptText}>{coachPrompt}</Text>
 
-              <View style={styles.promptActions}>
-                <TouchableOpacity style={styles.refreshBtn} onPress={handleGenerate}>
-                  <Icon name="refresh" size={16} color={theme.colors.primary} />
-                </TouchableOpacity>
-              </View>
-            </View>
+                <View style={styles.promptDivider} />
+
+                <View style={styles.promptFooterRow}>
+                  <TouchableOpacity
+                    style={styles.usePromptBtn}
+                    onPress={handleSelectPrompt}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="creation" size={14} color={theme.colors.onPrimary} />
+                    <Text style={styles.usePromptText}>
+                      {t('ai.coach.usePrompt', 'Use this prompt')}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.refreshBtn}
+                    onPress={handleGenerate}
+                    activeOpacity={0.7}
+                  >
+                    <Icon name="refresh" size={16} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
           )}
 
           {/* Usage indicator */}
@@ -353,31 +414,40 @@ const createStyles = (theme: AppTheme) =>
       paddingBottom: theme.spacing.md,
       gap: theme.spacing.sm,
     },
+    focusScroll: {
+      marginHorizontal: -theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.sm,
+    },
     focusRow: {
       flexDirection: 'row',
-      gap: theme.spacing.xs,
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
+      paddingRight: theme.spacing.md * 2,
     },
     focusChip: {
-      flex: 1,
-      minWidth: 48,
-      maxWidth: 60,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.borderRadius.md,
-      backgroundColor: theme.colors.surfaceVariant + '50',
-      justifyContent: 'center',
+      flexDirection: 'row',
       alignItems: 'center',
-      gap: 2,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm - 2,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.surfaceVariant + '40',
+      borderWidth: 1,
+      borderColor: theme.colors.outline + '10',
+      gap: 6,
     },
     focusChipActive: {
       backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+      shadowColor: theme.colors.primary,
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
     },
     focusLabel: {
-      ...theme.typography.labelSmall,
-      fontSize: 9,
+      ...theme.typography.labelMedium,
       color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
+      fontWeight: '600',
     },
     focusLabelActive: {
       color: theme.colors.onPrimary,
@@ -396,24 +466,58 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onPrimary,
       fontWeight: '600',
     },
+    promptCardContainer: {
+      marginTop: theme.spacing.sm,
+    },
     promptCard: {
-      backgroundColor: theme.colors.primaryContainer + '30',
-      borderRadius: theme.borderRadius.md,
+      backgroundColor: theme.colors.primaryContainer + '15',
+      borderRadius: theme.borderRadius.lg,
+      borderLeftWidth: 4,
+      borderLeftColor: theme.colors.primary,
       padding: theme.spacing.md,
-      gap: theme.spacing.sm,
+      position: 'relative',
+    },
+    quoteIconContainer: {
+      position: 'absolute',
+      top: 6,
+      left: 6,
     },
     promptText: {
       ...theme.typography.bodyMedium,
       color: theme.colors.onSurface,
       fontStyle: 'italic',
       lineHeight: 22,
+      paddingLeft: 12,
+      paddingTop: 4,
     },
-    promptActions: {
+    promptDivider: {
+      height: 1,
+      backgroundColor: theme.colors.outline + '10',
+      marginVertical: theme.spacing.sm,
+    },
+    promptFooterRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'flex-end',
-      gap: theme.spacing.sm,
-      marginTop: theme.spacing.xs,
+      justifyContent: 'space-between',
+    },
+    usePromptBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs + 2,
+      borderRadius: theme.borderRadius.full,
+      shadowColor: theme.colors.primary,
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    usePromptText: {
+      ...theme.typography.labelMedium,
+      color: theme.colors.onPrimary,
+      fontWeight: '600',
     },
     refreshBtn: {
       width: 32,
@@ -422,12 +526,6 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.surfaceVariant,
       justifyContent: 'center',
       alignItems: 'center',
-    },
-    remainingText: {
-      ...theme.typography.labelSmall,
-      color: theme.colors.onSurfaceVariant,
-      textAlign: 'center',
-      opacity: 0.8,
     },
     remainingContainer: {
       alignItems: 'center',

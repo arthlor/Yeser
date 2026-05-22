@@ -8,12 +8,100 @@ import {
   UnknownError,
   ValidationError,
 } from '@/shared/errors';
+import i18n from '@/i18n';
 
 interface APIError extends Error {
   code?: string;
   status?: number;
   details?: Record<string, unknown>;
 }
+
+const getLocalizedAPIErrorMessage = (
+  key: string,
+  defaultValue: string,
+  options: Record<string, string | number> = {}
+): string => {
+  if (!i18n.isInitialized) {
+    return Object.entries(options).reduce(
+      (message, [name, value]) => message.replace(`{{${name}}}`, String(value)),
+      defaultValue
+    );
+  }
+
+  return String(i18n.t(key, { defaultValue, ...options }));
+};
+
+const mapBusinessRuleError = (message: string, operation: string): Error | null => {
+  if (message.includes('PAST_ENTRY_REQUIRES_PRO')) {
+    return new PermissionError(
+      getLocalizedAPIErrorMessage(
+        'errors.gratitude.pastEntryRequiresPro',
+        'Past entries are a Premium feature.'
+      ),
+      { operation, code: 'PAST_ENTRY_REQUIRES_PRO' }
+    );
+  }
+
+  if (message.includes('FREE_DAILY_LIMIT_REACHED')) {
+    return new ValidationError(
+      getLocalizedAPIErrorMessage(
+        'errors.gratitude.freeDailyLimit',
+        'Free accounts can add one gratitude per day.'
+      ),
+      { operation, code: 'FREE_DAILY_LIMIT_REACHED' }
+    );
+  }
+
+  if (message.includes('MOOD_EDITING_REQUIRES_PRO')) {
+    return new PermissionError(
+      getLocalizedAPIErrorMessage(
+        'errors.gratitude.moodEditingRequiresPro',
+        'Mood editing is a Premium feature.'
+      ),
+      { operation, code: 'MOOD_EDITING_REQUIRES_PRO' }
+    );
+  }
+
+  if (message.includes('ATTACHMENTS_REQUIRE_PRO')) {
+    return new PermissionError(
+      getLocalizedAPIErrorMessage(
+        'errors.gratitude.attachmentsRequirePro',
+        'Media attachments are a Premium feature.'
+      ),
+      { operation, code: 'ATTACHMENTS_REQUIRE_PRO' }
+    );
+  }
+
+  const attachmentLimitMatch = message.match(/ATTACHMENT_DAILY_LIMIT_REACHED:(image|audio):(\d+)/);
+  if (attachmentLimitMatch) {
+    const kind = attachmentLimitMatch[1];
+    const cap = Number(attachmentLimitMatch[2]) || 10;
+    const key =
+      kind === 'image'
+        ? 'gratitude.attachments.errors.dailyLimitImage'
+        : 'gratitude.attachments.errors.dailyLimitAudio';
+    const fallback =
+      kind === 'image'
+        ? "You have reached today's image limit ({{cap}}/day). Try again tomorrow."
+        : "You have reached today's voice note limit ({{cap}}/day). Try again tomorrow.";
+
+    return new ValidationError(getLocalizedAPIErrorMessage(key, fallback, { cap }), {
+      operation,
+      code: 'ATTACHMENT_DAILY_LIMIT_REACHED',
+      kind,
+      cap,
+    });
+  }
+
+  if (message.includes('Entry not found') || message.includes('Attachment not found')) {
+    return new ValidationError(
+      getLocalizedAPIErrorMessage('errors.db.recordNotFound', 'Record not found.'),
+      { operation, code: 'P0002' }
+    );
+  }
+
+  return null;
+};
 
 /**
  * Standardized error handling for API operations
@@ -29,6 +117,11 @@ export const handleAPIError = (error: Error, operation: string): Error => {
 
   if (isNetworkError(error)) {
     return new NetworkError('Network error', { operation });
+  }
+
+  const businessError = mapBusinessRuleError(error.message || '', operation);
+  if (businessError) {
+    return businessError;
   }
 
   if (errorWithExtras?.code === 'PGRST116') {

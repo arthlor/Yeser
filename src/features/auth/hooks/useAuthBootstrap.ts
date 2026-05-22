@@ -7,6 +7,7 @@ import { authCoordinator } from '@/features/auth/services/authCoordinator';
 import { supabaseService } from '@/utils/supabaseClient';
 import { updateTimezone } from '@/features/settings/profileApi';
 import { useCoreAuthStore } from '@/features/auth/store/coreAuthStore';
+import { notificationService } from '@/services/notificationService';
 import type { Profile } from '@/schemas/profileSchema';
 
 // Process queued OTP tokens when database becomes ready
@@ -27,6 +28,7 @@ const handleDeepLink = (url: string, databaseReady: boolean = false): void => {
  * - Handles deep link processing
  * - Tracks database readiness for OAuth token queue
  * - Syncs timezone on authenticated profile load
+ * - Re-registers push token when reminders are enabled for the account
  */
 export const useAuthBootstrap = (profile?: Profile | null) => {
   const isAuthenticated = useCoreAuthStore((state) => state.isAuthenticated);
@@ -56,6 +58,18 @@ export const useAuthBootstrap = (profile?: Profile | null) => {
       updateTimezone(deviceTimezone);
     }
   }, [isAuthenticated, profileTimezone]);
+
+  React.useEffect(() => {
+    if (!isAuthenticated || !profile?.notification_time) {
+      return;
+    }
+
+    void notificationService.syncRemindersPushTokenIfNeeded(true).catch((error) => {
+      logger.warn('Failed to auto-sync reminders push token on launch', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+  }, [isAuthenticated, profile?.notification_time]);
 
   // Monitor Supabase initialization once and process token queue exactly once when ready
   React.useEffect(() => {

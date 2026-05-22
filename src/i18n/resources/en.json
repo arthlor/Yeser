@@ -223,7 +223,11 @@
     "stats": {
       "dailyProgress": "Daily Progress",
       "currentStreak": "Current Streak",
-      "longestStreak": "Longest: {{count}}"
+      "longestStreak": "Longest: {{count}}",
+      "completed": "completed"
+    },
+    "cta": {
+      "writeTitle": "Write today's gratitude"
     }
   },
   "tips": {
@@ -262,6 +266,17 @@
     "reminderTimeTitle": "Daily reminder time",
     "timeUpdatedSuccess": "Reminder time updated to {{time}}.",
     "reminderTimeA11y": "Set reminder time to {{time}}",
+    "status": {
+      "ready": "This device is registered for remote reminders. Delivery is confirmed by push receipts.",
+      "tokenPending": "Reminders are enabled, but this device is still waiting for a push token sync.",
+      "missingToken": "Reminders are enabled, but this device has not synced a push token yet.",
+      "permissionMissing": "Reminders are saved, but notification permission is off on this device.",
+      "syncFailed": "Could not verify notification sync. Try toggling reminders again.",
+      "tokenSaveFailed": "Could not save this device for remote reminders.",
+      "preferenceSaveFailed": "Could not save your reminder preference.",
+      "stillActiveOtherDevices": "This device was unsubscribed. Reminders remain active on your other devices.",
+      "deviceUnsubscribed": "Reminders turned off on this device."
+    },
     "errors": {
       "generic": "Something went wrong with notifications.",
       "permissionDenied": "Notification permission is required to enable reminders.",
@@ -433,7 +448,14 @@
       }
     },
     "user": {
-      "usernameTitle": "Username"
+      "usernameTitle": "Username",
+      "usernameEditTitle": "Edit username",
+      "usernamePlaceholder": "Choose a username",
+      "usernameUnchanged": "Enter a different username to save changes.",
+      "usernameAvailable": "This username is available.",
+      "usernameHint": "Use 3 to 50 characters. Letters and numbers work best.",
+      "usernameModalA11y": "Username editor",
+      "usernameSaving": "Saving..."
     },
     "version": "Yeser v{{version}}",
     "help": {
@@ -1033,6 +1055,9 @@
       "cancel": "Cancel"
     },
     "attachments": {
+      "voiceNote": "Voice note",
+      "audioUnavailable": "Voice note unavailable",
+      "imageUnavailable": "Image unavailable",
       "errors": {
         "dailyLimitImage": "You've reached today's image limit ({{cap}}/day). Try again tomorrow.",
         "dailyLimitAudio": "You've reached today's voice note limit ({{cap}}/day). Try again tomorrow."
@@ -1317,7 +1342,7 @@
       "benefit2Desc": "Enough support to remember, never enough to nag",
       "benefit3Title": "You're in charge",
       "benefit3Desc": "Change the time, tone, or turn it off anytime",
-      "statusSuccess": "Lovely — your gentle reminder is set.",
+      "statusSuccess": "Lovely — this device is registered for your gentle reminder.",
       "statusSkip": "You can skip for now; enable later in settings",
       "enable": "Turn on my reminder",
       "enableLoading": "Requesting Permission...",
@@ -1627,6 +1652,12 @@
       "security": "Due to a security restriction, the operation couldn't be completed. Please sign out and sign in again.",
       "notificationSchedule": "We couldn't update your notification schedule. Please try again."
     },
+    "gratitude": {
+      "pastEntryRequiresPro": "Past entries are a Premium feature.",
+      "freeDailyLimit": "Free accounts can add one gratitude per day.",
+      "moodEditingRequiresPro": "Mood editing is a Premium feature.",
+      "attachmentsRequirePro": "Media attachments are a Premium feature."
+    },
     "network": { "generic": "Check your internet connection." },
     "server": { "generic": "A server error occurred. Please try again later." },
     "validation": { "generic": "Please check the information you entered." },
@@ -1728,14 +1759,20 @@
       "range": {
         "15d": "15 Days",
         "30d": "30 Days",
-        "90d": "90 Days"
+        "90d": "90 Days",
+        "5e": "Last 5 Moments",
+        "15e": "Last 15 Moments",
+        "30e": "Last 30 Moments"
       },
       "home": {
-        "latestTitle": "What your gratitude is revealing",
-        "readyDescription": "You already have enough moments here for a meaningful read.",
-        "seedTitle": "Your first pattern is taking shape",
-        "seedDescription": "Add a few more gratitude moments and we'll turn them into your first emotional insight.",
-        "fallbackDescription": "Open Insights to see the feelings and themes beginning to surface.",
+        "latestTitle": "What your reflections show",
+        "latestDescription": "A brief read on your recent entries.",
+        "latestRowTitle": "Open Analysis",
+        "latestRowDescription": "See themes and feelings.",
+        "readyDescription": "Your brief analysis is ready.",
+        "seedTitle": "First signals are forming",
+        "seedDescription": "Add a few more reflections to sharpen it.",
+        "fallbackDescription": "See the brief analysis.",
         "updatedToday": "Updated today",
         "updatedDaysAgo": "Updated {{count}} days ago",
         "previewBadge": "Preview",
@@ -1754,7 +1791,8 @@
         "noDominantMood": "None",
         "statementsPerEntry": "Avg {{value}} statements per entry",
         "generatedAt": "Updated on {{date}}",
-        "entriesExplanation": "This overview reflects the emotional patterns emerging across {{count}} entries from the last {{days}} days."
+        "entriesExplanation": "This overview reflects the emotional patterns emerging across {{count}} entries from the last {{days}} days.",
+        "entriesExplanationEntries": "This overview reflects the emotional patterns emerging across your last {{count}} entries."
       },
       "balance": {
         "imbalanced": "Imbalanced",
@@ -1765,6 +1803,9 @@
         "narrative": {
           "title": "What stands out most",
           "subtitle": "A deeper read on the themes, feelings, and needs showing up in your gratitude."
+        },
+        "emotions": {
+          "title": "Core Emotions"
         }
       },
       "ai": {
@@ -1780,7 +1821,26 @@
         "logical": "What it suggests",
         "emotional": "Emotional undercurrent",
         "suggestions": "What to try next",
-        "empty": "Add a few more gratitude moments and we'll surface your first pattern."
+        "empty": "Add a few more moments to reveal your first pattern."
+      },
+      "status": {
+        "updating": "Updating...",
+        "reading": "Reading your entries...",
+        "patterns": "Finding patterns...",
+        "generating": "Preparing your insight...",
+        "analyzingTitle": "Preparing your insight",
+        "analyzingMessage": "Reading your recent entries.",
+        "errorTitle": "Insight paused",
+        "errorMessage": "The analysis stopped. Try again.",
+        "limitTitle": "Daily insight limit reached",
+        "limitMessage": "You have used today's AI insight refreshes. It resets tomorrow, and you can still review your latest saved insight.",
+        "unavailableTitle": "Insight could not be updated",
+        "unavailableMessage": "We could not refresh the analysis right now. Try again in a moment.",
+        "readyTitle": "Insight ready",
+        "readyToRevealTitle": "Ready",
+        "readyToRevealMessage": "Tap reveal to start.",
+        "seedTitle": "Keep writing",
+        "seedMessage": "A few more moments will make this clearer."
       },
       "actions": {
         "refresh": "Refresh"

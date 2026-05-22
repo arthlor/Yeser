@@ -1,4 +1,5 @@
 import { networkMonitorService } from '@/services/networkMonitorService';
+import { backgroundSyncService } from '@/services/backgroundSyncService';
 import { RobustFetch } from './robustFetch';
 
 /**
@@ -6,6 +7,12 @@ import { RobustFetch } from './robustFetch';
  * app unmount, hot-reload, and unit-test teardown.
  */
 export const cleanupSingletons = (): void => {
+  try {
+    backgroundSyncService.cleanup();
+  } catch {
+    // ignored – service might not be initialised
+  }
+
   try {
     networkMonitorService.cleanup();
   } catch {

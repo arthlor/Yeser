@@ -8,24 +8,32 @@ import { Feather } from '@expo/vector-icons';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import Reanimated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { OnboardingLayout } from '@/features/onboarding/components/OnboardingLayout';
 import OnboardingNavHeader from '@/features/onboarding/components/OnboardingNavHeader';
 import { OnboardingButton } from '@/features/onboarding/components/OnboardingButton';
 import { ScreenSection } from '@/shared/components/layout';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface GoalSettingStepProps {
   onNext: (selectedGoal: number) => void;
   onBack: () => void;
   initialGoal?: number;
+  currentStep?: number;
+  totalSteps?: number;
 }
+
+const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
 export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
   onNext,
   onBack,
   initialGoal = 3,
+  currentStep,
+  totalSteps,
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -70,77 +78,26 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
         description: t('onboarding.goal.options.five.desc'),
         vibe: t('onboarding.goal.options.five.vibe'),
       },
-      {
-        value: 0,
-        emoji: '✨',
-        label: t('onboarding.goal.options.custom.label'),
-        description: t('onboarding.goal.options.custom.desc'),
-        vibe: t('onboarding.goal.options.custom.vibe'),
-      },
     ],
     [t]
   );
 
-  const handleGoalSelect = useCallback((goal: number) => {
-    setSelectedGoal(goal);
-    hapticFeedback.light();
-    analyticsService.logEvent('onboarding_goal_selected', { selected_goal: goal });
-  }, []);
+  const handleGoalSelect = useCallback(
+    (goal: number) => {
+      if (selectedGoal !== goal) {
+        setSelectedGoal(goal);
+        hapticFeedback.light();
+        analyticsService.logEvent('onboarding_goal_selected', { selected_goal: goal });
+      }
+    },
+    [selectedGoal]
+  );
 
   const handleContinue = useCallback(() => {
     hapticFeedback.success();
     analyticsService.logEvent('onboarding_goal_confirmed', { final_goal: selectedGoal });
     onNext(selectedGoal);
   }, [selectedGoal, onNext]);
-
-  const renderGoalOption = useCallback(
-    (option: (typeof goalOptions)[0]) => {
-      const isSelected = selectedGoal === option.value;
-      const isRecommended = option.value === 3;
-
-      return (
-        <TouchableOpacity
-          key={option.value}
-          onPress={() => handleGoalSelect(option.value)}
-          style={[styles.optionCard, isSelected && styles.optionCardSelected]}
-          activeOpacity={0.85}
-          accessible
-          accessibilityRole="radio"
-          accessibilityState={{ selected: isSelected }}
-          accessibilityLabel={`${option.label}: ${option.description}`}
-        >
-          <View style={styles.optionContent}>
-            <View style={styles.optionEmojiWrap}>
-              <Text style={styles.optionEmoji}>{option.emoji}</Text>
-            </View>
-            <View style={styles.optionText}>
-              <View style={styles.optionLabelRow}>
-                <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
-                  {option.label}
-                </Text>
-                {isRecommended && (
-                  <View style={styles.recommendedBadge}>
-                    <Feather name="star" size={10} color={theme.colors.onPrimary} />
-                    <Text style={styles.recommendedText}>
-                      {t('onboarding.goal.options.recommended')}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.optionDescription}>{option.description}</Text>
-              <Text style={styles.optionVibe}>{option.vibe}</Text>
-            </View>
-            <View style={[styles.radioButton, isSelected && styles.radioButtonSelected]}>
-              {isSelected && (
-                <Feather name="check" size={14} color={theme.colors.onPrimary} strokeWidth={3} />
-              )}
-            </View>
-          </View>
-        </TouchableOpacity>
-      );
-    },
-    [selectedGoal, theme, handleGoalSelect, styles, t]
-  );
 
   return (
     <OnboardingLayout edgeToEdge={true} ambient="warm">
@@ -151,6 +108,8 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
               hapticFeedback.light();
               onBack();
             }}
+            currentStep={currentStep}
+            totalSteps={totalSteps}
           />
         </ScreenSection>
 
@@ -164,7 +123,19 @@ export const GoalSettingStep: React.FC<GoalSettingStepProps> = ({
         </ScreenSection>
 
         <ScreenSection>
-          <View style={styles.optionsContainer}>{goalOptions.map(renderGoalOption)}</View>
+          <View style={styles.optionsContainer}>
+            {goalOptions.map((option) => (
+              <GoalOptionCard
+                key={option.value}
+                option={option}
+                isSelected={selectedGoal === option.value}
+                onSelect={handleGoalSelect}
+                styles={styles}
+                theme={theme}
+                t={t}
+              />
+            ))}
+          </View>
 
           <View style={styles.infoCard}>
             <Feather name="info" size={16} color={theme.colors.primary} />
@@ -191,39 +162,43 @@ const createStyles = (theme: AppTheme) =>
     container: {
       flex: 1,
     },
-    header: { alignItems: 'center', paddingTop: 0 },
+    header: { alignItems: 'center', paddingTop: 0, marginBottom: theme.spacing.sm },
     title: {
       ...theme.typography.headlineMedium,
-      fontSize: 24,
+      fontSize: 26,
       fontWeight: '700',
       color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.xs,
+      letterSpacing: -0.5,
     },
     subtitle: {
       ...theme.typography.bodyMedium,
-      fontSize: 14,
+      fontSize: 15,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 20,
+      lineHeight: 22,
       paddingHorizontal: theme.spacing.sm,
     },
     optionsContainer: {
-      gap: theme.spacing.xs,
+      gap: theme.spacing.sm,
       marginBottom: theme.spacing.sm,
+    },
+    optionCardContainer: {
+      borderRadius: theme.borderRadius.xl,
     },
     optionCard: {
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.xl,
+      paddingVertical: theme.spacing.md,
       paddingHorizontal: theme.spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.outline + '35',
+      borderWidth: 1.5,
+      borderColor: theme.colors.outline + '15',
+      overflow: 'hidden',
     },
     optionCardSelected: {
       borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '0E',
-      ...getPrimaryShadow.small(theme),
+      ...getPrimaryShadow.card(theme),
     },
     optionContent: {
       flexDirection: 'row',
@@ -231,15 +206,19 @@ const createStyles = (theme: AppTheme) =>
       gap: theme.spacing.sm,
     },
     optionEmojiWrap: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: theme.colors.primary + '14',
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.primary + '10',
       alignItems: 'center',
       justifyContent: 'center',
     },
+    optionEmojiWrapSelected: {
+      backgroundColor: theme.colors.surface,
+      ...getPrimaryShadow.small(theme),
+    },
     optionEmoji: {
-      fontSize: 22,
+      fontSize: 24,
     },
     optionText: {
       flex: 1,
@@ -252,6 +231,7 @@ const createStyles = (theme: AppTheme) =>
     },
     optionLabel: {
       ...theme.typography.bodyLarge,
+      fontSize: 16,
       color: theme.colors.onBackground,
       fontWeight: '600',
     },
@@ -260,22 +240,24 @@ const createStyles = (theme: AppTheme) =>
     },
     optionDescription: {
       ...theme.typography.bodySmall,
+      fontSize: 13,
       color: theme.colors.onSurfaceVariant,
     },
     optionVibe: {
       ...theme.typography.bodySmall,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.primary,
-      marginTop: 2,
+      marginTop: 4,
       fontStyle: 'italic',
       letterSpacing: 0.2,
+      fontWeight: '500',
     },
     radioButton: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
       borderWidth: 2,
-      borderColor: theme.colors.outline,
+      borderColor: theme.colors.outline + '40',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -288,8 +270,8 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       gap: 4,
       backgroundColor: theme.colors.primary,
-      paddingHorizontal: theme.spacing.xs + 2,
-      paddingVertical: 2,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
       borderRadius: theme.borderRadius.full,
     },
     recommendedText: {
@@ -297,27 +279,123 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.onPrimary,
       fontSize: 10,
       fontWeight: '700',
-      letterSpacing: 0.3,
+      letterSpacing: 0.4,
     },
     infoCard: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
-      backgroundColor: theme.colors.primary + '0E',
+      backgroundColor: theme.colors.primary + '0A',
       borderRadius: theme.borderRadius.lg,
       padding: theme.spacing.md,
       marginBottom: theme.spacing.sm,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.primary + '20',
     },
     infoText: {
       ...theme.typography.bodySmall,
       color: theme.colors.onSurfaceVariant,
       flex: 1,
       lineHeight: 18,
+      fontSize: 13,
     },
     footer: {
       alignItems: 'center',
       gap: theme.spacing.xs,
     },
   });
+
+interface GoalOption {
+  value: number;
+  emoji: string;
+  label: string;
+  description: string;
+  vibe: string;
+}
+
+interface GoalOptionCardProps {
+  option: GoalOption;
+  isSelected: boolean;
+  onSelect: (value: number) => void;
+  styles: ReturnType<typeof createStyles>;
+  theme: AppTheme;
+  t: (key: string) => string;
+}
+
+const GoalOptionCard: React.FC<GoalOptionCardProps> = ({
+  option,
+  isSelected,
+  onSelect,
+  styles,
+  theme,
+  t,
+}) => {
+  const scale = useSharedValue(1);
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+  };
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const isRecommended = option.value === 3;
+
+  return (
+    <AnimatedPressable
+      onPress={() => onSelect(option.value)}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[styles.optionCardContainer, animatedStyle]}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: isSelected }}
+      accessibilityLabel={`${option.label}: ${option.description}`}
+    >
+      <View style={[styles.optionCard, isSelected && styles.optionCardSelected]}>
+        {isSelected && (
+          <LinearGradient
+            colors={[theme.colors.primary + '15', theme.colors.primary + '05']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+        )}
+        <View style={styles.optionContent}>
+          <View style={[styles.optionEmojiWrap, isSelected && styles.optionEmojiWrapSelected]}>
+            <Text style={styles.optionEmoji}>{option.emoji}</Text>
+          </View>
+          <View style={styles.optionText}>
+            <View style={styles.optionLabelRow}>
+              <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
+                {option.label}
+              </Text>
+              {isRecommended && (
+                <View style={styles.recommendedBadge}>
+                  <Feather name="star" size={10} color={theme.colors.onPrimary} />
+                  <Text style={styles.recommendedText}>
+                    {t('onboarding.goal.options.recommended')}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.optionDescription}>{option.description}</Text>
+            {isSelected && <Text style={styles.optionVibe}>{option.vibe}</Text>}
+          </View>
+          <View style={[styles.radioButton, isSelected && styles.radioButtonSelected]}>
+            {isSelected && (
+              <Feather name="check" size={14} color={theme.colors.onPrimary} strokeWidth={3} />
+            )}
+          </View>
+        </View>
+      </View>
+    </AnimatedPressable>
+  );
+};
 
 export default GoalSettingStep;

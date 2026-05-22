@@ -1,4 +1,4 @@
-import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -37,7 +37,7 @@ type MoodAnalysisNavigationProp = NativeStackNavigationProp<AppStackParamList, '
 type MoodAnalysisRouteProp = RouteProp<AppStackParamList, 'MoodAnalysis'>;
 
 const DEFAULT_RANGE: MoodAnalyticsRange = '30d';
-const RANGE_OPTIONS: MoodAnalyticsRange[] = ['15d', '30d', '90d'];
+const DAILY_LIMIT_ERROR = 'Daily limit reached';
 const BOARD_PALETTE = {
   pinShadowCoral: '#FF8A64',
   pinShadowBlue: '#5B7FFF',
@@ -67,6 +67,11 @@ const BOARD_PALETTE = {
   stepMint: '#148B80',
 } as const;
 
+const isDailyLimitError = (value: unknown) => {
+  const message = value instanceof Error ? value.message : String(value ?? '');
+  return message.toLowerCase().includes(DAILY_LIMIT_ERROR.toLowerCase());
+};
+
 const MoodAnalysisScreen: React.FC = () => {
   const navigation = useNavigation<MoodAnalysisNavigationProp>();
   const route = useRoute<MoodAnalysisRouteProp>();
@@ -78,14 +83,16 @@ const MoodAnalysisScreen: React.FC = () => {
   );
   const { data, error, isLoading, isRefetching, refetch } = useMoodAnalytics(selectedRange);
 
-  const rangeOptions = useMemo(
-    () =>
-      RANGE_OPTIONS.map((value) => ({
-        value,
-        label: t(`mood.analysis.range.${value}`),
-      })),
-    [t]
-  );
+  const rangeOptions = useMemo(() => {
+    const isEntryBased = selectedRange.endsWith('e');
+    const optionsList: MoodAnalyticsRange[] = isEntryBased
+      ? ['5e', '15e', '30e']
+      : ['15d', '30d', '90d'];
+    return optionsList.map((value) => ({
+      value,
+      label: t(`mood.analysis.range.${value}`),
+    }));
+  }, [selectedRange, t]);
   useStreakData();
   const { isPro, checkGate } = useSubscription();
   const { snapshot: latestInsightSnapshot, hasEnoughData: hasEnoughInsightData } =
@@ -102,16 +109,7 @@ const MoodAnalysisScreen: React.FC = () => {
 
   const [analysisRequested, setAnalysisRequested] = useState(false);
   const [headerHeight, setHeaderHeight] = useState<number>(120);
-
-  const handleGenerateInsights = async () => {
-    analyticsService.logEvent('insight_reveal_requested', {
-      source: route.params?.source ?? 'insights_screen',
-      range: selectedRange,
-      isPro,
-    });
-    setAnalysisRequested(true);
-    await generateInsights();
-  };
+  const autoGenerateKeyRef = useRef<string | null>(null);
 
   const hasAnalytics = Boolean(data && data.overview.totalEntries > 0);
 
@@ -127,6 +125,22 @@ const MoodAnalysisScreen: React.FC = () => {
     setAnalysisRequested(true);
     await generateInsights();
   }, [generateInsights, selectedRange]);
+
+  const handleGenerateInsights = useCallback(async () => {
+    analyticsService.logEvent('insight_reveal_requested', {
+      source: route.params?.source ?? 'insights_screen',
+      range: selectedRange,
+      isPro,
+    });
+
+    if (!isPro) {
+      checkGate('mood_analytics_deep_dive');
+      return;
+    }
+
+    setAnalysisRequested(true);
+    await generateInsights();
+  }, [checkGate, generateInsights, isPro, route.params?.source, selectedRange]);
 
   const handleUnlockInsights = useCallback(() => {
     checkGate('mood_analytics_deep_dive');
@@ -156,12 +170,34 @@ const MoodAnalysisScreen: React.FC = () => {
     }
   }, [route.params?.initialRange]);
 
+  useEffect(() => {
+    if (!route.params?.autoGenerate || !hasEnoughInsightData) {
+      return;
+    }
+
+    const key = `${selectedRange}:${route.params.source ?? 'auto'}`;
+    if (autoGenerateKeyRef.current === key) {
+      return;
+    }
+
+    autoGenerateKeyRef.current = key;
+    void handleGenerateInsights();
+  }, [
+    handleGenerateInsights,
+    hasEnoughInsightData,
+    route.params?.autoGenerate,
+    route.params?.source,
+    selectedRange,
+  ]);
+
   const visibleInsight =
     latestInsightSnapshot?.highlighted_insight ?? aiInsights?.highlighted_insight;
   const visibleNarrative = latestInsightSnapshot?.narrative ?? aiInsights?.narrative ?? null;
   const visibleRemaining = aiInsights?.remaining;
   const visibleResetInSeconds = aiInsights?.resetInSeconds;
   const visibleLimitError = aiInsights?.error;
+  const isDailyLimitState =
+    isDailyLimitError(visibleLimitError) || isDailyLimitError(aiError) || visibleRemaining === 0;
   const latestInsightMeta = useMemo(() => {
     const generatedAt = latestInsightSnapshot?.generated_at ?? aiInsights?.generated_at;
 
@@ -176,6 +212,86 @@ const MoodAnalysisScreen: React.FC = () => {
 
     return t('mood.analysis.home.updatedDaysAgo', { count: ageInDays });
   }, [aiInsights?.generated_at, latestInsightSnapshot?.generated_at, t]);
+  const isAiBusy = isAiLoading || isAiRefetching;
+  const analysisStatus = useMemo(() => {
+    if (isAiBusy) {
+      return {
+        tone: 'loading' as const,
+        icon: 'progress-clock',
+        title: t('mood.analysis.status.analyzingTitle', 'Preparing your insight'),
+        message: t(
+          'mood.analysis.status.analyzingMessage',
+          'This can take a moment while we read the pattern across your gratitude entries.'
+        ),
+      };
+    }
+
+    if (isDailyLimitState) {
+      return {
+        tone: 'idle' as const,
+        icon: 'clock-outline',
+        title: t('mood.analysis.status.limitTitle', 'Daily insight limit reached'),
+        message: t(
+          'mood.analysis.status.limitMessage',
+          "You have used today's AI insight refreshes. Your latest saved insight is still available."
+        ),
+      };
+    }
+
+    if (aiError || visibleLimitError) {
+      return {
+        tone: 'error' as const,
+        icon: 'alert-circle-outline',
+        title: t('mood.analysis.status.unavailableTitle', 'Insight could not be updated'),
+        message: t(
+          'mood.analysis.status.unavailableMessage',
+          'We could not refresh the analysis right now. Try again in a moment.'
+        ),
+      };
+    }
+
+    if (visibleInsight || visibleNarrative || latestInsightSnapshot) {
+      return {
+        tone: 'ready' as const,
+        icon: 'star-four-points',
+        title: t('mood.analysis.status.readyTitle', 'Insight ready'),
+        message: latestInsightMeta ?? t('mood.analysis.snapshot.stored'),
+      };
+    }
+
+    if (hasEnoughInsightData) {
+      return {
+        tone: 'idle' as const,
+        icon: 'lightbulb-on-outline',
+        title: t('mood.analysis.status.readyToRevealTitle', 'Ready to reveal'),
+        message: t(
+          'mood.analysis.status.readyToRevealMessage',
+          'Tap reveal and stay here while the analysis runs.'
+        ),
+      };
+    }
+
+    return {
+      tone: 'idle' as const,
+      icon: 'seed-outline',
+      title: t('mood.analysis.status.seedTitle', 'Keep writing'),
+      message: t(
+        'mood.analysis.status.seedMessage',
+        'A few more gratitude moments will make this insight more meaningful.'
+      ),
+    };
+  }, [
+    aiError,
+    hasEnoughInsightData,
+    isDailyLimitState,
+    isAiBusy,
+    latestInsightMeta,
+    latestInsightSnapshot,
+    t,
+    visibleInsight,
+    visibleLimitError,
+    visibleNarrative,
+  ]);
   const spotlightStatement = useMemo(() => {
     const statement = data?.highlightedStatements?.[0]?.statement;
     return typeof statement === 'string' ? statement.trim() : null;
@@ -265,12 +381,14 @@ const MoodAnalysisScreen: React.FC = () => {
           theme={theme}
         />
 
+        <InsightStatusStrip status={analysisStatus} styles={styles} theme={theme} />
+
         <ScreenSection spacing="large">
-          {visibleInsight || analysisRequested || isAiLoading || isAiRefetching || aiError ? (
+          {visibleInsight || analysisRequested || isAiBusy || aiError || visibleLimitError ? (
             <NarrativeSection
               narrative={visibleNarrative}
               insight={visibleInsight}
-              isLoading={isAiLoading || isAiRefetching}
+              isLoading={isAiBusy}
               styles={styles}
               t={t}
               theme={theme}
@@ -292,7 +410,7 @@ const MoodAnalysisScreen: React.FC = () => {
               ctaLabel={t('mood.analysis.home.cta.reveal')}
               onPress={() => void handleGenerateInsights()}
               emoji="✨"
-              isLoading={isAiLoading || isAiRefetching}
+              isLoading={isAiBusy}
               lockedLabel={t('mood.analysis.home.previewBadge')}
               variant="reference"
             />
@@ -492,18 +610,20 @@ const MoodAnalysisScreen: React.FC = () => {
         theme={theme}
       />
 
+      <InsightStatusStrip status={analysisStatus} styles={styles} theme={theme} />
+
       {/* AI Insights Section */}
       <View style={styles.boardSection}>
         {visibleInsight ||
         visibleNarrative ||
         analysisRequested ||
-        isAiLoading ||
-        isAiRefetching ||
-        aiError ? (
+        isAiBusy ||
+        aiError ||
+        visibleLimitError ? (
           <NarrativeSection
             narrative={visibleNarrative}
             insight={visibleInsight}
-            isLoading={isAiLoading || isAiRefetching}
+            isLoading={isAiBusy}
             styles={styles}
             t={t}
             theme={theme}
@@ -523,7 +643,7 @@ const MoodAnalysisScreen: React.FC = () => {
             ctaLabel={t('mood.analysis.banner.button', 'Reveal insight')}
             onPress={() => void handleGenerateInsights()}
             emoji="✨"
-            isLoading={isAiLoading || isAiRefetching}
+            isLoading={isAiBusy}
             variant="reference"
           />
         ) : (
@@ -548,11 +668,15 @@ const MoodAnalysisScreen: React.FC = () => {
               {latestInsightMeta ?? t('mood.analysis.snapshot.stored')}
             </Text>
             <ThemedButton
-              title={t('mood.analysis.banner.button')}
+              title={
+                isAiBusy
+                  ? t('mood.analysis.status.updating', 'Updating...')
+                  : t('mood.analysis.banner.button')
+              }
               onPress={() => void handleGenerateInsights()}
               variant="outline"
               size="compact"
-              isLoading={isAiLoading || isAiRefetching}
+              disabled={isAiBusy}
             />
           </View>
         ) : null}
@@ -560,12 +684,16 @@ const MoodAnalysisScreen: React.FC = () => {
 
       <View style={styles.footerSpacing}>
         <ThemedButton
-          title={t('mood.analysis.actions.refresh')}
+          title={
+            isRefetching || isAiBusy
+              ? t('mood.analysis.status.updating', 'Updating...')
+              : t('mood.analysis.actions.refresh')
+          }
           iconLeft="refresh"
           variant="outline"
           size="compact"
           onPress={handleRefresh}
-          isLoading={isRefetching}
+          disabled={isRefetching || isAiBusy}
         />
       </View>
     </ScreenLayout>
@@ -580,6 +708,38 @@ interface RangeSelectorChipsProps {
   styles: ReturnType<typeof createStyles>;
   theme: AppTheme;
 }
+
+type InsightStatus = {
+  tone: 'loading' | 'ready' | 'error' | 'idle';
+  icon: string;
+  title: string;
+  message: string;
+};
+
+const InsightStatusStrip: React.FC<{
+  status: InsightStatus;
+  styles: ReturnType<typeof createStyles>;
+  theme: AppTheme;
+}> = ({ status, styles, theme }) => {
+  const color =
+    status.tone === 'error'
+      ? theme.colors.error
+      : status.tone === 'ready'
+        ? theme.colors.success
+        : theme.colors.primary;
+
+  return (
+    <View style={styles.statusStrip}>
+      <View style={[styles.statusIconWrap, { backgroundColor: color + '14' }]}>
+        <Icon name={status.icon} size={18} color={color} />
+      </View>
+      <View style={styles.statusCopy}>
+        <Text style={styles.statusTitle}>{status.title}</Text>
+        <Text style={styles.statusMessage}>{status.message}</Text>
+      </View>
+    </View>
+  );
+};
 
 const RangeSelectorChips: React.FC<RangeSelectorChipsProps> = ({
   options,
@@ -679,7 +839,9 @@ const NarrativeSection: React.FC<NarrativeSectionProps> = ({
     return (
       <ThemedCard variant="filled" density="comfortable" elevation="floating">
         <View style={styles.inlineLoader}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <View style={styles.inlineLoaderIcon}>
+            <Icon name="progress-clock" size={18} color={theme.colors.primary} />
+          </View>
           <Text style={styles.loadingText}>
             {t('mood.analysis.narrative.loading', 'Analyzing your gratitude patterns...')}
           </Text>
@@ -688,31 +850,37 @@ const NarrativeSection: React.FC<NarrativeSectionProps> = ({
     );
   }
 
-  // Handle generic API error (4xx/5xx)
-  if (error) {
-    return (
-      <ThemedCard variant="filled" density="comfortable" elevation="floating">
-        <Text style={[styles.emptyMessage, { color: theme.colors.error }]}>
-          {error.message || t('common.error')}
-        </Text>
-      </ThemedCard>
-    );
-  }
+  const reachedDailyLimit =
+    isDailyLimitError(aiError) || isDailyLimitError(error) || remaining === 0;
 
   // Handle specific AI limit reached error (200 OK with error field)
-  if (aiError === 'Daily limit reached' || remaining === 0) {
+  if (reachedDailyLimit) {
     return (
       <ThemedCard variant="filled" density="comfortable" elevation="floating">
         <View style={styles.limitReachedContainer}>
           <Icon name="clock-outline" size={32} color={theme.colors.primary} />
           <Text style={[styles.emptyTitle, styles.noMargin]}>
-            {t('ai.usage.limit_reached', 'Daily AI Limit Reached')}
+            {t('mood.analysis.status.limitTitle', 'Daily insight limit reached')}
           </Text>
           <Text style={styles.emptyMessage}>
-            {t('ai.usage.limit_desc', 'You have used all your AI interactions for today.')}
+            {t(
+              'mood.analysis.status.limitMessage',
+              "You have used today's AI insight refreshes. Your latest saved insight is still available."
+            )}
           </Text>
           <AIUsageIndicator remaining={0} resetInSeconds={resetInSeconds} showAlways />
         </View>
+      </ThemedCard>
+    );
+  }
+
+  // Handle generic API error (4xx/5xx)
+  if (error || aiError) {
+    return (
+      <ThemedCard variant="filled" density="comfortable" elevation="floating">
+        <Text style={[styles.emptyMessage, { color: theme.colors.error }]}>
+          {t('mood.analysis.errors.revealFailed')}
+        </Text>
       </ThemedCard>
     );
   }
@@ -1047,10 +1215,17 @@ function buildJourneySteps({
     : t('mood.analysis.overview.noDominantMood');
   const balanceLabel = context ? t(`mood.analysis.balance.${context.balanceLabel}`) : null;
   const widerPictureBody = context
-    ? `${t('mood.analysis.overview.entriesExplanation', {
-        count: context.totalEntries,
-        days: parseInt(context.range, 10),
-      })} ${t('mood.analysis.board.contextBody', {
+    ? `${
+        context.range.endsWith('e')
+          ? t('mood.analysis.overview.entriesExplanationEntries', {
+              count: context.totalEntries,
+              defaultValue: `This overview reflects the emotional patterns emerging across your last ${context.totalEntries} entries.`,
+            })
+          : t('mood.analysis.overview.entriesExplanation', {
+              count: context.totalEntries,
+              days: parseInt(context.range, 10),
+            })
+      } ${t('mood.analysis.board.contextBody', {
         statements: context.analyzedStatements,
         dominantMood: dominantMoodLabel,
         balance: balanceLabel ?? '',
@@ -1500,6 +1675,41 @@ function createStyles(theme: AppTheme) {
       color: theme.colors.primary,
       fontWeight: '800',
     },
+    statusStrip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginHorizontal: theme.spacing.page,
+      marginTop: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.xl,
+      backgroundColor: theme.colors.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.outline + '20',
+      gap: theme.spacing.sm,
+    },
+    statusIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    statusCopy: {
+      flex: 1,
+      gap: 2,
+    },
+    statusTitle: {
+      ...theme.typography.labelLarge,
+      color: theme.colors.onSurface,
+      fontWeight: '800',
+    },
+    statusMessage: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.onSurfaceVariant,
+      lineHeight: 18,
+    },
     previewCard: {
       position: 'relative',
       overflow: 'hidden',
@@ -1602,6 +1812,14 @@ function createStyles(theme: AppTheme) {
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: theme.spacing.md,
+    },
+    inlineLoaderIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.primary + '14',
     },
 
     streakRow: {

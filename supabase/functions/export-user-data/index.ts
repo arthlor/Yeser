@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 type SupportedLanguage = 'tr' | 'en' | 'es';
 type LanguageDetectionMethod = 'header' | 'body' | 'profile' | 'accept-language' | 'fallback';

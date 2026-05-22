@@ -89,8 +89,21 @@ export const queryClient = new QueryClient({
   },
 });
 
+const isExpectedMoodInsightLimit = (error: unknown, queryKey: readonly unknown[]) => {
+  if (!queryKey.includes('moodInsights')) {
+    return false;
+  }
+
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return message.toLowerCase().includes('daily limit reached');
+};
+
 // Enhanced error handling with performance monitoring
 queryClient.getQueryCache().config.onError = (error, query) => {
+  if (isExpectedMoodInsightLimit(error, query.queryKey)) {
+    return;
+  }
+
   logger.error('Query error occurred', {
     extra: {
       queryKey: query.queryKey,

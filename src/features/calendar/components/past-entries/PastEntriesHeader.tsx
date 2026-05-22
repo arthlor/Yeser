@@ -118,14 +118,14 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: theme.spacing.lg,
     },
     headerContent: {
-      paddingRight: 110,
+      paddingRight: 120,
     },
     mascotContainer: {
       position: 'absolute',
-      right: -20,
-      top: 40,
-      width: 180,
-      height: 180,
+      right: -15,
+      top: 45,
+      width: 135,
+      height: 135,
       zIndex: 10,
     },
     mascotImage: {

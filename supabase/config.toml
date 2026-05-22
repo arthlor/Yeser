@@ -1,0 +1,14 @@
+# Cron invokes send-daily-reminders with x-internal-secret only.
+# verify_jwt must be false — set via Dashboard or deploy with --no-verify-jwt.
+[functions.send-daily-reminders]
+verify_jwt = false
+
+# Cron invokes check-push-receipts with x-internal-secret only.
+# verify_jwt must be false — set via Dashboard or deploy with --no-verify-jwt.
+[functions.check-push-receipts]
+verify_jwt = false
+
+# Cron invokes cleanup-storage-queue with x-internal-secret only.
+# verify_jwt must be false — set via Dashboard or deploy with --no-verify-jwt.
+[functions.cleanup-storage-queue]
+verify_jwt = false

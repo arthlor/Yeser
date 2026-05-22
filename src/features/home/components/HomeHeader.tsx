@@ -31,7 +31,6 @@ const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
 
     return (
       <View style={styles.container}>
-        {/* Main Row: Avatar + Greeting */}
         <View style={styles.mainRow}>
           <TouchableOpacity
             style={styles.avatar}
@@ -68,8 +67,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
             ) : null}
           </View>
 
-          {/* Mascot Decorative Image */}
-          <View style={styles.mascotContainer}>
+          <View pointerEvents="none" style={styles.mascotContainer}>
             <Image
               source={require('@/assets/assets/mascot.png')}
               style={styles.mascotImage}
@@ -88,13 +86,16 @@ HomeHeader.displayName = 'HomeHeader';
 const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
     container: {
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.sm,
       paddingHorizontal: theme.spacing.xs,
-      paddingTop: theme.spacing.md,
+      paddingTop: theme.spacing.sm,
     },
     mainRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      minHeight: 92,
+      overflow: 'hidden',
+      position: 'relative',
     },
     avatar: {
       width: 52,
@@ -110,6 +111,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       shadowOpacity: 0.1,
       shadowRadius: 8,
       elevation: 3,
+      zIndex: 1,
     },
     avatarImage: {
       width: '100%',
@@ -125,7 +127,8 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       flex: 1,
       justifyContent: 'center',
       marginLeft: theme.spacing.md,
-      paddingRight: 120,
+      paddingRight: 96,
+      zIndex: 1,
     },
     greetingText: {
       ...theme.typography.headlineSmall,
@@ -147,12 +150,12 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
     },
     mascotContainer: {
       position: 'absolute',
-      right: -30,
-      top: -15,
-      width: 180,
-      height: 180,
-      zIndex: -1, // Sits behind the greeting text but above surface
-      opacity: 0.9,
+      right: -6,
+      top: -8,
+      width: 118,
+      height: 118,
+      zIndex: 0,
+      opacity: 0.38,
       transform: [{ rotate: '-5deg' }, { scaleX: -1 }],
     },
     mascotImage: {

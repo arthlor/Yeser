@@ -2,9 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { EventArg } from '@react-navigation/native';
 import { createStackNavigator, StackCardInterpolationProps } from '@react-navigation/stack';
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { StyleSheet } from 'react-native';
 
 // Import screens from new locations
 import CalendarViewScreen from '../features/calendar/screens/CalendarViewScreen';
@@ -25,86 +23,21 @@ import { useTranslation } from 'react-i18next';
 import { AppStackParamList, MainTabParamList } from '../types/navigation';
 import { hapticFeedback } from '../utils/hapticFeedback';
 import { getPrimaryShadow } from '@/themes/utils';
-import { AppTheme } from '@/themes/types';
 import { analyticsService } from '@/services/analyticsService';
+import CustomTabBar from './CustomTabBar';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const AppStack = createStackNavigator<AppStackParamList>();
 
-const createTabBarStyles = (theme: AppTheme, insets: { bottom: number }) =>
-  StyleSheet.create({
-    tabBar: {
-      backgroundColor: theme.colors.surface,
-      borderTopLeftRadius: 0,
-      borderTopRightRadius: 0,
-      height: Platform.OS === 'ios' ? 85 + insets.bottom : 70 + insets.bottom,
-      paddingTop: theme.spacing.sm,
-      paddingBottom: Platform.OS === 'ios' ? theme.spacing.sm : theme.spacing.md,
-      paddingHorizontal: 0,
-      borderTopColor: theme.colors.outline + '10',
-      borderTopWidth: StyleSheet.hairlineWidth,
-      ...getPrimaryShadow.floating(theme),
-    },
-    tabBarBackground: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: theme.colors.surface,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: theme.colors.outline + '10',
-    },
-    tabBarItem: {
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.borderRadius.md,
-      marginHorizontal: theme.spacing.xs,
-      flex: 1,
-    },
-    tabBarLabel: {
-      fontSize: 11,
-      fontWeight: '600',
-      marginTop: 2,
-      marginBottom: Platform.OS === 'ios' ? 0 : 4,
-      textAlign: 'center',
-    },
-  });
-
 const MainAppTabNavigator: React.FC = () => {
-  const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
-  const tabBarStyles = React.useMemo(() => createTabBarStyles(theme, insets), [theme, insets]);
-
   const { t } = useTranslation();
   return (
     <Tab.Navigator
       initialRouteName="DailyEntryTab"
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size: _size }) => {
-          let iconName = '';
-
-          if (route.name === 'HomeTab') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'DailyEntryTab') {
-            iconName = focused ? 'plus-circle' : 'plus-circle-outline';
-          } else if (route.name === 'PastEntriesTab') {
-            iconName = focused ? 'history' : 'clock-outline';
-          } else if (route.name === 'CalendarTab') {
-            iconName = focused ? 'calendar' : 'calendar-outline';
-          } else if (route.name === 'SettingsTab') {
-            iconName = focused ? 'cog' : 'cog-outline';
-          }
-          return <Icon name={iconName} size={focused ? 26 : 24} color={color} />;
-        },
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
-        tabBarStyle: tabBarStyles.tabBar,
-        tabBarShowLabel: true,
-        tabBarLabelStyle: tabBarStyles.tabBarLabel,
-        tabBarItemStyle: tabBarStyles.tabBarItem,
-        tabBarBackground: () => <View style={tabBarStyles.tabBarBackground} />,
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-      })}
+      }}
     >
       <Tab.Screen
         name="HomeTab"
@@ -124,23 +57,6 @@ const MainAppTabNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="DailyEntryTab"
-        component={DailyEntryScreen}
-        options={{
-          title: t('navigation.tabs.dailyEntry.title'),
-          tabBarAccessibilityLabel: t('navigation.tabs.dailyEntry.a11y'),
-        }}
-        listeners={{
-          tabPress: (_e: EventArg<'tabPress', true>) => {
-            hapticFeedback.medium();
-            analyticsService.logEvent('tab_navigation', {
-              tab_name: 'DailyEntryTab',
-              target_screen: 'daily_entry',
-            });
-          },
-        }}
-      />
-      <Tab.Screen
         name="PastEntriesTab"
         component={PastEntriesScreen}
         options={{
@@ -153,6 +69,23 @@ const MainAppTabNavigator: React.FC = () => {
             analyticsService.logEvent('tab_navigation', {
               tab_name: 'PastEntriesTab',
               target_screen: 'past_entries',
+            });
+          },
+        }}
+      />
+      <Tab.Screen
+        name="DailyEntryTab"
+        component={DailyEntryScreen}
+        options={{
+          title: t('navigation.tabs.dailyEntry.title'),
+          tabBarAccessibilityLabel: t('navigation.tabs.dailyEntry.a11y'),
+        }}
+        listeners={{
+          tabPress: (_e: EventArg<'tabPress', true>) => {
+            hapticFeedback.medium();
+            analyticsService.logEvent('tab_navigation', {
+              tab_name: 'DailyEntryTab',
+              target_screen: 'daily_entry',
             });
           },
         }}

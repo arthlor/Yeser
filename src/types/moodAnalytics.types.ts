@@ -1,12 +1,14 @@
 import type { MoodEmoji } from './mood.types';
 
-export type MoodAnalyticsRange = '15d' | '30d' | '90d';
+export type MoodAnalyticsRange = '15d' | '30d' | '90d' | '5e' | '15e' | '30e';
 
 export interface MoodNarrativeInsight {
   logical: string;
   emotional: string;
   suggestions: string[];
 }
+
+export type MoodInsightRiskLevel = 'none' | 'mild_distress' | 'high_distress' | 'crisis';
 
 export interface HighlightedMoodInsight {
   title: string;
@@ -19,6 +21,11 @@ export interface AIInsightResponse {
   highlighted_insight: HighlightedMoodInsight | null;
   generated_at?: string;
   entry_count_at_generation?: number;
+  statement_count_at_generation?: number;
+  range_entry_count_at_generation?: number;
+  analysis_details?: Record<string, unknown> | null;
+  risk_level?: MoodInsightRiskLevel;
+  source_hash?: string | null;
   is_preview_only?: boolean;
   remaining?: number;
   resetInSeconds?: number;
@@ -32,6 +39,11 @@ export interface MoodInsightSnapshot {
   narrative: MoodNarrativeInsight | null;
   generated_at: string;
   entry_count_at_generation: number;
+  statement_count_at_generation?: number;
+  range_entry_count_at_generation?: number;
+  analysis_details?: Record<string, unknown> | null;
+  risk_level?: MoodInsightRiskLevel;
+  source_hash?: string | null;
   is_preview_only?: boolean;
 }
 

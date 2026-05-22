@@ -19,6 +19,8 @@ interface PlanRevealStepProps {
   onBack: () => void;
   username: string;
   dailyGoal: number;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 /**
@@ -34,6 +36,8 @@ export const PlanRevealStep: React.FC<PlanRevealStepProps> = ({
   onBack,
   username,
   dailyGoal,
+  currentStep,
+  totalSteps,
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -105,6 +109,8 @@ export const PlanRevealStep: React.FC<PlanRevealStepProps> = ({
               hapticFeedback.light();
               onBack();
             }}
+            currentStep={currentStep}
+            totalSteps={totalSteps}
           />
         </View>
 

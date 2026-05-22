@@ -82,7 +82,9 @@ module.exports = {
   name,
   slug: 'yeser',
   version: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.3.2',
-  runtimeVersion: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.3.2', // Static version for bare workflow
+  runtimeVersion: {
+    policy: 'fingerprint',
+  },
   scheme,
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
@@ -220,7 +222,6 @@ module.exports = {
           'Yeşer uses the microphone so you can record a short voice note for your gratitude entry.',
       },
     ],
-    // Enable App Tracking Transparency
     // Enable App Tracking Transparency
     'expo-tracking-transparency',
     // Enable custom fonts

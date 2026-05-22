@@ -17,6 +17,7 @@ interface AIMoodSuggestionsProps {
   suggestedMoods: MoodEmoji[];
   primaryMood: MoodEmoji | null;
   remaining: number | null;
+  resetInSeconds?: number | null;
   isLoading: boolean;
   onSelectMood: (mood: MoodEmoji) => void;
   style?: ViewStyle;
@@ -30,6 +31,7 @@ export const AIMoodSuggestions: React.FC<AIMoodSuggestionsProps> = ({
   suggestedMoods,
   primaryMood,
   remaining,
+  resetInSeconds = null,
   isLoading,
   onSelectMood,
   style,
@@ -70,7 +72,11 @@ export const AIMoodSuggestions: React.FC<AIMoodSuggestionsProps> = ({
         )}
       </View>
 
-      <AIUsageIndicator remaining={remaining} isLoading={isLoading} />
+      <AIUsageIndicator
+        remaining={remaining}
+        resetInSeconds={resetInSeconds}
+        isLoading={isLoading}
+      />
     </View>
   );
 };

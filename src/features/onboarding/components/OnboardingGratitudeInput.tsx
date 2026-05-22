@@ -68,6 +68,8 @@ const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
   const inputRef = useRef<TextInput>(null);
   const emojiButtonRef = useRef<View>(null);
   const emojiAnim = useRef(new Animated.Value(0)).current;
+  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
   const animations = useCoordinatedAnimations();
@@ -84,8 +86,17 @@ const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
     loadRecents();
     return () => {
       isMounted = false;
+      if (focusTimeoutRef.current) {
+        clearTimeout(focusTimeoutRef.current);
+        focusTimeoutRef.current = null;
+      }
+      if (pressTimeoutRef.current) {
+        clearTimeout(pressTimeoutRef.current);
+        pressTimeoutRef.current = null;
+      }
+      emojiAnim.stopAnimation();
     };
-  }, []);
+  }, [emojiAnim]);
 
   // Open emoji picker
   const openEmoji = useCallback(() => {
@@ -129,8 +140,12 @@ const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
       closeEmoji();
 
       // Refocus input for continuity
-      setTimeout(() => {
+      if (focusTimeoutRef.current) {
+        clearTimeout(focusTimeoutRef.current);
+      }
+      focusTimeoutRef.current = setTimeout(() => {
         inputRef.current?.focus();
+        focusTimeoutRef.current = null;
       }, 50);
     },
     [closeEmoji, onMoodChange]
@@ -140,8 +155,12 @@ const OnboardingGratitudeInput: React.FC<OnboardingGratitudeInputProps> = ({
     if (inputText.trim() && !disabled) {
       // **COORDINATED PRESS FEEDBACK**: Use coordinated press animation
       animations.animatePressIn();
-      setTimeout(() => {
+      if (pressTimeoutRef.current) {
+        clearTimeout(pressTimeoutRef.current);
+      }
+      pressTimeoutRef.current = setTimeout(() => {
         animations.animatePressOut();
+        pressTimeoutRef.current = null;
       }, 150);
 
       const trimmed = inputText.trim();

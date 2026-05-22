@@ -41,7 +41,7 @@
       "tip": "💡 Consejo"
     },
     "chat": {
-      "title": "💬 Yeşer AI",
+      "title": "Yeşer AI",
       "placeholder": "Comparte tus pensamientos...",
       "send": "Enviar",
       "greeting": "¡Hola! Soy Yeşer, tu compañero de gratitud. ¿Cómo puedo ayudarte a reflexionar hoy?",
@@ -222,7 +222,11 @@
     "stats": {
       "dailyProgress": "Progreso Diario",
       "currentStreak": "Racha Actual",
-      "longestStreak": "Más larga: {{count}}"
+      "longestStreak": "Más larga: {{count}}",
+      "completed": "completado"
+    },
+    "cta": {
+      "writeTitle": "Escribe tu gratitud de hoy"
     }
   },
   "tips": {
@@ -261,6 +265,17 @@
     "reminderTimeTitle": "Hora del recordatorio diario",
     "timeUpdatedSuccess": "La hora del recordatorio se actualizó a las {{time}}.",
     "reminderTimeA11y": "Configurar recordatorio para las {{time}}",
+    "status": {
+      "ready": "Este dispositivo está registrado para recordatorios remotos. La entrega se confirma con recibos push.",
+      "tokenPending": "Los recordatorios están activos, pero este dispositivo aún espera sincronizar un token push.",
+      "missingToken": "Los recordatorios están activos, pero este dispositivo aún no sincronizó un token push.",
+      "permissionMissing": "Los recordatorios están guardados, pero el permiso de notificaciones está desactivado en este dispositivo.",
+      "syncFailed": "No se pudo verificar la sincronización de notificaciones. Intenta desactivar y activar recordatorios otra vez.",
+      "tokenSaveFailed": "No se pudo guardar este dispositivo para recordatorios remotos.",
+      "preferenceSaveFailed": "No se pudo guardar tu preferencia de recordatorio.",
+      "stillActiveOtherDevices": "Este dispositivo fue dado de baja. Los recordatorios siguen activos en tus otros dispositivos.",
+      "deviceUnsubscribed": "Recordatorios desactivados en este dispositivo."
+    },
     "errors": {
       "generic": "Ocurrió un problema con las notificaciones.",
       "permissionDenied": "Se requiere permiso de notificaciones para activar recordatorios.",
@@ -449,7 +464,14 @@
       }
     },
     "user": {
-      "usernameTitle": "Nombre de usuario"
+      "usernameTitle": "Nombre de usuario",
+      "usernameEditTitle": "Editar nombre de usuario",
+      "usernamePlaceholder": "Elige un nombre de usuario",
+      "usernameUnchanged": "Ingresa un nombre de usuario diferente para guardar.",
+      "usernameAvailable": "Este nombre de usuario está disponible.",
+      "usernameHint": "Usa de 3 a 50 caracteres. Letras y números son mejores.",
+      "usernameModalA11y": "Editor de nombre de usuario",
+      "usernameSaving": "Guardando..."
     },
     "version": "Yeser v{{version}}",
     "help": {
@@ -918,14 +940,20 @@
       "range": {
         "15d": "15 Días",
         "30d": "30 Días",
-        "90d": "90 Días"
+        "90d": "90 Días",
+        "5e": "Últimos 5 Momentos",
+        "15e": "Últimos 15 Momentos",
+        "30e": "Últimos 30 Momentos"
       },
       "home": {
-        "latestTitle": "Lo que tu gratitud está revelando",
-        "readyDescription": "Ya hay suficientes momentos aquí para una lectura con sentido.",
-        "seedTitle": "Tu primer patrón está empezando a aparecer",
-        "seedDescription": "Agrega unos momentos de gratitud más y los convertiremos en tu primera perspectiva emocional.",
-        "fallbackDescription": "Abre Perspectivas para ver las emociones y temas que empiezan a salir a la luz.",
+        "latestTitle": "Lo que muestran tus reflexiones",
+        "latestDescription": "Una lectura breve de tus entradas recientes.",
+        "latestRowTitle": "Abrir análisis",
+        "latestRowDescription": "Mira temas y emociones.",
+        "readyDescription": "Tu análisis breve está listo.",
+        "seedTitle": "Aparecen primeras señales",
+        "seedDescription": "Agrega unas reflexiones más para aclararlo.",
+        "fallbackDescription": "Ver análisis breve.",
         "updatedToday": "Actualizado hoy",
         "updatedDaysAgo": "Actualizado hace {{count}} días",
         "previewBadge": "Vista previa",
@@ -944,7 +972,8 @@
         "noDominantMood": "Ninguno",
         "statementsPerEntry": "Promedio {{value}} declaraciones por entrada",
         "generatedAt": "Actualizado el {{date}}",
-        "entriesExplanation": "Este resumen refleja los patrones emocionales que están emergiendo en {{count}} entradas de los últimos {{days}} días."
+        "entriesExplanation": "Este resumen refleja los patrones emocionales que están emergiendo en {{count}} entradas de los últimos {{days}} días.",
+        "entriesExplanationEntries": "Este resumen refleja los patrones emocionales que surgen de tus últimas {{count}} entradas."
       },
       "balance": {
         "imbalanced": "Desequilibrado",
@@ -955,6 +984,9 @@
         "narrative": {
           "title": "Lo que más destaca",
           "subtitle": "Una lectura más profunda de los temas, emociones y necesidades que aparecen en tu gratitud."
+        },
+        "emotions": {
+          "title": "Emociones Principales"
         }
       },
       "ai": {
@@ -970,7 +1002,26 @@
         "logical": "Lo que esto sugiere",
         "emotional": "Corriente emocional",
         "suggestions": "Qué probar ahora",
-        "empty": "Agrega unos momentos de gratitud más y sacaremos a la luz tu primer patrón."
+        "empty": "Agrega unos momentos más para ver tu primer patrón."
+      },
+      "status": {
+        "updating": "Actualizando...",
+        "reading": "Leyendo tus entradas...",
+        "patterns": "Buscando patrones...",
+        "generating": "Preparando tu perspectiva...",
+        "analyzingTitle": "Preparando tu perspectiva",
+        "analyzingMessage": "Leyendo tus entradas recientes.",
+        "errorTitle": "Perspectiva pausada",
+        "errorMessage": "El análisis se detuvo. Inténtalo otra vez.",
+        "limitTitle": "Límite diario de perspectivas alcanzado",
+        "limitMessage": "Ya usaste las actualizaciones de IA de hoy. Se restablece mañana y aún puedes revisar tu última perspectiva guardada.",
+        "unavailableTitle": "No se pudo actualizar la perspectiva",
+        "unavailableMessage": "No pudimos actualizar el análisis ahora. Inténtalo de nuevo en un momento.",
+        "readyTitle": "Perspectiva lista",
+        "readyToRevealTitle": "Listo",
+        "readyToRevealMessage": "Toca revelar para empezar.",
+        "seedTitle": "Sigue escribiendo",
+        "seedMessage": "Unos momentos más lo harán más claro."
       },
       "actions": {
         "refresh": "Actualizar"
@@ -1160,6 +1211,9 @@
       "cancel": "Cancelar"
     },
     "attachments": {
+      "voiceNote": "Nota de voz",
+      "audioUnavailable": "Nota de voz no disponible",
+      "imageUnavailable": "Imagen no disponible",
       "errors": {
         "dailyLimitImage": "Has alcanzado el límite de imágenes de hoy ({{cap}}/día). Inténtalo mañana.",
         "dailyLimitAudio": "Has alcanzado el límite de notas de voz de hoy ({{cap}}/día). Inténtalo mañana."
@@ -1449,7 +1503,7 @@
       "benefit2Desc": "Lo justo para recordar, nunca para incomodar",
       "benefit3Title": "Tú mandas",
       "benefit3Desc": "Cambia la hora, el tono o apágalo cuando quieras",
-      "statusSuccess": "Listo — tu recordatorio suave está configurado.",
+      "statusSuccess": "Listo — este dispositivo está registrado para tu recordatorio suave.",
       "statusSkip": "Puedes omitir por ahora; habilitar más tarde en la configuración",
       "enable": "Activar mi recordatorio",
       "enableLoading": "Solicitando Permiso...",
@@ -1765,6 +1819,12 @@
       "access": "Error de acceso a la base de datos. Por favor inténtalo de nuevo.",
       "security": "Debido a una restricción de seguridad, la operación no se pudo completar. Por favor cierra sesión e inicia sesión nuevamente.",
       "notificationSchedule": "No pudimos actualizar tu horario de notificaciones. Por favor inténtalo de nuevo."
+    },
+    "gratitude": {
+      "pastEntryRequiresPro": "Las entradas pasadas son una función Premium.",
+      "freeDailyLimit": "Las cuentas gratuitas pueden agregar una gratitud por día.",
+      "moodEditingRequiresPro": "Editar el ánimo es una función Premium.",
+      "attachmentsRequirePro": "Los archivos multimedia son una función Premium."
     },
     "network": {
       "generic": "Verifica tu conexión a Internet."

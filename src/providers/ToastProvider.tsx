@@ -138,6 +138,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   // **COORDINATED ANIMATION SYSTEM**: Use coordinated animations for consistency
   const animations = useCoordinatedAnimations();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hideToast = useCallback(() => {
     // Clear timeout
@@ -145,13 +146,18 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+    if (hideAnimationTimeoutRef.current) {
+      clearTimeout(hideAnimationTimeoutRef.current);
+      hideAnimationTimeoutRef.current = null;
+    }
 
     // **COORDINATED HIDE**: Simple fade out
     animations.animateFade(0, { duration: 200 });
 
     // Hide after animation completes
-    setTimeout(() => {
+    hideAnimationTimeoutRef.current = setTimeout(() => {
       setToastState((prev) => ({ ...prev, visible: false }));
+      hideAnimationTimeoutRef.current = null;
     }, 200);
   }, [animations]);
 
@@ -226,6 +232,9 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+      }
+      if (hideAnimationTimeoutRef.current) {
+        clearTimeout(hideAnimationTimeoutRef.current);
       }
     };
   }, []);

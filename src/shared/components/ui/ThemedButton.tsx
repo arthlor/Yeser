@@ -78,27 +78,41 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
   // **COORDINATED ANIMATION SYSTEM**: Single instance for all animations
   const animations = useCoordinatedAnimations();
   const loadingAnim = useRef(new Animated.Value(0)).current;
+  const loadingAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
 
   // **ESSENTIAL LOADING ANIMATION**: Keep only for loading state feedback
   useEffect(() => {
-    if (isLoading) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(loadingAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(loadingAnim, {
-            toValue: 0,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } else {
+    if (!isLoading) {
+      loadingAnimationRef.current?.stop();
+      loadingAnimationRef.current = null;
       loadingAnim.setValue(0);
+      return;
     }
+
+    const loadingAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(loadingAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(loadingAnim, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    loadingAnimationRef.current = loadingAnimation;
+    loadingAnimation.start();
+
+    return () => {
+      loadingAnimation.stop();
+      if (loadingAnimationRef.current === loadingAnimation) {
+        loadingAnimationRef.current = null;
+      }
+    };
   }, [isLoading, loadingAnim]);
 
   // **COORDINATED PRESS FEEDBACK**: Use coordinated animation methods

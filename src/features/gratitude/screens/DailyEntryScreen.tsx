@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Animated,
+  Platform,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -28,7 +29,6 @@ import {
   usePromptMutations,
   usePromptText,
 } from '../hooks';
-import AttachmentRail from '../components/AttachmentRail';
 import type { PendingAttachments } from '../components/GratitudeInputBar';
 import type { Attachment } from '@/schemas/gratitudeEntrySchema';
 import { MAX_ATTACHMENTS_PER_DAY_PER_KIND } from '../mediaApi';
@@ -46,7 +46,7 @@ import { AppStackParamList, MainTabParamList } from '@/types/navigation';
 import { analyticsService } from '@/services/analyticsService';
 import { useCoordinatedAnimations } from '@/shared/hooks/useCoordinatedAnimations';
 import InsightTeaserCard from '@/features/mood/components/InsightTeaserCard';
-import { useLatestMoodInsight, useMoodInsights } from '@/features/mood/hooks';
+import { useLatestMoodInsight } from '@/features/mood/hooks';
 
 import GratitudeInputBar, { GratitudeInputBarRef } from '../components/GratitudeInputBar';
 import { AICoachPrompt } from '@/shared/components/ui/AICoachPrompt';
@@ -58,6 +58,9 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { format } from 'date-fns';
 import { enUS, es, tr } from 'date-fns/locale';
 import { getStaticDefaultPrompt } from '@/features/gratitude/hooks/usePrompts';
+import { groupAttachmentsByStatementIndex } from '@/features/gratitude/utils/attachmentGrouping';
+import { TAB_BAR_HEIGHT } from '@/navigation/tabBarMetrics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type DailyEntryScreenRouteProp = RouteProp<MainTabParamList, 'DailyEntryTab'>;
 
@@ -66,6 +69,9 @@ interface Props {
 }
 
 const LAST_INSIGHT_TEASER_KEY = 'lastInsightTeaserShownAt';
+const CHAT_FAB_TAB_GAP = 14;
+const CHAT_FAB_SIZE = 56;
+const CHAT_FAB_CONTENT_GAP = 24;
 
 const getInsightTeaserDayStamp = () => new Date().toISOString().split('T')[0];
 
@@ -89,9 +95,18 @@ const markInsightTeaserShownToday = async (): Promise<void> => {
 const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { handleMutationError, showError } = useGlobalError();
   const { showSuccess, showWarning } = useToast();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const chatFabBottomOffset = useMemo(() => {
+    const tabBarBottomPadding = Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 12);
+    return TAB_BAR_HEIGHT + tabBarBottomPadding + CHAT_FAB_TAB_GAP;
+  }, [insets.bottom]);
+
+  const styles = useMemo(
+    () => createStyles(theme, chatFabBottomOffset),
+    [theme, chatFabBottomOffset]
+  );
   const { t } = useTranslation();
 
   const initialDate = route?.params?.initialDate ? new Date(route.params.initialDate) : new Date();
@@ -106,7 +121,6 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     isFresh: hasFreshInsight,
     isLoading: isLatestInsightLoading,
   } = useLatestMoodInsight('30d');
-  const { refetch: generateInsight, isRefetching: isGeneratingInsight } = useMoodInsights('30d');
 
   // **PAST DATE INJECTION PROTECTION**
   useEffect(() => {
@@ -136,7 +150,7 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     deleteStatementError,
   } = useGratitudeMutations();
 
-  const { uploadImage, uploadAudio, deleteAttachment: removeAttachment } = useAttachmentMutations();
+  const { uploadImage, uploadAudio } = useAttachmentMutations();
 
   const { profile } = useUserProfile();
 
@@ -181,6 +195,10 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     () => (currentEntry?.attachments as Attachment[] | undefined) ?? [],
     [currentEntry?.attachments]
   );
+  const attachmentsByStatementIndex = useMemo(
+    () => groupAttachmentsByStatementIndex(attachments),
+    [attachments]
+  );
   const imageAttachmentsRemaining = useMemo(
     () =>
       Math.max(
@@ -208,18 +226,18 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
   const layoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const animationTimer = animationTimerRef.current;
-    const fadeTimer = fadeTimerRef.current;
-    const layoutTimer = layoutTimerRef.current;
     return () => {
-      if (animationTimer) {
-        clearTimeout(animationTimer);
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+        animationTimerRef.current = null;
       }
-      if (fadeTimer) {
-        clearTimeout(fadeTimer);
+      if (fadeTimerRef.current) {
+        clearTimeout(fadeTimerRef.current);
+        fadeTimerRef.current = null;
       }
-      if (layoutTimer) {
-        clearTimeout(layoutTimer);
+      if (layoutTimerRef.current) {
+        clearTimeout(layoutTimerRef.current);
+        layoutTimerRef.current = null;
       }
     };
   }, []);
@@ -492,16 +510,6 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     ]
   );
 
-  const handleRemoveAttachment = useCallback(
-    (attachment: Attachment) => {
-      void removeAttachment({
-        entryDate: finalDateString,
-        attachmentId: attachment.id,
-      });
-    },
-    [finalDateString, removeAttachment]
-  );
-
   const handleDismissInsightTeaser = useCallback(() => {
     setIsInsightTeaserVisible(false);
     analyticsService.logEvent('insight_teaser_dismissed', {
@@ -510,25 +518,19 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     });
   }, [isPro]);
 
-  const handleInsightTeaserPress = useCallback(async () => {
+  const handleInsightTeaserPress = useCallback(() => {
     analyticsService.logEvent('insight_reveal_requested', {
       source: 'daily_entry_teaser',
       range: '30d',
     });
 
-    const result = await generateInsight();
-
-    if (result.error) {
-      handleMutationError(result.error, t('mood.analysis.errors.revealFailed'));
-      return;
-    }
-
     setIsInsightTeaserVisible(false);
     navigation.navigate('MoodAnalysis', {
       initialRange: '30d',
       source: 'daily_entry_teaser',
+      autoGenerate: true,
     });
-  }, [generateInsight, handleMutationError, navigation, t]);
+  }, [navigation]);
 
   const handleSaveEditedStatement = useCallback(
     async (index: number, updatedStatement: string, updatedMood?: MoodEmoji | null) => {
@@ -627,9 +629,11 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
     await refetchEntry();
   };
 
-  const effectivePromptText = canUseVariedPrompts
-    ? currentPrompt
-    : getStaticDefaultPrompt(language === 'tr' ? 'tr' : language === 'es' ? 'es' : 'en');
+  const effectivePromptText =
+    route?.params?.initialPrompt ||
+    (canUseVariedPrompts
+      ? currentPrompt
+      : getStaticDefaultPrompt(language === 'tr' ? 'tr' : language === 'es' ? 'es' : 'en'));
   const effectivePromptLoading = canUseVariedPrompts ? promptLoading : false;
   const effectivePromptError = canUseVariedPrompts ? promptError?.message || null : null;
 
@@ -638,8 +642,11 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
       checkGate('varied_prompts');
       return;
     }
+    if (route?.params?.initialPrompt) {
+      navigation.setParams({ initialPrompt: undefined });
+    }
     fetchNewPrompt();
-  }, [canUseVariedPrompts, checkGate, fetchNewPrompt]);
+  }, [canUseVariedPrompts, checkGate, fetchNewPrompt, navigation, route?.params?.initialPrompt]);
 
   const getDateLocale = () => {
     switch (language) {
@@ -764,9 +771,15 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
           {/* HEADER SECTION */}
           <View style={styles.header}>
             <View style={styles.headerContent}>
-              <Text style={styles.headerDate}>{formattedDate.toUpperCase()}</Text>
-              <Text style={styles.headerTitle}>{greeting}</Text>
-              <Text style={styles.headerSubtitle}>{subtitle}</Text>
+              <Text style={styles.headerDate} maxFontSizeMultiplier={1.3}>
+                {formattedDate.toLocaleUpperCase(language === 'tr' ? 'tr-TR' : language)}
+              </Text>
+              <Text style={styles.headerTitle} maxFontSizeMultiplier={1.3}>
+                {greeting}
+              </Text>
+              <Text style={styles.headerSubtitle} maxFontSizeMultiplier={1.3}>
+                {subtitle}
+              </Text>
             </View>
 
             <View style={styles.mascotContainer}>
@@ -824,9 +837,8 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
                 description={t('mood.analysis.teaser.description')}
                 promise={t('mood.analysis.promise')}
                 ctaLabel={t('mood.analysis.home.cta.reveal')}
-                onPress={() => void handleInsightTeaserPress()}
+                onPress={handleInsightTeaserPress}
                 emoji="✨"
-                isLoading={isGeneratingInsight}
                 lockedLabel={!isPro ? t('mood.analysis.home.previewBadge') : null}
                 onDismiss={handleDismissInsightTeaser}
               />
@@ -838,9 +850,9 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
             <View style={styles.coachSection}>
               <AICoachPrompt
                 recentEntries={statements.slice(0, 5)}
-                onSelectPrompt={(_prompt) => {
+                onSelectPrompt={(prompt) => {
+                  inputBarRef.current?.setInputText?.(prompt);
                   inputBarRef.current?.focus();
-                  // The prompt will be shown as a hint
                 }}
               />
             </View>
@@ -872,15 +884,9 @@ const EnhancedDailyEntryScreen: React.FC<Props> = ({ route }) => {
 
             {displayStatements.map((statement, index) => {
               const originalIndex = statements.length - 1 - index;
-              const rawAttachments = (currentEntry?.attachments as Attachment[] | undefined) ?? [];
-              const statementAttachments = rawAttachments.filter(
-                (a) => a.statement_index === originalIndex
-              );
+              const statementAttachments = attachmentsByStatementIndex.get(originalIndex) ?? [];
               return (
-                <View
-                  key={`${finalDateString}-${index}-${statement.slice(0, 10)}`}
-                  style={styles.statementWrapper}
-                >
+                <View key={`${finalDateString}-${originalIndex}`} style={styles.statementWrapper}>
                   <DailyEntryStatementItem
                     index={index}
                     statement={statement}
@@ -1052,11 +1058,11 @@ const DailyEntryStatementItem = React.memo<{
 );
 DailyEntryStatementItem.displayName = 'DailyEntryStatementItem';
 
-const createStyles = (theme: AppTheme) =>
+const createStyles = (theme: AppTheme, chatFabBottomOffset: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      paddingBottom: theme.spacing.xl,
+      paddingBottom: chatFabBottomOffset + CHAT_FAB_SIZE + CHAT_FAB_CONTENT_GAP,
     },
     header: {
       flexDirection: 'row',
@@ -1069,7 +1075,7 @@ const createStyles = (theme: AppTheme) =>
     },
     headerContent: {
       flex: 1,
-      paddingRight: 160,
+      paddingRight: 120,
     },
     headerDate: {
       ...theme.typography.labelSmall,
@@ -1113,10 +1119,10 @@ const createStyles = (theme: AppTheme) =>
     },
     mascotContainer: {
       position: 'absolute',
-      right: -20,
-      top: 5,
-      width: 180,
-      height: 180,
+      right: -15,
+      top: 10,
+      width: 135,
+      height: 135,
       zIndex: 0,
       opacity: 0.8,
     },
@@ -1176,7 +1182,7 @@ const createStyles = (theme: AppTheme) =>
     },
     chatFab: {
       position: 'absolute',
-      bottom: 24, // Optimized position
+      bottom: chatFabBottomOffset,
       right: theme.spacing.lg,
       width: 56,
       height: 56,

@@ -3,23 +3,27 @@ import { supabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/debugConfig';
 import { useSubscription } from '@/hooks/useSubscription';
 import type { MoodEmoji } from '@/types/mood.types';
+import type { SupportedLanguage } from '@/store/languageStore';
 
 interface MoodSuggestionResult {
-  moods: MoodEmoji[];
-  primary: MoodEmoji;
+  moods?: MoodEmoji[];
+  primary?: MoodEmoji;
   remaining: number;
+  resetInSeconds?: number;
+  error?: string;
 }
 
 interface UseMoodSuggestionOptions {
   debounceMs?: number;
   minLength?: number;
-  language?: 'tr' | 'en';
+  language?: SupportedLanguage;
 }
 
 interface UseMoodSuggestionReturn {
   suggestedMoods: MoodEmoji[];
   primaryMood: MoodEmoji | null;
   remaining: number | null;
+  resetInSeconds: number | null;
   isLoading: boolean;
   error: string | null;
   suggestMood: (statement: string) => void;
@@ -34,16 +38,25 @@ export const useMoodSuggestion = (
   const [suggestedMoods, setSuggestedMoods] = useState<MoodEmoji[]>([]);
   const [primaryMood, setPrimaryMood] = useState<MoodEmoji | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [resetInSeconds, setResetInSeconds] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { isPro } = useSubscription();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastStatement = useRef<string>('');
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const clearSuggestions = useCallback(() => {
     setSuggestedMoods([]);
     setPrimaryMood(null);
+    setResetInSeconds(null);
     setError(null);
   }, []);
 
@@ -66,8 +79,10 @@ export const useMoodSuggestion = (
       }
 
       lastStatement.current = statement;
-      setIsLoading(true);
-      setError(null);
+      if (isMountedRef.current) {
+        setIsLoading(true);
+        setError(null);
+      }
 
       try {
         const { data, error: invokeError } = await supabase.functions.invoke<MoodSuggestionResult>(
@@ -82,17 +97,42 @@ export const useMoodSuggestion = (
         }
 
         if (data) {
-          setSuggestedMoods(data.moods as MoodEmoji[]);
-          setPrimaryMood(data.primary as MoodEmoji);
-          setRemaining(data.remaining);
+          if (data.error) {
+            if (isMountedRef.current) {
+              setRemaining(data.remaining);
+              if (data.resetInSeconds) {
+                setResetInSeconds(data.resetInSeconds);
+              }
+              setSuggestedMoods([]);
+              setPrimaryMood(null);
+            }
+            return;
+          }
+
+          if (isMountedRef.current) {
+            if (data.moods) {
+              setSuggestedMoods(data.moods as MoodEmoji[]);
+            }
+            if (data.primary) {
+              setPrimaryMood(data.primary as MoodEmoji);
+            }
+            setRemaining(data.remaining);
+            if (data.resetInSeconds) {
+              setResetInSeconds(data.resetInSeconds);
+            }
+          }
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to suggest mood';
         logger.warn('[useMoodSuggestion] Error:', { error: errorMessage });
-        setError(errorMessage);
-        clearSuggestions();
+        if (isMountedRef.current) {
+          setError(errorMessage);
+          clearSuggestions();
+        }
       } finally {
-        setIsLoading(false);
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
       }
     },
     [isPro, minLength, language, clearSuggestions]
@@ -126,6 +166,7 @@ export const useMoodSuggestion = (
     suggestedMoods,
     primaryMood,
     remaining,
+    resetInSeconds,
     isLoading,
     error,
     suggestMood,

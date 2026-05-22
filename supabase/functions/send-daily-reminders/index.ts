@@ -1,11 +1,20 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
-type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | {
+      [key: string]: Json | undefined;
+    }
+  | Json[];
 
 const EXPO_PUSH_API_URL = 'https://exp.host/--/api/v2/push/send';
 const DEFAULT_BATCH_LIMIT = 100;
 const DEFAULT_JOB_LIMIT = 200;
 const MAX_ATTEMPTS = 5;
+const MAX_FAILURE_DETAILS = 20;
 type NotificationLanguage = 'tr' | 'en' | 'es';
 type ReminderVariant = 'midday' | 'evening';
 
@@ -69,24 +78,79 @@ interface NotificationLogInsert {
   expo_status: string | null;
   expo_message: string | null;
   expo_ticket_id: string | null;
-  error_detail: string | null;
+  error_detail: Json | null;
+}
+
+interface DeliveryFailureDetail {
+  job_id: string;
+  token_suffix: string | null;
+  expo_status: string | null;
+  expo_message: string | null;
+  expo_error: string | null;
+}
+
+interface DeliveryDiagnostics {
+  jobs_processed: number;
+  messages_built: number;
+  ticket_ok: number;
+  ticket_error: number;
+  invalid_tokens: number;
+  credential_errors: number;
+  log_insert_error: string | null;
+  failure_details: DeliveryFailureDetail[];
 }
 
 type SupabaseAdminClient = SupabaseClient;
 
+const parseSecretKeyDictionary = (raw: string | undefined): string[] => {
+  if (!raw?.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return Object.values(parsed)
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .map((value) => value.trim());
+  } catch {
+    return [];
+  }
+};
+
+const resolveServiceRoleKeys = (): string[] => {
+  const keys = new Set<string>();
+  const legacyKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim();
+
+  if (legacyKey) {
+    keys.add(legacyKey);
+  }
+
+  for (const key of parseSecretKeyDictionary(Deno.env.get('SUPABASE_SECRET_KEYS'))) {
+    keys.add(key);
+  }
+
+  return [...keys];
+};
+
 const loadConfig = () => {
+  const serviceRoleKeys = resolveServiceRoleKeys();
   const config = {
     SUPABASE_URL: Deno.env.get('SUPABASE_URL') ?? '',
-    SUPABASE_SERVICE_ROLE_KEY: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    SUPABASE_SERVICE_ROLE_KEY: serviceRoleKeys[0] ?? '',
+    ACCEPTED_SERVICE_ROLE_KEYS: serviceRoleKeys,
     EDGE_INTERNAL_SECRET: Deno.env.get('EDGE_INTERNAL_SECRET') ?? '',
-    CRON_AUTH_TOKEN: Deno.env.get('CRON_AUTH_TOKEN') ?? undefined,
+    CRON_AUTH_TOKEN: Deno.env.get('CRON_AUTH_TOKEN')?.trim() || undefined,
     EXPO_ACCESS_TOKEN: Deno.env.get('EXPO_ACCESS_TOKEN') ?? '',
     JOB_LIMIT: Number(Deno.env.get('JOB_PROCESS_LIMIT') ?? DEFAULT_JOB_LIMIT),
   };
 
-  const missing = Object.entries(config)
-    .filter(([key, value]) => (key === 'CRON_AUTH_TOKEN' ? false : !value))
-    .map(([key]) => key);
+  const missing: string[] = [];
+  if (!config.SUPABASE_URL) missing.push('SUPABASE_URL');
+  if (config.ACCEPTED_SERVICE_ROLE_KEYS.length === 0) {
+    missing.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEYS');
+  }
+  if (!config.EDGE_INTERNAL_SECRET) missing.push('EDGE_INTERNAL_SECRET');
+  if (!config.EXPO_ACCESS_TOKEN) missing.push('EXPO_ACCESS_TOKEN');
 
   if (missing.length > 0) {
     throw new Error(`Missing environment variables: ${missing.join(', ')}`);
@@ -98,24 +162,32 @@ const loadConfig = () => {
 const authorizeRequest = (
   request: Request,
   edgeSecret: string,
-  serviceRoleKey: string,
-  cronToken: string | undefined
-) => {
-  const bearer = request.headers.get('authorization')?.trim();
-  const internal = request.headers.get('x-internal-secret');
-  const cron = request.headers.get('x-cron-token');
+  cronToken: string | undefined,
+  acceptedServiceRoleKeys: string[]
+): { authorized: boolean; failures: string[] } => {
+  const internal = request.headers.get('x-internal-secret')?.trim() ?? '';
+  const cron = request.headers.get('x-cron-token')?.trim() ?? '';
+  const bearer =
+    request.headers
+      .get('authorization')
+      ?.trim()
+      .replace(/^Bearer\s+/i, '') ?? '';
 
-  const bearerToken =
-    bearer && bearer.startsWith('Bearer ') ? bearer.slice('Bearer '.length).trim() : null;
-  const acceptedBearerTokens = [serviceRoleKey, cronToken]
-    .filter((value): value is string => Boolean(value && value.trim().length > 0))
-    .map((value) => value.trim());
+  const normalizedEdgeSecret = edgeSecret.trim();
+  const hasInternal = internal.length > 0 && internal === normalizedEdgeSecret;
+  const hasServiceRoleBearer = bearer.length > 0 && acceptedServiceRoleKeys.includes(bearer);
+  const hasCron = hasServiceRoleBearer || (cronToken ? cron === cronToken.trim() : true);
 
-  const hasBearer = Boolean(bearerToken && acceptedBearerTokens.includes(bearerToken));
-  const hasInternal = internal === edgeSecret;
-  const hasCron = cronToken ? cron === cronToken : true;
+  const failures: string[] = [];
+  if (!hasInternal && !hasServiceRoleBearer) {
+    failures.push('internal_or_service_role');
+  }
+  if (!hasCron) failures.push('cron');
 
-  return hasBearer && hasInternal && hasCron;
+  return {
+    authorized: failures.length === 0,
+    failures,
+  };
 };
 
 const isExpoToken = (token: string) => {
@@ -125,6 +197,48 @@ const isExpoToken = (token: string) => {
     token.startsWith('ExpoPushToken[') ||
     /^[A-Za-z0-9_-]{22,}$/.test(token)
   );
+};
+
+const getTokenSuffix = (token: string | null): string | null => {
+  if (!token) return null;
+  return token.slice(-10);
+};
+
+const getTicketError = (ticket: ExpoTicket): string | null => {
+  const error = ticket.details?.error;
+  return typeof error === 'string' && error.trim().length > 0 ? error : null;
+};
+
+const shouldDeleteTokenForTicket = (ticket: ExpoTicket): boolean =>
+  getTicketError(ticket) === 'DeviceNotRegistered' || /not registered/i.test(ticket.message ?? '');
+
+const isCredentialTicketError = (ticket: ExpoTicket): boolean => {
+  const ticketError = getTicketError(ticket);
+  if (ticketError === 'DeviceNotRegistered') {
+    return false;
+  }
+
+  return (
+    ticketError === 'InvalidCredentials' ||
+    ticketError === 'InvalidProviderToken' ||
+    ticketError === 'MismatchSenderId' ||
+    /invalidcredential|invalidprovider|invalid provider|credential/i.test(ticket.message ?? '')
+  );
+};
+
+const buildErrorDetail = (ticket: ExpoTicket): Json | null => {
+  const details = ticket.details ? { ...ticket.details } : {};
+  const ticketError = getTicketError(ticket);
+
+  if (ticketError) {
+    details.error = ticketError;
+  }
+
+  if (isCredentialTicketError(ticket)) {
+    details.requires_credential_fix = true;
+  }
+
+  return Object.keys(details).length > 0 ? (details as Json) : null;
 };
 
 const chunk = <T>(items: T[], size: number): T[][] => {
@@ -161,12 +275,16 @@ const getRelativeMemoryLabel = (language: NotificationLanguage, ageDays: number)
   if (safeAgeDays >= 7) {
     const weeks = Math.max(Math.round(safeAgeDays / 7), 1);
     if (language === 'tr') return `${weeks} hafta önce`;
-    if (language === 'es') return `hace ${weeks} semana${weeks === 1 ? '' : 's'}`;
+    if (language === 'es') {
+      return `hace ${weeks} semana${weeks === 1 ? '' : 's'}`;
+    }
     return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
   }
 
   if (language === 'tr') return `${safeAgeDays} gün önce`;
-  if (language === 'es') return `hace ${safeAgeDays} día${safeAgeDays === 1 ? '' : 's'}`;
+  if (language === 'es') {
+    return `hace ${safeAgeDays} día${safeAgeDays === 1 ? '' : 's'}`;
+  }
   return `${safeAgeDays} day${safeAgeDays === 1 ? '' : 's'} ago`;
 };
 
@@ -270,6 +388,7 @@ const dispatchExpo = async (
 ): Promise<DispatchTicket[]> => {
   const batches = chunk(messages, DEFAULT_BATCH_LIMIT);
   const tickets: DispatchTicket[] = [];
+  let batchStartIndex = 0;
 
   for (const batch of batches) {
     const response = await fetch(EXPO_PUSH_API_URL, {
@@ -290,19 +409,41 @@ const dispatchExpo = async (
             status: 'error',
             message,
           },
-          index,
+          index: batchStartIndex + index,
         });
       });
+      batchStartIndex += batch.length;
       continue;
     }
 
-    const body = (await response.json()) as { data?: ExpoTicket[] };
-    body.data?.forEach((ticket, index: number) =>
-      tickets.push({
-        ticket,
-        index,
-      })
-    );
+    const body = (await response.json()) as {
+      data?: ExpoTicket[];
+      errors?: ExpoTicket[];
+    };
+    if (!body.data || body.data.length === 0) {
+      const message = body.errors
+        ?.map((error) => error.message)
+        .filter(Boolean)
+        .join('; ');
+      batch.forEach((_, index: number) => {
+        tickets.push({
+          ticket: {
+            status: 'error',
+            message: message || 'Expo push response did not include ticket data',
+            details: body.errors?.[0]?.details ?? null,
+          },
+          index: batchStartIndex + index,
+        });
+      });
+    } else {
+      body.data.forEach((ticket, index: number) =>
+        tickets.push({
+          ticket,
+          index: batchStartIndex + index,
+        })
+      );
+    }
+    batchStartIndex += batch.length;
   }
   return tickets;
 };
@@ -323,11 +464,21 @@ const updateJobStatus = async (
     .eq('id', jobId);
 };
 
-const insertLogs = async (supabase: SupabaseAdminClient, logs: NotificationLogInsert[]) => {
-  if (logs.length === 0) return;
-  await supabase.rpc('insert_notification_logs', {
+const insertLogs = async (
+  supabase: SupabaseAdminClient,
+  logs: NotificationLogInsert[]
+): Promise<string | null> => {
+  if (logs.length === 0) return null;
+  const { error } = await supabase.rpc('insert_notification_logs', {
     p_logs: logs as unknown as Json,
   });
+
+  if (error) {
+    console.error('[send-daily-reminders] insert_notification_logs failed:', error.message);
+    return error.message;
+  }
+
+  return null;
 };
 
 const removeInvalidTokens = async (supabase: SupabaseAdminClient, tokens: Set<string>) => {
@@ -361,15 +512,15 @@ Deno.serve(async (request: Request) => {
     );
   }
 
-  if (
-    !authorizeRequest(
-      request,
-      config.EDGE_INTERNAL_SECRET,
-      config.SUPABASE_SERVICE_ROLE_KEY,
-      config.CRON_AUTH_TOKEN
-    )
-  ) {
-    console.warn('[send-daily-reminders] Unauthorized request blocked');
+  const auth = authorizeRequest(
+    request,
+    config.EDGE_INTERNAL_SECRET,
+    config.CRON_AUTH_TOKEN,
+    config.ACCEPTED_SERVICE_ROLE_KEYS
+  );
+
+  if (!auth.authorized) {
+    console.warn('[send-daily-reminders] Unauthorized request blocked:', auth.failures.join(', '));
     return new Response('Unauthorized', {
       status: 401,
     });
@@ -414,6 +565,16 @@ Deno.serve(async (request: Request) => {
     );
   }
 
+  const diagnostics: DeliveryDiagnostics = {
+    jobs_processed: claimedJobs.length,
+    messages_built: 0,
+    ticket_ok: 0,
+    ticket_error: 0,
+    invalid_tokens: 0,
+    credential_errors: 0,
+    log_insert_error: null,
+    failure_details: [],
+  };
   const logs: NotificationLogInsert[] = [];
   const invalidTokens = new Set<string>();
 
@@ -424,6 +585,7 @@ Deno.serve(async (request: Request) => {
     }
 
     const messages = buildMessages(job);
+    diagnostics.messages_built += messages.length;
     if (messages.length === 0) {
       await updateJobStatus(supabase, job.id, 'failed', 'No valid Expo tokens');
       continue;
@@ -432,24 +594,42 @@ Deno.serve(async (request: Request) => {
     const tickets = await dispatchExpo(messages, config.EXPO_ACCESS_TOKEN);
     let successCount = 0;
     let failureCount = 0;
-    let lastError = null;
+    let lastError: string | null = tickets.length === 0 ? 'Expo returned no push tickets' : null;
+
+    if (tickets.length === 0) {
+      failureCount = messages.length;
+      diagnostics.ticket_error += messages.length;
+    }
 
     for (const { ticket, index } of tickets) {
       const token = messages[index]?.to ?? null;
       const isOk = ticket.status === 'ok';
+      const ticketError = getTicketError(ticket);
 
       if (isOk) {
         successCount += 1;
+        diagnostics.ticket_ok += 1;
       } else {
         failureCount += 1;
+        diagnostics.ticket_error += 1;
         lastError = ticket.message ?? 'Unknown Expo error';
-        if (
-          token &&
-          (ticket.details?.error === 'DeviceNotRegistered' ||
-            ticket.details?.error === 'InvalidCredentials' ||
-            /(invalid|not registered)/i.test(ticket.message ?? ''))
-        ) {
+
+        if (isCredentialTicketError(ticket)) {
+          diagnostics.credential_errors += 1;
+        }
+
+        if (token && shouldDeleteTokenForTicket(ticket)) {
           invalidTokens.add(token);
+        }
+
+        if (diagnostics.failure_details.length < MAX_FAILURE_DETAILS) {
+          diagnostics.failure_details.push({
+            job_id: job.id,
+            token_suffix: getTokenSuffix(token),
+            expo_status: ticket.status ?? null,
+            expo_message: ticket.message ?? null,
+            expo_error: ticketError,
+          });
         }
       }
 
@@ -459,22 +639,28 @@ Deno.serve(async (request: Request) => {
         expo_status: ticket.status ?? null,
         expo_message: ticket.message ?? null,
         expo_ticket_id: ticket.id ?? null,
-        error_detail: ticket.details ? JSON.stringify(ticket.details) : null,
+        error_detail: buildErrorDetail(ticket),
       });
     }
 
-    const statusUpdate = successCount > 0 && failureCount === 0 ? 'sent' : 'failed';
+    const statusUpdate = successCount > 0 ? 'sent' : 'failed';
     await updateJobStatus(supabase, job.id, statusUpdate, lastError);
   }
 
-  await insertLogs(supabase, logs);
+  diagnostics.log_insert_error = await insertLogs(supabase, logs);
   await removeInvalidTokens(supabase, invalidTokens);
+  diagnostics.invalid_tokens = invalidTokens.size;
+
+  if (diagnostics.ticket_error > 0 || diagnostics.credential_errors > 0) {
+    console.warn('[send-daily-reminders] Expo push ticket failures:', diagnostics);
+  } else {
+    console.log('[send-daily-reminders] Expo push ticket summary:', diagnostics);
+  }
 
   return new Response(
     JSON.stringify({
       ok: true,
-      jobs_processed: claimedJobs.length,
-      invalid_tokens: invalidTokens.size,
+      ...diagnostics,
     }),
     {
       status: 200,

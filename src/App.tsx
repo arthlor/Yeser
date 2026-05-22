@@ -15,7 +15,7 @@ import {
 import * as Linking from 'expo-linking';
 import { StatusBar, type StatusBarStyle } from 'expo-status-bar';
 import React from 'react';
-import { LogBox, StyleSheet, View } from 'react-native';
+import { LogBox, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import RootNavigator from './navigation/RootNavigator';
 import { useTheme } from './providers/ThemeProvider';
 import EnhancedSplashScreen from './features/auth/screens/SplashScreen';
@@ -26,7 +26,10 @@ import { RootStackParamList } from './types/navigation';
 import { AppProviders } from './providers/AppProviders';
 import SplashOverlayProvider from './providers/SplashOverlayProvider';
 import { useAuthBootstrap } from './features/auth/hooks/useAuthBootstrap';
+import { useCoreAuthStore } from './features/auth/store/coreAuthStore';
 import { useAppTrackingTransparency } from './shared/hooks/useAppTrackingTransparency';
+import { useNotificationResponse } from './shared/hooks/useNotificationResponse';
+import { checkVersionCompatibility } from './services/versionCompatibilityService';
 
 // Silence known upstream deprecation warnings from dependencies during development
 if (__DEV__) {
@@ -86,18 +89,28 @@ const linking: LinkingOptions<RootStackParamList> = {
       MainApp: {
         path: 'app',
         screens: {
-          HomeTab: '',
-          DailyEntryTab: 'daily-entry',
-          PastEntriesTab: 'past-entries',
-          CalendarTab: 'calendar',
-          SettingsTab: 'settings',
+          MainAppTabs: {
+            path: '',
+            screens: {
+              HomeTab: '',
+              DailyEntryTab: 'daily-entry',
+              PastEntriesTab: 'past-entries',
+              CalendarTab: 'calendar',
+              SettingsTab: 'settings',
+            },
+          },
+          EntryDetail: 'entry/:entryId',
+          PrivacyPolicy: 'privacy',
+          TermsOfService: 'terms',
+          Help: 'help',
+          WhyGratitude: 'why-gratitude',
+          MoodAnalysis: 'mood-analysis',
+          PastEntryCreation: 'past-entry-creation',
+          CustomerCenter: 'customer-center',
         },
       },
       Onboarding: 'onboarding',
-      EntryDetail: 'entry/:entryId',
-      PrivacyPolicy: 'privacy',
-      TermsOfService: 'terms',
-      Help: 'help',
+      NotFound: '*',
     } as PathConfigMap<RootStackParamList>,
   },
 };
@@ -105,14 +118,33 @@ const linking: LinkingOptions<RootStackParamList> = {
 const AppContent: React.FC = () => {
   const { theme, colorMode } = useTheme();
   const { profile } = useUserProfile();
+  const isAuthenticated = useCoreAuthStore((state) => state.isAuthenticated);
   const routeNameRef = React.useRef<string | undefined>(undefined);
   const navigationRef = React.useRef<NavigationContainerRef<RootStackParamList> | null>(null);
+  const [isNavigationReady, setIsNavigationReady] = React.useState(false);
+  const [requiredVersion, setRequiredVersion] = React.useState<string | null>(null);
+  const isMainAppReady = isAuthenticated && Boolean(profile?.onboarded);
 
   // Removed verbose AppState debug tracing
   // Request App Tracking Transparency on iOS when appropriate
   useAppTrackingTransparency({ shouldRequest: true });
 
   useAuthBootstrap(profile);
+  useNotificationResponse(navigationRef, isNavigationReady, isMainAppReady);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    checkVersionCompatibility().then((result) => {
+      if (isMounted && !result.compatible) {
+        setRequiredVersion(result.minVersion ?? '');
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const navigationTheme = React.useMemo(
     () => ({
@@ -131,12 +163,46 @@ const AppContent: React.FC = () => {
 
   const statusBarStyle: StatusBarStyle = colorMode === 'dark' ? 'light' : 'dark';
 
+  if (requiredVersion !== null) {
+    return (
+      <View style={[styles.updateRequiredContainer, { backgroundColor: theme.colors.background }]}>
+        <Text style={[styles.updateRequiredTitle, { color: theme.colors.onBackground }]}>
+          Update required
+        </Text>
+        <Text style={[styles.updateRequiredBody, { color: theme.colors.onSurfaceVariant }]}>
+          This version is no longer supported. Install the latest Yeşer update to continue.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          style={[styles.updateRequiredButton, { backgroundColor: theme.colors.primary }]}
+          onPress={() => {
+            const storeUrl =
+              Platform.OS === 'android'
+                ? 'market://details?id=com.arthlor.yeser'
+                : 'https://apps.apple.com/app/yeser';
+            Linking.openURL(storeUrl).catch(() => undefined);
+          }}
+        >
+          <Text style={[styles.updateRequiredButtonText, { color: theme.colors.onPrimary }]}>
+            Update
+          </Text>
+        </Pressable>
+        {requiredVersion.length > 0 ? (
+          <Text style={[styles.updateRequiredMeta, { color: theme.colors.onSurfaceVariant }]}>
+            Minimum version {requiredVersion}
+          </Text>
+        ) : null}
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer
       ref={navigationRef}
       theme={navigationTheme}
       linking={linking}
       fallback={<EnhancedSplashScreen />}
+      onReady={() => setIsNavigationReady(true)}
       onStateChange={(state) => {
         const previousRouteName = routeNameRef.current;
         const currentRouteName = getActiveRouteName(state);
@@ -169,6 +235,40 @@ const App: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  updateRequiredContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  updateRequiredTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  updateRequiredBody: {
+    marginTop: 12,
+    fontSize: 16,
+    lineHeight: 23,
+    textAlign: 'center',
+  },
+  updateRequiredButton: {
+    marginTop: 24,
+    minWidth: 160,
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  updateRequiredButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  updateRequiredMeta: {
+    marginTop: 12,
+    fontSize: 13,
+    textAlign: 'center',
   },
 });
 

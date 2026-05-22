@@ -11,11 +11,13 @@ import { hapticFeedback } from '@/utils/hapticFeedback';
 import { OnboardingMascot } from '@/features/onboarding/components/OnboardingMascot';
 import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 
 interface WelcomeStepProps {
   onNext: () => void;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 type FeatureKey = 'daily' | 'streak' | 'growth';
@@ -25,19 +27,36 @@ interface FeatureCardProps {
   tintKey: FeatureKey;
   title: string;
   description: string;
+  animValue: Animated.Value;
 }
 
-export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
+export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext, currentStep, totalSteps }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const { t } = useTranslation();
   const animations = useCoordinatedAnimations();
 
+  // Staggered animation values for feature cards
+  const cardAnims = useRef([...Array(3)].map(() => new Animated.Value(0))).current;
+
   useEffect(() => {
     animations.animateEntrance({ duration: 500 });
+
+    // Stagger feature cards slightly after main entrance
+    Animated.stagger(
+      150,
+      cardAnims.map((anim) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        })
+      )
+    ).start();
+
     analyticsService.logScreenView('onboarding_welcome_step');
     analyticsService.logEvent('onboarding_welcome_viewed');
-  }, [animations]);
+  }, [animations, cardAnims]);
 
   const handleGetStarted = useCallback(() => {
     hapticFeedback.success();
@@ -61,18 +80,32 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
     [theme]
   );
 
-  const FeatureCard: React.FC<FeatureCardProps> = ({ icon, tintKey, title, description }) => {
+  const FeatureCard: React.FC<FeatureCardProps> = ({
+    icon,
+    tintKey,
+    title,
+    description,
+    animValue,
+  }) => {
     const tint = getTintForKey(tintKey);
+
+    const translateY = animValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [20, 0],
+    });
+
     return (
-      <View style={styles.featureItem}>
-        <View style={[styles.featureIconContainer, { backgroundColor: tint + '18' }]}>
-          <Feather name={icon} size={18} color={tint} />
+      <Animated.View
+        style={[styles.featureItem, { opacity: animValue, transform: [{ translateY }] }]}
+      >
+        <View style={[styles.featureIconContainer, { backgroundColor: tint + '15' }]}>
+          <Feather name={icon} size={20} color={tint} />
         </View>
         <View style={styles.featureContent}>
           <Text style={styles.featureTitle}>{title}</Text>
           <Text style={styles.featureDescription}>{description}</Text>
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
@@ -87,10 +120,10 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
           },
         ]}
       >
-        <OnboardingNavHeader />
+        <OnboardingNavHeader currentStep={currentStep} totalSteps={totalSteps} />
 
         <View style={styles.hero}>
-          <OnboardingMascot source={require('@/assets/assets/mascot.png')} delay={200} />
+          <OnboardingMascot source={require('@/assets/assets/mascot.png')} delay={100} />
 
           <View style={styles.socialProofPill}>
             <Feather name="users" size={12} color={theme.colors.primary} />
@@ -107,18 +140,21 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
             tintKey="daily"
             title={t('onboarding.welcome.featureDailyTitle')}
             description={t('onboarding.welcome.featureDailyDesc')}
+            animValue={cardAnims[0]}
           />
           <FeatureCard
             icon="zap"
             tintKey="streak"
             title={t('onboarding.welcome.featureStreakTitle')}
             description={t('onboarding.welcome.featureStreakDesc')}
+            animValue={cardAnims[1]}
           />
           <FeatureCard
             icon="feather"
             tintKey="growth"
             title={t('onboarding.welcome.featureGrowthTitle')}
             description={t('onboarding.welcome.featureGrowthDesc')}
+            animValue={cardAnims[2]}
           />
         </View>
 
@@ -146,81 +182,85 @@ const createStyles = (theme: AppTheme) =>
     hero: {
       alignItems: 'center',
       paddingTop: theme.spacing.xs,
-      paddingBottom: theme.spacing.sm,
+      paddingBottom: theme.spacing.md, // Increased padding
     },
     socialProofPill: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 3,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: 4,
       borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.primary + '14',
-      marginBottom: theme.spacing.xs,
+      backgroundColor: theme.colors.primary + '10',
+      marginBottom: theme.spacing.sm,
     },
     socialProofText: {
       ...theme.typography.labelSmall,
-      fontSize: 10,
+      fontSize: 11,
       color: theme.colors.primary,
-      letterSpacing: 0.3,
+      letterSpacing: 0.4,
+      fontWeight: '600',
     },
     welcomeTitle: {
       ...theme.typography.headlineMedium,
-      fontSize: 26,
+      fontSize: 28, // Slightly larger, more premium
       fontWeight: '700',
       color: theme.colors.onBackground,
       textAlign: 'center',
       marginBottom: theme.spacing.xs,
+      letterSpacing: -0.5, // Tighter tracking for modern look
     },
     welcomeSubtitle: {
       ...theme.typography.bodyMedium,
-      fontSize: 14,
+      fontSize: 15,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
-      lineHeight: 20,
+      lineHeight: 22,
       paddingHorizontal: theme.spacing.sm,
     },
     featuresSection: {
-      gap: theme.spacing.xs,
+      gap: theme.spacing.sm, // More spacing between cards
       paddingVertical: theme.spacing.xs,
+      marginBottom: theme.spacing.md,
     },
     featureItem: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.lg,
-      padding: theme.spacing.sm,
-      borderWidth: 1,
-      borderColor: theme.colors.outline + '20',
-      ...getPrimaryShadow.small(theme),
+      borderRadius: theme.borderRadius.xl, // Softer corners
+      padding: theme.spacing.md, // More breathing room
+      borderWidth: StyleSheet.hairlineWidth, // More subtle border
+      borderColor: theme.colors.outline + '15',
+      ...getPrimaryShadow.card(theme), // Softer diffused shadow
     },
     featureIconContainer: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 44, // Slightly larger
+      height: 44,
+      borderRadius: 22,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: theme.spacing.sm,
+      marginRight: theme.spacing.md,
     },
     featureContent: {
       flex: 1,
+      justifyContent: 'center',
     },
     featureTitle: {
-      ...theme.typography.bodyMedium,
-      fontSize: 14,
+      ...theme.typography.bodyLarge,
+      fontSize: 15,
       fontWeight: '600',
       color: theme.colors.onBackground,
-      marginBottom: 1,
+      marginBottom: 2,
     },
     featureDescription: {
       ...theme.typography.bodySmall,
-      fontSize: 12,
+      fontSize: 13,
       color: theme.colors.onSurfaceVariant,
-      lineHeight: 16,
+      lineHeight: 18, // Better readability
     },
     actionSection: {
       paddingBottom: theme.spacing.lg,
-      paddingTop: theme.spacing.sm,
+      paddingTop: theme.spacing.md,
       alignItems: 'stretch',
     },
     encouragementText: {

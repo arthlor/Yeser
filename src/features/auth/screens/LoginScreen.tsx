@@ -3,8 +3,17 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { MotiView } from 'moti';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Dimensions, Image, Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,7 +51,7 @@ interface Props {
  */
 const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) => {
   const { theme, colorMode } = useTheme();
-  const { showWarning, showSuccess } = useToast();
+  const { showWarning, showSuccess, showError } = useToast();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme, insets, colorMode);
   const { t } = useTranslation();
@@ -112,11 +121,13 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   const { isAuthenticated, isLoading: coreLoading } = useCoreAuth();
   const {
     isLoading: googleOAuthLoading,
+    error: googleOAuthError,
     isInitialized: googleOAuthReady,
     canAttemptSignIn: canAttemptGoogleSignIn,
   } = useGoogleAuthState();
   const {
     isLoading: appleOAuthLoading,
+    error: appleOAuthError,
     isInitialized: appleOAuthReady,
     canAttemptSignIn: canAttemptAppleSignIn,
   } = useAppleAuthState();
@@ -129,48 +140,101 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
   const shouldShowVideo = videoReady && !videoError;
 
   // Track OAuth callback state
-  const [isWaitingForOAuthCallback, setIsWaitingForOAuthCallback] = useState(false);
+  const [isWaitingForBrowserCallback, setIsWaitingForBrowserCallback] = useState(false);
+  const visibleOAuthError = appleOAuthError ?? googleOAuthError;
+  const isMountedRef = useRef(true);
+  const successToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const googleReadyIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const googleReadyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appleReadyIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const appleReadyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearGoogleReadyTimers = useCallback(() => {
+    if (googleReadyIntervalRef.current) {
+      clearInterval(googleReadyIntervalRef.current);
+      googleReadyIntervalRef.current = null;
+    }
+    if (googleReadyTimeoutRef.current) {
+      clearTimeout(googleReadyTimeoutRef.current);
+      googleReadyTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearAppleReadyTimers = useCallback(() => {
+    if (appleReadyIntervalRef.current) {
+      clearInterval(appleReadyIntervalRef.current);
+      appleReadyIntervalRef.current = null;
+    }
+    if (appleReadyTimeoutRef.current) {
+      clearTimeout(appleReadyTimeoutRef.current);
+      appleReadyTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (successToastTimeoutRef.current) {
+        clearTimeout(successToastTimeoutRef.current);
+        successToastTimeoutRef.current = null;
+      }
+      clearGoogleReadyTimers();
+      clearAppleReadyTimers();
+    };
+  }, [clearAppleReadyTimers, clearGoogleReadyTimers]);
 
   // Reset OAuth callback state after timeout
   useEffect(() => {
-    if (isWaitingForOAuthCallback) {
+    if (isWaitingForBrowserCallback) {
       const timeout = setTimeout(() => {
-        setIsWaitingForOAuthCallback(false);
+        setIsWaitingForBrowserCallback(false);
         logger.debug('OAuth callback timeout - resetting state');
       }, 60000);
 
       return () => clearTimeout(timeout);
     }
-  }, [isWaitingForOAuthCallback]);
+  }, [isWaitingForBrowserCallback]);
 
   // Reset OAuth callback state when user becomes authenticated
   useEffect(() => {
-    if (isAuthenticated && isWaitingForOAuthCallback) {
-      setIsWaitingForOAuthCallback(false);
+    if (isAuthenticated && isWaitingForBrowserCallback) {
+      setIsWaitingForBrowserCallback(false);
       logger.debug('OAuth callback successful - resetting state');
-      setTimeout(() => {
+      if (successToastTimeoutRef.current) {
+        clearTimeout(successToastTimeoutRef.current);
+      }
+      successToastTimeoutRef.current = setTimeout(() => {
         showSuccess?.(t('auth.login.toasts.loginSuccess'));
+        successToastTimeoutRef.current = null;
       }, 100);
     }
-  }, [isAuthenticated, isWaitingForOAuthCallback, showSuccess, t]);
+  }, [isAuthenticated, isWaitingForBrowserCallback, showSuccess, t]);
 
   // Initialize Google OAuth after database is ready
   useEffect(() => {
+    let cancelled = false;
+
     const initGoogle = async () => {
       try {
         if (supabaseService.isInitialized()) {
-          await initializeGoogle();
+          if (!cancelled && isMountedRef.current) {
+            await initializeGoogle();
+          }
           logger.debug('Google OAuth initialized after database ready');
         } else {
           const checkReady = setInterval(async () => {
+            if (cancelled || !isMountedRef.current) {
+              return;
+            }
             if (supabaseService.isInitialized()) {
-              clearInterval(checkReady);
+              clearGoogleReadyTimers();
               await initializeGoogle();
               logger.debug('Google OAuth initialized after database became ready');
             }
           }, 500);
 
-          setTimeout(() => clearInterval(checkReady), 10000);
+          googleReadyIntervalRef.current = checkReady;
+          googleReadyTimeoutRef.current = setTimeout(clearGoogleReadyTimers, 10000);
         }
       } catch (error) {
         logger.debug('Google OAuth initialization failed (non-critical):', {
@@ -180,27 +244,41 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     };
 
     initGoogle();
-  }, [initializeGoogle]);
+
+    return () => {
+      cancelled = true;
+      clearGoogleReadyTimers();
+    };
+  }, [clearGoogleReadyTimers, initializeGoogle]);
 
   // Initialize Apple OAuth after database is ready (iOS only)
   useEffect(() => {
     if (Platform.OS !== 'ios') {
       return;
     }
+
+    let cancelled = false;
+
     const initApple = async () => {
       try {
         if (supabaseService.isInitialized()) {
-          await initializeApple();
+          if (!cancelled && isMountedRef.current) {
+            await initializeApple();
+          }
           logger.debug('Apple OAuth initialized after database ready');
         } else {
           const checkReady = setInterval(async () => {
+            if (cancelled || !isMountedRef.current) {
+              return;
+            }
             if (supabaseService.isInitialized()) {
-              clearInterval(checkReady);
+              clearAppleReadyTimers();
               await initializeApple();
               logger.debug('Apple OAuth initialized after database became ready');
             }
           }, 500);
-          setTimeout(() => clearInterval(checkReady), 10000);
+          appleReadyIntervalRef.current = checkReady;
+          appleReadyTimeoutRef.current = setTimeout(clearAppleReadyTimers, 10000);
         }
       } catch (error) {
         logger.debug('Apple OAuth initialization failed (non-critical):', {
@@ -210,7 +288,12 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     };
 
     initApple();
-  }, [initializeApple]);
+
+    return () => {
+      cancelled = true;
+      clearAppleReadyTimers();
+    };
+  }, [clearAppleReadyTimers, initializeApple]);
 
   const handleGoogleLogin = useCallback(async (): Promise<void> => {
     if (!canAttemptGoogleSignIn) {
@@ -219,17 +302,17 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     }
 
     try {
-      setIsWaitingForOAuthCallback(true);
+      setIsWaitingForBrowserCallback(true);
       const { useGoogleOAuthStore } = await import('@/features/auth');
       await useGoogleOAuthStore.getState().signIn();
-      setIsWaitingForOAuthCallback(false);
     } catch (error) {
-      setIsWaitingForOAuthCallback(false);
+      setIsWaitingForBrowserCallback(false);
       if (error instanceof Error && error.message !== 'OAUTH_CALLBACK_REQUIRED') {
         logger.error('Google OAuth error in UI:', error as Error);
+        showError(error.message || t('auth.services.googleFailed'));
       }
     }
-  }, [canAttemptGoogleSignIn, showWarning, t]);
+  }, [canAttemptGoogleSignIn, showError, showWarning, t]);
 
   const handleAppleLogin = useCallback(async (): Promise<void> => {
     if (Platform.OS !== 'ios') {
@@ -243,17 +326,15 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
     }
 
     try {
-      setIsWaitingForOAuthCallback(true);
       const { useAppleOAuthStore } = await import('@/features/auth');
       await useAppleOAuthStore.getState().signIn();
-      setIsWaitingForOAuthCallback(false);
     } catch (error) {
-      setIsWaitingForOAuthCallback(false);
       if (error instanceof Error && error.message !== 'OAUTH_CALLBACK_REQUIRED') {
         logger.error('Apple OAuth error in UI:', error as Error);
+        showError(error.message || t('auth.services.appleFailed'));
       }
     }
-  }, [canAttemptAppleSignIn, showWarning, t]);
+  }, [canAttemptAppleSignIn, showError, showWarning, t]);
 
   return (
     <View style={styles.root}>
@@ -331,7 +412,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                 title={
                   !googleOAuthReady
                     ? t('auth.login.buttons.googleLoading')
-                    : isWaitingForOAuthCallback
+                    : isWaitingForBrowserCallback
                       ? t('auth.login.buttons.openInBrowser')
                       : googleOAuthLoading
                         ? t('auth.login.buttons.googleSigning')
@@ -345,7 +426,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                   googleOAuthLoading ||
                   !googleOAuthReady ||
                   !canAttemptGoogleSignIn ||
-                  isWaitingForOAuthCallback
+                  isWaitingForBrowserCallback
                 }
                 style={styles.googleButton}
                 textStyle={styles.googleButtonText}
@@ -358,11 +439,9 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                   title={
                     !appleOAuthReady
                       ? t('auth.login.buttons.appleLoading')
-                      : isWaitingForOAuthCallback
-                        ? t('auth.login.buttons.openInBrowser')
-                        : appleOAuthLoading
-                          ? t('auth.login.buttons.appleSigning')
-                          : t('auth.login.oauth.appleContinue')
+                      : appleOAuthLoading
+                        ? t('auth.login.buttons.appleSigning')
+                        : t('auth.login.oauth.appleContinue')
                   }
                   onPress={handleAppleLogin}
                   variant="secondary"
@@ -372,7 +451,7 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
                     appleOAuthLoading ||
                     !appleOAuthReady ||
                     !canAttemptAppleSignIn ||
-                    isWaitingForOAuthCallback
+                    isWaitingForBrowserCallback
                   }
                   style={styles.appleButton}
                   textStyle={styles.appleButtonText}
@@ -381,14 +460,21 @@ const LoginScreen: React.FC<Props> = React.memo(({ navigation: _navigation }) =>
               )}
 
               {/* OAuth Callback Indicator */}
-              {isWaitingForOAuthCallback && (
+              {isWaitingForBrowserCallback && (
                 <View style={styles.callbackIndicator}>
-                  <Ionicons name="open-outline" size={16} color={theme.colors.onSurfaceVariant} />
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
                   <Text style={styles.callbackText}>
                     {t('auth.login.oauth.browserReturnInstruction')}
                   </Text>
                 </View>
               )}
+
+              {visibleOAuthError ? (
+                <View style={styles.oauthErrorRow}>
+                  <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
+                  <Text style={styles.oauthErrorText}>{visibleOAuthError}</Text>
+                </View>
+              ) : null}
             </View>
 
             {/* Privacy Note */}
@@ -606,6 +692,25 @@ const createStyles = (
       fontSize: 13,
       color: theme.colors.onSurfaceVariant,
       opacity: 0.8,
+    },
+    oauthErrorRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: theme.spacing.xs,
+      marginTop: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.md,
+      backgroundColor: alpha(theme.colors.error, 0.1),
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: alpha(theme.colors.error, 0.28),
+    },
+    oauthErrorText: {
+      flex: 1,
+      fontSize: 12,
+      lineHeight: 17,
+      color: theme.colors.error,
+      fontFamily: theme.typography.fontFamilyRegular || 'Inter-Regular',
     },
 
     // Privacy section

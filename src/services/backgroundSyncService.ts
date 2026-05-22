@@ -36,6 +36,7 @@ class BackgroundSyncService implements InitializableService {
   private isOnline: boolean = true;
   private isSyncing: boolean = false;
   private syncInterval: ReturnType<typeof setInterval> | null = null;
+  private netInfoUnsubscribe: (() => void) | null = null;
   private initialized: boolean = false;
   private databaseReady: boolean = false;
   private queueLock: Promise<void> = Promise.resolve();
@@ -132,9 +133,14 @@ class BackgroundSyncService implements InitializableService {
    */
   private async initializeNetworkListener(): Promise<void> {
     try {
+      if (this.netInfoUnsubscribe) {
+        logger.debug('[COLD START] Network listener already initialized');
+        return;
+      }
+
       logger.debug('[COLD START] Setting up network listener...');
 
-      NetInfo.addEventListener((state) => {
+      this.netInfoUnsubscribe = NetInfo.addEventListener((state) => {
         const wasOffline = !this.isOnline;
         this.isOnline = !!state.isConnected;
 
@@ -189,6 +195,11 @@ class BackgroundSyncService implements InitializableService {
    */
   private async startPeriodicSync(): Promise<void> {
     try {
+      if (this.syncInterval) {
+        logger.debug('[COLD START] Periodic sync already running');
+        return;
+      }
+
       logger.debug('[COLD START] Starting periodic sync...');
 
       this.syncInterval = setInterval(() => {
@@ -213,6 +224,18 @@ class BackgroundSyncService implements InitializableService {
       this.syncInterval = null;
       logger.debug('Periodic sync stopped');
     }
+  }
+
+  cleanup(): void {
+    this.stopPeriodicSync();
+
+    if (this.netInfoUnsubscribe) {
+      this.netInfoUnsubscribe();
+      this.netInfoUnsubscribe = null;
+      logger.debug('Background sync network listener stopped');
+    }
+
+    this.initialized = false;
   }
 
   /**
@@ -537,15 +560,22 @@ export const useBackgroundSync = () => {
     isInitialized: false,
   });
 
-  const updateStatus = async () => {
-    const status = await backgroundSyncService.getSyncStatus();
-    setSyncStatus(status);
-  };
-
   React.useEffect(() => {
+    let isMounted = true;
+
+    const updateStatus = async () => {
+      const status = await backgroundSyncService.getSyncStatus();
+      if (isMounted) {
+        setSyncStatus(status);
+      }
+    };
+
     updateStatus();
     const interval = setInterval(updateStatus, 5000); // Update every 5 seconds
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return {

@@ -17,7 +17,6 @@ import PaywallStep from './steps/PaywallStep';
 import PersonalizationStep from './steps/PersonalizationStep';
 import PlanRevealStep from './steps/PlanRevealStep';
 import WelcomeStep from './steps/WelcomeStep';
-import OnboardingProgressDots from '@/features/onboarding/components/OnboardingProgressDots';
 import { logger } from '@/utils/debugConfig';
 
 import { ScreenLayout } from '@/shared/components/layout';
@@ -161,6 +160,8 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
     const stepProps = {
       onNext: handleStepNext,
       onBack: handleStepBack,
+      currentStep: ONBOARDING_STEPS.indexOf(currentStep),
+      totalSteps: ONBOARDING_STEPS.length,
     };
 
     switch (currentStep) {
@@ -175,6 +176,8 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
               handleStepNext();
             }}
             onBack={handleStepBack}
+            currentStep={stepProps.currentStep}
+            totalSteps={stepProps.totalSteps}
           />
         );
 
@@ -242,43 +245,25 @@ export const EnhancedOnboardingFlowScreen: React.FC = () => {
   return (
     <ScreenLayout
       showsVerticalScrollIndicator={false}
-      edges={['top']}
+      edges={[]}
       edgeToEdge={true}
       backgroundColor={theme.colors.background}
     >
       <View style={styles.container}>
         <View style={styles.stepContainer}>{renderCurrentStep()}</View>
-
-        {/* Step Progress Indicator (hidden on paywall + completion for focus) */}
-        {currentStep !== 'completion' && currentStep !== 'paywall' && (
-          <View style={styles.progressContainer} pointerEvents="none">
-            <OnboardingProgressDots
-              total={ONBOARDING_STEPS.length}
-              current={ONBOARDING_STEPS.indexOf(currentStep)}
-            />
-          </View>
-        )}
       </View>
     </ScreenLayout>
   );
 };
 
-const createStyles = (theme: AppTheme) =>
+const createStyles = (_theme: AppTheme) =>
   StyleSheet.create({
     container: {
       flex: 1,
     },
     stepContainer: {
       flex: 1,
-      paddingTop: theme.spacing.xxl,
-    },
-    progressContainer: {
-      position: 'absolute',
-      top: theme.spacing.lg,
-      left: theme.spacing.lg,
-      right: theme.spacing.lg,
-      zIndex: 10,
-      paddingVertical: theme.spacing.xs,
+      paddingTop: 0,
     },
   });
 

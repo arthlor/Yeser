@@ -39,10 +39,6 @@ export const analyzeMoodInsights = async (
     throw handleAPIError(new Error(error.message), 'analyze mood insights');
   }
 
-  if (data && typeof data === 'object' && 'error' in data) {
-    throw handleAPIError(new Error(String((data as any).error)), 'analyze mood insights');
-  }
-
   return data as AIInsightResponse;
 };
 
@@ -75,6 +71,12 @@ export const getLatestMoodInsightSnapshot = async (
       narrative: (rawSnapshot.narrative ?? null) as MoodInsightSnapshot['narrative'],
       generated_at: rawSnapshot.generated_at,
       entry_count_at_generation: rawSnapshot.entry_count_at_generation ?? 0,
+      statement_count_at_generation: rawSnapshot.statement_count_at_generation ?? undefined,
+      range_entry_count_at_generation: rawSnapshot.range_entry_count_at_generation ?? undefined,
+      analysis_details:
+        (rawSnapshot.analysis_details as MoodInsightSnapshot['analysis_details']) ?? null,
+      risk_level: (rawSnapshot.risk_level as MoodInsightSnapshot['risk_level']) ?? undefined,
+      source_hash: rawSnapshot.source_hash ?? null,
       is_preview_only: Boolean(rawSnapshot.is_preview_only),
     };
   } catch (err) {
@@ -89,34 +91,29 @@ export const getRecentGratitudeEntryCount = async (
   try {
     const { client, session } = await getAuthedClient();
     const { user } = session;
-    const startDate = getMoodInsightRangeStartDate(range);
 
-    const { data, error } = await client
-      .from('gratitude_entries')
-      .select('statements')
-      .eq('user_id', user.id)
-      .gte('entry_date', startDate);
+    if (range.endsWith('e')) {
+      const { count, error } = await client
+        .from('gratitude_entries')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw handleAPIError(new Error(error.message), 'fetch total gratitude entry count');
+      }
+      return count ?? 0;
+    }
+
+    const startDate = getMoodInsightRangeStartDate(range);
+    const { data, error } = await client.rpc('get_recent_statement_count', {
+      p_start_date: startDate,
+    });
 
     if (error) {
       throw handleAPIError(new Error(error.message), 'fetch recent gratitude entry count');
     }
 
-    return (data ?? []).reduce((total, row) => {
-      if (!Array.isArray(row.statements)) {
-        return total;
-      }
-
-      const statements = row.statements as unknown[];
-      const statementCount = statements.reduce<number>((count, value) => {
-        if (typeof value !== 'string') {
-          return count;
-        }
-
-        return value.trim().length > 0 ? count + 1 : count;
-      }, 0);
-
-      return total + statementCount;
-    }, 0);
+    return Number(data ?? 0);
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     throw handleAPIError(error, 'fetch recent gratitude entry count');

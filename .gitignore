@@ -235,3 +235,4 @@ config/google-services.json
 
 # Environment variables
 .env.local
+node_modules

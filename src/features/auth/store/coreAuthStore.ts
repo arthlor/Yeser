@@ -291,6 +291,7 @@ export const useCoreAuthStore = create<CoreAuthState>((set, get) => ({
               logger.debug('Core auth store: Session set successfully from tokens', {
                 userId: user.id,
               });
+              await revenueCatService.identifyUser(user.id);
             } else {
               set({ isLoading: false });
               const error = new Error('Invalid session data received');

@@ -81,7 +81,7 @@ const extra = {
 module.exports = {
   name,
   slug: 'yeser',
-  version: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.4.0',
+  version: process.env.EXPO_PUBLIC_APP_VERSION ?? '1.4.1',
   runtimeVersion: {
     policy: 'fingerprint',
   },
